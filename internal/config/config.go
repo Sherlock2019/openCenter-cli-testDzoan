@@ -409,6 +409,167 @@ func Load(name string) (Config, error) {
     return cfg, nil
 }
 
+// GenerateCompleteConfig generates a complete configuration by merging schema defaults
+// with the actual cluster configuration. The opencenter values take precedence over
+// schema defaults.
+//
+// Inputs:
+//   - name: The cluster name to load configuration for.
+//
+// Outputs:
+//   - Config: The complete merged configuration.
+//   - error: An error if the configuration cannot be generated.
+func GenerateCompleteConfig(name string) (Config, error) {
+    // Generate schema defaults as YAML
+    defaultYAML, err := GenerateDefaultFromSchema(name)
+    if err != nil {
+        return Config{}, fmt.Errorf("failed to generate schema defaults: %w", err)
+    }
+
+    // Read the actual cluster configuration file directly as YAML
+    path, err := ConfigPath(name)
+    if err != nil {
+        return Config{}, fmt.Errorf("failed to get config path: %w", err)
+    }
+    actualYAML, err := os.ReadFile(path)
+    if err != nil {
+        return Config{}, fmt.Errorf("failed to read cluster config: %w", err)
+    }
+
+    // Parse both as generic maps to preserve all structure
+    var schemaDefaults map[string]any
+    if err := yaml.Unmarshal(defaultYAML, &schemaDefaults); err != nil {
+        return Config{}, fmt.Errorf("failed to parse schema defaults: %w", err)
+    }
+
+    var actualConfig map[string]any
+    if err := yaml.Unmarshal(actualYAML, &actualConfig); err != nil {
+        return Config{}, fmt.Errorf("failed to parse actual config: %w", err)
+    }
+
+    // Merge the configurations with actual config taking precedence
+    mergedConfig := mergeYAMLMaps(schemaDefaults, actualConfig)
+
+    // Marshal back to YAML then unmarshal into Config struct
+    mergedYAML, err := yaml.Marshal(mergedConfig)
+    if err != nil {
+        return Config{}, fmt.Errorf("failed to marshal merged config: %w", err)
+    }
+
+    var completeCfg Config
+    if err := yaml.Unmarshal(mergedYAML, &completeCfg); err != nil {
+        return Config{}, fmt.Errorf("failed to parse merged config into struct: %w", err)
+    }
+
+    return completeCfg, nil
+}
+
+// mergeYAMLMaps recursively merges two YAML maps, with values from 'override' taking precedence
+func mergeYAMLMaps(base, override map[string]any) map[string]any {
+    result := make(map[string]any)
+
+    // Start with all base values
+    for k, v := range base {
+        result[k] = v
+    }
+
+    // Override with values from override map
+    for k, v := range override {
+        if baseVal, exists := result[k]; exists {
+            // If both values are maps, merge them recursively
+            if baseMap, baseIsMap := baseVal.(map[string]any); baseIsMap {
+                if overrideMap, overrideIsMap := v.(map[string]any); overrideIsMap {
+                    result[k] = mergeYAMLMaps(baseMap, overrideMap)
+                    continue
+                }
+            }
+        }
+        // Otherwise, override value takes precedence
+        result[k] = v
+    }
+
+    return result
+}
+
+// GenerateCompleteConfigYAML generates a complete configuration YAML by merging schema defaults
+// with the actual cluster configuration, preserving all YAML structure.
+//
+// Inputs:
+//   - name: The cluster name to load configuration for.
+//
+// Outputs:
+//   - []byte: The complete merged configuration as YAML.
+//   - error: An error if the configuration cannot be generated.
+func GenerateCompleteConfigYAML(name string) ([]byte, error) {
+    // Generate schema defaults as YAML
+    defaultYAML, err := GenerateDefaultFromSchema(name)
+    if err != nil {
+        return nil, fmt.Errorf("failed to generate schema defaults: %w", err)
+    }
+
+    // Read the actual cluster configuration file directly as YAML
+    path, err := ConfigPath(name)
+    if err != nil {
+        return nil, fmt.Errorf("failed to get config path: %w", err)
+    }
+    actualYAML, err := os.ReadFile(path)
+    if err != nil {
+        return nil, fmt.Errorf("failed to read cluster config: %w", err)
+    }
+
+    // Parse both as generic maps to preserve all structure
+    var schemaDefaults map[string]any
+    if err := yaml.Unmarshal(defaultYAML, &schemaDefaults); err != nil {
+        return nil, fmt.Errorf("failed to parse schema defaults: %w", err)
+    }
+
+    var actualConfig map[string]any
+    if err := yaml.Unmarshal(actualYAML, &actualConfig); err != nil {
+        return nil, fmt.Errorf("failed to parse actual config: %w", err)
+    }
+
+    // Merge the configurations with actual config taking precedence
+    mergedConfig := mergeYAMLMaps(schemaDefaults, actualConfig)
+
+    // Marshal back to YAML
+    mergedYAML, err := yaml.Marshal(mergedConfig)
+    if err != nil {
+        return nil, fmt.Errorf("failed to marshal merged config: %w", err)
+    }
+
+    return mergedYAML, nil
+}
+
+// SaveDebugConfig saves a complete configuration to the GitOps directory as .openCenter.yaml
+// for debugging purposes. This is only called when OPENCENTER_DEBUG environment variable exists.
+//
+// Inputs:
+//   - clusterName: The cluster name to generate complete config for.
+//   - gitDir: The GitOps directory where to save the debug config.
+//
+// Outputs:
+//   - error: An error if the configuration cannot be saved.
+func SaveDebugConfig(clusterName, gitDir string) error {
+    if gitDir == "" {
+        return fmt.Errorf("git directory is empty")
+    }
+
+    debugPath := filepath.Join(gitDir, ".openCenter.yaml")
+
+    // Generate the complete config YAML
+    data, err := GenerateCompleteConfigYAML(clusterName)
+    if err != nil {
+        return fmt.Errorf("failed to generate complete config: %w", err)
+    }
+
+    // Write the debug config file with 0600 permissions
+    if err := os.WriteFile(debugPath, data, 0o600); err != nil {
+        return fmt.Errorf("failed to write debug config to %s: %w", debugPath, err)
+    }
+
+    return nil
+}
+
 // Save writes the configuration to a YAML file. The file is saved with 0600
 // permissions to protect sensitive data.
 //

@@ -1,0 +1,63 @@
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: rmpk-gateway
+  namespace: rackspace-system
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-1342585-prosys
+spec:
+  gatewayClassName: eg
+  listeners:
+    - name: keycloak-https
+      port: 443
+      protocol: HTTPS
+      hostname: auth.prosys.dev.dfw3.k8s.opencenter.cloud
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: keycloak-tls
+    - name: gitops-https
+      port: 443
+      protocol: HTTPS
+      hostname: gitops.prosys.dev.dfw3.k8s.opencenter.cloud
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: gitops-tls
+    - name: prometheus-https
+      port: 443
+      protocol: HTTPS
+      hostname: prometheus.prosys.dev.dfw3.k8s.opencenter.cloud
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: prometheus-tls
+    - name: alertmanager-https
+      port: 443
+      protocol: HTTPS
+      hostname: alertmanager.prosys.dev.dfw3.k8s.opencenter.cloud
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: alertmanager-tls

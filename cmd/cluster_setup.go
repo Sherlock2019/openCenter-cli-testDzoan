@@ -88,9 +88,27 @@ func newClusterSetupCmd() *cobra.Command {
             if err := gitops.CopyBase(cfg, render); err != nil {
                 return fmt.Errorf("failed to prepare gitops directory: %w", err)
             }
+
+            // Render cluster-specific templates
+            if err := gitops.RenderClusterApps(cfg); err != nil {
+                return fmt.Errorf("failed to render cluster apps templates: %w", err)
+            }
+
+            if err := gitops.RenderInfrastructureCluster(cfg); err != nil {
+                return fmt.Errorf("failed to render infrastructure cluster templates: %w", err)
+            }
+
             // Provision OpenTofu (renders main.tf and provider.tf)
             if err := tofu.Provision(cfg); err != nil {
                 return fmt.Errorf("failed to provision opentofu: %w", err)
+            }
+
+            // Generate debug config if OPENCENTER_DEBUG environment variable exists
+            if os.Getenv("OPENCENTER_DEBUG") != "" {
+                if err := config.SaveDebugConfig(cfg.ClusterName, cfg.GitOps.GitDir); err != nil {
+                    return fmt.Errorf("failed to save debug config: %w", err)
+                }
+                fmt.Fprintln(cmd.OutOrStdout(), "Debug config saved to .openCenter.yaml")
             }
             // Ansible provisioning removed with legacy templates.
             // Write .opencenter marker

@@ -1,0 +1,11 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: observability
+resources: [./custom-alertmanager-routes.yaml, custom-prometheus-routes.yaml]
+secretGenerator:
+  - name: kube-prometheus-stack-values-override
+    type: Opaque
+    files: [override.yaml=helm-values/override-values.yaml]
+    options:
+      disableNameSuffixHash: true

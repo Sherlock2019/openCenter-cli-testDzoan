@@ -8,6 +8,9 @@ helm = "3.18"
 # Override the default config directory via environment for reproducible tests
 OPENCENTER_CONFIG_DIR = "./testdata/config"
 
+# When true deubg logs are set to true and other artifacts are created to help trouble shoot or verify functionality
+OPENCENTER_DEBUG = true
+
 [tasks]
 # Build the openCenter binary
 build = "go build -o bin/openCenter"

@@ -61,9 +61,9 @@ Feature: Minimal network workflow (VRRP) from init to bootstrap
     # ./openCenter cluster setup --render (renders and materializes the repo)
     When I run "openCenter cluster setup --render --config-dir tmp/conf"
     Then the exit code should be 0
-    And stdout should contain "render"
+    And stdout should contain "Setup complete"
     And the directory "tmp/repo-demo" should exist
-    And the directory "tmp/repo-demo" should contain a file matching "README\\.md"
+    And the directory "tmp/repo-demo" should contain a file matching "gitignore"
     And the directory "tmp/repo-demo" should contain a directory "applications"
 
     # Prepare the remote for bootstrap

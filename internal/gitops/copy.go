@@ -65,9 +65,13 @@ func CopyBase(cfg config.Config, render bool) error {
         }
         dst := filepath.Join(target, rel)
         // If template file and render flag set, process template
-        if strings.HasSuffix(d.Name(), ".tmpl") {
-            // Strip .tmpl extension
-            dst = strings.TrimSuffix(dst, ".tmpl")
+        if strings.HasSuffix(d.Name(), ".tmpl") || strings.HasSuffix(d.Name(), ".tpl") {
+            // Strip template extension
+            if strings.HasSuffix(d.Name(), ".tmpl") {
+                dst = strings.TrimSuffix(dst, ".tmpl")
+            } else {
+                dst = strings.TrimSuffix(dst, ".tpl")
+            }
             if render {
                 return renderTemplate(path, dst, cfg)
             }
@@ -80,12 +84,24 @@ func CopyBase(cfg config.Config, render bool) error {
 
 // renderTemplate reads the embedded template file at path, executes
 // it using the provided configuration, and writes the result to dst.
+// It handles special cases where template files contain non-Go template syntax.
 func renderTemplate(path, dst string, cfg config.Config) error {
     data, err := Files.ReadFile(path)
     if err != nil {
         return err
     }
-    t, err := template.New(filepath.Base(path)).Funcs(sprig.TxtFuncMap()).Parse(string(data))
+
+    // Handle special cases for files that contain conflicting template syntax
+    content := string(data)
+    filename := filepath.Base(path)
+
+    // For Makefile.tpl, escape Helm template syntax to prevent Go template parsing conflicts
+    if filename == "Makefile.tpl" {
+        // Replace Helm template syntax with escaped version for Go template processing
+        content = strings.ReplaceAll(content, `--template="{{.Version}}"`, `--template="{{"{{"}}.Version{{"}}"}}"`)
+    }
+
+    t, err := template.New(filename).Funcs(sprig.TxtFuncMap()).Parse(content)
     if err != nil {
         return fmt.Errorf("failed to parse template %s: %w", path, err)
     }
@@ -112,4 +128,98 @@ func copyFile(src, dst string) error {
         return err
     }
     return os.WriteFile(dst, data, 0o644)
+}
+
+// RenderClusterApps renders cluster-apps-base template to applications/overlays/<cluster-name>/
+// This function processes all files in the cluster-apps-base template directory,
+// renders .tmpl files with the cluster configuration, and copies others as-is.
+func RenderClusterApps(cfg config.Config) error {
+    clusterName := cfg.ClusterName
+    if clusterName == "" {
+        return fmt.Errorf("cluster name is empty")
+    }
+
+    target := filepath.Join(cfg.GitOps.GitDir, "applications", "overlays", clusterName)
+
+    // Create target directory
+    if err := os.MkdirAll(target, 0o755); err != nil {
+        return err
+    }
+
+    // Walk embedded cluster-apps-base files
+    return fs.WalkDir(Files, "templates/cluster-apps-base", func(path string, d fs.DirEntry, walkErr error) error {
+        if walkErr != nil {
+            return walkErr
+        }
+        if d.IsDir() {
+            return nil
+        }
+
+        rel, err := filepath.Rel("templates/cluster-apps-base", path)
+        if err != nil {
+            return err
+        }
+
+        dst := filepath.Join(target, rel)
+
+        // If template file, process and strip template extension
+        if strings.HasSuffix(d.Name(), ".tmpl") || strings.HasSuffix(d.Name(), ".tpl") {
+            if strings.HasSuffix(d.Name(), ".tmpl") {
+                dst = strings.TrimSuffix(dst, ".tmpl")
+            } else {
+                dst = strings.TrimSuffix(dst, ".tpl")
+            }
+            return renderTemplate(path, dst, cfg)
+        }
+
+        // Copy file as-is
+        return copyFile(path, dst)
+    })
+}
+
+// RenderInfrastructureCluster renders infrastructure-cluster-template to infrastructure/clusters/<cluster-name>/
+// This function processes all files in the infrastructure-cluster-template directory,
+// renders .tmpl and .tpl files with the cluster configuration, and copies others as-is.
+func RenderInfrastructureCluster(cfg config.Config) error {
+    clusterName := cfg.ClusterName
+    if clusterName == "" {
+        return fmt.Errorf("cluster name is empty")
+    }
+
+    target := filepath.Join(cfg.GitOps.GitDir, "infrastructure", "clusters", clusterName)
+
+    // Create target directory
+    if err := os.MkdirAll(target, 0o755); err != nil {
+        return err
+    }
+
+    // Walk embedded infrastructure-cluster-template files
+    return fs.WalkDir(Files, "templates/infrastructure-cluster-template", func(path string, d fs.DirEntry, walkErr error) error {
+        if walkErr != nil {
+            return walkErr
+        }
+        if d.IsDir() {
+            return nil
+        }
+
+        rel, err := filepath.Rel("templates/infrastructure-cluster-template", path)
+        if err != nil {
+            return err
+        }
+
+        dst := filepath.Join(target, rel)
+
+        // If template file, process and strip template extension
+        if strings.HasSuffix(d.Name(), ".tmpl") || strings.HasSuffix(d.Name(), ".tpl") {
+            if strings.HasSuffix(d.Name(), ".tmpl") {
+                dst = strings.TrimSuffix(dst, ".tmpl")
+            } else {
+                dst = strings.TrimSuffix(dst, ".tpl")
+            }
+            return renderTemplate(path, dst, cfg)
+        }
+
+        // Copy file as-is
+        return copyFile(path, dst)
+    })
 }

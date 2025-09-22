@@ -38,8 +38,8 @@ func TestCopyBase(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := os.Stat(filepath.Join(dst, "README.md")); os.IsNotExist(err) {
-		t.Error("README.md was not copied")
+	if _, err := os.Stat(filepath.Join(dst, ".gitignore")); os.IsNotExist(err) {
+		t.Error(".gitignore was not copied")
 	}
 
 	files, err := filepath.Glob(filepath.Join(dst, "*"))

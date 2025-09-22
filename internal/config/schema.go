@@ -375,19 +375,34 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 //   - []byte: The YAML configuration document
 //   - error: An error if the configuration cannot be generated
 func GenerateDefaultFromSchema(name string) ([]byte, error) {
-    // Get the schema properties (without the JSON Schema metadata)
-    schema := getSchemaProperties()
+    // Generate the current JSON schema
+    schemaJSON, err := GenerateSchema(false)
+    if err != nil {
+        return nil, fmt.Errorf("failed to generate current schema: %w", err)
+    }
+
+    // Parse the JSON schema
+    var schemaDoc map[string]any
+    if err := json.Unmarshal(schemaJSON, &schemaDoc); err != nil {
+        return nil, fmt.Errorf("failed to parse schema JSON: %w", err)
+    }
+
+    // Extract the properties section
+    properties, ok := schemaDoc["properties"].(map[string]any)
+    if !ok {
+        return nil, fmt.Errorf("schema does not have properties section")
+    }
 
     // Create a map to hold the configuration
     config := make(map[string]any)
 
-    // Process each property in the schema, excluding 'iac'
-    for key, value := range schema {
-        if key == "iac" {
-            continue // Skip iac section as requested
+    // Process each property in the schema
+    for key, value := range properties {
+        propertySchema, ok := value.(map[string]any)
+        if !ok {
+            continue
         }
-
-        config[key] = generateDefaultValue(value.(map[string]any), key, name)
+        config[key] = generateDefaultValue(propertySchema, key, name)
     }
 
     // Marshal to YAML

@@ -1,0 +1,11 @@
+apiVersion: rbacmanager.reactiveops.io/v1beta1
+kind: RBACDefinition
+metadata:
+  name: rbac-manager-users
+rbacBindings:
+  - name: cluster-admins
+    subjects:
+      - kind: Group
+        name: "oidc:test-group"
+    clusterRoleBindings:
+      - clusterRole: cluster-admin
