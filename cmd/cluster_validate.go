@@ -70,14 +70,14 @@ func newClusterValidateCmd() *cobra.Command {
 				outputDir, _ := cmd.Flags().GetString("output-dir")
 				if outputDir == "" {
 					// Use GitOps directory if available, otherwise current directory
-					if cfg.GitOps.GitDir != "" {
-						outputDir = cfg.GitOps.GitDir
+					if cfg.GitOps().GitDir != "" {
+						outputDir = cfg.GitOps().GitDir
 					} else {
 						outputDir = "."
 					}
 				}
 
-				if err := config.SaveDebugConfig(cfg.ClusterName, outputDir); err != nil {
+				if err := config.SaveDebugConfig(cfg.ClusterName(), outputDir); err != nil {
 					return fmt.Errorf("failed to save debug config: %w", err)
 				}
 				debugPath := filepath.Join(outputDir, ".openCenter.yaml")

@@ -189,22 +189,18 @@ func newClusterInitCmd() *cobra.Command {
             // name is required as a positional argument (initial seed)
             name := args[0]
 
-            // Generate configuration from schema (excluding iac section)
-            schemaYAML, err := config.GenerateDefaultFromSchema(name)
+            // Generate configuration using the new simplified default structure
+            cfg := config.NewDefault(name)
+
+            // Convert the struct to a map for manipulation
+            schemaYAML, err := yaml.Marshal(cfg)
             if err != nil {
-                return fmt.Errorf("failed to generate config from schema: %w", err)
+                return fmt.Errorf("failed to marshal default config: %w", err)
             }
 
-            // Parse the schema-generated YAML into a map for manipulation
             var configMap map[string]any
             if err := yaml.Unmarshal(schemaYAML, &configMap); err != nil {
-                return fmt.Errorf("failed to parse schema-generated config: %w", err)
-            }
-
-            // For validation and SOPS key generation, we still need a Config struct
-            cfg := config.Config{}
-            if err := yaml.Unmarshal(schemaYAML, &cfg); err != nil {
-                return fmt.Errorf("failed to parse schema-generated config to struct: %w", err)
+                return fmt.Errorf("failed to parse default config to map: %w", err)
             }
 
 			// Apply overrides from flags to the config struct (for validation) and map (for output)
@@ -272,6 +268,11 @@ func newClusterInitCmd() *cobra.Command {
             if cfg.Secrets.SopsAgeKeyFile != "" {
                 if secretsMap, ok := configMap["secrets"].(map[string]any); ok {
                     secretsMap["sops_age_key_file"] = cfg.Secrets.SopsAgeKeyFile
+                } else {
+                    // Create secrets map if it doesn't exist
+                    configMap["secrets"] = map[string]any{
+                        "sops_age_key_file": cfg.Secrets.SopsAgeKeyFile,
+                    }
                 }
             }
 

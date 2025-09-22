@@ -59,8 +59,8 @@ func newClusterSetupCmd() *cobra.Command {
 
             // If already initialized, report idempotency and exit unless --force
             if !force {
-                if _, err := os.Stat(filepath.Join(cfg.GitOps.GitDir, ".git")); err == nil {
-                    if _, err2 := os.Stat(filepath.Join(cfg.GitOps.GitDir, ".opencenter")); err2 == nil {
+                if _, err := os.Stat(filepath.Join(cfg.GitOps().GitDir, ".git")); err == nil {
+                    if _, err2 := os.Stat(filepath.Join(cfg.GitOps().GitDir, ".opencenter")); err2 == nil {
                         fmt.Fprintln(cmd.OutOrStdout(), "already initialized")
                         return nil
                     }
@@ -88,14 +88,14 @@ func newClusterSetupCmd() *cobra.Command {
 
             // Ansible provisioning removed with legacy templates.
             // Write .opencenter marker
-            markerPath := filepath.Join(cfg.GitOps.GitDir, ".opencenter")
-            if err := os.WriteFile(markerPath, []byte(cfg.ClusterName), 0o644); err != nil {
+            markerPath := filepath.Join(cfg.GitOps().GitDir, ".opencenter")
+            if err := os.WriteFile(markerPath, []byte(cfg.ClusterName()), 0o644); err != nil {
                 return err
             }
             // Initialise git repo if not present
-            if _, statErr := os.Stat(filepath.Join(cfg.GitOps.GitDir, ".git")); os.IsNotExist(statErr) {
+            if _, statErr := os.Stat(filepath.Join(cfg.GitOps().GitDir, ".git")); os.IsNotExist(statErr) {
                 cmdGit := exec.Command("git", "init", "-b", "main")
-                cmdGit.Dir = cfg.GitOps.GitDir
+                cmdGit.Dir = cfg.GitOps().GitDir
                 cmdGit.Stdout = cmd.OutOrStdout()
                 cmdGit.Stderr = cmd.ErrOrStderr()
                 if err := cmdGit.Run(); err != nil {
@@ -105,10 +105,10 @@ func newClusterSetupCmd() *cobra.Command {
                 fmt.Fprintln(cmd.OutOrStdout(), "Created GitOps repo")
             }
             // Add and commit
-            if err := runGit(cfg.GitOps.GitDir, []string{"add", "."}, cmd); err != nil {
+            if err := runGit(cfg.GitOps().GitDir, []string{"add", "."}, cmd); err != nil {
                 return err
             }
-            if err := runGit(cfg.GitOps.GitDir, []string{"commit", "-m", "Initial commit", "--allow-empty"}, cmd); err != nil {
+            if err := runGit(cfg.GitOps().GitDir, []string{"commit", "-m", "Initial commit", "--allow-empty"}, cmd); err != nil {
                 return err
             }
             fmt.Fprintln(cmd.OutOrStdout(), "Setup complete.")

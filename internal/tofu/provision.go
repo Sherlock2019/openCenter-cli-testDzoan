@@ -17,7 +17,7 @@ func Provision(cfg config.Config) error {
         return nil
     }
 
-    clusterDir := filepath.Join(cfg.GitOps.GitDir, "infrastructure", "clusters", cfg.ClusterName)
+    clusterDir := filepath.Join(cfg.GitOps().GitDir, "infrastructure", "clusters", cfg.ClusterName())
     if err := os.MkdirAll(clusterDir, 0o755); err != nil {
         return fmt.Errorf("failed to create cluster iac directory: %w", err)
     }

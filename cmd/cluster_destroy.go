@@ -34,7 +34,7 @@ func newClusterDestroyCmd() *cobra.Command {
 			}
 
 			// Remove gitops directory
-			if err := os.RemoveAll(cfg.GitOps.GitDir); err != nil {
+			if err := os.RemoveAll(cfg.GitOps().GitDir); err != nil {
 				return fmt.Errorf("failed to remove gitops directory: %w", err)
 			}
 

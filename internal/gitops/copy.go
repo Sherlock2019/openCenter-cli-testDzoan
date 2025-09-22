@@ -26,7 +26,7 @@ import (
 )
 
 // CopyBase copies or renders embedded files from gitops-base-dir into the target directory
-// specified by cfg.GitOps.GitDir.
+// specified by cfg.GitOps().GitDir.
 //
 // When render is true, files ending with .tmpl are processed as Go text/templates
 // with sprig functions available, and the cluster configuration is bound to the
@@ -43,7 +43,7 @@ import (
 // Outputs:
 //   - error: An error if one occurred during the copy or render operation.
 func CopyBase(cfg config.Config, render bool) error {
-    target := cfg.GitOps.GitDir
+    target := cfg.GitOps().GitDir
     if target == "" {
         return fmt.Errorf("gitops.git_dir is empty")
     }
@@ -134,12 +134,12 @@ func copyFile(src, dst string) error {
 // This function processes all files in the cluster-apps-base template directory,
 // renders .tmpl files with the cluster configuration, and copies others as-is.
 func RenderClusterApps(cfg config.Config) error {
-    clusterName := cfg.ClusterName
+    clusterName := cfg.ClusterName()
     if clusterName == "" {
         return fmt.Errorf("cluster name is empty")
     }
 
-    target := filepath.Join(cfg.GitOps.GitDir, "applications", "overlays", clusterName)
+    target := filepath.Join(cfg.GitOps().GitDir, "applications", "overlays", clusterName)
 
     // Create target directory
     if err := os.MkdirAll(target, 0o755); err != nil {
@@ -181,12 +181,12 @@ func RenderClusterApps(cfg config.Config) error {
 // This function processes all files in the infrastructure-cluster-template directory,
 // renders .tmpl and .tpl files with the cluster configuration, and copies others as-is.
 func RenderInfrastructureCluster(cfg config.Config) error {
-    clusterName := cfg.ClusterName
+    clusterName := cfg.ClusterName()
     if clusterName == "" {
         return fmt.Errorf("cluster name is empty")
     }
 
-    target := filepath.Join(cfg.GitOps.GitDir, "infrastructure", "clusters", clusterName)
+    target := filepath.Join(cfg.GitOps().GitDir, "infrastructure", "clusters", clusterName)
 
     // Create target directory
     if err := os.MkdirAll(target, 0o755); err != nil {

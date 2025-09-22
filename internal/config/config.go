@@ -26,28 +26,15 @@ import (
     "gopkg.in/yaml.v3"
 )
 
-// Config represents the root configuration for a cluster. It groups
-// GitOps, Kubernetes, and Cloud configuration under nested fields.
-//
-// When marshalled to YAML, the field names follow the dotted notation as
-// defined in the specification.
-//
-// Some fields have default values; these defaults are applied when
-// loading or initializing a configuration. Required fields are
-// validated by the Validate function.
-//
-// See docs/ARCHITECTURE.md for a complete description of the data model.
+// Config represents the simplified root configuration for a cluster based on the new schema.
+// The structure matches the testdata/schema.yaml format with opencenter, opentofu, cloud, and secrets sections.
+// IAC field is included for backward compatibility with existing templates.
 type Config struct {
-    ClusterName   string       `yaml:"cluster_name" json:"cluster_name"`
-    NamingPrefix  string       `yaml:"naming_prefix,omitempty" json:"naming_prefix,omitempty"`
-    Cluster       ClusterMeta  `yaml:"cluster,omitempty" json:"cluster,omitempty"`
-    GitOps        GitOpsConfig `yaml:"gitops" json:"gitops"`
-    OpenCenter    OpenCenter   `yaml:"opencenter" json:"opencenter"`
-    OpenTofu      OpenTofu     `yaml:"opentofu" json:"opentofu"`
-    Ansible       Ansible      `yaml:"ansible" json:"ansible"`
-    IAC           IAC          `yaml:"iac" json:"iac"`
-    Cloud         Cloud        `yaml:"cloud" json:"cloud"`
-    Secrets       Secrets      `yaml:"secrets" json:"secrets"`
+    OpenCenter SimplifiedOpenCenter `yaml:"opencenter" json:"opencenter"`
+    OpenTofu   SimplifiedOpenTofu   `yaml:"opentofu" json:"opentofu"`
+    Cloud      SimplifiedCloud      `yaml:"cloud" json:"cloud"`
+    Secrets    Secrets              `yaml:"secrets" json:"secrets"`
+    IAC        IAC                  `yaml:"-" json:"-"` // Hidden from YAML output, for template compatibility
 }
 
 // ClusterMeta holds high-level metadata about the cluster.
@@ -107,6 +94,7 @@ type GitOpsConfig struct {
     GitDir     string     `yaml:"git_dir" json:"git_dir"`
     GitURL     string     `yaml:"git_url" json:"git_url"`
     GitSSHKey  string     `yaml:"git_ssh_key,omitempty" json:"git_ssh_key,omitempty"`
+    GitSSHPub  string     `yaml:"git_ssh_pub,omitempty" json:"git_ssh_pub,omitempty"`
     GitBranch  string     `yaml:"git_branch,omitempty" json:"git_branch,omitempty"`
     Flux       GitOpsFlux `yaml:"flux,omitempty" json:"flux,omitempty"`
 }
@@ -216,86 +204,241 @@ type Secrets struct {
     SopsAgeKeyFile string `yaml:"sops_age_key_file" json:"sops_age_key_file"`
 }
 
+// Simplified structures based on testdata/schema.yaml
+
+// SimplifiedOpenCenter represents the opencenter section of the new simplified schema
+type SimplifiedOpenCenter struct {
+    Services        Services        `yaml:"services" json:"services"`
+    ManagedService  ManagedService  `yaml:"managed-service" json:"managed-service"`
+    Cluster         ClusterConfig   `yaml:"cluster" json:"cluster"`
+    GitOps          GitOpsConfig    `yaml:"gitops" json:"gitops"`
+}
+
+// Services represents the services configuration
+type Services struct {
+    CertManager bool `yaml:"cert-manager" json:"cert-manager"`
+    Gateway     bool `yaml:"gateway" json:"gateway"`
+    GatewayAPI  bool `yaml:"gateway-api" json:"gateway-api"`
+    Keycloak    bool `yaml:"keycloak" json:"keycloak"`
+}
+
+// ManagedService represents the managed service configuration
+type ManagedService struct {
+    AlertManager bool `yaml:"alert-manager" json:"alert-manager"`
+}
+
+// ClusterConfig represents the cluster configuration section
+type ClusterConfig struct {
+    ClusterName           string             `yaml:"cluster_name" json:"cluster_name"`
+    AWSAccessKey          string             `yaml:"aws_access_key" json:"aws_access_key"`
+    AWSSecretAccessKey    string             `yaml:"aws_secret_access_key" json:"aws_secret_access_key"`
+    K8sAPIPortACL         []string           `yaml:"k8s_api_port_acl" json:"k8s_api_port_acl"`
+    SSHAuthorizedKeys     []string           `yaml:"ssh_authorized_keys" json:"ssh_authorized_keys"`
+    Kubernetes            KubernetesConfig   `yaml:"kubernetes" json:"kubernetes"`
+}
+
+// KubernetesConfig represents the kubernetes configuration
+type KubernetesConfig struct {
+    Version               string           `yaml:"version" json:"version"`
+    FlavorBastion         string           `yaml:"flavor_bastion" json:"flavor_bastion"`
+    FlavorMaster          string           `yaml:"flavor_master" json:"flavor_master"`
+    FlavorWorker          string           `yaml:"flavor_worker" json:"flavor_worker"`
+    SubnetPods            string           `yaml:"subnet_pods" json:"subnet_pods"`
+    SubnetServices        string           `yaml:"subnet_services" json:"subnet_services"`
+    LoadbalancerProvider  string           `yaml:"loadbalancer_provider" json:"loadbalancer_provider"`
+    DNSZoneName           string           `yaml:"dns_zone_name" json:"dns_zone_name"`
+    MasterCount           int              `yaml:"master_count" json:"master_count"`
+    WorkerCount           int              `yaml:"worker_count" json:"worker_count"`
+    WorkerCountWindows    int              `yaml:"worker_count_windows" json:"worker_count_windows"`
+    NetworkPlugin         NetworkPlugin    `yaml:"network_plugin" json:"network_plugin"`
+    OIDC                  OIDCConfig       `yaml:"oidc" json:"oidc"`
+    WindowsWorkers        WindowsWorkers   `yaml:"windows_workers" json:"windows_workers"`
+}
+
+// NetworkPlugin represents the network plugin configuration
+type NetworkPlugin struct {
+    Calico CalicoConfig `yaml:"calico" json:"calico"`
+}
+
+// CalicoConfig represents the Calico configuration
+type CalicoConfig struct {
+    Enabled                    bool   `yaml:"enabled" json:"enabled"`
+    CNIIface                   string `yaml:"cni_iface" json:"cni_iface"`
+    CalicoInterfaceAutodetect  string `yaml:"calico_interface_autodetect" json:"calico_interface_autodetect"`
+}
+
+// OIDCConfig represents the OIDC configuration
+type OIDCConfig struct {
+    Enabled              bool   `yaml:"enabled" json:"enabled"`
+    KubeOIDCURL          string `yaml:"kube_oidc_url" json:"kube_oidc_url"`
+    KubeOIDCClientID     string `yaml:"kube_oidc_client_id" json:"kube_oidc_client_id"`
+    KubeOIDCCAFile       string `yaml:"kube_oidc_ca_file" json:"kube_oidc_ca_file"`
+    KubeOIDCUsernameClaim string `yaml:"kube_oidc_username_claim" json:"kube_oidc_username_claim"`
+    KubeOIDCUsernamePrefix string `yaml:"kube_oidc_username_prefix" json:"kube_oidc_username_prefix"`
+    KubeOIDCGroupsClaim   string `yaml:"kube_oidc_groups_claim" json:"kube_oidc_groups_claim"`
+    KubeOIDCGroupsPrefix  string `yaml:"kube_oidc_groups_prefix" json:"kube_oidc_groups_prefix"`
+}
+
+// WindowsWorkers represents the Windows workers configuration
+type WindowsWorkers struct {
+    Enabled                     bool   `yaml:"enabled" json:"enabled"`
+    WindowsUser                 string `yaml:"windows_user" json:"windows_user"`
+    WindowsAdminPassword        string `yaml:"windows_admin_password" json:"windows_admin_password"`
+    WorkerNodeBFVSizeWindows    int    `yaml:"worker_node_bfv_size_windows" json:"worker_node_bfv_size_windows"`
+    WorkerNodeBFVTypeWindows    string `yaml:"worker_node_bfv_type_windows" json:"worker_node_bfv_type_windows"`
+}
+
+// SimplifiedOpenTofu represents the opentofu section
+type SimplifiedOpenTofu struct {
+    Enabled bool                      `yaml:"enabled" json:"enabled"`
+    Path    string                    `yaml:"path" json:"path"`
+    Backend SimplifiedTofuBackend     `yaml:"backend" json:"backend"`
+}
+
+// SimplifiedTofuBackend represents the backend configuration
+type SimplifiedTofuBackend struct {
+    Type  string              `yaml:"type" json:"type"`
+    Local SimplifiedTofuLocal `yaml:"local" json:"local"`
+    S3    SimplifiedTofuS3    `yaml:"s3" json:"s3"`
+}
+
+// SimplifiedTofuLocal represents the local backend
+type SimplifiedTofuLocal struct {
+    Path string `yaml:"path" json:"path"`
+}
+
+// SimplifiedTofuS3 represents the S3 backend
+type SimplifiedTofuS3 struct {
+    Bucket string `yaml:"bucket" json:"bucket"`
+    Key    string `yaml:"key" json:"key"`
+    Region string `yaml:"region" json:"region"`
+}
+
+// SimplifiedCloud represents the cloud section
+type SimplifiedCloud struct {
+    Provider  string                    `yaml:"provider" json:"provider"`
+    OpenStack SimplifiedOpenStackCloud `yaml:"openstack" json:"openstack"`
+    AWS       SimplifiedAWSCloud       `yaml:"aws" json:"aws"`
+}
+
+// SimplifiedOpenStackCloud represents the OpenStack configuration
+type SimplifiedOpenStackCloud struct {
+    AuthURL                       string `yaml:"auth_url" json:"auth_url"`
+    Insecure                      bool   `yaml:"insecure" json:"insecure"`
+    Region                        string `yaml:"region" json:"region"`
+    ApplicationCredentialID       string `yaml:"application_credential_id" json:"application_credential_id"`
+    ApplicationCredentialSecret   string `yaml:"application_credential_secret" json:"application_credential_secret"`
+}
+
+// SimplifiedAWSCloud represents the AWS configuration
+type SimplifiedAWSCloud struct {
+    Profile        string   `yaml:"profile" json:"profile"`
+    Region         string   `yaml:"region" json:"region"`
+    VPCID          string   `yaml:"vpc_id" json:"vpc_id"`
+    PrivateSubnets []string `yaml:"private_subnets" json:"private_subnets"`
+    PublicSubnets  []string `yaml:"public_subnets" json:"public_subnets"`
+}
+
 
 
 // defaultConfig returns a Config pre-populated with the default
-// values defined in the specification. This function can be used to
+// values based on the simplified schema. This function can be used to
 // initialise new cluster configurations.
 func defaultConfig(name string) Config {
     cfg := Config{
-        ClusterName:  name,
-        NamingPrefix: "",
-        Cluster: ClusterMeta{
-            Name:   name,
-            Env:    "dev",
-            Region: "us-east-1",
-            Status: "pending",
-        },
-        GitOps: GitOpsConfig{
-            GitDir:    "",
-            GitURL:    "",
-            GitSSHKey: "",
-            GitBranch: "main",
-            Flux: GitOpsFlux{
-                Interval: "1m",
-                Prune:    true,
+        OpenCenter: SimplifiedOpenCenter{
+            Services: Services{
+                CertManager: true,
+                Gateway:     true,
+                GatewayAPI:  true,
+                Keycloak:    true,
+            },
+            ManagedService: ManagedService{
+                AlertManager: true,
+            },
+            Cluster: ClusterConfig{
+                ClusterName:        name,
+                AWSAccessKey:       "",
+                AWSSecretAccessKey: "",
+                K8sAPIPortACL:      []string{""},
+                SSHAuthorizedKeys:  []string{""},
+                Kubernetes: KubernetesConfig{
+                    Version:              "1.32.8",
+                    FlavorBastion:        "gp.5.2.2",
+                    FlavorMaster:         "gp.5.4.4",
+                    FlavorWorker:         "gp.5.4.8",
+                    SubnetPods:           "10.42.0.0/16",
+                    SubnetServices:       "10.43.0.0/16",
+                    LoadbalancerProvider: "ovn",
+                    DNSZoneName:          "dev.controller.com",
+                    MasterCount:          3,
+                    WorkerCount:          4,
+                    WorkerCountWindows:   0,
+                    NetworkPlugin: NetworkPlugin{
+                        Calico: CalicoConfig{
+                            Enabled:                   true,
+                            CNIIface:                  "enp3s0",
+                            CalicoInterfaceAutodetect: "interface",
+                        },
+                    },
+                    OIDC: OIDCConfig{
+                        Enabled:               false,
+                        KubeOIDCURL:           "",
+                        KubeOIDCClientID:      "kubernetes",
+                        KubeOIDCCAFile:        "",
+                        KubeOIDCUsernameClaim: "sub",
+                        KubeOIDCUsernamePrefix: "oidc:",
+                        KubeOIDCGroupsClaim:   "groups",
+                        KubeOIDCGroupsPrefix:  "oidc:",
+                    },
+                    WindowsWorkers: WindowsWorkers{
+                        Enabled:                     false,
+                        WindowsUser:                 "Administrator",
+                        WindowsAdminPassword:        "",
+                        WorkerNodeBFVSizeWindows:    0,
+                        WorkerNodeBFVTypeWindows:    "local",
+                    },
+                },
+            },
+            GitOps: GitOpsConfig{
+                GitDir:    fmt.Sprintf("./testdata/local-git-repo-%s", name),
+                GitURL:    "",
+                GitSSHKey: "~/.ssh/id_ed25519-flux",
+                GitSSHPub: "~/.ssh/id_ed25519-flux.pub",
+                GitBranch: "main",
+                Flux: GitOpsFlux{
+                    Interval: "1m",
+                    Prune:    true,
+                },
             },
         },
-        OpenCenter: OpenCenter{
-            AWSAccessKey:       "",
-            AWSSecretAccessKey: "",
-        },
-        OpenTofu: OpenTofu{
+        OpenTofu: SimplifiedOpenTofu{
             Enabled: true,
             Path:    "opentofu",
-            Backend: TofuBackend{
+            Backend: SimplifiedTofuBackend{
                 Type: "local",
-                Local: TofuLocal{
+                Local: SimplifiedTofuLocal{
                     Path: "terraform.tfstate",
                 },
-                S3: TofuS3{
-                    Bucket:   "",
-                    Key:      "",
-                    Region:   "",
-                    Endpoint: "",
-                    Profile:  "",
-                    Encrypt:  false,
+                S3: SimplifiedTofuS3{
+                    Bucket: "",
+                    Key:    "",
+                    Region: "",
                 },
             },
         },
-        Ansible: Ansible{
-            Enabled:   true,
-            Path:      "ansible",
-            Inventory: "inventory.yml",
-            Playbooks: []string{
-                "site.yml",
-            },
-        },
-        IAC: IAC{},
-        Cloud: Cloud{
+        Cloud: SimplifiedCloud{
             Provider: "openstack",
-            OpenStack: OpenStackCloud{
-                AuthURL:          "",
-                Insecure:         false,
-                Region:           "",
-                UserName:         "",
-                UserPassword:     "",
-                AdminPassword:    "",
-                ProjectDomainName: "",
-                UserDomainName:    "",
-                TenantName:        "",
-                AvailabilityZone:  "nova",
-                FloatingIPPool:    "public",
-                RouterExternalNetworkID: "",
-                DisableBastion:    false,
-                CA:               "",
-                ExternalNetwork:   "",
-                UseOctavia:        false,
-                VRRPIP:            "",
+            OpenStack: SimplifiedOpenStackCloud{
+                AuthURL:                     "",
+                Insecure:                    false,
+                Region:                      "",
+                ApplicationCredentialID:     "",
+                ApplicationCredentialSecret: "",
             },
-            AWS: AWSCloud{
+            AWS: SimplifiedAWSCloud{
                 Profile:        "",
-                Region:         "us-east-1",
+                Region:         "",
                 VPCID:          "",
                 PrivateSubnets: []string{},
                 PublicSubnets:  []string{},
@@ -303,6 +446,26 @@ func defaultConfig(name string) Config {
         },
         Secrets: Secrets{
             SopsAgeKeyFile: "",
+        },
+        IAC: IAC{
+            Main: map[string]any{
+                "cluster_name": name,
+                "master_count": 3,
+                "worker_count": 4,
+                "subnet_pods": "10.42.0.0/16",
+                "subnet_services": "10.43.0.0/16",
+            },
+            Modules: map[string]any{
+                "calico": map[string]any{
+                    "source": "",
+                },
+                "kubespray-cluster": map[string]any{
+                    "source": "",
+                },
+                "openstack-nova": map[string]any{
+                    "source": "",
+                },
+            },
         },
     }
     return cfg
@@ -317,6 +480,18 @@ func defaultConfig(name string) Config {
 //   - Config: A new Config object with default values.
 func NewDefault(name string) Config {
     return defaultConfig(name)
+}
+
+// Helper methods for backward compatibility
+
+// ClusterName returns the cluster name from the simplified structure
+func (c Config) ClusterName() string {
+    return c.OpenCenter.Cluster.ClusterName
+}
+
+// GitOps returns the GitOps configuration from the simplified structure
+func (c Config) GitOps() GitOpsConfig {
+    return c.OpenCenter.GitOps
 }
 
 
@@ -579,10 +754,10 @@ func SaveDebugConfig(clusterName, gitDir string) error {
 // Outputs:
 //   - error: An error if the configuration cannot be saved.
 func Save(cfg Config) error {
-    if cfg.ClusterName == "" {
+    if cfg.ClusterName() == "" {
         return errors.New("cluster_name must not be empty")
     }
-    path, err := ConfigPath(cfg.ClusterName)
+    path, err := ConfigPath(cfg.ClusterName())
     if err != nil {
         return err
     }
@@ -703,10 +878,10 @@ func GetActive() (string, error) {
 func Validate(cfg Config) []string {
     var errs []string
     // Required cluster name and gitops.git_dir
-    if cfg.ClusterName == "" {
+    if cfg.ClusterName() == "" {
         errs = append(errs, "cluster_name must be set")
     }
-    if cfg.GitOps.GitDir == "" {
+    if cfg.GitOps().GitDir == "" {
         errs = append(errs, "gitops.git_dir must be set")
     }
     // OpenTofu validation
@@ -729,7 +904,7 @@ func Validate(cfg Config) []string {
                 errs = append(errs, "opentofu.backend.s3 requires bucket, key, and region")
             }
             // When using S3 backend, AWS credentials must be provided via opencenter
-            if strings.TrimSpace(cfg.OpenCenter.AWSAccessKey) == "" || strings.TrimSpace(cfg.OpenCenter.AWSSecretAccessKey) == "" {
+            if strings.TrimSpace(cfg.OpenCenter.Cluster.AWSAccessKey) == "" || strings.TrimSpace(cfg.OpenCenter.Cluster.AWSSecretAccessKey) == "" {
                 errs = append(errs, "opencenter.aws_access_key and opencenter.aws_secret_access_key must be set when opentofu.backend.type=s3")
             }
         default:
@@ -742,15 +917,18 @@ func Validate(cfg Config) []string {
     // If Octavia is not used, a VRRP IP must be provided. Prefer cloud.openstack.*
     // but also honor legacy iac.networking.* when present in the YAML file.
     // This keeps older workflows passing until fully migrated.
-    useOctavia := cfg.Cloud.OpenStack.UseOctavia
-    vrrpIP := strings.TrimSpace(cfg.Cloud.OpenStack.VRRPIP)
+    // Note: UseOctavia and VRRPIP are not in the simplified schema, commenting out for now
+    // useOctavia := cfg.Cloud.OpenStack.UseOctavia
+    // vrrpIP := strings.TrimSpace(cfg.Cloud.OpenStack.VRRPIP)
+    useOctavia := false
+    vrrpIP := ""
     vrrpEnabled := false
     // Fallback to reading iac.networking from the YAML on disk if not set
     if vrrpIP == "" || !useOctavia {
         // Attempt to locate YAML file and parse minimal fields
         // Ignore errors silently; this is a best-effort compatibility shim.
         if dir, err := ResolveConfigDir(); err == nil {
-            path := filepath.Join(dir, cfg.ClusterName+".yaml")
+            path := filepath.Join(dir, cfg.ClusterName()+".yaml")
             if data, rerr := os.ReadFile(path); rerr == nil {
                 var raw map[string]any
                 if yerr := yaml.Unmarshal(data, &raw); yerr == nil {

@@ -56,10 +56,10 @@ func newClusterBootstrapCmd() *cobra.Command {
             kubeconf, _ := cmd.Flags().GetString("kubeconfig")
             logPath, _ := cmd.Flags().GetString("log")
             if logPath == "" {
-                logPath = filepath.Join(cfg.GitOps.GitDir, "infrastructure", "clusters", cfg.ClusterName, "bootstrap.log")
+                logPath = filepath.Join(cfg.GitOps().GitDir, "infrastructure", "clusters", cfg.ClusterName(), "bootstrap.log")
             }
 
-            clusterDir := filepath.Join(cfg.GitOps.GitDir, "infrastructure", "clusters", cfg.ClusterName)
+            clusterDir := filepath.Join(cfg.GitOps().GitDir, "infrastructure", "clusters", cfg.ClusterName())
             if _, statErr := os.Stat(clusterDir); statErr != nil {
                 return fmt.Errorf("cluster directory not found: %s", clusterDir)
             }
@@ -77,7 +77,7 @@ func newClusterBootstrapCmd() *cobra.Command {
                 logFile = f
                 defer logFile.Close()
                 // Write header
-                fmt.Fprintf(logFile, "# openCenter bootstrap log\n# time: %s\n# cluster: %s\n# dir: %s\n\n", time.Now().Format(time.RFC3339), cfg.ClusterName, clusterDir)
+                fmt.Fprintf(logFile, "# openCenter bootstrap log\n# time: %s\n# cluster: %s\n# dir: %s\n\n", time.Now().Format(time.RFC3339), cfg.ClusterName(), clusterDir)
             }
 
             // Helper to run a command with logging and optional env
@@ -122,11 +122,11 @@ func newClusterBootstrapCmd() *cobra.Command {
             }
 
             // Build override values path using the current cluster name
-            overrideValues := filepath.Join(cfg.GitOps.GitDir, "applications", "overlays", cfg.ClusterName, "services", "calico", "helm-values", "override_values.yaml")
+            overrideValues := filepath.Join(cfg.GitOps().GitDir, "applications", "overlays", cfg.ClusterName(), "services", "calico", "helm-values", "override_values.yaml")
             // But the original relative path in request used ../../../ from clusterDir, compute that too for logs
             relOverride, _ := filepath.Rel(clusterDir, overrideValues)
             if relOverride == "" {
-                relOverride = "../../../applications/overlays/" + cfg.ClusterName + "/services/calico/helm-values/override_values.yaml"
+                relOverride = "../../../applications/overlays/" + cfg.ClusterName() + "/services/calico/helm-values/override_values.yaml"
             }
 
             // Step 1: cd to clusterDir (implicit by setting dir in run())
