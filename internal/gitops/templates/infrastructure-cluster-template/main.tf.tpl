@@ -1,11 +1,11 @@
 locals {
   # this will be the user's name and the DNS zone prefix
-  cluster_name                            = "prosys.dev.dfw3"
+  cluster_name                            = "{{ .OpenCenter.Cluster.ClusterName }}"
   # Prefix to add to Openstack resource names
   naming_prefix                           = "${local.cluster_name}-"
-  openstack_auth_url                      = "https://keystone.api.dfw3.rackspacecloud.com/v3/"
-  openstack_insecure                      = false
-  openstack_region                        = "DFW3"
+  openstack_auth_url                      = "{{ .OpenCenter.Cloud.OpenStack.AuthURL | default "https://keystone.api.dfw3.rackspacecloud.com/v3/" }}"
+  openstack_insecure                      = {{ .OpenCenter.Cloud.OpenStack.Insecure | default false }}
+  openstack_region                        = "{{ .OpenCenter.Cloud.OpenStack.Region | default "DFW3" }}"
   availability_zone                       = "az1"
   openstack_user_name                     = ""
   openstack_user_password                 = ""
@@ -21,7 +21,7 @@ locals {
   mtu                                     = ""
   network_provider                        = "physnet1"
   #CIDR that the openstack VMs will use for K8s nodes
-  subnet_nodes                            = "10.0.4.0/22"
+  subnet_nodes                            = "{{ .OpenCenter.Cluster.Kubernetes.SubnetNodes | default "10.0.4.0/22" }}"
   subnet_nodes_oct                       = join(".", slice(split(".", split("/", local.subnet_nodes)[0]), 0, 3))
   #Leave some IPs free for the VRRP IP and the MetalLB Range
   allocation_pool_start                   = "${local.subnet_nodes_oct}.50"
@@ -29,18 +29,18 @@ locals {
   # vrrp_ip Must be an IP from subnet_nodes and will be used as the internal Kubernetes API VIP.
   vrrp_ip                                 = "${local.subnet_nodes_oct}.10"
   #CIDR that will be used by kubernetes pods. Not an openstack network.
-  subnet_pods                             = "10.42.0.0/16"
+  subnet_pods                             = "{{ .OpenCenter.Cluster.Kubernetes.SubnetPods | default "10.42.0.0/16" }}"
   #CIDR that will be used for kubernetes services. Not an openstack network.
-  subnet_services                         = "10.43.0.0/16"
+  subnet_services                         = "{{ .OpenCenter.Cluster.Kubernetes.SubnetServices | default "10.43.0.0/16" }}"
   # use_octavia set to false to create a floating IP associated with the vrrp_ip port. true will create an octavia LB with a floating IP
   use_octavia                             = false
-  loadbalancer_provider                   = "amphora"
+  loadbalancer_provider                   = "{{ .OpenCenter.Cluster.Kubernetes.LoadbalancerProvider | default "amphora" }}"
   # vrrp_enabled cannot be set to true if use_octavia is true
   vrrp_enabled                            = true
   # Creates a DNS record using the LB floating IP and dns_zone_name
   use_designate                           = false
   # dns_zone_name is the dns zone to create if use_designate is true
-  dns_zone_name                           = "dev.attcontroller.com"
+  dns_zone_name                           = "{{ .OpenCenter.Cluster.Kubernetes.DNSZoneName | default "dev.attcontroller.com" }}"
   # DNS servers to configure on the nodes
   dns_nameservers                         = ["1.1.1.1","8.8.8.8"]
   ntp_servers                             = ["time.dfw3.rackspace.com","time2.dfw3.rackspace.com"]
@@ -52,7 +52,7 @@ locals {
   worker_count_windows                    = 0
   # Enter 1 or 3 masters.
   master_count                            = 3
-  ssh_user                                = "ubuntu"
+  ssh_user                                = "{{ .OpenCenter.Cloud.OpenStack.SSHUser | default "ubuntu" }}"
   # these are the ssh public keys that will be able to connect to the cluster's bastion node
   ssh_authorized_keys                     = ["ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDogzEullM89m//Vd8IGPERto2DotXnUCKGH6II1Vk/klEuDVqXx9kCb981XJKh8mU15bfJVdE4h078q/shK9EIcPMRKSQSMs2LkgF/1yUeVYPNYiIBph6CaqjIxKHy1kYxw3KUTIh8IIl1M4t5fc5c49Gr3QuDpeMN4Z/wrbR1DceIbFDiVxYNeyJWfOdowKgTn4AKh0n1xtg6/XLin3cCstpvfUJUKm0WOcmn3+DHK6cBNqNAMKdtxgnGwlY4MfizJOZE30Y7hwPqXUjOgLgB2vybcdcMpUvw9e8HopogOFQnVwwmlc9/7ZKPCaCKRBEC38IV82CJ6+/eePIMriPF migu4903@MNF0TUDV30"]
   node_worker                             = "wn"
@@ -76,36 +76,36 @@ locals {
 
   # ====================================
   #Kubespray Settings
-  kubespray_version                       = "v2.28.1"
-  kubernetes_version                      = "1.32.8"
-  network_plugin                          = "calico"
+  kubespray_version                       = "{{ .OpenCenter.Cluster.Kubernetes.KubesprayVersion | default "v2.28.1" }}"
+  kubernetes_version                      = "{{ .OpenCenter.Cluster.Kubernetes.Version | default "1.32.8" }}"
+  network_plugin                          = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin | default "calico" }}"
   deploy_cluster                          = true
   #kub-vip settings
   kube_vip_enabled                        = true
   #Hardening
-  k8s_hardening_enabled                   = true
+  k8s_hardening_enabled                   = {{ .OpenCenter.Cluster.Kubernetes.Hardening.Enabled | default true }}
   kube_pod_security_exemptions_namespaces = ["trivy-temp"]
   kubelet_rotate_server_certificates      = true
-  os_hardening_enabled                    = true
+  os_hardening_enabled                    = {{ .OpenCenter.Cluster.Kubernetes.Hardening.OSHardening | default true }}
 
   #OIDC Settings
-  kube_oidc_auth_enabled                 = true
-  kube_oidc_url                          = "https://auth.prosys.dev.dfw3.k8s.opencenter.cloud/realms/opencenter"
-  kube_oidc_client_id                    = "test"
+  kube_oidc_auth_enabled                 = {{ .OpenCenter.Cluster.Kubernetes.OIDC.Enabled | default true }}
+  kube_oidc_url                          = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.URL | default "https://auth.prosys.dev.dfw3.k8s.opencenter.cloud/realms/opencenter" }}"
+  kube_oidc_client_id                    = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.ClientID | default "test" }}"
   # # Optional settings fo OIDC
   # kube_oidc_ca_file                      = ""
-  kube_oidc_username_claim               = "email"
+  kube_oidc_username_claim               = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.UsernameClaim | default "email" }}"
   # kube_oidc_username_prefix              = "oidc:"
-  kube_oidc_groups_claim                 = "groups"
+  kube_oidc_groups_claim                 = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.GroupsClaim | default "groups" }}"
   # kube_oidc_groups_prefix                = "oidc:"
 
   #Calico Settings
-  cni_iface                               = "enp3s0"
+  cni_iface                               = "{{ .OpenCenter.Cluster.Kubernetes.CNI.Interface | default "enp3s0" }}"
   #Interface detection method for Calico nodeAddressAutodetectionV4. Can be "first-found", "interface", "cidr"
   #https://docs.tigera.io/calico/latest/reference/installation/api#operator.tigera.io%2fv1.NodeAddressAutodetection
-  calico_interface_autodetect             = "interface"
+  calico_interface_autodetect             = "{{ .OpenCenter.Cluster.Kubernetes.CNI.Calico.InterfaceAutodetect | default "interface" }}"
   calico_interface_autodetect_cidr        = ""
-  calico_encapsulation_type               = "VXLAN"
+  calico_encapsulation_type               = "{{ .OpenCenter.Cluster.Kubernetes.CNI.Calico.EncapsulationType | default "VXLAN" }}"
   calico_nat_outgoing                     = true
 
   # ## Windows settings

@@ -32,8 +32,8 @@ import (
 type Config struct {
     OpenCenter SimplifiedOpenCenter `yaml:"opencenter" json:"opencenter"`
     OpenTofu   SimplifiedOpenTofu   `yaml:"opentofu" json:"opentofu"`
-    Cloud      SimplifiedCloud      `yaml:"cloud" json:"cloud"`
     Secrets    Secrets              `yaml:"secrets" json:"secrets"`
+    Overrides  map[string]any       `yaml:"overrides,omitempty" json:"overrides,omitempty"`
     IAC        IAC                  `yaml:"-" json:"-"` // Hidden from YAML output, for template compatibility
 }
 
@@ -208,10 +208,24 @@ type Secrets struct {
 
 // SimplifiedOpenCenter represents the opencenter section of the new simplified schema
 type SimplifiedOpenCenter struct {
-    Services        Services        `yaml:"services" json:"services"`
-    ManagedService  ManagedService  `yaml:"managed-service" json:"managed-service"`
+    Infrastructure  Infrastructure  `yaml:"infrastructure" json:"infrastructure"`
+    Provider        string          `yaml:"provider" json:"provider"`
+    Cloud           CloudConfig     `yaml:"cloud" json:"cloud"`
     Cluster         ClusterConfig   `yaml:"cluster" json:"cluster"`
     GitOps          GitOpsConfig    `yaml:"gitops" json:"gitops"`
+    ManagedService  ManagedService  `yaml:"managed-service" json:"managed-service"`
+    Services        Services        `yaml:"services" json:"services"`
+}
+
+// Infrastructure represents the infrastructure configuration
+type Infrastructure struct {
+    // Add infrastructure-specific fields as needed
+}
+
+// CloudConfig represents the cloud configuration within opencenter
+type CloudConfig struct {
+    AWS       SimplifiedAWSCloud       `yaml:"aws" json:"aws"`
+    OpenStack SimplifiedOpenStackCloud `yaml:"openstack" json:"openstack"`
 }
 
 // Services represents the services configuration
@@ -257,7 +271,9 @@ type KubernetesConfig struct {
 
 // NetworkPlugin represents the network plugin configuration
 type NetworkPlugin struct {
-    Calico CalicoConfig `yaml:"calico" json:"calico"`
+    Calico  CalicoConfig  `yaml:"calico" json:"calico"`
+    Cilium  CiliumConfig  `yaml:"cilium" json:"cilium"`
+    KubeOVN KubeOVNConfig `yaml:"kube-ovn" json:"kube-ovn"`
 }
 
 // CalicoConfig represents the Calico configuration
@@ -265,6 +281,19 @@ type CalicoConfig struct {
     Enabled                    bool   `yaml:"enabled" json:"enabled"`
     CNIIface                   string `yaml:"cni_iface" json:"cni_iface"`
     CalicoInterfaceAutodetect  string `yaml:"calico_interface_autodetect" json:"calico_interface_autodetect"`
+}
+
+// CiliumConfig represents the Cilium configuration
+type CiliumConfig struct {
+    Enabled               bool `yaml:"enabled" json:"enabled"`
+    OperatorEnabled       bool `yaml:"operator_enabled" json:"operator_enabled"`
+    KubeProxyReplacement  bool `yaml:"kubeProxyReplacement" json:"kubeProxyReplacement"`
+}
+
+// KubeOVNConfig represents the Kube-OVN configuration
+type KubeOVNConfig struct {
+    Enabled            bool `yaml:"enabled" json:"enabled"`
+    CiliumIntegration  bool `yaml:"cilium_integration" json:"cilium_integration"`
 }
 
 // OIDCConfig represents the OIDC configuration
@@ -347,14 +376,23 @@ type SimplifiedAWSCloud struct {
 func defaultConfig(name string) Config {
     cfg := Config{
         OpenCenter: SimplifiedOpenCenter{
-            Services: Services{
-                CertManager: true,
-                Gateway:     true,
-                GatewayAPI:  true,
-                Keycloak:    true,
-            },
-            ManagedService: ManagedService{
-                AlertManager: true,
+            Infrastructure: Infrastructure{},
+            Provider:      "openstack",
+            Cloud: CloudConfig{
+                AWS: SimplifiedAWSCloud{
+                    Profile:        "",
+                    Region:         "",
+                    VPCID:          "",
+                    PrivateSubnets: []string{},
+                    PublicSubnets:  []string{},
+                },
+                OpenStack: SimplifiedOpenStackCloud{
+                    AuthURL:                     "",
+                    Insecure:                    false,
+                    Region:                      "",
+                    ApplicationCredentialID:     "",
+                    ApplicationCredentialSecret: "",
+                },
             },
             Cluster: ClusterConfig{
                 ClusterName:        name,
@@ -380,16 +418,25 @@ func defaultConfig(name string) Config {
                             CNIIface:                  "enp3s0",
                             CalicoInterfaceAutodetect: "interface",
                         },
+                        Cilium: CiliumConfig{
+                            Enabled:              true,
+                            OperatorEnabled:      true,
+                            KubeProxyReplacement: true,
+                        },
+                        KubeOVN: KubeOVNConfig{
+                            Enabled:           true,
+                            CiliumIntegration: true,
+                        },
                     },
                     OIDC: OIDCConfig{
-                        Enabled:               false,
-                        KubeOIDCURL:           "",
-                        KubeOIDCClientID:      "kubernetes",
-                        KubeOIDCCAFile:        "",
-                        KubeOIDCUsernameClaim: "sub",
+                        Enabled:                false,
+                        KubeOIDCURL:            "",
+                        KubeOIDCClientID:       "kubernetes",
+                        KubeOIDCCAFile:         "",
+                        KubeOIDCUsernameClaim:  "sub",
                         KubeOIDCUsernamePrefix: "oidc:",
-                        KubeOIDCGroupsClaim:   "groups",
-                        KubeOIDCGroupsPrefix:  "oidc:",
+                        KubeOIDCGroupsClaim:    "groups",
+                        KubeOIDCGroupsPrefix:   "oidc:",
                     },
                     WindowsWorkers: WindowsWorkers{
                         Enabled:                     false,
@@ -407,9 +454,18 @@ func defaultConfig(name string) Config {
                 GitSSHPub: "~/.ssh/id_ed25519-flux.pub",
                 GitBranch: "main",
                 Flux: GitOpsFlux{
-                    Interval: "1m",
+                    Interval: "15m",
                     Prune:    true,
                 },
+            },
+            ManagedService: ManagedService{
+                AlertManager: false,
+            },
+            Services: Services{
+                CertManager: true,
+                Gateway:     true,
+                GatewayAPI:  true,
+                Keycloak:    true,
             },
         },
         OpenTofu: SimplifiedOpenTofu{
@@ -425,23 +481,6 @@ func defaultConfig(name string) Config {
                     Key:    "",
                     Region: "",
                 },
-            },
-        },
-        Cloud: SimplifiedCloud{
-            Provider: "openstack",
-            OpenStack: SimplifiedOpenStackCloud{
-                AuthURL:                     "",
-                Insecure:                    false,
-                Region:                      "",
-                ApplicationCredentialID:     "",
-                ApplicationCredentialSecret: "",
-            },
-            AWS: SimplifiedAWSCloud{
-                Profile:        "",
-                Region:         "",
-                VPCID:          "",
-                PrivateSubnets: []string{},
-                PublicSubnets:  []string{},
             },
         },
         Secrets: Secrets{
@@ -918,8 +957,8 @@ func Validate(cfg Config) []string {
     // but also honor legacy iac.networking.* when present in the YAML file.
     // This keeps older workflows passing until fully migrated.
     // Note: UseOctavia and VRRPIP are not in the simplified schema, commenting out for now
-    // useOctavia := cfg.Cloud.OpenStack.UseOctavia
-    // vrrpIP := strings.TrimSpace(cfg.Cloud.OpenStack.VRRPIP)
+    // useOctavia := cfg.OpenCenter.Cloud.OpenStack.UseOctavia
+    // vrrpIP := strings.TrimSpace(cfg.OpenCenter.Cloud.OpenStack.VRRPIP)
     useOctavia := false
     vrrpIP := ""
     vrrpEnabled := false

@@ -31,7 +31,7 @@ import (
 
 // setField sets a field in a struct using a dot-notation path.
 // It uses reflection to traverse the struct and set the value.
-func setField(obj interface{}, path string, value string) error {
+func setField(obj any, path string, value string) error {
 	v := reflect.ValueOf(obj).Elem() // We expect a pointer to a struct
 	parts := strings.Split(path, ".")
 

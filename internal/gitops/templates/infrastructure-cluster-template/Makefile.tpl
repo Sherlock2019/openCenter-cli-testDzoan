@@ -1,14 +1,20 @@
+# Generated Makefile for cluster: {{ .OpenCenter.Cluster.ClusterName }}
+# Provider: {{ .OpenCenter.Provider }}
+# Kubernetes Version: {{ .OpenCenter.Cluster.Kubernetes.Version }}
+
 .PHONY: clean lint rke terraform kubectl
 
 BIN := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))/.bin
-TERRAFORM_VERSION := PLACEHOLDER_VALUE
-KUBECTL_VERSION := 1.28.0
+TERRAFORM_VERSION := 1.8.5
+KUBECTL_VERSION := {{- if .OpenCenter.Cluster.Kubernetes.Version }} {{ .OpenCenter.Cluster.Kubernetes.Version }}{{- else }} 1.28.0{{- end }}
 HELM_VERSION := 3.18.6
+CLUSTER_NAME := {{ .OpenCenter.Cluster.ClusterName }}
+PROVIDER := {{ .OpenCenter.Provider }}
 
 export PATH := $(BIN):$(PATH)
 export TF_CLI_CONFIG_FILE=config.tfrc
 
-export ANSIBLE_INVENTORY = /Users/migu4903/Documents/RPC/MPK/tf-gene/etc/genestack/sjc-lab/inventory/inventory.yaml
+export ANSIBLE_INVENTORY = {{- if .OpenCenter.GitOps.GitDir }}{{ .OpenCenter.GitOps.GitDir }}/inventory/inventory.yaml{{- else }}/tmp/inventory/inventory.yaml{{- end }}
 
 UNAME_S := $(shell uname -s)
 UNAME_M := $(shell uname -m)

@@ -56,9 +56,9 @@ func newClusterPreflightCmd() *cobra.Command {
             fmt.Fprintf(cmd.OutOrStdout(), "kubectl: %s\n", check("kubectl"))
             fmt.Fprintf(cmd.OutOrStdout(), "talosctl: %s\n", check("talosctl"))
             // Provider-specific checks
-            switch cfg.Cloud.Provider {
+            switch cfg.OpenCenter.Provider {
             case "openstack", "":
-                messages := openstack.PreflightOpenStack(cfg.Cloud.OpenStack.AuthURL)
+                messages := openstack.PreflightOpenStack(cfg.OpenCenter.Cloud.OpenStack.AuthURL)
                 for _, m := range messages {
                     fmt.Fprintln(cmd.OutOrStdout(), m)
                 }
