@@ -111,6 +111,133 @@ A wrapper for the `openCenter cluster validate` command.
 **When to use it**
 Use this to quickly check your configuration for errors after making changes.
 
+---
+
+## Development Workflow Tasks
+
+### Local Gitea Setup
+
+These tasks help set up a local Gitea instance for development and testing GitOps workflows.
+
+#### `gitea-setup`
+
+Starts a local Gitea instance using Docker/Podman.
+
+**Command**
+```bash
+mise run gitea-setup
+```
+
+**Description**
+This task launches a local Gitea server accessible at `https://localhost:3001` for development and testing purposes.
+
+---
+
+#### `gitea-configure`
+
+Configures the Gitea instance with users, tokens, and repositories.
+
+**Command**
+```bash
+mise run gitea-configure
+```
+
+**Description**
+This task creates admin and user accounts, generates API tokens, and sets up a test repository.
+
+---
+
+#### `gitea-up`
+
+Complete Gitea setup (combines setup and configure).
+
+**Command**
+```bash
+mise run gitea-up
+```
+
+**Description**
+Runs both `gitea-setup` and `gitea-configure` in sequence to provide a fully configured local Gitea instance.
+
+---
+
+#### `gitea-cleanup`
+
+Cleans up local Gitea resources.
+
+**Command**
+```bash
+mise run gitea-cleanup
+```
+
+**Description**
+Destroys the local Gitea instance and removes generated token files.
+
+---
+
+### Kind Cluster Tasks
+
+#### `kind-cluster-no-cni`
+
+Creates a kind cluster with no CNI installed using experimental podman support.
+
+**Command**
+```bash
+mise run kind-cluster-no-cni
+```
+
+**Description**
+Creates a multi-node kind cluster (1 control-plane, 3 workers) with:
+- No default CNI installation (`disableDefaultCNI: true`)
+- Experimental podman support
+- Standard pod and service subnets
+- Automatic kubeconfig export
+
+**When to use it**
+Use this to create a local Kubernetes cluster for testing CNI installations or GitOps workflows.
+
+---
+
+## Quick Getting Started Guide
+
+For rapid local development with GitOps workflows:
+
+### 1. Set up local Gitea server
+```bash
+# Start and configure local Gitea with users and repositories
+mise run gitea-up
+```
+
+### 2. Generate and upload SSH keys
+```bash
+# Create SSH key and upload to Gitea newuser account
+./hack/gitea-local/setup-ssh-key.sh
+```
+
+### 3. Create a kind cluster configuration
+```bash
+# Create a kind cluster config pointing to local Gitea repo
+./bin/openCenter cluster init kind_test \
+  --opencenter.provider=kind \
+  --opencenter.gitops.git_url=git@localhost:3001:newuser/test-repo.git \
+  --opencenter.gitops.git_dir=testdata/repo-kind-local-test \
+  --opencenter.gitops.git_ssh_key=/Users/$(whoami)/.ssh/gitea_newuser_key \
+  --force
+```
+
+### 4. Create kind cluster (optional)
+```bash
+# Create actual kind cluster for testing
+mise run kind-cluster-no-cni
+```
+
+This setup provides a complete local development environment with:
+- Local Gitea server with SSH access
+- Cluster configuration pointing to local Git repository
+- Optional local Kubernetes cluster for testing
+
 ### Sources
 *   `README.md`
 *   `tests/features/`
+*   `.mise.toml`
+*   `hack/gitea-local/`

@@ -145,7 +145,7 @@ openCenter cluster info [name] [flags]
 
 ### `openCenter cluster init <name>`
 
-Initializes a new cluster configuration file with default values. The command is non-interactive and requires a cluster name. Uses the OpenStack template by default.
+Initializes a new cluster configuration file with default values. The command is non-interactive and requires a cluster name. Uses the OpenStack provider by default.
 
 **Usage**
 ```bash
@@ -159,13 +159,40 @@ openCenter cluster init <name> [flags]
 | `--strict`| Fail the command if the resulting configuration is not valid. |
 | `--no-sops-keygen` | Do not auto-generate a SOPS age key when `secrets.sops_age_key_file` is unset. |
 
-**Dynamic Flags**
+**Dynamic Configuration Flags**
 
-The `init` command accepts additional flags to override any field in the configuration using dot notation. Unknown flags are interpreted as field assignments and applied to the in-memory config before saving. Supported value types include strings, integers, and booleans. Map fields accept simple `--map.key=value` assignments.
+The `init` command accepts additional flags to override any field in the configuration using dot notation. Unknown flags are interpreted as field assignments and applied to the in-memory config before saving. Supported value types include strings, integers, and booleans.
+
+**Configuration Structure**
+
+The configuration follows this structure:
+- `opencenter.*` - Main cluster configuration
+  - `opencenter.provider` - Cloud provider (openstack, aws, kind, vmware, etc.)
+  - `opencenter.cluster.*` - Cluster metadata and Kubernetes settings
+  - `opencenter.gitops.*` - GitOps repository configuration
+  - `opencenter.cloud.*` - Cloud provider-specific settings
+  - `opencenter.services.*` - Service enablement flags
+- `opentofu.*` - OpenTofu/Terraform backend configuration
+- `secrets.*` - Secret management settings
+
+**Common Configuration Fields**
+
+| Field Path | Description | Example |
+| --- | --- | --- |
+| `opencenter.provider` | Cloud provider | `openstack`, `kind`, `aws` |
+| `opencenter.cluster.cluster_name` | Cluster name | `my-cluster` |
+| `opencenter.gitops.git_url` | GitOps repository URL | `git@github.com:org/repo.git` |
+| `opencenter.gitops.git_dir` | Local git directory | `./testdata/repo-local` |
+| `opencenter.gitops.git_ssh_key` | SSH private key path | `~/.ssh/gitea_key` |
+| `opencenter.kubernetes.master_count` | Number of master nodes | `3` |
+| `opencenter.kubernetes.worker_count` | Number of worker nodes | `4` |
+| `opencenter.services.cert-manager` | Enable cert-manager | `true`/`false` |
+| `opentofu.backend.type` | Backend type | `local`, `s3` |
+| `secrets.sops_age_key_file` | SOPS age key file path | `~/.config/sops/age/keys.txt` |
 
 **Flow**
 - Resolve config directory: honors `--config-dir` or `OPENCENTER_CONFIG_DIR`; defaults to `~/.config/openCenter`.
-- Create defaults: start from a spec-aligned default config for `<name>`.
+- Create defaults: start from a default OpenStack configuration for `<name>`.
 - Apply overrides: parse unknown `--field.path=value` flags and set matching fields.
 - Guard existing files: if `<config-dir>/<name>.yaml` exists and `--force` is not set, abort.
 - Optional strict validation: if `--strict`, validate the config and abort on errors (errors printed to stderr).
@@ -177,21 +204,34 @@ The `init` command accepts additional flags to override any field in the configu
 - A new config file exists at `<config-dir>/<name>.yaml` populated with defaults plus any overrides.
 - If generated, an Age key file exists at `<config-dir>/sops/age/keys/<name>-key.txt`, and `secrets.sops_age_key_file` points to it.
 - The active cluster is not changed; set it with `openCenter cluster select <name>` if desired.
-- Validation runs only when `--strict` is provided; otherwise, you can validate later with `openCenter cluster validate <name>` or `openCenter cluster info --validate`.
+- Validation runs only when `--strict` is provided; otherwise, you can validate later with `openCenter cluster validate <name>`.
 
 **Examples**
 ```bash
-# Create a new OpenStack cluster
+# Create a new OpenStack cluster with GitOps configuration
 ./openCenter cluster init my-cluster \
-  --gitops.git_dir=/tmp/my-cluster \
-  --gitops.git_url=git@github.com:my-org/my-cluster.git
+  --opencenter.gitops.git_dir=/tmp/my-cluster \
+  --opencenter.gitops.git_url=git@github.com:my-org/my-cluster.git
+
+# Create a kind cluster for local development
+./openCenter cluster init kind-test \
+  --opencenter.provider=kind \
+  --opencenter.gitops.git_url=git@localhost:3001:newuser/test-repo.git \
+  --opencenter.gitops.git_dir=./testdata/repo-kind-local \
+  --opencenter.gitops.git_ssh_key=~/.ssh/gitea_newuser_key
+
+# Create an AWS cluster with custom worker count
+./openCenter cluster init aws-prod \
+  --opencenter.provider=aws \
+  --opencenter.cluster.kubernetes.worker_count=10 \
+  --opencenter.cloud.aws.region=us-west-2
 
 # Create without auto-generating a SOPS key
 ./openCenter cluster init my-cluster --no-sops-keygen
 
-# Create and fail fast on invalid combinations
+# Create and fail fast on validation errors
 ./openCenter cluster init strict-cluster --strict \
-  --iac.networking.use_octavia=false
+  --opencenter.services.cert-manager=false
 ```
 
 ---

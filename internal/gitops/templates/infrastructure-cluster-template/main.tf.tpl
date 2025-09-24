@@ -20,8 +20,8 @@ locals {
   vlan_id                                 = ""
   mtu                                     = ""
   network_provider                        = "physnet1"
-  #CIDR that the openstack VMs will use for K8s nodes
-  subnet_nodes                            = "{{ .OpenCenter.Cluster.Kubernetes.SubnetNodes | default "10.0.4.0/22" }}"
+  #CIDR that the openstack VMs will use for K8s nodes - using default since not in new schema
+  subnet_nodes                            = "10.0.4.0/22"
   subnet_nodes_oct                       = join(".", slice(split(".", split("/", local.subnet_nodes)[0]), 0, 3))
   #Leave some IPs free for the VRRP IP and the MetalLB Range
   allocation_pool_start                   = "${local.subnet_nodes_oct}.50"
@@ -47,27 +47,27 @@ locals {
   image_id                                = "ec458631-309a-4b7d-846c-cd2ccc601137"
   image_id_windows                        = ""
   k8s_api_port                            = 443
-  k8s_api_port_acl                        = ["146.20.2.10/32","172.99.99.10/32","134.213.179.10/32","161.47.0.10/32","134.213.178.10/32","119.9.122.10/32","119.9.148.10/32","63.131.145.180/32","78.136.22.232/32"] 
-  worker_count                            = 4
-  worker_count_windows                    = 0
+  k8s_api_port_acl                        = {{ if .OpenCenter.Cluster.K8sAPIPortACL }}[{{ range $i, $acl := .OpenCenter.Cluster.K8sAPIPortACL }}{{if $i}}, {{end}}"{{ $acl }}"{{ end }}]{{ else }}["146.20.2.10/32","172.99.99.10/32","134.213.179.10/32","161.47.0.10/32","134.213.178.10/32","119.9.122.10/32","119.9.148.10/32","63.131.145.180/32","78.136.22.232/32"]{{ end }}
+  worker_count                            = {{ .OpenCenter.Cluster.Kubernetes.WorkerCount | default 4 }}
+  worker_count_windows                    = {{ .OpenCenter.Cluster.Kubernetes.WorkerCountWindows | default 0 }}
   # Enter 1 or 3 masters.
-  master_count                            = 3
-  ssh_user                                = "{{ .OpenCenter.Cloud.OpenStack.SSHUser | default "ubuntu" }}"
+  master_count                            = {{ .OpenCenter.Cluster.Kubernetes.MasterCount | default 3 }}
+  ssh_user                                = "ubuntu"
   # these are the ssh public keys that will be able to connect to the cluster's bastion node
-  ssh_authorized_keys                     = ["ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDogzEullM89m//Vd8IGPERto2DotXnUCKGH6II1Vk/klEuDVqXx9kCb981XJKh8mU15bfJVdE4h078q/shK9EIcPMRKSQSMs2LkgF/1yUeVYPNYiIBph6CaqjIxKHy1kYxw3KUTIh8IIl1M4t5fc5c49Gr3QuDpeMN4Z/wrbR1DceIbFDiVxYNeyJWfOdowKgTn4AKh0n1xtg6/XLin3cCstpvfUJUKm0WOcmn3+DHK6cBNqNAMKdtxgnGwlY4MfizJOZE30Y7hwPqXUjOgLgB2vybcdcMpUvw9e8HopogOFQnVwwmlc9/7ZKPCaCKRBEC38IV82CJ6+/eePIMriPF migu4903@MNF0TUDV30"]
+  ssh_authorized_keys                     = {{ if .OpenCenter.Cluster.SSHAuthorizedKeys }}[{{ range $i, $key := .OpenCenter.Cluster.SSHAuthorizedKeys }}{{if $i}}, {{end}}"{{ $key }}"{{ end }}]{{ else }}["ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDogzEullM89m//Vd8IGPERto2DotXnUCKGH6II1Vk/klEuDVqXx9kCb981XJKh8mU15bfJVdE4h078q/shK9EIcPMRKSQSMs2LkgF/1yUeVYPNYiIBph6CaqjIxKHy1kYxw3KUTIh8IIl1M4t5fc5c49Gr3QuDpeMN4Z/wrbR1DceIbFDiVxYNeyJWfOdowKgTn4AKh0n1xtg6/XLin3cCstpvfUJUKm0WOcmn3+DHK6cBNqNAMKdtxgnGwlY4MfizJOZE30Y7hwPqXUjOgLgB2vybcdcMpUvw9e8HopogOFQnVwwmlc9/7ZKPCaCKRBEC38IV82CJ6+/eePIMriPF migu4903@MNF0TUDV30"]{{ end }}
   node_worker                             = "wn"
   node_master                             = "cp"
   node_worker_windows                     = "win"
   ub_version                              = "24"
   #FLEX Flavor Settings ==========================
-  flavor_bastion                          = "gp.5.2.2"
-  flavor_master                           = "gp.5.4.4"
-  flavor_worker                           = "gp.5.4.8"
+  flavor_bastion                          = "{{ .OpenCenter.Cluster.Kubernetes.FlavorBastion | default "gp.5.2.2" }}"
+  flavor_master                           = "{{ .OpenCenter.Cluster.Kubernetes.FlavorMaster | default "gp.5.4.4" }}"
+  flavor_worker                           = "{{ .OpenCenter.Cluster.Kubernetes.FlavorWorker | default "gp.5.4.8" }}"
 
-  worker_node_bfv_volume_size             = 100
+  worker_node_bfv_volume_size             = {{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WorkerNodeBFVSizeWindows | default 100 }}
   worker_node_bfv_destination_type        = "volume"
   worker_node_bfv_source_type             = "image"
-  worker_node_bfv_volume_type             = "Performance"
+  worker_node_bfv_volume_type             = "{{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WorkerNodeBFVTypeWindows | default "Performance" }}"
 
   # ====================================
   #ca_certificates add CA certificates to server's trusts. Good for trusting internal private Certificate Authorities.
@@ -76,43 +76,43 @@ locals {
 
   # ====================================
   #Kubespray Settings
-  kubespray_version                       = "{{ .OpenCenter.Cluster.Kubernetes.KubesprayVersion | default "v2.28.1" }}"
+  kubespray_version                       = "v2.28.1"
   kubernetes_version                      = "{{ .OpenCenter.Cluster.Kubernetes.Version | default "1.32.8" }}"
-  network_plugin                          = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin | default "calico" }}"
+  network_plugin                          = "{{ if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled }}calico{{ else if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled }}cilium{{ else if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Enabled }}kube-ovn{{ else }}calico{{ end }}"
   deploy_cluster                          = true
   #kub-vip settings
   kube_vip_enabled                        = true
   #Hardening
-  k8s_hardening_enabled                   = {{ .OpenCenter.Cluster.Kubernetes.Hardening.Enabled | default true }}
+  k8s_hardening_enabled                   = true
   kube_pod_security_exemptions_namespaces = ["trivy-temp"]
   kubelet_rotate_server_certificates      = true
-  os_hardening_enabled                    = {{ .OpenCenter.Cluster.Kubernetes.Hardening.OSHardening | default true }}
+  os_hardening_enabled                    = true
 
   #OIDC Settings
-  kube_oidc_auth_enabled                 = {{ .OpenCenter.Cluster.Kubernetes.OIDC.Enabled | default true }}
-  kube_oidc_url                          = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.URL | default "https://auth.prosys.dev.dfw3.k8s.opencenter.cloud/realms/opencenter" }}"
-  kube_oidc_client_id                    = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.ClientID | default "test" }}"
+  kube_oidc_auth_enabled                 = {{ .OpenCenter.Cluster.Kubernetes.OIDC.Enabled | default false }}
+  kube_oidc_url                          = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCURL | default "https://auth.prosys.dev.dfw3.k8s.opencenter.cloud/realms/opencenter" }}"
+  kube_oidc_client_id                    = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCClientID | default "kubernetes" }}"
   # # Optional settings fo OIDC
-  # kube_oidc_ca_file                      = ""
-  kube_oidc_username_claim               = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.UsernameClaim | default "email" }}"
-  # kube_oidc_username_prefix              = "oidc:"
-  kube_oidc_groups_claim                 = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.GroupsClaim | default "groups" }}"
-  # kube_oidc_groups_prefix                = "oidc:"
+  kube_oidc_ca_file                      = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCCAFile }}"
+  kube_oidc_username_claim               = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCUsernameClaim | default "sub" }}"
+  kube_oidc_username_prefix              = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCUsernamePrefix | default "oidc:" }}"
+  kube_oidc_groups_claim                 = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCGroupsClaim | default "groups" }}"
+  kube_oidc_groups_prefix                = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCGroupsPrefix | default "oidc:" }}"
 
   #Calico Settings
-  cni_iface                               = "{{ .OpenCenter.Cluster.Kubernetes.CNI.Interface | default "enp3s0" }}"
+  cni_iface                               = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.CNIIface | default "enp3s0" }}"
   #Interface detection method for Calico nodeAddressAutodetectionV4. Can be "first-found", "interface", "cidr"
   #https://docs.tigera.io/calico/latest/reference/installation/api#operator.tigera.io%2fv1.NodeAddressAutodetection
-  calico_interface_autodetect             = "{{ .OpenCenter.Cluster.Kubernetes.CNI.Calico.InterfaceAutodetect | default "interface" }}"
+  calico_interface_autodetect             = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.CalicoInterfaceAutodetect | default "interface" }}"
   calico_interface_autodetect_cidr        = ""
-  calico_encapsulation_type               = "{{ .OpenCenter.Cluster.Kubernetes.CNI.Calico.EncapsulationType | default "VXLAN" }}"
+  calico_encapsulation_type               = "VXLAN"
   calico_nat_outgoing                     = true
 
   # ## Windows settings
-  # windows_user                            = "Administrator"
-  # windows_admin_password                  = ""
-  # worker_node_bfv_size_windows            = 0
-  # worker_node_bfv_type_windows            = "local"
+  windows_user                            = "{{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WindowsUser | default "Administrator" }}"
+  windows_admin_password                  = "{{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WindowsAdminPassword }}"
+  worker_node_bfv_size_windows            = {{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WorkerNodeBFVSizeWindows | default 0 }}
+  worker_node_bfv_type_windows            = "{{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WorkerNodeBFVTypeWindows | default "local" }}"
 }
 
 module "openstack-nova" {

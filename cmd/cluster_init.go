@@ -189,18 +189,21 @@ func newClusterInitCmd() *cobra.Command {
             // name is required as a positional argument (initial seed)
             name := args[0]
 
-            // Generate configuration using the new simplified default structure
-            cfg := config.NewDefault(name)
-
-            // Convert the struct to a map for manipulation
-            schemaYAML, err := yaml.Marshal(cfg)
+            // Generate configuration using schema-based defaults to match testdata/schema.yaml structure
+            schemaDefaultYAML, err := config.GenerateDefaultFromSchema(name)
             if err != nil {
-                return fmt.Errorf("failed to marshal default config: %w", err)
+                return fmt.Errorf("failed to generate schema-based defaults: %w", err)
             }
 
             var configMap map[string]any
-            if err := yaml.Unmarshal(schemaYAML, &configMap); err != nil {
-                return fmt.Errorf("failed to parse default config to map: %w", err)
+            if err := yaml.Unmarshal(schemaDefaultYAML, &configMap); err != nil {
+                return fmt.Errorf("failed to parse schema defaults to map: %w", err)
+            }
+
+            // Also create a struct version for validation (unmarshal the schema defaults into a Config struct)
+            cfg := config.Config{}
+            if err := yaml.Unmarshal(schemaDefaultYAML, &cfg); err != nil {
+                return fmt.Errorf("failed to parse schema defaults to struct: %w", err)
             }
 
 			// Apply overrides from flags to the config struct (for validation) and map (for output)

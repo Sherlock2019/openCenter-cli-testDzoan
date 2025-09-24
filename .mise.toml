@@ -16,6 +16,8 @@ KIND_EXPERIMENTAL_PROVIDER = "podman"
 
 CONTAINER_RUNTIME = "podman" 
 
+OPENCENTER_PLUGINS_DIR = "./testdata/plugins/"
+
 [tasks]
 # Build the openCenter binary
 build = "go build -o bin/openCenter"
@@ -103,4 +105,41 @@ clean = [
   "echo Cleaning up...",
   "rm -rf testdata",
   "rm -rf bin"
+]
+
+# Comprehensive schema change verification task
+# Use this task whenever making changes to:
+# - internal/config/schema.go (schema definition)
+# - internal/config/config.go (struct definitions)
+# - testdata/schema.yaml (reference schema)
+# - Any schema-related default generation logic
+schema-verify = [
+  "echo === Building project ===",
+  "mise build",
+  "echo === Testing schema generation ===",
+  "./bin/openCenter cluster schema --pretty > new-schema.json && echo 'Schema generated successfully' || echo 'FAILED: Schema generation'",
+  "echo === Testing cluster init with new schema ===",
+  "OPENCENTER_CONFIG_DIR=./testdata/config ./bin/openCenter cluster init test-verify --force && echo 'Cluster init successful' || echo 'FAILED: Cluster init'",
+  "echo === Testing cluster update ===",
+  "OPENCENTER_CONFIG_DIR=./testdata/config ./bin/openCenter cluster update test-verify --opencenter.provider=aws && echo 'Cluster update successful' || echo 'FAILED: Cluster update'",
+  "echo === Testing validation ===",
+  "unset OPENCENTER_DEBUG && OPENCENTER_CONFIG_DIR=./testdata/config ./bin/openCenter cluster validate test-verify && echo 'Validation successful' || echo 'FAILED: Validation'",
+  "echo === Running unit tests ===",
+  "mise test && echo 'Unit tests passed' || echo 'WARNING: Unit tests failed - may need test updates for schema changes'",
+  "echo === Running BDD tests ===",
+  "mise godog && echo 'BDD tests passed' || echo 'WARNING: BDD tests failed - may need test updates for schema changes'",
+  "echo === Comparing with reference schema ===",
+  "if [ -f testdata/schema.yaml ]; then echo 'Reference schema found - manual comparison recommended:'; echo 'Run: diff testdata/schema.yaml testdata/config/test-verify.yaml'; else echo 'No reference schema found at testdata/schema.yaml'; fi",
+  "echo === Schema verification results ===",
+  "echo 'Generated files:'",
+  "echo '  - new-schema.json (JSON schema)'",
+  "echo '  - testdata/config/test-verify.yaml (sample config)'",
+  "echo ''",
+  "echo 'Manual verification steps:'",
+  "echo '1. Review new-schema.json for correct structure'",
+  "echo '2. Compare generated config with testdata/schema.yaml'",
+  "echo '3. Update tests if they failed due to schema changes'",
+  "echo '4. Update documentation (docs/reference/config.md)'",
+  "echo '5. Test with existing cluster configurations'",
+  "echo '=== Schema verification complete ==='",
 ]

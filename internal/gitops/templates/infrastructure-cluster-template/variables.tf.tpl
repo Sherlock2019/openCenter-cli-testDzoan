@@ -11,7 +11,7 @@ variable "os_application_credential_secret" {
 
 variable "openstack_admin_name" {
   type    = string
-  default = "{{ .OpenCenter.Cloud.OpenStack.AdminName | default "admin" }}"
+  default = "admin"
 }
 
 variable "openstack_admin_password" {
@@ -46,16 +46,16 @@ variable "pf9_password" {
 
 variable "worker_count" {
   type    = string
-  default = "{{ .OpenCenter.Cluster.Infrastructure.WorkerCount | default "1" }}"
+  default = "{{ .OpenCenter.Cluster.Kubernetes.WorkerCount | default "1" }}"
 
 }
 
 variable "master_count" {
   type    = string
-  default = "{{ .OpenCenter.Cluster.Infrastructure.MasterCount | default "3" }}"
+  default = "{{ .OpenCenter.Cluster.Kubernetes.MasterCount | default "3" }}"
 }
 
 variable "windows_admin_password" {
   type    = string
-  default = ""
+  default = "{{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WindowsAdminPassword }}"
 }
