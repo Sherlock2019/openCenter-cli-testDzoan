@@ -30,7 +30,7 @@ The directory on the local filesystem where `openCenter` stores all Cluster Conf
 
 ### GitOps Repository
 
-The local Git repository that `openCenter` generates from its embedded templates. This repository contains all the manifests and infrastructure-as-code files needed to deploy the cluster. Its location is defined by the `gitops.git_dir` field in the Cluster Configuration.
+The local Git repository that `openCenter` generates from its embedded templates. This repository contains all the manifests and infrastructure-as-code files needed to deploy the cluster. Its location is defined by the `opencenter.gitops.git_dir` field in the Cluster Configuration.
 
 ---
 

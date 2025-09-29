@@ -16,15 +16,21 @@ Feature: Cluster command group
     And an empty directory "tmp/repo-prod"
     And a file "tmp/conf/dev.yaml" with content:
       """
-      cluster_name: dev
-      git_dir: tmp/repo-dev
-      git_url: ""
+      opencenter:
+        cluster:
+          cluster_name: dev
+        gitops:
+          git_dir: tmp/repo-dev
+          git_url: ""
       """
     And a file "tmp/conf/prod.yaml" with content:
       """
-      cluster_name: prod
-      git_dir: tmp/repo-prod
-      git_url: ""
+      opencenter:
+        cluster:
+          cluster_name: prod
+        gitops:
+          git_dir: tmp/repo-prod
+          git_url: ""
       """
 
   # ---------------------------------------------------------------------------

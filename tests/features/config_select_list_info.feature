@@ -8,15 +8,21 @@ Feature: Configuration selection and inspection
     And an empty directory "tmp/repo-prod"
     And a file "tmp/conf/dev.yaml" with content:
       """
-      cluster_name: dev
-      git_dir: tmp/repo-dev
-      git_url: ""
+      opencenter:
+        cluster:
+          cluster_name: dev
+        gitops:
+          git_dir: tmp/repo-dev
+          git_url: ""
       """
     And a file "tmp/conf/prod.yaml" with content:
       """
-      cluster_name: prod
-      git_dir: tmp/repo-prod
-      git_url: ""
+      opencenter:
+        cluster:
+          cluster_name: prod
+        gitops:
+          git_dir: tmp/repo-prod
+          git_url: ""
       """
 
   # list / ls
@@ -33,8 +39,8 @@ Feature: Configuration selection and inspection
     When I run "openCenter cluster ls --json --config-dir tmp/conf"
     Then the exit code should be 0
     And stdout should contain "["
-    And stdout should contain "\"dev\""
-    And stdout should contain "\"prod\""
+    And stdout should contain '"dev"'
+    And stdout should contain '"prod"'
 
   @config @list @missing_dir
   Scenario: If config_dir does not exist, create it and print no entries
@@ -50,7 +56,7 @@ Feature: Configuration selection and inspection
     When I run "openCenter cluster select dev --config-dir tmp/conf"
     Then the exit code should be 0
     And the file "tmp/conf/.active" should match regex "^dev$"
-    And stdout should contain "Selected cluster: dev"
+    And stdout should contain "Active cluster set to dev"
 
   @config @select @interactive
   Scenario: Selecting a cluster interactively
@@ -58,7 +64,7 @@ Feature: Configuration selection and inspection
     And I choose "prod" from the prompt
     Then the exit code should be 0
     And the file "tmp/conf/.active" should match regex "^prod$"
-    And stdout should contain "Selected cluster: prod"
+    And stdout should contain "Active cluster set to prod"
 
   @config @select @missing
   Scenario: Selecting a non-existent cluster yields a helpful error
@@ -90,8 +96,8 @@ Feature: Configuration selection and inspection
   Scenario: Info for a named cluster with --json prints full parsed config
     When I run "openCenter cluster info dev --json --config-dir tmp/conf"
     Then the exit code should be 0
-    And stdout should contain "\"cluster_name\":\"dev\""
-    And stdout should contain "\"git_dir\":\"tmp/repo-dev\""
+    And stdout should contain '"cluster_name": "dev"'
+    And stdout should contain '"git_dir": "tmp/repo-dev"'
 
   @config @info @unset_active
   Scenario: Info without active cluster set yields helpful message
@@ -110,4 +116,3 @@ Feature: Configuration selection and inspection
     Then the exit code should not be 0
     And stderr should contain "parse"
     And stderr should contain "yaml"
-

@@ -10,7 +10,9 @@ Feature: openCenter cluster basics
   Scenario: Select the cluster
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """
-      cluster_name: demo
+      opencenter:
+        cluster:
+          cluster_name: demo
       """
     When I run "openCenter cluster select demo --config-dir <<tmp>>/conf"
     Then the file "<<tmp>>/conf/.active" should match regex "^demo$"
@@ -18,7 +20,9 @@ Feature: openCenter cluster basics
   Scenario: Show current cluster
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """
-      cluster_name: demo
+      opencenter:
+        cluster:
+          cluster_name: demo
       """
     And I run "openCenter cluster select demo --config-dir <<tmp>>/conf"
     When I run "openCenter cluster current --config-dir <<tmp>>/conf"
@@ -27,15 +31,21 @@ Feature: openCenter cluster basics
   Scenario: List clusters
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """
-      cluster_name: demo
+      opencenter:
+        cluster:
+          cluster_name: demo
       """
     And a file "<<tmp>>/conf/blue.yaml" with content:
       """
-      cluster_name: blue
+      opencenter:
+        cluster:
+          cluster_name: blue
       """
     And a file "<<tmp>>/conf/green.yaml" with content:
       """
-      cluster_name: green
+      opencenter:
+        cluster:
+          cluster_name: green
       """
     When I run "openCenter cluster list --config-dir <<tmp>>/conf"
     Then stdout should contain:
@@ -48,15 +58,21 @@ Feature: openCenter cluster basics
   Scenario: List clusters as JSON
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """
-      cluster_name: demo
+      opencenter:
+        cluster:
+          cluster_name: demo
       """
     And a file "<<tmp>>/conf/blue.yaml" with content:
       """
-      cluster_name: blue
+      opencenter:
+        cluster:
+          cluster_name: blue
       """
     And a file "<<tmp>>/conf/green.yaml" with content:
       """
-      cluster_name: green
+      opencenter:
+        cluster:
+          cluster_name: green
       """
     When I run "openCenter cluster list --json --config-dir <<tmp>>/conf"
     Then stdout should contain '["blue","demo","green"]'
@@ -64,7 +80,9 @@ Feature: openCenter cluster basics
   Scenario: Info for a cluster
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """
-      cluster_name: demo
+      opencenter:
+        cluster:
+          cluster_name: demo
       """
     And I run "openCenter cluster select demo --config-dir <<tmp>>/conf"
     When I run "openCenter cluster info --config-dir <<tmp>>/conf"
@@ -73,9 +91,11 @@ Feature: openCenter cluster basics
   Scenario: Validate constraints
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """
-      cluster_name: demo
-      gitops:
-        git_dir: "<<tmp>>/repo"
+      opencenter:
+        cluster:
+          cluster_name: demo
+        gitops:
+          git_dir: "<<tmp>>/repo"
       """
     When I run "openCenter cluster validate demo --config-dir <<tmp>>/conf"
     Then the exit code should be 0
@@ -84,17 +104,22 @@ Feature: openCenter cluster basics
   Scenario: Validate constraints failure
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """
-      cluster_name: demo
-      # missing gitops.git_dir
+      opencenter:
+        cluster:
+          cluster_name: demo
+        gitops:
+          git_dir: ""
       """
     When I run "openCenter cluster validate demo --config-dir <<tmp>>/conf"
     Then exit code should be 1
-    And stderr should contain "gitops.git_dir must be set"
+    And stderr should contain "opencenter.gitops.git_dir must be set"
 
   Scenario: Preflight
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """
-      cluster_name: demo
+      opencenter:
+        cluster:
+          cluster_name: demo
       """
     And I run "openCenter cluster select demo --config-dir <<tmp>>/conf"
     When I run "openCenter cluster preflight --config-dir <<tmp>>/conf"
@@ -105,19 +130,19 @@ Feature: openCenter cluster basics
   Scenario: Bootstrap pushes a new commit to a remote repository
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """
-      cluster_name: demo
-      gitops:
-        git_dir: "<<tmp>>/opencenter-demo"
-      iac:
-        networking:
-          use_designate: false
-          """
+      opencenter:
+        cluster:
+          cluster_name: demo
+        gitops:
+          git_dir: "<<tmp>>/opencenter-demo"
+      """
 
     And a bare git repository exists at "<<tmp>>/remote.git"
     And I update the YAML "<<tmp>>/conf/demo.yaml" to set:
       """
-      gitops:
-      git_url: "git@localhost:newuser/gitops-repo.git"
+      opencenter:
+        gitops:
+          git_url: "git@localhost:newuser/gitops-repo.git"
       """
     And I run "openCenter cluster setup demo --config-dir <<tmp>>/conf"
     When I run "openCenter cluster bootstrap demo --force --config-dir <<tmp>>/conf"
@@ -128,9 +153,11 @@ Feature: openCenter cluster basics
   Scenario: Setup with provisioning
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """
-      cluster_name: demo
-      gitops:
-        git_dir: "<<tmp>>/opencenter-demo"
+      opencenter:
+        cluster:
+          cluster_name: demo
+        gitops:
+          git_dir: "<<tmp>>/opencenter-demo"
       opentofu:
         enabled: true
       """
@@ -142,9 +169,11 @@ Feature: openCenter cluster basics
   Scenario: Destroy a cluster
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """
-      cluster_name: demo
-      gitops:
-        git_dir: "<<tmp>>/opencenter-demo"
+      opencenter:
+        cluster:
+          cluster_name: demo
+        gitops:
+          git_dir: "<<tmp>>/opencenter-demo"
       """
     When I run "openCenter cluster destroy demo --config-dir <<tmp>>/conf"
     Then the command should succeed

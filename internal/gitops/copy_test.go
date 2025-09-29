@@ -32,7 +32,7 @@ func TestMain(m *testing.M) {
 func TestCopyBase(t *testing.T) {
 	dst := t.TempDir()
 	cfg := config.NewDefault("test")
-	cfg.GitOps.GitDir = dst
+	cfg.OpenCenter.GitOps.GitDir = dst
 
 	if err := CopyBase(cfg, false); err != nil {
 		t.Fatal(err)

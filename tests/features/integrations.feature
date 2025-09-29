@@ -8,21 +8,12 @@ Feature: Integrations scaffolding and error handling
     And an empty directory "tmp/repo-dev"
     And a file "tmp/conf/dev.yaml" with content:
       """
-      cluster_name: dev
-      gitops:
-        git_dir: tmp/repo-dev
-        git_url: ""
-      terraform:
-        enabled: true
-        path: "terraform"
-      pulumi:
-        enabled: true
-      iac:
-        counts: {}
-        flavors: {}
-        networking:
-          use_octavia: true
-          vrrp_enabled: false
+      opencenter:
+        cluster:
+          cluster_name: dev
+        gitops:
+          git_dir: tmp/repo-dev
+          git_url: ""
       """
     And I run "openCenter cluster select dev --config-dir tmp/conf"
     And the exit code should be 0
@@ -106,8 +97,9 @@ Feature: Integrations scaffolding and error handling
   Scenario: Setup fails with non-zero code and helpful message when git_dir is not writable
     Given I update the YAML "tmp/conf/dev.yaml" to set:
       """
-      gitops:
-        git_dir: /root/forbidden-path
+      opencenter:
+        gitops:
+          git_dir: /root/forbidden-path
       """
     When I run "openCenter cluster setup --config-dir tmp/conf"
     Then the exit code should not be 0

@@ -5,10 +5,12 @@ Feature: GitOps repository setup behaviors
     And an empty directory "tmp/repo-dev"
     And a file "tmp/conf/dev.yaml" with content:
       """
-      cluster_name: dev
-      gitops:
-        git_dir: tmp/repo-dev
-        git_url: ""
+      opencenter:
+        cluster:
+          cluster_name: dev
+        gitops:
+          git_dir: tmp/repo-dev
+          git_url: ""
       """
 
   @gitops @setup @materialize
@@ -51,10 +53,9 @@ Feature: GitOps repository setup behaviors
     And stderr should contain "no active cluster"
     Given a file "tmp/conf/nogit.yaml" with content:
       """
-      cluster_name: nogit
-      iac:
-        networking:
-          use_designate: false
+      opencenter:
+        cluster:
+          cluster_name: nogit
       """
     When I run "openCenter cluster setup nogit --config-dir tmp/conf"
     Then the exit code should not be 0

@@ -16,39 +16,43 @@ Feature: CLI core flows and validations
     And an empty directory "<<tmp>>/repo-prod"
     And a file "<<tmp>>/conf/dev.yaml" with content:
       """
-      cluster_name: dev
-      gitops:
-        git_dir: "<<tmp>>/repo-dev"
-        git_url: ""
-      iac:
-        counts: { master: 1, worker: 1 }
-        flavors: { master: "m1.large", worker: "m1.large" }
-        networking:
-          use_octavia: true
-          vrrp_enabled: false
-          use_designate: false
-          dns_nameservers: ["8.8.8.8","8.8.4.4"]
-          subnet_nodes: "10.0.0.0/16"
-          subnet_pods: "10.42.0.0/16"
-          subnet_services: "10.43.0.0/16"
+      opencenter:
+        cluster:
+          cluster_name: dev
+          kubernetes:
+            master_count: 1
+            worker_count: 1
+            subnet_pods: "10.42.0.0/16"
+            subnet_services: "10.43.0.0/16"
+            loadbalancer_provider: octavia
+        gitops:
+          git_dir: "<<tmp>>/repo-dev"
+          git_url: ""
+        infrastructure:
+          provider: openstack
+          cloud:
+            openstack:
+              region: "regionOne"
       """
     And a file "<<tmp>>/conf/prod.yaml" with content:
       """
-      cluster_name: prod
-      gitops:
-        git_dir: "<<tmp>>/repo-prod"
-        git_url: ""
-      iac:
-        counts: { master: 3, worker: 6 }
-        flavors: { master: "m2.xlarge", worker: "m2.large" }
-        networking:
-          use_octavia: true
-          vrrp_enabled: false
-          use_designate: false
-          dns_nameservers: ["1.1.1.1","8.8.8.8"]
-          subnet_nodes: "10.1.0.0/16"
-          subnet_pods: "10.42.0.0/16"
-          subnet_services: "10.43.0.0/16"
+      opencenter:
+        cluster:
+          cluster_name: prod
+          kubernetes:
+            master_count: 3
+            worker_count: 6
+            subnet_pods: "10.42.0.0/16"
+            subnet_services: "10.43.0.0/16"
+            loadbalancer_provider: octavia
+        gitops:
+          git_dir: "<<tmp>>/repo-prod"
+          git_url: ""
+        infrastructure:
+          provider: openstack
+          cloud:
+            openstack:
+              region: "regionOne"
       """
 
   # ---------------------------------------------------------------------------
@@ -100,8 +104,8 @@ Feature: CLI core flows and validations
   Scenario: Showing info for a named cluster with JSON output
     When I run "openCenter cluster info prod --json"
     Then the exit code should be 0
-    And stdout should contain '"cluster_name":"prod"'
-    And stdout should contain '"git_dir":"<<tmp>>/repo-prod"'
+    And stdout should contain '"cluster_name": "prod"'
+    And stdout should contain '"git_dir": "<<tmp>>/repo-prod"'
 
   @info @validate
   Scenario: Validating configuration with --validate
@@ -123,7 +127,7 @@ Feature: CLI core flows and validations
   Scenario: Non-interactive init fails with --strict when required values missing
     When I run "openCenter cluster init bad --strict"
     Then the exit code should not be 0
-    And stderr should contain "gitops.git_dir must be set"
+    And stderr should contain "opencenter.gitops.git_dir must be set"
 
   # ---------------------------------------------------------------------------
   # SETUP (materialization, idempotency, forced overwrite)
@@ -167,9 +171,10 @@ Feature: CLI core flows and validations
     Given a bare git repository exists at "<<tmp>>/remote.git"
     And I update the YAML "<<tmp>>/conf/dev.yaml" to set:
       """
-      gitops:
-        git_dir: "<<tmp>>/repo-dev"
-        git_url: "<<tmp>>/remote.git"
+      opencenter:
+        gitops:
+          git_dir: "<<tmp>>/repo-dev"
+          git_url: "<<tmp>>/remote.git"
       """
     And I run "openCenter cluster select dev"
     And the exit code should be 0
@@ -182,17 +187,15 @@ Feature: CLI core flows and validations
   # (validation scenarios moved to validation.feature)
 
   @validate @git_dir_missing
-  Scenario: gitops.git_dir missing -> error on setup
+  Scenario: opencenter.gitops.git_dir missing -> error on setup
     Given a file "<<tmp>>/conf/no-gitdir.yaml" with content:
       """
-      cluster_name: no-gitdir
-      gitops:
-        git_dir: ""
-      iac:
-        counts: {}
-        flavors: {}
-        networking: { use_octavia: true, vrrp_enabled: false, use_designate: false }
+      opencenter:
+        cluster:
+          cluster_name: no-gitdir
+        gitops:
+          git_dir: ""
       """
     When I run "openCenter cluster setup no-gitdir"
     Then the exit code should not be 0
-    And stderr should contain "gitops.git_dir must be set"
+    And stderr should contain "opencenter.gitops.git_dir must be set"

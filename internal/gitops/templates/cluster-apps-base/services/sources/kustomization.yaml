@@ -18,3 +18,4 @@ resources:
   - ./opencenter-external-snapshotter.yaml
   - ./opencenter-rbac-manager.yaml
   - ./opencenter-kyverno.yaml
+  - ./opencenter-headlamp.yaml

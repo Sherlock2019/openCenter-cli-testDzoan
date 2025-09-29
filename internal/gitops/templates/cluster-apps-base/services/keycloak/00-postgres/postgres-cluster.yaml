@@ -21,3 +21,10 @@ spec:
     keycloak:
       - superuser
       - createdb
+  resources:
+    limits:
+      cpu: "2"
+      memory: "3000Mi"
+    requests:
+      cpu: "1"
+      memory: "1000Mi"

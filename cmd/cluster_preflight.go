@@ -14,59 +14,59 @@
 package cmd
 
 import (
-    "fmt"
-    "os/exec"
+	"fmt"
+	"os/exec"
 
-    "github.com/rackerlabs/openCenter/internal/cloud/openstack"
-    "github.com/rackerlabs/openCenter/internal/config"
-    "github.com/spf13/cobra"
+	"github.com/rackerlabs/openCenter/internal/cloud/openstack"
+	"github.com/rackerlabs/openCenter/internal/config"
+	"github.com/spf13/cobra"
 )
 
 func newClusterPreflightCmd() *cobra.Command {
-    return &cobra.Command{
-        Use:   "preflight [name]",
-        Short: "Run preflight checks for tools and provider requirements",
-        Args:  cobra.MaximumNArgs(1),
-        RunE: func(cmd *cobra.Command, args []string) error {
-            var name string
-            if len(args) > 0 {
-                name = args[0]
-            } else {
-                var err error
-                name, err = config.GetActive()
-                if err != nil {
-                    return err
-                }
-                if name == "" {
-                    return fmt.Errorf("no active cluster; specify name")
-                }
-            }
-            cfg, err := config.Load(name)
-            if err != nil {
-                return err
-            }
-            // Tools: git, kubectl, talosctl
-            check := func(bin string) string {
-                if _, err := exec.LookPath(bin); err == nil {
-                    return "OK"
-                }
-                return "MISSING"
-            }
-            fmt.Fprintf(cmd.OutOrStdout(), "git: %s\n", check("git"))
-            fmt.Fprintf(cmd.OutOrStdout(), "kubectl: %s\n", check("kubectl"))
-            fmt.Fprintf(cmd.OutOrStdout(), "talosctl: %s\n", check("talosctl"))
-            // Provider-specific checks
-            switch cfg.OpenCenter.Provider {
-            case "openstack", "":
-                messages := openstack.PreflightOpenStack(cfg.OpenCenter.Cloud.OpenStack.AuthURL)
-                for _, m := range messages {
-                    fmt.Fprintln(cmd.OutOrStdout(), m)
-                }
-            default:
-                // Unknown provider; no checks
-            }
-            fmt.Fprintln(cmd.OutOrStdout(), "Preflight complete.")
-            return nil
-        },
-    }
+	return &cobra.Command{
+		Use:   "preflight [name]",
+		Short: "Run preflight checks for tools and provider requirements",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var name string
+			if len(args) > 0 {
+				name = args[0]
+			} else {
+				var err error
+				name, err = config.GetActive()
+				if err != nil {
+					return err
+				}
+				if name == "" {
+					return fmt.Errorf("no active cluster; specify name")
+				}
+			}
+			cfg, err := config.Load(name)
+			if err != nil {
+				return err
+			}
+			// Tools: git, kubectl, talosctl
+			check := func(bin string) string {
+				if _, err := exec.LookPath(bin); err == nil {
+					return "OK"
+				}
+				return "MISSING"
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "git: %s\n", check("git"))
+			fmt.Fprintf(cmd.OutOrStdout(), "kubectl: %s\n", check("kubectl"))
+			fmt.Fprintf(cmd.OutOrStdout(), "talosctl: %s\n", check("talosctl"))
+			// Provider-specific checks
+			switch cfg.OpenCenter.Infrastructure.Provider {
+			case "openstack", "":
+				messages := openstack.PreflightOpenStack(cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL)
+				for _, m := range messages {
+					fmt.Fprintln(cmd.OutOrStdout(), m)
+				}
+			default:
+				// Unknown provider; no checks
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), "Preflight complete.")
+			return nil
+		},
+	}
 }

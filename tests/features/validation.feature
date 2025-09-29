@@ -5,21 +5,28 @@ Feature: Configuration validation rules
     And an empty directory "<<tmp>>/repo-bad"
 
   @validation @missing_git_dir
-  Scenario: missing gitops.git_dir -> error
+  Scenario: missing opencenter.gitops.git_dir -> error
     Given a file "<<tmp>>/conf/mgd.yaml" with content:
       """
-      cluster_name: mgd
+      opencenter:
+        cluster:
+          cluster_name: mgd
+        gitops:
+          git_dir: ""
       """
     When I run "openCenter cluster info mgd --validate"
     Then the exit code should not be 0
-    And stderr should contain "gitops.git_dir must be set"
+    And stderr should contain "opencenter.gitops.git_dir must be set"
 
   @validation @opentofu_s3_requires_creds
   Scenario: OpenTofu S3 backend requires credentials -> error then pass
     Given a file "<<tmp>>/conf/s3.yaml" with content:
       """
-      cluster_name: s3
-      gitops: { git_dir: "<<tmp>>/repo-bad" }
+      opencenter:
+        cluster:
+          cluster_name: s3
+        gitops:
+          git_dir: "<<tmp>>/repo-bad"
       opentofu:
         enabled: true
         backend:
@@ -31,18 +38,20 @@ Feature: Configuration validation rules
       """
     When I run "openCenter cluster info s3 --validate"
     Then the exit code should not be 0
-    And stderr should contain "opencenter.aws_access_key"
-    And stderr should contain "opencenter.aws_secret_access_key"
+    And stderr should contain "opencenter.cluster.aws_access_key"
+    And stderr should contain "opencenter.cluster.aws_secret_access_key"
 
   @validation @s3_with_creds_ok
   Scenario: OpenTofu S3 backend with credentials -> ok
     Given a file "<<tmp>>/conf/s3ok.yaml" with content:
       """
-      cluster_name: s3ok
-      gitops: { git_dir: "<<tmp>>/repo-bad" }
       opencenter:
-        aws_access_key: AKIA...
-        aws_secret_access_key: secret
+        cluster:
+          cluster_name: s3ok
+          aws_access_key: AKIA...
+          aws_secret_access_key: secret
+        gitops:
+          git_dir: "<<tmp>>/repo-bad"
       opentofu:
         enabled: true
         backend:

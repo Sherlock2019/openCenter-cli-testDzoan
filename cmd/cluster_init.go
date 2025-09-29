@@ -14,19 +14,19 @@
 package cmd
 
 import (
-    "crypto/rand"
-    "encoding/hex"
-    "fmt"
-    "os"
-    "path/filepath"
-    "reflect"
-    "strconv"
-    "strings"
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
+	"strconv"
+	"strings"
 
-    "github.com/rackerlabs/openCenter/internal/config"
-    "github.com/rackerlabs/openCenter/internal/util"
-    "github.com/spf13/cobra"
-    "gopkg.in/yaml.v3"
+	"github.com/rackerlabs/openCenter/internal/config"
+	"github.com/rackerlabs/openCenter/internal/util"
+	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 // setField sets a field in a struct using a dot-notation path.
@@ -92,7 +92,6 @@ func setField(obj any, path string, value string) error {
 	}
 	return nil
 }
-
 
 // setFieldValue sets a reflect.Value from a string, with type conversion.
 func setFieldValue(field reflect.Value, value string) error {
@@ -178,36 +177,36 @@ func convertStringValue(value string) any {
 }
 
 func newClusterInitCmd() *cobra.Command {
-    cmd := &cobra.Command{
-        Use:   "init <name>",
-        Short: "Initialize a new cluster configuration (non-interactive)",
-        Args:  cobra.ExactArgs(1),
-        FParseErrWhitelist: cobra.FParseErrWhitelist{
-            UnknownFlags: true,
-        },
-        RunE: func(cmd *cobra.Command, args []string) error {
-            // name is required as a positional argument (initial seed)
-            name := args[0]
+	cmd := &cobra.Command{
+		Use:   "init <name>",
+		Short: "Initialize a new cluster configuration (non-interactive)",
+		Args:  cobra.ExactArgs(1),
+		FParseErrWhitelist: cobra.FParseErrWhitelist{
+			UnknownFlags: true,
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// name is required as a positional argument (initial seed)
+			name := args[0]
 
-            // Generate configuration using schema-based defaults to match testdata/schema.yaml structure
-            schemaDefaultYAML, err := config.GenerateDefaultFromSchema(name)
-            if err != nil {
-                return fmt.Errorf("failed to generate schema-based defaults: %w", err)
-            }
+			// Generate configuration using schema-based defaults to match testdata/schema.yaml structure
+			schemaDefaultYAML, err := config.GenerateDefaultFromSchema(name)
+			if err != nil {
+				return fmt.Errorf("failed to generate schema-based defaults: %w", err)
+			}
 
-            var configMap map[string]any
-            if err := yaml.Unmarshal(schemaDefaultYAML, &configMap); err != nil {
-                return fmt.Errorf("failed to parse schema defaults to map: %w", err)
-            }
+			var configMap map[string]any
+			if err := yaml.Unmarshal(schemaDefaultYAML, &configMap); err != nil {
+				return fmt.Errorf("failed to parse schema defaults to map: %w", err)
+			}
 
-            // Also create a struct version for validation (unmarshal the schema defaults into a Config struct)
-            cfg := config.Config{}
-            if err := yaml.Unmarshal(schemaDefaultYAML, &cfg); err != nil {
-                return fmt.Errorf("failed to parse schema defaults to struct: %w", err)
-            }
+			// Also create a struct version for validation (unmarshal the schema defaults into a Config struct)
+			cfg := config.Config{}
+			if err := yaml.Unmarshal(schemaDefaultYAML, &cfg); err != nil {
+				return fmt.Errorf("failed to parse schema defaults to struct: %w", err)
+			}
 
 			// Apply overrides from flags to the config struct (for validation) and map (for output)
-            // We parse os.Args manually here because cobra does not support
+			// We parse os.Args manually here because cobra does not support
 			// unknown flags in a way that allows us to capture them.
 			// FParseErrWhitelist.UnknownFlags = true makes cobra ignore them,
 			// but it does not provide a way to access them.
@@ -216,7 +215,7 @@ func newClusterInitCmd() *cobra.Command {
 					parts := strings.SplitN(strings.TrimPrefix(arg, "--"), "=", 2)
 					if len(parts) == 2 {
 						key, value := parts[0], parts[1]
-                    // Skip flags that are handled by cobra
+						// Skip flags that are handled by cobra
 						if cmd.Flags().Lookup(key) != nil {
 							continue
 						}
@@ -231,21 +230,21 @@ func newClusterInitCmd() *cobra.Command {
 				}
 			}
 
-            // Interactive wizard has been removed; name must be provided
+			// Interactive wizard has been removed; name must be provided
 
-            // Use the name parameter directly since cluster_name is no longer top-level
-            // The name is set from the positional argument and may be overridden by flags
+			// Use the name parameter directly since cluster_name is no longer top-level
+			// The name is set from the positional argument and may be overridden by flags
 
 			// Handle --force
 			force, _ := cmd.Flags().GetBool("force")
-            if !force {
-                path, err := config.ConfigPath(name)
-                if err == nil {
-                    if _, err := os.Stat(path); err == nil {
-                        return fmt.Errorf("cluster configuration %s already exists, use --force to overwrite", name)
-                    }
-                }
-            }
+			if !force {
+				path, err := config.ConfigPath(name)
+				if err == nil {
+					if _, err := os.Stat(path); err == nil {
+						return fmt.Errorf("cluster configuration %s already exists, use --force to overwrite", name)
+					}
+				}
+			}
 
 			// Handle --strict
 			strict, _ := cmd.Flags().GetBool("strict")
@@ -259,49 +258,49 @@ func newClusterInitCmd() *cobra.Command {
 			}
 
 			// Persist config
-            // If no SOPS key location provided, generate one named after cluster
-            disableKeygen, _ := cmd.Flags().GetBool("no-sops-keygen")
-            if !disableKeygen && cfg.Secrets.SopsAgeKeyFile == "" && name != "" {
-                if err := generateDefaultSOPSKey(name, &cfg); err != nil {
-                    return fmt.Errorf("failed to generate default SOPS key: %w", err)
-                }
-            }
+			// If no SOPS key location provided, generate one named after cluster
+			disableKeygen, _ := cmd.Flags().GetBool("no-sops-keygen")
+			if !disableKeygen && cfg.Secrets.SopsAgeKeyFile == "" && name != "" {
+				if err := generateDefaultSOPSKey(name, &cfg); err != nil {
+					return fmt.Errorf("failed to generate default SOPS key: %w", err)
+				}
+			}
 
-            // Update the map with any SOPS key changes from the struct
-            if cfg.Secrets.SopsAgeKeyFile != "" {
-                if secretsMap, ok := configMap["secrets"].(map[string]any); ok {
-                    secretsMap["sops_age_key_file"] = cfg.Secrets.SopsAgeKeyFile
-                } else {
-                    // Create secrets map if it doesn't exist
-                    configMap["secrets"] = map[string]any{
-                        "sops_age_key_file": cfg.Secrets.SopsAgeKeyFile,
-                    }
-                }
-            }
+			// Update the map with any SOPS key changes from the struct
+			if cfg.Secrets.SopsAgeKeyFile != "" {
+				if secretsMap, ok := configMap["secrets"].(map[string]any); ok {
+					secretsMap["sops_age_key_file"] = cfg.Secrets.SopsAgeKeyFile
+				} else {
+					// Create secrets map if it doesn't exist
+					configMap["secrets"] = map[string]any{
+						"sops_age_key_file": cfg.Secrets.SopsAgeKeyFile,
+					}
+				}
+			}
 
-            // Convert the map to YAML for final output
-            finalYAML, err := yaml.Marshal(configMap)
-            if err != nil {
-                return fmt.Errorf("failed to marshal final config: %w", err)
-            }
+			// Convert the map to YAML for final output
+			finalYAML, err := yaml.Marshal(configMap)
+			if err != nil {
+				return fmt.Errorf("failed to marshal final config: %w", err)
+			}
 
-            // Save the YAML file directly
-            path, err := config.ConfigPath(name)
-            if err != nil {
-                return err
-            }
+			// Save the YAML file directly
+			path, err := config.ConfigPath(name)
+			if err != nil {
+				return err
+			}
 
-            if err := os.WriteFile(path, finalYAML, 0o600); err != nil {
-                return fmt.Errorf("failed to write config file: %w", err)
-            }
-            fmt.Fprintf(cmd.OutOrStdout(), "Created cluster configuration %s\n", name)
-            return nil
-        },
-    }
-    cmd.Flags().Bool("strict", false, "fail if required values are missing")
-    cmd.Flags().Bool("force", false, "overwrite existing file")
-    cmd.Flags().Bool("no-sops-keygen", false, "do not auto-generate a SOPS age key when secrets.sops_age_key_file is unset")
-    return cmd
+			if err := os.WriteFile(path, finalYAML, 0o600); err != nil {
+				return fmt.Errorf("failed to write config file: %w", err)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Created cluster configuration %s\n", name)
+			return nil
+		},
+	}
+	cmd.Flags().Bool("strict", false, "fail if required values are missing")
+	cmd.Flags().Bool("force", false, "overwrite existing file")
+	cmd.Flags().Bool("no-sops-keygen", false, "do not auto-generate a SOPS age key when secrets.sops_age_key_file is unset")
+	return cmd
 }
 
 // generateDefaultSOPSKey creates an age key file under the config directory
@@ -309,25 +308,24 @@ func newClusterInitCmd() *cobra.Command {
 // to point to the generated file. The key is a placeholder that starts with
 // AGE-SECRET-KEY-1 followed by random bytes; file perms are 0600.
 func generateDefaultSOPSKey(cluster string, cfg *config.Config) error {
-    dir, err := config.ResolveConfigDir()
-    if err != nil {
-        return err
-    }
-    rel := filepath.Join("sops", "age", "keys", fmt.Sprintf("%s-key.txt", cluster))
-    out := filepath.Join(dir, rel)
-    if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
-        return err
-    }
-    // generate a key
-    var b [32]byte
-    if _, err := rand.Read(b[:]); err != nil {
-        return err
-    }
-    key := fmt.Sprintf("AGE-SECRET-KEY-1%s\n", hex.EncodeToString(b[:]))
-    if err := os.WriteFile(out, []byte(key), 0o600); err != nil {
-        return err
-    }
-    cfg.Secrets.SopsAgeKeyFile = out
-    return nil
+	dir, err := config.ResolveConfigDir()
+	if err != nil {
+		return err
+	}
+	rel := filepath.Join("sops", "age", "keys", fmt.Sprintf("%s-key.txt", cluster))
+	out := filepath.Join(dir, rel)
+	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
+		return err
+	}
+	// generate a key
+	var b [32]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return err
+	}
+	key := fmt.Sprintf("AGE-SECRET-KEY-1%s\n", hex.EncodeToString(b[:]))
+	if err := os.WriteFile(out, []byte(key), 0o600); err != nil {
+		return err
+	}
+	cfg.Secrets.SopsAgeKeyFile = out
+	return nil
 }
-

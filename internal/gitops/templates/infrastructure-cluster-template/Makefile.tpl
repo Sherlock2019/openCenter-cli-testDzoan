@@ -1,5 +1,5 @@
 # Generated Makefile for cluster: {{ .OpenCenter.Cluster.ClusterName }}
-# Provider: {{ .OpenCenter.Provider }}
+# Provider: {{ .OpenCenter.Infrastructure.Provider }}
 # Kubernetes Version: {{ .OpenCenter.Cluster.Kubernetes.Version }}
 
 .PHONY: clean lint rke terraform kubectl
@@ -9,7 +9,7 @@ TERRAFORM_VERSION := 1.8.5
 KUBECTL_VERSION := {{- if .OpenCenter.Cluster.Kubernetes.Version }} {{ .OpenCenter.Cluster.Kubernetes.Version }}{{- else }} 1.28.0{{- end }}
 HELM_VERSION := 3.18.6
 CLUSTER_NAME := {{ .OpenCenter.Cluster.ClusterName }}
-PROVIDER := {{ .OpenCenter.Provider }}
+PROVIDER := {{ .OpenCenter.Infrastructure.Provider }}
 
 export PATH := $(BIN):$(PATH)
 export TF_CLI_CONFIG_FILE=config.tfrc

@@ -1,6 +1,6 @@
 locals:
   cluster_name: "dev-cluster"
-  naming_prefix: 'local.cluster_name'
+  naming_prefix: "local.cluster_name"
   vcenter_server: ""
   vcenter_user: ""
   vcenter_password: ""
@@ -37,43 +37,43 @@ locals:
 modules:
   vsphere-vm:
     source: "github.com/rackerlabs/openCenter.git//install/iac/infra/vsphere?ref=main"
-    vcenter_server: 'local.vcenter_server'
-    vcenter_user: 'local.vcenter_user'
-    vcenter_password: 'local.vcenter_password'
-    datacenter: 'local.datacenter'
-    cluster: 'local.cluster'
-    datastore: 'local.datastore'
-    network: 'local.network'
-    resource_pool: 'local.resource_pool'
-    folder: 'local.folder'
-    template: 'local.template'
-    cluster_name: 'local.cluster_name'
-    naming_prefix: 'local.naming_prefix'
-    master_count: 'local.master_count'
-    worker_count: 'local.worker_count'
-    master_cpu: 'local.master_cpu'
-    master_memory: 'local.master_memory'
-    master_disk_size: 'local.master_disk_size'
-    worker_cpu: 'local.worker_cpu'
-    worker_memory: 'local.worker_memory'
-    worker_disk_size: 'local.worker_disk_size'
-    ssh_user: 'local.ssh_user'
-    ssh_authorized_keys: 'local.ssh_authorized_keys'
-    timezone: 'local.timezone'
-    ntp_servers: 'local.ntp_servers'
+    vcenter_server: "local.vcenter_server"
+    vcenter_user: "local.vcenter_user"
+    vcenter_password: "local.vcenter_password"
+    datacenter: "local.datacenter"
+    cluster: "local.cluster"
+    datastore: "local.datastore"
+    network: "local.network"
+    resource_pool: "local.resource_pool"
+    folder: "local.folder"
+    template: "local.template"
+    cluster_name: "local.cluster_name"
+    naming_prefix: "local.naming_prefix"
+    master_count: "local.master_count"
+    worker_count: "local.worker_count"
+    master_cpu: "local.master_cpu"
+    master_memory: "local.master_memory"
+    master_disk_size: "local.master_disk_size"
+    worker_cpu: "local.worker_cpu"
+    worker_memory: "local.worker_memory"
+    worker_disk_size: "local.worker_disk_size"
+    ssh_user: "local.ssh_user"
+    ssh_authorized_keys: "local.ssh_authorized_keys"
+    timezone: "local.timezone"
+    ntp_servers: "local.ntp_servers"
   kubespray-cluster:
     source: "github.com/rackerlabs/openCenter.git//install/iac/kubespray?ref=main"
-    cluster_name: 'local.cluster_name'
-    master_nodes: 'module.vsphere-vm.master_nodes'
-    worker_nodes: 'module.vsphere-vm.worker_nodes'
-    kubernetes_version: 'local.kubernetes_version'
-    network_plugin: 'local.network_plugin'
-    pod_subnet: 'local.pod_subnet'
-    service_subnet: 'local.service_subnet'
-    cluster_dns: 'local.cluster_dns'
-    ssh_user: 'local.ssh_user'
-    allow_workloads_on_master: 'local.allow_workloads_on_master'
-    ingress_enabled: 'local.ingress_enabled'
-    ingress_controller: 'local.ingress_controller'
-    load_balancer_type: 'local.load_balancer_type'
-    metallb_ip_range: 'local.metallb_ip_range'
+    cluster_name: "local.cluster_name"
+    master_nodes: "module.vsphere-vm.master_nodes"
+    worker_nodes: "module.vsphere-vm.worker_nodes"
+    kubernetes_version: "local.kubernetes_version"
+    network_plugin: "local.network_plugin"
+    pod_subnet: "local.pod_subnet"
+    service_subnet: "local.service_subnet"
+    cluster_dns: "local.cluster_dns"
+    ssh_user: "local.ssh_user"
+    allow_workloads_on_master: "local.allow_workloads_on_master"
+    ingress_enabled: "local.ingress_enabled"
+    ingress_controller: "local.ingress_controller"
+    load_balancer_type: "local.load_balancer_type"
+    metallb_ip_range: "local.metallb_ip_range"

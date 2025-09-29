@@ -17,3 +17,4 @@ resources:
   - ./external-snapshotter.yaml
   - ./rbac-manager.yaml
   - ./kyverno.yaml
+  - ./headlamp.yaml

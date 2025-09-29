@@ -2,7 +2,7 @@
 # Verifies active cluster behavior:
 # 1) `select` writes the selected name to the active pointer file.
 # 2) Commands that rely on the active cluster read the pointer; error if unset.
-# 3) When CWD == selected cluster's gitops.git_dir, the CLI prefixes output with "Active cluster: <name>".
+# 3) When CWD == selected cluster's opencenter.gitops.git_dir, the CLI prefixes output with "Active cluster: <name>".
 
 Feature: Active cluster rules
 
@@ -14,9 +14,11 @@ Feature: Active cluster rules
   Scenario: Selecting a cluster writes its name to the active pointer
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """
-      cluster_name: demo
-      gitops:
-        git_dir: <<tmp>>/repo-demo
+      opencenter:
+        cluster:
+          cluster_name: demo
+        gitops:
+          git_dir: <<tmp>>/repo-demo
       """
     When I run "openCenter cluster select demo"
     Then the exit code should be 0
@@ -26,9 +28,11 @@ Feature: Active cluster rules
   Scenario: Commands that need the active cluster fail when none is set
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """
-      cluster_name: demo
-      gitops:
-        git_dir: <<tmp>>/repo-demo
+      opencenter:
+        cluster:
+          cluster_name: demo
+        gitops:
+          git_dir: <<tmp>>/repo-demo
       """
     And the file "<<tmp>>/conf/active" does not exist
     When I run "openCenter cluster info"
@@ -39,9 +43,11 @@ Feature: Active cluster rules
   Scenario: When in the cluster's git directory, output starts with an active-cluster header
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """
-      cluster_name: demo
-      gitops:
-        git_dir: <<tmp>>/repo-demo
+      opencenter:
+        cluster:
+          cluster_name: demo
+        gitops:
+          git_dir: <<tmp>>/repo-demo
       """
     And the directory "<<tmp>>/repo-demo" exists
     And I run "openCenter cluster select demo"
@@ -55,9 +61,11 @@ Feature: Active cluster rules
   Scenario: Commands read the active pointer when no cluster name is provided
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """
-      cluster_name: demo
-      gitops:
-        git_dir: <<tmp>>/repo-demo
+      opencenter:
+        cluster:
+          cluster_name: demo
+        gitops:
+          git_dir: <<tmp>>/repo-demo
       """
     And I run "openCenter cluster select demo"
     And the exit code should be 0

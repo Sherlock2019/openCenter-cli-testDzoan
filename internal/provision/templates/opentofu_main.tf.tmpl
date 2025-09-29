@@ -14,11 +14,11 @@ terraform {
     bucket = "{{ .OpenTofu.Backend.S3.Bucket }}"
     key    = "{{ .OpenTofu.Backend.S3.Key }}"
     region = "{{ .OpenTofu.Backend.S3.Region }}"
-    {{- if .OpenCenter.AWSAccessKey }}
-    access_key = "{{ .OpenCenter.AWSAccessKey }}"
+    {{- if .OpenCenter.Cluster.AWSAccessKey }}
+    access_key = "{{ .OpenCenter.Cluster.AWSAccessKey }}"
     {{- end }}
-    {{- if .OpenCenter.AWSSecretAccessKey }}
-    secret_key = "{{ .OpenCenter.AWSSecretAccessKey }}"
+    {{- if .OpenCenter.Cluster.AWSSecretAccessKey }}
+    secret_key = "{{ .OpenCenter.Cluster.AWSSecretAccessKey }}"
     {{- end }}
     {{- if .OpenTofu.Backend.S3.Endpoint }}
     endpoint = "{{ .OpenTofu.Backend.S3.Endpoint }}"

@@ -3,9 +3,9 @@ locals {
   cluster_name                            = "{{ .OpenCenter.Cluster.ClusterName }}"
   # Prefix to add to Openstack resource names
   naming_prefix                           = "${local.cluster_name}-"
-  openstack_auth_url                      = "{{ .OpenCenter.Cloud.OpenStack.AuthURL | default "https://keystone.api.dfw3.rackspacecloud.com/v3/" }}"
-  openstack_insecure                      = {{ .OpenCenter.Cloud.OpenStack.Insecure | default false }}
-  openstack_region                        = "{{ .OpenCenter.Cloud.OpenStack.Region | default "DFW3" }}"
+  openstack_auth_url                      = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL | default "https://keystone.api.dfw3.rackspacecloud.com/v3/" }}"
+  openstack_insecure                      = {{ .OpenCenter.Infrastructure.Cloud.OpenStack.Insecure | default false }}
+  openstack_region                        = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.Region | default "DFW3" }}"
   availability_zone                       = "az1"
   openstack_user_name                     = ""
   openstack_user_password                 = ""

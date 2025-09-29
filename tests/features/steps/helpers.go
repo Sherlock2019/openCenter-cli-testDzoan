@@ -14,19 +14,19 @@
 package steps
 
 import (
-    "bytes"
-    "context"
-    "encoding/json"
-    "fmt"
-    "io/ioutil"
-    "os"
-    "os/exec"
-    "path/filepath"
-    "reflect"
-    "runtime"
-    "strings"
-    "testing"
-    "time"
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"reflect"
+	"runtime"
+	"strings"
+	"testing"
+	"time"
 
 	"github.com/cucumber/godog"
 	"github.com/rackerlabs/openCenter/internal/config"
@@ -39,18 +39,18 @@ import (
 // compiled binary, configuration directory and captures of the last
 // command's output and exit status.
 type world struct {
-    bin          string
-    configDir    string
-    lastOut      string
-    lastErr      string
-    lastExit     int
-    lastFile     string
-    remoteGitDir string
-    tmpDir       string
-    pendingCmd   string
-    answers      map[string]string
-    pendingChoice string
-    cwd           string
+	bin           string
+	configDir     string
+	lastOut       string
+	lastErr       string
+	lastExit      int
+	lastFile      string
+	remoteGitDir  string
+	tmpDir        string
+	pendingCmd    string
+	answers       map[string]string
+	pendingChoice string
+	cwd           string
 }
 
 var compiledBinary string
@@ -59,37 +59,37 @@ var compiledBinary string
 // resulting executable is placed in a temporary directory and its
 // path is cached in compiledBinary.
 func buildBinary() (string, error) {
-    if compiledBinary != "" {
-        return compiledBinary, nil
-    }
-    // Place compiled binary under repo testdata for tests
-    _, thisFile, _, _ := runtime.Caller(0)
-    base := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "testdata")
-    tmp, err := os.MkdirTemp(base, "opencenter-bin-")
-    if err != nil {
-        return "", err
-    }
-    bin := filepath.Join(tmp, "openCenter")
-    // Build the binary
-    cmd := exec.Command("go", "build", "-o", bin, ".")
+	if compiledBinary != "" {
+		return compiledBinary, nil
+	}
+	// Place compiled binary under repo testdata for tests
+	_, thisFile, _, _ := runtime.Caller(0)
+	base := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "testdata")
+	tmp, err := os.MkdirTemp(base, "opencenter-bin-")
+	if err != nil {
+		return "", err
+	}
+	bin := filepath.Join(tmp, "openCenter")
+	// Build the binary
+	cmd := exec.Command("go", "build", "-o", bin, ".")
 	cmd.Dir = "../../.." // parent of features/steps is project root
-    cmd.Env = os.Environ()
-    out, err := cmd.CombinedOutput()
-    if err != nil {
-        return "", fmt.Errorf("failed to build binary: %v: %s", err, string(out))
-    }
-    compiledBinary = bin
-    return bin, nil
+	cmd.Env = os.Environ()
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to build binary: %v: %s", err, string(out))
+	}
+	compiledBinary = bin
+	return bin, nil
 }
 
 // newWorld constructs a new world for a scenario. It ensures the binary
 // is built and resets per-scenario state.
 func newWorld() (*world, error) {
-    bin, err := buildBinary()
-    if err != nil {
-        return nil, err
-    }
-    return &world{bin: bin}, nil
+	bin, err := buildBinary()
+	if err != nil {
+		return nil, err
+	}
+	return &world{bin: bin}, nil
 }
 
 // isolateConfigDir prepares an isolated configuration directory for a
@@ -108,22 +108,22 @@ func (w *world) isolateConfigDir() error {
 // captures stdout, stderr and the exit code. The command uses a 30s
 // timeout to avoid hanging indefinitely.
 func (w *world) runOpenCenter(args []string) error {
-    ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-    defer cancel()
-    cmd := exec.CommandContext(ctx, w.bin, args...)
-    // Run from the per-scenario tmp dir so relative paths like "tmp/..." resolve under it
-    if w.cwd != "" {
-        cmd.Dir = w.cwd
-    } else if w.tmpDir != "" {
-        cmd.Dir = w.tmpDir
-    }
-    // set environment: ensure OPENCENTER_CONFIG_DIR is set
-    env := os.Environ()
-    // propagate config dir
-    env = append(env, fmt.Sprintf("OPENCENTER_CONFIG_DIR=%s", w.configDir))
-    if w.tmpDir != "" {
-        env = append(env, fmt.Sprintf("OPENCENTER_TEST_TMP=%s", w.tmpDir))
-    }
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, w.bin, args...)
+	// Run from the per-scenario tmp dir so relative paths like "tmp/..." resolve under it
+	if w.cwd != "" {
+		cmd.Dir = w.cwd
+	} else if w.tmpDir != "" {
+		cmd.Dir = w.tmpDir
+	}
+	// set environment: ensure OPENCENTER_CONFIG_DIR is set
+	env := os.Environ()
+	// propagate config dir
+	env = append(env, fmt.Sprintf("OPENCENTER_CONFIG_DIR=%s", w.configDir))
+	if w.tmpDir != "" {
+		env = append(env, fmt.Sprintf("OPENCENTER_TEST_TMP=%s", w.tmpDir))
+	}
 	cmd.Env = env
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -148,14 +148,83 @@ func (w *world) runOpenCenter(args []string) error {
 // configuration directory. Otherwise it returns the absolute path
 // unchanged.
 func (w *world) pathFromFeature(p string) string {
-    // Normalize any <<tmp>> or tmp/ prefixes into the per-scenario tmp dir
-    p = w.replaceTmp(p)
-    // Map config-dir home shorthand to the isolated config dir
-    if strings.HasPrefix(p, "~/.config/openCenter") {
-        suffix := strings.TrimPrefix(p, "~/.config/openCenter")
-        return filepath.Join(w.configDir, suffix)
-    }
-    return p
+	// Normalize any <<tmp>> or tmp/ prefixes into the per-scenario tmp dir
+	p = w.replaceTmp(p)
+	// Map config-dir home shorthand to the isolated config dir
+	if strings.HasPrefix(p, "~/.config/openCenter") {
+		suffix := strings.TrimPrefix(p, "~/.config/openCenter")
+		return filepath.Join(w.configDir, suffix)
+	}
+	return p
+}
+
+// normalizeConfigYAML updates legacy flat configs (cluster_name, gitops, services at
+// the root) to the current opencenter.* nested structure. It returns the original
+// content when parsing fails or when the document already uses the new layout.
+func normalizeConfigYAML(raw string) string {
+	var data map[string]any
+	if err := yaml.Unmarshal([]byte(raw), &data); err != nil {
+		return raw
+	}
+	updated, changed := normalizeLegacyConfigMap(data)
+	if !changed {
+		return raw
+	}
+	out, err := yaml.Marshal(updated)
+	if err != nil {
+		return raw
+	}
+	return string(out)
+}
+
+func normalizeLegacyConfigMap(src map[string]any) (map[string]any, bool) {
+	if src == nil {
+		return src, false
+	}
+	if _, ok := src["opencenter"]; ok {
+		return src, false
+	}
+	convert := make(map[string]any)
+	for k, v := range src {
+		convert[k] = v
+	}
+	opencenter := map[string]any{}
+	cluster := map[string]any{}
+
+	// helper to move key into cluster map if present
+	moveCluster := func(key, target string) {
+		if val, ok := convert[key]; ok {
+			cluster[target] = val
+			delete(convert, key)
+		}
+	}
+	moveCluster("cluster_name", "cluster_name")
+	moveCluster("aws_access_key", "aws_access_key")
+	moveCluster("aws_secret_access_key", "aws_secret_access_key")
+	moveCluster("k8s_api_port_acl", "k8s_api_port_acl")
+	moveCluster("ssh_authorized_keys", "ssh_authorized_keys")
+	moveCluster("kubernetes", "kubernetes")
+
+	if len(cluster) > 0 {
+		opencenter["cluster"] = cluster
+	}
+
+	moveInto := func(key string) {
+		if val, ok := convert[key]; ok {
+			opencenter[key] = val
+			delete(convert, key)
+		}
+	}
+	moveInto("gitops")
+	moveInto("services")
+	moveInto("managed-service")
+	moveInto("infrastructure")
+
+	if len(opencenter) == 0 {
+		return src, false
+	}
+	convert["opencenter"] = opencenter
+	return convert, true
 }
 
 // createCluster writes a minimal cluster YAML with defaults for the
@@ -173,10 +242,10 @@ func (w *world) createCluster(name string) error {
 // setActiveCluster writes the active marker file for the given
 // cluster name.
 func (w *world) setActiveCluster(name string) error {
-    orig := os.Getenv("OPENCENTER_CONFIG_DIR")
-    os.Setenv("OPENCENTER_CONFIG_DIR", w.configDir)
-    defer os.Setenv("OPENCENTER_CONFIG_DIR", orig)
-    return config.SetActive(name)
+	orig := os.Getenv("OPENCENTER_CONFIG_DIR")
+	os.Setenv("OPENCENTER_CONFIG_DIR", w.configDir)
+	defer os.Setenv("OPENCENTER_CONFIG_DIR", orig)
+	return config.SetActive(name)
 }
 
 // setConfigValue updates a YAML value at a dotted path and saves
@@ -208,50 +277,50 @@ func (w *world) setConfigValue(path, value string) error {
 	b, _ := yaml.Marshal(m)
 	var newCfg config.Config
 	_ = yaml.Unmarshal(b, &newCfg)
-	newCfg.ClusterName = active
+	newCfg.OpenCenter.Cluster.ClusterName = active
 	return config.Save(newCfg)
 }
 
 // setNested assigns value into nested map given path parts. For now
 // only string values are assigned. Boolean values are converted.
 func setNested(m map[string]any, parts []string, value string) {
-    if len(parts) == 0 {
-        return
-    }
-    k := parts[0]
-    if len(parts) == 1 {
-        // leaf
-        if strings.EqualFold(value, "true") || strings.EqualFold(value, "false") {
-            m[k] = (strings.EqualFold(value, "true"))
-        } else {
-            m[k] = value
-        }
-        return
-    }
-    // ensure map exists
-    next, ok := m[k].(map[string]any)
-    if !ok {
-        next = map[string]any{}
-        m[k] = next
-    }
-    setNested(next, parts[1:], value)
+	if len(parts) == 0 {
+		return
+	}
+	k := parts[0]
+	if len(parts) == 1 {
+		// leaf
+		if strings.EqualFold(value, "true") || strings.EqualFold(value, "false") {
+			m[k] = (strings.EqualFold(value, "true"))
+		} else {
+			m[k] = value
+		}
+		return
+	}
+	// ensure map exists
+	next, ok := m[k].(map[string]any)
+	if !ok {
+		next = map[string]any{}
+		m[k] = next
+	}
+	setNested(next, parts[1:], value)
 }
 
 // createBareGitRemote initialises a bare Git repository and returns
 // its file:// URL. This is used to satisfy bootstrap tests.
 func (w *world) createBareGitRemote() (string, error) {
-    // Create remote under repo testdata to avoid /tmp usage
-    tmp, err := os.MkdirTemp("testdata", "opencenter-remote-")
-    if err != nil {
-        return "", err
-    }
-    w.remoteGitDir = tmp
-    // Create a non-bare repo first, add a commit, then convert to bare
-    nonBare, err := os.MkdirTemp("testdata", "opencenter-remote-non-bare-")
-    if err != nil {
-        return "", err
-    }
-    defer os.RemoveAll(nonBare)
+	// Create remote under repo testdata to avoid /tmp usage
+	tmp, err := os.MkdirTemp("testdata", "opencenter-remote-")
+	if err != nil {
+		return "", err
+	}
+	w.remoteGitDir = tmp
+	// Create a non-bare repo first, add a commit, then convert to bare
+	nonBare, err := os.MkdirTemp("testdata", "opencenter-remote-non-bare-")
+	if err != nil {
+		return "", err
+	}
+	defer os.RemoveAll(nonBare)
 	cmd := exec.Command("git", "init", "-b", "main")
 	cmd.Dir = nonBare
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -291,14 +360,14 @@ func (w *world) createBareGitRemote() (string, error) {
 }
 
 func (w *world) replaceTmp(path string) string {
-    if strings.Contains(path, "<<tmp>>") {
-        return strings.Replace(path, "<<tmp>>", w.tmpDir, 1)
-    }
-    if strings.HasPrefix(path, "tmp/") {
-        // Keep the leading "tmp" segment under the scenario tmp root for consistency
-        return filepath.Join(w.tmpDir, path)
-    }
-    return path
+	if strings.Contains(path, "<<tmp>>") {
+		return strings.Replace(path, "<<tmp>>", w.tmpDir, 1)
+	}
+	if strings.HasPrefix(path, "tmp/") {
+		// Keep the leading "tmp" segment under the scenario tmp root for consistency
+		return filepath.Join(w.tmpDir, path)
+	}
+	return path
 }
 
 // Godog steps
@@ -320,44 +389,44 @@ func (w *world) iRunCommand(arg string) error {
 }
 
 func (w *world) aFileShouldExist(path string) error {
-    p := w.pathFromFeature(path)
-    if _, err := os.Stat(p); err != nil {
-        return err
-    }
-    // remember last file for subsequent content checks
-    w.lastFile = p
-    return nil
+	p := w.pathFromFeature(path)
+	if _, err := os.Stat(p); err != nil {
+		return err
+	}
+	// remember last file for subsequent content checks
+	w.lastFile = p
+	return nil
 }
 
 func (w *world) aDirectoryShouldExist(path string) error {
-    p := w.replaceTmp(path)
-    if fi, err := os.Stat(p); err != nil {
-        return err
-    } else if !fi.IsDir() {
-        return fmt.Errorf("%s is not a directory", p)
-    }
-    return nil
+	p := w.replaceTmp(path)
+	if fi, err := os.Stat(p); err != nil {
+		return err
+	} else if !fi.IsDir() {
+		return fmt.Errorf("%s is not a directory", p)
+	}
+	return nil
 }
 
 func (w *world) theFileShouldContain(path, substring string) error {
-    p := w.pathFromFeature(path)
-    data, err := os.ReadFile(p)
-    if err != nil {
-        return err
-    }
-    content := string(data)
-    if !strings.Contains(content, substring) {
-        // Try matching with tmp path normalized under scenario tmp root
-        alt := strings.ReplaceAll(substring, "<<tmp>>", w.tmpDir)
-        if strings.Contains(substring, "tmp/") {
-            alt = strings.Replace(substring, "tmp/", filepath.Join(w.tmpDir, "tmp")+"/", 1)
-        }
-        if alt != substring && strings.Contains(content, alt) {
-            return nil
-        }
-        return fmt.Errorf("expected %s to contain %q", p, substring)
-    }
-    return nil
+	p := w.pathFromFeature(path)
+	data, err := os.ReadFile(p)
+	if err != nil {
+		return err
+	}
+	content := string(data)
+	if !strings.Contains(content, substring) {
+		// Try matching with tmp path normalized under scenario tmp root
+		alt := strings.ReplaceAll(substring, "<<tmp>>", w.tmpDir)
+		if strings.Contains(substring, "tmp/") {
+			alt = strings.Replace(substring, "tmp/", filepath.Join(w.tmpDir, "tmp")+"/", 1)
+		}
+		if alt != substring && strings.Contains(content, alt) {
+			return nil
+		}
+		return fmt.Errorf("expected %s to contain %q", p, substring)
+	}
+	return nil
 }
 
 func (w *world) stdoutShouldContain(expected string) error {
@@ -373,24 +442,24 @@ func (w *world) stdoutShouldContain(expected string) error {
 		return nil
 	}
 
-    // fallback to case-insensitive string contains with tmp token normalization
-    outLower := strings.ToLower(w.lastOut)
-    exp := expected
-    if strings.Contains(exp, "<<tmp>>") {
-        exp = strings.ReplaceAll(exp, "<<tmp>>", w.tmpDir)
-    }
-    expLower := strings.ToLower(exp)
-    if !strings.Contains(outLower, expLower) {
-        // try mapping leading tmp/ to scenario tmp root
-        if strings.Contains(expected, "tmp/") {
-            alt := strings.Replace(expected, "tmp/", filepath.Join(w.tmpDir, "tmp")+"/", 1)
-            if strings.Contains(outLower, strings.ToLower(alt)) {
-                return nil
-            }
-        }
-        return fmt.Errorf("stdout did not contain %q; got %q", expected, w.lastOut)
-    }
-    return nil
+	// fallback to case-insensitive string contains with tmp token normalization
+	outLower := strings.ToLower(w.lastOut)
+	exp := expected
+	if strings.Contains(exp, "<<tmp>>") {
+		exp = strings.ReplaceAll(exp, "<<tmp>>", w.tmpDir)
+	}
+	expLower := strings.ToLower(exp)
+	if !strings.Contains(outLower, expLower) {
+		// try mapping leading tmp/ to scenario tmp root
+		if strings.Contains(expected, "tmp/") {
+			alt := strings.Replace(expected, "tmp/", filepath.Join(w.tmpDir, "tmp")+"/", 1)
+			if strings.Contains(outLower, strings.ToLower(alt)) {
+				return nil
+			}
+		}
+		return fmt.Errorf("stdout did not contain %q; got %q", expected, w.lastOut)
+	}
+	return nil
 }
 
 func (w *world) aFileShouldNotExist(path string) error {
@@ -443,49 +512,49 @@ func (w *world) theActiveClusterShouldBe(name string) error {
 }
 
 func (w *world) exitCodeShouldBe(code int) error {
-    if w.lastExit != code {
-        return fmt.Errorf("expected exit code %d, got %d (stderr: %s)", code, w.lastExit, w.lastErr)
-    }
-    return nil
+	if w.lastExit != code {
+		return fmt.Errorf("expected exit code %d, got %d (stderr: %s)", code, w.lastExit, w.lastErr)
+	}
+	return nil
 }
 
 func (w *world) aClusterExists(names string) error {
-    list := strings.Split(names, ",")
-    for i := range list {
-        name := strings.TrimSpace(list[i])
-        if name == "" {
-            continue
-        }
-        if err := w.createCluster(name); err != nil {
-            return err
-        }
-    }
-    return nil
+	list := strings.Split(names, ",")
+	for i := range list {
+		name := strings.TrimSpace(list[i])
+		if name == "" {
+			continue
+		}
+		if err := w.createCluster(name); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (w *world) givenClusterExists(name string) error {
-    return w.createCluster(name)
+	return w.createCluster(name)
 }
 
 func (w *world) activeClusterIs(name string) error {
-    if err := w.createCluster(name); err != nil {
-        return err
-    }
-    return w.setActiveCluster(name)
+	if err := w.createCluster(name); err != nil {
+		return err
+	}
+	return w.setActiveCluster(name)
 }
 
 func (w *world) iSetKeyToValue(key, value string) error {
-    return w.setConfigValue(key, value)
+	return w.setConfigValue(key, value)
 }
 
 func (w *world) gitopsGitURLIsConfigured() error {
-    // Create bare remote repo
-    url, err := w.createBareGitRemote()
-    if err != nil {
-        return err
-    }
-    // Set gitops.git_url in active cluster
-    return w.setConfigValue("gitops.git_url", url)
+	// Create bare remote repo
+	url, err := w.createBareGitRemote()
+	if err != nil {
+		return err
+	}
+	// Set gitops.git_url in active cluster
+	return w.setConfigValue("opencenter.gitops.git_url", url)
 }
 
 func (w *world) aClusterIsConfiguredWithTemporaryGitopsDirectory(name string) error {
@@ -496,44 +565,44 @@ func (w *world) aClusterIsConfiguredWithTemporaryGitopsDirectory(name string) er
 		return err
 	}
 	// Set gitops.git_dir to a temporary directory
-	return w.setConfigValue("gitops.git_dir", w.replaceTmp("<<tmp>>/opencenter-demo"))
+	return w.setConfigValue("opencenter.gitops.git_dir", w.replaceTmp("<<tmp>>/opencenter-demo"))
 }
 
 func (w *world) theGitopsDirectoryIsAGitRepository() error {
-    // Initialize a git repo in the configured gitops.git_dir for the active cluster
-    orig := os.Getenv("OPENCENTER_CONFIG_DIR")
-    os.Setenv("OPENCENTER_CONFIG_DIR", w.configDir)
-    defer os.Setenv("OPENCENTER_CONFIG_DIR", orig)
-    active, err := config.GetActive()
-    if err != nil {
-        return err
-    }
-    cfg, err := config.Load(active)
-    if err != nil {
-        return err
-    }
-    dir := w.replaceTmp(cfg.GitOps.GitDir)
-    if dir == "" {
-        return fmt.Errorf("gitops.git_dir not set for active cluster")
-    }
-    if err := os.MkdirAll(dir, 0o755); err != nil {
-        return err
-    }
-    cmd := exec.Command("git", "init")
-    cmd.Dir = dir
-    return cmd.Run()
+	// Initialize a git repo in the configured gitops.git_dir for the active cluster
+	orig := os.Getenv("OPENCENTER_CONFIG_DIR")
+	os.Setenv("OPENCENTER_CONFIG_DIR", w.configDir)
+	defer os.Setenv("OPENCENTER_CONFIG_DIR", orig)
+	active, err := config.GetActive()
+	if err != nil {
+		return err
+	}
+	cfg, err := config.Load(active)
+	if err != nil {
+		return err
+	}
+	dir := w.replaceTmp(cfg.GitOps().GitDir)
+	if dir == "" {
+		return fmt.Errorf("opencenter.gitops.git_dir not set for active cluster")
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	cmd := exec.Command("git", "init")
+	cmd.Dir = dir
+	return cmd.Run()
 }
 
 func (w *world) theGitopsRepositoryHasABareRemote() error {
-    return w.gitopsGitURLIsConfigured()
+	return w.gitopsGitURLIsConfigured()
 }
 
 func (w *world) theCommandShouldSucceed() error {
-    return w.exitCodeShouldBe(0)
+	return w.exitCodeShouldBe(0)
 }
 
 func (w *world) theRemoteGitRepositoryShouldContainA(msg string) error {
-    return w.remoteRepoShouldHaveCommit(msg)
+	return w.remoteRepoShouldHaveCommit(msg)
 }
 
 func (w *world) remoteRepoShouldHaveCommit(msg string) error {
@@ -567,31 +636,35 @@ func (w *world) aFileWithContent(path string, content *godog.DocString) error {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
-	return ioutil.WriteFile(p, []byte(w.replaceTmp(content.Content)), 0644)
+	body := w.replaceTmp(content.Content)
+	if ext := strings.ToLower(filepath.Ext(p)); ext == ".yaml" || ext == ".yml" {
+		body = normalizeConfigYAML(body)
+	}
+	return ioutil.WriteFile(p, []byte(body), 0644)
 }
 
 func (w *world) theFileShouldMatchRegex(path, pattern string) error {
-    p := w.replaceTmp(path)
-    content, err := ioutil.ReadFile(p)
-    if err != nil {
-        // Support ".active" fallback when feature uses "active"
-        base := filepath.Base(p)
-        if !strings.HasPrefix(base, ".") {
-            alt := filepath.Join(filepath.Dir(p), "."+base)
-            if data, e2 := ioutil.ReadFile(alt); e2 == nil {
-                content = data
-            } else {
-                return err
-            }
-        } else {
-            return err
-        }
-    }
-    // Normalize common PCRE shorthand to Go's RE2 (e.g., \s)
-    // Handle both literal "\\s" and "\s" occurrences from feature files.
-    norm := strings.ReplaceAll(pattern, `\\s`, `\s`)
-    norm = strings.ReplaceAll(norm, `\s`, `[ \t\r\n\f\v]`)
-    matched, err := regexp.MatchString(norm, string(content))
+	p := w.replaceTmp(path)
+	content, err := ioutil.ReadFile(p)
+	if err != nil {
+		// Support ".active" fallback when feature uses "active"
+		base := filepath.Base(p)
+		if !strings.HasPrefix(base, ".") {
+			alt := filepath.Join(filepath.Dir(p), "."+base)
+			if data, e2 := ioutil.ReadFile(alt); e2 == nil {
+				content = data
+			} else {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+	// Normalize common PCRE shorthand to Go's RE2 (e.g., \s)
+	// Handle both literal "\\s" and "\s" occurrences from feature files.
+	norm := strings.ReplaceAll(pattern, `\\s`, `\s`)
+	norm = strings.ReplaceAll(norm, `\s`, `[ \t\r\n\f\v]`)
+	matched, err := regexp.MatchString(norm, string(content))
 	if err != nil {
 		return err
 	}
@@ -609,12 +682,12 @@ func (w *world) theExitCodeShouldNotBe(code int) error {
 }
 
 func (w *world) iCdTo(path string) error {
-    p := w.replaceTmp(path)
-    if err := os.Chdir(p); err != nil {
-        return err
-    }
-    w.cwd = p
-    return nil
+	p := w.replaceTmp(path)
+	if err := os.Chdir(p); err != nil {
+		return err
+	}
+	w.cwd = p
+	return nil
 }
 
 func (w *world) theFirstLineOfStdoutShouldStartWith(prefix string) error {
@@ -635,53 +708,53 @@ func (w *world) aBareGitRepositoryExistsAt(path string) error {
 }
 
 func (w *world) iAnswerThePromptsWith(table *godog.Table) error {
-    // Collect answers
-    w.answers = map[string]string{}
-    for i, row := range table.Rows {
-        if i == 0 && len(row.Cells) == 2 && strings.EqualFold(row.Cells[0].Value, "prompt") {
-            continue
-        }
-        if len(row.Cells) < 2 {
-            continue
-        }
-        k := strings.TrimSpace(row.Cells[0].Value)
-        v := strings.TrimSpace(row.Cells[1].Value)
-        w.answers[k] = v
-    }
-    // no interactive init wizard is available anymore
-    return nil
+	// Collect answers
+	w.answers = map[string]string{}
+	for i, row := range table.Rows {
+		if i == 0 && len(row.Cells) == 2 && strings.EqualFold(row.Cells[0].Value, "prompt") {
+			continue
+		}
+		if len(row.Cells) < 2 {
+			continue
+		}
+		k := strings.TrimSpace(row.Cells[0].Value)
+		v := strings.TrimSpace(row.Cells[1].Value)
+		w.answers[k] = v
+	}
+	// no interactive init wizard is available anymore
+	return nil
 }
 
 func (w *world) iChooseFromThePrompt(choice string) error {
-    w.pendingChoice = choice
-    // Simulate interactive selection flows immediately
-    if strings.Contains(w.pendingCmd, "cluster select") {
-        // Write .active under current config dir
-        orig := os.Getenv("OPENCENTER_CONFIG_DIR")
-        os.Setenv("OPENCENTER_CONFIG_DIR", w.configDir)
-        defer os.Setenv("OPENCENTER_CONFIG_DIR", orig)
-        _ = os.MkdirAll(w.configDir, 0o755)
-        if err := config.SetActive(choice); err != nil {
-            w.lastExit = 1
-            w.lastErr = err.Error()
-            return err
-        }
-        // also ensure .active exists even if implementation changes
-        _ = os.WriteFile(filepath.Join(w.configDir, ".active"), []byte(choice), 0o600)
-        w.lastExit = 0
-        w.lastOut = fmt.Sprintf("Selected cluster: %s\n", choice)
-        return nil
-    }
-    return nil
+	w.pendingChoice = choice
+	// Simulate interactive selection flows immediately
+	if strings.Contains(w.pendingCmd, "cluster select") {
+		// Write .active under current config dir
+		orig := os.Getenv("OPENCENTER_CONFIG_DIR")
+		os.Setenv("OPENCENTER_CONFIG_DIR", w.configDir)
+		defer os.Setenv("OPENCENTER_CONFIG_DIR", orig)
+		_ = os.MkdirAll(w.configDir, 0o755)
+		if err := config.SetActive(choice); err != nil {
+			w.lastExit = 1
+			w.lastErr = err.Error()
+			return err
+		}
+		// also ensure .active exists even if implementation changes
+		_ = os.WriteFile(filepath.Join(w.configDir, ".active"), []byte(choice), 0o600)
+		w.lastExit = 0
+		w.lastOut = fmt.Sprintf("Selected cluster: %s\n", choice)
+		return nil
+	}
+	return nil
 }
 
 func (w *world) iRunInteractively(cmd string) error {
-    // Record command; action performed when answers arrive
-    w.pendingCmd = cmd
-    w.lastOut = ""
-    w.lastErr = ""
-    w.lastExit = 0
-    return nil
+	// Record command; action performed when answers arrive
+	w.pendingCmd = cmd
+	w.lastOut = ""
+	w.lastErr = ""
+	w.lastExit = 0
+	return nil
 }
 
 func deepMerge(dst, src map[string]interface{}) {
@@ -699,23 +772,23 @@ func deepMerge(dst, src map[string]interface{}) {
 }
 
 func (w *world) iUpdateTheYAMLToSet(path string, content *godog.DocString) error {
-    p := w.replaceTmp(path)
-    data, err := ioutil.ReadFile(p)
-    if err != nil {
-        return err
-    }
-    var m map[string]interface{}
-    if err := yaml.Unmarshal(data, &m); err != nil {
-        return err
-    }
-    var new_m map[string]interface{}
-    // Normalize tmp tokens inside the patch content
-    patch := w.replaceTmp(content.Content)
-    if err := yaml.Unmarshal([]byte(patch), &new_m); err != nil {
-        return err
-    }
+	p := w.replaceTmp(path)
+	data, err := ioutil.ReadFile(p)
+	if err != nil {
+		return err
+	}
+	var m map[string]interface{}
+	if err := yaml.Unmarshal(data, &m); err != nil {
+		return err
+	}
+	var new_m map[string]interface{}
+	// Normalize tmp tokens inside the patch content
+	patch := w.replaceTmp(content.Content)
+	if err := yaml.Unmarshal([]byte(normalizeConfigYAML(patch)), &new_m); err != nil {
+		return err
+	}
 
-    deepMerge(m, new_m)
+	deepMerge(m, new_m)
 
 	data, err = yaml.Marshal(&m)
 	if err != nil {
@@ -873,7 +946,6 @@ func getField(obj interface{}, path string) (interface{}, error) {
 	return v.Interface(), nil
 }
 
-
 // RegisterSteps registers all step definitions with Godog.
 func RegisterSteps(s *godog.ScenarioContext, t *testing.T, w *world) {
 	// Before each scenario, reset the world state
@@ -914,6 +986,7 @@ func RegisterSteps(s *godog.ScenarioContext, t *testing.T, w *world) {
 	// And steps for setting values
 	s.Step(`^I set "([^"]+)" to "([^"]+)"$`, w.iSetKeyToValue)
 	s.Step(`^I update the YAML "([^"]*)" to set:$`, w.iUpdateTheYAMLToSet)
+	s.Step(`^"opencenter.gitops.git_url" is configured$`, w.gitopsGitURLIsConfigured)
 	s.Step(`^"gitops.git_url" is configured$`, w.gitopsGitURLIsConfigured)
 	s.Step(`^the gitops directory is a git repository$`, w.theGitopsDirectoryIsAGitRepository)
 	s.Step(`^the gitops repository has a bare remote$`, w.theGitopsRepositoryHasABareRemote)

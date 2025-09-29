@@ -27,6 +27,7 @@ func TestConfig(t *testing.T) {
 
 	t.Run("Save and Load", func(t *testing.T) {
 		cfg := NewDefault("test")
+		cfg.OpenCenter.GitOps.GitDir = ""
 		if err := Save(cfg); err != nil {
 			t.Fatal(err)
 		}
@@ -63,25 +64,26 @@ func TestConfig(t *testing.T) {
 		}
 	})
 
-    t.Run("Validate", func(t *testing.T) {
-        cfg := NewDefault("test")
-        // Missing git_dir should produce a validation error
-        errs := Validate(cfg)
-        if len(errs) == 0 {
-            t.Error("expected validation error for missing gitops.git_dir")
-        }
-        // Provide minimal required fields
-        cfg.GitOps.GitDir = "testdata/gitops"
-        errs = Validate(cfg)
-        if len(errs) != 0 {
-            t.Errorf("unexpected validation errors: %v", errs)
-        }
-    })
+	t.Run("Validate", func(t *testing.T) {
+		cfg := NewDefault("test")
+		cfg.OpenCenter.GitOps.GitDir = ""
+		// Missing git_dir should produce a validation error
+		errs := Validate(cfg)
+		if len(errs) == 0 {
+			t.Error("expected validation error for missing opencenter.gitops.git_dir")
+		}
+		// Provide minimal required fields
+		cfg.OpenCenter.GitOps.GitDir = "testdata/gitops"
+		errs = Validate(cfg)
+		if len(errs) != 0 {
+			t.Errorf("unexpected validation errors: %v", errs)
+		}
+	})
 
 	// New: OpenTofu S3 backend requires opencenter AWS credentials
 	t.Run("Validate OpenTofu S3 requires credentials", func(t *testing.T) {
 		cfg := NewDefault("test")
-		cfg.GitOps.GitDir = "testdata/gitops"
+		cfg.OpenCenter.GitOps.GitDir = "testdata/gitops"
 		cfg.OpenTofu.Enabled = true
 		cfg.OpenTofu.Backend.Type = "s3"
 		cfg.OpenTofu.Backend.S3.Bucket = "my-bucket"
@@ -93,8 +95,8 @@ func TestConfig(t *testing.T) {
 			t.Fatal("expected validation error for missing opencenter AWS credentials with s3 backend")
 		}
 		// Provide credentials, expect no error from this rule (other rules already satisfied)
-		cfg.OpenCenter.AWSAccessKey = "AKIA..."
-		cfg.OpenCenter.AWSSecretAccessKey = "secret"
+		cfg.OpenCenter.Cluster.AWSAccessKey = "AKIA..."
+		cfg.OpenCenter.Cluster.AWSSecretAccessKey = "secret"
 		errs = Validate(cfg)
 		if len(errs) != 0 {
 			t.Errorf("unexpected validation errors with credentials set: %v", errs)
@@ -117,17 +119,17 @@ func TestResolveConfigDir(t *testing.T) {
 	}
 
 	// Set env var to test override (use repo testdata)
-    testDir := "testdata/openCenter-test"
-    os.Setenv("OPENCENTER_CONFIG_DIR", testDir)
-    defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
+	testDir := "testdata/openCenter-test"
+	os.Setenv("OPENCENTER_CONFIG_DIR", testDir)
+	defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
 
-    dir, err = ResolveConfigDir()
-    if err != nil {
-        t.Fatal(err)
-    }
-    // ResolveConfigDir returns an absolute path; compare absolute forms.
-    absExpected, _ := filepath.Abs(testDir)
-    if dir != absExpected {
-        t.Errorf("expected config dir %s, but got %s", absExpected, dir)
-    }
+	dir, err = ResolveConfigDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// ResolveConfigDir returns an absolute path; compare absolute forms.
+	absExpected, _ := filepath.Abs(testDir)
+	if dir != absExpected {
+		t.Errorf("expected config dir %s, but got %s", absExpected, dir)
+	}
 }

@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-    "strings"
+	"strings"
 
 	"github.com/rackerlabs/openCenter/internal/config"
 	"github.com/rackerlabs/openCenter/internal/provision"
@@ -33,17 +33,26 @@ import (
 // Outputs:
 //   - error: An error if one occurred during file generation.
 func Provision(cfg config.Config) error {
-    if !cfg.Ansible.Enabled {
-        return nil
-    }
+	svc, ok := cfg.OpenCenter.Services["ansible"]
+	if ok && !svc.Enabled {
+		return nil
+	}
+	if !ok {
+		// ansible not requested
+		return nil
+	}
 
-    // When using raw iac.main_tf content, skip ansible provisioning to avoid
-    // relying on legacy IAC fields that no longer exist.
-    if strings.TrimSpace(cfg.IAC.MainTF) != "" {
-        return nil
-    }
+	// When using raw iac.main_tf content, skip ansible provisioning to avoid
+	// relying on legacy IAC fields that no longer exist.
+	if strings.TrimSpace(cfg.IAC.MainTF) != "" {
+		return nil
+	}
 
-	ansibleDir := filepath.Join(cfg.GitOps.GitDir, cfg.Ansible.Path)
+	gitDir := strings.TrimSpace(cfg.OpenCenter.GitOps.GitDir)
+	if gitDir == "" {
+		return fmt.Errorf("opencenter.gitops.git_dir must be set to render ansible assets")
+	}
+	ansibleDir := filepath.Join(gitDir, "ansible")
 	if err := os.MkdirAll(ansibleDir, 0755); err != nil {
 		return fmt.Errorf("failed to create ansible directory: %w", err)
 	}
@@ -68,9 +77,9 @@ func Provision(cfg config.Config) error {
 	}
 	defer inventoryFile.Close()
 
-    if err := provision.Templates.ExecuteTemplate(inventoryFile, "inventory.tmpl", cfg); err != nil {
-        return fmt.Errorf("failed to execute inventory template: %w", err)
-    }
+	if err := provision.Templates.ExecuteTemplate(inventoryFile, "inventory.tmpl", cfg); err != nil {
+		return fmt.Errorf("failed to execute inventory template: %w", err)
+	}
 
 	return nil
 }
