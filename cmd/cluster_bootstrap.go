@@ -14,191 +14,254 @@
 package cmd
 
 import (
-    "bytes"
-    "fmt"
-    "io"
-    "os"
-    "os/exec"
-    "path/filepath"
-    "strings"
-    "time"
+	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"sort"
+	"strings"
+	"time"
 
-    "github.com/rackerlabs/openCenter/internal/config"
-    "github.com/spf13/cobra"
+	"github.com/rackerlabs/openCenter/internal/config"
+	"github.com/spf13/cobra"
 )
 
+const kindClusterConfig = `kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  disableDefaultCNI: true
+  podSubnet: "10.244.0.0/16"
+  serviceSubnet: "10.96.0.0/12"
+nodes:
+- role: control-plane
+- role: worker
+- role: worker
+- role: worker
+`
+
 func newClusterBootstrapCmd() *cobra.Command {
-    cmd := &cobra.Command{
-        Use:   "bootstrap [name]",
-        Short: "Provision and configure the cluster (terraform, kubectl, helm, ansible)",
-        RunE: func(cmd *cobra.Command, args []string) error {
-            // Resolve cluster name
-            var name string
-            var err error
-            if len(args) > 0 {
-                name = args[0]
-            } else {
-                name, err = config.GetActive()
-                if err != nil {
-                    return err
-                }
-            }
-            if name == "" {
-                return fmt.Errorf("no active cluster; specify name or use 'select' to set it")
-            }
-            cfg, err := config.Load(name)
-            if err != nil {
-                return err
-            }
+	cmd := &cobra.Command{
+		Use:   "bootstrap [name]",
+		Short: "Run provider-specific bootstrap actions for a cluster",
+		Args:  cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Resolve cluster name from args or active selection.
+			var name string
+			var err error
+			if len(args) > 0 {
+				name = args[0]
+			} else {
+				name, err = config.GetActive()
+				if err != nil {
+					return err
+				}
+			}
+			if strings.TrimSpace(name) == "" {
+				return fmt.Errorf("no active cluster; specify name or use 'select' to set it")
+			}
 
-            // Flags
-            dryRun, _ := cmd.Flags().GetBool("dry-run")
-            kubeconf, _ := cmd.Flags().GetString("kubeconfig")
-            logPath, _ := cmd.Flags().GetString("log")
-            if logPath == "" {
-                logPath = filepath.Join(cfg.GitOps().GitDir, "infrastructure", "clusters", cfg.ClusterName(), "bootstrap.log")
-            }
+			cfg, err := config.Load(name)
+			if err != nil {
+				return err
+			}
 
-            clusterDir := filepath.Join(cfg.GitOps().GitDir, "infrastructure", "clusters", cfg.ClusterName())
-            if _, statErr := os.Stat(clusterDir); statErr != nil {
-                return fmt.Errorf("cluster directory not found: %s", clusterDir)
-            }
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
+			kubeconf, _ := cmd.Flags().GetString("kubeconfig")
+			logPath, _ := cmd.Flags().GetString("log")
+			runtimeFlag, _ := cmd.Flags().GetString("container-runtime")
 
-            // Open log file
-            var logFile *os.File
-            if !dryRun {
-                if err := os.MkdirAll(filepath.Dir(logPath), 0o755); err != nil {
-                    return fmt.Errorf("failed to create log directory: %w", err)
-                }
-                f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
-                if err != nil {
-                    return fmt.Errorf("failed to open log file: %w", err)
-                }
-                logFile = f
-                defer logFile.Close()
-                // Write header
-                fmt.Fprintf(logFile, "# openCenter bootstrap log\n# time: %s\n# cluster: %s\n# dir: %s\n\n", time.Now().Format(time.RFC3339), cfg.ClusterName(), clusterDir)
-            }
+			clusterDir := ""
+			gitDir := strings.TrimSpace(cfg.GitOps().GitDir)
+			if gitDir != "" {
+				clusterDir = filepath.Join(gitDir, "infrastructure", "clusters", cfg.ClusterName())
+			}
+			if logPath == "" && clusterDir != "" {
+				logPath = filepath.Join(clusterDir, "bootstrap.log")
+			}
 
-            // Helper to run a command with logging and optional env
-            run := func(dir string, env map[string]string, name string, args ...string) error {
-                // Print the command
-                printable := name + " " + strings.Join(args, " ")
-                if len(env) > 0 {
-                    kv := make([]string, 0, len(env))
-                    for k, v := range env {
-                        kv = append(kv, fmt.Sprintf("%s=%s", k, v))
-                    }
-                    printable = strings.Join(kv, " ") + " " + printable
-                }
-                fmt.Fprintln(cmd.OutOrStdout(), "$ ", printable)
-                if logFile != nil {
-                    fmt.Fprintln(logFile, "$ ", printable)
-                }
-                if dryRun {
-                    return nil
-                }
-                c := exec.Command(name, args...)
-                c.Dir = dir
-                // Build environment
-                envList := os.Environ()
-                for k, v := range env {
-                    envList = append(envList, fmt.Sprintf("%s=%s", k, v))
-                }
-                c.Env = envList
-                // Wire outputs to both stdout and log file
-                var outW io.Writer = cmd.OutOrStdout()
-                var errW io.Writer = cmd.ErrOrStderr()
-                if logFile != nil {
-                    outW = io.MultiWriter(cmd.OutOrStdout(), logFile)
-                    errW = io.MultiWriter(cmd.ErrOrStderr(), logFile)
-                }
-                c.Stdout = outW
-                c.Stderr = errW
-                if err := c.Run(); err != nil {
-                    return fmt.Errorf("command failed: %s: %w", printable, err)
-                }
-                return nil
-            }
+			runner, err := newBootstrapRunner(cmd, cfg.ClusterName(), clusterDir, logPath, dryRun)
+			if err != nil {
+				return err
+			}
+			defer runner.Close()
 
-            // Build override values path using the current cluster name
-            overrideValues := filepath.Join(cfg.GitOps().GitDir, "applications", "overlays", cfg.ClusterName(), "services", "calico", "helm-values", "override_values.yaml")
-            // But the original relative path in request used ../../../ from clusterDir, compute that too for logs
-            relOverride, _ := filepath.Rel(clusterDir, overrideValues)
-            if relOverride == "" {
-                relOverride = "../../../applications/overlays/" + cfg.ClusterName() + "/services/calico/helm-values/override_values.yaml"
-            }
+			provider := strings.ToLower(strings.TrimSpace(cfg.OpenCenter.Infrastructure.Provider))
+			if provider == "" {
+				provider = "openstack"
+			}
 
-            // Step 1: cd to clusterDir (implicit by setting dir in run())
-            // Step 2: terraform init
-            if err := run(clusterDir, nil, "terraform", "init"); err != nil {
-                return err
-            }
-            // Step 3: terraform apply (non-interactive)
-            if err := run(clusterDir, nil, "terraform", "apply", "-auto-approve"); err != nil {
-                return err
-            }
-            // Step 4: kubectl get nodes with KUBECONFIG
-            if kubeconf == "" {
-                kubeconf = "./kubeconfig.yaml"
-            }
-            if err := run(clusterDir, map[string]string{"KUBECONFIG": kubeconf}, "kubectl", "get", "nodes"); err != nil {
-                return err
-            }
-            // Step 5: helm repo add
-            if err := run(clusterDir, nil, "helm", "repo", "add", "projectcalico", "https://docs.tigera.io/calico/charts"); err != nil {
-                return err
-            }
-            // Step 6: helm upgrade --install calico
-            if err := run(clusterDir, nil, "helm", "upgrade", "--install", "calico", "projectcalico/tigera-operator",
-                "--namespace", "tigera-operator", "-f", relOverride, "--create-namespace"); err != nil {
-                return err
-            }
-            // Step 7: terraform apply again
-            if err := run(clusterDir, nil, "terraform", "apply", "-auto-approve"); err != nil {
-                return err
-            }
-            // Step 8: export ANSIBLE_INVENTORY env for subsequent playbook
-            inventory := filepath.Join(clusterDir, "inventory", "inventory.yaml")
-            // Step 9: ansible-playbook using venv if present, from kubespray subdir
-            venvBin := filepath.Join(clusterDir, "venv", "bin")
-            envMap := map[string]string{"ANSIBLE_INVENTORY": inventory}
-            // Prepend venv bin to PATH if it exists
-            if st, err := os.Stat(venvBin); err == nil && st.IsDir() {
-                envMap["PATH"] = venvBin + string(os.PathListSeparator) + os.Getenv("PATH")
-            }
-            ksDir := filepath.Join(clusterDir, "kubespray")
-            if err := run(ksDir, envMap, "ansible-playbook", "-f", "10", "-b", "upgrade-cluster.yml", "-e", "@../inventory/k8s_hardening.yml"); err != nil {
-                return err
-            }
+			switch provider {
+			case "openstack", "aws", "gcp", "azure":
+				if clusterDir == "" {
+					return fmt.Errorf("gitops.git_dir must be configured for provider %q", provider)
+				}
+				if _, err := os.Stat(clusterDir); err != nil {
+					return fmt.Errorf("cluster directory not found: %s", clusterDir)
+				}
+				env := map[string]string{}
+				if kubeconf != "" {
+					env["KUBECONFIG"] = kubeconf
+				}
+				runner.Infof("Running make in %s", clusterDir)
+				if err := runner.Run(clusterDir, env, "make"); err != nil {
+					return err
+				}
+			case "kind":
+				runtime := resolveContainerRuntime(runtimeFlag)
+				env := map[string]string{}
+				switch runtime {
+				case "podman":
+					env["KIND_EXPERIMENTAL_PROVIDER"] = "podman"
+				case "docker":
+					// default, no extra env
+				default:
+					return fmt.Errorf("unsupported container runtime %q", runtime)
+				}
 
-            fmt.Fprintln(cmd.OutOrStdout(), "Bootstrap complete.")
-            if logPath != "" {
-                fmt.Fprintf(cmd.OutOrStdout(), "Log written to %s\n", logPath)
-            }
-            return nil
-        },
-    }
-    cmd.Flags().Bool("dry-run", false, "show planned actions without executing")
-    cmd.Flags().String("kubeconfig", "./kubeconfig.yaml", "path to kubeconfig for kubectl commands (relative to cluster dir)")
-    cmd.Flags().String("log", "", "log file path (defaults to <git_dir>/infrastructure/clusters/<name>/bootstrap.log)")
-    return cmd
+				runner.Infof("Creating kind cluster %q using %s", cfg.ClusterName(), runtime)
+				if err := runner.RunWithInput("", env, kindClusterConfig, "kind", "create", "cluster", "--name", cfg.ClusterName(), "--config=-"); err != nil {
+					return err
+				}
+				if err := runner.Run("", env, "kind", "export", "kubeconfig", "--name", cfg.ClusterName()); err != nil {
+					return err
+				}
+			default:
+				return fmt.Errorf("unsupported provider %q", cfg.OpenCenter.Infrastructure.Provider)
+			}
+
+			runner.Infof("Bootstrap complete.")
+			if logPath != "" && !dryRun {
+				fmt.Fprintf(cmd.OutOrStdout(), "Log written to %s\n", logPath)
+			}
+			return nil
+		},
+	}
+
+	cmd.Flags().Bool("dry-run", false, "show planned actions without executing")
+	cmd.Flags().String("kubeconfig", "./kubeconfig.yaml", "path to kubeconfig used by bootstrap actions")
+	cmd.Flags().String("log", "", "log file path (defaults to <git_dir>/infrastructure/clusters/<name>/bootstrap.log)")
+	cmd.Flags().String("container-runtime", "", "container runtime for kind clusters (docker or podman)")
+
+	return cmd
 }
 
-// hasOrigin returns true if the git repository at `dir` has a remote
-// named `origin`.
-func hasOrigin(dir string) (bool, error) {
-	remotes := exec.Command("git", "remote")
-	remotes.Dir = dir
-	out, err := remotes.Output()
-	if err != nil {
-		return false, err
+func resolveContainerRuntime(flagValue string) string {
+	if v := strings.TrimSpace(flagValue); v != "" {
+		return strings.ToLower(v)
 	}
-	//
-	for _, line := range bytes.Split(out, []byte("\n")) {
-		if string(line) == "origin" {
-			return true, nil
+	if v := strings.TrimSpace(os.Getenv("CONTAINER_RUNTIME")); v != "" {
+		return strings.ToLower(v)
+	}
+	if v := strings.TrimSpace(os.Getenv("KIND_EXPERIMENTAL_PROVIDER")); v != "" {
+		return strings.ToLower(v)
+	}
+	return "docker"
+}
+
+type bootstrapRunner struct {
+	dryRun  bool
+	logFile *os.File
+	stdout  io.Writer
+	stderr  io.Writer
+}
+
+func newBootstrapRunner(cmd *cobra.Command, clusterName, clusterDir, logPath string, dryRun bool) (*bootstrapRunner, error) {
+	var f *os.File
+	if logPath != "" && !dryRun {
+		if err := os.MkdirAll(filepath.Dir(logPath), 0o755); err != nil {
+			return nil, fmt.Errorf("failed to create log directory: %w", err)
+		}
+		file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open log file: %w", err)
+		}
+		header := fmt.Sprintf(`# openCenter bootstrap log
+# time: %s
+# cluster: %s
+# dir: %s
+
+`, time.Now().Format(time.RFC3339), clusterName, clusterDir)
+		if _, err := file.WriteString(header); err != nil {
+			file.Close()
+			return nil, fmt.Errorf("failed to write log header: %w", err)
+		}
+		f = file
+	}
+
+	out := cmd.OutOrStdout()
+	errOut := cmd.ErrOrStderr()
+	if f != nil {
+		out = io.MultiWriter(out, f)
+		errOut = io.MultiWriter(errOut, f)
+	}
+
+	return &bootstrapRunner{
+		dryRun:  dryRun,
+		logFile: f,
+		stdout:  out,
+		stderr:  errOut,
+	}, nil
+}
+
+func (r *bootstrapRunner) Close() {
+	if r.logFile != nil {
+		_ = r.logFile.Close()
+	}
+}
+
+func (r *bootstrapRunner) Infof(format string, args ...interface{}) {
+	fmt.Fprintf(r.stdout, format+"\n", args...)
+}
+
+func (r *bootstrapRunner) Run(dir string, env map[string]string, name string, args ...string) error {
+	return r.execute(dir, env, nil, name, args...)
+}
+
+func (r *bootstrapRunner) RunWithInput(dir string, env map[string]string, input string, name string, args ...string) error {
+	return r.execute(dir, env, strings.NewReader(input), name, args...)
+}
+
+func (r *bootstrapRunner) execute(dir string, env map[string]string, stdin io.Reader, name string, args ...string) error {
+	printable := formatCommand(env, name, args)
+	fmt.Fprintf(r.stdout, "$ %s\n", printable)
+
+	if r.dryRun {
+		return nil
+	}
+
+	cmd := exec.Command(name, args...)
+	cmd.Dir = dir
+	if stdin != nil {
+		cmd.Stdin = stdin
+	}
+
+	envList := os.Environ()
+	for k, v := range env {
+		envList = append(envList, fmt.Sprintf("%s=%s", k, v))
+	}
+	cmd.Env = envList
+	cmd.Stdout = r.stdout
+	cmd.Stderr = r.stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("command failed: %s: %w", printable, err)
+	}
+	return nil
+}
+
+func formatCommand(env map[string]string, name string, args []string) string {
+	var prefixes []string
+	if len(env) > 0 {
+		keys := make([]string, 0, len(env))
+		for k := range env {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			prefixes = append(prefixes, fmt.Sprintf("%s=%s", k, env[k]))
 		}
 	}
-	return false, nil
+	parts := append(prefixes, append([]string{name}, args...)...)
+	return strings.Join(parts, " ")
 }
