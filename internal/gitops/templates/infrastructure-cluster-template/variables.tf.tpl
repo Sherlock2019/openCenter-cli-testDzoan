@@ -46,16 +46,16 @@ variable "pf9_password" {
 
 variable "worker_count" {
   type    = string
-  default = "{{ .OpenCenter.Cluster.Kubernetes.WorkerCount | default "1" }}"
+  default = "1"
 
 }
 
 variable "master_count" {
   type    = string
-  default = "{{ .OpenCenter.Cluster.Kubernetes.MasterCount | default "3" }}"
+  default = "3"
 }
 
 variable "windows_admin_password" {
   type    = string
-  default = "{{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WindowsAdminPassword }}"
+  default = ""
 }
