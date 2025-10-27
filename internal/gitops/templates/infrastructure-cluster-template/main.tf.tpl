@@ -63,11 +63,14 @@ locals {
   flavor_bastion                          = "{{ .OpenCenter.Cluster.Kubernetes.FlavorBastion | default "gp.5.2.2" }}"
   flavor_master                           = "{{ .OpenCenter.Cluster.Kubernetes.FlavorMaster | default "gp.5.4.4" }}"
   flavor_worker                           = "{{ .OpenCenter.Cluster.Kubernetes.FlavorWorker | default "gp.5.4.8" }}"
+  flavor_worker_windows                   = "gp.5.4.16"
 
-  worker_node_bfv_volume_size             = {{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WorkerNodeBFVSizeWindows | default 100 }}
+  worker_node_bfv_volume_size             = 20
   worker_node_bfv_destination_type        = "volume"
   worker_node_bfv_source_type             = "image"
-  worker_node_bfv_volume_type             = "{{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WorkerNodeBFVTypeWindows | default "Performance" }}"
+  worker_node_bfv_volume_type             = "Standard"
+
+  additional_block_devices_worker = []
 
   # ====================================
   #ca_certificates add CA certificates to server's trusts. Good for trusting internal private Certificate Authorities.
@@ -116,8 +119,9 @@ locals {
 }
 
 module "openstack-nova" {
-  source = "github.com/rackerlabs/openCenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main"
+  source = "github.com/rackerlabs/openCenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=worker-server-group"
   availability_zone             = local.availability_zone
+  additional_block_devices_worker      = local.additional_block_devices_worker
   application_credential_id     = local.application_credential_id
   application_credential_secret = local.application_credential_secret
   ca_certificates               = local.ca_certificates
@@ -162,19 +166,24 @@ module "openstack-nova" {
     count  = local.worker_count
     flavor = local.flavor_worker
   }
-  # size_worker_windows = {
-  #   count  = local.worker_count_windows
-  #   flavor = local.flavor_worker_windows
-  # }
+  size_worker_windows = {
+      count  = local.worker_count_windows
+      flavor = local.flavor_worker_windows
+  }
   node_master                  = local.node_master
   node_worker                  = local.node_worker
   node_worker_windows          = local.node_worker_windows
   ub_version                   = local.ub_version
+  windows_admin_password       = local.windows_admin_password
+  windows_user                 = local.windows_user
 
   worker_node_bfv_volume_size = local.worker_node_bfv_volume_size
   worker_node_bfv_destination_type = local.worker_node_bfv_destination_type
   worker_node_bfv_source_type = local.worker_node_bfv_source_type
   worker_node_bfv_volume_type = local.worker_node_bfv_volume_type
+  worker_node_bfv_type_windows = local.worker_node_bfv_type_windows
+  worker_node_bfv_size_windows = local.worker_node_bfv_size_windows
+  wn_server_group_affinity = ["anti-affinity"]
 }
 
 module "kubespray-cluster" {
@@ -231,5 +240,5 @@ module "calico" {
   subnet_nodes                     = local.subnet_nodes
   subnet_pods                      = local.subnet_pods
   subnet_services                  = local.subnet_services
-  windows_dataplane                = length(module.openstack-nova.windows_nodes) > 0 ? "HSN" : "Disabled"
+  windows_dataplane                = length(module.openstack-nova.windows_nodes) > 0 ? "HNS" : "Disabled"
 }

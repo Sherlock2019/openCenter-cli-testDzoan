@@ -110,6 +110,10 @@ func renderTemplate(path, dst string, cfg config.Config) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse template %s: %w", path, err)
 	}
+	// Ensure directory exists
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return err
+	}
 	f, err := os.Create(dst)
 	if err != nil {
 		return err
