@@ -6,6 +6,7 @@ resources:
   - "./custom-alertmanager-routes.yaml"
   - "./custom-prometheus-routes.yaml"
   - "./custom-grafana-routes.yaml"
+  - "./grafana-admin-password.yaml"
 secretGenerator:
   - name: kube-prometheus-stack-values-override
     type: Opaque

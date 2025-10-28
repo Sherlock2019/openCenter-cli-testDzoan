@@ -1,0 +1,11 @@
+---
+alertmanager:
+  enabled: true
+prometheus:
+  enabled: true
+grafana:
+  enabled: true
+  admin:
+    existingSecret: "grafana-admin-password"
+    userKey: admin-user
+    passwordKey: admin-password

@@ -250,7 +250,15 @@ type KubernetesConfig struct {
 	FlavorMaster         string         `yaml:"flavor_master" json:"flavor_master"`
 	FlavorWorker         string         `yaml:"flavor_worker" json:"flavor_worker"`
 	SubnetPods           string         `yaml:"subnet_pods" json:"subnet_pods"`
-	SubnetServices       string         `yaml:"subnet_services" json:"subnet_services"`
+	SubnetServices       string         `yaml:"subnet_apiVersion: v1
+data:
+    cloud: 
+kind: Secret
+metadata:
+    name: velero-s3-credentials
+    namespace: velero
+type: Opaque
+`
 	LoadbalancerProvider string         `yaml:"loadbalancer_provider" json:"loadbalancer_provider"`
 	DNSZoneName          string         `yaml:"dns_zone_name" json:"dns_zone_name"`
 	MasterCount          int            `yaml:"master_count" json:"master_count"`

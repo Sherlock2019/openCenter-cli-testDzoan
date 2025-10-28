@@ -8,7 +8,7 @@ metadata:
   namespace: keycloak
 spec:
   # Deployment configuration
-  startOptimized: false # Start in {{ .ClusterName }} mode (not optimized for production)
+  startOptimized: false # Start in  mode (not optimized for production)
   #startOptimized: true                             # RECOMMENDED: Enable for production performance
   instances: 3 # High availability with 3 replicas
   image: quay.io/keycloak/keycloak:26.3.0 # Keycloak version 26.3.0
