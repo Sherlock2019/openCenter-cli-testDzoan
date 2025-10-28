@@ -223,8 +223,11 @@ type Infrastructure struct {
 
 // ServiceCfg captures the on/off toggle plus optional metadata for a service.
 type ServiceCfg struct {
-	Enabled bool   `yaml:"enabled" json:"enabled"`
-	Email   string `yaml:"email,omitempty" json:"email,omitempty"`
+	Enabled  bool   `yaml:"enabled" json:"enabled"`
+	Email    string `yaml:"email,omitempty" json:"email,omitempty"`
+	Region   string `yaml:"region,omitempty" json:"region,omitempty"`
+	S3Host   string `yaml:"s3_host,omitempty" json:"s3_host,omitempty"`
+	S3Region string `yaml:"s3_region,omitempty" json:"s3_region,omitempty"`
 }
 
 // CloudConfig represents the cloud configuration within opencenter
@@ -250,15 +253,7 @@ type KubernetesConfig struct {
 	FlavorMaster         string         `yaml:"flavor_master" json:"flavor_master"`
 	FlavorWorker         string         `yaml:"flavor_worker" json:"flavor_worker"`
 	SubnetPods           string         `yaml:"subnet_pods" json:"subnet_pods"`
-	SubnetServices       string         `yaml:"subnet_apiVersion: v1
-data:
-    cloud: 
-kind: Secret
-metadata:
-    name: velero-s3-credentials
-    namespace: velero
-type: Opaque
-`
+	SubnetServices       string         `yaml:"subnet_services" json:"subnet_services"`
 	LoadbalancerProvider string         `yaml:"loadbalancer_provider" json:"loadbalancer_provider"`
 	DNSZoneName          string         `yaml:"dns_zone_name" json:"dns_zone_name"`
 	MasterCount          int            `yaml:"master_count" json:"master_count"`
@@ -463,22 +458,25 @@ func defaultConfig(name string) Config {
 				},
 			},
 			Services: map[string]ServiceCfg{
-				"alert-manager":         {Enabled: true},
 				"calico":                {Enabled: true},
-				"cert-manager":          {Enabled: true, Email: "mpk-support@rackspace.com"},
-				"etcd-backup":           {Enabled: true},
+				"cert-manager":          {Enabled: true, Email: "mpk-support@rackspace.com", Region: "us-east-1"},
+				"etcd-backup":           {Enabled: true, S3Host: "https://swift.api.dfw3.rackspacecloud.com", S3Region: "DFW3"},
+				"external-snapshotter":  {Enabled: true},
+				"fluxcd":                {Enabled: true},
 				"gateway":               {Enabled: true},
 				"gateway-api":           {Enabled: true},
 				"headlamp":              {Enabled: true},
 				"keycloak":              {Enabled: true},
 				"kube-prometheus-stack": {Enabled: true},
+				"kyverno":               {Enabled: true},
 				"olm":                   {Enabled: true},
 				"openstack-ccm":         {Enabled: true},
 				"openstack-csi":         {Enabled: true},
 				"postgres-operator":     {Enabled: true},
+				"rbac-manager":          {Enabled: true},
 				"sources":               {Enabled: true},
 				"velero":                {Enabled: true},
-				"weave-gitops":          {Enabled: false},
+				"weave-gitops":          {Enabled: true},
 			},
 		},
 		OpenTofu: SimplifiedOpenTofu{

@@ -11,7 +11,7 @@ spec:
     solvers:
       - dns01:
           route53:
-            region: us-east-1
+            region: {{ (index .OpenCenter.Services "cert-manager").Region }}
             accessKeyIDSecretRef:
               name: "{{ .ClusterName }}-aws-credentials-secret"
               key: access-key-id

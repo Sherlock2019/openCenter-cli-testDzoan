@@ -259,6 +259,15 @@
               },
               "enabled": {
                 "type": "boolean"
+              },
+              "region": {
+                "type": "string"
+              },
+              "s3_host": {
+                "type": "string"
+              },
+              "s3_region": {
+                "type": "string"
               }
             },
             "type": "object"
@@ -272,6 +281,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -288,6 +306,15 @@
               },
               "enabled": {
                 "type": "boolean"
+              },
+              "region": {
+                "type": "string"
+              },
+              "s3_host": {
+                "type": "string"
+              },
+              "s3_region": {
+                "type": "string"
               }
             },
             "type": "object"
@@ -301,6 +328,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -313,6 +349,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -325,6 +370,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -337,6 +391,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -349,6 +412,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -361,6 +433,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -373,6 +454,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -385,6 +475,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -397,6 +496,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -409,6 +517,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -421,6 +538,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -433,6 +559,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -445,6 +580,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -457,6 +601,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -469,6 +622,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -481,6 +643,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -493,6 +664,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -505,6 +685,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -517,6 +706,15 @@
                 },
                 "enabled": {
                   "type": "boolean"
+                },
+                "region": {
+                  "type": "string"
+                },
+                "s3_host": {
+                  "type": "string"
+                },
+                "s3_region": {
+                  "type": "string"
                 }
               },
               "type": "object"
