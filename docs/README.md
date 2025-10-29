@@ -30,6 +30,7 @@ These guides provide focused, goal-oriented steps to solve common problems and p
 This section contains detailed, technical information about `openCenter`.
 
 *   [**CLI Command Reference**](./reference/cli.md): A comprehensive reference for every command and flag in the `openCenter` CLI.
+*   [**SOPS CLI Reference**](./cli/sops.md): Detailed documentation for SOPS key management and encryption commands.
 *   [**Configuration File Reference**](./reference/config.md): A complete guide to every field in the cluster YAML file, including data types and default values.
 *   [**Developer Tasks Reference**](./reference/tasks.md): A reference for the common development tasks available via `mise`.
 

@@ -447,3 +447,32 @@ openCenter secrets sops-keygen --out <path>
 # secrets:
 #   sops_age_key_file: ~/.config/sops/age/keys.txt
 ```
+
+---
+
+## `openCenter sops`
+
+The `sops` command group provides comprehensive SOPS (Secrets OPerationS) key management and automation for secure GitOps workflows. These commands handle the full lifecycle of Age encryption keys used for encrypting sensitive data in Kubernetes deployments.
+
+For detailed documentation of all SOPS commands, see [`docs/cli/sops.md`](../cli/sops.md).
+
+**Available Commands:**
+- `generate-key` - Generate new Age key pair for SOPS encryption
+- `rotate-key` - Rotate Age keys and re-encrypt existing secrets  
+- `backup-key` - Create backup of Age keys and SOPS configuration
+- `validate` - Validate Age key configuration and SOPS setup
+
+**Quick Examples:**
+```bash
+# Generate a new SOPS key
+openCenter sops generate-key
+
+# Validate SOPS setup
+openCenter sops validate
+
+# Create a backup of keys
+openCenter sops backup-key
+
+# Rotate keys and re-encrypt files
+openCenter sops rotate-key --search-path ./secrets
+```

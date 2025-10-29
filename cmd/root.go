@@ -20,7 +20,7 @@ import (
 
     "github.com/spf13/cobra"
 
-    "github.com/rackerlabs/openCenter/internal/plugins"
+    "github.com/rackerlabs/openCenter-cli/internal/plugins"
 )
 
 var rootCmd = &cobra.Command{
@@ -68,6 +68,7 @@ func Execute(version string) error {
     // Register subcommands
     rootCmd.AddCommand(newClusterCmd())
     rootCmd.AddCommand(newSecretsCmd())
+    rootCmd.AddCommand(newSOPSCmd())
     rootCmd.AddCommand(newPluginsCmd())
     // Discover and attach external plugins as subcommands
     plugins.LoadExternalPlugins(rootCmd)
