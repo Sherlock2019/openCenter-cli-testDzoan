@@ -29,6 +29,7 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 		"type": "object",
 		"properties": map[string]any{
 			"enabled": map[string]any{"type": "boolean"},
+			"release": map[string]any{"type": "string"},
 		},
 		"additionalProperties": false,
 	}
@@ -37,11 +38,12 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 	certManagerSchema := map[string]any{
 		"type": "object",
 		"properties": map[string]any{
-			"enabled":              map[string]any{"type": "boolean"},
-			"email":                map[string]any{"type": "string"},
-			"region":               map[string]any{"type": "string"},
 			"aws_access_key":       map[string]any{"type": "string"},
 			"aws_secret_access_key": map[string]any{"type": "string"},
+			"email":                map[string]any{"type": "string"},
+			"enabled":              map[string]any{"type": "boolean"},
+			"region":               map[string]any{"type": "string"},
+			"release":                map[string]any{"type": "string"},
 		},
 		"additionalProperties": false,
 	}
@@ -51,6 +53,7 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 		"type": "object",
 		"properties": map[string]any{
 			"enabled": map[string]any{"type": "boolean"},
+			"release":                map[string]any{"type": "string"},
 		},
 		"additionalProperties": false,
 	}
@@ -59,11 +62,12 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 	etcdBackupSchema := map[string]any{
 		"type": "object",
 		"properties": map[string]any{
-			"enabled":              map[string]any{"type": "boolean"},
-			"s3_host":              map[string]any{"type": "string"},
-			"s3_region":            map[string]any{"type": "string"},
 			"aws_access_key":       map[string]any{"type": "string"},
 			"aws_secret_access_key": map[string]any{"type": "string"},
+			"enabled":              map[string]any{"type": "boolean"},
+			"release":                map[string]any{"type": "string"},
+			"s3_host":              map[string]any{"type": "string"},
+			"s3_region":            map[string]any{"type": "string"},
 		},
 		"additionalProperties": false,
 	}
@@ -72,13 +76,14 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 	serviceSchema := map[string]any{
 		"type": "object",
 		"properties": map[string]any{
-			"enabled":              map[string]any{"type": "boolean"},
-			"email":                map[string]any{"type": "string"},
-			"region":               map[string]any{"type": "string"},
-			"s3_host":              map[string]any{"type": "string"},
-			"s3_region":            map[string]any{"type": "string"},
 			"aws_access_key":       map[string]any{"type": "string"},
 			"aws_secret_access_key": map[string]any{"type": "string"},
+			"email":                map[string]any{"type": "string"},
+			"enabled":              map[string]any{"type": "boolean"},
+			"region":               map[string]any{"type": "string"},
+			"release":                map[string]any{"type": "string"},
+			"s3_host":              map[string]any{"type": "string"},
+			"s3_region":            map[string]any{"type": "string"},
 		},
 		"additionalProperties": false,
 	}
