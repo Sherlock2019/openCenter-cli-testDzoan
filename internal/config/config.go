@@ -96,6 +96,7 @@ type GitOpsConfig struct {
 	GitSSHKey string     `yaml:"git_ssh_key,omitempty" json:"git_ssh_key,omitempty"`
 	GitSSHPub string     `yaml:"git_ssh_pub,omitempty" json:"git_ssh_pub,omitempty"`
 	GitBranch string     `yaml:"git_branch,omitempty" json:"git_branch,omitempty"`
+	Release   string     `yaml:"release,omitempty" json:"release,omitempty"`
 	Flux      GitOpsFlux `yaml:"flux,omitempty" json:"flux,omitempty"`
 }
 

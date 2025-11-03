@@ -187,6 +187,9 @@
             },
             "git_url": {
               "type": "string"
+            },
+            "release": {
+              "type": "string"
             }
           },
           "type": "object"

@@ -158,6 +158,7 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 			"git_ssh_key": map[string]any{"type": "string"},
 			"git_ssh_pub": map[string]any{"type": "string"},
 			"git_url":     map[string]any{"type": "string"},
+			"release":     map[string]any{"type": "string"},
 			"flux": map[string]any{
 				"type": "object",
 				"properties": map[string]any{
