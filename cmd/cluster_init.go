@@ -245,12 +245,12 @@ func newClusterInitCmd() *cobra.Command {
 			// Check if cluster directory exists
 			if _, err := os.Stat(clusterDir); err == nil {
 				if !force {
-					return fmt.Errorf("cluster configuration directory '%s' already exists, use --force to overwrite", name)
+					return fmt.Errorf("cluster configuration directory '%s' already exists in clusters subdirectory, use --force to overwrite", name)
 				}
 				
 				// Force flag is set, perform cleanup and overwrite
 				if err := cleanupClusterDirectory(clusterDir); err != nil {
-					return fmt.Errorf("failed to cleanup existing cluster directory: %w", err)
+					return fmt.Errorf("failed to cleanup existing cluster directory '%s': %w", clusterDir, err)
 				}
 			}
 
@@ -295,14 +295,14 @@ func newClusterInitCmd() *cobra.Command {
 			// Get the config path (this will create the cluster directory structure)
 			path, err := config.ConfigPath(name)
 			if err != nil {
-				return fmt.Errorf("failed to get config path: %w", err)
+				return fmt.Errorf("failed to get cluster configuration path: %w", err)
 			}
 
 			// Write the config file with proper permissions (0600 for files)
 			if err := os.WriteFile(path, finalYAML, 0o600); err != nil {
-				return fmt.Errorf("failed to write config file: %w", err)
+				return fmt.Errorf("failed to write cluster configuration file to '%s': %w", path, err)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Created cluster configuration directory and file for %s\n", name)
+			fmt.Fprintf(cmd.OutOrStdout(), "Created cluster configuration directory structure and file for '%s' in clusters subdirectory\n", name)
 			return nil
 		},
 	}
@@ -317,7 +317,7 @@ func newClusterInitCmd() *cobra.Command {
 func cleanupClusterDirectory(clusterDir string) error {
 	// Remove the entire cluster directory and all its contents
 	if err := os.RemoveAll(clusterDir); err != nil {
-		return fmt.Errorf("failed to remove existing cluster directory %s: %w", clusterDir, err)
+		return fmt.Errorf("failed to remove existing cluster directory and contents: %w", err)
 	}
 	return nil
 }
@@ -330,12 +330,12 @@ func generateDefaultSOPSKey(cluster string, cfg *config.Config) error {
 	// Get the cluster-specific secrets directory path
 	secretsDir, err := config.ClusterSecretsPath(cluster)
 	if err != nil {
-		return fmt.Errorf("failed to get cluster secrets path: %w", err)
+		return fmt.Errorf("failed to get cluster secrets directory path: %w", err)
 	}
 	
 	// Create the secrets directory with proper permissions (0755 for directories)
 	if err := os.MkdirAll(secretsDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create cluster secrets directory: %w", err)
+		return fmt.Errorf("failed to create cluster secrets directory '%s': %w", secretsDir, err)
 	}
 	
 	// Generate the key file path
@@ -350,7 +350,7 @@ func generateDefaultSOPSKey(cluster string, cfg *config.Config) error {
 	
 	// Write the key file with proper permissions (0600 for files)
 	if err := os.WriteFile(keyFile, []byte(key), 0o600); err != nil {
-		return fmt.Errorf("failed to write SOPS key file: %w", err)
+		return fmt.Errorf("failed to write SOPS key file to cluster directory '%s': %w", keyFile, err)
 	}
 	
 	cfg.Secrets.SopsAgeKeyFile = keyFile

@@ -70,7 +70,7 @@ Feature: Configuration selection and inspection
   Scenario: Selecting a non-existent cluster yields a helpful error
     When I run "openCenter cluster select missing --config-dir tmp/conf"
     Then the exit code should not be 0
-    And stderr should contain "cluster 'missing' not found"
+    And stderr should contain "cluster configuration directory 'missing' not found"
     And stderr should contain "openCenter cluster list"
 
   @config @select @header_in_git_dir

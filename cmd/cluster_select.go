@@ -165,7 +165,7 @@ func newClusterSelectCmd() *cobra.Command {
 				return err
 			}
 			if _, err := os.Stat(path); err != nil {
-				return fmt.Errorf("cluster '%s' not found. Use 'openCenter cluster list' to see available clusters", name)
+				return fmt.Errorf("cluster configuration directory '%s' not found in clusters subdirectory. Use 'openCenter cluster list' to see available clusters", name)
 			}
 			// Set active
 			if err := config.SetActive(name); err != nil {

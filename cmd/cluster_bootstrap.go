@@ -97,7 +97,7 @@ func newClusterBootstrapCmd() *cobra.Command {
 					return fmt.Errorf("gitops.git_dir must be configured for provider %q", provider)
 				}
 				if _, err := os.Stat(clusterDir); err != nil {
-					return fmt.Errorf("cluster directory not found: %s", clusterDir)
+					return fmt.Errorf("cluster infrastructure directory not found in GitOps repository: %s", clusterDir)
 				}
 				env := map[string]string{}
 				if kubeconf != "" {

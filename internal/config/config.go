@@ -628,28 +628,28 @@ func ResolveConfigDir() (string, error) {
 //   - error: An error if the name is invalid.
 func validateClusterName(name string) error {
 	if name == "" {
-		return errors.New("cluster name cannot be empty")
+		return errors.New("cluster name cannot be empty for directory creation")
 	}
 	
 	// Check for path separators and special characters that could cause issues
 	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
-		return errors.New("cluster name cannot contain path separators")
+		return errors.New("cluster name cannot contain path separators (/ or \\) for directory structure")
 	}
 	
 	// Check for relative path components
 	if name == "." || name == ".." || strings.HasPrefix(name, ".") && (strings.Contains(name, "/") || strings.Contains(name, "\\")) {
-		return errors.New("cluster name cannot be a relative path component")
+		return errors.New("cluster name cannot be a relative path component for security reasons")
 	}
 	
 	// Allow alphanumeric characters, hyphens, underscores, and dots (but not starting with dot)
 	validName := regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]*$`)
 	if !validName.MatchString(name) {
-		return errors.New("cluster name must start with alphanumeric character and contain only alphanumeric characters, dots, hyphens, and underscores")
+		return errors.New("cluster name must start with alphanumeric character and contain only alphanumeric characters, dots, hyphens, and underscores for directory naming")
 	}
 	
 	// Prevent excessively long names that could cause filesystem issues
 	if len(name) > 255 {
-		return errors.New("cluster name cannot exceed 255 characters")
+		return errors.New("cluster name cannot exceed 255 characters for filesystem compatibility")
 	}
 	
 	return nil
@@ -665,12 +665,12 @@ func validateClusterName(name string) error {
 //   - error: An error if one occurred.
 func ClusterDirectoryPath(name string) (string, error) {
 	if err := validateClusterName(name); err != nil {
-		return "", fmt.Errorf("invalid cluster name: %w", err)
+		return "", fmt.Errorf("invalid cluster name for directory creation: %w", err)
 	}
 	
 	dir, err := ResolveConfigDir()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to resolve config directory for cluster '%s': %w", name, err)
 	}
 	
 	return filepath.Join(dir, "clusters", name), nil
@@ -687,7 +687,7 @@ func ClusterDirectoryPath(name string) (string, error) {
 func ClusterSecretsPath(name string) (string, error) {
 	clusterDir, err := ClusterDirectoryPath(name)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get cluster directory for secrets path: %w", err)
 	}
 	
 	return filepath.Join(clusterDir, "secrets", "age", "keys"), nil
@@ -709,7 +709,7 @@ func ConfigPath(name string) (string, error) {
 	
 	// Ensure the clusters subdirectory and cluster directory exist
 	if err := os.MkdirAll(clusterDir, 0o755); err != nil {
-		return "", fmt.Errorf("failed to create cluster directory %s: %w", clusterDir, err)
+		return "", fmt.Errorf("failed to create cluster directory structure '%s': %w", clusterDir, err)
 	}
 	
 	return filepath.Join(clusterDir, "."+name+"-config.yaml"), nil
@@ -731,7 +731,7 @@ func Load(name string) (Config, error) {
 	}
 	data, readErr := os.ReadFile(path)
 	if readErr != nil {
-		return Config{}, fmt.Errorf("failed to read cluster configuration from directory structure %s: %w", path, readErr)
+		return Config{}, fmt.Errorf("failed to read cluster configuration file from directory structure '%s': %w", path, readErr)
 	}
 	// Unmarshal YAML then overlay onto default config
 	cfg := defaultConfig(name)
