@@ -642,3 +642,203 @@ func TestSortStrings(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateClusterName(t *testing.T) {
+	tests := []struct {
+		name        string
+		clusterName string
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "valid simple name",
+			clusterName: "test-cluster",
+			expectError: false,
+		},
+		{
+			name:        "valid name with underscores",
+			clusterName: "test_cluster_01",
+			expectError: false,
+		},
+		{
+			name:        "valid name with dots",
+			clusterName: "test.cluster.dev",
+			expectError: false,
+		},
+		{
+			name:        "valid alphanumeric",
+			clusterName: "cluster123",
+			expectError: false,
+		},
+		{
+			name:        "empty name",
+			clusterName: "",
+			expectError: true,
+			errorMsg:    "cluster name cannot be empty",
+		},
+		{
+			name:        "name with forward slash",
+			clusterName: "test/cluster",
+			expectError: true,
+			errorMsg:    "cluster name cannot contain path separators",
+		},
+		{
+			name:        "name with backslash",
+			clusterName: "test\\cluster",
+			expectError: true,
+			errorMsg:    "cluster name cannot contain path separators",
+		},
+		{
+			name:        "relative path current dir",
+			clusterName: ".",
+			expectError: true,
+			errorMsg:    "cluster name cannot be a relative path component",
+		},
+		{
+			name:        "relative path parent dir",
+			clusterName: "..",
+			expectError: true,
+			errorMsg:    "cluster name cannot be a relative path component",
+		},
+		{
+			name:        "name starting with special char",
+			clusterName: "-cluster",
+			expectError: true,
+			errorMsg:    "cluster name must start with alphanumeric character and contain only alphanumeric characters, dots, hyphens, and underscores",
+		},
+		{
+			name:        "name with invalid characters",
+			clusterName: "test@cluster",
+			expectError: true,
+			errorMsg:    "cluster name must start with alphanumeric character and contain only alphanumeric characters, dots, hyphens, and underscores",
+		},
+		{
+			name:        "name starting with dot",
+			clusterName: ".hidden",
+			expectError: true,
+			errorMsg:    "cluster name must start with alphanumeric character and contain only alphanumeric characters, dots, hyphens, and underscores",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateClusterName(tt.clusterName)
+			
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("expected error for cluster name %q, but got none", tt.clusterName)
+					return
+				}
+				if tt.errorMsg != "" && err.Error() != tt.errorMsg {
+					t.Errorf("expected error message %q, got %q", tt.errorMsg, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Errorf("expected no error for cluster name %q, but got: %v", tt.clusterName, err)
+				}
+			}
+		})
+	}
+}
+
+func TestClusterDirectoryPath(t *testing.T) {
+	dir := t.TempDir()
+	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
+	defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
+
+	tests := []struct {
+		name        string
+		clusterName string
+		expectError bool
+	}{
+		{
+			name:        "valid cluster name",
+			clusterName: "test-cluster",
+			expectError: false,
+		},
+		{
+			name:        "invalid cluster name",
+			clusterName: "test/cluster",
+			expectError: true,
+		},
+		{
+			name:        "empty cluster name",
+			clusterName: "",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path, err := ClusterDirectoryPath(tt.clusterName)
+			
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("expected error for cluster name %q, but got none", tt.clusterName)
+				}
+				return
+			}
+			
+			if err != nil {
+				t.Errorf("expected no error for cluster name %q, but got: %v", tt.clusterName, err)
+				return
+			}
+			
+			expected := filepath.Join(dir, "clusters", tt.clusterName)
+			if path != expected {
+				t.Errorf("expected path %s, got %s", expected, path)
+			}
+		})
+	}
+}
+
+func TestClusterSecretsPath(t *testing.T) {
+	dir := t.TempDir()
+	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
+	defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
+
+	tests := []struct {
+		name        string
+		clusterName string
+		expectError bool
+	}{
+		{
+			name:        "valid cluster name",
+			clusterName: "test-cluster",
+			expectError: false,
+		},
+		{
+			name:        "invalid cluster name",
+			clusterName: "test/cluster",
+			expectError: true,
+		},
+		{
+			name:        "empty cluster name",
+			clusterName: "",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path, err := ClusterSecretsPath(tt.clusterName)
+			
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("expected error for cluster name %q, but got none", tt.clusterName)
+				}
+				return
+			}
+			
+			if err != nil {
+				t.Errorf("expected no error for cluster name %q, but got: %v", tt.clusterName, err)
+				return
+			}
+			
+			expected := filepath.Join(dir, "clusters", tt.clusterName, "secrets", "age", "keys")
+			if path != expected {
+				t.Errorf("expected path %s, got %s", expected, path)
+			}
+		})
+	}
+}

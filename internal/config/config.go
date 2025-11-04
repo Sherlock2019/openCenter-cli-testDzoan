@@ -20,6 +20,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -615,6 +616,81 @@ func ResolveConfigDir() (string, error) {
 		return "", err
 	}
 	return dir, err
+}
+
+// validateClusterName validates and sanitizes a cluster name to ensure it's safe for use as a directory name.
+// It checks for valid characters and prevents directory traversal attacks.
+//
+// Inputs:
+//   - name: The cluster name to validate.
+//
+// Outputs:
+//   - error: An error if the name is invalid.
+func validateClusterName(name string) error {
+	if name == "" {
+		return errors.New("cluster name cannot be empty")
+	}
+	
+	// Check for path separators and special characters that could cause issues
+	if strings.Contains(name, "/") || strings.Contains(name, "\\") {
+		return errors.New("cluster name cannot contain path separators")
+	}
+	
+	// Check for relative path components
+	if name == "." || name == ".." || strings.HasPrefix(name, ".") && (strings.Contains(name, "/") || strings.Contains(name, "\\")) {
+		return errors.New("cluster name cannot be a relative path component")
+	}
+	
+	// Allow alphanumeric characters, hyphens, underscores, and dots (but not starting with dot)
+	validName := regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._-]*$`)
+	if !validName.MatchString(name) {
+		return errors.New("cluster name must start with alphanumeric character and contain only alphanumeric characters, dots, hyphens, and underscores")
+	}
+	
+	// Prevent excessively long names that could cause filesystem issues
+	if len(name) > 255 {
+		return errors.New("cluster name cannot exceed 255 characters")
+	}
+	
+	return nil
+}
+
+// ClusterDirectoryPath returns the absolute path to a cluster's directory within the clusters subdirectory.
+//
+// Inputs:
+//   - name: The name of the cluster.
+//
+// Outputs:
+//   - string: The absolute path to the cluster directory.
+//   - error: An error if one occurred.
+func ClusterDirectoryPath(name string) (string, error) {
+	if err := validateClusterName(name); err != nil {
+		return "", fmt.Errorf("invalid cluster name: %w", err)
+	}
+	
+	dir, err := ResolveConfigDir()
+	if err != nil {
+		return "", err
+	}
+	
+	return filepath.Join(dir, "clusters", name), nil
+}
+
+// ClusterSecretsPath returns the absolute path to a cluster's secrets directory for SOPS key storage.
+//
+// Inputs:
+//   - name: The name of the cluster.
+//
+// Outputs:
+//   - string: The absolute path to the cluster's secrets directory.
+//   - error: An error if one occurred.
+func ClusterSecretsPath(name string) (string, error) {
+	clusterDir, err := ClusterDirectoryPath(name)
+	if err != nil {
+		return "", err
+	}
+	
+	return filepath.Join(clusterDir, "secrets", "age", "keys"), nil
 }
 
 // ConfigPath returns the absolute path to a cluster's configuration file.
