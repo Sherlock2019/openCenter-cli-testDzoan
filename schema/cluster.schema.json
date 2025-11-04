@@ -330,6 +330,26 @@
           },
           "type": "object"
         },
+        "meta": {
+          "properties": {
+            "env": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "organization": {
+              "type": "string"
+            },
+            "region": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
         "services": {
           "additionalProperties": {
             "additionalProperties": false,

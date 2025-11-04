@@ -44,6 +44,7 @@ type ClusterMeta struct {
 	Env    string `yaml:"env" json:"env"`
 	Region string `yaml:"region" json:"region"`
 	Status string `yaml:"status" json:"status"`
+	Organization string `yaml:"organization" json:"organization"`
 }
 
 // OpenTofu holds OpenTofu-specific settings.
@@ -210,6 +211,7 @@ type Secrets struct {
 
 // SimplifiedOpenCenter represents the opencenter section of the new simplified schema
 type SimplifiedOpenCenter struct {
+	Meta           ClusterMeta           `yaml:"meta" json:"meta"`
 	Infrastructure Infrastructure        `yaml:"infrastructure" json:"infrastructure"`
 	Cluster        ClusterConfig         `yaml:"cluster" json:"cluster"`
 	GitOps         GitOpsConfig          `yaml:"gitops" json:"gitops"`

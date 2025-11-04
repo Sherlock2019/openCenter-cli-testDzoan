@@ -266,6 +266,16 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 			"opencenter": map[string]any{
 				"type": "object",
 				"properties": map[string]any{
+					"meta": map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"name":         map[string]any{"type": "string"},
+							"env":          map[string]any{"type": "string"},
+							"region":       map[string]any{"type": "string"},
+							"status":       map[string]any{"type": "string"},
+							"organization": map[string]any{"type": "string"},
+						},
+					},
 					"infrastructure":  infrastructure,
 					"cluster":         cluster,
 					"gitops":          gitops,
