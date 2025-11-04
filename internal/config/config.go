@@ -731,7 +731,7 @@ func Load(name string) (Config, error) {
 	}
 	data, readErr := os.ReadFile(path)
 	if readErr != nil {
-		return Config{}, fmt.Errorf("failed to read configuration from new directory structure %s: %w", path, readErr)
+		return Config{}, fmt.Errorf("failed to read cluster configuration from directory structure %s: %w", path, readErr)
 	}
 	// Unmarshal YAML then overlay onto default config
 	cfg := defaultConfig(name)
