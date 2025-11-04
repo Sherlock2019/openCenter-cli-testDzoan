@@ -77,7 +77,9 @@ type ConfigManager struct {
 }
 
 // ConfigValidator validates configuration values and structure.
-type ConfigValidator struct{}
+type ConfigValidator struct {
+	autoRepair bool
+}
 
 // ConfigError represents configuration-related errors with actionable messages.
 type ConfigError struct {
@@ -85,17 +87,35 @@ type ConfigError struct {
 	Field   string      // dot notation path to problematic field
 	Value   interface{}
 	Message string
+	Repaired bool       // indicates if the error was automatically repaired
+}
+
+// ValidationResult contains the results of configuration validation.
+type ValidationResult struct {
+	Valid    bool
+	Errors   []*ConfigError
+	Warnings []*ConfigError
+	Repaired []*ConfigError
 }
 
 func (ce *ConfigError) Error() string {
-	if ce.Field != "" {
-		return fmt.Sprintf("%s error in field '%s': %s", ce.Type, ce.Field, ce.Message)
+	prefix := ""
+	if ce.Repaired {
+		prefix = "[AUTO-REPAIRED] "
 	}
-	return fmt.Sprintf("%s error: %s", ce.Type, ce.Message)
+	
+	if ce.Field != "" {
+		return fmt.Sprintf("%s%s error in field '%s': %s", prefix, ce.Type, ce.Field, ce.Message)
+	}
+	return fmt.Sprintf("%s%s error: %s", prefix, ce.Type, ce.Message)
 }
 
 // Suggestions returns actionable suggestions for fixing the configuration error.
 func (ce *ConfigError) Suggestions() []string {
+	if ce.Repaired {
+		return []string{"Configuration was automatically repaired with default values"}
+	}
+	
 	switch ce.Type {
 	case "validation":
 		switch ce.Field {
@@ -105,18 +125,34 @@ func (ce *ConfigError) Suggestions() []string {
 			return []string{"Use one of: text, json, yaml"}
 		case "logging.output":
 			return []string{"Use 'stdout', 'stderr', or a valid file path"}
+		case "logging.file.maxSize":
+			return []string{"Use a positive integer value (MB)"}
+		case "logging.file.maxBackups":
+			return []string{"Use a non-negative integer value"}
+		case "logging.file.maxAge":
+			return []string{"Use a non-negative integer value (days)"}
+		case "paths.configDir", "paths.clustersDir":
+			return []string{"Use an absolute path or path starting with ~"}
 		}
 	case "permission":
 		return []string{
 			"Check file/directory permissions",
 			"Ensure the directory is writable",
 			"Run with appropriate user permissions",
+			"Try running: chmod 755 <directory>",
 		}
 	case "path":
 		return []string{
 			"Ensure the path exists or can be created",
 			"Check for typos in the path",
 			"Verify parent directories exist",
+			"Try creating the directory manually: mkdir -p <path>",
+		}
+	case "dependency":
+		return []string{
+			"Ensure required dependencies are installed",
+			"Check system requirements",
+			"Verify environment setup",
 		}
 	}
 	return []string{"Check the configuration documentation for valid values"}
@@ -139,7 +175,7 @@ func NewConfigManager(configPath string) (*ConfigManager, error) {
 	cm := &ConfigManager{
 		configPath: configPath,
 		defaults:   DefaultCLIConfig(),
-		validator:  &ConfigValidator{},
+		validator:  &ConfigValidator{autoRepair: true},
 	}
 
 	// Load configuration
@@ -240,9 +276,21 @@ func (cm *ConfigManager) Load() error {
 	// Merge with defaults to ensure completeness
 	cm.config = cm.mergeWithDefaults(&config)
 
-	// Validate configuration
-	if err := cm.validator.Validate(cm.config); err != nil {
-		return err
+	// Validate configuration with auto-repair
+	result := cm.validator.ValidateWithResult(cm.config)
+	if !result.Valid {
+		// Apply auto-repairs if any were made
+		if len(result.Repaired) > 0 {
+			// Save the repaired configuration
+			if err := cm.Save(); err != nil {
+				return fmt.Errorf("failed to save auto-repaired configuration: %w", err)
+			}
+		}
+		
+		// If there are still errors after repair, return them
+		if len(result.Errors) > 0 {
+			return result.Errors[0] // Return the first error
+		}
 	}
 
 	// Expand paths in the loaded configuration
@@ -359,8 +407,9 @@ func (cm *ConfigManager) SetValue(key string, value interface{}) error {
 	}
 
 	// Validate the updated configuration
-	if err := cm.validator.Validate(cm.config); err != nil {
-		return err
+	result := cm.validator.ValidateWithResult(cm.config)
+	if !result.Valid && len(result.Errors) > 0 {
+		return result.Errors[0]
 	}
 
 	return nil
@@ -382,15 +431,75 @@ func (cm *ConfigManager) GetConfigPath() string {
 	return cm.configPath
 }
 
+// ValidateConfig performs comprehensive validation and returns detailed results.
+func (cm *ConfigManager) ValidateConfig() *ValidationResult {
+	return cm.validator.ValidateWithResult(cm.config)
+}
+
+// RepairConfig attempts to repair configuration issues and returns the results.
+func (cm *ConfigManager) RepairConfig() (*ValidationResult, error) {
+	// Create a validator with auto-repair enabled
+	repairValidator := &ConfigValidator{autoRepair: true}
+	
+	// Validate and repair
+	result := repairValidator.ValidateWithResult(cm.config)
+	
+	// If repairs were made, save the configuration
+	if len(result.Repaired) > 0 {
+		if err := cm.Save(); err != nil {
+			return result, fmt.Errorf("failed to save repaired configuration: %w", err)
+		}
+	}
+	
+	return result, nil
+}
+
+// GetValidationSummary returns a human-readable summary of validation results.
+func (cm *ConfigManager) GetValidationSummary() string {
+	result := cm.ValidateConfig()
+	
+	var summary strings.Builder
+	
+	if result.Valid {
+		summary.WriteString("✓ Configuration is valid\n")
+	} else {
+		summary.WriteString("✗ Configuration has issues\n")
+	}
+	
+	if len(result.Errors) > 0 {
+		summary.WriteString(fmt.Sprintf("\nErrors (%d):\n", len(result.Errors)))
+		for _, err := range result.Errors {
+			summary.WriteString(fmt.Sprintf("  - %s\n", err.Error()))
+		}
+	}
+	
+	if len(result.Warnings) > 0 {
+		summary.WriteString(fmt.Sprintf("\nWarnings (%d):\n", len(result.Warnings)))
+		for _, warning := range result.Warnings {
+			summary.WriteString(fmt.Sprintf("  - %s\n", warning.Error()))
+		}
+	}
+	
+	if len(result.Repaired) > 0 {
+		summary.WriteString(fmt.Sprintf("\nAuto-repaired (%d):\n", len(result.Repaired)))
+		for _, repaired := range result.Repaired {
+			summary.WriteString(fmt.Sprintf("  - %s\n", repaired.Error()))
+		}
+	}
+	
+	return summary.String()
+}
+
 // LoadWithConfig loads the configuration manager with an existing configuration.
 // This is useful for applying runtime overrides without modifying the file.
 func (cm *ConfigManager) LoadWithConfig(config *CLIConfig) error {
 	cm.config = config
-	cm.validator = &ConfigValidator{}
+	cm.validator = &ConfigValidator{autoRepair: false} // Don't auto-repair when loading existing config
 	
 	// Validate the provided configuration
-	if err := cm.validator.Validate(cm.config); err != nil {
-		return err
+	result := cm.validator.ValidateWithResult(cm.config)
+	if !result.Valid && len(result.Errors) > 0 {
+		return result.Errors[0]
 	}
 
 	// Expand paths in the configuration
@@ -405,12 +514,13 @@ func NewConfigManagerWithConfig(config *CLIConfig) (*ConfigManager, error) {
 	cm := &ConfigManager{
 		config:    config,
 		defaults:  DefaultCLIConfig(),
-		validator: &ConfigValidator{},
+		validator: &ConfigValidator{autoRepair: false}, // Don't auto-repair when using existing config
 	}
 
 	// Validate the provided configuration
-	if err := cm.validator.Validate(cm.config); err != nil {
-		return nil, err
+	result := cm.validator.ValidateWithResult(cm.config)
+	if !result.Valid && len(result.Errors) > 0 {
+		return nil, result.Errors[0]
 	}
 
 	// Expand paths in the configuration
@@ -884,112 +994,400 @@ func (cm *ConfigManager) getDefaultsValue(defaults *DefaultsConfig, parts []stri
 	}
 }
 
-// Validate validates the CLI configuration.
+// Validate validates the CLI configuration and returns the first error found.
 func (cv *ConfigValidator) Validate(config *CLIConfig) error {
-	// Validate logging configuration
-	if err := cv.validateLogging(&config.Logging); err != nil {
-		return err
+	result := cv.ValidateWithResult(config)
+	if !result.Valid && len(result.Errors) > 0 {
+		return result.Errors[0]
 	}
-
-	// Validate paths configuration
-	if err := cv.validatePaths(&config.Paths); err != nil {
-		return err
-	}
-
 	return nil
 }
 
-// validateLogging validates the logging configuration.
-func (cv *ConfigValidator) validateLogging(logging *LoggingConfig) error {
+// ValidateWithResult performs comprehensive validation and returns detailed results.
+func (cv *ConfigValidator) ValidateWithResult(config *CLIConfig) *ValidationResult {
+	result := &ValidationResult{
+		Valid:    true,
+		Errors:   []*ConfigError{},
+		Warnings: []*ConfigError{},
+		Repaired: []*ConfigError{},
+	}
+
+	// Validate logging configuration
+	cv.validateLoggingWithResult(&config.Logging, result)
+
+	// Validate paths configuration
+	cv.validatePathsWithResult(&config.Paths, result)
+
+	// Validate behavior configuration
+	cv.validateBehaviorWithResult(&config.Behavior, result)
+
+	// Validate defaults configuration
+	cv.validateDefaultsWithResult(&config.Defaults, result)
+
+	// Validate dependencies
+	cv.validateDependenciesWithResult(config, result)
+
+	// Set overall validity
+	result.Valid = len(result.Errors) == 0
+
+	return result
+}
+
+// validateLoggingWithResult validates the logging configuration with auto-repair support.
+func (cv *ConfigValidator) validateLoggingWithResult(logging *LoggingConfig, result *ValidationResult) {
+	defaults := DefaultCLIConfig()
+
 	// Validate log level
 	validLevels := []string{"debug", "info", "warn", "error"}
 	if !contains(validLevels, logging.Level) {
-		return &ConfigError{
-			Type:    "validation",
-			Field:   "logging.level",
-			Value:   logging.Level,
-			Message: fmt.Sprintf("invalid log level '%s', must be one of: %s", logging.Level, strings.Join(validLevels, ", ")),
+		if cv.autoRepair {
+			logging.Level = defaults.Logging.Level
+			result.Repaired = append(result.Repaired, &ConfigError{
+				Type:     "validation",
+				Field:    "logging.level",
+				Value:    logging.Level,
+				Message:  fmt.Sprintf("invalid log level, repaired to default '%s'", defaults.Logging.Level),
+				Repaired: true,
+			})
+		} else {
+			result.Errors = append(result.Errors, &ConfigError{
+				Type:    "validation",
+				Field:   "logging.level",
+				Value:   logging.Level,
+				Message: fmt.Sprintf("invalid log level '%s', must be one of: %s", logging.Level, strings.Join(validLevels, ", ")),
+			})
 		}
 	}
 
 	// Validate log format
 	validFormats := []string{"text", "json", "yaml"}
 	if !contains(validFormats, logging.Format) {
-		return &ConfigError{
-			Type:    "validation",
-			Field:   "logging.format",
-			Value:   logging.Format,
-			Message: fmt.Sprintf("invalid log format '%s', must be one of: %s", logging.Format, strings.Join(validFormats, ", ")),
+		if cv.autoRepair {
+			logging.Format = defaults.Logging.Format
+			result.Repaired = append(result.Repaired, &ConfigError{
+				Type:     "validation",
+				Field:    "logging.format",
+				Value:    logging.Format,
+				Message:  fmt.Sprintf("invalid log format, repaired to default '%s'", defaults.Logging.Format),
+				Repaired: true,
+			})
+		} else {
+			result.Errors = append(result.Errors, &ConfigError{
+				Type:    "validation",
+				Field:   "logging.format",
+				Value:   logging.Format,
+				Message: fmt.Sprintf("invalid log format '%s', must be one of: %s", logging.Format, strings.Join(validFormats, ", ")),
+			})
 		}
 	}
 
 	// Validate log output
 	validOutputs := []string{"stdout", "stderr"}
-	if !contains(validOutputs, logging.Output) {
-		// If not a standard output, check if it's a valid file path
-		if logging.Output != "" {
-			if err := cv.validateFilePath(logging.Output); err != nil {
-				return &ConfigError{
+	if !contains(validOutputs, logging.Output) && logging.Output != "" {
+		// Check if it's a valid file path
+		if err := cv.validateFilePath(logging.Output); err != nil {
+			if cv.autoRepair {
+				logging.Output = defaults.Logging.Output
+				result.Repaired = append(result.Repaired, &ConfigError{
+					Type:     "validation",
+					Field:    "logging.output",
+					Value:    logging.Output,
+					Message:  fmt.Sprintf("invalid output path, repaired to default '%s'", defaults.Logging.Output),
+					Repaired: true,
+				})
+			} else {
+				result.Errors = append(result.Errors, &ConfigError{
 					Type:    "validation",
 					Field:   "logging.output",
 					Value:   logging.Output,
 					Message: fmt.Sprintf("invalid output '%s', must be 'stdout', 'stderr', or a valid file path: %v", logging.Output, err),
-				}
+				})
 			}
 		}
 	}
 
 	// Validate file configuration
 	if logging.File.MaxSize <= 0 {
-		return &ConfigError{
-			Type:    "validation",
-			Field:   "logging.file.maxSize",
-			Value:   logging.File.MaxSize,
-			Message: "maxSize must be greater than 0",
+		if cv.autoRepair {
+			logging.File.MaxSize = defaults.Logging.File.MaxSize
+			result.Repaired = append(result.Repaired, &ConfigError{
+				Type:     "validation",
+				Field:    "logging.file.maxSize",
+				Value:    logging.File.MaxSize,
+				Message:  fmt.Sprintf("invalid maxSize, repaired to default %d", defaults.Logging.File.MaxSize),
+				Repaired: true,
+			})
+		} else {
+			result.Errors = append(result.Errors, &ConfigError{
+				Type:    "validation",
+				Field:   "logging.file.maxSize",
+				Value:   logging.File.MaxSize,
+				Message: "maxSize must be greater than 0",
+			})
 		}
 	}
 
 	if logging.File.MaxBackups < 0 {
-		return &ConfigError{
-			Type:    "validation",
-			Field:   "logging.file.maxBackups",
-			Value:   logging.File.MaxBackups,
-			Message: "maxBackups must be greater than or equal to 0",
+		if cv.autoRepair {
+			logging.File.MaxBackups = defaults.Logging.File.MaxBackups
+			result.Repaired = append(result.Repaired, &ConfigError{
+				Type:     "validation",
+				Field:    "logging.file.maxBackups",
+				Value:    logging.File.MaxBackups,
+				Message:  fmt.Sprintf("invalid maxBackups, repaired to default %d", defaults.Logging.File.MaxBackups),
+				Repaired: true,
+			})
+		} else {
+			result.Errors = append(result.Errors, &ConfigError{
+				Type:    "validation",
+				Field:   "logging.file.maxBackups",
+				Value:   logging.File.MaxBackups,
+				Message: "maxBackups must be greater than or equal to 0",
+			})
 		}
 	}
 
 	if logging.File.MaxAge < 0 {
-		return &ConfigError{
-			Type:    "validation",
-			Field:   "logging.file.maxAge",
-			Value:   logging.File.MaxAge,
-			Message: "maxAge must be greater than or equal to 0",
+		if cv.autoRepair {
+			logging.File.MaxAge = defaults.Logging.File.MaxAge
+			result.Repaired = append(result.Repaired, &ConfigError{
+				Type:     "validation",
+				Field:    "logging.file.maxAge",
+				Value:    logging.File.MaxAge,
+				Message:  fmt.Sprintf("invalid maxAge, repaired to default %d", defaults.Logging.File.MaxAge),
+				Repaired: true,
+			})
+		} else {
+			result.Errors = append(result.Errors, &ConfigError{
+				Type:    "validation",
+				Field:   "logging.file.maxAge",
+				Value:   logging.File.MaxAge,
+				Message: "maxAge must be greater than or equal to 0",
+			})
 		}
 	}
-
-	return nil
 }
 
-// validatePaths validates the paths configuration.
-func (cv *ConfigValidator) validatePaths(paths *PathsConfig) error {
+// validatePathsWithResult validates the paths configuration with auto-repair support.
+func (cv *ConfigValidator) validatePathsWithResult(paths *PathsConfig, result *ValidationResult) {
+	defaults := DefaultCLIConfig()
+
 	// Validate config directory
 	if paths.ConfigDir == "" {
-		return &ConfigError{
-			Type:    "validation",
-			Field:   "paths.configDir",
-			Value:   paths.ConfigDir,
-			Message: "configDir cannot be empty",
+		if cv.autoRepair {
+			paths.ConfigDir = defaults.Paths.ConfigDir
+			result.Repaired = append(result.Repaired, &ConfigError{
+				Type:     "validation",
+				Field:    "paths.configDir",
+				Value:    paths.ConfigDir,
+				Message:  fmt.Sprintf("empty configDir, repaired to default '%s'", defaults.Paths.ConfigDir),
+				Repaired: true,
+			})
+		} else {
+			result.Errors = append(result.Errors, &ConfigError{
+				Type:    "validation",
+				Field:   "paths.configDir",
+				Value:   paths.ConfigDir,
+				Message: "configDir cannot be empty",
+			})
+		}
+	} else {
+		// Validate that the path is accessible
+		expandedPath := ExpandPath(paths.ConfigDir)
+		if err := cv.validateDirectoryPath(expandedPath); err != nil {
+			if cv.autoRepair {
+				// Try to create the directory
+				if createErr := os.MkdirAll(expandedPath, 0755); createErr != nil {
+					result.Errors = append(result.Errors, &ConfigError{
+						Type:    "permission",
+						Field:   "paths.configDir",
+						Value:   paths.ConfigDir,
+						Message: fmt.Sprintf("cannot create configDir '%s': %v", expandedPath, createErr),
+					})
+				} else {
+					result.Repaired = append(result.Repaired, &ConfigError{
+						Type:     "permission",
+						Field:    "paths.configDir",
+						Value:    paths.ConfigDir,
+						Message:  fmt.Sprintf("created missing configDir '%s'", expandedPath),
+						Repaired: true,
+					})
+				}
+			} else {
+				// For non-auto-repair mode, only warn about missing directories
+				result.Warnings = append(result.Warnings, &ConfigError{
+					Type:    "path",
+					Field:   "paths.configDir",
+					Value:   paths.ConfigDir,
+					Message: fmt.Sprintf("configDir path may not be accessible: %v", err),
+				})
+			}
 		}
 	}
 
 	// Validate clusters directory
 	if paths.ClustersDir == "" {
-		return &ConfigError{
-			Type:    "validation",
-			Field:   "paths.clustersDir",
-			Value:   paths.ClustersDir,
-			Message: "clustersDir cannot be empty",
+		if cv.autoRepair {
+			paths.ClustersDir = defaults.Paths.ClustersDir
+			result.Repaired = append(result.Repaired, &ConfigError{
+				Type:     "validation",
+				Field:    "paths.clustersDir",
+				Value:    paths.ClustersDir,
+				Message:  fmt.Sprintf("empty clustersDir, repaired to default '%s'", defaults.Paths.ClustersDir),
+				Repaired: true,
+			})
+		} else {
+			result.Errors = append(result.Errors, &ConfigError{
+				Type:    "validation",
+				Field:   "paths.clustersDir",
+				Value:   paths.ClustersDir,
+				Message: "clustersDir cannot be empty",
+			})
 		}
+	} else {
+		// Validate that the path is accessible
+		expandedPath := ExpandPath(paths.ClustersDir)
+		if err := cv.validateDirectoryPath(expandedPath); err != nil {
+			if cv.autoRepair {
+				// Try to create the directory
+				if createErr := os.MkdirAll(expandedPath, 0755); createErr != nil {
+					result.Errors = append(result.Errors, &ConfigError{
+						Type:    "permission",
+						Field:   "paths.clustersDir",
+						Value:   paths.ClustersDir,
+						Message: fmt.Sprintf("cannot create clustersDir '%s': %v", expandedPath, createErr),
+					})
+				} else {
+					result.Repaired = append(result.Repaired, &ConfigError{
+						Type:     "permission",
+						Field:    "paths.clustersDir",
+						Value:    paths.ClustersDir,
+						Message:  fmt.Sprintf("created missing clustersDir '%s'", expandedPath),
+						Repaired: true,
+					})
+				}
+			} else {
+				// For non-auto-repair mode, only warn about missing directories
+				result.Warnings = append(result.Warnings, &ConfigError{
+					Type:    "path",
+					Field:   "paths.clustersDir",
+					Value:   paths.ClustersDir,
+					Message: fmt.Sprintf("clustersDir path may not be accessible: %v", err),
+				})
+			}
+		}
+	}
+}
+
+// validateBehaviorWithResult validates the behavior configuration.
+func (cv *ConfigValidator) validateBehaviorWithResult(behavior *BehaviorConfig, result *ValidationResult) {
+	// Behavior configuration is mostly boolean values, so validation is minimal
+	// We could add warnings for potentially problematic combinations
+	if behavior.AutoConfirm && !behavior.DryRun {
+		result.Warnings = append(result.Warnings, &ConfigError{
+			Type:    "validation",
+			Field:   "behavior.autoConfirm",
+			Value:   behavior.AutoConfirm,
+			Message: "autoConfirm is enabled without dryRun, this may lead to unintended actions",
+		})
+	}
+}
+
+// validateDefaultsWithResult validates the defaults configuration.
+func (cv *ConfigValidator) validateDefaultsWithResult(defaults *DefaultsConfig, result *ValidationResult) {
+	// Validate provider
+	validProviders := []string{"openstack", "aws", "azure", "gcp", "kind", "vmware", "baremetal"}
+	if defaults.Provider != "" && !contains(validProviders, defaults.Provider) {
+		result.Warnings = append(result.Warnings, &ConfigError{
+			Type:    "validation",
+			Field:   "defaults.provider",
+			Value:   defaults.Provider,
+			Message: fmt.Sprintf("unknown provider '%s', supported providers: %s", defaults.Provider, strings.Join(validProviders, ", ")),
+		})
+	}
+
+	// Validate region format (basic check)
+	if defaults.Region != "" && len(defaults.Region) < 2 {
+		result.Warnings = append(result.Warnings, &ConfigError{
+			Type:    "validation",
+			Field:   "defaults.region",
+			Value:   defaults.Region,
+			Message: "region appears to be too short, verify it's a valid region identifier",
+		})
+	}
+
+	// Validate environment
+	commonEnvs := []string{"dev", "test", "stage", "staging", "prod", "production"}
+	if defaults.Environment != "" && !contains(commonEnvs, defaults.Environment) {
+		result.Warnings = append(result.Warnings, &ConfigError{
+			Type:    "validation",
+			Field:   "defaults.environment",
+			Value:   defaults.Environment,
+			Message: fmt.Sprintf("uncommon environment '%s', common environments: %s", defaults.Environment, strings.Join(commonEnvs, ", ")),
+		})
+	}
+}
+
+// validateDependenciesWithResult validates system dependencies and requirements.
+func (cv *ConfigValidator) validateDependenciesWithResult(config *CLIConfig, result *ValidationResult) {
+	// Check if required directories are accessible
+	expandedConfigDir := ExpandPath(config.Paths.ConfigDir)
+	expandedClustersDir := ExpandPath(config.Paths.ClustersDir)
+
+	// Check disk space for config directory
+	if err := cv.checkDiskSpace(expandedConfigDir); err != nil {
+		result.Warnings = append(result.Warnings, &ConfigError{
+			Type:    "dependency",
+			Field:   "paths.configDir",
+			Value:   expandedConfigDir,
+			Message: fmt.Sprintf("disk space warning for configDir: %v", err),
+		})
+	}
+
+	// Check disk space for clusters directory
+	if err := cv.checkDiskSpace(expandedClustersDir); err != nil {
+		result.Warnings = append(result.Warnings, &ConfigError{
+			Type:    "dependency",
+			Field:   "paths.clustersDir",
+			Value:   expandedClustersDir,
+			Message: fmt.Sprintf("disk space warning for clustersDir: %v", err),
+		})
+	}
+
+	// Check if logging output file is writable (if it's a file path)
+	validOutputs := []string{"stdout", "stderr"}
+	if !contains(validOutputs, config.Logging.Output) && config.Logging.Output != "" {
+		if err := cv.validateFilePath(config.Logging.Output); err != nil {
+			result.Errors = append(result.Errors, &ConfigError{
+				Type:    "permission",
+				Field:   "logging.output",
+				Value:   config.Logging.Output,
+				Message: fmt.Sprintf("cannot write to log file: %v", err),
+			})
+		}
+	}
+}
+
+// validateDirectoryPath validates that a directory path exists or can be created.
+func (cv *ConfigValidator) validateDirectoryPath(path string) error {
+	// Check if directory exists
+	if stat, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			// Directory doesn't exist, check if we can create it
+			return fmt.Errorf("directory does not exist: %s", path)
+		}
+		return fmt.Errorf("cannot access directory: %w", err)
+	} else if !stat.IsDir() {
+		return fmt.Errorf("path exists but is not a directory: %s", path)
+	}
+
+	// Check if directory is writable
+	testFile := filepath.Join(path, ".openCenter_write_test")
+	if file, err := os.Create(testFile); err != nil {
+		return fmt.Errorf("directory is not writable: %w", err)
+	} else {
+		file.Close()
+		os.Remove(testFile)
 	}
 
 	return nil
@@ -1012,6 +1410,28 @@ func (cv *ConfigValidator) validateFilePath(path string) error {
 		return fmt.Errorf("cannot write to file %s: %w", expandedPath, err)
 	}
 	file.Close()
+
+	return nil
+}
+
+// checkDiskSpace checks if there's sufficient disk space in the given directory.
+func (cv *ConfigValidator) checkDiskSpace(path string) error {
+	// This is a basic implementation - in a real system you might want to use
+	// syscalls to get actual disk space information
+	if stat, err := os.Stat(path); err != nil {
+		return fmt.Errorf("cannot check disk space: %w", err)
+	} else if !stat.IsDir() {
+		return fmt.Errorf("path is not a directory")
+	}
+
+	// For now, just check if we can write a small test file
+	testFile := filepath.Join(path, ".openCenter_space_test")
+	if file, err := os.Create(testFile); err != nil {
+		return fmt.Errorf("insufficient disk space or permissions: %w", err)
+	} else {
+		file.Close()
+		os.Remove(testFile)
+	}
 
 	return nil
 }
