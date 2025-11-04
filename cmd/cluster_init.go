@@ -242,11 +242,7 @@ func newClusterInitCmd() *cobra.Command {
 			// Determine organization from configuration or use default
 			organization := cfg.OpenCenter.Meta.Organization
 			if organization == "" {
-				// Check if organization was set via CLI defaults
-				organization = configManager.GetConfig().Defaults.Environment
-				if organization == "" {
-					organization = "default"
-				}
+				organization = "default"
 			}
 
 			// Update configuration with organization if not already set
