@@ -936,12 +936,57 @@ func (w *world) theFileShouldNotContain(path, substr string) error {
 	return nil
 }
 
-func (w *world) assertClusterConfigValue(clusterName, path, expectedValue string) error {
-	// Load the config using the new directory structure
-	p := filepath.Join(w.configDir, "clusters", clusterName, "."+clusterName+"-config.yaml")
-	data, err := os.ReadFile(p)
+// findClusterConfigPath searches for the cluster configuration file in both
+// legacy and organization-based directory structures
+func (w *world) findClusterConfigPath(clusterName string) (string, error) {
+	// First try the legacy path
+	legacyPath := filepath.Join(w.configDir, "clusters", clusterName, "."+clusterName+"-config.yaml")
+	if _, err := os.Stat(legacyPath); err == nil {
+		return legacyPath, nil
+	}
+
+	// Search in organization-based structure
+	clustersDir := filepath.Join(w.configDir, "clusters")
+	if _, err := os.Stat(clustersDir); os.IsNotExist(err) {
+		return "", fmt.Errorf("clusters directory does not exist")
+	}
+
+	entries, err := os.ReadDir(clustersDir)
 	if err != nil {
-		return fmt.Errorf("could not read config file %s: %w", p, err)
+		return "", fmt.Errorf("failed to read clusters directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			orgName := entry.Name()
+			
+			// Skip if this looks like a legacy cluster directory
+			legacyConfigPath := filepath.Join(clustersDir, orgName, "."+orgName+"-config.yaml")
+			if _, err := os.Stat(legacyConfigPath); err == nil {
+				continue // This is a legacy cluster, not an organization
+			}
+
+			// Check if cluster exists in this organization
+			clusterConfigPath := filepath.Join(clustersDir, orgName, "infrastructure", "clusters", clusterName, "."+clusterName+"-config.yaml")
+			if _, err := os.Stat(clusterConfigPath); err == nil {
+				return clusterConfigPath, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("cluster configuration file not found for cluster %s", clusterName)
+}
+
+func (w *world) assertClusterConfigValue(clusterName, path, expectedValue string) error {
+	// Find the config file in either legacy or organization structure
+	configPath, err := w.findClusterConfigPath(clusterName)
+	if err != nil {
+		return err
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("could not read config file %s: %w", configPath, err)
 	}
 
 	var cfg config.Config
@@ -965,11 +1010,15 @@ func (w *world) assertClusterConfigValue(clusterName, path, expectedValue string
 }
 
 func (w *world) assertClusterConfigValueContains(clusterName, path, expectedSubstring string) error {
-	// Load the config using the new directory structure
-	p := filepath.Join(w.configDir, "clusters", clusterName, "."+clusterName+"-config.yaml")
-	data, err := os.ReadFile(p)
+	// Find the config file in either legacy or organization structure
+	configPath, err := w.findClusterConfigPath(clusterName)
 	if err != nil {
-		return fmt.Errorf("could not read config file %s: %w", p, err)
+		return err
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("could not read config file %s: %w", configPath, err)
 	}
 
 	var cfg config.Config
@@ -1048,7 +1097,11 @@ func RegisterSteps(s *godog.ScenarioContext, t *testing.T, w *world) {
 	s.Step(`^the configuration directory is isolated for tests$`, func() error { return nil })
 	s.Step(`^a cluster "([^"]+)" exists$`, w.givenClusterExists)
 	s.Step(`^a cluster configuration "([^"]*)" should exist$`, func(name string) error {
-		return w.aFileShouldExist(filepath.Join(w.configDir, "clusters", name, "."+name+"-config.yaml"))
+		configPath, err := w.findClusterConfigPath(name)
+		if err != nil {
+			return err
+		}
+		return w.aFileShouldExist(configPath)
 	})
 	s.Step(`^the cluster configuration "([^"]*)" should have "([^"]*)" set to "([^"]*)"$`, w.assertClusterConfigValue)
 	s.Step(`^the cluster configuration "([^"]*)" should have "([^"]*)" containing "([^"]*)"$`, w.assertClusterConfigValueContains)

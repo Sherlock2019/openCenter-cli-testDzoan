@@ -40,13 +40,13 @@ func TestGenerateDefaultSOPSKey(t *testing.T) {
 			name:        "invalid cluster name with slash",
 			clusterName: "test/cluster",
 			expectError: true,
-			errorMsg:    "failed to get cluster secrets path",
+			errorMsg:    "invalid cluster name",
 		},
 		{
 			name:        "empty cluster name",
 			clusterName: "",
 			expectError: true,
-			errorMsg:    "failed to get cluster secrets path",
+			errorMsg:    "invalid cluster name",
 		},
 	}
 
@@ -271,5 +271,296 @@ func TestGenerateDefaultSOPSKeyExistingDirectory(t *testing.T) {
 	keyFile := filepath.Join(secretsDir, clusterName+"-key.txt")
 	if _, err := os.Stat(keyFile); os.IsNotExist(err) {
 		t.Errorf("SOPS key file was not created: %s", keyFile)
+	}
+}
+
+func TestGenerateOrganizationSOPSKey(t *testing.T) {
+	// Set up temporary config directory
+	dir := t.TempDir()
+	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
+	defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
+
+	tests := []struct {
+		name         string
+		clusterName  string
+		organization string
+		expectError  bool
+		errorMsg     string
+	}{
+		{
+			name:         "valid cluster and organization",
+			clusterName:  "test-cluster",
+			organization: "dev-team",
+			expectError:  false,
+		},
+		{
+			name:         "cluster with default organization",
+			clusterName:  "prod-cluster",
+			organization: "default",
+			expectError:  false,
+		},
+		{
+			name:         "cluster with empty organization (should use default)",
+			clusterName:  "staging-cluster",
+			organization: "",
+			expectError:  false,
+		},
+		{
+			name:         "cluster name with special characters",
+			clusterName:  "test-cluster-01.dev",
+			organization: "qa-team",
+			expectError:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Initialize configuration manager and path resolver
+			configManager, err := config.NewConfigManager("")
+			if err != nil {
+				t.Fatalf("failed to create config manager: %v", err)
+			}
+
+			pathResolver := config.NewPathResolver(configManager)
+
+			// Create a test config
+			cfg := config.NewDefault(tt.clusterName)
+			cfg.OpenCenter.GitOps.GitDir = "test-dir"
+
+			// Set expected organization (default if empty)
+			expectedOrg := tt.organization
+			if expectedOrg == "" {
+				expectedOrg = "default"
+			}
+
+			// Call generateOrganizationSOPSKey
+			err = generateOrganizationSOPSKey(tt.clusterName, tt.organization, &cfg, pathResolver)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("expected error for cluster %q and organization %q, but got none", tt.clusterName, tt.organization)
+					return
+				}
+				if tt.errorMsg != "" && !strings.Contains(err.Error(), tt.errorMsg) {
+					t.Errorf("expected error message to contain %q, got %q", tt.errorMsg, err.Error())
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("expected no error for cluster %q and organization %q, but got: %v", tt.clusterName, tt.organization, err)
+				return
+			}
+
+			// Resolve expected paths
+			clusterPaths := pathResolver.ResolveClusterPaths(tt.clusterName, expectedOrg)
+
+			// Verify the organization secrets directory was created
+			expectedSecretsDir := filepath.Dir(clusterPaths.SOPSKeyPath)
+			if _, err := os.Stat(expectedSecretsDir); os.IsNotExist(err) {
+				t.Errorf("organization secrets directory was not created: %s", expectedSecretsDir)
+				return
+			}
+
+			// Check directory permissions
+			info, err := os.Stat(expectedSecretsDir)
+			if err != nil {
+				t.Errorf("failed to stat secrets directory: %v", err)
+				return
+			}
+			if info.Mode().Perm() != 0o755 {
+				t.Errorf("expected secrets directory permissions 0755, got %o", info.Mode().Perm())
+			}
+
+			// Check that key file was created
+			if _, err := os.Stat(clusterPaths.SOPSKeyPath); os.IsNotExist(err) {
+				t.Errorf("SOPS key file was not created: %s", clusterPaths.SOPSKeyPath)
+				return
+			}
+
+			// Check file permissions
+			info, err = os.Stat(clusterPaths.SOPSKeyPath)
+			if err != nil {
+				t.Errorf("failed to stat key file: %v", err)
+				return
+			}
+			if info.Mode().Perm() != 0o600 {
+				t.Errorf("expected key file permissions 0600, got %o", info.Mode().Perm())
+			}
+
+			// Verify key file content
+			keyContent, err := os.ReadFile(clusterPaths.SOPSKeyPath)
+			if err != nil {
+				t.Errorf("failed to read key file: %v", err)
+				return
+			}
+
+			keyStr := string(keyContent)
+			if !strings.HasPrefix(keyStr, "AGE-SECRET-KEY-1") {
+				t.Errorf("expected key to start with 'AGE-SECRET-KEY-1', got: %s", keyStr[:20])
+			}
+
+			if !strings.HasSuffix(keyStr, "\n") {
+				t.Error("expected key to end with newline")
+			}
+
+			// Verify key length (AGE-SECRET-KEY-1 + 64 hex chars + newline = 81 chars)
+			if len(keyStr) != 81 {
+				t.Errorf("expected key length 81, got %d", len(keyStr))
+			}
+
+			// Verify config was updated with organization-based path
+			if cfg.Secrets.SopsAgeKeyFile != clusterPaths.SOPSKeyPath {
+				t.Errorf("expected config SopsAgeKeyFile to be %s, got %s", clusterPaths.SOPSKeyPath, cfg.Secrets.SopsAgeKeyFile)
+			}
+
+			// Verify SOPS config file was created
+			if _, err := os.Stat(clusterPaths.SOPSConfigPath); os.IsNotExist(err) {
+				t.Errorf("SOPS config file was not created: %s", clusterPaths.SOPSConfigPath)
+				return
+			}
+
+			// Check SOPS config file permissions
+			info, err = os.Stat(clusterPaths.SOPSConfigPath)
+			if err != nil {
+				t.Errorf("failed to stat SOPS config file: %v", err)
+				return
+			}
+			if info.Mode().Perm() != 0o600 {
+				t.Errorf("expected SOPS config file permissions 0600, got %o", info.Mode().Perm())
+			}
+
+			// Verify SOPS config file content
+			sopsContent, err := os.ReadFile(clusterPaths.SOPSConfigPath)
+			if err != nil {
+				t.Errorf("failed to read SOPS config file: %v", err)
+				return
+			}
+
+			sopsStr := string(sopsContent)
+			if !strings.Contains(sopsStr, "creation_rules:") {
+				t.Error("expected SOPS config to contain 'creation_rules:'")
+			}
+			if !strings.Contains(sopsStr, "path_regex:") {
+				t.Error("expected SOPS config to contain 'path_regex:'")
+			}
+			if !strings.Contains(sopsStr, "age:") {
+				t.Error("expected SOPS config to contain 'age:'")
+			}
+		})
+	}
+}
+
+func TestOrganizationBasedClusterInit(t *testing.T) {
+	// Set up temporary config directory
+	dir := t.TempDir()
+	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
+	defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
+
+	tests := []struct {
+		name         string
+		clusterName  string
+		organization string
+		expectError  bool
+	}{
+		{
+			name:         "init cluster in dev organization",
+			clusterName:  "web-app",
+			organization: "dev-team",
+			expectError:  false,
+		},
+		{
+			name:         "init cluster in default organization",
+			clusterName:  "legacy-app",
+			organization: "default",
+			expectError:  false,
+		},
+		{
+			name:         "init cluster with empty organization",
+			clusterName:  "test-app",
+			organization: "",
+			expectError:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Initialize configuration manager and path resolver
+			configManager, err := config.NewConfigManager("")
+			if err != nil {
+				t.Fatalf("failed to create config manager: %v", err)
+			}
+
+			pathResolver := config.NewPathResolver(configManager)
+
+			// Set expected organization (default if empty)
+			expectedOrg := tt.organization
+			if expectedOrg == "" {
+				expectedOrg = "default"
+			}
+
+			// Create organization structure
+			err = pathResolver.CreateOrganizationStructure(expectedOrg)
+			if err != nil {
+				t.Fatalf("failed to create organization structure: %v", err)
+			}
+
+			// Create cluster directories
+			err = pathResolver.CreateClusterDirectories(tt.clusterName, expectedOrg)
+			if err != nil {
+				t.Fatalf("failed to create cluster directories: %v", err)
+			}
+
+			// Resolve cluster paths
+			clusterPaths := pathResolver.ResolveClusterPaths(tt.clusterName, expectedOrg)
+
+			// Verify organization directory structure was created
+			expectedDirs := []string{
+				clusterPaths.OrganizationDir,
+				clusterPaths.ClusterDir,
+				clusterPaths.ApplicationsDir,
+				clusterPaths.InventoryPath,
+				clusterPaths.VenvPath,
+				clusterPaths.BinPath,
+				filepath.Dir(clusterPaths.SOPSKeyPath), // age/keys directory
+			}
+
+			for _, expectedDir := range expectedDirs {
+				if _, err := os.Stat(expectedDir); os.IsNotExist(err) {
+					t.Errorf("expected directory was not created: %s", expectedDir)
+				}
+			}
+
+			// Verify GitOps structure
+			gitopsStructureDirs := []string{
+				filepath.Join(clusterPaths.GitOpsDir, "applications", "overlays"),
+				filepath.Join(clusterPaths.GitOpsDir, "infrastructure", "clusters"),
+				filepath.Join(clusterPaths.SecretsDir, "age", "keys"),
+			}
+
+			for _, gitopsDir := range gitopsStructureDirs {
+				if _, err := os.Stat(gitopsDir); os.IsNotExist(err) {
+					t.Errorf("expected GitOps directory was not created: %s", gitopsDir)
+				}
+			}
+
+			// Test that paths are correctly resolved
+			if !strings.Contains(clusterPaths.ClusterDir, expectedOrg) {
+				t.Errorf("cluster directory should contain organization name %q, got: %s", expectedOrg, clusterPaths.ClusterDir)
+			}
+
+			if !strings.Contains(clusterPaths.ApplicationsDir, expectedOrg) {
+				t.Errorf("applications directory should contain organization name %q, got: %s", expectedOrg, clusterPaths.ApplicationsDir)
+			}
+
+			if !strings.Contains(clusterPaths.SecretsDir, expectedOrg) {
+				t.Errorf("secrets directory should contain organization name %q, got: %s", expectedOrg, clusterPaths.SecretsDir)
+			}
+
+			// Verify that GitOps directory points to organization root
+			if clusterPaths.GitOpsDir != clusterPaths.OrganizationDir {
+				t.Errorf("GitOps directory should point to organization root, got: %s, expected: %s", clusterPaths.GitOpsDir, clusterPaths.OrganizationDir)
+			}
+		})
 	}
 }

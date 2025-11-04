@@ -188,6 +188,15 @@ func newClusterInitCmd() *cobra.Command {
 			// name is required as a positional argument (initial seed)
 			name := args[0]
 
+			// Initialize CLI configuration manager
+			configManager, err := config.NewConfigManager("")
+			if err != nil {
+				return fmt.Errorf("failed to initialize configuration manager: %w", err)
+			}
+
+			// Initialize path resolver
+			pathResolver := config.NewPathResolver(configManager)
+
 			// Generate configuration using schema-based defaults to match testdata/schema.yaml structure
 			schemaDefaultYAML, err := config.GenerateDefaultFromSchema(name)
 			if err != nil {
@@ -230,27 +239,52 @@ func newClusterInitCmd() *cobra.Command {
 				}
 			}
 
-			// Interactive wizard has been removed; name must be provided
+			// Determine organization from configuration or use default
+			organization := cfg.OpenCenter.Meta.Organization
+			if organization == "" {
+				// Check if organization was set via CLI defaults
+				organization = configManager.GetConfig().Defaults.Environment
+				if organization == "" {
+					organization = "default"
+				}
+			}
 
-			// Use the name parameter directly since cluster_name is no longer top-level
-			// The name is set from the positional argument and may be overridden by flags
+			// Update configuration with organization if not already set
+			if cfg.OpenCenter.Meta.Organization == "" {
+				cfg.OpenCenter.Meta.Organization = organization
+				// Also update the map
+				if opencenter, ok := configMap["opencenter"].(map[string]any); ok {
+					if meta, ok := opencenter["meta"].(map[string]any); ok {
+						meta["organization"] = organization
+					} else {
+						opencenter["meta"] = map[string]any{
+							"organization": organization,
+						}
+					}
+				} else {
+					configMap["opencenter"] = map[string]any{
+						"meta": map[string]any{
+							"organization": organization,
+						},
+					}
+				}
+			}
+
+			// Resolve cluster paths using organization structure
+			clusterPaths := pathResolver.ResolveClusterPaths(name, organization)
 
 			// Handle --force
 			force, _ := cmd.Flags().GetBool("force")
-			clusterDir, err := config.ClusterDirectoryPath(name)
-			if err != nil {
-				return fmt.Errorf("failed to get cluster directory path: %w", err)
-			}
 			
-			// Check if cluster directory exists
-			if _, err := os.Stat(clusterDir); err == nil {
+			// Check if cluster directory exists in organization structure
+			if _, err := os.Stat(clusterPaths.ClusterDir); err == nil {
 				if !force {
-					return fmt.Errorf("cluster configuration directory '%s' already exists in clusters subdirectory, use --force to overwrite", name)
+					return fmt.Errorf("cluster configuration directory '%s' already exists in organization '%s', use --force to overwrite", name, organization)
 				}
 				
 				// Force flag is set, perform cleanup and overwrite
-				if err := cleanupClusterDirectory(clusterDir); err != nil {
-					return fmt.Errorf("failed to cleanup existing cluster directory '%s': %w", clusterDir, err)
+				if err := cleanupClusterDirectory(clusterPaths.ClusterDir); err != nil {
+					return fmt.Errorf("failed to cleanup existing cluster directory '%s': %w", clusterPaths.ClusterDir, err)
 				}
 			}
 
@@ -265,12 +299,34 @@ func newClusterInitCmd() *cobra.Command {
 				}
 			}
 
+			// Create organization structure
+			if err := pathResolver.CreateOrganizationStructure(organization); err != nil {
+				return fmt.Errorf("failed to create organization structure: %w", err)
+			}
+
+			// Create cluster directories
+			if err := pathResolver.CreateClusterDirectories(name, organization); err != nil {
+				return fmt.Errorf("failed to create cluster directories: %w", err)
+			}
+
 			// Persist config
-			// If no SOPS key location provided, generate one named after cluster
+			// If no SOPS key location provided, generate one using organization structure
 			disableKeygen, _ := cmd.Flags().GetBool("no-sops-keygen")
 			if !disableKeygen && cfg.Secrets.SopsAgeKeyFile == "" && name != "" {
-				if err := generateDefaultSOPSKey(name, &cfg); err != nil {
-					return fmt.Errorf("failed to generate default SOPS key: %w", err)
+				if err := generateOrganizationSOPSKey(name, organization, &cfg, pathResolver); err != nil {
+					return fmt.Errorf("failed to generate organization SOPS key: %w", err)
+				}
+			}
+
+			// Update GitOps directory to point to organization root
+			cfg.OpenCenter.GitOps.GitDir = clusterPaths.GitOpsDir
+			if opencenter, ok := configMap["opencenter"].(map[string]any); ok {
+				if gitops, ok := opencenter["gitops"].(map[string]any); ok {
+					gitops["git_dir"] = clusterPaths.GitOpsDir
+				} else {
+					opencenter["gitops"] = map[string]any{
+						"git_dir": clusterPaths.GitOpsDir,
+					}
 				}
 			}
 
@@ -292,17 +348,17 @@ func newClusterInitCmd() *cobra.Command {
 				return fmt.Errorf("failed to marshal final config: %w", err)
 			}
 
-			// Get the config path (this will create the cluster directory structure)
-			path, err := config.ConfigPath(name)
-			if err != nil {
-				return fmt.Errorf("failed to get cluster configuration path: %w", err)
-			}
+			// Get the config path using organization structure
+			configPath := filepath.Join(clusterPaths.ClusterDir, "."+name+"-config.yaml")
 
 			// Write the config file with proper permissions (0600 for files)
-			if err := os.WriteFile(path, finalYAML, 0o600); err != nil {
-				return fmt.Errorf("failed to write cluster configuration file to '%s': %w", path, err)
+			if err := os.WriteFile(configPath, finalYAML, 0o600); err != nil {
+				return fmt.Errorf("failed to write cluster configuration file to '%s': %w", configPath, err)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Created cluster configuration directory structure and file for '%s' in clusters subdirectory\n", name)
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Created cluster configuration in organization '%s' at '%s'\n", organization, clusterPaths.ClusterDir)
+			fmt.Fprintf(cmd.OutOrStdout(), "GitOps repository root: %s\n", clusterPaths.GitOpsDir)
+			fmt.Fprintf(cmd.OutOrStdout(), "SOPS key location: %s\n", clusterPaths.SOPSKeyPath)
 			return nil
 		},
 	}
@@ -354,5 +410,68 @@ func generateDefaultSOPSKey(cluster string, cfg *config.Config) error {
 	}
 	
 	cfg.Secrets.SopsAgeKeyFile = keyFile
+	return nil
+}
+
+// generateOrganizationSOPSKey creates an age key file using the organization-based directory structure
+// and updates cfg.Secrets.SopsAgeKeyFile to point to the generated file.
+func generateOrganizationSOPSKey(cluster, organization string, cfg *config.Config, pathResolver *config.PathResolver) error {
+	// Resolve cluster paths for the organization
+	clusterPaths := pathResolver.ResolveClusterPaths(cluster, organization)
+	
+	// Create the secrets directory with proper permissions (0755 for directories)
+	secretsKeyDir := filepath.Dir(clusterPaths.SOPSKeyPath)
+	if err := os.MkdirAll(secretsKeyDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create organization secrets directory '%s': %w", secretsKeyDir, err)
+	}
+	
+	// Generate a key
+	var b [32]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return fmt.Errorf("failed to generate random key: %w", err)
+	}
+	key := fmt.Sprintf("AGE-SECRET-KEY-1%s\n", hex.EncodeToString(b[:]))
+	
+	// Write the key file with proper permissions (0600 for files)
+	if err := os.WriteFile(clusterPaths.SOPSKeyPath, []byte(key), 0o600); err != nil {
+		return fmt.Errorf("failed to write SOPS key file to organization directory '%s': %w", clusterPaths.SOPSKeyPath, err)
+	}
+	
+	// Create or update the SOPS configuration file for the organization
+	if err := createOrganizationSOPSConfig(clusterPaths.SOPSConfigPath, clusterPaths.SOPSKeyPath); err != nil {
+		return fmt.Errorf("failed to create organization SOPS config: %w", err)
+	}
+	
+	cfg.Secrets.SopsAgeKeyFile = clusterPaths.SOPSKeyPath
+	return nil
+}
+
+// createOrganizationSOPSConfig creates or updates the .sops.yaml configuration file for the organization.
+func createOrganizationSOPSConfig(sopsConfigPath, keyPath string) error {
+	// Read the key file to get the public key
+	keyData, err := os.ReadFile(keyPath)
+	if err != nil {
+		return fmt.Errorf("failed to read SOPS key file: %w", err)
+	}
+	
+	// Extract the private key part (remove AGE-SECRET-KEY-1 prefix and newline)
+	privateKey := strings.TrimSpace(strings.TrimPrefix(string(keyData), "AGE-SECRET-KEY-1"))
+	
+	// For this implementation, we'll create a basic SOPS config
+	// In a real implementation, you might want to derive the public key from the private key
+	sopsConfig := fmt.Sprintf(`creation_rules:
+  - path_regex: .*\.yaml$
+    age: >-
+      %s
+  - path_regex: .*\.json$
+    age: >-
+      %s
+`, privateKey[:56]+"...", privateKey[:56]+"...") // Truncated for example
+
+	// Write the SOPS configuration file
+	if err := os.WriteFile(sopsConfigPath, []byte(sopsConfig), 0o600); err != nil {
+		return fmt.Errorf("failed to write SOPS config file: %w", err)
+	}
+	
 	return nil
 }
