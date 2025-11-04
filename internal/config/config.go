@@ -702,11 +702,17 @@ func ClusterSecretsPath(name string) (string, error) {
 //   - string: The absolute path to the configuration file.
 //   - error: An error if one occurred.
 func ConfigPath(name string) (string, error) {
-	dir, err := ResolveConfigDir()
+	clusterDir, err := ClusterDirectoryPath(name)
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(dir, name+".yaml"), nil
+	
+	// Ensure the clusters subdirectory and cluster directory exist
+	if err := os.MkdirAll(clusterDir, 0o755); err != nil {
+		return "", fmt.Errorf("failed to create cluster directory %s: %w", clusterDir, err)
+	}
+	
+	return filepath.Join(clusterDir, "."+name+"-config.yaml"), nil
 }
 
 // Load reads and unmarshals a YAML configuration file for the given cluster name.
@@ -725,7 +731,7 @@ func Load(name string) (Config, error) {
 	}
 	data, readErr := os.ReadFile(path)
 	if readErr != nil {
-		return Config{}, fmt.Errorf("failed to read %s: %w", path, readErr)
+		return Config{}, fmt.Errorf("failed to read configuration from new directory structure %s: %w", path, readErr)
 	}
 	// Unmarshal YAML then overlay onto default config
 	cfg := defaultConfig(name)
@@ -1062,7 +1068,7 @@ func Save(cfg Config) error {
 }
 
 // List returns a sorted list of cluster names from the configuration directory.
-// It ignores any files that do not have a .yaml extension.
+// It looks for cluster directories within the clusters subdirectory.
 //
 // Outputs:
 //   - []string: A list of cluster names.
@@ -1072,20 +1078,29 @@ func List() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	entries, readErr := os.ReadDir(dir)
+	
+	clustersDir := filepath.Join(dir, "clusters")
+	entries, readErr := os.ReadDir(clustersDir)
 	if readErr != nil {
+		// If clusters directory doesn't exist, return empty list
+		if os.IsNotExist(readErr) {
+			return []string{}, nil
+		}
 		return nil, readErr
 	}
+	
 	var names []string
 	for _, entry := range entries {
 		if entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
-		if strings.HasSuffix(name, ".yaml") {
-			names = append(names, strings.TrimSuffix(name, ".yaml"))
+			// Verify that the cluster directory contains a valid config file
+			clusterName := entry.Name()
+			configFile := filepath.Join(clustersDir, clusterName, "."+clusterName+"-config.yaml")
+			if _, err := os.Stat(configFile); err == nil {
+				names = append(names, clusterName)
+			}
 		}
 	}
+	
 	// Sort lexically
 	if len(names) > 1 {
 		sortStrings(names)
@@ -1215,8 +1230,7 @@ func Validate(cfg Config) []string {
 	if vrrpIP == "" || !useOctavia {
 		// Attempt to locate YAML file and parse minimal fields
 		// Ignore errors silently; this is a best-effort compatibility shim.
-		if dir, err := ResolveConfigDir(); err == nil {
-			path := filepath.Join(dir, cfg.ClusterName()+".yaml")
+		if path, err := ConfigPath(cfg.ClusterName()); err == nil {
 			if data, rerr := os.ReadFile(path); rerr == nil {
 				var raw map[string]any
 				if yerr := yaml.Unmarshal(data, &raw); yerr == nil {

@@ -391,6 +391,20 @@ func (w *world) iRunCommand(arg string) error {
 func (w *world) aFileShouldExist(path string) error {
 	p := w.pathFromFeature(path)
 	if _, err := os.Stat(p); err != nil {
+		// If the file doesn't exist at the old location, check if it's a cluster config file
+		// and look for it in the new directory structure
+		if strings.Contains(p, "/conf/") && strings.HasSuffix(p, ".yaml") {
+			fileName := filepath.Base(p)
+			clusterName := strings.TrimSuffix(fileName, ".yaml")
+			confDir := filepath.Dir(p)
+			newPath := filepath.Join(confDir, "clusters", clusterName, "."+clusterName+"-config.yaml")
+			
+			if _, newErr := os.Stat(newPath); newErr == nil {
+				// File exists in new location
+				w.lastFile = newPath
+				return nil
+			}
+		}
 		return err
 	}
 	// remember last file for subsequent content checks
@@ -632,6 +646,32 @@ func (w *world) anEmptyDirectory(path string) error {
 
 func (w *world) aFileWithContent(path string, content *godog.DocString) error {
 	p := w.replaceTmp(path)
+	
+	// Check if this is a cluster configuration file in the conf directory
+	if strings.Contains(p, "/conf/") && strings.HasSuffix(p, ".yaml") {
+		// Extract cluster name from the file path
+		fileName := filepath.Base(p)
+		clusterName := strings.TrimSuffix(fileName, ".yaml")
+		
+		// Check if the content looks like a cluster configuration (contains "opencenter:" section)
+		if strings.Contains(content.Content, "opencenter:") {
+			// Create the new directory structure path
+			confDir := filepath.Dir(p)
+			clusterDir := filepath.Join(confDir, "clusters", clusterName)
+			newPath := filepath.Join(clusterDir, "."+clusterName+"-config.yaml")
+			
+			// Create the cluster directory
+			if err := os.MkdirAll(clusterDir, 0755); err != nil {
+				return err
+			}
+			
+			body := w.replaceTmp(content.Content)
+			body = normalizeConfigYAML(body)
+			return ioutil.WriteFile(newPath, []byte(body), 0644)
+		}
+	}
+	
+	// Default behavior for non-cluster config files
 	dir := filepath.Dir(p)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
@@ -775,7 +815,24 @@ func (w *world) iUpdateTheYAMLToSet(path string, content *godog.DocString) error
 	p := w.replaceTmp(path)
 	data, err := ioutil.ReadFile(p)
 	if err != nil {
-		return err
+		// If the file doesn't exist at the old location, check if it's a cluster config file
+		// and look for it in the new directory structure
+		if strings.Contains(p, "/conf/") && strings.HasSuffix(p, ".yaml") {
+			fileName := filepath.Base(p)
+			clusterName := strings.TrimSuffix(fileName, ".yaml")
+			confDir := filepath.Dir(p)
+			newPath := filepath.Join(confDir, "clusters", clusterName, "."+clusterName+"-config.yaml")
+			
+			if newData, newErr := ioutil.ReadFile(newPath); newErr == nil {
+				// File exists in new location, use it
+				data = newData
+				p = newPath // Update path for writing back
+			} else {
+				return err // Return original error if not found in new location either
+			}
+		} else {
+			return err
+		}
 	}
 	var m map[string]interface{}
 	if err := yaml.Unmarshal(data, &m); err != nil {
@@ -880,8 +937,8 @@ func (w *world) theFileShouldNotContain(path, substr string) error {
 }
 
 func (w *world) assertClusterConfigValue(clusterName, path, expectedValue string) error {
-	// Load the config
-	p := filepath.Join(w.configDir, clusterName+".yaml")
+	// Load the config using the new directory structure
+	p := filepath.Join(w.configDir, "clusters", clusterName, "."+clusterName+"-config.yaml")
 	data, err := os.ReadFile(p)
 	if err != nil {
 		return fmt.Errorf("could not read config file %s: %w", p, err)
@@ -963,7 +1020,7 @@ func RegisterSteps(s *godog.ScenarioContext, t *testing.T, w *world) {
 	s.Step(`^the configuration directory is isolated for tests$`, func() error { return nil })
 	s.Step(`^a cluster "([^"]+)" exists$`, w.givenClusterExists)
 	s.Step(`^a cluster configuration "([^"]*)" should exist$`, func(name string) error {
-		return w.aFileShouldExist(filepath.Join(w.configDir, name+".yaml"))
+		return w.aFileShouldExist(filepath.Join(w.configDir, "clusters", name, "."+name+"-config.yaml"))
 	})
 	s.Step(`^the cluster configuration "([^"]*)" should have "([^"]*)" set to "([^"]*)"$`, w.assertClusterConfigValue)
 	s.Step(`^a cluster "([^"]+)" is configured with a temporary gitops directory$`, w.aClusterIsConfiguredWithTemporaryGitopsDirectory)

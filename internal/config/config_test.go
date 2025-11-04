@@ -146,9 +146,15 @@ func TestConfigPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := filepath.Join(dir, "test-cluster.yaml")
+	expected := filepath.Join(dir, "clusters", "test-cluster", ".test-cluster-config.yaml")
 	if path != expected {
 		t.Errorf("expected path %s, got %s", expected, path)
+	}
+	
+	// Verify that the cluster directory was created
+	clusterDir := filepath.Join(dir, "clusters", "test-cluster")
+	if _, err := os.Stat(clusterDir); os.IsNotExist(err) {
+		t.Error("cluster directory was not created")
 	}
 }
 

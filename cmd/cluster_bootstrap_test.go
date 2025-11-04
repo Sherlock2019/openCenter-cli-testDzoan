@@ -27,7 +27,13 @@ func writeTestConfig(t *testing.T, dir, name, provider, gitDir string) {
   gitops:
     git_dir: %q
 `, provider, name, gitDir)
-	path := filepath.Join(dir, name+".yaml")
+	// Create cluster directory structure
+	clusterDir := filepath.Join(dir, "clusters", name)
+	if err := os.MkdirAll(clusterDir, 0o755); err != nil {
+		t.Fatalf("create cluster directory: %v", err)
+	}
+	
+	path := filepath.Join(clusterDir, "."+name+"-config.yaml")
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
