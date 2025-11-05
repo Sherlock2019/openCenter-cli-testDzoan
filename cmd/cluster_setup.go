@@ -127,8 +127,18 @@ func setupOrganizationGitOps(cfg config.Config, organization string, render, for
     }
 
     // Update configuration to use organization-based GitOps directory
+    // Only override git_dir if it's not explicitly set to a custom path
     updatedCfg := cfg
-    updatedCfg.OpenCenter.GitOps.GitDir = paths.GitOpsDir
+    originalGitDir := cfg.GitOps().GitDir
+    
+    // If user specified a custom git_dir, use it; otherwise use organization-based path
+    if originalGitDir != "" && originalGitDir != paths.GitOpsDir {
+        // User has specified a custom git_dir, use it instead of organization path
+        updatedCfg.OpenCenter.GitOps.GitDir = originalGitDir
+    } else {
+        // Use organization-based path
+        updatedCfg.OpenCenter.GitOps.GitDir = paths.GitOpsDir
+    }
 
     // Setup GitOps base structure at organization level
     if err := gitops.CopyBase(updatedCfg, render); err != nil {
@@ -154,13 +164,14 @@ func setupOrganizationGitOps(cfg config.Config, organization string, render, for
         return fmt.Errorf("failed to setup organization SOPS: %w", err)
     }
 
-    // Initialize Git repository at organization level if not present
-    if err := initializeOrganizationGitRepo(paths.GitOpsDir, cmd); err != nil {
-        return fmt.Errorf("failed to initialize organization git repository: %w", err)
+    // Initialize Git repository at the configured git_dir location
+    gitDir := updatedCfg.GitOps().GitDir
+    if err := initializeOrganizationGitRepo(gitDir, cmd); err != nil {
+        return fmt.Errorf("failed to initialize git repository: %w", err)
     }
 
     // Write .opencenter marker with cluster name
-    markerPath := filepath.Join(paths.GitOpsDir, ".opencenter")
+    markerPath := filepath.Join(gitDir, ".opencenter")
     markerContent := fmt.Sprintf("organization: %s\nclusters:\n  - %s\n", organization, clusterName)
     
     // If marker exists, update it to include this cluster
@@ -179,12 +190,12 @@ func setupOrganizationGitOps(cfg config.Config, organization string, render, for
     }
 
     // Add and commit changes
-    if err := runGit(paths.GitOpsDir, []string{"add", "."}, cmd); err != nil {
+    if err := runGit(gitDir, []string{"add", "."}, cmd); err != nil {
         return fmt.Errorf("failed to add files to git: %w", err)
     }
 
     commitMsg := fmt.Sprintf("Setup cluster %s in organization %s", clusterName, organization)
-    if err := runGit(paths.GitOpsDir, []string{"commit", "-m", commitMsg, "--allow-empty"}, cmd); err != nil {
+    if err := runGit(gitDir, []string{"commit", "-m", commitMsg, "--allow-empty"}, cmd); err != nil {
         return fmt.Errorf("failed to commit changes: %w", err)
     }
 

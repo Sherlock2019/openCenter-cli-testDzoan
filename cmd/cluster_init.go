@@ -314,17 +314,24 @@ func newClusterInitCmd() *cobra.Command {
 				}
 			}
 
-			// Update GitOps directory to point to organization root
-			cfg.OpenCenter.GitOps.GitDir = clusterPaths.GitOpsDir
-			if opencenter, ok := configMap["opencenter"].(map[string]any); ok {
-				if gitops, ok := opencenter["gitops"].(map[string]any); ok {
-					gitops["git_dir"] = clusterPaths.GitOpsDir
-				} else {
-					opencenter["gitops"] = map[string]any{
-						"git_dir": clusterPaths.GitOpsDir,
+			// Update GitOps directory to point to organization root only if not explicitly set by user
+			originalGitDir := cfg.OpenCenter.GitOps.GitDir
+			
+			// Check if user specified a custom git_dir that differs from the organization default
+			if originalGitDir == "" || originalGitDir == clusterPaths.GitOpsDir {
+				// No custom git_dir specified, use organization-based path
+				cfg.OpenCenter.GitOps.GitDir = clusterPaths.GitOpsDir
+				if opencenter, ok := configMap["opencenter"].(map[string]any); ok {
+					if gitops, ok := opencenter["gitops"].(map[string]any); ok {
+						gitops["git_dir"] = clusterPaths.GitOpsDir
+					} else {
+						opencenter["gitops"] = map[string]any{
+							"git_dir": clusterPaths.GitOpsDir,
+						}
 					}
 				}
 			}
+			// If user specified a custom git_dir, keep it as-is
 
 			// Update the map with any SOPS key changes from the struct
 			if cfg.Secrets.SopsAgeKeyFile != "" {

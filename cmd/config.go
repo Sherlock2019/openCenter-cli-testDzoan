@@ -278,6 +278,31 @@ The configuration file is named 'config.yaml' within the configuration directory
 func convertConfigValue(key, value string) (interface{}, error) {
 	// Determine the expected type based on the key
 	switch {
+	case key == "logging.level":
+		// Validate log level
+		validLevels := []string{"debug", "info", "warn", "error"}
+		for _, level := range validLevels {
+			if value == level {
+				return value, nil
+			}
+		}
+		return nil, fmt.Errorf("invalid log level '%s', must be one of: %s", value, strings.Join(validLevels, ", "))
+	case key == "logging.format":
+		// Validate log format
+		validFormats := []string{"text", "json", "yaml"}
+		for _, format := range validFormats {
+			if value == format {
+				return value, nil
+			}
+		}
+		return nil, fmt.Errorf("invalid log format '%s', must be one of: %s", value, strings.Join(validFormats, ", "))
+	case key == "logging.output":
+		// Validate log output (stdout, stderr, or file path)
+		if value == "stdout" || value == "stderr" {
+			return value, nil
+		}
+		// For file paths, just return as string - validation will happen in ConfigManager
+		return value, nil
 	case strings.HasSuffix(key, ".compress") ||
 		strings.HasPrefix(key, "behavior."):
 		// Boolean fields

@@ -1080,6 +1080,22 @@ func getField(obj interface{}, path string) (interface{}, error) {
 	return v.Interface(), nil
 }
 
+// setEnvironmentVariable sets an environment variable for the test scenario
+func (w *world) setEnvironmentVariable(name, value string) error {
+	expandedValue := w.replaceTmp(value)
+	
+	// Special handling for OPENCENTER_CONFIG_DIR to update the world's configDir
+	if name == "OPENCENTER_CONFIG_DIR" {
+		w.configDir = expandedValue
+		// Create the directory if it doesn't exist
+		if err := os.MkdirAll(expandedValue, 0755); err != nil {
+			return err
+		}
+	}
+	
+	return os.Setenv(name, expandedValue)
+}
+
 // RegisterSteps registers all step definitions with Godog.
 func RegisterSteps(s *godog.ScenarioContext, t *testing.T, w *world) {
 	// Before each scenario, reset the world state
@@ -1125,6 +1141,7 @@ func RegisterSteps(s *godog.ScenarioContext, t *testing.T, w *world) {
 	// And steps for setting values
 	s.Step(`^I set "([^"]+)" to "([^"]+)"$`, w.iSetKeyToValue)
 	s.Step(`^I update the YAML "([^"]*)" to set:$`, w.iUpdateTheYAMLToSet)
+	s.Step(`^I set environment variable "([^"]*)" to "([^"]*)"$`, w.setEnvironmentVariable)
 	s.Step(`^"opencenter.gitops.git_url" is configured$`, w.gitopsGitURLIsConfigured)
 	s.Step(`^"gitops.git_url" is configured$`, w.gitopsGitURLIsConfigured)
 	s.Step(`^the gitops directory is a git repository$`, w.theGitopsDirectoryIsAGitRepository)
@@ -1181,4 +1198,19 @@ func RegisterSteps(s *godog.ScenarioContext, t *testing.T, w *world) {
 	s.Step(`^the directory "([^"]*)" should contain a directory "([^"]*)"$`, w.theDirectoryShouldContainADirectory)
 	s.Step(`^the directory "([^"]*)" should contain a file matching "([^"]*)"$`, w.theDirectoryShouldContainAFileMatching)
 	s.Step(`^the file "([^"]*)" should not contain "([^"]*)"$`, w.theFileShouldNotContain)
+	s.Step(`^stdout should match regex "([^"]*)"$`, w.stdoutShouldMatchRegex)
+}
+
+// stdoutShouldMatchRegex checks if stdout matches the given regex pattern
+func (w *world) stdoutShouldMatchRegex(pattern string) error {
+	// Trim whitespace from stdout to handle newlines
+	output := strings.TrimSpace(w.lastOut)
+	matched, err := regexp.MatchString(pattern, output)
+	if err != nil {
+		return fmt.Errorf("invalid regex pattern '%s': %w", pattern, err)
+	}
+	if !matched {
+		return fmt.Errorf("stdout did not match regex '%s'; got %q", pattern, output)
+	}
+	return nil
 }

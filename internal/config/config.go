@@ -1107,11 +1107,27 @@ func List() ([]string, error) {
 	var names []string
 	for _, entry := range entries {
 		if entry.IsDir() {
-			// Verify that the cluster directory contains a valid config file
-			clusterName := entry.Name()
-			configFile := filepath.Join(clustersDir, clusterName, "."+clusterName+"-config.yaml")
-			if _, err := os.Stat(configFile); err == nil {
-				names = append(names, clusterName)
+			entryName := entry.Name()
+			
+			// Check for legacy structure: clustersDir/clusterName/.clusterName-config.yaml
+			legacyConfigFile := filepath.Join(clustersDir, entryName, "."+entryName+"-config.yaml")
+			if _, err := os.Stat(legacyConfigFile); err == nil {
+				names = append(names, entryName)
+				continue
+			}
+			
+			// Check for organization-based structure: clustersDir/organization/infrastructure/clusters/*/
+			orgInfraDir := filepath.Join(clustersDir, entryName, "infrastructure", "clusters")
+			if orgEntries, err := os.ReadDir(orgInfraDir); err == nil {
+				for _, orgEntry := range orgEntries {
+					if orgEntry.IsDir() {
+						clusterName := orgEntry.Name()
+						orgConfigFile := filepath.Join(orgInfraDir, clusterName, "."+clusterName+"-config.yaml")
+						if _, err := os.Stat(orgConfigFile); err == nil {
+							names = append(names, clusterName)
+						}
+					}
+				}
 			}
 		}
 	}
