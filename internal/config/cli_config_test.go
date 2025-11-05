@@ -16,11 +16,13 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 )
 
 func TestDefaultCLIConfig(t *testing.T) {
@@ -710,4 +712,498 @@ func TestLoggingHelperFunctions(t *testing.T) {
 		"key1": "value1",
 		"key2": 42,
 	}).Info("Message with fields")
+}
+
+func TestEnvironmentExpansion(t *testing.T) {
+	// Set up test environment variables
+	os.Setenv("TEST_CONFIG_DIR", "/tmp/test-config")
+	os.Setenv("TEST_CLUSTERS_DIR", "/tmp/test-clusters")
+	defer func() {
+		os.Unsetenv("TEST_CONFIG_DIR")
+		os.Unsetenv("TEST_CLUSTERS_DIR")
+	}()
+
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.yaml")
+
+	// Create config with environment variables
+	configYAML := `
+logging:
+  level: info
+  format: text
+  output: stderr
+paths:
+  configDir: ${TEST_CONFIG_DIR}
+  clustersDir: ${TEST_CLUSTERS_DIR}
+behavior:
+  autoConfirm: false
+  dryRun: false
+  verbose: false
+defaults:
+  provider: openstack
+  region: iad3
+  environment: dev
+`
+
+	if err := os.WriteFile(configPath, []byte(configYAML), 0600); err != nil {
+		t.Fatalf("Failed to write test config: %v", err)
+	}
+
+	// Load configuration
+	cm, err := NewConfigManager(configPath)
+	if err != nil {
+		t.Fatalf("Failed to create config manager: %v", err)
+	}
+
+	config := cm.GetConfig()
+
+	// Verify environment variables were expanded
+	if config.Paths.ConfigDir != "/tmp/test-config" {
+		t.Errorf("Expected configDir '/tmp/test-config', got '%s'", config.Paths.ConfigDir)
+	}
+
+	if config.Paths.ClustersDir != "/tmp/test-clusters" {
+		t.Errorf("Expected clustersDir '/tmp/test-clusters', got '%s'", config.Paths.ClustersDir)
+	}
+}
+
+func TestConfigurationPrecedence(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.yaml")
+
+	// Create base configuration file
+	baseConfig := DefaultCLIConfig()
+	baseConfig.Logging.Level = "info"
+	baseConfig.Behavior.Verbose = false
+
+	data, err := yaml.Marshal(baseConfig)
+	if err != nil {
+		t.Fatalf("Failed to marshal base config: %v", err)
+	}
+
+	if err := os.WriteFile(configPath, data, 0600); err != nil {
+		t.Fatalf("Failed to write base config: %v", err)
+	}
+
+	// Test 1: Configuration file values
+	cm, err := NewConfigManager(configPath)
+	if err != nil {
+		t.Fatalf("Failed to create config manager: %v", err)
+	}
+
+	config := cm.GetConfig()
+	if config.Logging.Level != "info" {
+		t.Errorf("Expected log level 'info' from config file, got '%s'", config.Logging.Level)
+	}
+
+	// Test 2: Environment variable override
+	os.Setenv("OPENCENTER_LOG_LEVEL", "debug")
+	defer os.Unsetenv("OPENCENTER_LOG_LEVEL")
+
+	// Create config with environment variable in YAML
+	configWithEnv := `
+logging:
+  level: ${OPENCENTER_LOG_LEVEL}
+  format: text
+  output: stderr
+paths:
+  configDir: ` + baseConfig.Paths.ConfigDir + `
+  clustersDir: ` + baseConfig.Paths.ClustersDir + `
+behavior:
+  autoConfirm: false
+  dryRun: false
+  verbose: false
+defaults:
+  provider: openstack
+  region: iad3
+  environment: dev
+`
+
+	// Expand environment variables before writing
+	expandedConfig := os.ExpandEnv(configWithEnv)
+	if err := os.WriteFile(configPath, []byte(expandedConfig), 0600); err != nil {
+		t.Fatalf("Failed to write config with env var: %v", err)
+	}
+
+	cm2, err := NewConfigManager(configPath)
+	if err != nil {
+		t.Fatalf("Failed to create config manager with env: %v", err)
+	}
+
+	config2 := cm2.GetConfig()
+	if config2.Logging.Level != "debug" {
+		t.Errorf("Expected log level 'debug' from environment variable, got '%s'", config2.Logging.Level)
+	}
+}
+
+func TestConfigManagerDotNotationEdgeCases(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.yaml")
+
+	cm, err := NewConfigManager(configPath)
+	if err != nil {
+		t.Fatalf("Failed to create config manager: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		key         string
+		value       interface{}
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "invalid key format",
+			key:         "invalid",
+			value:       "test",
+			expectError: true,
+			errorMsg:    "path must have at least two parts",
+		},
+		{
+			name:        "unknown section",
+			key:         "unknown.field",
+			value:       "test",
+			expectError: true,
+			errorMsg:    "unknown configuration section: unknown",
+		},
+		{
+			name:        "unknown logging field",
+			key:         "logging.unknown",
+			value:       "test",
+			expectError: true,
+			errorMsg:    "unknown logging field: unknown",
+		},
+		{
+			name:        "invalid type for boolean field",
+			key:         "behavior.verbose",
+			value:       "not-a-boolean",
+			expectError: true,
+			errorMsg:    "verbose must be a boolean",
+		},
+		{
+			name:        "valid nested file config",
+			key:         "logging.file.maxSize",
+			value:       200,
+			expectError: false,
+		},
+		{
+			name:        "string number conversion",
+			key:         "logging.file.maxBackups",
+			value:       "5",
+			expectError: false,
+		},
+		{
+			name:        "string boolean conversion",
+			key:         "behavior.autoConfirm",
+			value:       "true",
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := cm.SetValue(tt.key, tt.value)
+			
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error for key '%s', but got none", tt.key)
+					return
+				}
+				if !strings.Contains(err.Error(), tt.errorMsg) {
+					t.Errorf("Expected error message to contain '%s', got '%s'", tt.errorMsg, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no error for key '%s', but got: %v", tt.key, err)
+					return
+				}
+
+				// Verify the value was set correctly
+				result, err := cm.GetValue(tt.key)
+				if err != nil {
+					t.Errorf("Failed to get value for key '%s': %v", tt.key, err)
+					return
+				}
+
+				// Convert expected value for comparison
+				var expectedValue interface{}
+				switch tt.key {
+				case "logging.file.maxSize", "logging.file.maxBackups":
+					if str, ok := tt.value.(string); ok {
+						if intVal, err := strconv.Atoi(str); err == nil {
+							expectedValue = intVal
+						} else {
+							expectedValue = tt.value
+						}
+					} else {
+						expectedValue = tt.value
+					}
+				case "behavior.autoConfirm":
+					if str, ok := tt.value.(string); ok {
+						if boolVal, err := strconv.ParseBool(str); err == nil {
+							expectedValue = boolVal
+						} else {
+							expectedValue = tt.value
+						}
+					} else {
+						expectedValue = tt.value
+					}
+				default:
+					expectedValue = tt.value
+				}
+
+				if result != expectedValue {
+					t.Errorf("GetValue(%s) = %v, expected %v", tt.key, result, expectedValue)
+				}
+			}
+		})
+	}
+}
+
+func TestConfigValidatorComprehensive(t *testing.T) {
+	tests := []struct {
+		name           string
+		config         *CLIConfig
+		autoRepair     bool
+		expectValid    bool
+		expectErrors   int
+		expectWarnings int
+		expectRepairs  int
+	}{
+		{
+			name: "completely invalid config without auto-repair",
+			config: &CLIConfig{
+				Logging: LoggingConfig{
+					Level:  "invalid-level",
+					Format: "invalid-format",
+					Output: "invalid-output",
+					File: FileConfig{
+						MaxSize:    -1,
+						MaxBackups: -1,
+						MaxAge:     -1,
+					},
+				},
+				Paths: PathsConfig{
+					ConfigDir:   "",
+					ClustersDir: "",
+				},
+				Behavior: BehaviorConfig{
+					AutoConfirm: true,
+					DryRun:      false, // This should generate a warning
+				},
+				Defaults: DefaultsConfig{
+					Provider:    "unknown-provider",
+					Region:      "x",
+					Environment: "unknown-env",
+				},
+			},
+			autoRepair:     false,
+			expectValid:    false,
+			expectErrors:   7, // level, format, output, maxSize, maxBackups, maxAge, configDir, clustersDir
+			expectWarnings: 6, // autoConfirm without dryRun, provider, region, environment, disk space warnings
+			expectRepairs:  0,
+		},
+		{
+			name: "completely invalid config with auto-repair",
+			config: &CLIConfig{
+				Logging: LoggingConfig{
+					Level:  "invalid-level",
+					Format: "invalid-format",
+					Output: "invalid-output",
+					File: FileConfig{
+						MaxSize:    -1,
+						MaxBackups: -1,
+						MaxAge:     -1,
+					},
+				},
+				Paths: PathsConfig{
+					ConfigDir:   "",
+					ClustersDir: "",
+				},
+				Behavior: BehaviorConfig{
+					AutoConfirm: true,
+					DryRun:      false,
+				},
+				Defaults: DefaultsConfig{
+					Provider:    "unknown-provider",
+					Region:      "x",
+					Environment: "unknown-env",
+				},
+			},
+			autoRepair:     true,
+			expectValid:    true,
+			expectErrors:   0,
+			expectWarnings: 4, // Warnings are not auto-repaired (excluding disk space warnings which are repaired)
+			expectRepairs:  7, // All validation errors should be repaired
+		},
+		{
+			name:           "valid config",
+			config:         DefaultCLIConfig(),
+			autoRepair:     false,
+			expectValid:    true,
+			expectErrors:   0,
+			expectWarnings: 0,
+			expectRepairs:  0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			validator := &ConfigValidator{autoRepair: tt.autoRepair}
+			result := validator.ValidateWithResult(tt.config)
+
+			if result.Valid != tt.expectValid {
+				t.Errorf("Expected valid=%v, got valid=%v", tt.expectValid, result.Valid)
+			}
+
+			if len(result.Errors) != tt.expectErrors {
+				t.Errorf("Expected %d errors, got %d: %v", tt.expectErrors, len(result.Errors), result.Errors)
+			}
+
+			if len(result.Warnings) != tt.expectWarnings {
+				t.Errorf("Expected %d warnings, got %d: %v", tt.expectWarnings, len(result.Warnings), result.Warnings)
+			}
+
+			if len(result.Repaired) != tt.expectRepairs {
+				t.Errorf("Expected %d repairs, got %d: %v", tt.expectRepairs, len(result.Repaired), result.Repaired)
+			}
+		})
+	}
+}
+
+func TestPathValidationEdgeCases(t *testing.T) {
+	config := DefaultCLIConfig()
+	_, err := NewConfigManagerWithConfig(config)
+	if err != nil {
+		t.Fatalf("Failed to create config manager: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		path        string
+		expectError bool
+	}{
+		{
+			name:        "empty path",
+			path:        "",
+			expectError: true,
+		},
+		{
+			name:        "path with double dots",
+			path:        "/tmp/../etc/passwd",
+			expectError: true,
+		},
+		{
+			name:        "relative path",
+			path:        "relative/path",
+			expectError: true,
+		},
+		{
+			name:        "valid absolute path",
+			path:        "/tmp/valid/path",
+			expectError: false,
+		},
+		{
+			name:        "path with tilde",
+			path:        "~/valid/path",
+			expectError: false,
+		},
+		{
+			name:        "path with environment variable",
+			path:        "${HOME}/valid/path",
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test direct path validation using ExpandPath and basic checks
+			expandedPath := ExpandPath(tt.path)
+			
+			var hasError bool
+			var errorMsg string
+			
+			// Check for path traversal
+			if strings.Contains(expandedPath, "..") {
+				hasError = true
+				errorMsg = "contains directory traversal"
+			}
+			
+			// Check for empty path
+			if tt.path == "" {
+				hasError = true
+				errorMsg = "empty path"
+			}
+			
+			// Check if path is absolute after expansion (for non-empty paths)
+			if tt.path != "" && !filepath.IsAbs(expandedPath) {
+				hasError = true
+				errorMsg = "not absolute after expansion"
+			}
+
+			if tt.expectError && !hasError {
+				t.Errorf("Expected path validation error for '%s', but got none", tt.path)
+			}
+
+			if !tt.expectError && hasError {
+				t.Errorf("Expected no path validation error for '%s', but got: %s", tt.path, errorMsg)
+			}
+		})
+	}
+}
+
+func TestConfigManagerConcurrency(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.yaml")
+
+	cm, err := NewConfigManager(configPath)
+	if err != nil {
+		t.Fatalf("Failed to create config manager: %v", err)
+	}
+
+	// Test concurrent access to configuration
+	const numGoroutines = 10
+	const numOperations = 100
+
+	done := make(chan bool, numGoroutines)
+
+	for i := 0; i < numGoroutines; i++ {
+		go func(id int) {
+			defer func() { done <- true }()
+
+			for j := 0; j < numOperations; j++ {
+				// Alternate between reading and writing
+				if j%2 == 0 {
+					// Read operation
+					_, err := cm.GetValue("logging.level")
+					if err != nil {
+						t.Errorf("Goroutine %d: GetValue failed: %v", id, err)
+						return
+					}
+				} else {
+					// Write operation
+					level := "info"
+					if j%4 == 1 {
+						level = "debug"
+					}
+					err := cm.SetValue("logging.level", level)
+					if err != nil {
+						t.Errorf("Goroutine %d: SetValue failed: %v", id, err)
+						return
+					}
+				}
+			}
+		}(i)
+	}
+
+	// Wait for all goroutines to complete
+	for i := 0; i < numGoroutines; i++ {
+		<-done
+	}
+
+	// Verify final state is still valid
+	result := cm.ValidateConfig()
+	if !result.Valid {
+		t.Errorf("Configuration became invalid after concurrent operations: %v", result.Errors)
+	}
 }

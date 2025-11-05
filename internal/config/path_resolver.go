@@ -316,6 +316,12 @@ func (mm *MigrationManager) MigrateClusterToOrganization(clusterName, organizati
 		return fmt.Errorf("failed to update cluster configuration: %w", err)
 	}
 
+	// Remove the legacy directory if it's empty
+	if err := mm.removeLegacyDirectoryIfEmpty(legacyPath); err != nil {
+		// Log warning but don't fail migration
+		fmt.Printf("Warning: failed to remove legacy directory %s: %v\n", legacyPath, err)
+	}
+
 	return nil
 }
 
@@ -370,7 +376,18 @@ func (mm *MigrationManager) migrateFileOrDir(src, dst string) error {
 
 	// Check if destination already exists
 	if _, err := os.Stat(dst); err == nil {
-		return fmt.Errorf("destination %s already exists", dst)
+		// If destination exists and source is a directory, merge contents
+		if srcInfo.IsDir() {
+			// For directories, merge contents instead of failing
+			if err := mm.copyDir(src, dst); err != nil {
+				return fmt.Errorf("failed to merge directory %s to %s: %w", src, dst, err)
+			}
+			if err := os.RemoveAll(src); err != nil {
+				return fmt.Errorf("failed to remove source directory %s: %w", src, err)
+			}
+			return nil
+		}
+		return fmt.Errorf("destination file %s already exists", dst)
 	}
 
 	// Move the file or directory
@@ -552,6 +569,42 @@ func (mm *MigrationManager) ValidatePostMigration(clusterName, organization stri
 	}
 
 	return fmt.Errorf("organization metadata not found or incorrect in migrated configuration")
+}
+
+// removeLegacyDirectoryIfEmpty removes the legacy directory if it's empty or only contains empty directories.
+func (mm *MigrationManager) removeLegacyDirectoryIfEmpty(legacyPath string) error {
+	// Check if directory exists
+	if _, err := os.Stat(legacyPath); os.IsNotExist(err) {
+		return nil // Already removed
+	}
+
+	// Check if directory is empty or only contains empty directories
+	entries, err := os.ReadDir(legacyPath)
+	if err != nil {
+		return err
+	}
+
+	// Remove any empty subdirectories first
+	for _, entry := range entries {
+		if entry.IsDir() {
+			subPath := filepath.Join(legacyPath, entry.Name())
+			if err := mm.removeLegacyDirectoryIfEmpty(subPath); err != nil {
+				return err
+			}
+		}
+	}
+
+	// Check again if directory is now empty
+	entries, err = os.ReadDir(legacyPath)
+	if err != nil {
+		return err
+	}
+
+	if len(entries) == 0 {
+		return os.Remove(legacyPath)
+	}
+
+	return nil // Directory is not empty, leave it
 }
 
 // UpdateExistingPathFunctions updates the existing path functions to support organization structure.
