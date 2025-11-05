@@ -821,14 +821,23 @@ func (w *world) iUpdateTheYAMLToSet(path string, content *godog.DocString) error
 			fileName := filepath.Base(p)
 			clusterName := strings.TrimSuffix(fileName, ".yaml")
 			confDir := filepath.Dir(p)
-			newPath := filepath.Join(confDir, "clusters", clusterName, "."+clusterName+"-config.yaml")
 			
-			if newData, newErr := ioutil.ReadFile(newPath); newErr == nil {
-				// File exists in new location, use it
+			// Try legacy structure first
+			legacyPath := filepath.Join(confDir, "clusters", clusterName, "."+clusterName+"-config.yaml")
+			if newData, newErr := ioutil.ReadFile(legacyPath); newErr == nil {
+				// File exists in legacy location, use it
 				data = newData
-				p = newPath // Update path for writing back
+				p = legacyPath // Update path for writing back
 			} else {
-				return err // Return original error if not found in new location either
+				// Try organization-based structure (default organization)
+				orgPath := filepath.Join(confDir, "clusters", "default", "infrastructure", "clusters", clusterName, "."+clusterName+"-config.yaml")
+				if orgData, orgErr := ioutil.ReadFile(orgPath); orgErr == nil {
+					// File exists in organization location, use it
+					data = orgData
+					p = orgPath // Update path for writing back
+				} else {
+					return err // Return original error if not found in any location
+				}
 			}
 		} else {
 			return err

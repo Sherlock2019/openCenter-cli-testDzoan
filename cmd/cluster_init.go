@@ -314,12 +314,18 @@ func newClusterInitCmd() *cobra.Command {
 				}
 			}
 
-			// Update GitOps directory to point to organization root only if not explicitly set by user
-			originalGitDir := cfg.OpenCenter.GitOps.GitDir
+			// Update GitOps directory to point to organization root
+			// Check if user explicitly set a custom git_dir via command line flags
+			userSetCustomGitDir := false
+			for _, arg := range os.Args {
+				if strings.HasPrefix(arg, "--opencenter.gitops.git_dir=") || strings.HasPrefix(arg, "--gitops.git_dir=") {
+					userSetCustomGitDir = true
+					break
+				}
+			}
 			
-			// Check if user specified a custom git_dir that differs from the organization default
-			if originalGitDir == "" || originalGitDir == clusterPaths.GitOpsDir {
-				// No custom git_dir specified, use organization-based path
+			// If user didn't explicitly set a custom git_dir, use organization-based path
+			if !userSetCustomGitDir {
 				cfg.OpenCenter.GitOps.GitDir = clusterPaths.GitOpsDir
 				if opencenter, ok := configMap["opencenter"].(map[string]any); ok {
 					if gitops, ok := opencenter["gitops"].(map[string]any); ok {

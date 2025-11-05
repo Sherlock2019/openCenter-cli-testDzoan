@@ -20,12 +20,12 @@ Feature: Cluster initialisation
 
   Scenario: Init generates a SOPS key when not provided
     When I run "openCenter cluster init demo --opencenter.gitops.git_dir=<<tmp>>/repo-demo"
-    Then a file "~/.config/openCenter/clusters/demo/secrets/age/keys/demo-key.txt" should exist
-    And the file "~/.config/openCenter/clusters/demo/secrets/age/keys/demo-key.txt" should contain "AGE-SECRET-KEY-1"
+    Then a file "~/.config/openCenter/clusters/default/secrets/age/keys/demo-key.txt" should exist
+    And the file "~/.config/openCenter/clusters/default/secrets/age/keys/demo-key.txt" should contain "AGE-SECRET-KEY-1"
 
   Scenario: Init does not generate a SOPS key when disabled
     When I run "openCenter cluster init demo2 --opencenter.gitops.git_dir=<<tmp>>/repo-demo2 --no-sops-keygen"
-    Then the file "~/.config/openCenter/clusters/demo2/secrets/age/keys/demo2-key.txt" should not exist
+    Then the file "~/.config/openCenter/clusters/default/secrets/age/keys/demo2-key.txt" should not exist
     And the cluster configuration "demo2" should have "secrets.sops_age_key_file" set to ""
 
   Scenario: Init with full schema includes local references
@@ -38,15 +38,16 @@ Feature: Cluster initialisation
   Scenario: Init creates clusters subdirectory and cluster directory structure
     When I run "openCenter cluster init new-cluster"
     Then a directory "~/.config/openCenter/clusters" should exist
-    And a directory "~/.config/openCenter/clusters/new-cluster" should exist
-    And a file "~/.config/openCenter/clusters/new-cluster/.new-cluster-config.yaml" should exist
+    And a directory "~/.config/openCenter/clusters/default" should exist
+    And a directory "~/.config/openCenter/clusters/default/infrastructure/clusters/new-cluster" should exist
+    And a file "~/.config/openCenter/clusters/default/infrastructure/clusters/new-cluster/.new-cluster-config.yaml" should exist
 
   Scenario: Init creates cluster-specific secrets directory structure
     When I run "openCenter cluster init secrets-test"
-    Then a directory "~/.config/openCenter/clusters/secrets-test/secrets" should exist
-    And a directory "~/.config/openCenter/clusters/secrets-test/secrets/age" should exist
-    And a directory "~/.config/openCenter/clusters/secrets-test/secrets/age/keys" should exist
-    And a file "~/.config/openCenter/clusters/secrets-test/secrets/age/keys/secrets-test-key.txt" should exist
+    Then a directory "~/.config/openCenter/clusters/default/secrets" should exist
+    And a directory "~/.config/openCenter/clusters/default/secrets/age" should exist
+    And a directory "~/.config/openCenter/clusters/default/secrets/age/keys" should exist
+    And a file "~/.config/openCenter/clusters/default/secrets/age/keys/secrets-test-key.txt" should exist
 
   Scenario: Force flag overwrites existing cluster directory
     When I run "openCenter cluster init force-test"
@@ -68,13 +69,13 @@ Feature: Cluster initialisation
 
   Scenario: SOPS key generation uses cluster-specific directory
     When I run "openCenter cluster init sops-dir-test"
-    Then a file "~/.config/openCenter/clusters/sops-dir-test/secrets/age/keys/sops-dir-test-key.txt" should exist
-    And the cluster configuration "sops-dir-test" should have "secrets.sops_age_key_file" containing "clusters/sops-dir-test/secrets/age/keys/sops-dir-test-key.txt"
+    Then a file "~/.config/openCenter/clusters/default/secrets/age/keys/sops-dir-test-key.txt" should exist
+    And the cluster configuration "sops-dir-test" should have "secrets.sops_age_key_file" containing "clusters/default/secrets/age/keys/sops-dir-test-key.txt"
 
   Scenario: Cluster directory creation with special characters in name
     When I run "openCenter cluster init test-cluster-123"
-    Then a directory "~/.config/openCenter/clusters/test-cluster-123" should exist
-    And a file "~/.config/openCenter/clusters/test-cluster-123/.test-cluster-123-config.yaml" should exist
+    Then a directory "~/.config/openCenter/clusters/default/infrastructure/clusters/test-cluster-123" should exist
+    And a file "~/.config/openCenter/clusters/default/infrastructure/clusters/test-cluster-123/.test-cluster-123-config.yaml" should exist
 
   # Organization-based cluster initialization tests
 

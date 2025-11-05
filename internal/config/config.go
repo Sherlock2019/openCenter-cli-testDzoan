@@ -716,7 +716,16 @@ func ConfigPath(name string) (string, error) {
 		}
 	}
 	
-	// Fall back to legacy path for backward compatibility
+	// Check for flat config file (backward compatibility)
+	configDir, err := ResolveConfigDir()
+	if err == nil {
+		flatConfigPath := filepath.Join(configDir, name+".yaml")
+		if _, statErr := os.Stat(flatConfigPath); statErr == nil {
+			return flatConfigPath, nil
+		}
+	}
+	
+	// Fall back to legacy directory structure path for backward compatibility
 	clusterDir, err := ClusterDirectoryPath(name)
 	if err != nil {
 		return "", err
@@ -1083,7 +1092,7 @@ func Save(cfg Config) error {
 }
 
 // List returns a sorted list of cluster names from the configuration directory.
-// It looks for cluster directories within the clusters subdirectory.
+// It looks for cluster directories within the clusters subdirectory and flat config files.
 //
 // Outputs:
 //   - []string: A list of cluster names.
@@ -1094,17 +1103,37 @@ func List() ([]string, error) {
 		return nil, err
 	}
 	
+	var names []string
+	
+	// Check for flat config files (backward compatibility)
+	if entries, err := os.ReadDir(dir); err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".yaml") {
+				// Extract cluster name from filename (remove .yaml extension)
+				clusterName := strings.TrimSuffix(entry.Name(), ".yaml")
+				// Skip config.yaml (CLI config file)
+				if clusterName != "config" {
+					names = append(names, clusterName)
+				}
+			}
+		}
+	}
+	
+	// Check clusters directory for legacy and organization-based structures
 	clustersDir := filepath.Join(dir, "clusters")
 	entries, readErr := os.ReadDir(clustersDir)
 	if readErr != nil {
-		// If clusters directory doesn't exist, return empty list
+		// If clusters directory doesn't exist, just return flat config files
 		if os.IsNotExist(readErr) {
-			return []string{}, nil
+			// Sort lexically
+			if len(names) > 1 {
+				sortStrings(names)
+			}
+			return names, nil
 		}
 		return nil, readErr
 	}
 	
-	var names []string
 	for _, entry := range entries {
 		if entry.IsDir() {
 			entryName := entry.Name()
