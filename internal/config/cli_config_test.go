@@ -18,6 +18,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 func TestDefaultCLIConfig(t *testing.T) {
@@ -404,4 +407,307 @@ paths:
 	if cm.config.Logging.Level != defaults.Logging.Level {
 		t.Error("Invalid log level should be repaired to default")
 	}
+}
+
+func TestLoggingInitialization(t *testing.T) {
+	// Test default logging initialization
+	defaultConfig := DefaultCLIConfig()
+	err := InitializeLogging(&defaultConfig.Logging)
+	if err != nil {
+		t.Errorf("Failed to initialize default logging: %v", err)
+	}
+
+	logger := GetGlobalLogger()
+	if logger == nil {
+		t.Error("Global logger should not be nil after initialization")
+	}
+
+	// Test that log level is set correctly
+	if logger.Level.String() != "warning" {
+		t.Errorf("Expected log level 'warning', got '%s'", logger.Level.String())
+	}
+}
+
+func TestLoggingValidation(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      LoggingConfig
+		expectError bool
+	}{
+		{
+			name: "valid config",
+			config: LoggingConfig{
+				Level:  "info",
+				Format: "json",
+				Output: "stdout",
+				File: FileConfig{
+					MaxSize:    100,
+					MaxBackups: 3,
+					MaxAge:     28,
+					Compress:   true,
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "invalid log level",
+			config: LoggingConfig{
+				Level:  "invalid",
+				Format: "text",
+				Output: "stderr",
+				File: FileConfig{
+					MaxSize:    100,
+					MaxBackups: 3,
+					MaxAge:     28,
+					Compress:   true,
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid log format",
+			config: LoggingConfig{
+				Level:  "info",
+				Format: "invalid",
+				Output: "stderr",
+				File: FileConfig{
+					MaxSize:    100,
+					MaxBackups: 3,
+					MaxAge:     28,
+					Compress:   true,
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "invalid file config",
+			config: LoggingConfig{
+				Level:  "info",
+				Format: "text",
+				Output: "stderr",
+				File: FileConfig{
+					MaxSize:    -1,
+					MaxBackups: 3,
+					MaxAge:     28,
+					Compress:   true,
+				},
+			},
+			expectError: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := ValidateLoggingConfig(&test.config)
+			if test.expectError && err == nil {
+				t.Error("Expected validation error but got none")
+			}
+			if !test.expectError && err != nil {
+				t.Errorf("Expected no validation error but got: %v", err)
+			}
+		})
+	}
+}
+
+func TestLoggingFileOutput(t *testing.T) {
+	tmpDir := t.TempDir()
+	logFile := filepath.Join(tmpDir, "test.log")
+
+	config := LoggingConfig{
+		Level:  "debug",
+		Format: "text",
+		Output: logFile,
+		File: FileConfig{
+			MaxSize:    1,
+			MaxBackups: 2,
+			MaxAge:     1,
+			Compress:   false,
+		},
+	}
+
+	err := InitializeLogging(&config)
+	if err != nil {
+		t.Errorf("Failed to initialize file logging: %v", err)
+	}
+
+	// Test logging to file
+	Debug("Test debug message")
+	Info("Test info message")
+	Warn("Test warning message")
+	Error("Test error message")
+
+	// Check that log file was created
+	if _, err := os.Stat(logFile); os.IsNotExist(err) {
+		t.Error("Log file should have been created")
+	}
+}
+
+func TestLoggingFormats(t *testing.T) {
+	formats := []string{"text", "json", "yaml"}
+
+	for _, format := range formats {
+		t.Run(format, func(t *testing.T) {
+			config := LoggingConfig{
+				Level:  "info",
+				Format: format,
+				Output: "stderr",
+				File: FileConfig{
+					MaxSize:    100,
+					MaxBackups: 3,
+					MaxAge:     28,
+					Compress:   true,
+				},
+			}
+
+			err := InitializeLogging(&config)
+			if err != nil {
+				t.Errorf("Failed to initialize logging with format %s: %v", format, err)
+			}
+
+			// Test that we can log without errors
+			Info("Test message for format: " + format)
+		})
+	}
+}
+
+func TestSetLogLevel(t *testing.T) {
+	// Initialize with default config
+	defaultConfig := DefaultCLIConfig()
+	err := InitializeLogging(&defaultConfig.Logging)
+	if err != nil {
+		t.Errorf("Failed to initialize logging: %v", err)
+	}
+
+	// Test setting valid log levels
+	levels := []string{"debug", "info", "warn", "error"}
+	for _, level := range levels {
+		err := SetLogLevel(level)
+		if err != nil {
+			t.Errorf("Failed to set log level to %s: %v", level, err)
+		}
+
+		logger := GetGlobalLogger()
+		expectedLevel := level
+		if level == "warn" {
+			expectedLevel = "warning"
+		}
+		if logger.Level.String() != expectedLevel {
+			t.Errorf("Expected log level %s, got %s", expectedLevel, logger.Level.String())
+		}
+	}
+
+	// Test setting invalid log level
+	err = SetLogLevel("invalid")
+	if err == nil {
+		t.Error("Expected error when setting invalid log level")
+	}
+}
+
+func TestSetLogFormat(t *testing.T) {
+	// Initialize with default config
+	defaultConfig := DefaultCLIConfig()
+	err := InitializeLogging(&defaultConfig.Logging)
+	if err != nil {
+		t.Errorf("Failed to initialize logging: %v", err)
+	}
+
+	// Test setting valid log formats
+	formats := []string{"text", "json", "yaml"}
+	for _, format := range formats {
+		err := SetLogFormat(format)
+		if err != nil {
+			t.Errorf("Failed to set log format to %s: %v", format, err)
+		}
+		// We can't easily test the formatter type, but we can ensure no error occurred
+	}
+
+	// Test setting invalid log format
+	err = SetLogFormat("invalid")
+	if err == nil {
+		t.Error("Expected error when setting invalid log format")
+	}
+}
+
+func TestYAMLFormatter(t *testing.T) {
+	formatter := &YAMLFormatter{}
+	
+	// Create a test log entry
+	entry := &logrus.Entry{
+		Time:    time.Now(),
+		Level:   logrus.InfoLevel,
+		Message: "Test message",
+		Data: logrus.Fields{
+			"key1": "value1",
+			"key2": 42,
+		},
+	}
+
+	output, err := formatter.Format(entry)
+	if err != nil {
+		t.Errorf("YAML formatter failed: %v", err)
+	}
+
+	outputStr := string(output)
+	
+	// Check that output contains expected YAML elements
+	if !strings.Contains(outputStr, "timestamp:") {
+		t.Error("YAML output should contain timestamp")
+	}
+	
+	if !strings.Contains(outputStr, "level: info") {
+		t.Error("YAML output should contain log level")
+	}
+	
+	if !strings.Contains(outputStr, "message: \"Test message\"") {
+		t.Error("YAML output should contain message")
+	}
+	
+	if !strings.Contains(outputStr, "fields:") {
+		t.Error("YAML output should contain fields section")
+	}
+	
+	if !strings.Contains(outputStr, "key1: value1") {
+		t.Error("YAML output should contain field data")
+	}
+	
+	if !strings.Contains(outputStr, "---") {
+		t.Error("YAML output should end with document separator")
+	}
+}
+
+func TestLoggingHelperFunctions(t *testing.T) {
+	// Initialize with debug level to capture all messages
+	config := LoggingConfig{
+		Level:  "debug",
+		Format: "text",
+		Output: "stderr",
+		File: FileConfig{
+			MaxSize:    100,
+			MaxBackups: 3,
+			MaxAge:     28,
+			Compress:   true,
+		},
+	}
+
+	err := InitializeLogging(&config)
+	if err != nil {
+		t.Errorf("Failed to initialize logging: %v", err)
+	}
+
+	// Test all logging helper functions (they should not panic)
+	Debug("Debug message")
+	Debugf("Debug message with format: %s", "test")
+	Info("Info message")
+	Infof("Info message with format: %d", 42)
+	Warn("Warning message")
+	Warnf("Warning message with format: %v", true)
+	Error("Error message")
+	Errorf("Error message with format: %s", "error")
+
+	// Test WithField and WithFields
+	WithField("key", "value").Info("Message with field")
+	WithFields(logrus.Fields{
+		"key1": "value1",
+		"key2": 42,
+	}).Info("Message with fields")
 }

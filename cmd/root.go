@@ -18,6 +18,7 @@ import (
     "os"
     "strings"
 
+    "github.com/sirupsen/logrus"
     "github.com/spf13/cobra"
 
     "github.com/rackerlabs/openCenter-cli/internal/config"
@@ -150,6 +151,15 @@ func initializeGlobalConfig(cmd *cobra.Command) error {
         return fmt.Errorf("failed to apply global flag overrides: %w", err)
     }
 
+    // Log that configuration has been initialized
+    config.Debug("Configuration initialized successfully")
+    config.WithFields(logrus.Fields{
+        "config_path": configManager.GetConfigPath(),
+        "log_level":   configManager.GetConfig().Logging.Level,
+        "log_format":  configManager.GetConfig().Logging.Format,
+        "log_output":  configManager.GetConfig().Logging.Output,
+    }).Debug("Configuration details")
+
     return nil
 }
 
@@ -162,16 +172,19 @@ func applyGlobalFlagOverrides(globalFlags *GlobalFlags) error {
 
     // Apply log level override
     if globalFlags.LogLevel != "warn" || globalFlags.Verbose {
+        config.Debugf("Overriding log level from '%s' to '%s'", overriddenConfig.Logging.Level, globalFlags.LogLevel)
         overriddenConfig.Logging.Level = globalFlags.LogLevel
     }
 
     // Apply dry-run override
     if globalFlags.DryRun {
+        config.Debug("Enabling dry-run mode via global flag")
         overriddenConfig.Behavior.DryRun = true
     }
 
     // Apply verbose override
     if globalFlags.Verbose {
+        config.Debug("Enabling verbose mode via global flag")
         overriddenConfig.Behavior.Verbose = true
     }
 
@@ -228,6 +241,11 @@ func applySetFlagOverrides(cliConfig *config.CLIConfig, setFlags []string) error
         if err := tempManager.SetValue(key, parsedValue); err != nil {
             return fmt.Errorf("failed to set configuration value '%s=%s': %w", key, value, err)
         }
+        
+        config.WithFields(logrus.Fields{
+            "key":   key,
+            "value": parsedValue,
+        }).Debug("Applied --set flag override")
     }
 
     // Get the updated configuration back
