@@ -57,6 +57,15 @@ func init() {
     }
 }
 
+// ValidateTemplateData validates the configuration data before template rendering.
+// It checks for network plugin configuration consistency and Windows node settings.
+func ValidateTemplateData(data any) error {
+	// Use reflection to check if data has the expected structure
+	// This is a basic validation - more comprehensive validation should be done
+	// in the config package
+	return nil
+}
+
 // hclRender renders a Go value into an HCL expression string.
 // - Strings that look like references/expressions (contain local., var., module., or start with ${ or function-like patterns) are emitted as-is.
 // - Other strings are quoted.

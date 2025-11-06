@@ -243,7 +243,7 @@ module "kubespray-cluster" {
 }
 
 
-{{- if or (not .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico) .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled }}
+{{- if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled }}
 module "calico" {
   source = "{{ (index .IAC.Modules "calico").source | default "github.com/rackerlabs/openCenter.git//install/iac/calico?ref=main" }}"
 
@@ -259,6 +259,41 @@ module "calico" {
   subnet_nodes                     = local.subnet_nodes
   subnet_pods                      = local.subnet_pods
   subnet_services                  = local.subnet_services
-  windows_dataplane                = length(module.openstack-nova.windows_nodes) > 0 ? "HSN" : "Disabled"
+  {{- if gt (.OpenCenter.Cluster.Kubernetes.WorkerCountWindows | default 0) 0 }}
+  windows_dataplane                = "HSN"
+  {{- else }}
+  windows_dataplane                = "Disabled"
+  {{- end }}
+}
+{{- end }}
+
+{{- if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled }}
+module "cilium" {
+  source = "{{ (index .IAC.Modules "cilium").source | default "github.com/rackerlabs/openCenter.git//install/iac/cilium?ref=main" }}"
+
+  cluster_name                     = local.cluster_name
+  deploy_cluster                   = local.deploy_cluster
+  k8s_internal_ip                  = module.openstack-nova.k8s_internal_ip
+  k8s_api_port                     = local.k8s_api_port
+  subnet_nodes                     = local.subnet_nodes
+  subnet_pods                      = local.subnet_pods
+  subnet_services                  = local.subnet_services
+  cilium_operator_enabled          = {{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.OperatorEnabled | default true }}
+  cilium_kube_proxy_replacement    = {{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.KubeProxyReplacement | default true }}
+}
+{{- end }}
+
+{{- if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Enabled }}
+module "kube-ovn" {
+  source = "{{ (index .IAC.Modules "kube-ovn").source | default "github.com/rackerlabs/openCenter.git//install/iac/kube-ovn?ref=main" }}"
+
+  cluster_name                     = local.cluster_name
+  deploy_cluster                   = local.deploy_cluster
+  k8s_internal_ip                  = module.openstack-nova.k8s_internal_ip
+  k8s_api_port                     = local.k8s_api_port
+  subnet_nodes                     = local.subnet_nodes
+  subnet_pods                      = local.subnet_pods
+  subnet_services                  = local.subnet_services
+  kube_ovn_cilium_integration      = {{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.CiliumIntegration | default true }}
 }
 {{- end }}

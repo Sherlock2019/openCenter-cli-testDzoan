@@ -22,6 +22,11 @@ func Provision(cfg config.Config) error {
         return fmt.Errorf("failed to create cluster iac directory: %w", err)
     }
 
+    // Validate template data before rendering
+    if err := provision.ValidateTemplateData(cfg); err != nil {
+        return fmt.Errorf("template validation failed: %w", err)
+    }
+
     // Render main.tf from structured IaC (locals + modules)
     mainPath := filepath.Join(clusterDir, "main.tf")
     mf, err := os.Create(mainPath)

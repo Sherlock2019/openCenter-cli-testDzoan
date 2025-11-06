@@ -16,6 +16,7 @@ package gitops
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -286,6 +287,7 @@ func TestRenderInfrastructureClusterNetworkPluginSelection(t *testing.T) {
 		{
 			name: "cilium enabled",
 			setupConfig: func(cfg *config.Config) {
+				cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled = false
 				cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled = true
 			},
 			expectedPlugin: "cilium",
@@ -293,6 +295,7 @@ func TestRenderInfrastructureClusterNetworkPluginSelection(t *testing.T) {
 		{
 			name: "kube-ovn enabled",
 			setupConfig: func(cfg *config.Config) {
+				cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled = false
 				cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Enabled = true
 			},
 			expectedPlugin: "kube-ovn",
@@ -300,7 +303,9 @@ func TestRenderInfrastructureClusterNetworkPluginSelection(t *testing.T) {
 		{
 			name: "default to calico",
 			setupConfig: func(cfg *config.Config) {
-				// No network plugin explicitly enabled
+				// Calico is enabled by default, ensure others are disabled
+				cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled = false
+				cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Enabled = false
 			},
 			expectedPlugin: "calico",
 		},
@@ -327,7 +332,13 @@ func TestRenderInfrastructureClusterNetworkPluginSelection(t *testing.T) {
 			content := string(data)
 
 			expectedLine := `network_plugin = "` + tc.expectedPlugin + `"`
-			if !strings.Contains(content, expectedLine) {
+			// Use regex to handle variable whitespace in template formatting
+			expectedPattern := `network_plugin\s*=\s*"` + tc.expectedPlugin + `"`
+			matched, err := regexp.MatchString(expectedPattern, content)
+			if err != nil {
+				t.Fatalf("failed to compile regex pattern: %v", err)
+			}
+			if !matched {
 				t.Errorf("rendered main.tf missing expected network plugin %s\ncontent:\n%s", expectedLine, content)
 			}
 		})

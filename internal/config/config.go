@@ -887,7 +887,7 @@ func mergeUserConfigIntoIAC(cfg *Config) error {
 		cfg.IAC.Main["dns_zone_name"] = k8s.DNSZoneName
 	}
 	
-	// Map network plugin configuration
+	// Map network plugin configuration with proper conditional logic
 	if k8s.NetworkPlugin.Calico.Enabled {
 		cfg.IAC.Main["network_plugin"] = "calico"
 		if k8s.NetworkPlugin.Calico.CNIIface != "" {
@@ -896,6 +896,13 @@ func mergeUserConfigIntoIAC(cfg *Config) error {
 		if k8s.NetworkPlugin.Calico.CalicoInterfaceAutodetect != "" {
 			cfg.IAC.Main["calico_interface_autodetect"] = k8s.NetworkPlugin.Calico.CalicoInterfaceAutodetect
 		}
+	} else if k8s.NetworkPlugin.Cilium.Enabled {
+		cfg.IAC.Main["network_plugin"] = "cilium"
+		cfg.IAC.Main["cilium_operator_enabled"] = k8s.NetworkPlugin.Cilium.OperatorEnabled
+		cfg.IAC.Main["cilium_kube_proxy_replacement"] = k8s.NetworkPlugin.Cilium.KubeProxyReplacement
+	} else if k8s.NetworkPlugin.KubeOVN.Enabled {
+		cfg.IAC.Main["network_plugin"] = "kube-ovn"
+		cfg.IAC.Main["kube_ovn_cilium_integration"] = k8s.NetworkPlugin.KubeOVN.CiliumIntegration
 	}
 	
 	// Map SSH authorized keys
@@ -1335,6 +1342,40 @@ func Validate(cfg Config) []string {
 	if vrrpEnabled && !useOctavia && vrrpIP == "" {
 		errs = append(errs, "vrrp_ip must be set when use_octavia is false")
 	}
+	
+	// Network plugin validation - ensure only one is enabled
+	networkPlugins := []struct {
+		name    string
+		enabled bool
+	}{
+		{"Calico", cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled},
+		{"Cilium", cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled},
+		{"Kube-OVN", cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Enabled},
+	}
+	
+	enabledCount := 0
+	var enabledPlugins []string
+	for _, plugin := range networkPlugins {
+		if plugin.enabled {
+			enabledCount++
+			enabledPlugins = append(enabledPlugins, plugin.name)
+		}
+	}
+	
+	if enabledCount == 0 {
+		errs = append(errs, "at least one network plugin (Calico, Cilium, or Kube-OVN) must be enabled")
+	} else if enabledCount > 1 {
+		errs = append(errs, fmt.Sprintf("only one network plugin can be enabled at a time, but found: %s", strings.Join(enabledPlugins, ", ")))
+	}
+	
+	// Windows node validation - exclude Windows blocks when worker_count_windows = 0
+	if cfg.OpenCenter.Cluster.Kubernetes.WorkerCountWindows == 0 {
+		// Windows workers should be disabled when count is 0
+		if cfg.OpenCenter.Cluster.Kubernetes.WindowsWorkers.Enabled {
+			errs = append(errs, "windows_workers.enabled must be false when worker_count_windows is 0")
+		}
+	}
+	
 	return errs
 }
 
