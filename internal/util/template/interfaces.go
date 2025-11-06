@@ -36,6 +36,13 @@ type TemplateValidator interface {
 	ValidateTemplateData(templateName string, data interface{}) error
 	ValidateTemplateExists(templateName string) error
 	ValidateRequiredFields(data interface{}, requiredFields []string) error
+	
+	// Enhanced validation methods for comprehensive template validation framework
+	ValidateTemplateWithData(templateName string, data interface{}) *TemplateValidationResult
+	ValidateTemplateSyntax(templateName string) error
+	ValidateVariableSubstitution(templateName string, data interface{}) error
+	ExtractTemplateVariables(templateName string) ([]VariableInfo, error)
+	ValidateNetworkPluginConfig(pluginType string, config map[string]interface{}) error
 }
 
 // TemplateEngine interface combining rendering and validation with dependency injection
@@ -54,6 +61,12 @@ type TemplateEngine interface {
 	// Advanced rendering with validation
 	RenderWithValidation(templateName string, data interface{}, requiredFields []string) (string, error)
 	RenderToWriterWithValidation(templateName string, data interface{}, writer io.Writer, requiredFields []string) error
+	
+	// Enhanced validation methods
+	ValidateTemplateWithDataAndResult(templateName string, data interface{}) (*TemplateValidationResult, error)
+	ValidateTemplateSyntaxEngine(templateName string) error
+	ValidateVariableSubstitutionEngine(templateName string, data interface{}) error
+	ExtractTemplateVariablesEngine(templateName string) ([]VariableInfo, error)
 	
 	// Component access for dependency injection
 	GetRenderer() TemplateRenderer
@@ -92,4 +105,26 @@ type ValidationError struct {
 
 func (e ValidationError) Error() string {
 	return e.Message
+}
+
+// TemplateValidationResult represents the result of comprehensive template validation
+type TemplateValidationResult struct {
+	Valid              bool
+	Errors             []*TemplateError
+	Warnings           []*TemplateError
+	MissingVariables   []string
+	UnusedVariables    []string
+	SyntaxErrors       []string
+	RequiredFields     []string
+	OptionalFields     []string
+}
+
+// VariableInfo represents information about a template variable
+type VariableInfo struct {
+	Name     string
+	Type     string
+	Required bool
+	Path     string
+	Line     int
+	Column   int
 }

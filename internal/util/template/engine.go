@@ -137,6 +137,13 @@ func (e *DefaultTemplateEngine) InitWithTemplates(templates *template.Template) 
 		e.templates = templates
 		e.initErr = e.initializeDependencies()
 	})
+	
+	// If already initialized, update the templates and re-initialize dependencies
+	if e.initErr == nil && e.templates != templates {
+		e.templates = templates
+		e.initErr = e.initializeDependencies()
+	}
+	
 	return e.initErr
 }
 
@@ -217,6 +224,86 @@ func (e *DefaultTemplateEngine) ValidateTemplateData(templateName string, data i
 		return fmt.Errorf("template engine not initialized")
 	}
 	return e.validator.ValidateTemplateData(templateName, data)
+}
+
+// ValidateTemplateWithDataAndResult performs comprehensive validation of template with data
+func (e *DefaultTemplateEngine) ValidateTemplateWithDataAndResult(templateName string, data interface{}) (*TemplateValidationResult, error) {
+	if e.templates == nil {
+		return nil, NewInitializationError("template engine", fmt.Errorf("template engine not initialized"))
+	}
+	
+	result := e.validator.ValidateTemplateWithData(templateName, data)
+	if !result.Valid {
+		return result, fmt.Errorf("template validation failed with %d errors", len(result.Errors))
+	}
+	
+	return result, nil
+}
+
+// ValidateTemplateSyntaxEngine validates template syntax
+func (e *DefaultTemplateEngine) ValidateTemplateSyntaxEngine(templateName string) error {
+	if e.templates == nil {
+		return NewInitializationError("template engine", fmt.Errorf("template engine not initialized"))
+	}
+	return e.validator.ValidateTemplateSyntax(templateName)
+}
+
+// ValidateVariableSubstitutionEngine validates variable substitution for a template
+func (e *DefaultTemplateEngine) ValidateVariableSubstitutionEngine(templateName string, data interface{}) error {
+	if e.templates == nil {
+		return NewInitializationError("template engine", fmt.Errorf("template engine not initialized"))
+	}
+	return e.validator.ValidateVariableSubstitution(templateName, data)
+}
+
+// ExtractTemplateVariablesEngine extracts variables from a template
+func (e *DefaultTemplateEngine) ExtractTemplateVariablesEngine(templateName string) ([]VariableInfo, error) {
+	if e.templates == nil {
+		return nil, NewInitializationError("template engine", fmt.Errorf("template engine not initialized"))
+	}
+	return e.validator.ExtractTemplateVariables(templateName)
+}
+
+// ValidateNetworkPluginConfig validates network plugin configuration
+func (e *DefaultTemplateEngine) ValidateNetworkPluginConfig(pluginType string, config map[string]interface{}) error {
+	return e.validator.ValidateNetworkPluginConfig(pluginType, config)
+}
+
+// ValidateTemplateWithData performs comprehensive validation of template with data (interface method)
+func (e *DefaultTemplateEngine) ValidateTemplateWithData(templateName string, data interface{}) *TemplateValidationResult {
+	if e.templates == nil {
+		result := &TemplateValidationResult{
+			Valid:  false,
+			Errors: []*TemplateError{NewInitializationError("template engine", fmt.Errorf("template engine not initialized"))},
+		}
+		return result
+	}
+	
+	return e.validator.ValidateTemplateWithData(templateName, data)
+}
+
+// ValidateTemplateSyntax validates template syntax (interface method)
+func (e *DefaultTemplateEngine) ValidateTemplateSyntax(templateName string) error {
+	if e.templates == nil {
+		return NewInitializationError("template engine", fmt.Errorf("template engine not initialized"))
+	}
+	return e.validator.ValidateTemplateSyntax(templateName)
+}
+
+// ValidateVariableSubstitution validates variable substitution for a template (interface method)
+func (e *DefaultTemplateEngine) ValidateVariableSubstitution(templateName string, data interface{}) error {
+	if e.templates == nil {
+		return NewInitializationError("template engine", fmt.Errorf("template engine not initialized"))
+	}
+	return e.validator.ValidateVariableSubstitution(templateName, data)
+}
+
+// ExtractTemplateVariables extracts variables from a template (interface method)
+func (e *DefaultTemplateEngine) ExtractTemplateVariables(templateName string) ([]VariableInfo, error) {
+	if e.templates == nil {
+		return nil, NewInitializationError("template engine", fmt.Errorf("template engine not initialized"))
+	}
+	return e.validator.ExtractTemplateVariables(templateName)
 }
 
 // ValidateTemplateExists validates that a template exists
