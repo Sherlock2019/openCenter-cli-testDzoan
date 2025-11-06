@@ -23,10 +23,11 @@ locals {
   network_provider                        = "{{ .IAC.Main.network_provider | default "physnet1" }}"
   #CIDR that the openstack VMs will use for K8s nodes
   subnet_nodes                            = "{{ .IAC.Main.subnet_nodes | default "10.2.184.0/22" }}"
+  subnet_nodes_cidr                      = cidrsubnet(local.subnet_nodes, 0, 0)
   subnet_nodes_oct                       = join(".", slice(split(".", split("/", local.subnet_nodes)[0]), 0, 3))
   #Leave some IPs free for the VRRP IP and the MetalLB Range
   allocation_pool_start                   = "${local.subnet_nodes_oct}.50"
-  allocation_pool_end                     = "${local.subnet_nodes_oct}.254"
+  allocation_pool_end                     = "{{ .IAC.Main.allocation_pool_end | default "" }}" != "" ? "{{ .IAC.Main.allocation_pool_end }}" : cidrhost(local.subnet_nodes_cidr, -2)
   # vrrp_ip Must be an IP from subnet_nodes and will be used as the internal Kubernetes API VIP.
   vrrp_ip                                 = "${local.subnet_nodes_oct}.10"
   #CIDR that will be used by kubernetes pods. Not an openstack network.

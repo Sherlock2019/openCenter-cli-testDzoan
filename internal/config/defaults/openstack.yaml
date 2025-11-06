@@ -16,10 +16,10 @@ locals:
   vlan_id: ""
   mtu: ""
   network_provider: "physnet1"
-  subnet_nodes: "10.2.188.0/22"
+  subnet_nodes: "10.2.184.0/22"
   subnet_nodes_oct: 'join(".", slice(split(".", split("/", local.subnet_nodes)[0]), 0, 3))'
   allocation_pool_start: "${local.subnet_nodes_oct}.50"
-  allocation_pool_end: "${local.subnet_nodes_oct}.254"
+  allocation_pool_end: ""
   vrrp_ip: "${local.subnet_nodes_oct}.10"
   subnet_pods: "10.42.0.0/16"
   subnet_services: "10.43.0.0/16"
@@ -44,14 +44,14 @@ locals:
   flavor_bastion: "gp.0.2.2"
   flavor_master: "gp.0.4.4"
   flavor_worker: "gp.0.4.8"
-  worker_node_bfv_volume_size: 100
+  worker_node_bfv_volume_size: 40
   worker_node_bfv_destination_type: "volume"
   worker_node_bfv_source_type: "image"
   worker_node_bfv_volume_type: "HA-Standard"
   ca_certificates: ""
   openstack_ca: ""
   kubespray_version: "v2.28.1"
-  kubernetes_version: "1.30.4"
+  kubernetes_version: "1.31.4"
   network_plugin: "calico"
   deploy_cluster: true
   kube_vip_enabled: true

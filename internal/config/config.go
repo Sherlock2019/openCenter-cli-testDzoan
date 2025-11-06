@@ -421,16 +421,16 @@ func defaultConfig(name string) Config {
 				K8sAPIPortACL:      []string{"0.0.0.0/0"},
 				SSHAuthorizedKeys:  []string{"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDogzEullM89m//Vd8IGPERto2DotXnUCKGH6II1Vk/klEuDVqXx9kCb981XJKh8mU15bfJVdE4h078q/shK9EIcPMRKSQSMs2LkgF/1yUeVYPNYiIBph6CaqjIxKHy1kYxw3KUTIh8IIl1M4t5fc5c49Gr3QuDpeMN4Z/wrbR1DceIbFDiVxYNeyJWfOdowKgTn4AKh0n1xtg6/XLin3cCstpvfUJUKm0WOcmn3+DHK6cBNqNAMKdtxgnGwlY4MfizJOZE30Y7hwPqXUjOgLgB2vybcdcMpUvw9e8HopogOFQnVwwmlc9/7ZKPCaCKRBEC38IV82CJ6+/eePIMriPF migu4903@MNF0TUDV30"},
 				Kubernetes: KubernetesConfig{
-					Version:              "1.32.8",
+					Version:              "1.31.4",
 					FlavorBastion:        "gp.0.2.2",
-					FlavorMaster:         "gp.0.4.8",
-					FlavorWorker:         "gp.0.4.16",
+					FlavorMaster:         "gp.0.4.4",
+					FlavorWorker:         "gp.0.4.8",
 					SubnetPods:           "10.42.0.0/16",
 					SubnetServices:       "10.43.0.0/16",
 					LoadbalancerProvider: "ovn",
 					DNSZoneName:          "gdo.prod.sjc3.k8s.opencenter.cloud",
 					MasterCount:          3,
-					WorkerCount:          4,
+					WorkerCount:          2,
 					WorkerCountWindows:   0,
 					NetworkPlugin: NetworkPlugin{
 						Calico: CalicoConfig{
@@ -536,7 +536,8 @@ func defaultConfig(name string) Config {
 			Main: map[string]any{
 				"cluster_name":    name,
 				"master_count":    3,
-				"worker_count":    4,
+				"worker_count":    2,
+				"subnet_nodes":    "10.2.184.0/22",
 				"subnet_pods":     "10.42.0.0/16",
 				"subnet_services": "10.43.0.0/16",
 			},
