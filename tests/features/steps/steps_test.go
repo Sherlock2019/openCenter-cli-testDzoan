@@ -98,8 +98,34 @@ func TestFeatures(t *testing.T) {
 			RegisterSteps(s, t, w)
 
 			s.After(func(ctx context.Context, sc *godog.Scenario, err error) (context.Context, error) {
-				os.RemoveAll(w.tmpDir)
-				os.RemoveAll(w.configDir)
+				// Clean up environment variables
+				os.Unsetenv("OPENCENTER_CONFIG_DIR")
+				os.Unsetenv("OPENCENTER_TEST_TMP")
+				
+				// Clean up temporary directories
+				if w.tmpDir != "" {
+					os.RemoveAll(w.tmpDir)
+				}
+				if w.configDir != "" && w.configDir != w.tmpDir {
+					os.RemoveAll(w.configDir)
+				}
+				if w.remoteGitDir != "" {
+					os.RemoveAll(w.remoteGitDir)
+				}
+				
+				// Reset world state
+				w.tmpDir = ""
+				w.configDir = ""
+				w.remoteGitDir = ""
+				w.lastOut = ""
+				w.lastErr = ""
+				w.lastExit = 0
+				w.lastFile = ""
+				w.pendingCmd = ""
+				w.answers = nil
+				w.pendingChoice = ""
+				w.cwd = ""
+				
 				return ctx, err
 			})
 		},
