@@ -421,10 +421,18 @@ func executeSOPSBackupKey(ctx context.Context, keyFile, backupDir string, dryRun
 
 // executeSOPSValidate validates Age key configuration
 func executeSOPSValidate(ctx context.Context, keyFile, configFile string, dryRun bool) error {
+	// Check if debug mode is enabled
+	debugMode := os.Getenv("OPENCENTER_DEBUG") != ""
+	
 	if dryRun {
 		fmt.Println("🧪 DRY RUN: SOPS validation simulation")
 	} else {
 		fmt.Println("🔍 Validating SOPS configuration...")
+	}
+
+	if debugMode {
+		fmt.Println("🐛 DEBUG MODE ENABLED")
+		fmt.Printf("🐛 Environment: OPENCENTER_DEBUG=%s\n", os.Getenv("OPENCENTER_DEBUG"))
 	}
 
 	// Initialize key manager
@@ -432,10 +440,18 @@ func executeSOPSValidate(ctx context.Context, keyFile, configFile string, dryRun
 	keyDir := filepath.Join(homeDir, ".config", "sops", "age")
 	km := sops.NewKeyManager(keyDir)
 
+	if debugMode {
+		fmt.Printf("🐛 Home directory: %s\n", homeDir)
+		fmt.Printf("🐛 Key directory: %s\n", keyDir)
+	}
+
 	// Use default key name if not specified
 	keyName := "keys"
 	if keyFile != "" {
 		keyName = filepath.Base(strings.TrimSuffix(keyFile, filepath.Ext(keyFile)))
+		if debugMode {
+			fmt.Printf("🐛 Using custom key file: %s\n", keyFile)
+		}
 	}
 
 	fmt.Printf("📁 Key name: %s\n", keyName)
@@ -452,18 +468,60 @@ func executeSOPSValidate(ctx context.Context, keyFile, configFile string, dryRun
 
 	// Check if key exists
 	keyPath := filepath.Join(keyDir, fmt.Sprintf("%s.txt", keyName))
+	if debugMode {
+		fmt.Printf("🐛 Checking key path: %s\n", keyPath)
+	}
+	
 	if _, err := os.Stat(keyPath); os.IsNotExist(err) {
+		if debugMode {
+			fmt.Printf("🐛 Key file not found at: %s\n", keyPath)
+			// List available keys
+			if entries, err := os.ReadDir(keyDir); err == nil {
+				fmt.Printf("🐛 Available files in key directory:\n")
+				for _, entry := range entries {
+					fmt.Printf("🐛   - %s\n", entry.Name())
+				}
+			} else {
+				fmt.Printf("🐛 Failed to list key directory: %v\n", err)
+			}
+		}
 		return fmt.Errorf("❌ Age key file not found: %s", keyPath)
 	}
 
+	if debugMode {
+		// Show file permissions
+		if info, err := os.Stat(keyPath); err == nil {
+			fmt.Printf("🐛 Key file permissions: %s\n", info.Mode())
+			fmt.Printf("🐛 Key file size: %d bytes\n", info.Size())
+		}
+	}
+
 	// Load key to get public key
+	if debugMode {
+		fmt.Println("🐛 Loading Age key...")
+	}
 	keyPair, err := km.LoadAgeKey(keyName)
 	if err != nil {
+		if debugMode {
+			fmt.Printf("🐛 Failed to load key: %v\n", err)
+		}
 		return fmt.Errorf("❌ Failed to load Age key: %w", err)
 	}
 
+	if debugMode {
+		fmt.Printf("🐛 Private key length: %d characters\n", len(keyPair.PrivateKey))
+		fmt.Printf("🐛 Public key: %s\n", keyPair.PublicKey)
+		fmt.Printf("🐛 Public key length: %d characters\n", len(keyPair.PublicKey))
+	}
+
 	// Validate key format
+	if debugMode {
+		fmt.Println("🐛 Validating Age key format...")
+	}
 	if err := km.ValidateAgeKey(keyPair.PublicKey); err != nil {
+		if debugMode {
+			fmt.Printf("🐛 Key validation failed: %v\n", err)
+		}
 		return fmt.Errorf("❌ Age key validation failed: %w", err)
 	}
 
@@ -471,39 +529,117 @@ func executeSOPSValidate(ctx context.Context, keyFile, configFile string, dryRun
 	fmt.Printf("🔑 Public key: %s\n", keyPair.PublicKey)
 
 	// Validate SOPS configuration if it exists
+	if debugMode {
+		fmt.Printf("🐛 Checking for SOPS config at: %s\n", configFile)
+	}
+	
 	if _, err := os.Stat(configFile); err == nil {
 		fmt.Println("🔍 Validating SOPS configuration file...")
 
 		// Basic validation - check if public key is in config
 		content, err := os.ReadFile(configFile)
 		if err != nil {
+			if debugMode {
+				fmt.Printf("🐛 Failed to read config: %v\n", err)
+			}
 			return fmt.Errorf("failed to read SOPS config: %w", err)
+		}
+
+		if debugMode {
+			fmt.Printf("🐛 Config file size: %d bytes\n", len(content))
+			fmt.Println("🐛 Config file contents:")
+			fmt.Println("--- BEGIN CONFIG ---")
+			fmt.Println(string(content))
+			fmt.Println("--- END CONFIG ---")
 		}
 
 		if !strings.Contains(string(content), keyPair.PublicKey) {
 			fmt.Printf("⚠️  SOPS configuration does not contain current Age public key\n")
 			fmt.Printf("💡 Consider updating %s with the current public key\n", configFile)
+			
+			if debugMode {
+				fmt.Printf("🐛 Expected public key: %s\n", keyPair.PublicKey)
+				// Show what age keys are in the config
+				lines := strings.Split(string(content), "\n")
+				fmt.Println("🐛 Age keys found in config:")
+				for _, line := range lines {
+					if strings.Contains(line, "age:") || strings.Contains(line, "age1") {
+						fmt.Printf("🐛   %s\n", strings.TrimSpace(line))
+					}
+				}
+			}
 		} else {
 			fmt.Println("✅ SOPS configuration contains current Age public key")
 		}
 	} else {
 		fmt.Printf("⚠️  SOPS configuration file not found: %s\n", configFile)
+		if debugMode {
+			fmt.Printf("🐛 Config file error: %v\n", err)
+			// Check current directory
+			if cwd, err := os.Getwd(); err == nil {
+				fmt.Printf("🐛 Current working directory: %s\n", cwd)
+			}
+		}
 	}
 
 	// Test key access
 	fmt.Println("🧪 Testing key access...")
+	if debugMode {
+		fmt.Println("🐛 Validating key access permissions...")
+	}
 	if err := km.ValidateKeyAccess(keyName); err != nil {
+		if debugMode {
+			fmt.Printf("🐛 Key access validation failed: %v\n", err)
+		}
 		return fmt.Errorf("❌ Key access test failed: %w", err)
 	}
 
 	fmt.Println("✅ Key access test passed")
 
 	// Check SOPS installation
+	if debugMode {
+		fmt.Println("🐛 Checking SOPS installation...")
+		// Check PATH
+		if path := os.Getenv("PATH"); path != "" {
+			fmt.Printf("🐛 PATH: %s\n", path)
+		}
+	}
+	
 	manager := sops.NewSOPSManager()
 	if version, err := manager.CheckSOPSVersion(ctx); err != nil {
 		fmt.Printf("⚠️  SOPS not found or not executable: %v\n", err)
+		if debugMode {
+			fmt.Printf("🐛 SOPS check error details: %v\n", err)
+		}
 	} else {
 		fmt.Printf("✅ SOPS is installed: %s\n", version)
+	}
+
+	// Additional debug checks
+	if debugMode {
+		fmt.Println("\n🐛 === ADDITIONAL DEBUG INFORMATION ===")
+		
+		// Check SOPS_AGE_KEY_FILE environment variable
+		if sopsKeyFile := os.Getenv("SOPS_AGE_KEY_FILE"); sopsKeyFile != "" {
+			fmt.Printf("🐛 SOPS_AGE_KEY_FILE: %s\n", sopsKeyFile)
+		} else {
+			fmt.Println("🐛 SOPS_AGE_KEY_FILE: (not set)")
+		}
+		
+		// List all age keys in the key directory
+		fmt.Println("🐛 All Age keys in key directory:")
+		if keyNames, err := km.ListAgeKeys(); err == nil {
+			for _, name := range keyNames {
+				fmt.Printf("🐛   - %s\n", name)
+				if kp, err := km.LoadAgeKey(name); err == nil {
+					fmt.Printf("🐛     Public key: %s\n", kp.PublicKey)
+				}
+			}
+		} else {
+			fmt.Printf("🐛 Failed to list keys: %v\n", err)
+		}
+		
+		fmt.Println("🐛 === END DEBUG INFORMATION ===\n")
 	}
 
 	fmt.Println("✅ All validations completed successfully!")
