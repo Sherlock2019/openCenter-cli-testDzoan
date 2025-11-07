@@ -194,6 +194,12 @@ func (h *DefaultErrorHandler) determineErrorType(err error) ErrorType {
 	case strings.Contains(errorMsg, "network") || strings.Contains(errorMsg, "connection"):
 		return NetworkError
 		
+	case strings.Contains(errorMsg, "cloud") || strings.Contains(errorMsg, "aws") || strings.Contains(errorMsg, "openstack"):
+		return CloudError
+		
+	case strings.Contains(errorMsg, "credential") || strings.Contains(errorMsg, "authentication") || strings.Contains(errorMsg, "unauthorized"):
+		return CredentialError
+		
 	default:
 		return SystemError
 	}
@@ -253,6 +259,19 @@ func (h *DefaultErrorHandler) initializeSuggestions() {
 		"Check system resources",
 		"Verify system dependencies are installed",
 		"Review system logs for additional details",
+	}
+	
+	h.suggestionMap[CloudError] = []string{
+		"Verify cloud provider credentials",
+		"Check cloud provider service availability",
+		"Ensure proper network connectivity to cloud APIs",
+	}
+	
+	h.suggestionMap[CredentialError] = []string{
+		"Verify credentials are correctly configured",
+		"Check credential expiration dates",
+		"Ensure proper permissions for the credentials",
+		"Use SOPS to encrypt sensitive credentials",
 	}
 }
 
@@ -359,4 +378,45 @@ func IsTimeoutError(err error) bool {
 		return false
 	}
 	return strings.Contains(strings.ToLower(err.Error()), "timeout")
+}
+
+// CreateCloudError creates a cloud provider-related error
+func CreateCloudError(provider, operation, message string, cause error) *StructuredError {
+	suggestions := []string{
+		fmt.Sprintf("Verify %s credentials are correctly configured", provider),
+		fmt.Sprintf("Check %s service availability", provider),
+		"Ensure proper network connectivity to cloud APIs",
+		"Review cloud provider documentation for requirements",
+	}
+	
+	return &StructuredError{
+		Type:        CloudError,
+		Field:       "cloud_provider",
+		Message:     fmt.Sprintf("%s %s failed: %s", provider, operation, message),
+		Cause:       cause,
+		Suggestions: suggestions,
+		Context:     map[string]interface{}{"provider": provider, "operation": operation},
+		Retryable:   true, // Cloud operations are often retryable
+	}
+}
+
+// CreateCredentialError creates a credential-related error
+func CreateCredentialError(credentialType, field, message string, cause error) *StructuredError {
+	suggestions := []string{
+		fmt.Sprintf("Verify %s credentials are correctly set", credentialType),
+		"Check credential expiration dates",
+		"Ensure proper permissions for the credentials",
+		"Use SOPS to encrypt sensitive credentials",
+		"Refer to cloud provider documentation for credential setup",
+	}
+	
+	return &StructuredError{
+		Type:        CredentialError,
+		Field:       field,
+		Message:     fmt.Sprintf("%s credential error: %s", credentialType, message),
+		Cause:       cause,
+		Suggestions: suggestions,
+		Context:     map[string]interface{}{"credential_type": credentialType},
+		Retryable:   false, // Credential errors usually require manual fix
+	}
 }

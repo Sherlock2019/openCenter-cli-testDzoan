@@ -57,6 +57,27 @@ func NewConfigurationManager(
 	}
 }
 
+// NewEnhancedConfigurationManager creates a new configuration manager with enhanced validation.
+func NewEnhancedConfigurationManager(
+	loader ConfigLoaderInterface,
+	pathResolver PathResolverInterface,
+	cache ConfigCacheInterface,
+	migrator ConfigMigratorInterface,
+	autoRepair bool,
+) *ConfigurationManager {
+	enhancedValidator := NewEnhancedConfigValidator(autoRepair)
+	
+	return &ConfigurationManager{
+		loader:       loader,
+		validator:    enhancedValidator,
+		pathResolver: pathResolver,
+		cache:        cache,
+		migrator:     migrator,
+		enableCache:  true,
+		cacheTimeout: 5 * time.Minute,
+	}
+}
+
 // LoadConfig loads a cluster configuration by name with caching support.
 func (cm *ConfigurationManager) LoadConfig(ctx context.Context, clusterName string) (*Config, error) {
 	if err := ValidateClusterName(clusterName); err != nil {
@@ -163,6 +184,57 @@ func (cm *ConfigurationManager) ValidateConfig(ctx context.Context, config *Conf
 		}
 	}
 
+	return cm.validator.Validate(ctx, config)
+}
+
+// ValidateConfigComprehensive performs comprehensive validation using the enhanced validator.
+func (cm *ConfigurationManager) ValidateConfigComprehensive(ctx context.Context, config *Config) *ConfigValidationResult {
+	if config == nil {
+		return &ConfigValidationResult{
+			Valid: false,
+			Errors: []*ConfigValidationError{
+				{
+					Type:    "validation",
+					Field:   "config",
+					Message: "configuration cannot be nil",
+				},
+			},
+		}
+	}
+
+	// Use enhanced validator if available
+	if enhancedValidator, ok := cm.validator.(*EnhancedConfigValidator); ok {
+		result := enhancedValidator.ValidateComprehensive(ctx, config)
+		
+		// Convert structured errors to config validation errors
+		configResult := &ConfigValidationResult{
+			Valid:    result.Valid,
+			Errors:   []*ConfigValidationError{},
+			Warnings: []*ConfigValidationError{},
+		}
+		
+		for _, err := range result.Errors {
+			configResult.Errors = append(configResult.Errors, &ConfigValidationError{
+				Type:        string(err.Type),
+				Field:       err.Field,
+				Message:     err.Message,
+				Suggestions: err.Suggestions,
+			})
+		}
+		
+		for _, warning := range result.Warnings {
+			configResult.Warnings = append(configResult.Warnings, &ConfigValidationError{
+				Type:        string(warning.Type),
+				Field:       warning.Field,
+				Message:     warning.Message,
+				Suggestions: warning.Suggestions,
+			})
+		}
+		
+		return configResult
+	}
+	
+	// Fall back to regular validation
 	return cm.validator.Validate(ctx, config)
 }
 

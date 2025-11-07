@@ -32,6 +32,8 @@ const (
 	FileError       ErrorType = "file"
 	SystemError     ErrorType = "system"
 	UserError       ErrorType = "user"
+	CloudError      ErrorType = "cloud"
+	CredentialError ErrorType = "credential"
 )
 
 // ErrorHandler interface for handling and formatting errors
