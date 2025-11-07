@@ -1,0 +1,721 @@
+# CLI Command Reference
+
+Complete reference for all openCenter CLI commands.
+
+## Global Flags
+
+These flags are available for all commands:
+
+```bash
+--config string          Alternative cluster configuration file path
+--config-dir string      Configuration directory (default: ~/.config/openCenter)
+--dry-run               Enable dry-run mode (show actions without executing)
+--log-level string      Set log level (debug, info, warn, error) (default: "warn")
+--set stringArray       Override configuration values using dot notation
+--verbose               Enable verbose logging (sets log level to debug)
+```
+
+### Examples
+
+```bash
+# Use custom config directory
+openCenter --config-dir=/tmp/configs cluster list
+
+# Dry-run mode
+openCenter --dry-run cluster init test-cluster
+
+# Override configuration values
+openCenter --set opencenter.meta.env=prod cluster init my-cluster
+
+# Verbose logging
+openCenter --verbose cluster validate my-cluster
+```
+
+## Cluster Commands
+
+### cluster init
+
+Initialize a new cluster configuration with default values.
+
+```bash
+openCenter cluster init <name> [flags]
+```
+
+**Flags:**
+- `--force`: Overwrite existing configuration
+- `--no-sops-keygen`: Skip automatic SOPS key generation
+- `--strict`: Enable strict validation during initialization
+- `--opencenter.<path>=<value>`: Override any configuration value using dot notation
+
+**Examples:**
+
+```bash
+# Basic initialization
+openCenter cluster init my-cluster
+
+# Initialize with organization
+openCenter cluster init my-cluster --opencenter.meta.organization=myorg
+
+# Initialize with custom values
+openCenter cluster init my-cluster \
+  --opencenter.meta.env=prod \
+  --opencenter.cluster.kubernetes.version=1.31.4 \
+  --opencenter.infrastructure.provider=aws
+
+# Force overwrite existing
+openCenter cluster init my-cluster --force
+
+# Skip SOPS key generation
+openCenter cluster init my-cluster --no-sops-keygen
+```
+
+**Output:**
+- Creates cluster configuration file
+- Generates SOPS Age key (unless --no-sops-keygen)
+- Creates organization directory structure
+- Displays paths to created files
+
+### cluster validate
+
+Validate cluster configuration against schema and business rules.
+
+```bash
+openCenter cluster validate [name] [flags]
+```
+
+**Flags:**
+- `--generate-debug-config`: Generate complete configuration for debugging
+- `--output-dir string`: Directory to save debug config (default: GitOps directory)
+
+**Examples:**
+
+```bash
+# Validate active cluster
+openCenter cluster validate
+
+# Validate specific cluster
+openCenter cluster validate my-cluster
+
+# Generate debug configuration
+openCenter cluster validate my-cluster --generate-debug-config
+
+# Save debug config to specific directory
+openCenter cluster validate my-cluster --generate-debug-config --output-dir=/tmp
+```
+
+**Validation Checks:**
+- Schema validation
+- Required field validation
+- Cross-field dependency validation
+- Cloud provider credential validation
+- Network configuration validation
+- SOPS key validation
+- Network plugin mutual exclusivity
+
+### cluster list
+
+List all configured clusters across all organizations.
+
+```bash
+openCenter cluster list
+```
+
+**Output:**
+- Sorted list of cluster names
+- Supports both organization-based and legacy structures
+
+**Example:**
+
+```bash
+$ openCenter cluster list
+cluster1
+cluster2
+my-prod-cluster
+test-cluster
+```
+
+### cluster select
+
+Set the active cluster for subsequent commands.
+
+```bash
+openCenter cluster select <name>
+```
+
+**Examples:**
+
+```bash
+# Select a cluster
+openCenter cluster select my-cluster
+
+# Verify selection
+openCenter cluster current
+```
+
+### cluster current
+
+Display the currently active cluster.
+
+```bash
+openCenter cluster current
+```
+
+**Example:**
+
+```bash
+$ openCenter cluster current
+my-cluster
+```
+
+### cluster info
+
+Display detailed information about a cluster.
+
+```bash
+openCenter cluster info [name]
+```
+
+**Examples:**
+
+```bash
+# Show info for active cluster
+openCenter cluster info
+
+# Show info for specific cluster
+openCenter cluster info my-cluster
+```
+
+**Output:**
+- Cluster name and organization
+- Provider and region
+- Kubernetes version
+- Node counts
+- Network plugin
+- GitOps repository location
+- SOPS key location
+
+### cluster setup
+
+Setup GitOps directory structure and initialize Git repository.
+
+```bash
+openCenter cluster setup [name] [flags]
+```
+
+**Flags:**
+- `--render`: Render templates (rather than copy)
+- `--force`: Overwrite existing files and reinitialize
+
+**Examples:**
+
+```bash
+# Setup GitOps for active cluster
+openCenter cluster setup
+
+# Setup with template rendering
+openCenter cluster setup my-cluster --render
+
+# Force reinitialize
+openCenter cluster setup my-cluster --force
+```
+
+**Actions:**
+- Creates GitOps directory structure
+- Copies/renders base templates
+- Renders cluster-specific manifests
+- Provisions OpenTofu configuration
+- Initializes Git repository
+- Creates SOPS configuration
+
+### cluster bootstrap
+
+Run provider-specific bootstrap actions.
+
+```bash
+openCenter cluster bootstrap [name] [flags]
+```
+
+**Flags:**
+- `--dry-run`: Show planned actions without executing
+- `--kubeconfig string`: Path to kubeconfig (default: "./kubeconfig.yaml")
+- `--log string`: Log file path (default: <git_dir>/infrastructure/clusters/<name>/bootstrap.log)
+- `--container-runtime string`: Container runtime for Kind clusters (docker or podman)
+
+**Examples:**
+
+```bash
+# Bootstrap active cluster
+openCenter cluster bootstrap
+
+# Bootstrap with specific kubeconfig
+openCenter cluster bootstrap my-cluster --kubeconfig=/path/to/kubeconfig
+
+# Bootstrap Kind cluster with Podman
+openCenter cluster bootstrap kind-cluster --container-runtime=podman
+
+# Dry-run mode
+openCenter cluster bootstrap my-cluster --dry-run
+```
+
+**Provider-Specific Actions:**
+
+**OpenStack/AWS/GCP/Azure:**
+- Runs `make` in cluster infrastructure directory
+- Applies OpenTofu/Terraform configuration
+- Provisions infrastructure resources
+
+**Kind:**
+- Creates Kind cluster with specified runtime
+- Exports kubeconfig
+- Disables default CNI for custom network plugin
+
+### cluster render
+
+Render cluster templates without full setup.
+
+```bash
+openCenter cluster render [name]
+```
+
+**Examples:**
+
+```bash
+# Render templates for active cluster
+openCenter cluster render
+
+# Render for specific cluster
+openCenter cluster render my-cluster
+```
+
+### cluster schema
+
+Generate and display JSON schema for cluster configuration.
+
+```bash
+openCenter cluster schema [flags]
+```
+
+**Flags:**
+- `--pretty`: Pretty-print JSON output
+- `--out string`: Output file path (default: stdout)
+
+**Examples:**
+
+```bash
+# Display schema
+openCenter cluster schema --pretty
+
+# Save to file
+openCenter cluster schema --pretty --out schema/cluster.schema.json
+```
+
+**Output:**
+- JSON Schema Draft 2020-12 format
+- Complete validation rules
+- Property descriptions
+- Default values
+- Examples
+
+### cluster update
+
+Update cluster configuration with new values.
+
+```bash
+openCenter cluster update <name> [flags]
+```
+
+**Flags:**
+- `--<path>=<value>`: Override any configuration value using dot notation
+
+**Examples:**
+
+```bash
+# Update Kubernetes version
+openCenter cluster update my-cluster --opencenter.cluster.kubernetes.version=1.31.4
+
+# Update provider
+openCenter cluster update my-cluster --opencenter.infrastructure.provider=aws
+
+# Update multiple values
+openCenter cluster update my-cluster \
+  --opencenter.meta.env=prod \
+  --opencenter.cluster.kubernetes.master_count=5
+```
+
+### cluster migrate
+
+Migrate cluster configuration to new schema version.
+
+```bash
+openCenter cluster migrate <name> [flags]
+```
+
+**Flags:**
+- `--to-version string`: Target schema version
+- `--backup`: Create backup before migration (default: true)
+
+**Examples:**
+
+```bash
+# Migrate to latest schema
+openCenter cluster migrate my-cluster
+
+# Migrate to specific version
+openCenter cluster migrate my-cluster --to-version=2.0.0
+
+# Migrate without backup
+openCenter cluster migrate my-cluster --backup=false
+```
+
+### cluster preflight
+
+Run preflight checks before cluster deployment.
+
+```bash
+openCenter cluster preflight [name]
+```
+
+**Examples:**
+
+```bash
+# Run preflight checks for active cluster
+openCenter cluster preflight
+
+# Run for specific cluster
+openCenter cluster preflight my-cluster
+```
+
+**Checks:**
+- Configuration validation
+- Cloud provider connectivity
+- Required tools availability
+- Network connectivity
+- Resource quotas
+- DNS resolution
+
+### cluster destroy
+
+Destroy cluster infrastructure and clean up resources.
+
+```bash
+openCenter cluster destroy <name> [flags]
+```
+
+**Flags:**
+- `--force`: Skip confirmation prompt
+- `--keep-config`: Keep configuration files after destruction
+
+**Examples:**
+
+```bash
+# Destroy cluster (with confirmation)
+openCenter cluster destroy my-cluster
+
+# Force destroy without confirmation
+openCenter cluster destroy my-cluster --force
+
+# Destroy but keep configuration
+openCenter cluster destroy my-cluster --keep-config
+```
+
+## SOPS Commands
+
+### sops generate-key
+
+Generate new Age key pair for SOPS encryption.
+
+```bash
+openCenter sops generate-key [flags]
+```
+
+**Flags:**
+- `--key-file string`: Path to save Age key (default: ~/.config/sops/age/keys.txt)
+- `--update-sops-config`: Update .sops.yaml with new public key (default: true)
+- `--dry-run`: Show what would be done without making changes
+
+**Examples:**
+
+```bash
+# Generate new key
+openCenter sops generate-key
+
+# Generate with custom path
+openCenter sops generate-key --key-file=/path/to/key.txt
+
+# Dry-run mode
+openCenter sops generate-key --dry-run
+```
+
+### sops rotate-key
+
+Rotate Age keys and re-encrypt existing secrets.
+
+```bash
+openCenter sops rotate-key [flags]
+```
+
+**Flags:**
+- `--key-file string`: Path to Age key file
+- `--search-path string`: Path to search for SOPS files (default: ".")
+- `--dry-run`: Show what would be done without making changes
+
+**Examples:**
+
+```bash
+# Rotate key and re-encrypt all secrets
+openCenter sops rotate-key
+
+# Rotate with custom search path
+openCenter sops rotate-key --search-path=./gitops
+
+# Dry-run mode
+openCenter sops rotate-key --dry-run
+```
+
+**Process:**
+1. Backs up existing key
+2. Generates new key pair
+3. Finds all SOPS-encrypted files
+4. Re-encrypts each file with new key
+5. Updates .sops.yaml configuration
+
+### sops backup-key
+
+Create backup of Age keys and SOPS configuration.
+
+```bash
+openCenter sops backup-key [flags]
+```
+
+**Flags:**
+- `--key-file string`: Path to Age key file
+- `--backup-dir string`: Backup directory (default: ~/.config/sops/age/backups)
+- `--dry-run`: Show what would be done without making changes
+
+**Examples:**
+
+```bash
+# Create backup
+openCenter sops backup-key
+
+# Backup to custom directory
+openCenter sops backup-key --backup-dir=/secure/backups
+
+# Dry-run mode
+openCenter sops backup-key --dry-run
+```
+
+### sops validate
+
+Validate Age key configuration and SOPS setup.
+
+```bash
+openCenter sops validate [flags]
+```
+
+**Flags:**
+- `--key-file string`: Path to Age key file
+- `--config-file string`: Path to SOPS config (default: ".sops.yaml")
+- `--dry-run`: Show what would be done without making changes
+
+**Examples:**
+
+```bash
+# Validate SOPS setup
+openCenter sops validate
+
+# Validate with custom config
+openCenter sops validate --config-file=/path/to/.sops.yaml
+
+# Dry-run mode
+openCenter sops validate --dry-run
+```
+
+**Validation Checks:**
+- Age key file existence and permissions
+- Age key format validation
+- SOPS configuration validation
+- Key access test
+- SOPS installation check
+
+### sops secrets-list
+
+List all SOPS-encrypted files.
+
+```bash
+openCenter sops secrets-list [flags]
+```
+
+**Flags:**
+- `--search-path string`: Path to search (default: ".")
+- `--dry-run`: Show what would be done without making changes
+
+**Examples:**
+
+```bash
+# List encrypted files
+openCenter sops secrets-list
+
+# List in specific directory
+openCenter sops secrets-list --search-path=./gitops
+```
+
+### sops secrets-encrypt
+
+Encrypt secrets with automatic backup creation.
+
+```bash
+openCenter sops secrets-encrypt [flags]
+```
+
+**Flags:**
+- `--search-path string`: Path to search for files (default: ".")
+- `--backups`: Create backups before encryption (default: true)
+- `--dry-run`: Show what would be done without making changes
+
+**Examples:**
+
+```bash
+# Encrypt all secrets
+openCenter sops secrets-encrypt
+
+# Encrypt without backups (faster)
+openCenter sops secrets-encrypt --backups=false
+
+# Dry-run mode
+openCenter sops secrets-encrypt --dry-run
+```
+
+### sops secrets-decrypt
+
+Decrypt secrets with automatic backup creation.
+
+```bash
+openCenter sops secrets-decrypt [flags]
+```
+
+**Flags:**
+- `--search-path string`: Path to search for files (default: ".")
+- `--backups`: Create backups before decryption (default: true)
+- `--dry-run`: Show what would be done without making changes
+
+**Examples:**
+
+```bash
+# Decrypt all secrets
+openCenter sops secrets-decrypt
+
+# Decrypt without backups (faster)
+openCenter sops secrets-decrypt --backups=false
+
+# Dry-run mode
+openCenter sops secrets-decrypt --dry-run
+```
+
+## Config Commands
+
+### config ide
+
+Generate IDE configuration files for enhanced development experience.
+
+```bash
+openCenter config ide [flags]
+```
+
+**Flags:**
+- `--vscode`: Generate VS Code settings
+- `--jetbrains`: Generate JetBrains IDE settings
+- `--all`: Generate all IDE configurations
+
+**Examples:**
+
+```bash
+# Generate VS Code config
+openCenter config ide --vscode
+
+# Generate all IDE configs
+openCenter config ide --all
+```
+
+**Generated Files:**
+- `.vscode/settings.json`: VS Code YAML schema association
+- `.idea/jsonSchemas.xml`: JetBrains schema configuration
+
+## Plugins Commands
+
+### plugins list
+
+List all available plugins.
+
+```bash
+openCenter plugins list
+```
+
+**Output:**
+- Plugin name
+- Version
+- Description
+- Status (enabled/disabled)
+
+### plugins install
+
+Install a plugin from a repository.
+
+```bash
+openCenter plugins install <name> [flags]
+```
+
+**Flags:**
+- `--source string`: Plugin source URL or path
+- `--version string`: Plugin version to install
+
+**Examples:**
+
+```bash
+# Install from default repository
+openCenter plugins install my-plugin
+
+# Install from custom source
+openCenter plugins install my-plugin --source=https://github.com/org/plugin
+
+# Install specific version
+openCenter plugins install my-plugin --version=1.0.0
+```
+
+### plugins remove
+
+Remove an installed plugin.
+
+```bash
+openCenter plugins remove <name>
+```
+
+**Example:**
+
+```bash
+openCenter plugins remove my-plugin
+```
+
+## Environment Variables
+
+- `OPENCENTER_CONFIG_DIR`: Override default config directory
+- `OPENCENTER_DEBUG`: Enable debug logging and artifacts
+- `OPENCENTER_PLUGINS_DIR`: Directory for external plugins
+- `KIND_EXPERIMENTAL_PROVIDER`: Set to "podman" for Podman support
+- `CONTAINER_RUNTIME`: Set to "podman" if using Podman instead of Docker
+
+## Exit Codes
+
+- `0`: Success
+- `1`: General error
+- `2`: Configuration error
+- `3`: Validation error
+- `4`: Network error
+- `5`: Provider error
+
+## See Also
+
+- [Configuration Reference](configuration.md)
+- [Schema Reference](schema.md)
+- [How-To Guides](../how-to/)
+- [Tutorials](../tutorials/)

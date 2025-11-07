@@ -32,16 +32,23 @@ The fastest way to get started is to follow our end-to-end tutorial. You will ne
 
 ## Documentation
 
-All our documentation lives in the `docs/` directory.
+Comprehensive documentation is available in the `docs/` directory.
 
-*   [**Tutorials**](./docs/tutorials/quickstart.md): Step-by-step guides to learn `openCenter`.
-*   [**How-To Guides**](./docs/how-to/): Practical, goal-oriented recipes for common tasks.
-*   [**Reference**](./docs/reference/): Detailed, technical information on the CLI, configuration, and developer tasks.
-*   [**Explanation**](./docs/explanation/): Conceptual overviews of `openCenter`'s architecture and design.
-*   Plugins:
-    - [Using Plugins](./docs/how-to/plugins.md)
-    - [Plugins Reference](./docs/reference/plugins.md)
+### Quick Links
+*   **[Documentation Index](./docs/INDEX.md)** - Complete documentation guide
+*   **[Overview](./docs/overview.md)** - What is openCenter?
+*   **[Current Status](./docs/current-status.md)** - Implementation status and roadmap
+*   **[Architecture](./docs/architecture.md)** - Technical architecture and design
+
+### Documentation Categories
+*   **[Tutorials](./docs/tutorials/)** - Step-by-step learning guides
+*   **[How-To Guides](./docs/how-to/)** - Task-oriented recipes
+*   **[Reference](./docs/reference/)** - Technical specifications
+    - [CLI Commands](./docs/reference/cli-commands.md)
+    - [Configuration](./docs/reference/configuration.md)
+    - [Plugins](./docs/reference/plugins.md)
     - [Environment Variables](./docs/reference/environment.md)
+*   **[Explanation](./docs/explanation/)** - Conceptual overviews
 
 ## Contributing
 
