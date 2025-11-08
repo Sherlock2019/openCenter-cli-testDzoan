@@ -8,4 +8,6 @@ spec:
     type: Kubernetes
     kubernetes:
       envoyDeployment:
-        replicas: 4
+        replicas: 3
+      envoyService:
+        externalTrafficPolicy: Cluster

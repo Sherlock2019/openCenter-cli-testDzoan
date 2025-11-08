@@ -8,6 +8,7 @@ resources:
   - "./alert-manager-base-url-secret.yaml"
   - "./core-account-id-secret.yaml"
   - "./overseer-core-device-id-secret.yaml"
+  - "./http-route-fqdn-secret.yaml"
 secretGenerator:
   - name: alert-proxy-values-override
     namespace: rackspace-system

@@ -7,5 +7,5 @@ config:
   logging:
     log_level: "DEBUG"
   alert_proxy_config:
-    alert_verification: false
+    alert_verification: true
     create_ticket: false
