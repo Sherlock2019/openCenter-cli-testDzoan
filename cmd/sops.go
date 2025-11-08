@@ -535,8 +535,14 @@ func executeSOPSValidate(ctx context.Context, keyFile, configFile string, dryRun
 			return fmt.Errorf("❌ Failed to read private key: %w", err)
 		}
 		
+		// Extract the actual key (skip comments and empty lines)
+		privateKeyStr := extractAgeKeyFromContent(string(privateKeyData))
+		if privateKeyStr == "" {
+			return fmt.Errorf("❌ No valid age key found in file")
+		}
+		
 		// Parse the private key to extract the public key
-		keyPair, err := crypto.ParseAgeKey(strings.TrimSpace(string(privateKeyData)))
+		keyPair, err := crypto.ParseAgeKey(privateKeyStr)
 		if err != nil {
 			return fmt.Errorf("❌ Failed to parse private key: %w", err)
 		}
@@ -1081,18 +1087,28 @@ func executeSOPSSecretsEncrypt(ctx context.Context, keyFile, searchPath string, 
 	fmt.Printf("📁 Search path: %s\n", searchPath)
 	fmt.Printf("💾 Create backups: %t\n", createBackups)
 	
-	// Setup key environment if keyFile is specified
+	// Setup key environment and load age keys
+	var ageKeys []string
+	var err error
+	
 	if keyFile != "" {
+		// Use the specified key file
 		if err := setupSOPSKeyEnvironment(keyFile); err != nil {
 			return fmt.Errorf("failed to setup key environment: %w", err)
 		}
 		fmt.Printf("🔑 Using key file: %s\n", keyFile)
-	}
-
-	// Load SOPS configuration to get age keys
-	ageKeys, err := loadSOPSAgeKeys()
-	if err != nil {
-		return fmt.Errorf("failed to load SOPS age keys: %w", err)
+		
+		// Load the public key from the key file
+		ageKeys, err = loadAgeKeysFromFile(keyFile)
+		if err != nil {
+			return fmt.Errorf("failed to load age keys from file: %w", err)
+		}
+	} else {
+		// Load SOPS configuration to get age keys
+		ageKeys, err = loadSOPSAgeKeys()
+		if err != nil {
+			return fmt.Errorf("failed to load SOPS age keys: %w", err)
+		}
 	}
 
 	encryptor := sops.NewDefaultEncryptor(ageKeys, nil)
@@ -1384,4 +1400,62 @@ func setupSOPSKeyEnvironment(keyFile string) error {
 	}
 	
 	return nil
+}
+
+// extractAgeKeyFromContent extracts the age key from file content, skipping comments and empty lines
+func extractAgeKeyFromContent(content string) string {
+	lines := strings.Split(content, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		// Age private keys start with AGE-SECRET-KEY-
+		// Age public keys start with age1
+		if strings.HasPrefix(line, "AGE-SECRET-KEY-") || strings.HasPrefix(line, "age1") {
+			return line
+		}
+	}
+	return ""
+}
+
+// loadAgeKeysFromFile loads age public keys from a key file
+func loadAgeKeysFromFile(keyFile string) ([]string, error) {
+	// Resolve the key file path
+	homeDir, _ := os.UserHomeDir()
+	var keyPath string
+	
+	if strings.HasPrefix(keyFile, "~") {
+		keyPath = filepath.Join(homeDir, keyFile[1:])
+	} else if filepath.IsAbs(keyFile) {
+		keyPath = keyFile
+	} else {
+		// Relative path - make it absolute
+		if absPath, err := filepath.Abs(keyFile); err == nil {
+			keyPath = absPath
+		} else {
+			keyPath = keyFile
+		}
+	}
+	
+	// Read the key file
+	privateKeyData, err := os.ReadFile(keyPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read key file: %w", err)
+	}
+	
+	// Extract the actual key (skip comments and empty lines)
+	privateKeyStr := extractAgeKeyFromContent(string(privateKeyData))
+	if privateKeyStr == "" {
+		return nil, fmt.Errorf("no valid age key found in file")
+	}
+	
+	// Parse the private key to get the public key
+	keyPair, err := crypto.ParseAgeKey(privateKeyStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %w", err)
+	}
+	
+	return []string{keyPair.PublicKey}, nil
 }

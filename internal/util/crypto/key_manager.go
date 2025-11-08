@@ -132,6 +132,12 @@ func (m *DefaultKeyManager) LoadAgeKey(keyName string) (*AgeKeyPair, error) {
 		return nil, fmt.Errorf("failed to read private key: %w", err)
 	}
 
+	// Extract the actual private key (skip comments and empty lines)
+	privateKeyStr := extractAgeKey(string(privateKeyData))
+	if privateKeyStr == "" {
+		return nil, fmt.Errorf("no valid age key found in file")
+	}
+
 	// Load public key
 	publicKeyPath := filepath.Join(m.keyDir, fmt.Sprintf("%s.pub", keyName))
 	publicKeyData, err := os.ReadFile(publicKeyPath)
@@ -140,12 +146,30 @@ func (m *DefaultKeyManager) LoadAgeKey(keyName string) (*AgeKeyPair, error) {
 	}
 
 	keyPair := &AgeKeyPair{
-		PrivateKey: strings.TrimSpace(string(privateKeyData)),
+		PrivateKey: privateKeyStr,
 		PublicKey:  strings.TrimSpace(string(publicKeyData)),
 		Recipient:  strings.TrimSpace(string(publicKeyData)),
 	}
 
 	return keyPair, nil
+}
+
+// extractAgeKey extracts the age key from file content, skipping comments and empty lines
+func extractAgeKey(content string) string {
+	lines := strings.Split(content, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		// Age private keys start with AGE-SECRET-KEY-
+		// Age public keys start with age1
+		if strings.HasPrefix(line, "AGE-SECRET-KEY-") || strings.HasPrefix(line, "age1") {
+			return line
+		}
+	}
+	return ""
 }
 
 // ListAgeKeys lists all available age keys
