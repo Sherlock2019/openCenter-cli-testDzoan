@@ -99,6 +99,8 @@ type GitOpsConfig struct {
 	GitSSHPub string     `yaml:"git_ssh_pub,omitempty" json:"git_ssh_pub,omitempty"`
 	GitBranch string     `yaml:"git_branch,omitempty" json:"git_branch,omitempty"`
 	Release   string     `yaml:"release,omitempty" json:"release,omitempty"`
+	Branch   string     `yaml:"branch,omitempty" json:"branch,omitempty"`
+	Uri   string     `yaml:"uri,omitempty" json:"uri,omitempty"`
 	Flux      GitOpsFlux `yaml:"flux,omitempty" json:"flux,omitempty"`
 }
 
@@ -239,6 +241,10 @@ type ServiceCfg struct {
 	AccountServiceToken  string `yaml:"account_service_token,omitempty" json:"account_service_token,omitempty"`
 	AlertManagerBaseUrl  string `yaml:"alert_manager_base_url,omitempty" json:"alert_manager_base_url,omitempty"`
 	CoreAccountNumber    string `yaml:"core_account_number,omitempty" json:"core_account_number,omitempty"`
+	// Version control fields
+	Release              string `yaml:"release,omitempty" json:"release,omitempty"`
+	Branch               string `yaml:"branch,omitempty" json:"branch,omitempty"`
+	Uri                  string `yaml:"uri,omitempty" json:"uri,omitempty"`
 }
 
 // CloudConfig represents the cloud configuration within opencenter
@@ -1395,6 +1401,25 @@ func Validate(cfg Config) []string {
 		if cfg.OpenCenter.Cluster.Kubernetes.WindowsWorkers.Enabled {
 			errs = append(errs, "windows_workers.enabled must be false when worker_count_windows is 0")
 		}
+	}
+	
+	// Validate services: only one of release or branch can be set
+	for serviceName, serviceCfg := range cfg.OpenCenter.Services {
+		if serviceCfg.Release != "" && serviceCfg.Branch != "" {
+			errs = append(errs, fmt.Sprintf("service '%s': only one of 'release' or 'branch' can be set, not both", serviceName))
+		}
+	}
+	
+	// Validate managed services: only one of release or branch can be set
+	for serviceName, serviceCfg := range cfg.OpenCenter.ManagedService {
+		if serviceCfg.Release != "" && serviceCfg.Branch != "" {
+			errs = append(errs, fmt.Sprintf("managed-service '%s': only one of 'release' or 'branch' can be set, not both", serviceName))
+		}
+	}
+	
+	// Validate GitOps: only one of release or branch can be set
+	if cfg.OpenCenter.GitOps.Release != "" && cfg.OpenCenter.GitOps.Branch != "" {
+		errs = append(errs, "gitops: only one of 'release' or 'branch' can be set, not both")
 	}
 	
 	return errs

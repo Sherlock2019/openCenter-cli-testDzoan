@@ -39,8 +39,18 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 			},
 			"release": map[string]any{
 				"type":        "string",
-				"description": "Release version or tag for this service",
+				"description": "Release version or tag for this service (mutually exclusive with branch)",
 				"pattern":     "^[a-zA-Z0-9._-]+$",
+			},
+			"branch": map[string]any{
+				"type":        "string",
+				"description": "Git branch for this service (mutually exclusive with release)",
+				"pattern":     "^[a-zA-Z0-9/_-]+$",
+			},
+			"uri": map[string]any{
+				"type":        "string",
+				"description": "Git repository URI for this service",
+				"pattern":     "^(https?://|git@|ssh://)",
 			},
 		},
 		"additionalProperties": false,
@@ -77,8 +87,18 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 			},
 			"release": map[string]any{
 				"type":        "string",
-				"description": "Cert-manager release version",
+				"description": "Cert-manager release version (mutually exclusive with branch)",
 				"pattern":     "^[a-zA-Z0-9._-]+$",
+			},
+			"branch": map[string]any{
+				"type":        "string",
+				"description": "Git branch for cert-manager (mutually exclusive with release)",
+				"pattern":     "^[a-zA-Z0-9/_-]+$",
+			},
+			"uri": map[string]any{
+				"type":        "string",
+				"description": "Git repository URI for cert-manager",
+				"pattern":     "^(https?://|git@|ssh://)",
 			},
 		},
 		"additionalProperties": false,
@@ -95,8 +115,18 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 			},
 			"release": map[string]any{
 				"type":        "string",
-				"description": "Calico release version",
+				"description": "Calico release version (mutually exclusive with branch)",
 				"pattern":     "^[a-zA-Z0-9._-]+$",
+			},
+			"branch": map[string]any{
+				"type":        "string",
+				"description": "Git branch for Calico (mutually exclusive with release)",
+				"pattern":     "^[a-zA-Z0-9/_-]+$",
+			},
+			"uri": map[string]any{
+				"type":        "string",
+				"description": "Git repository URI for Calico",
+				"pattern":     "^(https?://|git@|ssh://)",
 			},
 		},
 		"additionalProperties": false,
@@ -123,8 +153,18 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 			},
 			"release": map[string]any{
 				"type":        "string",
-				"description": "Etcd-backup release version",
+				"description": "Etcd-backup release version (mutually exclusive with branch)",
 				"pattern":     "^[a-zA-Z0-9._-]+$",
+			},
+			"branch": map[string]any{
+				"type":        "string",
+				"description": "Git branch for etcd-backup (mutually exclusive with release)",
+				"pattern":     "^[a-zA-Z0-9/_-]+$",
+			},
+			"uri": map[string]any{
+				"type":        "string",
+				"description": "Git repository URI for etcd-backup",
+				"pattern":     "^(https?://|git@|ssh://)",
 			},
 			"s3_host": map[string]any{
 				"type":        "string",
@@ -144,14 +184,20 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 	serviceSchema := map[string]any{
 		"type": "object",
 		"properties": map[string]any{
-			"aws_access_key":       map[string]any{"type": "string"},
-			"aws_secret_access_key": map[string]any{"type": "string"},
-			"email":                map[string]any{"type": "string"},
-			"enabled":              map[string]any{"type": "boolean"},
-			"region":               map[string]any{"type": "string"},
-			"release":                map[string]any{"type": "string"},
-			"s3_host":              map[string]any{"type": "string"},
-			"s3_region":            map[string]any{"type": "string"},
+			"aws_access_key":         map[string]any{"type": "string"},
+			"aws_secret_access_key":  map[string]any{"type": "string"},
+			"email":                  map[string]any{"type": "string"},
+			"enabled":                map[string]any{"type": "boolean"},
+			"region":                 map[string]any{"type": "string"},
+			"release":                map[string]any{"type": "string", "description": "Release version or tag (mutually exclusive with branch)"},
+			"branch":                 map[string]any{"type": "string", "description": "Git branch (mutually exclusive with release)"},
+			"uri":                    map[string]any{"type": "string", "description": "Git repository URI"},
+			"s3_host":                map[string]any{"type": "string"},
+			"s3_region":              map[string]any{"type": "string"},
+			"core_device_id":         map[string]any{"type": "string"},
+			"account_service_token":  map[string]any{"type": "string"},
+			"alert_manager_base_url": map[string]any{"type": "string"},
+			"core_account_number":    map[string]any{"type": "string"},
 		},
 		"additionalProperties": false,
 	}
@@ -519,8 +565,18 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 			},
 			"release": map[string]any{
 				"type":        "string",
-				"description": "GitOps base release version",
+				"description": "GitOps base release version (mutually exclusive with branch)",
 				"pattern":     "^[a-zA-Z0-9._-]+$",
+			},
+			"branch": map[string]any{
+				"type":        "string",
+				"description": "Git branch for GitOps base (mutually exclusive with release)",
+				"pattern":     "^[a-zA-Z0-9/_-]+$",
+			},
+			"uri": map[string]any{
+				"type":        "string",
+				"description": "Git repository URI for GitOps base",
+				"pattern":     "^(https?://|git@|ssh://)",
 			},
 			"flux": map[string]any{
 				"type":        "object",

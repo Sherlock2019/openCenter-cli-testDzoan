@@ -327,6 +327,11 @@
         "gitops": {
           "description": "GitOps repository configuration for cluster manifests",
           "properties": {
+            "branch": {
+              "description": "Git branch for GitOps base (mutually exclusive with release)",
+              "pattern": "^[a-zA-Z0-9/_-]+$",
+              "type": "string"
+            },
             "flux": {
               "description": "FluxCD reconciliation settings",
               "properties": {
@@ -371,8 +376,13 @@
               "type": "string"
             },
             "release": {
-              "description": "GitOps base release version",
+              "description": "GitOps base release version (mutually exclusive with branch)",
               "pattern": "^[a-zA-Z0-9._-]+$",
+              "type": "string"
+            },
+            "uri": {
+              "description": "Git repository URI for GitOps base",
+              "pattern": "^(https?://|git@|ssh://)",
               "type": "string"
             }
           },
@@ -508,10 +518,26 @@
           "additionalProperties": {
             "additionalProperties": false,
             "properties": {
+              "account_service_token": {
+                "type": "string"
+              },
+              "alert_manager_base_url": {
+                "type": "string"
+              },
               "aws_access_key": {
                 "type": "string"
               },
               "aws_secret_access_key": {
+                "type": "string"
+              },
+              "branch": {
+                "description": "Git branch (mutually exclusive with release)",
+                "type": "string"
+              },
+              "core_account_number": {
+                "type": "string"
+              },
+              "core_device_id": {
                 "type": "string"
               },
               "email": {
@@ -524,12 +550,17 @@
                 "type": "string"
               },
               "release": {
+                "description": "Release version or tag (mutually exclusive with branch)",
                 "type": "string"
               },
               "s3_host": {
                 "type": "string"
               },
               "s3_region": {
+                "type": "string"
+              },
+              "uri": {
+                "description": "Git repository URI",
                 "type": "string"
               }
             },
@@ -539,10 +570,26 @@
             "alert-proxy": {
               "additionalProperties": false,
               "properties": {
+                "account_service_token": {
+                  "type": "string"
+                },
+                "alert_manager_base_url": {
+                  "type": "string"
+                },
                 "aws_access_key": {
                   "type": "string"
                 },
                 "aws_secret_access_key": {
+                  "type": "string"
+                },
+                "branch": {
+                  "description": "Git branch (mutually exclusive with release)",
+                  "type": "string"
+                },
+                "core_account_number": {
+                  "type": "string"
+                },
+                "core_device_id": {
                   "type": "string"
                 },
                 "email": {
@@ -555,12 +602,17 @@
                   "type": "string"
                 },
                 "release": {
+                  "description": "Release version or tag (mutually exclusive with branch)",
                   "type": "string"
                 },
                 "s3_host": {
                   "type": "string"
                 },
                 "s3_region": {
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI",
                   "type": "string"
                 }
               },
@@ -623,10 +675,26 @@
           "additionalProperties": {
             "additionalProperties": false,
             "properties": {
+              "account_service_token": {
+                "type": "string"
+              },
+              "alert_manager_base_url": {
+                "type": "string"
+              },
               "aws_access_key": {
                 "type": "string"
               },
               "aws_secret_access_key": {
+                "type": "string"
+              },
+              "branch": {
+                "description": "Git branch (mutually exclusive with release)",
+                "type": "string"
+              },
+              "core_account_number": {
+                "type": "string"
+              },
+              "core_device_id": {
                 "type": "string"
               },
               "email": {
@@ -639,12 +707,17 @@
                 "type": "string"
               },
               "release": {
+                "description": "Release version or tag (mutually exclusive with branch)",
                 "type": "string"
               },
               "s3_host": {
                 "type": "string"
               },
               "s3_region": {
+                "type": "string"
+              },
+              "uri": {
+                "description": "Git repository URI",
                 "type": "string"
               }
             },
@@ -654,14 +727,24 @@
             "calico": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for Calico (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable Calico CNI service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Calico release version",
+                  "description": "Calico release version (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for Calico",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -680,6 +763,11 @@
                   "minLength": 32,
                   "type": "string"
                 },
+                "branch": {
+                  "description": "Git branch for cert-manager (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "email": {
                   "description": "Email address for Let's Encrypt certificate notifications",
                   "format": "email",
@@ -696,8 +784,13 @@
                   "type": "string"
                 },
                 "release": {
-                  "description": "Cert-manager release version",
+                  "description": "Cert-manager release version (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for cert-manager",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -716,13 +809,18 @@
                   "minLength": 32,
                   "type": "string"
                 },
+                "branch": {
+                  "description": "Git branch for etcd-backup (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable automated etcd backups to S3",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Etcd-backup release version",
+                  "description": "Etcd-backup release version (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
                   "type": "string"
                 },
@@ -735,6 +833,11 @@
                   "description": "S3 region for backup storage",
                   "minLength": 1,
                   "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for etcd-backup",
+                  "pattern": "^(https?://|git@|ssh://)",
+                  "type": "string"
                 }
               },
               "type": "object"
@@ -742,14 +845,24 @@
             "external-snapshotter": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -758,14 +871,24 @@
             "fluxcd": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -774,14 +897,24 @@
             "gateway": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -790,14 +923,24 @@
             "gateway-api": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -806,14 +949,24 @@
             "headlamp": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -822,14 +975,24 @@
             "keycloak": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -838,14 +1001,24 @@
             "kube-prometheus-stack": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -854,14 +1027,24 @@
             "kyverno": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -870,14 +1053,24 @@
             "olm": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -886,14 +1079,24 @@
             "opencenter_release": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -902,14 +1105,24 @@
             "openstack-ccm": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -918,14 +1131,24 @@
             "openstack-csi": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -934,14 +1157,24 @@
             "postgres-operator": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -950,14 +1183,24 @@
             "rbac-manager": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -966,14 +1209,24 @@
             "sources": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -982,14 +1235,24 @@
             "velero": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },
@@ -998,14 +1261,24 @@
             "weave-gitops": {
               "additionalProperties": false,
               "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
                 "enabled": {
                   "default": false,
                   "description": "Enable or disable this service",
                   "type": "boolean"
                 },
                 "release": {
-                  "description": "Release version or tag for this service",
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
                   "type": "string"
                 }
               },

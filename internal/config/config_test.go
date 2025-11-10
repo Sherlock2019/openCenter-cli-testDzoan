@@ -848,3 +848,160 @@ func TestClusterSecretsPath(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateServiceReleaseAndBranch(t *testing.T) {
+	tests := []struct {
+		name        string
+		setupConfig func() Config
+		expectErrs  []string
+	}{
+		{
+			name: "service with both release and branch",
+			setupConfig: func() Config {
+				cfg := NewDefault("test")
+				cfg.OpenCenter.GitOps.GitDir = "test-dir"
+				cfg.OpenCenter.Services["cert-manager"] = ServiceCfg{
+					Enabled: true,
+					Release: "v1.0.0",
+					Branch:  "main",
+				}
+				return cfg
+			},
+			expectErrs: []string{"service 'cert-manager': only one of 'release' or 'branch' can be set, not both"},
+		},
+		{
+			name: "service with only release",
+			setupConfig: func() Config {
+				cfg := NewDefault("test")
+				cfg.OpenCenter.GitOps.GitDir = "test-dir"
+				cfg.OpenCenter.Services["cert-manager"] = ServiceCfg{
+					Enabled: true,
+					Release: "v1.0.0",
+				}
+				return cfg
+			},
+			expectErrs: []string{},
+		},
+		{
+			name: "service with only branch",
+			setupConfig: func() Config {
+				cfg := NewDefault("test")
+				cfg.OpenCenter.GitOps.GitDir = "test-dir"
+				cfg.OpenCenter.Services["cert-manager"] = ServiceCfg{
+					Enabled: true,
+					Branch:  "main",
+				}
+				return cfg
+			},
+			expectErrs: []string{},
+		},
+		{
+			name: "service with neither release nor branch",
+			setupConfig: func() Config {
+				cfg := NewDefault("test")
+				cfg.OpenCenter.GitOps.GitDir = "test-dir"
+				cfg.OpenCenter.Services["cert-manager"] = ServiceCfg{
+					Enabled: true,
+				}
+				return cfg
+			},
+			expectErrs: []string{},
+		},
+		{
+			name: "managed-service with both release and branch",
+			setupConfig: func() Config {
+				cfg := NewDefault("test")
+				cfg.OpenCenter.GitOps.GitDir = "test-dir"
+				cfg.OpenCenter.ManagedService["alert-proxy"] = ServiceCfg{
+					Enabled: true,
+					Release: "v1.0.0",
+					Branch:  "main",
+				}
+				return cfg
+			},
+			expectErrs: []string{"managed-service 'alert-proxy': only one of 'release' or 'branch' can be set, not both"},
+		},
+		{
+			name: "gitops with both release and branch",
+			setupConfig: func() Config {
+				cfg := NewDefault("test")
+				cfg.OpenCenter.GitOps.GitDir = "test-dir"
+				cfg.OpenCenter.GitOps.Release = "v1.0.0"
+				cfg.OpenCenter.GitOps.Branch = "main"
+				return cfg
+			},
+			expectErrs: []string{"gitops: only one of 'release' or 'branch' can be set, not both"},
+		},
+		{
+			name: "gitops with only release",
+			setupConfig: func() Config {
+				cfg := NewDefault("test")
+				cfg.OpenCenter.GitOps.GitDir = "test-dir"
+				cfg.OpenCenter.GitOps.Release = "v1.0.0"
+				return cfg
+			},
+			expectErrs: []string{},
+		},
+		{
+			name: "gitops with only branch",
+			setupConfig: func() Config {
+				cfg := NewDefault("test")
+				cfg.OpenCenter.GitOps.GitDir = "test-dir"
+				cfg.OpenCenter.GitOps.Branch = "develop"
+				return cfg
+			},
+			expectErrs: []string{},
+		},
+		{
+			name: "multiple services with conflicts",
+			setupConfig: func() Config {
+				cfg := NewDefault("test")
+				cfg.OpenCenter.GitOps.GitDir = "test-dir"
+				cfg.OpenCenter.Services["cert-manager"] = ServiceCfg{
+					Enabled: true,
+					Release: "v1.0.0",
+					Branch:  "main",
+				}
+				cfg.OpenCenter.Services["fluxcd"] = ServiceCfg{
+					Enabled: true,
+					Release: "v2.0.0",
+					Branch:  "develop",
+				}
+				cfg.OpenCenter.GitOps.Release = "v1.0.0"
+				cfg.OpenCenter.GitOps.Branch = "main"
+				return cfg
+			},
+			expectErrs: []string{
+				"service 'cert-manager': only one of 'release' or 'branch' can be set, not both",
+				"service 'fluxcd': only one of 'release' or 'branch' can be set, not both",
+				"gitops: only one of 'release' or 'branch' can be set, not both",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := tt.setupConfig()
+			errs := Validate(cfg)
+
+			if len(errs) != len(tt.expectErrs) {
+				t.Errorf("expected %d errors, got %d: %v", len(tt.expectErrs), len(errs), errs)
+				return
+			}
+
+			// Check that all expected errors are present (order may vary)
+			for _, expectedErr := range tt.expectErrs {
+				found := false
+				for _, err := range errs {
+					if err == expectedErr {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("expected error %q not found in: %v", expectedErr, errs)
+				}
+			}
+		})
+	}
+}

@@ -13,6 +13,7 @@ secretGenerator:
   - name: alert-proxy-values-override
     namespace: rackspace-system
     type: Opaque
-    files: [override.yaml=helm-values/override-values.yaml]
+    files:
+      - override.yaml=helm-values/override-values.yaml
     options:
       disableNameSuffixHash: true
