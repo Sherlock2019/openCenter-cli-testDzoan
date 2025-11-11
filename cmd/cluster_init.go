@@ -188,10 +188,17 @@ command-line flags with dot notation.
 The configuration is created in an organization-based directory structure:
   ~/.config/openCenter/clusters/<organization>/<cluster>/
 
+By default, the cluster name is used as the organization name. Use --org to
+specify a different organization.
+
 A SOPS Age encryption key is automatically generated unless --no-sops-keygen
 is specified. The key is stored in the cluster's secrets directory.
 
 Configuration Override:
+  Use --org flag or dot notation to set organization:
+    --org myorg
+    --opencenter.meta.organization=myorg
+  
   Use dot notation to override any configuration value:
     --opencenter.meta.env=prod
     --opencenter.cluster.kubernetes.version=1.31.4
@@ -201,14 +208,18 @@ Troubleshooting:
   • If cluster already exists, use --force to overwrite
   • Use --strict to enable validation during initialization
   • Check ~/.config/openCenter/clusters/ for created files`,
-		Example: `  # Initialize with defaults
+		Example: `  # Initialize with defaults (uses cluster name as organization)
   openCenter cluster init my-cluster
 
-  # Initialize with organization
+  # Initialize with organization using --org flag
+  openCenter cluster init my-cluster --org myorg
+
+  # Initialize with organization using dot notation
   openCenter cluster init my-cluster --opencenter.meta.organization=myorg
 
   # Initialize with custom values
   openCenter cluster init my-cluster \
+    --org production \
     --opencenter.meta.env=prod \
     --opencenter.cluster.kubernetes.version=1.31.4 \
     --opencenter.infrastructure.provider=aws
@@ -280,30 +291,32 @@ Troubleshooting:
 				}
 			}
 
-			// Determine organization from configuration or use cluster name as default
-			organization := cfg.OpenCenter.Meta.Organization
+			// Determine organization from --org flag, configuration, or use cluster name as default
+			orgFlag, _ := cmd.Flags().GetString("org")
+			organization := orgFlag
+			if organization == "" {
+				organization = cfg.OpenCenter.Meta.Organization
+			}
 			if organization == "" {
 				organization = name
 			}
 
-			// Update configuration with organization if not already set
-			if cfg.OpenCenter.Meta.Organization == "" {
-				cfg.OpenCenter.Meta.Organization = organization
-				// Also update the map
-				if opencenter, ok := configMap["opencenter"].(map[string]any); ok {
-					if meta, ok := opencenter["meta"].(map[string]any); ok {
-						meta["organization"] = organization
-					} else {
-						opencenter["meta"] = map[string]any{
-							"organization": organization,
-						}
-					}
+			// Always update configuration with the determined organization
+			cfg.OpenCenter.Meta.Organization = organization
+			// Also update the map
+			if opencenter, ok := configMap["opencenter"].(map[string]any); ok {
+				if meta, ok := opencenter["meta"].(map[string]any); ok {
+					meta["organization"] = organization
 				} else {
-					configMap["opencenter"] = map[string]any{
-						"meta": map[string]any{
-							"organization": organization,
-						},
+					opencenter["meta"] = map[string]any{
+						"organization": organization,
 					}
+				}
+			} else {
+				configMap["opencenter"] = map[string]any{
+					"meta": map[string]any{
+						"organization": organization,
+					},
 				}
 			}
 
@@ -417,6 +430,7 @@ Troubleshooting:
 			return nil
 		},
 	}
+	cmd.Flags().String("org", "", "organization name (defaults to cluster name if not specified)")
 	cmd.Flags().Bool("strict", false, "fail if required values are missing")
 	cmd.Flags().Bool("force", false, "overwrite existing file")
 	cmd.Flags().Bool("no-sops-keygen", false, "do not auto-generate a SOPS age key when secrets.sops_age_key_file is unset")
