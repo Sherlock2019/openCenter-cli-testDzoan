@@ -1265,6 +1265,27 @@ func List() ([]string, error) {
 	}
 	Debugf("List: resolved config directory: %s", dir)
 	
+	// Load CLI configuration to get the configured clustersDir
+	configManager, err := NewConfigManager("")
+	if err != nil {
+		Debugf("List: failed to load CLI config manager: %v", err)
+		// Fall back to default behavior if CLI config can't be loaded
+	}
+	
+	var clustersDir string
+	if configManager != nil {
+		clustersDir = configManager.GetConfig().Paths.ClustersDir
+		Debugf("List: using clustersDir from CLI config: %s", clustersDir)
+	} else {
+		// Fallback to default
+		clustersDir = filepath.Join(dir, "clusters")
+		Debugf("List: using default clustersDir: %s", clustersDir)
+	}
+	
+	// Expand environment variables and tilde in clustersDir
+	clustersDir = ExpandPath(clustersDir)
+	Debugf("List: expanded clustersDir: %s", clustersDir)
+	
 	var names []string
 	nameSet := make(map[string]bool) // Use set to avoid duplicates
 	
@@ -1292,7 +1313,6 @@ func List() ([]string, error) {
 	}
 	
 	// Check clusters directory for legacy and organization-based structures
-	clustersDir := filepath.Join(dir, "clusters")
 	Debugf("List: checking clusters directory: %s", clustersDir)
 	entries, readErr := os.ReadDir(clustersDir)
 	if readErr != nil {

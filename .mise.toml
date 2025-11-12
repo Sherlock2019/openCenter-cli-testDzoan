@@ -6,17 +6,17 @@ helm = "3.18"
 
 [env]
 # Override the default config directory via environment for reproducible tests
-OPENCENTER_CONFIG_DIR = "./testdata/config"
+#OPENCENTER_CONFIG_DIR = "./testdata/config"
 
 # When true deubg logs are set to true and other artifacts are created to help trouble shoot or verify functionality
-OPENCENTER_DEBUG = true
+#OPENCENTER_DEBUG = true
 
 # Enable podman support for KIND utility
 KIND_EXPERIMENTAL_PROVIDER = "podman" 
 
 CONTAINER_RUNTIME = "podman" 
 
-OPENCENTER_PLUGINS_DIR = "./testdata/plugins/"
+#OPENCENTER_PLUGINS_DIR = "./testdata/plugins/"
 
 [tasks]
 # Build the openCenter binary with version information
