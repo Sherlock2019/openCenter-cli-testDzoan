@@ -128,19 +128,15 @@ func (m model) View() string {
 }
 
 // loadClusterMetadata loads cluster metadata from the configuration file.
+// The clusterName parameter can be in "cluster" or "organization/cluster" format.
 func loadClusterMetadata(clusterName string) (ClusterMetadata, error) {
-	// Extract organization from cluster name if present (format: org/cluster)
-	var actualClusterName string
-	var orgFromName string
-	if strings.Contains(clusterName, "/") {
-		parts := strings.SplitN(clusterName, "/", 2)
-		orgFromName = parts[0]
-		actualClusterName = parts[1]
-	} else {
-		actualClusterName = clusterName
+	// Parse the cluster identifier to extract organization and cluster name
+	organization, actualClusterName, err := config.ParseClusterIdentifier(clusterName)
+	if err != nil {
+		return ClusterMetadata{}, fmt.Errorf("invalid cluster identifier: %w", err)
 	}
 
-	// Load cluster configuration
+	// Load cluster configuration (Load function now handles organization/cluster format)
 	cfg, err := config.Load(clusterName)
 	if err != nil {
 		return ClusterMetadata{}, fmt.Errorf("failed to load cluster configuration: %w", err)
@@ -160,25 +156,21 @@ func loadClusterMetadata(clusterName string) (ClusterMetadata, error) {
 		metadata.Name = actualClusterName
 	}
 
-	// Use organization from name if present, otherwise from config, otherwise "opencenter"
-	if orgFromName != "" {
-		metadata.Organization = orgFromName
-	} else if metadata.Organization == "" {
-		metadata.Organization = "opencenter"
+	// Use organization from parsed identifier if not set in config
+	if metadata.Organization == "" {
+		metadata.Organization = organization
 	}
 
 	return metadata, nil
 }
 
 // generateClusterSelectOutput generates the complete output for cluster select command.
+// The clusterName parameter can be in "cluster" or "organization/cluster" format.
 func generateClusterSelectOutput(clusterName string) (ClusterSelectOutput, error) {
-	// Extract actual cluster name from org/cluster format if present
-	var actualClusterName string
-	if strings.Contains(clusterName, "/") {
-		parts := strings.SplitN(clusterName, "/", 2)
-		actualClusterName = parts[1]
-	} else {
-		actualClusterName = clusterName
+	// Parse the cluster identifier to extract organization and cluster name
+	organization, actualClusterName, err := config.ParseClusterIdentifier(clusterName)
+	if err != nil {
+		return ClusterSelectOutput{}, fmt.Errorf("invalid cluster identifier: %w", err)
 	}
 
 	// Get CLI configuration manager
@@ -199,6 +191,11 @@ func generateClusterSelectOutput(clusterName string) (ClusterSelectOutput, error
 	metadata, err := loadClusterMetadata(clusterName)
 	if err != nil {
 		return ClusterSelectOutput{}, err
+	}
+
+	// Use organization from metadata if available, otherwise use parsed organization
+	if metadata.Organization == "" {
+		metadata.Organization = organization
 	}
 
 	// Resolve cluster paths using organization from metadata
@@ -257,15 +254,17 @@ func generateExportCommands(paths config.ClusterPaths) []string {
 }
 
 // validateClusterExists validates that the specified cluster exists in the organization structure.
+// The clusterName parameter can be in "cluster" or "organization/cluster" format.
 func validateClusterExists(clusterName string, pathResolver *config.PathResolver) error {
 	// Check if cluster configuration exists
+	// ConfigPath now handles organization/cluster format
 	path, err := config.ConfigPath(clusterName)
 	if err != nil {
 		return fmt.Errorf("failed to get config path for cluster %s: %w", clusterName, err)
 	}
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return fmt.Errorf("cluster configuration directory '%s' not found in clusters subdirectory. Use 'openCenter cluster list' to see available clusters", clusterName)
+		return fmt.Errorf("cluster configuration '%s' not found. Use 'openCenter cluster list' to see available clusters", clusterName)
 	}
 
 	return nil

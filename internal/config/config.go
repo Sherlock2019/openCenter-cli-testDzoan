@@ -633,9 +633,54 @@ func ResolveConfigDir() (string, error) {
 	}
 	return dir, err
 }
+// ParseClusterIdentifier parses a cluster identifier which can be in one of two formats:
+// 1. "cluster" - just the cluster name (uses default "opencenter" organization)
+// 2. "organization/cluster" - organization and cluster name
+//
+// Inputs:
+//   - identifier: The cluster identifier to parse.
+//
+// Outputs:
+//   - organization: The organization name (or "opencenter" if not specified).
+//   - clusterName: The cluster name.
+//   - error: An error if the identifier is invalid.
+func ParseClusterIdentifier(identifier string) (organization string, clusterName string, err error) {
+	if identifier == "" {
+		return "", "", errors.New("cluster identifier cannot be empty")
+	}
+	
+	// Check for organization/cluster format
+	if strings.Contains(identifier, "/") {
+		parts := strings.SplitN(identifier, "/", 2)
+		if len(parts) != 2 {
+			return "", "", errors.New("invalid cluster identifier format: expected 'organization/cluster'")
+		}
+		organization = parts[0]
+		clusterName = parts[1]
+		
+		// Validate both parts
+		if err := ValidateClusterName(organization); err != nil {
+			return "", "", fmt.Errorf("invalid organization name: %w", err)
+		}
+		if err := ValidateClusterName(clusterName); err != nil {
+			return "", "", fmt.Errorf("invalid cluster name: %w", err)
+		}
+		
+		return organization, clusterName, nil
+	}
+	
+	// Just cluster name, use default organization
+	if err := ValidateClusterName(identifier); err != nil {
+		return "", "", err
+	}
+	
+	return "opencenter", identifier, nil
+}
 
 // ValidateClusterName validates and sanitizes a cluster name to ensure it's safe for use as a directory name.
 // It checks for valid characters and prevents directory traversal attacks.
+// Note: This validates individual cluster or organization names, not the full "org/cluster" format.
+// Use ParseClusterIdentifier for validating the full identifier format.
 //
 // Inputs:
 //   - name: The cluster name to validate.
@@ -711,16 +756,20 @@ func ClusterSecretsPath(name string) (string, error) {
 
 // ConfigPath returns the absolute path to a cluster's configuration file.
 // It implements a fallback strategy to support both organization-based and legacy structures.
+// The name parameter can be in "cluster" or "organization/cluster" format.
+// If no organization is specified, it searches all organizations for the cluster.
 //
 // Inputs:
-//   - name: The name of the cluster (without the .yaml extension).
+//   - name: The name of the cluster (can be "cluster" or "organization/cluster").
 //
 // Outputs:
 //   - string: The absolute path to the configuration file.
 //   - error: An error if one occurred.
 func ConfigPath(name string) (string, error) {
-	if err := ValidateClusterName(name); err != nil {
-		return "", fmt.Errorf("invalid cluster name: %w", err)
+	// Parse the cluster identifier to extract organization and cluster name
+	organization, clusterName, err := ParseClusterIdentifier(name)
+	if err != nil {
+		return "", fmt.Errorf("invalid cluster identifier: %w", err)
 	}
 
 	configDir, err := ResolveConfigDir()
@@ -729,33 +778,70 @@ func ConfigPath(name string) (string, error) {
 	}
 	
 	// Check for flat config file first (backward compatibility and test support)
-	flatConfigPath := filepath.Join(configDir, name+".yaml")
-	if _, statErr := os.Stat(flatConfigPath); statErr == nil {
-		return flatConfigPath, nil
+	// Only check flat config if using default organization and no explicit org was provided
+	if !strings.Contains(name, "/") {
+		flatConfigPath := filepath.Join(configDir, clusterName+".yaml")
+		if _, statErr := os.Stat(flatConfigPath); statErr == nil {
+			return flatConfigPath, nil
+		}
 	}
 	
-	// Try organization-aware path (for org/cluster format)
-	cliConfigManager, err := NewConfigManager("")
-	if err == nil {
-		pathResolver := NewPathResolver(cliConfigManager)
-		if orgAwarePath, orgErr := pathResolver.OrganizationAwareConfigPath(name); orgErr == nil {
-			// Check if the organization-aware config file exists
-			if _, statErr := os.Stat(orgAwarePath); statErr == nil {
-				return orgAwarePath, nil
+	// If organization was explicitly specified, only check that organization
+	if strings.Contains(name, "/") {
+		cliConfigManager, err := NewConfigManager("")
+		if err == nil {
+			pathResolver := NewPathResolver(cliConfigManager)
+			paths := pathResolver.ResolveClusterPaths(clusterName, organization)
+			
+			// Check for config file at cluster directory level
+			clusterConfigPath := filepath.Join(paths.ClusterDir, "."+clusterName+"-config.yaml")
+			if _, statErr := os.Stat(clusterConfigPath); statErr == nil {
+				return clusterConfigPath, nil
+			}
+			
+			// Check for config file at organization level
+			orgConfigPath := filepath.Join(paths.OrganizationDir, "."+clusterName+"-config.yaml")
+			if _, statErr := os.Stat(orgConfigPath); statErr == nil {
+				return orgConfigPath, nil
+			}
+		}
+	} else {
+		// No organization specified - search all organizations
+		clustersDir := filepath.Join(configDir, "clusters")
+		if entries, readErr := os.ReadDir(clustersDir); readErr == nil {
+			for _, entry := range entries {
+				if entry.IsDir() {
+					orgName := entry.Name()
+					
+					// Check for config file at organization level
+					orgConfigPath := filepath.Join(clustersDir, orgName, "."+clusterName+"-config.yaml")
+					if _, statErr := os.Stat(orgConfigPath); statErr == nil {
+						return orgConfigPath, nil
+					}
+					
+					// Check for config file at cluster directory level
+					clusterConfigPath := filepath.Join(clustersDir, orgName, "infrastructure", "clusters", clusterName, "."+clusterName+"-config.yaml")
+					if _, statErr := os.Stat(clusterConfigPath); statErr == nil {
+						return clusterConfigPath, nil
+					}
+				}
 			}
 		}
 	}
 	
 	// Fall back to legacy directory structure path for backward compatibility
-	clusterDir, err := ClusterDirectoryPath(name)
-	if err != nil {
-		return "", err
-	}
-	
-	// Check if legacy config file exists before creating directories
-	legacyConfigPath := filepath.Join(clusterDir, "."+name+"-config.yaml")
-	if _, statErr := os.Stat(legacyConfigPath); statErr == nil {
-		return legacyConfigPath, nil
+	// Only try legacy path if using default organization
+	if organization == "opencenter" && !strings.Contains(name, "/") {
+		clusterDir, err := ClusterDirectoryPath(clusterName)
+		if err != nil {
+			return "", err
+		}
+		
+		// Check if legacy config file exists before creating directories
+		legacyConfigPath := filepath.Join(clusterDir, "."+clusterName+"-config.yaml")
+		if _, statErr := os.Stat(legacyConfigPath); statErr == nil {
+			return legacyConfigPath, nil
+		}
 	}
 	
 	// Only create directories if we're actually going to write a new config
@@ -766,16 +852,19 @@ func ConfigPath(name string) (string, error) {
 // Load reads and unmarshals a YAML configuration file for the given cluster name.
 // Default values are applied for any omitted fields.
 // It supports both organization-based and legacy directory structures.
+// The name parameter can be in "cluster" or "organization/cluster" format.
 //
 // Inputs:
-//   - name: The name of the cluster.
+//   - name: The name of the cluster (can be "cluster" or "organization/cluster").
 //
 // Outputs:
 //   - Config: The loaded configuration.
 //   - error: An error if the file does not exist or cannot be parsed.
 func Load(name string) (Config, error) {
-	if err := ValidateClusterName(name); err != nil {
-		return Config{}, fmt.Errorf("invalid cluster name: %w", err)
+	// Parse the cluster identifier - ConfigPath will handle validation
+	_, clusterName, err := ParseClusterIdentifier(name)
+	if err != nil {
+		return Config{}, fmt.Errorf("invalid cluster identifier: %w", err)
 	}
 
 	path, err := ConfigPath(name)
@@ -788,8 +877,8 @@ func Load(name string) (Config, error) {
 		return Config{}, fmt.Errorf("failed to read cluster configuration file '%s': %w", path, readErr)
 	}
 	
-	// Unmarshal YAML then overlay onto default config
-	cfg := defaultConfig(name)
+	// Unmarshal YAML then overlay onto default config (use actual cluster name, not full identifier)
+	cfg := defaultConfig(clusterName)
 	if unmarshalErr := yaml.Unmarshal(data, &cfg); unmarshalErr != nil {
 		return Config{}, fmt.Errorf("failed to parse YAML configuration from '%s': %w", path, unmarshalErr)
 	}
