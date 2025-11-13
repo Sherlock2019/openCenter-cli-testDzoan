@@ -193,8 +193,8 @@ The configuration is created in an organization-based directory structure:
 By default, the cluster name is used as the organization name. Use --org to
 specify a different organization.
 
-A SOPS Age encryption key is automatically generated unless --no-sops-keygen
-is specified. The key is stored in the cluster's secrets directory.
+SOPS Age encryption keys and SSH key pairs are automatically generated unless
+--no-keygen is specified. Keys are stored in the cluster's secrets directory.
 
 Configuration Override:
   Use --org flag or dot notation to set organization:
@@ -233,8 +233,8 @@ Troubleshooting:
     --opencenter.cluster.kubernetes.version=1.31.4 \
     --opencenter.infrastructure.provider=aws
 
-  # Initialize without SOPS key generation
-  openCenter cluster init my-cluster --no-sops-keygen
+  # Initialize without key generation (SOPS and SSH)
+  openCenter cluster init my-cluster --no-keygen
 
   # Force overwrite existing configuration
   openCenter cluster init my-cluster --force
@@ -412,7 +412,7 @@ Troubleshooting:
 
 			// Persist config
 			// If no SOPS key location provided, generate one using organization structure
-			disableKeygen, _ := cmd.Flags().GetBool("no-sops-keygen")
+			disableKeygen, _ := cmd.Flags().GetBool("no-keygen")
 			if !disableKeygen && cfg.Secrets.SopsAgeKeyFile == "" && name != "" {
 				if err := generateOrganizationSOPSKey(name, organization, &cfg, pathResolver); err != nil {
 					return fmt.Errorf("failed to generate organization SOPS key: %w", err)
@@ -509,34 +509,36 @@ Troubleshooting:
 			cfg.Secrets.SSHKey.Public = secretsSSHPubKeyPath
 			cfg.Secrets.SSHKey.Cypher = sshKeyCypher
 			
-			// Generate SSH key pair if it doesn't exist
-			if _, err := os.Stat(secretsSSHKeyPath); os.IsNotExist(err) {
-				// Create SSH directory if it doesn't exist
-				sshDir := filepath.Dir(secretsSSHKeyPath)
-				if err := os.MkdirAll(sshDir, 0o700); err != nil {
-					return fmt.Errorf("failed to create SSH directory: %w", err)
+			// Generate SSH key pair if it doesn't exist and keygen is not disabled
+			if !disableKeygen {
+				if _, err := os.Stat(secretsSSHKeyPath); os.IsNotExist(err) {
+					// Create SSH directory if it doesn't exist
+					sshDir := filepath.Dir(secretsSSHKeyPath)
+					if err := os.MkdirAll(sshDir, 0o700); err != nil {
+						return fmt.Errorf("failed to create SSH directory: %w", err)
+					}
+					
+					// Create SSH key comment in format: <organization>-<cluster>-<region>
+					sshKeyComment := fmt.Sprintf("%s-%s-%s", organization, name, region)
+					
+					// Generate SSH key pair using the specified cipher with comment
+					keyPair, err := crypto.GenerateSSHKeyWithComment(cfg.Secrets.SSHKey.Cypher, sshKeyComment)
+					if err != nil {
+						return fmt.Errorf("failed to generate SSH key pair: %w", err)
+					}
+					
+					// Write private key with restrictive permissions
+					if err := os.WriteFile(secretsSSHKeyPath, keyPair.PrivateKey, 0o600); err != nil {
+						return fmt.Errorf("failed to write SSH private key: %w", err)
+					}
+					
+					// Write public key
+					if err := os.WriteFile(secretsSSHPubKeyPath, keyPair.PublicKey, 0o644); err != nil {
+						return fmt.Errorf("failed to write SSH public key: %w", err)
+					}
+					
+					fmt.Fprintf(cmd.OutOrStdout(), "Generated %s SSH key pair at %s\n", cfg.Secrets.SSHKey.Cypher, secretsSSHKeyPath)
 				}
-				
-				// Create SSH key comment in format: <organization>-<cluster>-<region>
-				sshKeyComment := fmt.Sprintf("%s-%s-%s", organization, name, region)
-				
-				// Generate SSH key pair using the specified cipher with comment
-				keyPair, err := crypto.GenerateSSHKeyWithComment(cfg.Secrets.SSHKey.Cypher, sshKeyComment)
-				if err != nil {
-					return fmt.Errorf("failed to generate SSH key pair: %w", err)
-				}
-				
-				// Write private key with restrictive permissions
-				if err := os.WriteFile(secretsSSHKeyPath, keyPair.PrivateKey, 0o600); err != nil {
-					return fmt.Errorf("failed to write SSH private key: %w", err)
-				}
-				
-				// Write public key
-				if err := os.WriteFile(secretsSSHPubKeyPath, keyPair.PublicKey, 0o644); err != nil {
-					return fmt.Errorf("failed to write SSH public key: %w", err)
-				}
-				
-				fmt.Fprintf(cmd.OutOrStdout(), "Generated %s SSH key pair at %s\n", cfg.Secrets.SSHKey.Cypher, secretsSSHKeyPath)
 			}
 			
 			// Update the map with any SOPS key changes from the struct
@@ -589,7 +591,7 @@ Troubleshooting:
 	cmd.Flags().String("type", "openstack", "cluster type: openstack, baremetal, kind, vmware (defaults to openstack)")
 	cmd.Flags().Bool("strict", false, "fail if required values are missing")
 	cmd.Flags().Bool("force", false, "overwrite existing file")
-	cmd.Flags().Bool("no-sops-keygen", false, "do not auto-generate a SOPS age key when secrets.sops_age_key_file is unset")
+	cmd.Flags().Bool("no-keygen", false, "do not auto-generate SOPS age keys and SSH key pairs")
 	return cmd
 }
 
