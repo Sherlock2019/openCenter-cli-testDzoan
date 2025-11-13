@@ -34,7 +34,7 @@ locals {
   master_count                            = 3
   ssh_user                                = "ubuntu"
   # these are the ssh public keys that will be able to connect to the cluster's bastion node
-  ssh_authorized_keys                     = ["ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDogzEullM89m//Vd8IGPERto2DotXnUCKGH6II1Vk/klEuDVqXx9kCb981XJKh8mU15bfJVdE4h078q/shK9EIcPMRKSQSMs2LkgF/1yUeVYPNYiIBph6CaqjIxKHy1kYxw3KUTIh8IIl1M4t5fc5c49Gr3QuDpeMN4Z/wrbR1DceIbFDiVxYNeyJWfOdowKgTn4AKh0n1xtg6/XLin3cCstpvfUJUKm0WOcmn3+DHK6cBNqNAMKdtxgnGwlY4MfizJOZE30Y7hwPqXUjOgLgB2vybcdcMpUvw9e8HopogOFQnVwwmlc9/7ZKPCaCKRBEC38IV82CJ6+/eePIMriPF migu4903@MNF0TUDV30"]
+  ssh_authorized_keys                     = ["ssh-rsa ..."]
   node_worker                             = "wn"
   node_master                             = "cp"
   node_worker_windows                     = "win"
@@ -49,24 +49,36 @@ locals {
   worker_node_bfv_destination_type        = "volume"
   worker_node_bfv_source_type             = "image"
   worker_node_bfv_volume_type             = "Standard"
-
-## if additional_block_devices_worker  is empty then print the following line
   additional_block_devices_worker = []
-## Else print the following as needed based in the items in the list array
-  additional_block_devices_worker = [
-    {
-      source_type           = "blank"
-      volume_size           = 20
-      volume_type           = "Performance"
-      boot_index            = -1
-      destination_type      = "volume"
-      delete_on_termination = true
-      mountpoint            = "/var/lib/longhorn"
-      filesystem            = "ext4"
-      label                 = "longhorn-vol"
-    },
-  ]
-## end 
+  # additional_block_devices_worker = [
+  #   {
+  #     source_type           = "blank"
+  #     volume_size           = 20
+  #     volume_type           = "Performance"
+  #     boot_index            = -1
+  #     destination_type      = "volume"
+  #     delete_on_termination = true
+  #     mountpoint            = "/var/lib/longhorn"
+  #     filesystem            = "ext4"
+  #     label                 = "longhorn-vol"
+  #   },
+  #   {
+  #     source_type           = "blank"
+  #     volume_size           = 20
+  #     volume_type           = "Standard"
+  #     boot_index            = -1
+  #     destination_type      = "volume"
+  #     delete_on_termination = true
+  #     mountpoint            = "/var/lib/mysql"
+  #     filesystem            = "ext4"
+  #     label                 = "db-vol"
+  #   },
+  # ]
+
+  # ====================================
+  #ca_certificates add CA certificates to server's trusts. Good for trusting internal private Certificate Authorities.
+  ca_certificates                         = ""
+  openstack_ca                            = ""
 
   # ====================================
   #Kubespray Settings
@@ -82,17 +94,19 @@ locals {
   kubelet_rotate_server_certificates      = false
   os_hardening_enabled                    = true
 
-  #OIDC Settings
   {{- if .OpenCenter.Cluster.Kubernetes.OIDC.Enabled }}
-  kube_oidc_auth_enabled                  = local.kube_oidc_auth_enabled
-  kube_oidc_url                           = local.kube_oidc_url
-  kube_oidc_client_id                     = local.kube_oidc_client_id
-  kube_oidc_ca_file                       = local.kube_oidc_ca_file
-  kube_oidc_username_claim                = local.kube_oidc_username_claim
-  kube_oidc_username_prefix               = local.kube_oidc_username_prefix
-  kube_oidc_groups_claim                  = local.kube_oidc_groups_claim
-  kube_oidc_groups_prefix                 = local.kube_oidc_groups_prefix
+  #OIDC Settings
+  kube_oidc_auth_enabled                 = {{ .OpenCenter.Cluster.Kubernetes.OIDC.Enabled | default false }}
+  kube_oidc_url                          = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCURL | default "" }}"
+  kube_oidc_client_id                    = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCClientID | default "kubernetes" }}"
+  # # Optional settings fo OIDC
+  kube_oidc_ca_file                      = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCCAFile | default "" }}"
+  kube_oidc_username_claim               = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCUsernameClaim | default "sub" }}"
+  kube_oidc_username_prefix              = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCUsernamePrefix | default "oidc:" }}"
+  kube_oidc_groups_claim                 = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCGroupsClaim | default "groups" }}"
+  kube_oidc_groups_prefix                = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCGroupsPrefix | default "oidc:" }}"
   {{- end }}
+
 
   #Calico Settings
   cni_iface                               = "enp3s0"
@@ -109,6 +123,17 @@ locals {
   naming_prefix                           = "${local.cluster_name}-"
   windows_dataplane                       = "Disabled" 
 
+  {{- if .OpenCenter.Cluster.Kubernetes.MasterNodes }}
+  master_nodes = [
+    {{- range .OpenCenter.Cluster.Kubernetes.MasterNodes }}
+    {
+      id = "{{ .ID }}"
+      name = "{{ .Name }}"
+      access_ip_v4 = "{{ .AccessIPv4 }}"
+    },
+    {{- end }}
+  ]
+  {{- else }}
   master_nodes = [
     {
     id = "master-0"
@@ -126,7 +151,19 @@ locals {
     access_ip_v4 = "172.23.0.168"
     }
   ]
+  {{- end }}
 
+  {{- if .OpenCenter.Cluster.Kubernetes.WorkerNodes }}
+  worker_nodes = [
+    {{- range .OpenCenter.Cluster.Kubernetes.WorkerNodes }}
+    {
+      id = "{{ .ID }}"
+      name = "{{ .Name }}"
+      access_ip_v4 = "{{ .AccessIPv4 }}"
+    },
+    {{- end }}
+  ]
+  {{- else }}
   worker_nodes = [
     {
     id = "worker-0"
@@ -144,6 +181,7 @@ locals {
     access_ip_v4 = "172.23.0.212"
     }
   ]
+  {{- end }}
 }
 
 module "kubespray-cluster" {

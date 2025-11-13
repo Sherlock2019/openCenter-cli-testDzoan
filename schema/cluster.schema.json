@@ -79,6 +79,36 @@
                   "minimum": 1,
                   "type": "integer"
                 },
+                "master_nodes": {
+                  "description": "Pre-configured master/control plane nodes for baremetal deployments",
+                  "items": {
+                    "description": "Baremetal node configuration",
+                    "properties": {
+                      "access_ip_v4": {
+                        "description": "IPv4 address for accessing the node",
+                        "pattern": "^([0-9]{1,3}\\.){3}[0-9]{1,3}$",
+                        "type": "string"
+                      },
+                      "id": {
+                        "description": "Unique identifier for the node",
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "name": {
+                        "description": "Hostname or name of the node",
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "access_ip_v4"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
                 "network_plugin": {
                   "description": "Kubernetes network plugin (CNI) configuration. Only one plugin should be enabled at a time.",
                   "oneOf": [
@@ -298,6 +328,36 @@
                   "maximum": 50,
                   "minimum": 0,
                   "type": "integer"
+                },
+                "worker_nodes": {
+                  "description": "Pre-configured worker nodes for baremetal deployments",
+                  "items": {
+                    "description": "Baremetal node configuration",
+                    "properties": {
+                      "access_ip_v4": {
+                        "description": "IPv4 address for accessing the node",
+                        "pattern": "^([0-9]{1,3}\\.){3}[0-9]{1,3}$",
+                        "type": "string"
+                      },
+                      "id": {
+                        "description": "Unique identifier for the node",
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "name": {
+                        "description": "Hostname or name of the node",
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "access_ip_v4"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
                 }
               },
               "required": [

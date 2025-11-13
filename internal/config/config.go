@@ -276,9 +276,18 @@ type KubernetesConfig struct {
 	MasterCount          int            `yaml:"master_count" json:"master_count"`
 	WorkerCount          int            `yaml:"worker_count" json:"worker_count"`
 	WorkerCountWindows   int            `yaml:"worker_count_windows" json:"worker_count_windows"`
+	MasterNodes          []NodeConfig   `yaml:"master_nodes,omitempty" json:"master_nodes,omitempty"`
+	WorkerNodes          []NodeConfig   `yaml:"worker_nodes,omitempty" json:"worker_nodes,omitempty"`
 	NetworkPlugin        NetworkPlugin  `yaml:"network_plugin" json:"network_plugin"`
 	OIDC                 OIDCConfig     `yaml:"oidc" json:"oidc"`
 	WindowsWorkers       WindowsWorkers `yaml:"windows_workers" json:"windows_workers"`
+}
+
+// NodeConfig represents a baremetal node configuration with id, name, and IP
+type NodeConfig struct {
+	ID         string `yaml:"id" json:"id"`
+	Name       string `yaml:"name" json:"name"`
+	AccessIPv4 string `yaml:"access_ip_v4" json:"access_ip_v4"`
 }
 
 // NetworkPlugin represents the network plugin configuration
@@ -1023,6 +1032,14 @@ func mergeUserConfigIntoIAC(cfg *Config) error {
 	// Map SSH authorized keys
 	if len(cfg.OpenCenter.Cluster.SSHAuthorizedKeys) > 0 {
 		cfg.IAC.Main["ssh_authorized_keys"] = cfg.OpenCenter.Cluster.SSHAuthorizedKeys
+	}
+	
+	// Map baremetal node configurations
+	if len(k8s.MasterNodes) > 0 {
+		cfg.IAC.Main["master_nodes"] = k8s.MasterNodes
+	}
+	if len(k8s.WorkerNodes) > 0 {
+		cfg.IAC.Main["worker_nodes"] = k8s.WorkerNodes
 	}
 	
 	return nil

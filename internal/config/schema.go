@@ -503,6 +503,58 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 						"maximum":     50,
 						"default":     0,
 					},
+					"master_nodes": map[string]any{
+						"type":        "array",
+						"description": "Pre-configured master/control plane nodes for baremetal deployments",
+						"items": map[string]any{
+							"type":        "object",
+							"description": "Baremetal node configuration",
+							"required":    []string{"id", "name", "access_ip_v4"},
+							"properties": map[string]any{
+								"id": map[string]any{
+									"type":        "string",
+									"description": "Unique identifier for the node",
+									"minLength":   1,
+								},
+								"name": map[string]any{
+									"type":        "string",
+									"description": "Hostname or name of the node",
+									"minLength":   1,
+								},
+								"access_ip_v4": map[string]any{
+									"type":        "string",
+									"description": "IPv4 address for accessing the node",
+									"pattern":     "^([0-9]{1,3}\\.){3}[0-9]{1,3}$",
+								},
+							},
+						},
+					},
+					"worker_nodes": map[string]any{
+						"type":        "array",
+						"description": "Pre-configured worker nodes for baremetal deployments",
+						"items": map[string]any{
+							"type":        "object",
+							"description": "Baremetal node configuration",
+							"required":    []string{"id", "name", "access_ip_v4"},
+							"properties": map[string]any{
+								"id": map[string]any{
+									"type":        "string",
+									"description": "Unique identifier for the node",
+									"minLength":   1,
+								},
+								"name": map[string]any{
+									"type":        "string",
+									"description": "Hostname or name of the node",
+									"minLength":   1,
+								},
+								"access_ip_v4": map[string]any{
+									"type":        "string",
+									"description": "IPv4 address for accessing the node",
+									"pattern":     "^([0-9]{1,3}\\.){3}[0-9]{1,3}$",
+								},
+							},
+						},
+					},
 					"network_plugin": networkPlugin,
 					"oidc": map[string]any{
 						"type": "object",
