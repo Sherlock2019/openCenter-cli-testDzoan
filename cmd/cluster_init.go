@@ -24,6 +24,7 @@ import (
 	"github.com/rackerlabs/openCenter-cli/internal/config"
 	"github.com/rackerlabs/openCenter-cli/internal/sops"
 	"github.com/rackerlabs/openCenter-cli/internal/util"
+	"github.com/rackerlabs/openCenter-cli/internal/util/crypto"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -477,9 +478,46 @@ Troubleshooting:
 			secretsSSHKeyPath := filepath.Join(clusterPaths.SecretsDir, "ssh", sshKeyBaseName)
 			secretsSSHPubKeyPath := secretsSSHKeyPath + ".pub"
 			
+			// Check if user provided a cypher type, otherwise default to ed25519
+			sshKeyCypher := "ed25519"
+			if secretsMap, ok := configMap["secrets"].(map[string]any); ok {
+				if sshKeyMap, ok := secretsMap["ssh_key"].(map[string]any); ok {
+					if cypher, ok := sshKeyMap["cypher"].(string); ok && cypher != "" {
+						sshKeyCypher = cypher
+					}
+				}
+			}
+			
 			cfg.Secrets.SSHKey.Private = secretsSSHKeyPath
 			cfg.Secrets.SSHKey.Public = secretsSSHPubKeyPath
-			cfg.Secrets.SSHKey.Cypher = "ed25519"
+			cfg.Secrets.SSHKey.Cypher = sshKeyCypher
+			
+			// Generate SSH key pair if it doesn't exist
+			if _, err := os.Stat(secretsSSHKeyPath); os.IsNotExist(err) {
+				// Create SSH directory if it doesn't exist
+				sshDir := filepath.Dir(secretsSSHKeyPath)
+				if err := os.MkdirAll(sshDir, 0o700); err != nil {
+					return fmt.Errorf("failed to create SSH directory: %w", err)
+				}
+				
+				// Generate SSH key pair using the specified cipher
+				keyPair, err := crypto.GenerateSSHKey(cfg.Secrets.SSHKey.Cypher)
+				if err != nil {
+					return fmt.Errorf("failed to generate SSH key pair: %w", err)
+				}
+				
+				// Write private key with restrictive permissions
+				if err := os.WriteFile(secretsSSHKeyPath, keyPair.PrivateKey, 0o600); err != nil {
+					return fmt.Errorf("failed to write SSH private key: %w", err)
+				}
+				
+				// Write public key
+				if err := os.WriteFile(secretsSSHPubKeyPath, keyPair.PublicKey, 0o644); err != nil {
+					return fmt.Errorf("failed to write SSH public key: %w", err)
+				}
+				
+				fmt.Fprintf(cmd.OutOrStdout(), "Generated %s SSH key pair at %s\n", cfg.Secrets.SSHKey.Cypher, secretsSSHKeyPath)
+			}
 			
 			// Update the map with any SOPS key changes from the struct
 			if secretsMap, ok := configMap["secrets"].(map[string]any); ok {
@@ -490,7 +528,7 @@ Troubleshooting:
 				secretsMap["ssh_key"] = map[string]any{
 					"private": secretsSSHKeyPath,
 					"public":  secretsSSHPubKeyPath,
-					"cypher":  "ed25519",
+					"cypher":  sshKeyCypher,
 				}
 			} else {
 				// Create secrets map if it doesn't exist
@@ -498,7 +536,7 @@ Troubleshooting:
 					"ssh_key": map[string]any{
 						"private": secretsSSHKeyPath,
 						"public":  secretsSSHPubKeyPath,
-						"cypher":  "ed25519",
+						"cypher":  sshKeyCypher,
 					},
 				}
 				if cfg.Secrets.SopsAgeKeyFile != "" {
