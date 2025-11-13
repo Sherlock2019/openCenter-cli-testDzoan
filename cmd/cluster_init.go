@@ -199,6 +199,10 @@ Configuration Override:
     --org myorg
     --opencenter.meta.organization=myorg
   
+  Use --type flag to specify cluster type:
+    --type baremetal
+    --type openstack (default)
+  
   Use dot notation to override any configuration value:
     --opencenter.meta.env=prod
     --opencenter.cluster.kubernetes.version=1.31.4
@@ -210,6 +214,9 @@ Troubleshooting:
   • Check ~/.config/openCenter/clusters/ for created files`,
 		Example: `  # Initialize with defaults (uses cluster name as organization)
   openCenter cluster init my-cluster
+
+  # Initialize bare metal cluster
+  openCenter cluster init my-cluster --org myorg --type baremetal
 
   # Initialize with organization using --org flag
   openCenter cluster init my-cluster --org myorg
@@ -303,6 +310,22 @@ Troubleshooting:
 
 			// Always update configuration with the determined organization
 			cfg.OpenCenter.Meta.Organization = organization
+			
+			// Handle --type flag to set infrastructure provider
+			typeFlag, _ := cmd.Flags().GetString("type")
+			if typeFlag != "" {
+				cfg.OpenCenter.Infrastructure.Provider = typeFlag
+				// Also update the map
+				if opencenter, ok := configMap["opencenter"].(map[string]any); ok {
+					if infrastructure, ok := opencenter["infrastructure"].(map[string]any); ok {
+						infrastructure["provider"] = typeFlag
+					} else {
+						opencenter["infrastructure"] = map[string]any{
+							"provider": typeFlag,
+						}
+					}
+				}
+			}
 			// Also update the map
 			if opencenter, ok := configMap["opencenter"].(map[string]any); ok {
 				if meta, ok := opencenter["meta"].(map[string]any); ok {
@@ -487,6 +510,7 @@ Troubleshooting:
 		},
 	}
 	cmd.Flags().String("org", "", "organization name (defaults to cluster name if not specified)")
+	cmd.Flags().String("type", "openstack", "cluster type: openstack, baremetal, kind, vmware (defaults to openstack)")
 	cmd.Flags().Bool("strict", false, "fail if required values are missing")
 	cmd.Flags().Bool("force", false, "overwrite existing file")
 	cmd.Flags().Bool("no-sops-keygen", false, "do not auto-generate a SOPS age key when secrets.sops_age_key_file is unset")

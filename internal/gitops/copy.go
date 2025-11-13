@@ -223,6 +223,7 @@ func RenderClusterApps(cfg config.Config) error {
 // RenderInfrastructureCluster renders infrastructure-cluster-template to infrastructure/clusters/<cluster-name>/
 // This function processes all files in the infrastructure-cluster-template directory,
 // renders .tmpl and .tpl files with the cluster configuration, and copies others as-is.
+// It selects the appropriate main.tf template based on the infrastructure provider type.
 func RenderInfrastructureCluster(cfg config.Config) error {
 	clusterName := cfg.ClusterName()
 	if clusterName == "" {
@@ -234,6 +235,18 @@ func RenderInfrastructureCluster(cfg config.Config) error {
 	// Create target directory
 	if err := os.MkdirAll(target, 0o755); err != nil {
 		return err
+	}
+
+	// Determine which main.tf template to use based on provider
+	provider := cfg.OpenCenter.Infrastructure.Provider
+	if provider == "" {
+		provider = "openstack" // default
+	}
+	
+	// Map provider to template filename
+	mainTfTemplate := "main.tf.tpl" // default for openstack
+	if provider == "baremetal" {
+		mainTfTemplate = "main-baremetal.tf.tpl"
 	}
 
 	// Walk embedded infrastructure-cluster-template files
@@ -248,6 +261,18 @@ func RenderInfrastructureCluster(cfg config.Config) error {
 		rel, err := filepath.Rel("templates/infrastructure-cluster-template", path)
 		if err != nil {
 			return err
+		}
+
+		filename := d.Name()
+		
+		// Skip main.tf templates that don't match the provider
+		if strings.HasPrefix(filename, "main") && strings.HasSuffix(filename, ".tf.tpl") {
+			if filename != mainTfTemplate {
+				// Skip this template as it's not for the current provider
+				return nil
+			}
+			// Rename to main.tf for the selected provider template
+			rel = "main.tf.tpl"
 		}
 
 		// Replace cluster-name and cluster_name placeholders in filename
