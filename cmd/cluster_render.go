@@ -18,6 +18,7 @@ import (
 
     "github.com/rackerlabs/openCenter-cli/internal/config"
     "github.com/rackerlabs/openCenter-cli/internal/gitops"
+    "github.com/rackerlabs/openCenter-cli/internal/tofu"
     "github.com/spf13/cobra"
 )
 
@@ -61,6 +62,10 @@ func newClusterRenderCmd() *cobra.Command {
 			}
 			if err := gitops.RenderInfrastructureCluster(cfg); err != nil {
 				return fmt.Errorf("failed to render infrastructure cluster templates: %w", err)
+			}
+			// Provision OpenTofu (renders provider.tf)
+			if err := tofu.Provision(cfg); err != nil {
+				return fmt.Errorf("failed to provision opentofu: %w", err)
 			}
 			fmt.Fprintln(cmd.OutOrStdout(), "Render complete.")
 			return nil

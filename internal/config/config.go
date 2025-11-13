@@ -545,7 +545,7 @@ func defaultConfig(name string) Config {
 					Path: "terraform.tfstate",
 				},
 				S3: SimplifiedTofuS3{
-					Bucket: name,
+					Bucket: strings.ToLower(name),
 					Key:    fmt.Sprintf("%s/tfstate/terraform.tfstate", name),
 					Region: "us-west-2",
 				},
