@@ -437,15 +437,10 @@ Troubleshooting:
 				region = "local"
 			}
 			
-			// Get the clusters directory from config manager
-			configDir, err := config.ResolveConfigDir()
-			if err != nil {
-				return fmt.Errorf("failed to resolve config directory: %w", err)
-			}
-			clustersDir := filepath.Join(configDir, "clusters")
-			
+			// Use the already-resolved secrets directory from clusterPaths
+			// This respects any custom clustersDir configuration
 			sshKeyBaseName := fmt.Sprintf("%s-%s-%s", name, env, region)
-			sshKeyPath := filepath.Join(clustersDir, organization, "secrets", "ssh", sshKeyBaseName)
+			sshKeyPath := filepath.Join(clusterPaths.SecretsDir, "ssh", sshKeyBaseName)
 			sshPubKeyPath := sshKeyPath + ".pub"
 			
 			// Check if user explicitly set SSH keys via command line flags
