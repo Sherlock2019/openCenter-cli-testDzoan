@@ -146,7 +146,7 @@ Feature: CLI Configuration System Integration
     And a directory "<<tmp>>/conf/clusters/test-org/secrets/age/keys" should exist
     And a file "<<tmp>>/conf/clusters/test-org/infrastructure/clusters/org-test/.org-test-config.yaml" should exist
     And a file "<<tmp>>/conf/clusters/test-org/secrets/age/keys/org-test-key.txt" should exist
-    And a file "<<tmp>>/conf/clusters/test-org/secrets/.sops.yaml" should exist
+    And a file "<<tmp>>/conf/clusters/test-org/.sops.yaml" should exist
 
   @config @organization @opencenter
   Scenario: Cluster name is used as organization when none specified
@@ -164,7 +164,7 @@ Feature: CLI Configuration System Integration
     Then the exit code should be 0
     And a directory "<<tmp>>/conf/clusters/shared-org/infrastructure/clusters/cluster-a" should exist
     And a directory "<<tmp>>/conf/clusters/shared-org/infrastructure/clusters/cluster-b" should exist
-    And a file "<<tmp>>/conf/clusters/shared-org/secrets/.sops.yaml" should exist
+    And a file "<<tmp>>/conf/clusters/shared-org/.sops.yaml" should exist
     # Both clusters should share the same organization-level secrets directory
     And a file "<<tmp>>/conf/clusters/shared-org/secrets/age/keys/cluster-a-key.txt" should exist
     And a file "<<tmp>>/conf/clusters/shared-org/secrets/age/keys/cluster-b-key.txt" should exist

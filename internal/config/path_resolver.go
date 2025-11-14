@@ -39,7 +39,7 @@ type ClusterPaths struct {
 	ApplicationsDir   string // ~/.config/openCenter/clusters/<organization>/applications/overlays/<cluster>
 	SecretsDir        string // ~/.config/openCenter/clusters/<organization>/secrets
 	SOPSKeyPath       string // ~/.config/openCenter/clusters/<organization>/secrets/age/keys/<cluster>-key.txt
-	SOPSConfigPath    string // ~/.config/openCenter/clusters/<organization>/secrets/.sops.yaml
+	SOPSConfigPath    string // ~/.config/openCenter/clusters/<organization>/.sops.yaml
 	KubeconfigPath    string // ~/.config/openCenter/clusters/<organization>/infrastructure/clusters/<cluster>/kubeconfig.yaml
 	InventoryPath     string // ~/.config/openCenter/clusters/<organization>/infrastructure/clusters/<cluster>/inventory/
 	VenvPath          string // ~/.config/openCenter/clusters/<organization>/infrastructure/clusters/<cluster>/venv/
@@ -92,7 +92,7 @@ func (pr *PathResolver) ResolveClusterPaths(clusterName, organization string) Cl
 		ApplicationsDir: applicationsDir,
 		SecretsDir:      secretsDir,
 		SOPSKeyPath:     filepath.Join(secretsDir, "age", "keys", clusterName+"-key.txt"),
-		SOPSConfigPath:  filepath.Join(secretsDir, ".sops.yaml"),
+		SOPSConfigPath:  filepath.Join(organizationDir, ".sops.yaml"),
 		KubeconfigPath:  filepath.Join(clusterDir, "kubeconfig.yaml"),
 		InventoryPath:   filepath.Join(clusterDir, "inventory"),
 		VenvPath:        filepath.Join(clusterDir, "venv"),

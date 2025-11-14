@@ -102,8 +102,8 @@ Feature: Cluster initialisation
     When I run "openCenter cluster init database --opencenter.meta.organization=data-team"
     Then a file "~/.config/openCenter/clusters/data-team/secrets/age/keys/database-key.txt" should exist
     And the file "~/.config/openCenter/clusters/data-team/secrets/age/keys/database-key.txt" should contain "AGE-SECRET-KEY-1"
-    And a file "~/.config/openCenter/clusters/data-team/secrets/.sops.yaml" should exist
-    And the file "~/.config/openCenter/clusters/data-team/secrets/.sops.yaml" should contain "creation_rules:"
+    And a file "~/.config/openCenter/clusters/data-team/.sops.yaml" should exist
+    And the file "~/.config/openCenter/clusters/data-team/.sops.yaml" should contain "creation_rules:"
     And the cluster configuration "database" should have "secrets.sops_age_key_file" containing "data-team/secrets/age/keys/database-key.txt"
 
   Scenario: Init cluster without organization uses opencenter organization

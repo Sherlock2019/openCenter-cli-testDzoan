@@ -680,7 +680,7 @@ func generateOrganizationSOPSKey(cluster, organization string, cfg *config.Confi
 	}
 	
 	// Create or update the SOPS configuration file for the organization
-	if err := createOrganizationSOPSConfig(clusterPaths.SOPSConfigPath, keyPair.PublicKey); err != nil {
+	if err := createOrganizationSOPSConfig(clusterPaths.SOPSConfigPath, keyPair.PublicKey, cluster); err != nil {
 		return fmt.Errorf("failed to create organization SOPS config: %w", err)
 	}
 	
@@ -688,20 +688,81 @@ func generateOrganizationSOPSKey(cluster, organization string, cfg *config.Confi
 	return nil
 }
 
-// createOrganizationSOPSConfig creates or updates the .sops.yaml configuration file for the organization.
-func createOrganizationSOPSConfig(sopsConfigPath, publicKey string) error {
-	// Create a proper SOPS configuration with the Age public key
-	sopsConfig := fmt.Sprintf(`creation_rules:
-  - path_regex: .*\.yaml$
+// createOrganizationSOPSConfig creates or updates the .sops.yaml configuration file at the organization root.
+// Each cluster's key only encrypts files in its specific directories:
+// - /applications/overlays/<cluster>/
+// - /infrastructure/clusters/<cluster>/
+func createOrganizationSOPSConfig(sopsConfigPath, publicKey string, clusterName string) error {
+	// sopsConfigPath is already the full path to .sops.yaml at organization root
+	rootSOPSConfigPath := sopsConfigPath
+	
+	// Define the path patterns for this cluster
+	clusterRule := fmt.Sprintf(`  - path_regex: (applications/overlays/%s/.*|infrastructure/clusters/%s/.*)\.ya?ml$
     age: >-
-      %s
-  - path_regex: .*\.json$
-    age: >-
-      %s
-`, publicKey, publicKey)
-
-	// Write the SOPS configuration file
-	if err := os.WriteFile(sopsConfigPath, []byte(sopsConfig), 0o600); err != nil {
+      %s`, clusterName, clusterName, publicKey)
+	
+	// Check if .sops.yaml already exists at organization root
+	var existingContent string
+	if data, err := os.ReadFile(rootSOPSConfigPath); err == nil {
+		existingContent = string(data)
+	}
+	
+	var sopsConfig string
+	if existingContent == "" {
+		// Create new .sops.yaml with header and first cluster rule
+		sopsConfig = fmt.Sprintf(`# SOPS configuration for organization
+# Each cluster's key encrypts only its specific directories
+creation_rules:
+%s
+`, clusterRule)
+	} else {
+		// Check if this cluster already has a rule
+		clusterRulePattern := fmt.Sprintf(`path_regex: \(applications/overlays/%s/`, clusterName)
+		if strings.Contains(existingContent, clusterRulePattern) {
+			// Cluster rule already exists, update it
+			// Find and replace the existing rule for this cluster
+			lines := strings.Split(existingContent, "\n")
+			var newLines []string
+			skipNext := false
+			inClusterRule := false
+			
+			for i, line := range lines {
+				if skipNext {
+					skipNext = false
+					continue
+				}
+				
+				// Check if this is the start of our cluster's rule
+				if strings.Contains(line, clusterRulePattern) {
+					inClusterRule = true
+					// Add the new rule
+					newLines = append(newLines, clusterRule)
+					// Skip the next line (age key line)
+					if i+1 < len(lines) && strings.Contains(lines[i+1], "age:") {
+						skipNext = true
+					}
+					continue
+				}
+				
+				if inClusterRule && strings.TrimSpace(line) != "" && !strings.HasPrefix(strings.TrimSpace(line), "age:") {
+					inClusterRule = false
+				}
+				
+				if !inClusterRule {
+					newLines = append(newLines, line)
+				}
+			}
+			sopsConfig = strings.Join(newLines, "\n")
+		} else {
+			// Append new cluster rule to existing config
+			// Insert before the last newline if it exists
+			existingContent = strings.TrimRight(existingContent, "\n")
+			sopsConfig = fmt.Sprintf("%s\n%s\n", existingContent, clusterRule)
+		}
+	}
+	
+	// Write the SOPS configuration file at organization root
+	if err := os.WriteFile(rootSOPSConfigPath, []byte(sopsConfig), 0o644); err != nil {
 		return fmt.Errorf("failed to write SOPS config file: %w", err)
 	}
 	
