@@ -1,0 +1,397 @@
+Feature: Configuration-driven template rendering
+
+  Background:
+    Given an empty directory "<<tmp>>/conf"
+    And an empty directory "<<tmp>>/gitops-repo"
+
+  @template @alert-proxy @secrets
+  Scenario: Render alert-proxy secrets with custom values
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+      secrets:
+        alert_proxy:
+          core_device_id: "device-123"
+          account_service_token: "token-456"
+          core_account_number: "account-789"
+      """
+    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    And the directory "<<tmp>>/gitops-repo" should exist
+
+  @template @alert-proxy @configuration
+  Scenario: Render alert-proxy configuration with custom image tag
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+        managed-service:
+          alert-proxy:
+            enabled: true
+            image_tag: "v1.2.3"
+            alert_manager_base_url: "https://alertmanager.example.com"
+            http_route_fqdn: "alerts.example.com"
+      secrets:
+        alert_proxy:
+          core_device_id: "device-123"
+          account_service_token: "token-456"
+          core_account_number: "account-789"
+      """
+    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    And the directory "<<tmp>>/gitops-repo" should exist
+
+  @template @cert-manager @secrets
+  Scenario: Render cert-manager with custom AWS credentials
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+          admin_email: admin@example.com
+          cluster_fqdn: test-cluster.example.com
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+        services:
+          cert-manager:
+            enabled: true
+            region: us-west-2
+            letsencrypt_server: "https://acme-staging-v02.api.letsencrypt.org/directory"
+      secrets:
+        cert_manager:
+          aws_access_key: "AKIAEXAMPLE123"
+          aws_secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+      """
+    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    And the directory "<<tmp>>/gitops-repo" should exist
+
+  @template @cert-manager @letsencrypt
+  Scenario: Render cert-manager with LetsEncrypt configuration
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+          admin_email: devops@example.com
+          cluster_fqdn: prod.example.com
+          base_domain: example.com
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+        services:
+          cert-manager:
+            enabled: true
+            region: eu-west-1
+            letsencrypt_server: "https://acme-v02.api.letsencrypt.org/directory"
+      secrets:
+        cert_manager:
+          aws_access_key: "AKIAEXAMPLE456"
+          aws_secret_access_key: "secretkey789"
+      """
+    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    And the directory "<<tmp>>/gitops-repo" should exist
+
+  @template @loki @swift
+  Scenario: Render Loki with custom Swift credentials
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+        services:
+          loki:
+            enabled: true
+            loki_bucket_name: "my-loki-bucket"
+            loki_volume_size: 50
+            loki_storage_class: "fast-ssd"
+            swift_auth_url: "https://keystone.example.com/v3/"
+            swift_username: "loki-user"
+            swift_project_name: "my-project"
+            swift_region: "US-EAST-1"
+            swift_domain_name: "default"
+      secrets:
+        loki:
+          swift_password: "my-secure-password"
+      """
+    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    And the directory "<<tmp>>/gitops-repo" should exist
+
+  @template @loki @volume
+  Scenario: Render Loki with volume configuration
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+        storage:
+          default_storage_class: "csi-cinder-sc-delete"
+        services:
+          loki:
+            enabled: true
+            loki_volume_size: 100
+            swift_auth_url: "https://keystone.example.com/v3/"
+            swift_username: "loki"
+            swift_project_name: "project"
+            swift_region: "REGION"
+            swift_domain_name: "default"
+      secrets:
+        loki:
+          swift_password: "password"
+      """
+    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    And the directory "<<tmp>>/gitops-repo" should exist
+
+  @template @velero @backup
+  Scenario: Render Velero with custom backup bucket
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+        services:
+          velero:
+            enabled: true
+            velero_backup_bucket: "my-backup-bucket"
+            velero_region: "us-west-1"
+      """
+    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    And the directory "<<tmp>>/gitops-repo" should exist
+
+  @template @keycloak @oidc
+  Scenario: Render Keycloak with custom OIDC configuration
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+          admin_email: admin@example.com
+          cluster_fqdn: test.example.com
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+        services:
+          keycloak:
+            enabled: true
+            keycloak_realm: "my-realm"
+            keycloak_frontend_url: "https://auth.example.com"
+            keycloak_client_id: "my-client"
+            hostname: "auth.example.com"
+      secrets:
+        keycloak:
+          client_secret: "secret123"
+          admin_password: "admin123"
+      """
+    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    And the directory "<<tmp>>/gitops-repo" should exist
+
+  @template @headlamp @oidc
+  Scenario: Render Headlamp with OIDC integration
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+          cluster_fqdn: test.example.com
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+        services:
+          headlamp:
+            enabled: true
+            headlamp_oidc_client_id: "headlamp-client"
+            headlamp_oidc_issuer_url: "https://auth.example.com/realms/my-realm"
+            hostname: "headlamp.example.com"
+      secrets:
+        headlamp:
+          oidc_client_secret: "headlamp-secret"
+      """
+    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    And the directory "<<tmp>>/gitops-repo" should exist
+
+  @template @weave-gitops @password
+  Scenario: Render Weave GitOps with custom password
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+          cluster_fqdn: test.example.com
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+        services:
+          weave-gitops:
+            enabled: true
+            hostname: "gitops.example.com"
+      secrets:
+        weave_gitops:
+          password: "mypassword"
+          password_hash: "$2a$10$abcdefghijklmnopqrstuv"
+      """
+    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    And the directory "<<tmp>>/gitops-repo" should exist
+
+  @template @grafana @storage
+  Scenario: Render Grafana with custom storage configuration
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+        storage:
+          default_storage_class: "csi-cinder-sc-delete"
+        services:
+          kube-prometheus-stack:
+            enabled: true
+            grafana_volume_size: 20
+            grafana_storage_class: "fast-ssd"
+            prometheus_volume_size: 100
+            prometheus_storage_class: "fast-ssd"
+      secrets:
+        grafana:
+          admin_password: "grafana-admin-pass"
+      """
+    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    And the directory "<<tmp>>/gitops-repo" should exist
+
+  @template @httproute @hostname
+  Scenario: HTTPRoute hostname generation from cluster FQDN
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+          cluster_fqdn: prod.k8s.example.com
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+        services:
+          keycloak:
+            enabled: true
+          headlamp:
+            enabled: true
+          weave-gitops:
+            enabled: true
+      secrets:
+        keycloak:
+          client_secret: "secret"
+          admin_password: "password"
+        headlamp:
+          oidc_client_secret: "secret"
+        weave_gitops:
+          password: "password"
+          password_hash: "hash"
+        grafana:
+          admin_password: "password"
+      """
+    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    And the directory "<<tmp>>/gitops-repo" should exist
+
+  @template @httproute @custom-hostname
+  Scenario: HTTPRoute with custom hostname overrides
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+          cluster_fqdn: test.example.com
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+        services:
+          keycloak:
+            enabled: true
+            hostname: "custom-auth.example.com"
+          headlamp:
+            enabled: true
+            hostname: "custom-ui.example.com"
+      secrets:
+        keycloak:
+          client_secret: "secret"
+          admin_password: "password"
+        headlamp:
+          oidc_client_secret: "secret"
+        grafana:
+          admin_password: "password"
+      """
+    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    And the directory "<<tmp>>/gitops-repo" should exist
+
+  @template @secrets @validation @wip
+  Scenario: Missing required secrets should fail validation
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+        services:
+          cert-manager:
+            enabled: true
+      """
+    When I run "openCenter cluster validate test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should not be 0
+    And stderr should contain "secret"
+
+  @template @defaults @fallback
+  Scenario: Template rendering with default values
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+      """
+    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    And the directory "<<tmp>>/gitops-repo" should exist
