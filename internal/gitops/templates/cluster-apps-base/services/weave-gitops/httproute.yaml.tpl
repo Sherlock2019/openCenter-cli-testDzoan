@@ -9,7 +9,7 @@ spec:
       sectionName: gitops-https
       namespace: rackspace-system
   hostnames:
-    - "gitops.demo.stage.sjc3.k8s.opencenter.cloud"
+    - {{ (index .OpenCenter.Services "weave-gitops").Hostname | default (printf "gitops.%s" .OpenCenter.Cluster.ClusterFQDN) | quote }}
   rules:
     - backendRefs:
         - name: weave-gitops
