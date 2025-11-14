@@ -210,36 +210,36 @@ This document outlines the implementation tasks for the configuration schema enh
   - Replace hardcoded hostname with `{{ .OpenCenter.Services.headlamp.Hostname | default (printf "headlamp.%s" .OpenCenter.Cluster.ClusterFQDN) }}`
   - _Requirements: 8.2_
 
-- [ ] 9. Update Weave GitOps Templates
+- [x] 9. Update Weave GitOps Templates
   - Replace hardcoded password hash
   - Use Secrets section
   - _Requirements: 9.1, 9.2_
 
-- [ ] 9.1 Update weave-gitops/helm-values/override-values.yaml.tpl
+- [x] 9.1 Update weave-gitops/helm-values/override-values.yaml.tpl
   - Replace hardcoded passwordHash with `{{ .Secrets.WeaveGitOps.PasswordHash }}`
   - _Requirements: 9.1_
 
-- [ ] 9.2 Update weave-gitops/httproute.yaml.tpl
+- [x] 9.2 Update weave-gitops/httproute.yaml.tpl
   - Replace hardcoded hostname with `{{ .OpenCenter.Services.weave-gitops.Hostname | default (printf "gitops.%s" .OpenCenter.Cluster.ClusterFQDN) }}`
   - _Requirements: 9.2_
 
-- [ ] 10. Update Grafana/Prometheus Templates
+- [x] 10. Update Grafana/Prometheus Templates
   - Replace hardcoded admin password
   - Use Secrets section
   - _Requirements: 10.1, 10.2, 10.3_
 
-- [ ] 10.1 Update kube-prometheus-stack/grafana-admin-password.yaml.tpl
+- [x] 10.1 Update kube-prometheus-stack/grafana-admin-password.yaml.tpl
   - Replace hardcoded admin-password with `{{ .Secrets.Grafana.AdminPassword | b64enc }}`
   - Keep admin-user as `{{ "admin" | b64enc }}`
   - _Requirements: 10.1_
 
-- [ ] 10.2 Add Prometheus storage configuration
+- [x] 10.2 Add Prometheus storage configuration
   - Create or update Prometheus helm-values template
   - Add storageClass: `{{ .OpenCenter.Services.kube-prometheus-stack.PrometheusStorageClass | default .OpenCenter.Storage.DefaultStorageClass }}`
   - Add size: `{{ .OpenCenter.Services.kube-prometheus-stack.PrometheusVolumeSize | default 50 }}Gi`
   - _Requirements: 10.2_
 
-- [ ] 10.3 Add Grafana storage configuration
+- [x] 10.3 Add Grafana storage configuration
   - Create or update Grafana helm-values template
   - Add storageClass: `{{ .OpenCenter.Services.kube-prometheus-stack.GrafanaStorageClass | default .OpenCenter.Storage.DefaultStorageClass }}`
   - Add size: `{{ .OpenCenter.Services.kube-prometheus-stack.GrafanaVolumeSize | default 10 }}Gi`

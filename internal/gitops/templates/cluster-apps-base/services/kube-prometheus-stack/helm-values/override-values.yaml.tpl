@@ -1,8 +1,17 @@
 ---
+{{- $svc := index .OpenCenter.Services "kube-prometheus-stack" }}
 alertmanager:
   enabled: true
   alertmanagerSpec:
     externalUrl: https://alertmanager.demo.stage.sjc3.k8s.opencenter.cloud
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: {{ $svc.AlertmanagerStorageClass | default .OpenCenter.Storage.DefaultStorageClass | default "csi-cinder-sc-delete" }}
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: {{ $svc.AlertmanagerVolumeSize | default 10 }}Gi
   config:
     global:
       resolve_timeout: 5m
@@ -52,12 +61,24 @@ prometheus:
     serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorSelectorNilUsesHelmValues: false
     ruleSelectorNilUsesHelmValues: false
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: {{ $svc.PrometheusStorageClass | default .OpenCenter.Storage.DefaultStorageClass | default "csi-cinder-sc-delete" }}
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: {{ $svc.PrometheusVolumeSize | default 50 }}Gi
 grafana:
   enabled: true
   admin:
     existingSecret: "grafana-admin-password"
     userKey: admin-user
     passwordKey: admin-password
+  persistence:
+    enabled: true
+    storageClassName: {{ $svc.GrafanaStorageClass | default .OpenCenter.Storage.DefaultStorageClass | default "csi-cinder-sc-delete" }}
+    size: {{ $svc.GrafanaVolumeSize | default 10 }}Gi
   datasources:
     datasources.yaml:
       apiVersion: 1
