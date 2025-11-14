@@ -14,9 +14,9 @@ spec:
     bruteForceProtected: true
     passwordPolicy: length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1)
     attributes:
-      frontendUrl: https://auth.oc-poc2.td2.k8s.rmpk.dev
+      frontendUrl: {{ .OpenCenter.Services.keycloak.KeycloakFrontendURL | default (printf "https://auth.%s" .OpenCenter.Cluster.ClusterFQDN) }}
     clients:
-      - clientId: opencenter
+      - clientId: {{ .OpenCenter.Services.keycloak.KeycloakClientID | default "opencenter" }}
         name: openCenter Cluster
         description: OIDC client for Kubernetes API authentication
         enabled: true
@@ -86,7 +86,7 @@ spec:
     users:
       - username: oc.admin
         enabled: true
-        email: mpk-support@rackspace.com
+        email: {{ .OpenCenter.Cluster.AdminEmail }}
         emailVerified: true
         firstName: Admin
         lastName: User
@@ -95,4 +95,4 @@ spec:
         credentials:
           - type: password
             temporary: true
-            value: n5rUVHYhhrmchH!@#
+            value: {{ .Secrets.Keycloak.AdminPassword }}

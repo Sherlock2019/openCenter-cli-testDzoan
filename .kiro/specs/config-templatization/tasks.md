@@ -179,19 +179,19 @@ This document outlines the implementation tasks for the configuration schema enh
   - Add region configuration using `{{ .OpenCenter.Services.velero.VeleroRegion }}`
   - _Requirements: 6.1, 6.2_
 
-- [ ] 7. Update Keycloak Templates
+- [x] 7. Update Keycloak Templates
   - Replace hardcoded realm configuration and credentials
   - Use Secrets section for passwords
   - _Requirements: 7.1, 7.2_
 
-- [ ] 7.1 Update keycloak/20-keycloak/opencenter-realm.yaml.tpl
+- [x] 7.1 Update keycloak/20-keycloak/opencenter-realm.yaml.tpl
   - Replace hardcoded frontendUrl with `{{ .OpenCenter.Services.keycloak.KeycloakFrontendURL | default (printf "https://auth.%s" .OpenCenter.Cluster.ClusterFQDN) }}`
   - Replace hardcoded clientId with `{{ .OpenCenter.Services.keycloak.KeycloakClientID | default "opencenter" }}`
   - Replace hardcoded admin email with `{{ .OpenCenter.Cluster.AdminEmail }}`
   - Replace hardcoded admin password with `{{ .Secrets.Keycloak.AdminPassword }}`
   - _Requirements: 7.1_
 
-- [ ] 7.2 Update keycloak/20-keycloak/httproute.yaml.tpl
+- [x] 7.2 Update keycloak/20-keycloak/httproute.yaml.tpl
   - Replace hardcoded hostname with `{{ .OpenCenter.Services.keycloak.Hostname | default (printf "auth.%s" .OpenCenter.Cluster.ClusterFQDN) }}`
   - _Requirements: 7.2_
 
