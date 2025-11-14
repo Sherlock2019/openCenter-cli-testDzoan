@@ -284,15 +284,15 @@ This document outlines the implementation tasks for the configuration schema enh
   - Pattern: `{{ .OpenCenter.Services.{service}.Release | default .OpenCenter.GitOps.GitOpsBaseRelease }}`
   - _Requirements: 12.2_
 
-- [ ] 13. Update Gateway Templates
+- [x] 13. Update Gateway Templates
   - Verify hardcoded namespace usage
   - _Requirements: 13.1, 13.2_
 
-- [-] 13.1 Update gateway/namespace.yaml.tpl
+- [x] 13.1 Update gateway/namespace.yaml.tpl
   - Ensure namespace name is hardcoded as "rackspace-system"
   - _Requirements: 13.1_
 
-- [ ] 13.2 Verify gateway resource names
+- [x] 13.2 Verify gateway resource names
   - Ensure gateway name is hardcoded as "rmpk-gateway" in all gateway resources
   - _Requirements: 13.2_
 
