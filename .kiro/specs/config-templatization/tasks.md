@@ -320,29 +320,29 @@ This document outlines the implementation tasks for the configuration schema enh
   - Replace hardcoded DNS zone with `{{ .OpenCenter.Cluster.Kubernetes.DNSZoneName }}`
   - _Requirements: 15.2_
 
-- [ ] 16. Update Schema Generation
+- [x] 16. Update Schema Generation
   - Regenerate JSON schema with new fields
   - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.5_
 
-- [ ] 16.1 Run schema generation
+- [x] 16.1 Run schema generation
   - Execute `mise run schema` to regenerate JSON schema
   - Verify all new fields are present in generated schema
   - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.5_
 
-- [ ] 16.2 Verify schema includes ClusterConfig fields
+- [x] 16.2 Verify schema includes ClusterConfig fields
   - Check BaseDomain, ClusterFQDN, AdminEmail are in schema with descriptions
   - _Requirements: 16.1_
 
-- [ ] 16.3 Verify schema includes ServiceCfg fields
+- [x] 16.3 Verify schema includes ServiceCfg fields
   - Check all new service-specific fields are in schema with descriptions and defaults
   - _Requirements: 16.2_
 
-- [ ] 16.4 Verify schema includes Secrets fields
+- [x] 16.4 Verify schema includes Secrets fields
   - Check all secret types are in schema
   - Verify secret=true marking is present
   - _Requirements: 16.3_
 
-- [ ] 16.5 Verify schema includes other new types
+- [x] 16.5 Verify schema includes other new types
   - Check ManagedServiceCfg, StorageConfig, GitOpsConfig additions
   - _Requirements: 16.4, 16.5_
 
