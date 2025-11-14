@@ -99,9 +99,14 @@ type GitOpsConfig struct {
 	GitSSHPub string     `yaml:"git_ssh_pub,omitempty" json:"git_ssh_pub,omitempty"`
 	GitBranch string     `yaml:"git_branch,omitempty" json:"git_branch,omitempty"`
 	Release   string     `yaml:"release,omitempty" json:"release,omitempty"`
-	Branch   string     `yaml:"branch,omitempty" json:"branch,omitempty"`
-	Uri   string     `yaml:"uri,omitempty" json:"uri,omitempty"`
+	Branch    string     `yaml:"branch,omitempty" json:"branch,omitempty"`
+	Uri       string     `yaml:"uri,omitempty" json:"uri,omitempty"`
 	Flux      GitOpsFlux `yaml:"flux,omitempty" json:"flux,omitempty"`
+	
+	// New fields for GitOps base repository configuration
+	GitOpsBaseRepo    string `yaml:"gitops_base_repo,omitempty" json:"gitops_base_repo,omitempty" jsonschema:"description=URL of the GitOps base repository"`
+	GitOpsBaseRelease string `yaml:"gitops_base_release,omitempty" json:"gitops_base_release,omitempty" jsonschema:"description=Release tag of the GitOps base repository"`
+	GitOpsBranch      string `yaml:"gitops_branch,omitempty" json:"gitops_branch,omitempty" jsonschema:"description=Branch of the GitOps base repository,default=main"`
 }
 
 // GitOpsFlux holds optional FluxCD settings for reconciliation behavior.
@@ -204,10 +209,59 @@ type AWSCloud struct {
 	PublicSubnets  []string `yaml:"public_subnets" json:"public_subnets"`
 }
 
+// CertManagerSecrets holds cert-manager secret values
+type CertManagerSecrets struct {
+	AWSAccessKey       string `yaml:"aws_access_key,omitempty" json:"aws_access_key,omitempty" jsonschema:"secret=true,description=AWS access key for Route53 DNS validation"`
+	AWSSecretAccessKey string `yaml:"aws_secret_access_key,omitempty" json:"aws_secret_access_key,omitempty" jsonschema:"secret=true,description=AWS secret access key for Route53 DNS validation"`
+}
+
+// LokiSecrets holds Loki secret values
+type LokiSecrets struct {
+	SwiftPassword string `yaml:"swift_password,omitempty" json:"swift_password,omitempty" jsonschema:"secret=true,description=Swift storage password"`
+}
+
+// KeycloakSecrets holds Keycloak secret values
+type KeycloakSecrets struct {
+	ClientSecret  string `yaml:"client_secret,omitempty" json:"client_secret,omitempty" jsonschema:"secret=true,description=Keycloak OIDC client secret"`
+	AdminPassword string `yaml:"admin_password,omitempty" json:"admin_password,omitempty" jsonschema:"secret=true,description=Keycloak admin user password"`
+}
+
+// HeadlampSecrets holds Headlamp secret values
+type HeadlampSecrets struct {
+	OIDCClientSecret string `yaml:"oidc_client_secret,omitempty" json:"oidc_client_secret,omitempty" jsonschema:"secret=true,description=Headlamp OIDC client secret"`
+}
+
+// WeaveGitOpsSecrets holds Weave GitOps secret values
+type WeaveGitOpsSecrets struct {
+	Password     string `yaml:"password,omitempty" json:"password,omitempty" jsonschema:"secret=true,description=Weave GitOps admin password"`
+	PasswordHash string `yaml:"password_hash,omitempty" json:"password_hash,omitempty" jsonschema:"secret=true,description=Weave GitOps admin password hash (bcrypt)"`
+}
+
+// GrafanaSecrets holds Grafana secret values
+type GrafanaSecrets struct {
+	AdminPassword string `yaml:"admin_password,omitempty" json:"admin_password,omitempty" jsonschema:"secret=true,description=Grafana admin password"`
+}
+
+// AlertProxySecrets holds alert-proxy secret values
+type AlertProxySecrets struct {
+	CoreDeviceId        string `yaml:"core_device_id,omitempty" json:"core_device_id,omitempty" jsonschema:"secret=true,description=Alert proxy core device ID"`
+	AccountServiceToken string `yaml:"account_service_token,omitempty" json:"account_service_token,omitempty" jsonschema:"secret=true,description=Alert proxy account service token"`
+	CoreAccountNumber   string `yaml:"core_account_number,omitempty" json:"core_account_number,omitempty" jsonschema:"secret=true,description=Alert proxy core account number"`
+}
+
 // Secrets holds paths or settings for secret management tools.
 type Secrets struct {
 	SopsAgeKeyFile string `yaml:"sops_age_key_file" json:"sops_age_key_file"`
 	SSHKey         SSHKey `yaml:"ssh_key" json:"ssh_key"`
+	
+	// Service-specific secrets
+	CertManager CertManagerSecrets `yaml:"cert_manager,omitempty" json:"cert_manager,omitempty"`
+	Loki        LokiSecrets        `yaml:"loki,omitempty" json:"loki,omitempty"`
+	Keycloak    KeycloakSecrets    `yaml:"keycloak,omitempty" json:"keycloak,omitempty"`
+	Headlamp    HeadlampSecrets    `yaml:"headlamp,omitempty" json:"headlamp,omitempty"`
+	WeaveGitOps WeaveGitOpsSecrets `yaml:"weave_gitops,omitempty" json:"weave_gitops,omitempty"`
+	Grafana     GrafanaSecrets     `yaml:"grafana,omitempty" json:"grafana,omitempty"`
+	AlertProxy  AlertProxySecrets  `yaml:"alert_proxy,omitempty" json:"alert_proxy,omitempty"`
 }
 
 // SSHKey holds SSH key configuration for cluster access
@@ -219,12 +273,18 @@ type SSHKey struct {
 
 // Simplified structures based on testdata/schema.yaml
 
+// StorageConfig represents the storage configuration for the cluster
+type StorageConfig struct {
+	DefaultStorageClass string `yaml:"default_storage_class,omitempty" json:"default_storage_class,omitempty" jsonschema:"description=Default storage class for persistent volumes,default=csi-cinder-sc-delete"`
+}
+
 // SimplifiedOpenCenter represents the opencenter section of the new simplified schema
 type SimplifiedOpenCenter struct {
 	Meta           ClusterMeta           `yaml:"meta" json:"meta"`
 	Infrastructure Infrastructure        `yaml:"infrastructure" json:"infrastructure"`
 	Cluster        ClusterConfig         `yaml:"cluster" json:"cluster"`
 	GitOps         GitOpsConfig          `yaml:"gitops" json:"gitops"`
+	Storage        StorageConfig         `yaml:"storage,omitempty" json:"storage,omitempty"`
 	ManagedService map[string]ServiceCfg `yaml:"managed-service" json:"managed-service"`
 	Services       map[string]ServiceCfg `yaml:"services" json:"services"`
 }
@@ -237,22 +297,68 @@ type Infrastructure struct {
 
 // ServiceCfg captures the on/off toggle plus optional metadata for a service.
 type ServiceCfg struct {
-	Enabled              bool   `yaml:"enabled" json:"enabled"`
-	Email                string `yaml:"email,omitempty" json:"email,omitempty"`
-	Region               string `yaml:"region,omitempty" json:"region,omitempty"`
-	S3Host               string `yaml:"s3_host,omitempty" json:"s3_host,omitempty"`
-	S3Region             string `yaml:"s3_region,omitempty" json:"s3_region,omitempty"`
-	AWSAccessKey         string `yaml:"aws_access_key,omitempty" json:"aws_access_key,omitempty"`
-	AWSSecretAccessKey   string `yaml:"aws_secret_access_key,omitempty" json:"aws_secret_access_key,omitempty"`
-	// Alert-proxy specific fields
-	CoreDeviceId         string `yaml:"core_device_id,omitempty" json:"core_device_id,omitempty"`
-	AccountServiceToken  string `yaml:"account_service_token,omitempty" json:"account_service_token,omitempty"`
-	AlertManagerBaseUrl  string `yaml:"alert_manager_base_url,omitempty" json:"alert_manager_base_url,omitempty"`
-	CoreAccountNumber    string `yaml:"core_account_number,omitempty" json:"core_account_number,omitempty"`
+	Enabled bool   `yaml:"enabled" json:"enabled"`
+	Email   string `yaml:"email,omitempty" json:"email,omitempty"`
+	Region  string `yaml:"region,omitempty" json:"region,omitempty"`
+	S3Host  string `yaml:"s3_host,omitempty" json:"s3_host,omitempty"`
+	S3Region string `yaml:"s3_region,omitempty" json:"s3_region,omitempty"`
+	
+	// Alert-proxy specific fields (non-secret)
+	AlertManagerBaseUrl string `yaml:"alert_manager_base_url,omitempty" json:"alert_manager_base_url,omitempty"`
+	HTTPRouteFQDN       string `yaml:"http_route_fqdn,omitempty" json:"http_route_fqdn,omitempty"`
+	
 	// Version control fields
-	Release              string `yaml:"release,omitempty" json:"release,omitempty"`
-	Branch               string `yaml:"branch,omitempty" json:"branch,omitempty"`
-	Uri                  string `yaml:"uri,omitempty" json:"uri,omitempty"`
+	Release string `yaml:"release,omitempty" json:"release,omitempty"`
+	Branch  string `yaml:"branch,omitempty" json:"branch,omitempty"`
+	Uri     string `yaml:"uri,omitempty" json:"uri,omitempty"`
+	
+	// GitOps source fields (for managed services)
+	GitOpsSourceRepo    string `yaml:"gitops_source_repo,omitempty" json:"gitops_source_repo,omitempty" jsonschema:"description=GitOps source repository URL"`
+	GitOpsSourceRelease string `yaml:"gitops_source_release,omitempty" json:"gitops_source_release,omitempty" jsonschema:"description=GitOps source release tag"`
+	GitOpsSourceBranch  string `yaml:"gitops_source_branch,omitempty" json:"gitops_source_branch,omitempty" jsonschema:"description=GitOps source branch"`
+	
+	// Common service fields
+	Namespace       string `yaml:"namespace,omitempty" json:"namespace,omitempty" jsonschema:"description=Kubernetes namespace for the service"`
+	Hostname        string `yaml:"hostname,omitempty" json:"hostname,omitempty" jsonschema:"description=Hostname for HTTPRoute configuration"`
+	ImageRepository string `yaml:"image_repository,omitempty" json:"image_repository,omitempty" jsonschema:"description=Container image repository"`
+	ImageTag        string `yaml:"image_tag,omitempty" json:"image_tag,omitempty" jsonschema:"description=Container image tag"`
+	
+	// Cert-manager fields
+	LetsEncryptServer string `yaml:"letsencrypt_server,omitempty" json:"letsencrypt_server,omitempty" jsonschema:"description=LetsEncrypt ACME server URL"`
+	
+	// Loki fields
+	SwiftAuthURL     string `yaml:"swift_auth_url,omitempty" json:"swift_auth_url,omitempty" jsonschema:"description=Swift authentication URL"`
+	SwiftUsername    string `yaml:"swift_username,omitempty" json:"swift_username,omitempty" jsonschema:"description=Swift username"`
+	SwiftProjectName string `yaml:"swift_project_name,omitempty" json:"swift_project_name,omitempty" jsonschema:"description=Swift project name"`
+	SwiftRegion      string `yaml:"swift_region,omitempty" json:"swift_region,omitempty" jsonschema:"description=Swift region"`
+	SwiftDomainName  string `yaml:"swift_domain_name,omitempty" json:"swift_domain_name,omitempty" jsonschema:"description=Swift domain name"`
+	LokiBucketName   string `yaml:"loki_bucket_name,omitempty" json:"loki_bucket_name,omitempty" jsonschema:"description=Loki storage bucket name"`
+	LokiVolumeSize   int    `yaml:"loki_volume_size,omitempty" json:"loki_volume_size,omitempty" jsonschema:"description=Loki persistent volume size in GB"`
+	LokiStorageClass string `yaml:"loki_storage_class,omitempty" json:"loki_storage_class,omitempty" jsonschema:"description=Loki storage class"`
+	
+	// Velero fields
+	VeleroBackupBucket string `yaml:"velero_backup_bucket,omitempty" json:"velero_backup_bucket,omitempty" jsonschema:"description=Velero backup bucket name"`
+	VeleroRegion       string `yaml:"velero_region,omitempty" json:"velero_region,omitempty" jsonschema:"description=Velero backup region"`
+	
+	// Keycloak fields
+	KeycloakRealm       string `yaml:"keycloak_realm,omitempty" json:"keycloak_realm,omitempty" jsonschema:"description=Keycloak realm name"`
+	KeycloakFrontendURL string `yaml:"keycloak_frontend_url,omitempty" json:"keycloak_frontend_url,omitempty" jsonschema:"description=Keycloak frontend URL"`
+	KeycloakClientID    string `yaml:"keycloak_client_id,omitempty" json:"keycloak_client_id,omitempty" jsonschema:"description=Keycloak client ID"`
+	
+	// Grafana/Prometheus fields
+	GrafanaVolumeSize          int    `yaml:"grafana_volume_size,omitempty" json:"grafana_volume_size,omitempty" jsonschema:"description=Grafana persistent volume size in GB"`
+	GrafanaStorageClass        string `yaml:"grafana_storage_class,omitempty" json:"grafana_storage_class,omitempty" jsonschema:"description=Grafana storage class"`
+	PrometheusVolumeSize       int    `yaml:"prometheus_volume_size,omitempty" json:"prometheus_volume_size,omitempty" jsonschema:"description=Prometheus persistent volume size in GB"`
+	PrometheusStorageClass     string `yaml:"prometheus_storage_class,omitempty" json:"prometheus_storage_class,omitempty" jsonschema:"description=Prometheus storage class"`
+	AlertmanagerVolumeSize     int    `yaml:"alertmanager_volume_size,omitempty" json:"alertmanager_volume_size,omitempty" jsonschema:"description=Alertmanager persistent volume size in GB"`
+	AlertmanagerStorageClass   string `yaml:"alertmanager_storage_class,omitempty" json:"alertmanager_storage_class,omitempty" jsonschema:"description=Alertmanager storage class"`
+	
+	// Headlamp fields
+	HeadlampOIDCIssuerURL string `yaml:"headlamp_oidc_issuer_url,omitempty" json:"headlamp_oidc_issuer_url,omitempty" jsonschema:"description=Headlamp OIDC issuer URL"`
+	HeadlampOIDCClientID  string `yaml:"headlamp_oidc_client_id,omitempty" json:"headlamp_oidc_client_id,omitempty" jsonschema:"description=Headlamp OIDC client ID"`
+	
+	// Calico fields
+	CalicoKubeAPIServer string `yaml:"calico_kube_api_server,omitempty" json:"calico_kube_api_server,omitempty" jsonschema:"description=Calico Kubernetes API server address"`
 }
 
 // CloudConfig represents the cloud configuration within opencenter
@@ -263,12 +369,17 @@ type CloudConfig struct {
 
 // ClusterConfig represents the cluster configuration section
 type ClusterConfig struct {
-	ClusterName        string           `yaml:"cluster_name" json:"cluster_name"`
+	ClusterName        string           `yaml:"cluster_name" json:"cluster_name" jsonschema:"description=Name of the cluster"`
 	AWSAccessKey       string           `yaml:"aws_access_key" json:"aws_access_key"`
 	AWSSecretAccessKey string           `yaml:"aws_secret_access_key" json:"aws_secret_access_key"`
 	K8sAPIPortACL      []string         `yaml:"k8s_api_port_acl" json:"k8s_api_port_acl"`
 	SSHAuthorizedKeys  []string         `yaml:"ssh_authorized_keys" json:"ssh_authorized_keys"`
 	Kubernetes         KubernetesConfig `yaml:"kubernetes" json:"kubernetes"`
+	
+	// New fields for configuration-driven templates
+	BaseDomain  string `yaml:"base_domain,omitempty" json:"base_domain,omitempty" jsonschema:"description=Base domain for the cluster (e.g. k8s.opencenter.cloud)"`
+	ClusterFQDN string `yaml:"cluster_fqdn,omitempty" json:"cluster_fqdn,omitempty" jsonschema:"description=Fully qualified domain name for the cluster"`
+	AdminEmail  string `yaml:"admin_email,omitempty" json:"admin_email,omitempty" jsonschema:"description=Administrator email address for certificates and notifications"`
 }
 
 // KubernetesConfig represents the kubernetes configuration
@@ -508,16 +619,13 @@ func defaultConfig(name string) Config {
 			ManagedService: map[string]ServiceCfg{
 				"alert-proxy": {
 					Enabled:             true,
-					CoreDeviceId:        "",
-					AccountServiceToken: "",
 					AlertManagerBaseUrl: "",
-					CoreAccountNumber:   "",
 				},
 			},
 			Services: map[string]ServiceCfg{
 				"calico":                {Enabled: true},
-				"cert-manager":          {Enabled: true, Email: "mpk-support@rackspace.com", Region: "us-east-1", AWSAccessKey: "", AWSSecretAccessKey: ""},
-				"etcd-backup":           {Enabled: true, S3Host: "https://swift.api.dfw3.rackspacecloud.com", S3Region: "DFW3", AWSAccessKey: "", AWSSecretAccessKey: ""},
+				"cert-manager":          {Enabled: true, Email: "mpk-support@rackspace.com", Region: "us-east-1"},
+				"etcd-backup":           {Enabled: true, S3Host: "https://swift.api.dfw3.rackspacecloud.com", S3Region: "DFW3"},
 				"external-snapshotter":  {Enabled: true},
 				"fluxcd":                {Enabled: true},
 				"gateway":               {Enabled: true},
