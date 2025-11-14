@@ -542,11 +542,11 @@ func defaultConfig(name string) Config {
 					OpenStack: SimplifiedOpenStackCloud{
 						AuthURL:                     "https://keystone.api.sjc3.rackspacecloud.com/v3/",
 						Insecure:                    false,
-						Region:                      "",
+						Region:                      "SJC3",
 						ApplicationCredentialID:     "",
 						ApplicationCredentialSecret: "",
 						Domain:                      "Default",
-						TenantName:                  "",
+						TenantName:                  "default-tenant",
 						FloatingNetworkId:           "",
 						SubnetId:                    "",
 					},
@@ -558,6 +558,9 @@ func defaultConfig(name string) Config {
 				AWSSecretAccessKey: "",
 				K8sAPIPortACL:      []string{"0.0.0.0/0"},
 				SSHAuthorizedKeys:  []string{"ssh-rsa ..."},
+				BaseDomain:         "k8s.opencenter.cloud",
+				ClusterFQDN:        fmt.Sprintf("%s.sjc3.k8s.opencenter.cloud", name),
+				AdminEmail:         "admin@example.com",
 				Kubernetes: KubernetesConfig{
 					Version:              "1.31.4",
 					FlavorBastion:        "gp.0.2.2",
@@ -606,15 +609,21 @@ func defaultConfig(name string) Config {
 				},
 			},
 			GitOps: GitOpsConfig{
-				GitDir:    fmt.Sprintf("./testdata/local-git-repo-%s", name),
-				GitURL:    "",
-				GitSSHKey: "",
-				GitSSHPub: "",
-				GitBranch: "main",
+				GitDir:            fmt.Sprintf("./testdata/local-git-repo-%s", name),
+				GitURL:            "",
+				GitSSHKey:         "",
+				GitSSHPub:         "",
+				GitBranch:         "main",
+				GitOpsBaseRepo:    "ssh://git@github.com/rackerlabs/openCenter-gitops-base.git",
+				GitOpsBaseRelease: "v0.1.0",
+				GitOpsBranch:      "main",
 				Flux: GitOpsFlux{
 					Interval: "15m",
 					Prune:    true,
 				},
+			},
+			Storage: StorageConfig{
+				DefaultStorageClass: "csi-cinder-sc-delete",
 			},
 			ManagedService: map[string]ServiceCfg{
 				"alert-proxy": {
@@ -624,7 +633,7 @@ func defaultConfig(name string) Config {
 			},
 			Services: map[string]ServiceCfg{
 				"calico":                {Enabled: true},
-				"cert-manager":          {Enabled: true, Email: "mpk-support@rackspace.com", Region: "us-east-1"},
+				"cert-manager":          {Enabled: true, Email: "mpk-support@rackspace.com", Region: "us-east-1", LetsEncryptServer: "https://acme-v02.api.letsencrypt.org/directory"},
 				"etcd-backup":           {Enabled: true, S3Host: "https://swift.api.dfw3.rackspacecloud.com", S3Region: "DFW3"},
 				"external-snapshotter":  {Enabled: true},
 				"fluxcd":                {Enabled: true},
@@ -632,8 +641,9 @@ func defaultConfig(name string) Config {
 				"gateway-api":           {Enabled: true},
 				"headlamp":              {Enabled: true},
 				"keycloak":              {Enabled: true},
-				"kube-prometheus-stack": {Enabled: true},
+				"kube-prometheus-stack": {Enabled: true, PrometheusVolumeSize: 50, PrometheusStorageClass: "csi-cinder-sc-delete", GrafanaVolumeSize: 10, GrafanaStorageClass: "csi-cinder-sc-delete", AlertmanagerVolumeSize: 10, AlertmanagerStorageClass: "csi-cinder-sc-delete"},
 				"kyverno":               {Enabled: true},
+				"loki":                  {Enabled: false, LokiVolumeSize: 20, LokiStorageClass: "csi-cinder-sc-delete"},
 				"olm":                   {Enabled: true},
 				"openstack-ccm":         {Enabled: true},
 				"openstack-csi":         {Enabled: true},
@@ -666,6 +676,14 @@ func defaultConfig(name string) Config {
 				Public:  fmt.Sprintf("./testdata/local-git-repo-%s/%s/secrets/ssh/%s.pub", name, name, name),
 				Cypher:  "ed25519",
 			},
+			// Service-specific secrets - must be provided by user
+			CertManager: CertManagerSecrets{},
+			Loki:        LokiSecrets{},
+			Keycloak:    KeycloakSecrets{},
+			Headlamp:    HeadlampSecrets{},
+			WeaveGitOps: WeaveGitOpsSecrets{},
+			Grafana:     GrafanaSecrets{},
+			AlertProxy:  AlertProxySecrets{},
 		},
 	}
 	
