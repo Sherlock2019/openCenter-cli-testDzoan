@@ -245,23 +245,23 @@ This document outlines the implementation tasks for the configuration schema enh
   - Add size: `{{ .OpenCenter.Services.kube-prometheus-stack.GrafanaVolumeSize | default 10 }}Gi`
   - _Requirements: 10.3_
 
-- [ ] 11. Update HTTPRoute Templates
+- [x] 11. Update HTTPRoute Templates
   - Replace hardcoded hostnames with config values
   - Use hardcoded gateway references
   - _Requirements: 11.1, 11.2, 11.3_
 
-- [ ] 11.1 Update all service HTTPRoute templates
+- [x] 11.1 Update all service HTTPRoute templates
   - For each HTTPRoute template, replace hardcoded hostname with service-specific config
   - Pattern: `{{ .OpenCenter.Services.{service}.Hostname | default (printf "{service}.%s" .OpenCenter.Cluster.ClusterFQDN) }}`
   - Services: keycloak, headlamp, weave-gitops, longhorn, and any others with HTTPRoutes
   - _Requirements: 11.1_
 
-- [ ] 11.2 Verify gateway parentRef references
+- [x] 11.2 Verify gateway parentRef references
   - Ensure all HTTPRoute templates use hardcoded gateway name "rmpk-gateway"
   - Ensure all HTTPRoute templates use hardcoded namespace "rackspace-system" for gateway
   - _Requirements: 11.2_
 
-- [ ] 11.3 Verify HTTPRoute namespaces
+- [x] 11.3 Verify HTTPRoute namespaces
   - Ensure HTTPRoute templates use appropriate hardcoded namespaces
   - flux-system for weave-gitops
   - keycloak for keycloak

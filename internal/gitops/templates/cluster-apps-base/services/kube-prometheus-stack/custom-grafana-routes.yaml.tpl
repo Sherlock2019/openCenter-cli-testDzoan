@@ -6,7 +6,7 @@ metadata:
   namespace: observability
 spec:
   hostnames:
-    - "grafana.demo.stage.sjc3.k8s.opencenter.cloud"
+    - {{ (index .OpenCenter.Services "kube-prometheus-stack").Hostname | default (printf "grafana.%s" .OpenCenter.Cluster.ClusterFQDN) | quote }}
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway

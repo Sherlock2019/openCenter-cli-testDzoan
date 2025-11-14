@@ -6,7 +6,7 @@ metadata:
   namespace: longhorn-system
 spec:
   hostnames:
-    - longhorn.dev.sjc3.rmpk.dev
+    - {{ .OpenCenter.Services.longhorn.Hostname | default (printf "longhorn.%s" .OpenCenter.Cluster.ClusterFQDN) | quote }}
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway

@@ -6,12 +6,12 @@ metadata:
   namespace: observability
 spec:
   hostnames:
-    - "alertmanager.prosys.dev.dfw3.k8s.opencenter.cloud"
+    - {{ (index .OpenCenter.Services "kube-prometheus-stack").Hostname | default (printf "alertmanager.%s" .OpenCenter.Cluster.ClusterFQDN) | quote }}
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
       name: rmpk-gateway
-      namespace: observability
+      namespace: rackspace-system
       sectionName: alertmanager-https
   rules:
     - backendRefs:
