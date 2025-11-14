@@ -209,42 +209,42 @@ type AWSCloud struct {
 
 // CertManagerSecrets holds cert-manager secret values
 type CertManagerSecrets struct {
-	AWSAccessKey       string `yaml:"aws_access_key,omitempty" json:"aws_access_key,omitempty" jsonschema:"secret=true,description=AWS access key for Route53 DNS validation"`
-	AWSSecretAccessKey string `yaml:"aws_secret_access_key,omitempty" json:"aws_secret_access_key,omitempty" jsonschema:"secret=true,description=AWS secret access key for Route53 DNS validation"`
+	AWSAccessKey       string `yaml:"aws_access_key" json:"aws_access_key" jsonschema:"secret=true,description=AWS access key for Route53 DNS validation"`
+	AWSSecretAccessKey string `yaml:"aws_secret_access_key" json:"aws_secret_access_key" jsonschema:"secret=true,description=AWS secret access key for Route53 DNS validation"`
 }
 
 // LokiSecrets holds Loki secret values
 type LokiSecrets struct {
-	SwiftPassword string `yaml:"swift_password,omitempty" json:"swift_password,omitempty" jsonschema:"secret=true,description=Swift storage password"`
+	SwiftPassword string `yaml:"swift_password" json:"swift_password" jsonschema:"secret=true,description=Swift storage password"`
 }
 
 // KeycloakSecrets holds Keycloak secret values
 type KeycloakSecrets struct {
-	ClientSecret  string `yaml:"client_secret,omitempty" json:"client_secret,omitempty" jsonschema:"secret=true,description=Keycloak OIDC client secret"`
-	AdminPassword string `yaml:"admin_password,omitempty" json:"admin_password,omitempty" jsonschema:"secret=true,description=Keycloak admin user password"`
+	ClientSecret  string `yaml:"client_secret" json:"client_secret" jsonschema:"secret=true,description=Keycloak OIDC client secret"`
+	AdminPassword string `yaml:"admin_password" json:"admin_password" jsonschema:"secret=true,description=Keycloak admin user password"`
 }
 
 // HeadlampSecrets holds Headlamp secret values
 type HeadlampSecrets struct {
-	OIDCClientSecret string `yaml:"oidc_client_secret,omitempty" json:"oidc_client_secret,omitempty" jsonschema:"secret=true,description=Headlamp OIDC client secret"`
+	OIDCClientSecret string `yaml:"oidc_client_secret" json:"oidc_client_secret" jsonschema:"secret=true,description=Headlamp OIDC client secret"`
 }
 
 // WeaveGitOpsSecrets holds Weave GitOps secret values
 type WeaveGitOpsSecrets struct {
-	Password     string `yaml:"password,omitempty" json:"password,omitempty" jsonschema:"secret=true,description=Weave GitOps admin password"`
-	PasswordHash string `yaml:"password_hash,omitempty" json:"password_hash,omitempty" jsonschema:"secret=true,description=Weave GitOps admin password hash (bcrypt)"`
+	Password     string `yaml:"password" json:"password" jsonschema:"secret=true,description=Weave GitOps admin password"`
+	PasswordHash string `yaml:"password_hash" json:"password_hash" jsonschema:"secret=true,description=Weave GitOps admin password hash (bcrypt)"`
 }
 
 // GrafanaSecrets holds Grafana secret values
 type GrafanaSecrets struct {
-	AdminPassword string `yaml:"admin_password,omitempty" json:"admin_password,omitempty" jsonschema:"secret=true,description=Grafana admin password"`
+	AdminPassword string `yaml:"admin_password" json:"admin_password" jsonschema:"secret=true,description=Grafana admin password"`
 }
 
 // AlertProxySecrets holds alert-proxy secret values
 type AlertProxySecrets struct {
-	CoreDeviceId        string `yaml:"core_device_id,omitempty" json:"core_device_id,omitempty" jsonschema:"secret=true,description=Alert proxy core device ID"`
-	AccountServiceToken string `yaml:"account_service_token,omitempty" json:"account_service_token,omitempty" jsonschema:"secret=true,description=Alert proxy account service token"`
-	CoreAccountNumber   string `yaml:"core_account_number,omitempty" json:"core_account_number,omitempty" jsonschema:"secret=true,description=Alert proxy core account number"`
+	CoreDeviceId        string `yaml:"core_device_id" json:"core_device_id" jsonschema:"secret=true,description=Alert proxy core device ID"`
+	AccountServiceToken string `yaml:"account_service_token" json:"account_service_token" jsonschema:"secret=true,description=Alert proxy account service token"`
+	CoreAccountNumber   string `yaml:"core_account_number" json:"core_account_number" jsonschema:"secret=true,description=Alert proxy core account number"`
 }
 
 // Secrets holds paths or settings for secret management tools.
@@ -253,13 +253,13 @@ type Secrets struct {
 	SSHKey         SSHKey `yaml:"ssh_key" json:"ssh_key"`
 	
 	// Service-specific secrets
-	CertManager CertManagerSecrets `yaml:"cert_manager,omitempty" json:"cert_manager,omitempty"`
-	Loki        LokiSecrets        `yaml:"loki,omitempty" json:"loki,omitempty"`
-	Keycloak    KeycloakSecrets    `yaml:"keycloak,omitempty" json:"keycloak,omitempty"`
-	Headlamp    HeadlampSecrets    `yaml:"headlamp,omitempty" json:"headlamp,omitempty"`
-	WeaveGitOps WeaveGitOpsSecrets `yaml:"weave_gitops,omitempty" json:"weave_gitops,omitempty"`
-	Grafana     GrafanaSecrets     `yaml:"grafana,omitempty" json:"grafana,omitempty"`
-	AlertProxy  AlertProxySecrets  `yaml:"alert_proxy,omitempty" json:"alert_proxy,omitempty"`
+	CertManager CertManagerSecrets `yaml:"cert_manager" json:"cert_manager"`
+	Loki        LokiSecrets        `yaml:"loki" json:"loki"`
+	Keycloak    KeycloakSecrets    `yaml:"keycloak" json:"keycloak"`
+	Headlamp    HeadlampSecrets    `yaml:"headlamp" json:"headlamp"`
+	WeaveGitOps WeaveGitOpsSecrets `yaml:"weave_gitops" json:"weave_gitops"`
+	Grafana     GrafanaSecrets     `yaml:"grafana" json:"grafana"`
+	AlertProxy  AlertProxySecrets  `yaml:"alert_proxy" json:"alert_proxy"`
 }
 
 // SSHKey holds SSH key configuration for cluster access
@@ -626,30 +626,84 @@ func defaultConfig(name string) Config {
 			ManagedService: map[string]ServiceCfg{
 				"alert-proxy": {
 					Enabled:             true,
-					AlertManagerBaseUrl: "",
+					ImageRepository:     "ghcr.io/rackerlabs/alert-proxy",
+					ImageTag:            "latest",
+					AlertManagerBaseUrl: fmt.Sprintf("http://observability-kube-prometh-alertmanager.observability.svc.cluster.local:9093/api/v2/alerts"),
+					HTTPRouteFQDN:       fmt.Sprintf("https://alerts.%s.sjc3.k8s.opencenter.cloud", name),
+					GitOpsSourceRepo:    "ssh://git@github.com/rackerlabs/openCenter-gitops-base.git",
+					GitOpsSourceRelease: "v0.1.0",
+					GitOpsSourceBranch:  "main",
 				},
 			},
 			Services: map[string]ServiceCfg{
-				"calico":                {Enabled: true},
-				"cert-manager":          {Enabled: true, Email: "mpk-support@rackspace.com", Region: "us-east-1", LetsEncryptServer: "https://acme-v02.api.letsencrypt.org/directory"},
-				"etcd-backup":           {Enabled: true, S3Host: "https://swift.api.dfw3.rackspacecloud.com", S3Region: "DFW3"},
-				"external-snapshotter":  {Enabled: true},
-				"fluxcd":                {Enabled: true},
-				"gateway":               {Enabled: true},
-				"gateway-api":           {Enabled: true},
-				"headlamp":              {Enabled: true},
-				"keycloak":              {Enabled: true},
-				"kube-prometheus-stack": {Enabled: true, PrometheusVolumeSize: 50, PrometheusStorageClass: "csi-cinder-sc-delete", GrafanaVolumeSize: 10, GrafanaStorageClass: "csi-cinder-sc-delete", AlertmanagerVolumeSize: 10, AlertmanagerStorageClass: "csi-cinder-sc-delete"},
-				"kyverno":               {Enabled: true},
-				"loki":                  {Enabled: false, LokiVolumeSize: 20, LokiStorageClass: "csi-cinder-sc-delete"},
-				"olm":                   {Enabled: true},
-				"openstack-ccm":         {Enabled: true},
-				"openstack-csi":         {Enabled: true},
-				"postgres-operator":     {Enabled: true},
-				"rbac-manager":          {Enabled: true},
-				"sources":               {Enabled: true},
-				"velero":                {Enabled: true},
-				"weave-gitops":          {Enabled: true},
+				"calico": {
+					Enabled:             true,
+					CalicoKubeAPIServer: fmt.Sprintf("https://api.%s.sjc3.k8s.opencenter.cloud:6443", name),
+				},
+				"cert-manager": {
+					Enabled:           true,
+					Email:             "mpk-support@rackspace.com",
+					Region:            "us-east-1",
+					LetsEncryptServer: "https://acme-v02.api.letsencrypt.org/directory",
+				},
+				"etcd-backup": {
+					Enabled:  true,
+					S3Host:   "https://swift.api.dfw3.rackspacecloud.com",
+					S3Region: "DFW3",
+				},
+				"external-snapshotter": {Enabled: true},
+				"fluxcd":               {Enabled: true},
+				"gateway":              {Enabled: true},
+				"gateway-api":          {Enabled: true},
+				"headlamp": {
+					Enabled:               true,
+					Hostname:              fmt.Sprintf("dashboard.%s.sjc3.k8s.opencenter.cloud", name),
+					HeadlampOIDCIssuerURL: fmt.Sprintf("https://auth.%s.sjc3.k8s.opencenter.cloud/realms/opencenter", name),
+					HeadlampOIDCClientID:  "kubernetes",
+				},
+				"keycloak": {
+					Enabled:             true,
+					Hostname:            fmt.Sprintf("auth.%s.sjc3.k8s.opencenter.cloud", name),
+					KeycloakRealm:       "opencenter",
+					KeycloakClientID:    "kubernetes",
+					KeycloakFrontendURL: fmt.Sprintf("https://auth.%s.sjc3.k8s.opencenter.cloud", name),
+				},
+				"kube-prometheus-stack": {
+					Enabled:                    true,
+					PrometheusVolumeSize:       50,
+					PrometheusStorageClass:     "csi-cinder-sc-delete",
+					GrafanaVolumeSize:          10,
+					GrafanaStorageClass:        "csi-cinder-sc-delete",
+					AlertmanagerVolumeSize:     10,
+					AlertmanagerStorageClass:   "csi-cinder-sc-delete",
+				},
+				"kyverno":           {Enabled: true},
+				"loki": {
+					Enabled:          false,
+					LokiVolumeSize:   20,
+					LokiStorageClass: "csi-cinder-sc-delete",
+					LokiBucketName:   fmt.Sprintf("%s-loki", name),
+					SwiftAuthURL:     "https://keystone.api.sjc3.rackspacecloud.com/v3/",
+					SwiftUsername:    "",
+					SwiftProjectName: "",
+					SwiftRegion:      "SJC3",
+					SwiftDomainName:  "Default",
+				},
+				"olm":               {Enabled: true},
+				"openstack-ccm":     {Enabled: true},
+				"openstack-csi":     {Enabled: true},
+				"postgres-operator": {Enabled: true},
+				"rbac-manager":      {Enabled: true},
+				"sources":           {Enabled: true},
+				"velero": {
+					Enabled:            true,
+					VeleroBackupBucket: fmt.Sprintf("%s-backups", name),
+					VeleroRegion:       "us-east-1",
+				},
+				"weave-gitops": {
+					Enabled:  true,
+					Hostname: fmt.Sprintf("gitops.%s.sjc3.k8s.opencenter.cloud", name),
+				},
 			},
 		},
 		OpenTofu: SimplifiedOpenTofu{
@@ -675,13 +729,32 @@ func defaultConfig(name string) Config {
 				Cypher:  "ed25519",
 			},
 			// Service-specific secrets - must be provided by user
-			CertManager: CertManagerSecrets{},
-			Loki:        LokiSecrets{},
-			Keycloak:    KeycloakSecrets{},
-			Headlamp:    HeadlampSecrets{},
-			WeaveGitOps: WeaveGitOpsSecrets{},
-			Grafana:     GrafanaSecrets{},
-			AlertProxy:  AlertProxySecrets{},
+			CertManager: CertManagerSecrets{
+				AWSAccessKey:       "",
+				AWSSecretAccessKey: "",
+			},
+			Loki: LokiSecrets{
+				SwiftPassword: "",
+			},
+			Keycloak: KeycloakSecrets{
+				ClientSecret:  "",
+				AdminPassword: "",
+			},
+			Headlamp: HeadlampSecrets{
+				OIDCClientSecret: "",
+			},
+			WeaveGitOps: WeaveGitOpsSecrets{
+				Password:     "",
+				PasswordHash: "",
+			},
+			Grafana: GrafanaSecrets{
+				AdminPassword: "",
+			},
+			AlertProxy: AlertProxySecrets{
+				CoreDeviceId:        "",
+				AccountServiceToken: "",
+				CoreAccountNumber:   "",
+			},
 		},
 	}
 	
