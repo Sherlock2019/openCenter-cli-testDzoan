@@ -296,67 +296,67 @@ type Infrastructure struct {
 // ServiceCfg captures the on/off toggle plus optional metadata for a service.
 type ServiceCfg struct {
 	Enabled bool   `yaml:"enabled" json:"enabled"`
-	Email   string `yaml:"email,omitempty" json:"email,omitempty"`
-	Region  string `yaml:"region,omitempty" json:"region,omitempty"`
-	S3Host  string `yaml:"s3_host,omitempty" json:"s3_host,omitempty"`
-	S3Region string `yaml:"s3_region,omitempty" json:"s3_region,omitempty"`
+	Email   string `yaml:"email" json:"email"`
+	Region  string `yaml:"region" json:"region"`
+	S3Host  string `yaml:"s3_host" json:"s3_host"`
+	S3Region string `yaml:"s3_region" json:"s3_region"`
 	
 	// Alert-proxy specific fields (non-secret)
-	AlertManagerBaseUrl string `yaml:"alert_manager_base_url,omitempty" json:"alert_manager_base_url,omitempty"`
-	HTTPRouteFQDN       string `yaml:"http_route_fqdn,omitempty" json:"http_route_fqdn,omitempty"`
+	AlertManagerBaseUrl string `yaml:"alert_manager_base_url" json:"alert_manager_base_url"`
+	HTTPRouteFQDN       string `yaml:"http_route_fqdn" json:"http_route_fqdn"`
 	
 	// Version control fields
-	Release string `yaml:"release,omitempty" json:"release,omitempty"`
-	Branch  string `yaml:"branch,omitempty" json:"branch,omitempty"`
-	Uri     string `yaml:"uri,omitempty" json:"uri,omitempty"`
+	Release string `yaml:"release" json:"release"`
+	Branch  string `yaml:"branch" json:"branch"`
+	Uri     string `yaml:"uri" json:"uri"`
 	
 	// GitOps source fields (for managed services)
-	GitOpsSourceRepo    string `yaml:"gitops_source_repo,omitempty" json:"gitops_source_repo,omitempty" jsonschema:"description=GitOps source repository URL"`
-	GitOpsSourceRelease string `yaml:"gitops_source_release,omitempty" json:"gitops_source_release,omitempty" jsonschema:"description=GitOps source release tag"`
-	GitOpsSourceBranch  string `yaml:"gitops_source_branch,omitempty" json:"gitops_source_branch,omitempty" jsonschema:"description=GitOps source branch"`
+	GitOpsSourceRepo    string `yaml:"gitops_source_repo" json:"gitops_source_repo" jsonschema:"description=GitOps source repository URL"`
+	GitOpsSourceRelease string `yaml:"gitops_source_release" json:"gitops_source_release" jsonschema:"description=GitOps source release tag"`
+	GitOpsSourceBranch  string `yaml:"gitops_source_branch" json:"gitops_source_branch" jsonschema:"description=GitOps source branch"`
 	
 	// Common service fields
-	Namespace       string `yaml:"namespace,omitempty" json:"namespace,omitempty" jsonschema:"description=Kubernetes namespace for the service"`
-	Hostname        string `yaml:"hostname,omitempty" json:"hostname,omitempty" jsonschema:"description=Hostname for HTTPRoute configuration"`
-	ImageRepository string `yaml:"image_repository,omitempty" json:"image_repository,omitempty" jsonschema:"description=Container image repository"`
-	ImageTag        string `yaml:"image_tag,omitempty" json:"image_tag,omitempty" jsonschema:"description=Container image tag"`
+	Namespace       string `yaml:"namespace" json:"namespace" jsonschema:"description=Kubernetes namespace for the service"`
+	Hostname        string `yaml:"hostname" json:"hostname" jsonschema:"description=Hostname for HTTPRoute configuration"`
+	ImageRepository string `yaml:"image_repository" json:"image_repository" jsonschema:"description=Container image repository"`
+	ImageTag        string `yaml:"image_tag" json:"image_tag" jsonschema:"description=Container image tag"`
 	
 	// Cert-manager fields
-	LetsEncryptServer string `yaml:"letsencrypt_server,omitempty" json:"letsencrypt_server,omitempty" jsonschema:"description=LetsEncrypt ACME server URL"`
+	LetsEncryptServer string `yaml:"letsencrypt_server" json:"letsencrypt_server" jsonschema:"description=LetsEncrypt ACME server URL"`
 	
 	// Loki fields
-	SwiftAuthURL     string `yaml:"swift_auth_url,omitempty" json:"swift_auth_url,omitempty" jsonschema:"description=Swift authentication URL"`
-	SwiftUsername    string `yaml:"swift_username,omitempty" json:"swift_username,omitempty" jsonschema:"description=Swift username"`
-	SwiftProjectName string `yaml:"swift_project_name,omitempty" json:"swift_project_name,omitempty" jsonschema:"description=Swift project name"`
-	SwiftRegion      string `yaml:"swift_region,omitempty" json:"swift_region,omitempty" jsonschema:"description=Swift region"`
-	SwiftDomainName  string `yaml:"swift_domain_name,omitempty" json:"swift_domain_name,omitempty" jsonschema:"description=Swift domain name"`
-	LokiBucketName   string `yaml:"loki_bucket_name,omitempty" json:"loki_bucket_name,omitempty" jsonschema:"description=Loki storage bucket name"`
-	LokiVolumeSize   int    `yaml:"loki_volume_size,omitempty" json:"loki_volume_size,omitempty" jsonschema:"description=Loki persistent volume size in GB"`
-	LokiStorageClass string `yaml:"loki_storage_class,omitempty" json:"loki_storage_class,omitempty" jsonschema:"description=Loki storage class"`
+	SwiftAuthURL     string `yaml:"swift_auth_url" json:"swift_auth_url" jsonschema:"description=Swift authentication URL"`
+	SwiftUsername    string `yaml:"swift_username" json:"swift_username" jsonschema:"description=Swift username"`
+	SwiftProjectName string `yaml:"swift_project_name" json:"swift_project_name" jsonschema:"description=Swift project name"`
+	SwiftRegion      string `yaml:"swift_region" json:"swift_region" jsonschema:"description=Swift region"`
+	SwiftDomainName  string `yaml:"swift_domain_name" json:"swift_domain_name" jsonschema:"description=Swift domain name"`
+	LokiBucketName   string `yaml:"loki_bucket_name" json:"loki_bucket_name" jsonschema:"description=Loki storage bucket name"`
+	LokiVolumeSize   int    `yaml:"loki_volume_size" json:"loki_volume_size" jsonschema:"description=Loki persistent volume size in GB"`
+	LokiStorageClass string `yaml:"loki_storage_class" json:"loki_storage_class" jsonschema:"description=Loki storage class"`
 	
 	// Velero fields
-	VeleroBackupBucket string `yaml:"velero_backup_bucket,omitempty" json:"velero_backup_bucket,omitempty" jsonschema:"description=Velero backup bucket name"`
-	VeleroRegion       string `yaml:"velero_region,omitempty" json:"velero_region,omitempty" jsonschema:"description=Velero backup region"`
+	VeleroBackupBucket string `yaml:"velero_backup_bucket" json:"velero_backup_bucket" jsonschema:"description=Velero backup bucket name"`
+	VeleroRegion       string `yaml:"velero_region" json:"velero_region" jsonschema:"description=Velero backup region"`
 	
 	// Keycloak fields
-	KeycloakRealm       string `yaml:"keycloak_realm,omitempty" json:"keycloak_realm,omitempty" jsonschema:"description=Keycloak realm name"`
-	KeycloakFrontendURL string `yaml:"keycloak_frontend_url,omitempty" json:"keycloak_frontend_url,omitempty" jsonschema:"description=Keycloak frontend URL"`
-	KeycloakClientID    string `yaml:"keycloak_client_id,omitempty" json:"keycloak_client_id,omitempty" jsonschema:"description=Keycloak client ID"`
+	KeycloakRealm       string `yaml:"keycloak_realm" json:"keycloak_realm" jsonschema:"description=Keycloak realm name"`
+	KeycloakFrontendURL string `yaml:"keycloak_frontend_url" json:"keycloak_frontend_url" jsonschema:"description=Keycloak frontend URL"`
+	KeycloakClientID    string `yaml:"keycloak_client_id" json:"keycloak_client_id" jsonschema:"description=Keycloak client ID"`
 	
 	// Grafana/Prometheus fields
-	GrafanaVolumeSize          int    `yaml:"grafana_volume_size,omitempty" json:"grafana_volume_size,omitempty" jsonschema:"description=Grafana persistent volume size in GB"`
-	GrafanaStorageClass        string `yaml:"grafana_storage_class,omitempty" json:"grafana_storage_class,omitempty" jsonschema:"description=Grafana storage class"`
-	PrometheusVolumeSize       int    `yaml:"prometheus_volume_size,omitempty" json:"prometheus_volume_size,omitempty" jsonschema:"description=Prometheus persistent volume size in GB"`
-	PrometheusStorageClass     string `yaml:"prometheus_storage_class,omitempty" json:"prometheus_storage_class,omitempty" jsonschema:"description=Prometheus storage class"`
-	AlertmanagerVolumeSize     int    `yaml:"alertmanager_volume_size,omitempty" json:"alertmanager_volume_size,omitempty" jsonschema:"description=Alertmanager persistent volume size in GB"`
-	AlertmanagerStorageClass   string `yaml:"alertmanager_storage_class,omitempty" json:"alertmanager_storage_class,omitempty" jsonschema:"description=Alertmanager storage class"`
+	GrafanaVolumeSize          int    `yaml:"grafana_volume_size" json:"grafana_volume_size" jsonschema:"description=Grafana persistent volume size in GB"`
+	GrafanaStorageClass        string `yaml:"grafana_storage_class" json:"grafana_storage_class" jsonschema:"description=Grafana storage class"`
+	PrometheusVolumeSize       int    `yaml:"prometheus_volume_size" json:"prometheus_volume_size" jsonschema:"description=Prometheus persistent volume size in GB"`
+	PrometheusStorageClass     string `yaml:"prometheus_storage_class" json:"prometheus_storage_class" jsonschema:"description=Prometheus storage class"`
+	AlertmanagerVolumeSize     int    `yaml:"alertmanager_volume_size" json:"alertmanager_volume_size" jsonschema:"description=Alertmanager persistent volume size in GB"`
+	AlertmanagerStorageClass   string `yaml:"alertmanager_storage_class" json:"alertmanager_storage_class" jsonschema:"description=Alertmanager storage class"`
 	
 	// Headlamp fields
-	HeadlampOIDCIssuerURL string `yaml:"headlamp_oidc_issuer_url,omitempty" json:"headlamp_oidc_issuer_url,omitempty" jsonschema:"description=Headlamp OIDC issuer URL"`
-	HeadlampOIDCClientID  string `yaml:"headlamp_oidc_client_id,omitempty" json:"headlamp_oidc_client_id,omitempty" jsonschema:"description=Headlamp OIDC client ID"`
+	HeadlampOIDCIssuerURL string `yaml:"headlamp_oidc_issuer_url" json:"headlamp_oidc_issuer_url" jsonschema:"description=Headlamp OIDC issuer URL"`
+	HeadlampOIDCClientID  string `yaml:"headlamp_oidc_client_id" json:"headlamp_oidc_client_id" jsonschema:"description=Headlamp OIDC client ID"`
 	
 	// Calico fields
-	CalicoKubeAPIServer string `yaml:"calico_kube_api_server,omitempty" json:"calico_kube_api_server,omitempty" jsonschema:"description=Calico Kubernetes API server address"`
+	CalicoKubeAPIServer string `yaml:"calico_kube_api_server" json:"calico_kube_api_server" jsonschema:"description=Calico Kubernetes API server address"`
 }
 
 // CloudConfig represents the cloud configuration within opencenter
