@@ -100,32 +100,32 @@ This document outlines the implementation tasks for the configuration schema enh
   - Add comment indicating secrets must be provided by user
   - _Requirements: 17.6_
 
-- [ ] 3. Update Alert-Proxy Templates
+- [-] 3. Update Alert-Proxy Templates
   - Replace all hardcoded values with config references
   - Use Secrets section for sensitive data
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-- [ ] 3.1 Update account-service-token-secret.yaml.tpl
+- [x] 3.1 Update account-service-token-secret.yaml.tpl
   - Replace hardcoded base64 value with `{{ .Secrets.AlertProxy.AccountServiceToken | b64enc }}`
   - _Requirements: 3.1_
 
-- [ ] 3.2 Update core-account-id-secret.yaml.tpl
+- [x] 3.2 Update core-account-id-secret.yaml.tpl
   - Replace hardcoded base64 value with `{{ .Secrets.AlertProxy.CoreAccountNumber | b64enc }}`
   - _Requirements: 3.2_
 
-- [ ] 3.3 Update overseer-core-device-id-secret.yaml.tpl
+- [x] 3.3 Update overseer-core-device-id-secret.yaml.tpl
   - Replace hardcoded base64 value with `{{ .Secrets.AlertProxy.CoreDeviceId | b64enc }}`
   - _Requirements: 3.3_
 
-- [ ] 3.4 Update alert-manager-url-secret.yaml.tpl
+- [x] 3.4 Update alert-manager-url-secret.yaml.tpl
   - Replace hardcoded base64 value with `{{ .OpenCenter.ManagedService.alert-proxy.AlertManagerBaseUrl | b64enc }}`
   - _Requirements: 3.4_
 
-- [ ] 3.5 Update http-route-fqdn-secret.yaml.tpl
+- [x] 3.5 Update http-route-fqdn-secret.yaml.tpl
   - Replace hardcoded base64 value with `{{ .OpenCenter.ManagedService.alert-proxy.HTTPRouteFQDN | b64enc }}`
   - _Requirements: 3.5_
 
-- [ ] 3.6 Update alert-proxy helm-values/override-values.yaml.tpl
+- [x] 3.6 Update alert-proxy helm-values/override-values.yaml.tpl
   - Replace hardcoded image tag with `{{ .OpenCenter.ManagedService.alert-proxy.ImageTag | default "latest" }}`
   - _Requirements: 3.6_
 

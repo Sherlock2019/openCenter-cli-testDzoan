@@ -4,4 +4,4 @@ metadata:
   name: overseer-core-device-id-secret
 type: generic
 stringData:
-  overseer_core_device_id: NjMuMTMxLjE0NS4yMzM=
+  overseer_core_device_id: {{ .Secrets.AlertProxy.CoreDeviceId | b64enc }}
