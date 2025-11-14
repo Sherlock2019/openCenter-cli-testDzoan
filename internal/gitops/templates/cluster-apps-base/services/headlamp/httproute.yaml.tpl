@@ -9,7 +9,7 @@ spec:
       sectionName: headlamp-https
       namespace: rackspace-system
   hostnames:
-    - "headlamp.dev.sjc3.rmpk.dev"
+    - "{{ .OpenCenter.Services.headlamp.Hostname | default (printf "headlamp.%s" .OpenCenter.Cluster.ClusterFQDN) }}"
   rules:
     - backendRefs:
         - name: headlamp
@@ -26,7 +26,7 @@ spec:
       namespace: rackspace-system
       sectionName: headlamp-http
   hostnames:
-    - "headlamp.dev.sjc3.rmpk.dev"
+    - "{{ .OpenCenter.Services.headlamp.Hostname | default (printf "headlamp.%s" .OpenCenter.Cluster.ClusterFQDN) }}"
   rules:
     - filters:
         - type: RequestRedirect

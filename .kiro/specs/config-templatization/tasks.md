@@ -195,18 +195,18 @@ This document outlines the implementation tasks for the configuration schema enh
   - Replace hardcoded hostname with `{{ .OpenCenter.Services.keycloak.Hostname | default (printf "auth.%s" .OpenCenter.Cluster.ClusterFQDN) }}`
   - _Requirements: 7.2_
 
-- [ ] 8. Update Headlamp Templates
+- [x] 8. Update Headlamp Templates
   - Replace hardcoded OIDC configuration
   - Use Secrets section for client secret
   - _Requirements: 8.1, 8.2_
 
-- [ ] 8.1 Update headlamp/helm-values/override-values.yaml.tpl
+- [x] 8.1 Update headlamp/helm-values/override-values.yaml.tpl
   - Replace hardcoded clientID with `{{ .OpenCenter.Services.headlamp.HeadlampOIDCClientID | default "opencenter" }}`
   - Replace hardcoded clientSecret with `{{ .Secrets.Headlamp.OIDCClientSecret }}`
   - Replace hardcoded issuerURL with `{{ .OpenCenter.Services.headlamp.HeadlampOIDCIssuerURL | default (printf "https://auth.%s/realms/opencenter" .OpenCenter.Cluster.ClusterFQDN) }}`
   - _Requirements: 8.1_
 
-- [ ] 8.2 Update headlamp/httproute.yaml.tpl
+- [x] 8.2 Update headlamp/httproute.yaml.tpl
   - Replace hardcoded hostname with `{{ .OpenCenter.Services.headlamp.Hostname | default (printf "headlamp.%s" .OpenCenter.Cluster.ClusterFQDN) }}`
   - _Requirements: 8.2_
 
