@@ -11,6 +11,8 @@ It is designed to standardize how teams scaffold and validate Kubernetes and Ope
 *   **Configuration-First**: A single, comprehensive YAML file serves as the source of truth for your entire cluster definition.
 *   **GitOps by Default**: Generates a complete, version-controlled GitOps repository from embedded templates, ready to be used with tools like FluxCD or ArgoCD.
 *   **Built-in Validation**: Catches common configuration errors and logical inconsistencies before you ever apply them.
+*   **Secrets Management**: Dedicated secrets section with SOPS integration for secure credential management.
+*   **Template-Driven**: All templates use configuration references - no hardcoded values.
 *   **Interactive & Scriptable**: Offers an interactive mode to guide new users and a powerful flag-based interface for CI/CD automation.
 *   **Extensible**: Designed to be extended with new commands, templates, and cloud provider logic.
 *   **Test-Driven**: A full suite of Behavior-Driven Development (BDD) tests ensures reliability and serves as living documentation.
@@ -49,6 +51,11 @@ Comprehensive documentation is available in the `docs/` directory.
     - [Plugins](./docs/reference/plugins.md)
     - [Environment Variables](./docs/reference/environment.md)
 *   **[Explanation](./docs/explanation/)** - Conceptual overviews
+
+### Configuration Resources
+*   **[Configuration Schema](./CONFIG_SCHEMA_ADDITIONS.md)** - Complete field reference
+*   **[Template Analysis](./TEMPLATE_ANALYSIS_REPORT.md)** - Template implementation status
+*   **[Migration Guide](./MIGRATION_GUIDE.md)** - Upgrade from older configurations
 
 ## Contributing
 
