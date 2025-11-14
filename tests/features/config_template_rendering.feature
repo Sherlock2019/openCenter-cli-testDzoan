@@ -395,3 +395,215 @@ Feature: Configuration-driven template rendering
     When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
+
+  @integration @full-rendering
+  Scenario: Full cluster rendering with all new fields
+    Given a file "<<tmp>>/conf/test-integration.yaml" with content:
+      """
+      opencenter:
+        meta:
+          name: test-integration
+          env: integration-test
+          region: us-east-1
+          organization: test-org
+        cluster:
+          cluster_name: test-integration
+          base_domain: k8s.test.example.com
+          cluster_fqdn: test-integration.us-east-1.k8s.test.example.com
+          admin_email: admin@test.example.com
+        storage:
+          default_storage_class: csi-cinder-sc-delete
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+          gitops_base_repo: ssh://git@github.com/rackerlabs/openCenter-gitops-base.git
+          gitops_base_release: v0.2.0
+          gitops_branch: main
+        services:
+          cert-manager:
+            enabled: true
+            region: us-east-1
+            letsencrypt_server: https://acme-staging-v02.api.letsencrypt.org/directory
+          loki:
+            enabled: true
+            loki_bucket_name: test-integration-loki
+            loki_volume_size: 50
+            loki_storage_class: csi-cinder-sc-delete
+            swift_auth_url: https://keystone.api.test.example.com/v3/
+            swift_username: loki-user
+            swift_project_name: test-project
+            swift_region: US-EAST-1
+            swift_domain_name: default
+          velero:
+            enabled: true
+            velero_backup_bucket: test-integration-backups
+            velero_region: us-east-1
+          keycloak:
+            enabled: true
+            keycloak_realm: opencenter
+            keycloak_client_id: opencenter
+            hostname: auth.test-integration.us-east-1.k8s.test.example.com
+          headlamp:
+            enabled: true
+            headlamp_oidc_client_id: opencenter
+            hostname: headlamp.test-integration.us-east-1.k8s.test.example.com
+          weave-gitops:
+            enabled: true
+            hostname: gitops.test-integration.us-east-1.k8s.test.example.com
+          kube-prometheus-stack:
+            enabled: true
+            grafana_volume_size: 20
+            prometheus_volume_size: 100
+            alertmanager_volume_size: 10
+        managed-service:
+          alert-proxy:
+            enabled: true
+            alert_manager_base_url: https://alertmanager.test-integration.us-east-1.k8s.test.example.com
+            http_route_fqdn: alerts.test-integration.us-east-1.k8s.test.example.com
+            image_tag: v1.2.3
+      secrets:
+        cert_manager:
+          aws_access_key: AKIATEST123456789ABC
+          aws_secret_access_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYTESTKEY123
+        loki:
+          swift_password: test-swift-password-secure-123
+        keycloak:
+          client_secret: f8V0we25ajxjm9OMpFz9BsYObGTYKM4Y
+          admin_password: SecureKeycloakAdminPassword123!
+        headlamp:
+          oidc_client_secret: headlamp-oidc-secret-abc123xyz
+        weave_gitops:
+          password: WeaveGitOpsPassword123!
+          password_hash: $2a$10$abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOP
+        grafana:
+          admin_password: GrafanaAdminPassword123!
+        alert_proxy:
+          core_device_id: device-test-integration-12345
+          account_service_token: token-test-integration-67890
+          core_account_number: account-test-integration-11111
+      """
+    When I run "openCenter cluster select test-integration --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
+    And the directory "<<tmp>>/gitops-repo" should exist
+
+  @validation @missing-secrets
+  Scenario: Missing cert-manager secrets should fail validation
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+        services:
+          cert-manager:
+            enabled: true
+      """
+    When I run "openCenter cluster validate test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should not be 0
+
+  @validation @missing-secrets
+  Scenario: Missing loki secrets should fail validation
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+        services:
+          loki:
+            enabled: true
+            swift_auth_url: https://keystone.example.com/v3/
+            swift_username: loki
+            swift_project_name: project
+            swift_region: REGION
+            swift_domain_name: default
+      secrets:
+        cert_manager:
+          aws_access_key: test
+          aws_secret_access_key: test
+        keycloak:
+          admin_password: test
+        grafana:
+          admin_password: test
+        weave_gitops:
+          password_hash: test
+      """
+    When I run "openCenter cluster validate test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should not be 0
+
+  @validation @invalid-email
+  Scenario: Invalid admin email should fail validation
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+          admin_email: invalid-email-format
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+      secrets:
+        cert_manager:
+          aws_access_key: test
+          aws_secret_access_key: test
+        keycloak:
+          admin_password: test
+        grafana:
+          admin_password: test
+        weave_gitops:
+          password_hash: test
+      """
+    When I run "openCenter cluster validate test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should not be 0
+
+  @validation @invalid-domain
+  Scenario: Invalid cluster FQDN should fail validation
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+          cluster_fqdn: invalid domain with spaces
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+      secrets:
+        cert_manager:
+          aws_access_key: test
+          aws_secret_access_key: test
+        keycloak:
+          admin_password: test
+        grafana:
+          admin_password: test
+        weave_gitops:
+          password_hash: test
+      """
+    When I run "openCenter cluster validate test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should not be 0
+
+  @validation @valid-config
+  Scenario: Valid configuration should pass validation
+    Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
+      """
+      opencenter:
+        cluster:
+          cluster_name: test-cluster
+          admin_email: admin@example.com
+          cluster_fqdn: test.example.com
+          base_domain: example.com
+        gitops:
+          git_dir: <<tmp>>/gitops-repo
+      secrets:
+        cert_manager:
+          aws_access_key: AKIATEST123
+          aws_secret_access_key: secretkey123
+        keycloak:
+          admin_password: password123
+        grafana:
+          admin_password: password123
+        weave_gitops:
+          password_hash: $2a$10$hash
+      """
+    When I run "openCenter cluster validate test-cluster --config-dir <<tmp>>/conf"
+    Then the exit code should be 0
