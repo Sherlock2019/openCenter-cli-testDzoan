@@ -23,6 +23,9 @@ resources:
 {{- if (index $services "openstack-csi").Enabled }}
   - "opencenter-openstack-csi.yaml"
 {{- end }}
+{{- if (index $services "vsphere-csi").Enabled }}
+  - "opencenter-vsphere-csi.yaml"
+{{- end }}
 {{- if (index $services "weave-gitops").Enabled }}
   - "opencenter-weave-gitops.yaml"
 {{- end }}

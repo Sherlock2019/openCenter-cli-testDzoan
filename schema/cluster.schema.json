@@ -1698,6 +1698,32 @@
               },
               "type": "object"
             },
+            "vsphere-csi": {
+              "additionalProperties": false,
+              "properties": {
+                "branch": {
+                  "description": "Git branch for this service (mutually exclusive with release)",
+                  "pattern": "^[a-zA-Z0-9/_-]+$",
+                  "type": "string"
+                },
+                "enabled": {
+                  "default": false,
+                  "description": "Enable or disable this service",
+                  "type": "boolean"
+                },
+                "release": {
+                  "description": "Release version or tag for this service (mutually exclusive with branch)",
+                  "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "uri": {
+                  "description": "Git repository URI for this service",
+                  "pattern": "^(https?://|git@|ssh://)",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
             "weave-gitops": {
               "additionalProperties": false,
               "properties": {

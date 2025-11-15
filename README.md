@@ -34,28 +34,94 @@ The fastest way to get started is to follow our end-to-end tutorial. You will ne
 
 ## Documentation
 
-Comprehensive documentation is available in the `docs/` directory.
+Comprehensive documentation is available in the `docs/` directory, organized following the [Diátaxis framework](https://diataxis.fr/).
 
 ### Quick Links
-*   **[Documentation Index](./docs/INDEX.md)** - Complete documentation guide
+*   **[Documentation Home](./docs/readme.md)** - Complete documentation guide
 *   **[Overview](./docs/overview.md)** - What is openCenter?
 *   **[Current Status](./docs/current-status.md)** - Implementation status and roadmap
 *   **[Architecture](./docs/architecture.md)** - Technical architecture and design
+*   **[Troubleshooting](./docs/troubleshooting.md)** - Common issues and solutions
 
 ### Documentation Categories
-*   **[Tutorials](./docs/tutorials/)** - Step-by-step learning guides
-*   **[How-To Guides](./docs/how-to/)** - Task-oriented recipes
-*   **[Reference](./docs/reference/)** - Technical specifications
-    - [CLI Commands](./docs/reference/cli-commands.md)
-    - [Configuration](./docs/reference/configuration.md)
-    - [Plugins](./docs/reference/plugins.md)
-    - [Environment Variables](./docs/reference/environment.md)
-*   **[Explanation](./docs/explanation/)** - Conceptual overviews
+
+#### Getting Started
+*   **[Overview](./docs/overview.md)** - Introduction to openCenter
+*   **[IDE Integration](./docs/ide-integration.md)** - Setup your IDE for openCenter
+*   **[Adding Services](./docs/adding-services.md)** - Add services to your cluster
+
+#### Reference - Information-Oriented
+*   **[CLI Reference](./docs/reference/readme.md)** - Complete CLI command reference
+*   **[Configuration Reference](./docs/reference/configuration.md)** - Configuration file structure
+*   **[CLI Commands Overview](./docs/reference/cli-commands.md)** - Command overview
+
+##### Cluster Commands Reference
+Complete documentation for all cluster lifecycle commands:
+*   **[Cluster Commands Overview](./docs/reference/cluster/readme.md)** - Cluster management guide
+*   **Lifecycle Commands**
+    - [init](./docs/reference/cluster/init.md) - Initialize new cluster configuration
+    - [validate](./docs/reference/cluster/validate.md) - Validate cluster configuration
+    - [preflight](./docs/reference/cluster/preflight.md) - Run preflight checks
+    - [setup](./docs/reference/cluster/setup.md) - Setup GitOps repository
+    - [render](./docs/reference/cluster/render.md) - Render templates
+    - [bootstrap](./docs/reference/cluster/bootstrap.md) - Bootstrap cluster
+    - [destroy](./docs/reference/cluster/destroy.md) - Destroy cluster
+*   **Management Commands**
+    - [list](./docs/reference/cluster/list.md) - List all clusters
+    - [select](./docs/reference/cluster/select.md) - Select active cluster
+    - [current](./docs/reference/cluster/current.md) - Show current cluster
+    - [info](./docs/reference/cluster/info.md) - Show cluster information
+    - [edit](./docs/reference/cluster/edit.md) - Edit cluster configuration
+*   **Update Commands**
+    - [update](./docs/reference/cluster/update.md) - Update configuration fields
+    - [config-update](./docs/reference/cluster/config-update.md) - Update with defaults
+    - [migrate](./docs/reference/cluster/migrate.md) - Migrate to organization structure
+*   **Utility Commands**
+    - [schema](./docs/reference/cluster/schema.md) - Export JSON schema
+
+#### Developer Documentation
+*   **[Developer Guide](./docs/dev/readme.md)** - CLI architecture and implementation
+*   **[Cluster Commands Dev](./docs/dev/cluster/readme.md)** - Cluster command internals
 
 ### Configuration Resources
 *   **[Configuration Schema](./CONFIG_SCHEMA_ADDITIONS.md)** - Complete field reference
 *   **[Template Analysis](./TEMPLATE_ANALYSIS_REPORT.md)** - Template implementation status
 *   **[Migration Guide](./MIGRATION_GUIDE.md)** - Upgrade from older configurations
+
+## CLI Commands Quick Reference
+
+### Cluster Management
+```bash
+openCenter cluster init <name>        # Initialize new cluster
+openCenter cluster list                # List all clusters
+openCenter cluster select <name>       # Select active cluster
+openCenter cluster validate <name>     # Validate configuration
+openCenter cluster setup <name>        # Setup GitOps repository
+openCenter cluster bootstrap <name>    # Bootstrap cluster
+```
+
+### Configuration Management
+```bash
+openCenter config view                 # View current configuration
+openCenter config set <key> <value>    # Set configuration value
+openCenter config get <key>            # Get configuration value
+```
+
+### Secrets Management
+```bash
+openCenter sops generate-key           # Generate Age key pair
+openCenter sops validate               # Validate SOPS configuration
+openCenter sops secrets-encrypt        # Encrypt secrets
+```
+
+### Other Commands
+```bash
+openCenter version                     # Show version information
+openCenter plugins list                # List available plugins
+openCenter --help                      # Show help
+```
+
+For complete command documentation, see the [CLI Reference](./docs/reference/readme.md).
 
 ## Contributing
 

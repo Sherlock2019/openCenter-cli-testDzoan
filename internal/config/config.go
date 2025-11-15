@@ -247,6 +247,16 @@ type AlertProxySecrets struct {
 	CoreAccountNumber   string `yaml:"core_account_number" json:"core_account_number" jsonschema:"secret=true,description=Alert proxy core account number"`
 }
 
+// VSphereCsiSecrets holds vSphere CSI secret values
+type VSphereCsiSecrets struct {
+	VCenterHost  string `yaml:"vcenter_host" json:"vcenter_host" jsonschema:"secret=true,description=vCenter server hostname or IP address"`
+	Username     string `yaml:"username" json:"username" jsonschema:"secret=true,description=vCenter username"`
+	Password     string `yaml:"password" json:"password" jsonschema:"secret=true,description=vCenter password"`
+	Datacenters  string `yaml:"datacenters" json:"datacenters" jsonschema:"secret=true,description=Comma-separated list of datacenters"`
+	InsecureFlag string `yaml:"insecure_flag" json:"insecure_flag" jsonschema:"secret=true,description=Skip SSL certificate verification (true/false)"`
+	Port         string `yaml:"port" json:"port" jsonschema:"secret=true,description=vCenter port (default: 443)"`
+}
+
 // Secrets holds paths or settings for secret management tools.
 type Secrets struct {
 	SopsAgeKeyFile string `yaml:"sops_age_key_file" json:"sops_age_key_file"`
@@ -260,6 +270,7 @@ type Secrets struct {
 	WeaveGitOps WeaveGitOpsSecrets `yaml:"weave_gitops" json:"weave_gitops"`
 	Grafana     GrafanaSecrets     `yaml:"grafana" json:"grafana"`
 	AlertProxy  AlertProxySecrets  `yaml:"alert_proxy" json:"alert_proxy"`
+	VSphereCsi  VSphereCsiSecrets  `yaml:"vsphere_csi" json:"vsphere_csi"`
 }
 
 // SSHKey holds SSH key configuration for cluster access
@@ -700,6 +711,12 @@ func defaultConfig(name string) Config {
 					VeleroBackupBucket: fmt.Sprintf("%s-backups", name),
 					VeleroRegion:       "us-east-1",
 				},
+				"vsphere-csi": {
+					Enabled:         false, // Disabled by default, only for VMware environments
+					Namespace:       "vmware-system-csi",
+					ImageRepository: "registry.k8s.io/csi-vsphere",
+					ImageTag:        "v3.3.0",
+				},
 				"weave-gitops": {
 					Enabled:  true,
 					Hostname: fmt.Sprintf("gitops.%s.sjc3.k8s.opencenter.cloud", name),
@@ -754,6 +771,14 @@ func defaultConfig(name string) Config {
 				CoreDeviceId:        "",
 				AccountServiceToken: "",
 				CoreAccountNumber:   "",
+			},
+			VSphereCsi: VSphereCsiSecrets{
+				VCenterHost:  "",
+				Username:     "",
+				Password:     "",
+				Datacenters:  "",
+				InsecureFlag: "false",
+				Port:         "443",
 			},
 		},
 	}

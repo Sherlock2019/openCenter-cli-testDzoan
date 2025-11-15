@@ -91,7 +91,7 @@ func (pr *PathResolver) ResolveClusterPaths(clusterName, organization string) Cl
 		ClusterDir:      clusterDir,
 		ApplicationsDir: applicationsDir,
 		SecretsDir:      secretsDir,
-		SOPSKeyPath:     filepath.Join(secretsDir, "age", "keys", clusterName+".txt"),
+		SOPSKeyPath:     filepath.Join(secretsDir, "age", "keys", clusterName+"-key.txt"),
 		SOPSConfigPath:  filepath.Join(organizationDir, ".sops.yaml"),
 		KubeconfigPath:  filepath.Join(clusterDir, "kubeconfig.yaml"),
 		InventoryPath:   filepath.Join(clusterDir, "inventory"),

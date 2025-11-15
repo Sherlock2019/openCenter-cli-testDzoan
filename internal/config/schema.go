@@ -741,6 +741,7 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 			"rbac-manager":          baseServiceSchema,
 			"sources":               baseServiceSchema,
 			"velero":                baseServiceSchema,
+			"vsphere-csi":           baseServiceSchema,
 			"weave-gitops":          baseServiceSchema,
 		},
 		"additionalProperties": serviceSchema,
