@@ -108,12 +108,8 @@ func (m *DefaultKeyManager) SaveAgeKey(keyPair *AgeKeyPair, keyName string) erro
 	privateKeyPath := filepath.Join(m.keyDir, fmt.Sprintf("%s.txt", keyName))
 	publicKeyPath := filepath.Join(m.keyDir, fmt.Sprintf("%s.pub", keyName))
 
-	// Save private key atomically with header comments
-	// Format: # created: <timestamp>\n# public key: <public_key>\n<private_key>
-	keyContent := fmt.Sprintf("# created: %s\n# public key: %s\n%s",
-		time.Now().UTC().Format(time.RFC3339),
-		keyPair.PublicKey,
-		keyPair.PrivateKey)
+	// Save private key atomically
+	keyContent := keyPair.PrivateKey
 	if !strings.HasSuffix(keyContent, "\n") {
 		keyContent += "\n"
 	}

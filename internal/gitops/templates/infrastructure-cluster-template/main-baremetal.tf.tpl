@@ -16,7 +16,7 @@ locals {
   #CIDR that will be used for kubernetes services. Not an openstack network.
   subnet_services                         = "{{ .OpenCenter.Cluster.Kubernetes.SubnetServices | default "10.43.0.0/16" }}"
   # use_octavia set to false to create a floating IP associated with the vrrp_ip port. true will create an octavia LB with a floating IP
-  #use_octavia                             = {{ .IAC.Main.use_octavia | default false }}
+  use_octavia                             = {{ .IAC.Main.use_octavia | default false }}
   #loadbalancer_provider                   = "{{ .OpenCenter.Cluster.Kubernetes.LoadbalancerProvider | default "amphora" }}"
   # vrrp_enabled cannot be set to true if use_octavia is true
   vrrp_enabled                            = {{ .IAC.Main.vrrp_enabled | default true }}
@@ -99,7 +99,9 @@ locals {
 
 ######################
   address_bastion                        = "{{ .IAC.Main.address_bastion | default "50.56.158.76" }}" ##Or Public IP NATed to Bastion
-  windows_dataplane                       = {{ if gt (.OpenCenter.Cluster.Kubernetes.WorkerCountWindows | default 0) 0 }}"HSN"{{ else }}"Disabled"{{ end }} 
+  windows_dataplane                       = {{ if gt (.OpenCenter.Cluster.Kubernetes.WorkerCountWindows | default 0) 0 }}"HSN"{{ else }}"Disabled"{{ end }}
+  k8s_api_ip                              = "{{ .IAC.Main.k8s_api_ip | default "" }}" != "" ? "{{ .IAC.Main.k8s_api_ip }}" : local.vrrp_ip
+  ssh_key_path                            = "{{ .IAC.Main.ssh_key_path | default "" }}" 
 
   {{- if .OpenCenter.Cluster.Kubernetes.MasterNodes }}
   master_nodes = [
@@ -165,7 +167,7 @@ module "kubespray-cluster" {
   kube_pod_security_exemptions_namespaces = local.kube_pod_security_exemptions_namespaces
   kubelet_rotate_server_certificates      = local.kubelet_rotate_server_certificates
   worker_nodes                            = local.worker_nodes
-  k8s_api_ip                              = local.vrrp_ip
+  k8s_api_ip                              = local.k8s_api_ip
   k8s_api_port                            = local.k8s_api_port
   k8s_internal_ip                         = local.vrrp_ip
   vrrp_ip                                 = local.vrrp_ip
@@ -175,6 +177,7 @@ module "kubespray-cluster" {
   {{- else }}
   windows_nodes                           = []
   {{- end }}
+  ssh_key_path                            = local.ssh_key_path
   use_octavia                             = local.use_octavia
   {{- if .OpenCenter.Cluster.Kubernetes.OIDC.Enabled }}
   kube_oidc_auth_enabled                  = local.kube_oidc_auth_enabled

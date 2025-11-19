@@ -1,12 +1,12 @@
 [tools]
-golang = "1.24"
-kubectl = "1.34"
-kind = "0.30"
-helm = "3.18"
+golang = "latest"
+kubectl = "latest"
+kind = "latest"
+helm = "latest"
 
 [env]
 # Override the default config directory via environment for reproducible tests
-#OPENCENTER_CONFIG_DIR = "./testdata/config"
+OPENCENTER_CONFIG_DIR = "./testdata/config"
 
 # When true deubg logs are set to true and other artifacts are created to help trouble shoot or verify functionality
 #OPENCENTER_DEBUG = true

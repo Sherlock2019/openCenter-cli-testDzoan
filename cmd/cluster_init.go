@@ -20,7 +20,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/rackerlabs/openCenter-cli/internal/config"
 	"github.com/rackerlabs/openCenter-cli/internal/sops"
@@ -670,11 +669,7 @@ func generateDefaultSOPSKey(cluster string, cfg *config.Config) error {
 	}
 	
 	// Write the private key file with proper permissions (0600 for files)
-	// Format: # created: <timestamp>\n# public key: <public_key>\n<private_key>
-	keyContent := fmt.Sprintf("# created: %s\n# public key: %s\n%s",
-		time.Now().UTC().Format(time.RFC3339),
-		keyPair.PublicKey,
-		keyPair.PrivateKey)
+	keyContent := keyPair.PrivateKey
 	if !strings.HasSuffix(keyContent, "\n") {
 		keyContent += "\n"
 	}
@@ -794,7 +789,7 @@ creation_rules:
 	}
 	
 	// Write the SOPS configuration file at organization root
-	if err := os.WriteFile(rootSOPSConfigPath, []byte(sopsConfig), 0o644); err != nil {
+	if err := os.WriteFile(rootSOPSConfigPath, []byte(sopsConfig), 0o600); err != nil {
 		return fmt.Errorf("failed to write SOPS config file: %w", err)
 	}
 	
