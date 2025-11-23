@@ -108,6 +108,24 @@ fi
 # Build the openCenter binary
 tidy = "go mod tidy"
 
+# Upgrade all Go dependencies to their latest versions
+upgrade-deps = '''
+#!/usr/bin/env bash
+set -e
+
+echo "Upgrading all Go dependencies to latest versions..."
+
+# Get all dependencies and upgrade them
+go get -u ./...
+
+# Tidy up the go.mod and go.sum files
+go mod tidy
+
+echo "Dependencies upgraded successfully!"
+echo ""
+echo "Run 'mise run test' to verify everything still works."
+'''
+
 # Format all files to golang standards
 fmt = "gofmt -w ."
 
