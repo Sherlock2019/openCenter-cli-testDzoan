@@ -48,7 +48,7 @@ ifeq ($(UNAME_S),Darwin)
 endif
 
 clean:
-	rm cluster.rkestate kube_config_cluster.yml terraform.tfstate*
+	rm -f cluster.rkestate kube_config_cluster.yml terraform.tfstate*
 
 rke:
 
