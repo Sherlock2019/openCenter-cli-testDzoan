@@ -59,6 +59,11 @@ func newClusterSetupCmd() *cobra.Command {
 			render, _ := cmd.Flags().GetBool("render")
 			force, _ := cmd.Flags().GetBool("force")
 
+			// Validate git_dir is set before proceeding with setup
+			if err := validateGitDir(cfg); err != nil {
+				return err
+			}
+
 			// Get organization from cluster metadata
 			organization := cfg.OpenCenter.Meta.Organization
 			if organization == "" {
@@ -376,5 +381,81 @@ Thumbs.db
 	}
 
 	fmt.Fprintln(cmd.OutOrStdout(), "Created GitOps repo")
+	return nil
+}
+
+// validateGitDir validates that the git_dir is set and accessible.
+// It returns a clear error message if validation fails.
+func validateGitDir(cfg config.Config) error {
+	gitDir := cfg.GitOps().GitDir
+	
+	// Check if git_dir is set
+	if gitDir == "" {
+		return fmt.Errorf("opencenter.gitops.git_dir must be set\n\n" +
+			"The git_dir field specifies where GitOps manifests will be generated.\n" +
+			"Please set opencenter.gitops.git_dir in your cluster configuration.\n\n" +
+			"Example:\n" +
+			"  opencenter:\n" +
+			"    gitops:\n" +
+			"      git_dir: /path/to/gitops/repo\n\n" +
+			"Then run 'openCenter cluster setup' again.")
+	}
+
+	// Expand any environment variables or ~ in the path
+	expandedPath := os.ExpandEnv(gitDir)
+	if strings.HasPrefix(expandedPath, "~") {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to expand home directory in git_dir path: %w", err)
+		}
+		expandedPath = filepath.Join(homeDir, expandedPath[1:])
+	}
+
+	// Check if the parent directory exists and is accessible
+	parentDir := filepath.Dir(expandedPath)
+	if parentDir != "." && parentDir != "/" {
+		if _, err := os.Stat(parentDir); err != nil {
+			if os.IsNotExist(err) {
+				return fmt.Errorf("parent directory of git_dir does not exist: %s\n\n"+
+					"Please ensure the parent directory exists before running setup.\n"+
+					"You can create it with: mkdir -p %s", parentDir, parentDir)
+			}
+			if os.IsPermission(err) {
+				return fmt.Errorf("permission denied accessing parent directory of git_dir: %s\n\n"+
+					"Please check directory permissions.", parentDir)
+			}
+			return fmt.Errorf("failed to access parent directory of git_dir: %w", err)
+		}
+	}
+
+	// If git_dir already exists, check if it's accessible
+	if info, err := os.Stat(expandedPath); err == nil {
+		// Directory exists, check if it's actually a directory
+		if !info.IsDir() {
+			return fmt.Errorf("git_dir path exists but is not a directory: %s\n\n"+
+				"Please specify a directory path for git_dir.", expandedPath)
+		}
+		
+		// Check if we can write to it
+		testFile := filepath.Join(expandedPath, ".opencenter-test")
+		if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
+			if os.IsPermission(err) {
+				return fmt.Errorf("permission denied: cannot write to git_dir: %s\n\n"+
+					"Please check directory permissions.", expandedPath)
+			}
+			return fmt.Errorf("git_dir is not writable: %w", err)
+		}
+		// Clean up test file
+		os.Remove(testFile)
+	} else if !os.IsNotExist(err) {
+		// Some other error occurred (not "does not exist")
+		if os.IsPermission(err) {
+			return fmt.Errorf("permission denied accessing git_dir: %s\n\n"+
+				"Please check directory permissions.", expandedPath)
+		}
+		return fmt.Errorf("failed to access git_dir: %w", err)
+	}
+	// If directory doesn't exist, that's fine - we'll create it during setup
+
 	return nil
 }
