@@ -166,7 +166,7 @@ Feature: CLI core flows and validations
   # ---------------------------------------------------------------------------
   # BOOTSTRAP (git init/commit/remote/push)
   # ---------------------------------------------------------------------------
-  @bootstrap
+  @bootstrap @priority5
   Scenario: Bootstrap pushes the local repo to a remote
     Given a bare git repository exists at "<<tmp>>/remote.git"
     And I update the YAML "<<tmp>>/conf/dev.yaml" to set:
@@ -186,7 +186,7 @@ Feature: CLI core flows and validations
 
   # (validation scenarios moved to validation.feature)
 
-  @validate @git_dir_missing
+  @validate @git_dir_missing @priority2
   Scenario: opencenter.gitops.git_dir missing -> error on setup
     Given a file "<<tmp>>/conf/no-gitdir.yaml" with content:
       """

@@ -566,8 +566,8 @@ type SimplifiedOpenTofu struct {
 // SimplifiedTofuBackend represents the backend configuration
 type SimplifiedTofuBackend struct {
 	Type  string              `yaml:"type" json:"type"`
-	Local SimplifiedTofuLocal `yaml:"local" json:"local"`
-	S3    SimplifiedTofuS3    `yaml:"s3" json:"s3"`
+	Local SimplifiedTofuLocal `yaml:"local,omitempty" json:"local,omitempty"`
+	S3    SimplifiedTofuS3    `yaml:"s3,omitempty" json:"s3,omitempty"`
 }
 
 // SimplifiedTofuLocal represents the local backend
@@ -625,7 +625,7 @@ func defaultConfig(name string) Config {
 				Env:          "",
 				Region:       "",
 				Status:       "",
-				Organization: name,
+				Organization: "opencenter",
 			},
 			Secrets: OpenCenterSecrets{
 				Backend: "barbican",
@@ -713,12 +713,12 @@ func defaultConfig(name string) Config {
 						WindowsUser:              "Administrator",
 						WindowsAdminPassword:     "",
 						WorkerNodeBFVSizeWindows: 0,
-						WorkerNodeBFVTypeWindows: "local",
+						WorkerNodeBFVTypeWindows: "",
 					},
 				},
 			},
 			GitOps: GitOpsConfig{
-				GitDir:            fmt.Sprintf("./testdata/local-git-repo-%s", name),
+				GitDir:            fmt.Sprintf("./testdata/test-git-repo-%s", name),
 				GitURL:            "",
 				GitSSHKey:         "",
 				GitSSHPub:         "",
@@ -740,7 +740,7 @@ func defaultConfig(name string) Config {
 					Enabled:             true,
 					ImageRepository:     "ghcr.io/rackerlabs/alert-proxy",
 					ImageTag:            "latest",
-					AlertManagerBaseUrl: fmt.Sprintf("http://observability-kube-prometh-alertmanager.observability.svc.cluster.local:9093/api/v2/alerts"),
+					AlertManagerBaseUrl: fmt.Sprintf("http://alertmanager.example.com/api/v2/alerts"),
 					HTTPRouteFQDN:       fmt.Sprintf("https://alerts.%s.sjc3.k8s.opencenter.cloud", name),
 					GitOpsSourceRepo:    "ssh://git@github.com/rackerlabs/openCenter-gitops-base.git",
 					GitOpsSourceRelease: "v0.1.0",
@@ -828,10 +828,8 @@ func defaultConfig(name string) Config {
 			Enabled: true,
 			Path:    "opentofu",
 			Backend: SimplifiedTofuBackend{
-				Type: "local",
-				Local: SimplifiedTofuLocal{
-					Path: "terraform.tfstate",
-				},
+				Type:  "s3",
+				Local: SimplifiedTofuLocal{},
 				S3: SimplifiedTofuS3{
 					Bucket: strings.ToLower(name), // Default to cluster name, will be set to organization if available
 					Key:    fmt.Sprintf("%s/tfstate/terraform.tfstate", name),
@@ -842,8 +840,8 @@ func defaultConfig(name string) Config {
 		Secrets: Secrets{
 			SopsAgeKeyFile: "",
 			SSHKey: SSHKey{
-				Private: fmt.Sprintf("./testdata/local-git-repo-%s/%s/secrets/ssh/%s", name, name, name),
-				Public:  fmt.Sprintf("./testdata/local-git-repo-%s/%s/secrets/ssh/%s.pub", name, name, name),
+				Private: fmt.Sprintf("./testdata/test-git-repo-%s/%s/secrets/ssh/%s", name, name, name),
+				Public:  fmt.Sprintf("./testdata/test-git-repo-%s/%s/secrets/ssh/%s.pub", name, name, name),
 				Cypher:  "ed25519",
 			},
 			// Service-specific secrets - must be provided by user
@@ -1173,75 +1171,78 @@ func ConfigPath(name string) (string, error) {
 		return "", fmt.Errorf("failed to resolve config directory: %w", err)
 	}
 
-	// Check for flat config file first (backward compatibility and test support)
-	// Only check flat config if using default organization and no explicit org was provided
-	if !strings.Contains(name, "/") {
-		flatConfigPath := filepath.Join(configDir, clusterName+".yaml")
-		if _, statErr := os.Stat(flatConfigPath); statErr == nil {
-			return flatConfigPath, nil
+	// Load CLI configuration to get the configured clustersDir
+	cliConfigManager, err := NewConfigManager("")
+	var clustersDir string
+	if err == nil {
+		clustersDir = cliConfigManager.GetConfig().Paths.ClustersDir
+		if clustersDir == "" {
+			clustersDir = filepath.Join(configDir, "clusters")
 		}
+		clustersDir = ExpandPath(clustersDir)
+	} else {
+		clustersDir = filepath.Join(configDir, "clusters")
 	}
 
-	// If organization was explicitly specified, only check that organization
+	// Priority 1: If organization was explicitly specified, check organization-based paths
 	if strings.Contains(name, "/") {
-		cliConfigManager, err := NewConfigManager("")
-		if err == nil {
+		if cliConfigManager != nil {
 			pathResolver := NewPathResolver(cliConfigManager)
 			paths := pathResolver.ResolveClusterPaths(clusterName, organization)
 
-			// Check for config file at cluster directory level
-			clusterConfigPath := filepath.Join(paths.ClusterDir, "."+clusterName+"-config.yaml")
-			if _, statErr := os.Stat(clusterConfigPath); statErr == nil {
-				return clusterConfigPath, nil
-			}
-
-			// Check for config file at organization level
+			// Check for config file at organization level (primary location)
 			orgConfigPath := filepath.Join(paths.OrganizationDir, "."+clusterName+"-config.yaml")
 			if _, statErr := os.Stat(orgConfigPath); statErr == nil {
 				return orgConfigPath, nil
 			}
+
+			// Check for config file at cluster directory level (alternative location)
+			clusterConfigPath := filepath.Join(paths.ClusterDir, "."+clusterName+"-config.yaml")
+			if _, statErr := os.Stat(clusterConfigPath); statErr == nil {
+				return clusterConfigPath, nil
+			}
 		}
-	} else {
-		// No organization specified - search all organizations
-		clustersDir := filepath.Join(configDir, "clusters")
-		if entries, readErr := os.ReadDir(clustersDir); readErr == nil {
-			for _, entry := range entries {
-				if entry.IsDir() {
-					orgName := entry.Name()
+		// If explicitly specified org/cluster not found, return error
+		return "", fmt.Errorf("cluster configuration file not found for cluster %s", name)
+	}
 
-					// Check for config file at organization level
-					orgConfigPath := filepath.Join(clustersDir, orgName, "."+clusterName+"-config.yaml")
-					if _, statErr := os.Stat(orgConfigPath); statErr == nil {
-						return orgConfigPath, nil
-					}
+	// Priority 2: No organization specified - search organization-based paths first
+	if entries, readErr := os.ReadDir(clustersDir); readErr == nil {
+		for _, entry := range entries {
+			if entry.IsDir() {
+				orgName := entry.Name()
 
-					// Check for config file at cluster directory level
-					clusterConfigPath := filepath.Join(clustersDir, orgName, "infrastructure", "clusters", clusterName, "."+clusterName+"-config.yaml")
-					if _, statErr := os.Stat(clusterConfigPath); statErr == nil {
-						return clusterConfigPath, nil
-					}
+				// Check for config file at organization level (primary location)
+				orgConfigPath := filepath.Join(clustersDir, orgName, "."+clusterName+"-config.yaml")
+				if _, statErr := os.Stat(orgConfigPath); statErr == nil {
+					return orgConfigPath, nil
+				}
+
+				// Check for config file at cluster directory level (alternative location)
+				clusterConfigPath := filepath.Join(clustersDir, orgName, "infrastructure", "clusters", clusterName, "."+clusterName+"-config.yaml")
+				if _, statErr := os.Stat(clusterConfigPath); statErr == nil {
+					return clusterConfigPath, nil
 				}
 			}
 		}
 	}
 
-	// Fall back to legacy directory structure path for backward compatibility
-	// Only try legacy path if using default organization
-	if organization == "opencenter" && !strings.Contains(name, "/") {
-		clusterDir, err := ClusterDirectoryPath(clusterName)
-		if err != nil {
-			return "", err
-		}
+	// Priority 3: Check for flat config file (backward compatibility)
+	flatConfigPath := filepath.Join(configDir, clusterName+".yaml")
+	if _, statErr := os.Stat(flatConfigPath); statErr == nil {
+		return flatConfigPath, nil
+	}
 
-		// Check if legacy config file exists before creating directories
+	// Priority 4: Fall back to legacy directory structure (backward compatibility)
+	clusterDir, err := ClusterDirectoryPath(clusterName)
+	if err == nil {
 		legacyConfigPath := filepath.Join(clusterDir, "."+clusterName+"-config.yaml")
 		if _, statErr := os.Stat(legacyConfigPath); statErr == nil {
 			return legacyConfigPath, nil
 		}
 	}
 
-	// Only create directories if we're actually going to write a new config
-	// For read operations, return error if file doesn't exist
+	// Config file not found anywhere
 	return "", fmt.Errorf("cluster configuration file not found for cluster %s", name)
 }
 
@@ -1794,21 +1795,49 @@ func List() ([]string, error) {
 				Debugf("List: no legacy config file found for: %s", entryName)
 			}
 
-			// Check for organization-based structure: clustersDir/organization/.<cluster>-config.yaml
-			// List all .yaml files in the organization directory
+			// Check for organization-based structure
+			// Look for clusters in: clustersDir/organization/infrastructure/clusters/<cluster>/.<cluster>-config.yaml
 			orgDir := filepath.Join(clustersDir, entryName)
-			Debugf("List: checking organization directory: %s", orgDir)
+			infraClustersDir := filepath.Join(orgDir, "infrastructure", "clusters")
+			Debugf("List: checking organization infrastructure/clusters directory: %s", infraClustersDir)
+			
+			if infraEntries, err := os.ReadDir(infraClustersDir); err == nil {
+				Debugf("List: found %d entries in infrastructure/clusters directory for org: %s", len(infraEntries), entryName)
+				for _, clusterEntry := range infraEntries {
+					if clusterEntry.IsDir() {
+						clusterName := clusterEntry.Name()
+						// Check for config file at cluster directory level
+						clusterConfigPath := filepath.Join(infraClustersDir, clusterName, "."+clusterName+"-config.yaml")
+						Debugf("List: checking for config file: %s", clusterConfigPath)
+						if _, statErr := os.Stat(clusterConfigPath); statErr == nil {
+							Debugf("List: found cluster config file for: %s", clusterName)
+							// Format as organization/cluster
+							fullName := entryName + "/" + clusterName
+							if !nameSet[fullName] {
+								Debugf("List: adding organization cluster: %s", fullName)
+								names = append(names, fullName)
+								nameSet[fullName] = true
+							} else {
+								Debugf("List: skipping duplicate cluster: %s", fullName)
+							}
+						}
+					}
+				}
+			} else {
+				Debugf("List: infrastructure/clusters directory does not exist for org %s: %v", entryName, err)
+			}
+			
+			// Also check for config files at organization level (alternative location)
 			if orgFiles, err := os.ReadDir(orgDir); err == nil {
 				Debugf("List: found %d files in organization directory: %s", len(orgFiles), entryName)
 				for _, orgFile := range orgFiles {
 					if !orgFile.IsDir() && strings.HasPrefix(orgFile.Name(), ".") && strings.HasSuffix(orgFile.Name(), "-config.yaml") {
-						Debugf("List: found organization config file: %s", orgFile.Name())
+						Debugf("List: found organization-level config file: %s", orgFile.Name())
 						// Extract cluster name from .<cluster>-config.yaml
 						clusterName := strings.TrimPrefix(orgFile.Name(), ".")
 						clusterName = strings.TrimSuffix(clusterName, "-config.yaml")
 						Debugf("List: extracted cluster name: %s from file: %s", clusterName, orgFile.Name())
-						if clusterName != "" && clusterName != entryName {
-							// Only treat as organization structure if cluster name != directory name
+						if clusterName != "" {
 							// Format as organization/cluster
 							fullName := entryName + "/" + clusterName
 							if !nameSet[fullName] {
@@ -1819,7 +1848,7 @@ func List() ([]string, error) {
 								Debugf("List: skipping duplicate cluster: %s", fullName)
 							}
 						} else {
-							Debugf("List: skipping cluster (name=%s matches org=%s or is empty)", clusterName, entryName)
+							Debugf("List: skipping cluster (name is empty)")
 						}
 					}
 				}

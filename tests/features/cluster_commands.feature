@@ -36,7 +36,7 @@ Feature: Cluster command group
   # ---------------------------------------------------------------------------
   # Parent: help shows subcommands
   # ---------------------------------------------------------------------------
-  @help
+  @help @priority6
   Scenario: "openCenter cluster" prints help with all subcommands
     When I run "openCenter cluster --config-dir tmp/conf"
     Then the exit code should be 0

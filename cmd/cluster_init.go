@@ -189,8 +189,8 @@ command-line flags with dot notation.
 The configuration is created in an organization-based directory structure:
   ~/.config/openCenter/clusters/<organization>/<cluster>/
 
-By default, the cluster name is used as the organization name. Use --org to
-specify a different organization.
+	By default, the organization is set to "opencenter". Use --org to
+	specify a different organization.
 
 SOPS Age encryption keys and SSH key pairs are automatically generated if they
 don't already exist, unless --no-keygen is specified. Use --regenerate-keys to
@@ -215,8 +215,8 @@ Troubleshooting:
   • If cluster already exists, use --force to overwrite
   • Use --strict to enable validation during initialization
   • Check ~/.config/openCenter/clusters/ for created files`,
-		Example: `  # Initialize with defaults (uses cluster name as organization)
-  openCenter cluster init my-cluster
+		Example: `  # Initialize with defaults (uses "opencenter" as organization)
+	  openCenter cluster init my-cluster
 
   # Initialize bare metal cluster
   openCenter cluster init my-cluster --org myorg --type baremetal
@@ -327,7 +327,7 @@ Troubleshooting:
 				organization = cfg.OpenCenter.Meta.Organization
 			}
 			if organization == "" {
-				organization = name
+				organization = "opencenter"
 			}
 
 			// Always update configuration with the determined organization
@@ -378,6 +378,30 @@ Troubleshooting:
 			// Resolve cluster paths using organization structure
 			clusterPaths := pathResolver.ResolveClusterPaths(name, organization)
 
+			// Update GitOps directory to point to organization root
+			// Check if user explicitly set a custom git_dir via command line flags
+			userSetCustomGitDir := false
+			for _, arg := range os.Args {
+				if strings.HasPrefix(arg, "--opencenter.gitops.git_dir=") || strings.HasPrefix(arg, "--gitops.git_dir=") {
+					userSetCustomGitDir = true
+					break
+				}
+			}
+
+			// If user didn't explicitly set a custom git_dir, use organization-based path
+			if !userSetCustomGitDir {
+				cfg.OpenCenter.GitOps.GitDir = clusterPaths.GitOpsDir
+				if opencenter, ok := configMap["opencenter"].(map[string]any); ok {
+					if gitops, ok := opencenter["gitops"].(map[string]any); ok {
+						gitops["git_dir"] = clusterPaths.GitOpsDir
+					} else {
+						opencenter["gitops"] = map[string]any{
+							"git_dir": clusterPaths.GitOpsDir,
+						}
+					}
+				}
+			}
+
 			// Handle --force
 			force, _ := cmd.Flags().GetBool("force")
 
@@ -411,17 +435,9 @@ Troubleshooting:
 			if strict {
 				// In strict mode, clear default values for required fields if user didn't explicitly set them
 				// This ensures validation fails if required fields are missing
-				userSetCustomGitDir := false
-				for _, arg := range os.Args {
-					if strings.HasPrefix(arg, "--opencenter.gitops.git_dir=") || strings.HasPrefix(arg, "--gitops.git_dir=") {
-						userSetCustomGitDir = true
-						break
-					}
-				}
-				if !userSetCustomGitDir {
-					cfg.OpenCenter.GitOps.GitDir = ""
-				}
-				
+				// In strict mode, validation ensures required fields are present
+				// We no longer clear default values as they are now correctly resolved before validation
+
 				if errs := config.Validate(cfg); len(errs) > 0 {
 					for _, e := range errs {
 						fmt.Fprintln(cmd.ErrOrStderr(), e)
@@ -474,29 +490,7 @@ Troubleshooting:
 				fmt.Fprintf(cmd.OutOrStdout(), "Using existing SOPS key at %s\n", clusterPaths.SOPSKeyPath)
 			}
 
-			// Update GitOps directory to point to organization root
-			// Check if user explicitly set a custom git_dir via command line flags
-			userSetCustomGitDir := false
-			for _, arg := range os.Args {
-				if strings.HasPrefix(arg, "--opencenter.gitops.git_dir=") || strings.HasPrefix(arg, "--gitops.git_dir=") {
-					userSetCustomGitDir = true
-					break
-				}
-			}
-
-			// If user didn't explicitly set a custom git_dir, use organization-based path
-			if !userSetCustomGitDir {
-				cfg.OpenCenter.GitOps.GitDir = clusterPaths.GitOpsDir
-				if opencenter, ok := configMap["opencenter"].(map[string]any); ok {
-					if gitops, ok := opencenter["gitops"].(map[string]any); ok {
-						gitops["git_dir"] = clusterPaths.GitOpsDir
-					} else {
-						opencenter["gitops"] = map[string]any{
-							"git_dir": clusterPaths.GitOpsDir,
-						}
-					}
-				}
-			}
+			// GitOps directory is already updated to point to organization root
 			// If user specified a custom git_dir, keep it as-is
 
 			// Update SSH key paths to point to organization secrets directory
@@ -642,8 +636,8 @@ Troubleshooting:
 				return fmt.Errorf("failed to marshal final config: %w", err)
 			}
 
-			// Get the config path at cluster directory level
-			configPath := filepath.Join(clusterPaths.ClusterDir, "."+name+"-config.yaml")
+			// Get the config path at organization level (primary location per design document)
+			configPath := filepath.Join(clusterPaths.OrganizationDir, "."+name+"-config.yaml")
 
 			// Write the config file with proper permissions (0600 for files)
 			if err := os.WriteFile(configPath, finalYAML, 0o600); err != nil {

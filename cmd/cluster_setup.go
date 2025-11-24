@@ -112,26 +112,6 @@ func setupOrganizationGitOps(cfg config.Config, organization string, render, for
 	clusterName := cfg.ClusterName()
 	paths := pathResolver.ResolveClusterPaths(clusterName, organization)
 
-	// Check if already initialized unless force is specified
-	if !force {
-		if _, err := os.Stat(filepath.Join(paths.GitOpsDir, ".git")); err == nil {
-			if _, err2 := os.Stat(filepath.Join(paths.GitOpsDir, ".opencenter")); err2 == nil {
-				fmt.Fprintln(cmd.OutOrStdout(), "already initialized")
-				return nil
-			}
-		}
-	}
-
-	// Create organization directory structure
-	if err := pathResolver.CreateOrganizationStructure(organization); err != nil {
-		return fmt.Errorf("failed to create organization structure: %w", err)
-	}
-
-	// Create cluster-specific directories
-	if err := pathResolver.CreateClusterDirectories(clusterName, organization); err != nil {
-		return fmt.Errorf("failed to create cluster directories: %w", err)
-	}
-
 	// Update configuration to use organization-based GitOps directory
 	// Only override git_dir if it's not explicitly set to a custom path
 	updatedCfg := cfg
@@ -144,6 +124,32 @@ func setupOrganizationGitOps(cfg config.Config, organization string, render, for
 	} else {
 		// Use organization-based path
 		updatedCfg.OpenCenter.GitOps.GitDir = paths.GitOpsDir
+	}
+
+	// Check if already initialized unless force is specified
+	if !force {
+		initialized, err := gitops.IsGitOpsInitialized(updatedCfg.GitOps().GitDir)
+		if err != nil {
+			return fmt.Errorf("failed to check if GitOps is initialized: %w", err)
+		}
+		if initialized {
+			fmt.Fprintln(cmd.OutOrStdout(), "already initialized")
+			fmt.Fprintf(cmd.OutOrStdout(), "GitOps directory: %s\n", updatedCfg.GitOps().GitDir)
+			fmt.Fprintln(cmd.OutOrStdout(), "Use --force to reinitialize and overwrite existing files")
+			return nil
+		}
+	} else {
+		fmt.Fprintln(cmd.OutOrStdout(), "Force flag set: reinitializing GitOps directory")
+	}
+
+	// Create organization directory structure
+	if err := pathResolver.CreateOrganizationStructure(organization); err != nil {
+		return fmt.Errorf("failed to create organization structure: %w", err)
+	}
+
+	// Create cluster-specific directories
+	if err := pathResolver.CreateClusterDirectories(clusterName, organization); err != nil {
+		return fmt.Errorf("failed to create cluster directories: %w", err)
 	}
 
 	// Setup GitOps base structure at organization level

@@ -165,7 +165,7 @@ Feature: openCenter cluster basics
     Then a file "<<tmp>>/opencenter-demo/infrastructure/clusters/demo/main.tf" should exist
     And a file "<<tmp>>/opencenter-demo/infrastructure/clusters/demo/provider.tf" should exist
 
-  @skip 
+  @skip @priority7
   Scenario: Destroy a cluster
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """

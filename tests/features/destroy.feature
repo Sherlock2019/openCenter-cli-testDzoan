@@ -4,7 +4,7 @@ Feature: Destroy clusters safely
     Given an empty directory "<<tmp>>/conf"
     And an empty directory "<<tmp>>/opencenter-demo"
 
-  @destroy
+  @destroy @priority7
   Scenario: Destroy removes config and GitOps directory
     Given a file "<<tmp>>/conf/demo.yaml" with content:
       """

@@ -2,6 +2,7 @@ Feature: Cluster initialisation
   As a user, I want to initialise a new cluster configuration using
   the `init` command, so that I can start defining my cluster layout.
 
+  @priority8
   Scenario: Initialise a new cluster with default settings
     When I run "openCenter cluster init test-cluster"
     Then a cluster configuration "test-cluster" should exist
@@ -28,6 +29,7 @@ Feature: Cluster initialisation
     Then the file "~/.config/openCenter/clusters/opencenter/secrets/age/keys/demo2-key.txt" should not exist
     And the cluster configuration "demo2" should have "secrets.sops_age_key_file" set to ""
 
+  @priority8
   Scenario: Init with full schema includes local references
     When I run "openCenter cluster init full-one --full-schema"
     Then a cluster configuration "full-one" should exist

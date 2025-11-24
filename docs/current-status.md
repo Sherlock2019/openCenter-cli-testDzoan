@@ -62,6 +62,7 @@ openCenter is in active development with core functionality implemented and test
   - `cluster schema` - Generate JSON schema
   - `cluster preflight` - Run preflight checks
   - `cluster destroy` - Destroy cluster
+  - `cluster service` - Manage cluster services (enable/disable)
 
 - **SOPS Management** (100%)
   - `sops generate-key` - Generate Age keys
@@ -95,6 +96,15 @@ openCenter is in active development with core functionality implemented and test
   - Dynamic template rendering
   - Provider-specific templates
   - Service-specific templates
+
+#### Cluster Service Management
+- **Service Lifecycle** (100%)
+  - Enable/Disable services
+  - Managed service support
+  - Parameter injection
+  - Secret injection
+  - Service validation
+  - Configuration persistence
 
 #### Secrets Management
 - **SOPS Integration** (100%)
@@ -130,6 +140,14 @@ openCenter is in active development with core functionality implemented and test
   - Floating IP management
   - ✅ Configuration validation
   - ⚠️ Connectivity validation (partial)
+
+- **Talos Linux** (Active Development)
+  - ✅ Configuration schema extensions
+  - ✅ Project structure setup
+  - ✅ Core interfaces
+  - ✅ Pulumi integration
+  - ⚠️ Validation logic (partial)
+  - ⚠️ Generator implementation (partial)
 
 - **AWS** (70%)
   - VPC configuration
@@ -232,13 +250,6 @@ openCenter is in active development with core functionality implemented and test
   - ❌ Multi-cluster setup
   - ❌ Production deployment
   - ❌ Disaster recovery
-
-#### Talos Provider
-- **Talos Linux Support** (In Progress)
-  - Configuration schema extensions
-  - Project structure setup
-  - Core interfaces
-  - Pulumi integration for Talos
 
 ### 📋 Planned
 

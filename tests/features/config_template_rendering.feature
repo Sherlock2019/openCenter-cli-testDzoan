@@ -487,7 +487,7 @@ Feature: Configuration-driven template rendering
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
 
-  @validation @missing-secrets
+  @validation @missing-secrets @priority4
   Scenario: Missing cert-manager secrets should fail validation
     Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
       """
@@ -503,7 +503,7 @@ Feature: Configuration-driven template rendering
     When I run "openCenter cluster validate test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should not be 0
 
-  @validation @missing-secrets
+  @validation @missing-secrets @priority4
   Scenario: Missing loki secrets should fail validation
     Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
       """
@@ -534,7 +534,7 @@ Feature: Configuration-driven template rendering
     When I run "openCenter cluster validate test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should not be 0
 
-  @validation @invalid-email
+  @validation @invalid-email @priority4
   Scenario: Invalid admin email should fail validation
     Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
       """
@@ -558,7 +558,7 @@ Feature: Configuration-driven template rendering
     When I run "openCenter cluster validate test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should not be 0
 
-  @validation @invalid-domain
+  @validation @invalid-domain @priority4
   Scenario: Invalid cluster FQDN should fail validation
     Given a file "<<tmp>>/conf/test-cluster.yaml" with content:
       """

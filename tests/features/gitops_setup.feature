@@ -23,7 +23,7 @@ Feature: GitOps repository setup behaviors
     And stdout should contain "Created GitOps repo"
     And stdout should contain "tmp/repo-dev"
 
-  @gitops @setup @idempotent
+  @gitops @setup @idempotent @priority2
   Scenario: setup is idempotent when run repeatedly
     Given I run "openCenter cluster select dev --config-dir tmp/conf"
     And the exit code should be 0
@@ -45,7 +45,7 @@ Feature: GitOps repository setup behaviors
     Then the exit code should be 0
     And the file "tmp/repo-dev/README.md" should not contain "local edits that should be replaced"
 
-  @gitops @setup @missing_prereqs
+  @gitops @setup @missing_prereqs @priority2
   Scenario: setup errors when no active cluster or git_dir is missing
     Given the file "tmp/conf/active" does not exist
     When I run "openCenter cluster setup --config-dir tmp/conf"

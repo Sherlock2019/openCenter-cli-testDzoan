@@ -66,7 +66,7 @@ Feature: Configuration selection and inspection
     And the file "tmp/conf/.active" should match regex "^prod$"
     And stdout should contain "Active cluster set to prod"
 
-  @config @select @missing
+  @config @select @missing @priority3
   Scenario: Selecting a non-existent cluster yields a helpful error
     When I run "openCenter cluster select missing --config-dir tmp/conf"
     Then the exit code should not be 0

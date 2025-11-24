@@ -418,7 +418,7 @@ Feature: Configuration validation rules
     Then the exit code should be 0
     And stdout should contain "Validation successful"
 
-  @validation @prosys_cluster_vrrp_missing_ip
+  @validation @prosys_cluster_vrrp_missing_ip @priority4
   Scenario: prosys.dev.dfw3 cluster VRRP validation fails when IP missing
     Given a file "<<tmp>>/conf/prosys.dev.dfw3.yaml" with content:
       """

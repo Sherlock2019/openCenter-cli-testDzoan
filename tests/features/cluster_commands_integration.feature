@@ -27,6 +27,7 @@ Feature: Cluster commands integration with new directory structure
     Then the exit code should be 0
     And stdout should contain "Validation successful"
 
+  @priority3
   Scenario: Cluster commands handle non-existent clusters correctly
     When I run "openCenter cluster select missing-cluster --config-dir <<tmp>>/conf"
     Then the exit code should not be 0
@@ -40,6 +41,7 @@ Feature: Cluster commands integration with new directory structure
     Then the exit code should not be 0
     And stderr should contain "failed to read cluster configuration file"
 
+  @priority3
   Scenario: Multiple clusters work correctly with new directory structure
     When I run "openCenter cluster init cluster-a --config-dir <<tmp>>/conf"
     And I run "openCenter cluster init cluster-b --config-dir <<tmp>>/conf"

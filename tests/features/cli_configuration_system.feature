@@ -185,7 +185,7 @@ Feature: CLI Configuration System Integration
     And stdout should contain "Active cluster: enhanced-test"
     And stdout should contain "organization: enhanced-org"
 
-  @config @cluster_commands @list
+  @config @cluster_commands @list @priority3
   Scenario: Cluster list works with organization-based structure
     Given I run "openCenter cluster init list-test-a --opencenter.meta.organization=list-org --config-dir <<tmp>>/conf"
     And I run "openCenter cluster init list-test-b --opencenter.meta.organization=list-org --config-dir <<tmp>>/conf"
@@ -197,7 +197,7 @@ Feature: CLI Configuration System Integration
     And stdout should contain "list-org/list-test-b"
     And stdout should contain "other-org/list-test-c"
 
-  @config @cluster_commands @info
+  @config @cluster_commands @info @priority6
   Scenario: Cluster info shows organization-based paths
     Given I run "openCenter cluster init info-test --opencenter.meta.organization=info-org --config-dir <<tmp>>/conf"
     And the exit code should be 0

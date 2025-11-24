@@ -141,6 +141,37 @@ godog-wip = "go test ./... -v args --godog.tags=@wip --godog.paths=tests/feature
 # Detect failing scenarios and tag them with @wip
 tag-wip-failures = "python3 hack/tag_wip_failures.py"
 
+# Run all BDD tests (alias for godog)
+test-bdd = "go test ./... -v args --godog.tags=~@wip --godog.paths=tests/features"
+
+# Run regression tests (non-WIP scenarios)
+test-regression = "go test ./... -v args --godog.tags=~@wip --godog.paths=tests/features"
+
+# Priority-specific test tasks for testing-tasks-fix implementation
+# Priority 1: Config Loader for Organization Structure (18 failing tests)
+test-priority1 = "go test ./... -v args --godog.tags=@priority1 --godog.paths=tests/features"
+
+# Priority 2: GitOps Idempotency and Validation (7 failing tests)
+test-priority2 = "go test ./... -v args --godog.tags=@priority2 --godog.paths=tests/features"
+
+# Priority 3: Cluster List and Select Commands (4 failing tests)
+test-priority3 = "go test ./... -v args --godog.tags=@priority3 --godog.paths=tests/features"
+
+# Priority 4: Validation Logic (6 failing tests)
+test-priority4 = "go test ./... -v args --godog.tags=@priority4 --godog.paths=tests/features"
+
+# Priority 5: Bootstrap Cleanup (1 failing test)
+test-priority5 = "go test ./... -v args --godog.tags=@priority5 --godog.paths=tests/features"
+
+# Priority 6: Info Command Output (2 failing tests)
+test-priority6 = "go test ./... -v args --godog.tags=@priority6 --godog.paths=tests/features"
+
+# Priority 7: Cluster Destroy Command (2 failing tests)
+test-priority7 = "go test ./... -v args --godog.tags=@priority7 --godog.paths=tests/features"
+
+# Priority 8: Init Validation (2 failing tests)
+test-priority8 = "go test ./... -v args --godog.tags=@priority8 --godog.paths=tests/features"
+
 # Generate the cluster JSON schema into the schema directory
 schema = "./bin/openCenter cluster schema  --pretty --out schema/cluster.schema.json"
 

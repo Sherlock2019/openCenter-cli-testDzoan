@@ -25,6 +25,48 @@ import (
 	"github.com/rackerlabs/openCenter-cli/internal/config"
 )
 
+// IsGitOpsInitialized checks if a GitOps directory has already been initialized
+// by looking for marker files that indicate a previous setup.
+//
+// It checks for the presence of:
+//   - README.md: Base GitOps structure file
+//   - .gitignore: Git configuration file
+//   - .git directory: Git repository initialization
+//
+// Returns true if the directory appears to be initialized, false otherwise.
+func IsGitOpsInitialized(gitDir string) (bool, error) {
+	if gitDir == "" {
+		return false, fmt.Errorf("git_dir is empty")
+	}
+
+	// Check if directory exists
+	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
+		return false, nil
+	}
+
+	// Check for marker files that indicate initialization
+	markerFiles := []string{
+		"README.md",
+		".gitignore",
+	}
+
+	for _, marker := range markerFiles {
+		markerPath := filepath.Join(gitDir, marker)
+		if _, err := os.Stat(markerPath); err == nil {
+			// At least one marker file exists, consider it initialized
+			return true, nil
+		}
+	}
+
+	// Also check for .git directory as a strong indicator
+	gitPath := filepath.Join(gitDir, ".git")
+	if _, err := os.Stat(gitPath); err == nil {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 // CopyBase copies or renders embedded files from gitops-base-dir into the target directory
 // specified by cfg.GitOps().GitDir.
 //
