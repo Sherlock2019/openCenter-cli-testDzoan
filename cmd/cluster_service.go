@@ -39,6 +39,7 @@ command will fail and provide an example of the correct usage.`,
 	cmd.AddCommand(newClusterServiceEnableCmd())
 	cmd.AddCommand(newClusterServiceDisableCmd())
 	cmd.AddCommand(newClusterServiceStatusCmd())
+	cmd.AddCommand(newClusterServiceOptionsCmd())
 	return cmd
 }
 
@@ -434,4 +435,219 @@ Examples:
 	}
 	cmd.Flags().StringVar(&cluster, "cluster", "", "Specify the cluster name")
 	return cmd
+}
+
+// newClusterServiceOptionsCmd creates the "cluster service options" command.
+func newClusterServiceOptionsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "options <service-name>",
+		Short: "Display available configuration options for a service",
+		Long: `This command displays all available configuration parameters and secrets for a service.
+It shows the field names, types, descriptions, and whether they are required.
+
+Examples:
+  # Show options for cert-manager
+  openCenter cluster service options cert-manager
+
+  # Show options for loki
+  openCenter cluster service options loki
+
+  # Show options for a managed service
+  openCenter cluster service options alert-proxy --managed`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			serviceName := args[0]
+			isManaged, _ := cmd.Flags().GetBool("managed")
+
+			// Get service-specific options
+			options := getServiceOptions(serviceName)
+			secrets := getServiceSecrets(serviceName)
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Configuration options for service '%s':\n\n", serviceName)
+
+			// Display common fields
+			fmt.Fprintln(cmd.OutOrStdout(), "Common Fields:")
+			fmt.Fprintln(cmd.OutOrStdout(), "  enabled (boolean) - Enable or disable this service")
+			fmt.Fprintln(cmd.OutOrStdout(), "  status (string) - Service deployment status (pending/running/success/failed)")
+			fmt.Fprintln(cmd.OutOrStdout(), "  release (string) - Release version or tag (mutually exclusive with branch)")
+			fmt.Fprintln(cmd.OutOrStdout(), "  branch (string) - Git branch (mutually exclusive with release)")
+			fmt.Fprintln(cmd.OutOrStdout(), "  uri (string) - Git repository URI")
+
+			if isManaged {
+				fmt.Fprintln(cmd.OutOrStdout(), "\nManaged Service Fields:")
+				fmt.Fprintln(cmd.OutOrStdout(), "  gitops_source_repo (string) - GitOps source repository URL")
+				fmt.Fprintln(cmd.OutOrStdout(), "  gitops_source_release (string) - GitOps source release tag")
+				fmt.Fprintln(cmd.OutOrStdout(), "  gitops_source_branch (string) - GitOps source branch")
+			}
+
+			// Display service-specific parameters
+			if len(options) > 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "\nService-Specific Parameters:")
+				for _, opt := range options {
+					required := ""
+					if opt.Required {
+						required = " [REQUIRED]"
+					}
+					fmt.Fprintf(cmd.OutOrStdout(), "  %s (%s) - %s%s\n", opt.Name, opt.Type, opt.Description, required)
+				}
+			}
+
+			// Display service-specific secrets
+			if len(secrets) > 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "\nService-Specific Secrets:")
+				for _, secret := range secrets {
+					required := ""
+					if secret.Required {
+						required = " [REQUIRED]"
+					}
+					fmt.Fprintf(cmd.OutOrStdout(), "  %s (%s) - %s%s\n", secret.Name, secret.Type, secret.Description, required)
+				}
+			}
+
+			// Display usage examples
+			fmt.Fprintln(cmd.OutOrStdout(), "\nUsage Examples:")
+			if len(options) > 0 {
+				exampleParam := options[0].Name
+				fmt.Fprintf(cmd.OutOrStdout(), "  openCenter cluster service enable %s --param=\"%s=value\"\n", serviceName, exampleParam)
+			}
+			if len(secrets) > 0 {
+				exampleSecret := secrets[0].Name
+				fmt.Fprintf(cmd.OutOrStdout(), "  openCenter cluster service enable %s --secret=\"%s=secret-value\"\n", serviceName, exampleSecret)
+			}
+
+			return nil
+		},
+	}
+	cmd.Flags().Bool("managed", false, "Show options for a managed service")
+	return cmd
+}
+
+// ServiceOption represents a configuration option for a service
+type ServiceOption struct {
+	Name        string
+	Type        string
+	Description string
+	Required    bool
+}
+
+// getServiceOptions returns the service-specific configuration options
+func getServiceOptions(serviceName string) []ServiceOption {
+	switch serviceName {
+	case "cert-manager":
+		return []ServiceOption{
+			{Name: "email", Type: "string", Description: "Email address for Let's Encrypt certificate notifications", Required: true},
+			{Name: "letsencrypt_server", Type: "string", Description: "LetsEncrypt ACME server URL", Required: false},
+			{Name: "region", Type: "string", Description: "AWS region for Route53 DNS validation", Required: false},
+		}
+	case "loki":
+		return []ServiceOption{
+			{Name: "loki_storage_type", Type: "string", Description: "Storage backend type (s3 or swift)", Required: false},
+			{Name: "loki_bucket_name", Type: "string", Description: "Storage bucket/container name", Required: true},
+			{Name: "loki_volume_size", Type: "integer", Description: "Persistent volume size in GB", Required: false},
+			{Name: "loki_storage_class", Type: "string", Description: "Storage class", Required: false},
+			{Name: "swift_auth_url", Type: "string", Description: "Swift Keystone V3 authentication URL (for Swift storage)", Required: false},
+			{Name: "swift_region", Type: "string", Description: "Swift region name (for Swift storage)", Required: false},
+			{Name: "swift_auth_version", Type: "integer", Description: "Swift authentication version (default: 3)", Required: false},
+			{Name: "swift_application_credential_id", Type: "string", Description: "Swift application credential ID (recommended)", Required: false},
+			{Name: "swift_container_name", Type: "string", Description: "Swift container name", Required: false},
+			{Name: "loki_s3_endpoint", Type: "string", Description: "S3 endpoint URL (for S3 storage, e.g., MinIO)", Required: false},
+			{Name: "loki_s3_region", Type: "string", Description: "S3 region (for S3 storage)", Required: false},
+			{Name: "loki_s3_force_path_style", Type: "boolean", Description: "Force S3 path style (required for MinIO)", Required: false},
+			{Name: "loki_s3_insecure", Type: "boolean", Description: "Allow insecure S3 connections", Required: false},
+		}
+	case "keycloak":
+		return []ServiceOption{
+			{Name: "keycloak_realm", Type: "string", Description: "Keycloak realm name", Required: false},
+			{Name: "keycloak_frontend_url", Type: "string", Description: "Keycloak frontend URL", Required: false},
+			{Name: "keycloak_client_id", Type: "string", Description: "Keycloak client ID", Required: false},
+		}
+	case "headlamp":
+		return []ServiceOption{
+			{Name: "headlamp_oidc_issuer_url", Type: "string", Description: "Headlamp OIDC issuer URL", Required: false},
+			{Name: "headlamp_oidc_client_id", Type: "string", Description: "Headlamp OIDC client ID", Required: false},
+		}
+	case "kube-prometheus-stack":
+		return []ServiceOption{
+			{Name: "grafana_volume_size", Type: "integer", Description: "Grafana persistent volume size in GB", Required: false},
+			{Name: "grafana_storage_class", Type: "string", Description: "Grafana storage class", Required: false},
+			{Name: "prometheus_volume_size", Type: "integer", Description: "Prometheus persistent volume size in GB", Required: false},
+			{Name: "prometheus_storage_class", Type: "string", Description: "Prometheus storage class", Required: false},
+			{Name: "alertmanager_volume_size", Type: "integer", Description: "Alertmanager persistent volume size in GB", Required: false},
+			{Name: "alertmanager_storage_class", Type: "string", Description: "Alertmanager storage class", Required: false},
+		}
+	case "velero":
+		return []ServiceOption{
+			{Name: "velero_backup_bucket", Type: "string", Description: "Velero backup bucket name", Required: false},
+			{Name: "velero_region", Type: "string", Description: "Velero backup region", Required: false},
+		}
+	case "alert-proxy":
+		return []ServiceOption{
+			{Name: "alert_manager_base_url", Type: "string", Description: "Alert manager base URL", Required: false},
+			{Name: "http_route_fqdn", Type: "string", Description: "HTTPRoute fully qualified domain name", Required: false},
+		}
+	case "calico":
+		return []ServiceOption{
+			{Name: "calico_kube_api_server", Type: "string", Description: "Calico Kubernetes API server address", Required: false},
+		}
+	default:
+		return []ServiceOption{
+			{Name: "namespace", Type: "string", Description: "Kubernetes namespace for the service", Required: false},
+			{Name: "hostname", Type: "string", Description: "Hostname for HTTPRoute configuration", Required: false},
+			{Name: "image_repository", Type: "string", Description: "Container image repository", Required: false},
+			{Name: "image_tag", Type: "string", Description: "Container image tag", Required: false},
+		}
+	}
+}
+
+// getServiceSecrets returns the service-specific secrets
+func getServiceSecrets(serviceName string) []ServiceOption {
+	switch serviceName {
+	case "cert-manager":
+		return []ServiceOption{
+			{Name: "aws_access_key", Type: "string", Description: "AWS access key for Route53 DNS validation", Required: false},
+			{Name: "aws_secret_access_key", Type: "string", Description: "AWS secret access key for Route53 DNS validation", Required: false},
+		}
+	case "loki":
+		return []ServiceOption{
+			{Name: "swift_application_credential_secret", Type: "string", Description: "Swift application credential secret (recommended for Swift)", Required: false},
+			{Name: "swift_password", Type: "string", Description: "Swift password (legacy, deprecated)", Required: false},
+			{Name: "s3_access_key_id", Type: "string", Description: "S3 access key ID (for S3 storage)", Required: false},
+			{Name: "s3_secret_access_key", Type: "string", Description: "S3 secret access key (for S3 storage)", Required: false},
+		}
+	case "keycloak":
+		return []ServiceOption{
+			{Name: "admin_password", Type: "string", Description: "Keycloak admin user password", Required: true},
+			{Name: "client_secret", Type: "string", Description: "Keycloak OIDC client secret", Required: false},
+		}
+	case "headlamp":
+		return []ServiceOption{
+			{Name: "oidc_client_secret", Type: "string", Description: "Headlamp OIDC client secret", Required: false},
+		}
+	case "weave-gitops":
+		return []ServiceOption{
+			{Name: "password_hash", Type: "string", Description: "Weave GitOps admin password hash (bcrypt)", Required: true},
+			{Name: "password", Type: "string", Description: "Weave GitOps admin password", Required: false},
+		}
+	case "kube-prometheus-stack":
+		return []ServiceOption{
+			{Name: "admin_password", Type: "string", Description: "Grafana admin password", Required: true},
+		}
+	case "alert-proxy":
+		return []ServiceOption{
+			{Name: "core_device_id", Type: "string", Description: "Alert proxy core device ID", Required: true},
+			{Name: "account_service_token", Type: "string", Description: "Alert proxy account service token", Required: true},
+			{Name: "core_account_number", Type: "string", Description: "Alert proxy core account number", Required: true},
+		}
+	case "vsphere-csi":
+		return []ServiceOption{
+			{Name: "vcenter_host", Type: "string", Description: "vCenter server hostname or IP address", Required: true},
+			{Name: "username", Type: "string", Description: "vCenter username", Required: true},
+			{Name: "password", Type: "string", Description: "vCenter password", Required: true},
+			{Name: "datacenters", Type: "string", Description: "Comma-separated list of datacenters", Required: true},
+			{Name: "insecure_flag", Type: "string", Description: "Skip SSL certificate verification (true/false)", Required: false},
+			{Name: "port", Type: "string", Description: "vCenter port (default: 443)", Required: false},
+		}
+	default:
+		return []ServiceOption{}
+	}
 }
