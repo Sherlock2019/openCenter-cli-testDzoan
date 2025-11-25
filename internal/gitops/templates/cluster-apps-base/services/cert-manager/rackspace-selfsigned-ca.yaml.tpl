@@ -9,9 +9,9 @@ spec:
   duration: 87600h0m0s
   renewBefore: 360h0m0s
   privateKey:
-    algorithm: ECDSA
-    size: 256
+  algorithm: ECDSA
+  size: 256
   issuerRef:
-    name: rackspace-selfsigned-issuer
-    kind: Issuer
-    group: cert-manager.io
+  name: rackspace-selfsigned-issuer
+  kind: Issuer
+  group: cert-manager.io

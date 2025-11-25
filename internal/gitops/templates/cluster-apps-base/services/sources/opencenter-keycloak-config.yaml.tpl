@@ -8,11 +8,11 @@ spec:
   interval: 10m
   url: ssh://git@github.com/rpc-environments/000000-opencenter-example.git
   ref:
-    branch: main
+  branch: main
   secretRef:
-    name: flux-system
+  name: flux-system
   include:
-    - repository:
-        name: opencenter-keycloak
-      fromPath: applications/base/services/keycloak
-      toPath: applications/overlays/stage-cluster/services/base/keycloak/
+  - repository:
+    name: opencenter-keycloak
+  fromPath: applications/base/services/keycloak
+  toPath: applications/overlays/stage-cluster/services/base/keycloak/

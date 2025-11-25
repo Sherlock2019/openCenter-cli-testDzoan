@@ -22,8 +22,8 @@ metadata:
   name: external-snapshotter-runner
 rules:
   - apiGroups: [""]
-    resources: ["events"]
-    verbs: ["list", "watch", "create", "update", "patch"]
+  resources: ["events"]
+  verbs: ["list", "watch", "create", "update", "patch"]
   # Secret permission is optional.
   # Enable it if your driver needs secret.
   # For example, `csi.storage.k8s.io/snapshotter-secret-name` is set in VolumeSnapshotClass.
@@ -32,23 +32,23 @@ rules:
   #    resources: ["secrets"]
   #    verbs: ["get", "list"]
   - apiGroups: ["snapshot.storage.k8s.io"]
-    resources: ["volumesnapshotclasses"]
-    verbs: ["get", "list", "watch"]
+  resources: ["volumesnapshotclasses"]
+  verbs: ["get", "list", "watch"]
   - apiGroups: ["snapshot.storage.k8s.io"]
-    resources: ["volumesnapshotcontents"]
-    verbs: ["get", "list", "watch", "update", "patch"]
+  resources: ["volumesnapshotcontents"]
+  verbs: ["get", "list", "watch", "update", "patch"]
   - apiGroups: ["snapshot.storage.k8s.io"]
-    resources: ["volumesnapshotcontents/status"]
-    verbs: ["update", "patch"]
+  resources: ["volumesnapshotcontents/status"]
+  verbs: ["update", "patch"]
   - apiGroups: ["groupsnapshot.storage.k8s.io"]
-    resources: ["volumegroupsnapshotclasses"]
-    verbs: ["get", "list", "watch"]
+  resources: ["volumegroupsnapshotclasses"]
+  verbs: ["get", "list", "watch"]
   - apiGroups: ["groupsnapshot.storage.k8s.io"]
-    resources: ["volumegroupsnapshotcontents"]
-    verbs: ["get", "list", "watch", "update", "patch"]
+  resources: ["volumegroupsnapshotcontents"]
+  verbs: ["get", "list", "watch", "update", "patch"]
   - apiGroups: ["groupsnapshot.storage.k8s.io"]
-    resources: ["volumegroupsnapshotcontents/status"]
-    verbs: ["update", "patch"]
+  resources: ["volumegroupsnapshotcontents/status"]
+  verbs: ["update", "patch"]
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -56,9 +56,9 @@ metadata:
   name: csi-snapshotter-role
 subjects:
   - kind: ServiceAccount
-    name: csi-snapshotter
-    # replace with non-default namespace name
-    namespace: default
+  name: csi-snapshotter
+  # replace with non-default namespace name
+  namespace: default
 roleRef:
   kind: ClusterRole
   # change the name also here if the ClusterRole gets renamed
@@ -73,8 +73,8 @@ metadata:
   name: external-snapshotter-leaderelection
 rules:
   - apiGroups: ["coordination.k8s.io"]
-    resources: ["leases"]
-    verbs: ["get", "watch", "list", "delete", "update", "create"]
+  resources: ["leases"]
+  verbs: ["get", "watch", "list", "delete", "update", "create"]
 
 ---
 kind: RoleBinding
@@ -84,8 +84,8 @@ metadata:
   namespace: kube-system
 subjects:
   - kind: ServiceAccount
-    name: csi-snapshotter
-    namespace: kube-system
+  name: csi-snapshotter
+  namespace: kube-system
 roleRef:
   kind: Role
   name: external-snapshotter-leaderelection

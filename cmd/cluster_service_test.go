@@ -481,3 +481,210 @@ func TestClusterServiceEnableDisableRoundtrip(t *testing.T) {
 		t.Error("expected prometheus to be enabled after re-enable command")
 	}
 }
+
+func TestClusterServiceStatus(t *testing.T) {
+	tests := []struct {
+		name        string
+		clusterName string
+		setupFunc   func(t *testing.T, clusterName string)
+		expectError bool
+		errorMsg    string
+		validate    func(t *testing.T, output string)
+	}{
+		{
+			name:        "display status with no services",
+			clusterName: "test-cluster",
+			setupFunc:   nil,
+			expectError: false,
+			validate: func(t *testing.T, output string) {
+				if !strings.Contains(output, "SERVICE NAME") {
+					t.Error("expected header in output")
+				}
+				if !strings.Contains(output, "ENABLED") {
+					t.Error("expected ENABLED column in output")
+				}
+				if !strings.Contains(output, "STATUS") {
+					t.Error("expected STATUS column in output")
+				}
+			},
+		},
+		{
+			name:        "display status with enabled services",
+			clusterName: "test-cluster",
+			setupFunc: func(t *testing.T, clusterName string) {
+				cfg, err := config.Load(clusterName)
+				if err != nil {
+					t.Fatalf("failed to load config: %v", err)
+				}
+				if cfg.OpenCenter.Services == nil {
+					cfg.OpenCenter.Services = make(map[string]config.ServiceCfg)
+				}
+				cfg.OpenCenter.Services["prometheus"] = config.ServiceCfg{
+					Enabled: true,
+					Status:  "running",
+				}
+				cfg.OpenCenter.Services["grafana"] = config.ServiceCfg{
+					Enabled: false,
+					Status:  "pending",
+				}
+				if err := config.Save(cfg); err != nil {
+					t.Fatalf("failed to save config: %v", err)
+				}
+			},
+			expectError: false,
+			validate: func(t *testing.T, output string) {
+				if !strings.Contains(output, "prometheus") {
+					t.Error("expected prometheus in output")
+				}
+				if !strings.Contains(output, "grafana") {
+					t.Error("expected grafana in output")
+				}
+				if !strings.Contains(output, "enabled") {
+					t.Error("expected 'enabled' in output")
+				}
+				if !strings.Contains(output, "disabled") {
+					t.Error("expected 'disabled' in output")
+				}
+				if !strings.Contains(output, "running") {
+					t.Error("expected 'running' status in output")
+				}
+			},
+		},
+		{
+			name:        "display status with managed services",
+			clusterName: "test-cluster",
+			setupFunc: func(t *testing.T, clusterName string) {
+				cfg, err := config.Load(clusterName)
+				if err != nil {
+					t.Fatalf("failed to load config: %v", err)
+				}
+				if cfg.OpenCenter.ManagedService == nil {
+					cfg.OpenCenter.ManagedService = make(map[string]config.ServiceCfg)
+				}
+				cfg.OpenCenter.ManagedService["custom-app"] = config.ServiceCfg{
+					Enabled: true,
+					Status:  "success",
+				}
+				if err := config.Save(cfg); err != nil {
+					t.Fatalf("failed to save config: %v", err)
+				}
+			},
+			expectError: false,
+			validate: func(t *testing.T, output string) {
+				if !strings.Contains(output, "custom-app") {
+					t.Error("expected custom-app in output")
+				}
+				if !strings.Contains(output, "managed") {
+					t.Error("expected '(managed)' label in output")
+				}
+				if !strings.Contains(output, "success") {
+					t.Error("expected 'success' status in output")
+				}
+			},
+		},
+		{
+			name:        "display status with empty status field",
+			clusterName: "test-cluster",
+			setupFunc: func(t *testing.T, clusterName string) {
+				cfg, err := config.Load(clusterName)
+				if err != nil {
+					t.Fatalf("failed to load config: %v", err)
+				}
+				if cfg.OpenCenter.Services == nil {
+					cfg.OpenCenter.Services = make(map[string]config.ServiceCfg)
+				}
+				cfg.OpenCenter.Services["loki"] = config.ServiceCfg{
+					Enabled: true,
+					Status:  "",
+				}
+				if err := config.Save(cfg); err != nil {
+					t.Fatalf("failed to save config: %v", err)
+				}
+			},
+			expectError: false,
+			validate: func(t *testing.T, output string) {
+				if !strings.Contains(output, "loki") {
+					t.Error("expected loki in output")
+				}
+				// Should show "-" for empty status
+				lines := strings.Split(output, "\n")
+				found := false
+				for _, line := range lines {
+					if strings.Contains(line, "loki") {
+						if strings.Contains(line, "-") {
+							found = true
+							break
+						}
+					}
+				}
+				if !found {
+					t.Error("expected '-' for empty status field")
+				}
+			},
+		},
+		{
+			name:        "no active cluster",
+			clusterName: "",
+			setupFunc:   nil,
+			expectError: true,
+			errorMsg:    "no cluster selected",
+			validate:    nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var cleanup func()
+			if tt.clusterName != "" {
+				uniqueCluster := tt.clusterName + "-" + strings.ReplaceAll(tt.name, " ", "-")
+				_, cleanup = setupServiceTestEnv(t, uniqueCluster)
+				defer cleanup()
+
+				if tt.setupFunc != nil {
+					tt.setupFunc(t, uniqueCluster)
+				}
+			} else {
+				// Test case with no active cluster
+				cfgDir := t.TempDir()
+				oldEnv := os.Getenv("OPENCENTER_CONFIG_DIR")
+				os.Setenv("OPENCENTER_CONFIG_DIR", cfgDir)
+				cleanup = func() {
+					if oldEnv != "" {
+						os.Setenv("OPENCENTER_CONFIG_DIR", oldEnv)
+					} else {
+						os.Unsetenv("OPENCENTER_CONFIG_DIR")
+					}
+				}
+				defer cleanup()
+			}
+
+			cmd := newClusterServiceStatusCmd()
+			out := &bytes.Buffer{}
+			errOut := &bytes.Buffer{}
+			cmd.SetOut(out)
+			cmd.SetErr(errOut)
+
+			err := cmd.Execute()
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("expected error but got none. Output: %s", out.String())
+					return
+				}
+				if tt.errorMsg != "" && !strings.Contains(err.Error(), tt.errorMsg) {
+					t.Errorf("expected error to contain %q, got: %v", tt.errorMsg, err)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("unexpected error: %v\nOutput: %s\nError output: %s", err, out.String(), errOut.String())
+				return
+			}
+
+			if tt.validate != nil {
+				tt.validate(t, out.String())
+			}
+		})
+	}
+}

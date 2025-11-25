@@ -115,7 +115,7 @@ func newClusterInfoCmd() *cobra.Command {
 				fmt.Fprintf(cmd.OutOrStdout(), "Cluster: %s\n", name)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Config Path: %s\n\n", configPath)
-			
+
 			// Print GitOps configuration
 			if cfg.OpenCenter.GitOps.GitDir != "" {
 				fmt.Fprintf(cmd.OutOrStdout(), "git_dir: %s\n", cfg.OpenCenter.GitOps.GitDir)

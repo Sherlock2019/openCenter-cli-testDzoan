@@ -23,35 +23,35 @@ metadata:
   name: external-provisioner-runner
 rules:
   - apiGroups: [""]
-    resources: ["secrets"]
-    verbs: ["get", "list"]
+  resources: ["secrets"]
+  verbs: ["get", "list"]
   - apiGroups: [""]
-    resources: ["persistentvolumes"]
-    verbs: ["get", "list", "watch", "create", "delete"]
+  resources: ["persistentvolumes"]
+  verbs: ["get", "list", "watch", "create", "delete"]
   - apiGroups: [""]
-    resources: ["persistentvolumeclaims"]
-    verbs: ["get", "list", "watch", "update"]
+  resources: ["persistentvolumeclaims"]
+  verbs: ["get", "list", "watch", "update"]
   - apiGroups: ["storage.k8s.io"]
-    resources: ["storageclasses"]
-    verbs: ["get", "list", "watch"]
+  resources: ["storageclasses"]
+  verbs: ["get", "list", "watch"]
   - apiGroups: [""]
-    resources: ["events"]
-    verbs: ["list", "watch", "create", "update", "patch"]
+  resources: ["events"]
+  verbs: ["list", "watch", "create", "update", "patch"]
   - apiGroups: ["snapshot.storage.k8s.io"]
-    resources: ["volumesnapshots"]
-    verbs: ["get", "list"]
+  resources: ["volumesnapshots"]
+  verbs: ["get", "list"]
   - apiGroups: ["snapshot.storage.k8s.io"]
-    resources: ["volumesnapshotcontents"]
-    verbs: ["get", "list"]
+  resources: ["volumesnapshotcontents"]
+  verbs: ["get", "list"]
   - apiGroups: ["storage.k8s.io"]
-    resources: ["csinodes"]
-    verbs: ["get", "list", "watch"]
+  resources: ["csinodes"]
+  verbs: ["get", "list", "watch"]
   - apiGroups: [""]
-    resources: ["nodes"]
-    verbs: ["get", "list", "watch"]
+  resources: ["nodes"]
+  verbs: ["get", "list", "watch"]
   - apiGroups: ["storage.k8s.io"]
-    resources: ["volumeattachments"]
-    verbs: ["get", "list", "watch"]
+  resources: ["volumeattachments"]
+  verbs: ["get", "list", "watch"]
 
 ---
 kind: ClusterRoleBinding
@@ -60,9 +60,9 @@ metadata:
   name: csi-provisioner-role
 subjects:
   - kind: ServiceAccount
-    name: csi-provisioner
-    # replace with non-default namespace name
-    namespace: kube-system
+  name: csi-provisioner
+  # replace with non-default namespace name
+  namespace: kube-system
 roleRef:
   kind: ClusterRole
   name: external-provisioner-runner
@@ -79,8 +79,8 @@ metadata:
   name: external-provisioner-cfg
 rules:
   - apiGroups: ["coordination.k8s.io"]
-    resources: ["leases"]
-    verbs: ["get", "watch", "list", "delete", "update", "create"]
+  resources: ["leases"]
+  verbs: ["get", "watch", "list", "delete", "update", "create"]
 
 ---
 kind: RoleBinding
@@ -91,9 +91,9 @@ metadata:
   namespace: kube-system
 subjects:
   - kind: ServiceAccount
-    name: csi-provisioner
-    # replace with non-default namespace name
-    namespace: kube-system
+  name: csi-provisioner
+  # replace with non-default namespace name
+  namespace: kube-system
 roleRef:
   kind: Role
   name: external-provisioner-cfg

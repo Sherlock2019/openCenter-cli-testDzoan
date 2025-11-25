@@ -388,7 +388,7 @@ Thumbs.db
 // It returns a clear error message if validation fails.
 func validateGitDir(cfg config.Config) error {
 	gitDir := cfg.GitOps().GitDir
-	
+
 	// Check if git_dir is set
 	if gitDir == "" {
 		return fmt.Errorf("opencenter.gitops.git_dir must be set\n\n" +
@@ -435,7 +435,7 @@ func validateGitDir(cfg config.Config) error {
 			return fmt.Errorf("git_dir path exists but is not a directory: %s\n\n"+
 				"Please specify a directory path for git_dir.", expandedPath)
 		}
-		
+
 		// Check if we can write to it
 		testFile := filepath.Join(expandedPath, ".opencenter-test")
 		if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {

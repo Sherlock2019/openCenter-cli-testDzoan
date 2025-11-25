@@ -397,6 +397,7 @@ type Infrastructure struct {
 // ServiceCfg captures the on/off toggle plus optional metadata for a service.
 type ServiceCfg struct {
 	Enabled  bool   `yaml:"enabled" json:"enabled"`
+	Status   string `yaml:"status,omitempty" json:"status,omitempty" jsonschema:"description=Service deployment status (pending/running/success/failed)"`
 	Email    string `yaml:"email" json:"email"`
 	Region   string `yaml:"region" json:"region"`
 	S3Host   string `yaml:"s3_host" json:"s3_host"`
@@ -1681,10 +1682,10 @@ func saveConfig(cfg Config, omitEmpty bool) error {
 		if err := yaml.Unmarshal(tempData, &configMap); err != nil {
 			return err
 		}
-		
+
 		// Remove empty values recursively
 		cleanEmptyValues(configMap)
-		
+
 		data, marshalErr = yaml.Marshal(configMap)
 	} else {
 		// Standard marshal
@@ -1709,7 +1710,7 @@ func cleanEmptyValues(m map[string]any) {
 			delete(m, key)
 			continue
 		}
-		
+
 		// Recursively clean nested maps
 		if nestedMap, ok := value.(map[string]any); ok {
 			cleanEmptyValues(nestedMap)
@@ -1726,7 +1727,7 @@ func isEmpty(v any) bool {
 	if v == nil {
 		return true
 	}
-	
+
 	switch val := v.(type) {
 	case string:
 		return val == ""
@@ -1888,7 +1889,7 @@ func List() ([]string, error) {
 			orgDir := filepath.Join(clustersDir, entryName)
 			infraClustersDir := filepath.Join(orgDir, "infrastructure", "clusters")
 			Debugf("List: checking organization infrastructure/clusters directory: %s", infraClustersDir)
-			
+
 			if infraEntries, err := os.ReadDir(infraClustersDir); err == nil {
 				Debugf("List: found %d entries in infrastructure/clusters directory for org: %s", len(infraEntries), entryName)
 				for _, clusterEntry := range infraEntries {
@@ -1914,7 +1915,7 @@ func List() ([]string, error) {
 			} else {
 				Debugf("List: infrastructure/clusters directory does not exist for org %s: %v", entryName, err)
 			}
-			
+
 			// Also check for config files at organization level (alternative location)
 			if orgFiles, err := os.ReadDir(orgDir); err == nil {
 				Debugf("List: found %d files in organization directory: %s", len(orgFiles), entryName)

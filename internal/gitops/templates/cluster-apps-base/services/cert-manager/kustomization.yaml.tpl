@@ -10,7 +10,7 @@ resources:
   - "{{ .OpenCenter.Cluster.ClusterName }}-aws-credentials-secret.yaml"
 secretGenerator:
   - name: cert-manager-values-override
-    type: Opaque
-    files: [override.yaml=helm-values/override-values.yaml]
-    options:
-      disableNameSuffixHash: true
+  type: Opaque
+  files: [override.yaml=helm-values/override-values.yaml]
+  options:
+  disableNameSuffixHash: true

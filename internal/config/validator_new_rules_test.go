@@ -161,7 +161,7 @@ func TestNewValidationRules(t *testing.T) {
 		// Test that S3 bucket defaults to organization name (lowercase)
 		config := NewDefault("test-cluster")
 		config.OpenCenter.Meta.Organization = "MyOrganization"
-		
+
 		// Set backend to S3 and initialize bucket with cluster name (simulating old default)
 		config.OpenTofu.Backend.Type = "s3"
 		config.OpenTofu.Backend.S3.Bucket = strings.ToLower(config.ClusterName())

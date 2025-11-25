@@ -37,6 +37,7 @@ command will fail and provide an example of the correct usage.`,
 	}
 	cmd.AddCommand(newClusterServiceEnableCmd())
 	cmd.AddCommand(newClusterServiceDisableCmd())
+	cmd.AddCommand(newClusterServiceStatusCmd())
 	return cmd
 }
 
@@ -306,4 +307,78 @@ func validateService(serviceName string, serviceCfg *config.ServiceCfg, secretsC
 		}
 	}
 	return nil
+}
+
+// newClusterServiceStatusCmd creates the "cluster service status" command.
+func newClusterServiceStatusCmd() *cobra.Command {
+	var cluster string
+	cmd := &cobra.Command{
+		Use:   "status",
+		Short: "Display status of all services in the cluster configuration",
+		Long: `This command displays the status of all services (both standard and managed) 
+in a three-column format showing service name, enabled/disabled state, and deployment status.
+
+Examples:
+  # Show status of all services in the active cluster
+  openCenter cluster service status
+
+  # Show status for a specific cluster
+  openCenter cluster service status --cluster my-cluster`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Determine cluster name
+			var clusterName string
+			if cluster != "" {
+				clusterName = cluster
+			} else {
+				active, err := config.GetActive()
+				if err != nil {
+					return fmt.Errorf("failed to get active cluster: %w", err)
+				}
+				if active == "" {
+					return fmt.Errorf("no cluster selected. Use --cluster flag or 'openCenter cluster select' to select a cluster")
+				}
+				clusterName = active
+			}
+
+			// Load configuration
+			cfg, err := config.Load(clusterName)
+			if err != nil {
+				return fmt.Errorf("failed to load cluster configuration for '%s': %w", clusterName, err)
+			}
+
+			// Print header
+			fmt.Fprintf(cmd.OutOrStdout(), "%-30s %-15s %-15s\n", "SERVICE NAME", "ENABLED", "STATUS")
+			fmt.Fprintf(cmd.OutOrStdout(), "%-30s %-15s %-15s\n", strings.Repeat("-", 30), strings.Repeat("-", 15), strings.Repeat("-", 15))
+
+			// Print standard services
+			for name, svc := range cfg.OpenCenter.Services {
+				enabledStr := "disabled"
+				if svc.Enabled {
+					enabledStr = "enabled"
+				}
+				status := svc.Status
+				if status == "" {
+					status = "-"
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "%-30s %-15s %-15s\n", name, enabledStr, status)
+			}
+
+			// Print managed services
+			for name, svc := range cfg.OpenCenter.ManagedService {
+				enabledStr := "disabled"
+				if svc.Enabled {
+					enabledStr = "enabled"
+				}
+				status := svc.Status
+				if status == "" {
+					status = "-"
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "%-30s %-15s %-15s\n", name+" (managed)", enabledStr, status)
+			}
+
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&cluster, "cluster", "", "Specify the cluster name")
+	return cmd
 }

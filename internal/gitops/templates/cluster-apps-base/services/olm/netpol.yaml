@@ -6,14 +6,14 @@ metadata:
   namespace: olm
 spec:
   podSelector:
-    matchExpressions:
-      - key: operatorframework.io/bundle-unpack-ref
-        operator: Exists
-      - key: olm.managed
-        operator: In
-        values: ["true"]
+  matchExpressions:
+  - key: operatorframework.io/bundle-unpack-ref
+    operator: Exists
+  - key: olm.managed
+    operator: In
+    values: ["true"]
   policyTypes: [Egress]
   egress:
-    - ports:
-        - protocol: TCP
-          port: 443
+  - ports:
+    - protocol: TCP
+  port: 443

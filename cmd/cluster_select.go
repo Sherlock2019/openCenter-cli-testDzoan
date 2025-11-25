@@ -262,11 +262,11 @@ func validateClusterExists(clusterName string, pathResolver *config.PathResolver
 	if err != nil {
 		// Get list of available clusters for helpful error message
 		availableClusters, listErr := config.List()
-		
+
 		// Build error message with organization-based structure reference
 		var errMsg strings.Builder
 		errMsg.WriteString(fmt.Sprintf("cluster configuration directory '%s' not found in clusters subdirectory", clusterName))
-		
+
 		// Add helpful suggestions
 		if listErr == nil && len(availableClusters) > 0 {
 			errMsg.WriteString("\n\nAvailable clusters:")
@@ -277,23 +277,23 @@ func validateClusterExists(clusterName string, pathResolver *config.PathResolver
 		} else {
 			errMsg.WriteString("\n\nUse 'openCenter cluster list' to see available clusters")
 		}
-		
+
 		// Add hint about organization format
 		if !strings.Contains(clusterName, "/") {
 			errMsg.WriteString("\n\nNote: If your cluster is in an organization, use the format: organization/cluster")
 		}
-		
+
 		return errors.New(errMsg.String())
 	}
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		// Get list of available clusters for helpful error message
 		availableClusters, listErr := config.List()
-		
+
 		// Build error message with organization-based structure reference
 		var errMsg strings.Builder
 		errMsg.WriteString(fmt.Sprintf("cluster configuration directory '%s' not found in clusters subdirectory", clusterName))
-		
+
 		// Add helpful suggestions
 		if listErr == nil && len(availableClusters) > 0 {
 			errMsg.WriteString("\n\nAvailable clusters:")
@@ -304,12 +304,12 @@ func validateClusterExists(clusterName string, pathResolver *config.PathResolver
 		} else {
 			errMsg.WriteString("\n\nUse 'openCenter cluster list' to see available clusters")
 		}
-		
+
 		// Add hint about organization format
 		if !strings.Contains(clusterName, "/") {
 			errMsg.WriteString("\n\nNote: If your cluster is in an organization, use the format: organization/cluster")
 		}
-		
+
 		return errors.New(errMsg.String())
 	}
 

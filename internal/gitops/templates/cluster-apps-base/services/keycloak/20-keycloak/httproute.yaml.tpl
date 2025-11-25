@@ -5,15 +5,15 @@ metadata:
   namespace: keycloak
 spec:
   parentRefs:
-    - name: rmpk-gateway
-      sectionName: keycloak-https
-      namespace: rackspace-system
+  - name: rmpk-gateway
+  sectionName: keycloak-https
+  namespace: rackspace-system
   hostnames:
-    - {{ .OpenCenter.Services.keycloak.Hostname | default (printf "auth.%s" .OpenCenter.Cluster.ClusterFQDN) | quote }}
+  - {{ .OpenCenter.Services.keycloak.Hostname | default (printf "auth.%s" .OpenCenter.Cluster.ClusterFQDN) | quote }}
   rules:
-    - backendRefs:
-        - name: keycloak-service
-          port: 8080
+  - backendRefs:
+    - name: keycloak-service
+  port: 8080
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -22,14 +22,14 @@ metadata:
   namespace: keycloak
 spec:
   parentRefs:
-    - name: rmpk-gateway
-      namespace: rackspace-system
-      sectionName: keycloak-http
+  - name: rmpk-gateway
+  namespace: rackspace-system
+  sectionName: keycloak-http
   hostnames:
-    - {{ .OpenCenter.Services.keycloak.Hostname | default (printf "auth.%s" .OpenCenter.Cluster.ClusterFQDN) | quote }}
+  - {{ .OpenCenter.Services.keycloak.Hostname | default (printf "auth.%s" .OpenCenter.Cluster.ClusterFQDN) | quote }}
   rules:
-    - filters:
-        - type: RequestRedirect
-          requestRedirect:
-            scheme: https
-            statusCode: 301 # Permanent redirect
+  - filters:
+    - type: RequestRedirect
+  requestRedirect:
+    scheme: https
+    statusCode: 301 # Permanent redirect

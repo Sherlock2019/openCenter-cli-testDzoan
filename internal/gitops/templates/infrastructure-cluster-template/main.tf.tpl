@@ -172,17 +172,17 @@ module "openstack-nova" {
   allocation_pool_end           = local.allocation_pool_end
   k8s_api_port                  = local.k8s_api_port
   size_master = {
-    count  = local.master_count
-    flavor = local.flavor_master
+  count  = local.master_count
+  flavor = local.flavor_master
   }
   size_worker = {
-    count  = local.worker_count
-    flavor = local.flavor_worker
+  count  = local.worker_count
+  flavor = local.flavor_worker
   }
   {{- if gt (.OpenCenter.Cluster.Kubernetes.WorkerCountWindows | default 0) 0 }}
   size_worker_windows = {
-      count  = local.worker_count_windows
-      flavor = local.flavor_worker_windows
+  count  = local.worker_count_windows
+  flavor = local.flavor_worker_windows
   }
   {{- end }}
   node_master                  = local.node_master

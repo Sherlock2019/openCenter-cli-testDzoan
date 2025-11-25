@@ -5,8 +5,8 @@ resources:
   - "httproute.yaml"
 secretGenerator:
   - name: headlamp-values-override
-    type: Opaque
-    files:
-      - override.yaml=helm-values/override-values.yaml
-    options:
-      disableNameSuffixHash: true
+  type: Opaque
+  files:
+  - override.yaml=helm-values/override-values.yaml
+  options:
+  disableNameSuffixHash: true

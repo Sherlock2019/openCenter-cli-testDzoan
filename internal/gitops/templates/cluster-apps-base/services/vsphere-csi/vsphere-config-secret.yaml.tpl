@@ -27,22 +27,22 @@ metadata:
 type: Opaque
 stringData:
   csi-vsphere.conf: |
-    [Global]
-    cluster-id = "{{ .ClusterName }}"
-    
-    {{- if $secrets.VCenterHost }}
-    [VirtualCenter "{{ $secrets.VCenterHost }}"]
-    insecure-flag = "{{ $secrets.InsecureFlag | default "false" }}"
-    user = "{{ $secrets.Username }}"
-    password = "{{ $secrets.Password }}"
-    port = "{{ $secrets.Port | default "443" }}"
-    datacenters = "{{ $secrets.Datacenters }}"
-    {{- else }}
-    # VirtualCenter configuration required
-    # [VirtualCenter "vcenter.example.com"]
-    # insecure-flag = "false"
-    # user = "administrator@vsphere.local"
-    # password = "your-password"
-    # port = "443"
-    # datacenters = "Datacenter1"
-    {{- end }}
+  [Global]
+  cluster-id = "{{ .ClusterName }}"
+  
+  {{- if $secrets.VCenterHost }}
+  [VirtualCenter "{{ $secrets.VCenterHost }}"]
+  insecure-flag = "{{ $secrets.InsecureFlag | default "false" }}"
+  user = "{{ $secrets.Username }}"
+  password = "{{ $secrets.Password }}"
+  port = "{{ $secrets.Port | default "443" }}"
+  datacenters = "{{ $secrets.Datacenters }}"
+  {{- else }}
+  # VirtualCenter configuration required
+  # [VirtualCenter "vcenter.example.com"]
+  # insecure-flag = "false"
+  # user = "administrator@vsphere.local"
+  # password = "your-password"
+  # port = "443"
+  # datacenters = "Datacenter1"
+  {{- end }}

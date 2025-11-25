@@ -9,7 +9,7 @@ spec:
   path: ./applications/overlays/{{ .ClusterName }}/managed-services/sources
   prune: true
   sourceRef:
-    kind: GitRepository
-    name: flux-system
-    namespace: flux-system
+  kind: GitRepository
+  name: flux-system
+  namespace: flux-system
   wait: true

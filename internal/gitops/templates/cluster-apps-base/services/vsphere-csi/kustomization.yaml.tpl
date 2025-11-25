@@ -9,9 +9,9 @@ resources:
 
 images:
   - name: gcr.io/cloud-provider-vsphere/csi/release/driver
-    newName: {{ $service.ImageRepository | default "registry.k8s.io/csi-vsphere" }}/driver
-    newTag: {{ $version }}
+  newName: {{ $service.ImageRepository | default "registry.k8s.io/csi-vsphere" }}/driver
+  newTag: {{ $version }}
   - name: gcr.io/cloud-provider-vsphere/csi/release/syncer
-    newName: {{ $service.ImageRepository | default "registry.k8s.io/csi-vsphere" }}/syncer
-    newTag: {{ $version }}
+  newName: {{ $service.ImageRepository | default "registry.k8s.io/csi-vsphere" }}/syncer
+  newTag: {{ $version }}
 

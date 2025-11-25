@@ -105,13 +105,13 @@ locals {
 
   {{- if .OpenCenter.Cluster.Kubernetes.MasterNodes }}
   master_nodes = [
-    {{- range .OpenCenter.Cluster.Kubernetes.MasterNodes }}
-    {
-      id = "{{ .ID }}"
-      name = "{{ .Name }}"
-      access_ip_v4 = "{{ .AccessIPv4 }}"
-    },
-    {{- end }}
+  {{- range .OpenCenter.Cluster.Kubernetes.MasterNodes }}
+  {
+  id = "{{ .ID }}"
+  name = "{{ .Name }}"
+  access_ip_v4 = "{{ .AccessIPv4 }}"
+  },
+  {{- end }}
   ]
   {{- else }}
   master_nodes = []
@@ -119,13 +119,13 @@ locals {
 
   {{- if .OpenCenter.Cluster.Kubernetes.WorkerNodes }}
   worker_nodes = [
-    {{- range .OpenCenter.Cluster.Kubernetes.WorkerNodes }}
-    {
-      id = "{{ .ID }}"
-      name = "{{ .Name }}"
-      access_ip_v4 = "{{ .AccessIPv4 }}"
-    },
-    {{- end }}
+  {{- range .OpenCenter.Cluster.Kubernetes.WorkerNodes }}
+  {
+  id = "{{ .ID }}"
+  name = "{{ .Name }}"
+  access_ip_v4 = "{{ .AccessIPv4 }}"
+  },
+  {{- end }}
   ]
   {{- else }}
   worker_nodes = []
@@ -133,13 +133,13 @@ locals {
 
   {{- if .OpenCenter.Cluster.Kubernetes.WindowsNodes }}
   windows_nodes = [
-    {{- range .OpenCenter.Cluster.Kubernetes.WindowsNodes }}
-    {
-      id = "{{ .ID }}"
-      name = "{{ .Name }}"
-      access_ip_v4 = "{{ .AccessIPv4 }}"
-    },
-    {{- end }}
+  {{- range .OpenCenter.Cluster.Kubernetes.WindowsNodes }}
+  {
+  id = "{{ .ID }}"
+  name = "{{ .Name }}"
+  access_ip_v4 = "{{ .AccessIPv4 }}"
+  },
+  {{- end }}
   ]
   {{- else }}
   windows_nodes = []

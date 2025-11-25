@@ -6,8 +6,8 @@ resources:
   - "httproute.yaml"
 secretGenerator:
   - name: weave-gitops-values-override
-    namespace: weave-gitops
-    type: Opaque
-    files: [override.yaml=helm-values/override-values.yaml]
-    options:
-      disableNameSuffixHash: true
+  namespace: weave-gitops
+  type: Opaque
+  files: [override.yaml=helm-values/override-values.yaml]
+  options:
+  disableNameSuffixHash: true

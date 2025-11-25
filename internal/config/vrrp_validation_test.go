@@ -89,7 +89,7 @@ func TestVRRPValidation(t *testing.T) {
 		}
 
 		result := validator.Validate(ctx, config)
-		
+
 		// Check if VRRP validation error is NOT present
 		for _, err := range result.Errors {
 			if err.Field == "networking.vrrp_ip" {
@@ -119,7 +119,7 @@ func TestVRRPValidation(t *testing.T) {
 		}
 
 		result := validator.Validate(ctx, config)
-		
+
 		// Check if VRRP validation error is NOT present
 		for _, err := range result.Errors {
 			if err.Field == "networking.vrrp_ip" {
@@ -149,7 +149,7 @@ func TestVRRPValidation(t *testing.T) {
 		}
 
 		result := validator.Validate(ctx, config)
-		
+
 		// Check if VRRP validation error is NOT present
 		for _, err := range result.Errors {
 			if err.Field == "networking.vrrp_ip" {

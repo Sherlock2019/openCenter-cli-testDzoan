@@ -741,6 +741,16 @@
                 "description": "S3 region",
                 "type": "string"
               },
+              "status": {
+                "description": "Service deployment status",
+                "enum": [
+                  "pending",
+                  "running",
+                  "success",
+                  "failed"
+                ],
+                "type": "string"
+              },
               "swift_auth_url": {
                 "description": "Swift authentication URL",
                 "type": "string"
@@ -906,6 +916,16 @@
                 },
                 "s3_region": {
                   "description": "S3 region",
+                  "type": "string"
+                },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
                   "type": "string"
                 },
                 "swift_auth_url": {
@@ -1128,6 +1148,16 @@
                 "description": "S3 region",
                 "type": "string"
               },
+              "status": {
+                "description": "Service deployment status",
+                "enum": [
+                  "pending",
+                  "running",
+                  "success",
+                  "failed"
+                ],
+                "type": "string"
+              },
               "swift_auth_url": {
                 "description": "Swift authentication URL",
                 "type": "string"
@@ -1182,6 +1212,16 @@
                   "pattern": "^[a-zA-Z0-9._-]+$",
                   "type": "string"
                 },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
+                  "type": "string"
+                },
                 "uri": {
                   "description": "Git repository URI for Calico",
                   "pattern": "^(https?://|git@|ssh://)",
@@ -1226,6 +1266,16 @@
                 "release": {
                   "description": "Cert-manager release version (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
                   "type": "string"
                 },
                 "uri": {
@@ -1274,6 +1324,16 @@
                   "minLength": 1,
                   "type": "string"
                 },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
+                  "type": "string"
+                },
                 "uri": {
                   "description": "Git repository URI for etcd-backup",
                   "pattern": "^(https?://|git@|ssh://)",
@@ -1298,6 +1358,16 @@
                 "release": {
                   "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
                   "type": "string"
                 },
                 "uri": {
@@ -1326,6 +1396,16 @@
                   "pattern": "^[a-zA-Z0-9._-]+$",
                   "type": "string"
                 },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
+                  "type": "string"
+                },
                 "uri": {
                   "description": "Git repository URI for this service",
                   "pattern": "^(https?://|git@|ssh://)",
@@ -1350,6 +1430,16 @@
                 "release": {
                   "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
                   "type": "string"
                 },
                 "uri": {
@@ -1378,6 +1468,16 @@
                   "pattern": "^[a-zA-Z0-9._-]+$",
                   "type": "string"
                 },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
+                  "type": "string"
+                },
                 "uri": {
                   "description": "Git repository URI for this service",
                   "pattern": "^(https?://|git@|ssh://)",
@@ -1402,6 +1502,16 @@
                 "release": {
                   "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
                   "type": "string"
                 },
                 "uri": {
@@ -1430,6 +1540,16 @@
                   "pattern": "^[a-zA-Z0-9._-]+$",
                   "type": "string"
                 },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
+                  "type": "string"
+                },
                 "uri": {
                   "description": "Git repository URI for this service",
                   "pattern": "^(https?://|git@|ssh://)",
@@ -1454,6 +1574,16 @@
                 "release": {
                   "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
                   "type": "string"
                 },
                 "uri": {
@@ -1482,6 +1612,16 @@
                   "pattern": "^[a-zA-Z0-9._-]+$",
                   "type": "string"
                 },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
+                  "type": "string"
+                },
                 "uri": {
                   "description": "Git repository URI for this service",
                   "pattern": "^(https?://|git@|ssh://)",
@@ -1506,6 +1646,16 @@
                 "release": {
                   "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
                   "type": "string"
                 },
                 "uri": {
@@ -1534,6 +1684,16 @@
                   "pattern": "^[a-zA-Z0-9._-]+$",
                   "type": "string"
                 },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
+                  "type": "string"
+                },
                 "uri": {
                   "description": "Git repository URI for this service",
                   "pattern": "^(https?://|git@|ssh://)",
@@ -1558,6 +1718,16 @@
                 "release": {
                   "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
                   "type": "string"
                 },
                 "uri": {
@@ -1586,6 +1756,16 @@
                   "pattern": "^[a-zA-Z0-9._-]+$",
                   "type": "string"
                 },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
+                  "type": "string"
+                },
                 "uri": {
                   "description": "Git repository URI for this service",
                   "pattern": "^(https?://|git@|ssh://)",
@@ -1610,6 +1790,16 @@
                 "release": {
                   "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
                   "type": "string"
                 },
                 "uri": {
@@ -1638,6 +1828,16 @@
                   "pattern": "^[a-zA-Z0-9._-]+$",
                   "type": "string"
                 },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
+                  "type": "string"
+                },
                 "uri": {
                   "description": "Git repository URI for this service",
                   "pattern": "^(https?://|git@|ssh://)",
@@ -1662,6 +1862,16 @@
                 "release": {
                   "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
                   "type": "string"
                 },
                 "uri": {
@@ -1690,6 +1900,16 @@
                   "pattern": "^[a-zA-Z0-9._-]+$",
                   "type": "string"
                 },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
+                  "type": "string"
+                },
                 "uri": {
                   "description": "Git repository URI for this service",
                   "pattern": "^(https?://|git@|ssh://)",
@@ -1714,6 +1934,16 @@
                 "release": {
                   "description": "Release version or tag for this service (mutually exclusive with branch)",
                   "pattern": "^[a-zA-Z0-9._-]+$",
+                  "type": "string"
+                },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
                   "type": "string"
                 },
                 "uri": {
@@ -1742,6 +1972,16 @@
                   "pattern": "^[a-zA-Z0-9._-]+$",
                   "type": "string"
                 },
+                "status": {
+                  "description": "Service deployment status",
+                  "enum": [
+                    "pending",
+                    "running",
+                    "success",
+                    "failed"
+                  ],
+                  "type": "string"
+                },
                 "uri": {
                   "description": "Git repository URI for this service",
                   "pattern": "^(https?://|git@|ssh://)",
@@ -1759,6 +1999,177 @@
             "default_storage_class": {
               "default": "csi-cinder-sc-delete",
               "description": "Default storage class for persistent volumes",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "talos": {
+          "description": "Talos Linux provider configuration for immutable Kubernetes clusters",
+          "properties": {
+            "enabled": {
+              "default": false,
+              "description": "Enable Talos Linux provider",
+              "type": "boolean"
+            },
+            "image_signature": {
+              "description": "Cryptographic signature of Talos image",
+              "minLength": 64,
+              "type": "string"
+            },
+            "image_url": {
+              "description": "URL to Talos Linux image",
+              "format": "uri",
+              "type": "string"
+            },
+            "machine_config": {
+              "description": "Talos machine configuration settings",
+              "properties": {
+                "apparmor_enabled": {
+                  "default": true,
+                  "description": "Enable AppArmor security profiles",
+                  "type": "boolean"
+                },
+                "disk_encryption": {
+                  "default": true,
+                  "description": "Enable disk encryption with LUKS",
+                  "type": "boolean"
+                },
+                "kubeprism_enabled": {
+                  "default": true,
+                  "description": "Enable KubePrism for internal load balancing",
+                  "type": "boolean"
+                },
+                "log_destination": {
+                  "description": "Destination for Talos system logs",
+                  "format": "uri",
+                  "type": "string"
+                },
+                "seccomp_enabled": {
+                  "default": true,
+                  "description": "Enable Seccomp security profiles",
+                  "type": "boolean"
+                },
+                "system_extensions": {
+                  "description": "List of Talos system extensions to install",
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            },
+            "network_config": {
+              "description": "Network topology settings",
+              "properties": {
+                "allowed_cidrs": {
+                  "description": "List of CIDRs allowed to access cluster",
+                  "items": {
+                    "pattern": "^([0-9]{1,3}\\.){3}[0-9]{1,3}/[0-9]{1,2}$",
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "control_subnet": {
+                  "default": "10.0.2.0/24",
+                  "description": "CIDR for control plane network",
+                  "pattern": "^([0-9]{1,3}\\.){3}[0-9]{1,3}/[0-9]{1,2}$",
+                  "type": "string"
+                },
+                "data_subnet": {
+                  "default": "10.0.3.0/24",
+                  "description": "CIDR for data plane network",
+                  "pattern": "^([0-9]{1,3}\\.){3}[0-9]{1,3}/[0-9]{1,2}$",
+                  "type": "string"
+                },
+                "management_subnet": {
+                  "default": "10.0.1.0/24",
+                  "description": "CIDR for management network",
+                  "pattern": "^([0-9]{1,3}\\.){3}[0-9]{1,3}/[0-9]{1,2}$",
+                  "type": "string"
+                },
+                "talos_api_port": {
+                  "default": 50000,
+                  "description": "TCP port for Talos API",
+                  "maximum": 65535,
+                  "minimum": 1024,
+                  "type": "integer"
+                },
+                "wireguard_port": {
+                  "default": 51820,
+                  "description": "UDP port for WireGuard VPN",
+                  "maximum": 65535,
+                  "minimum": 1024,
+                  "type": "integer"
+                }
+              },
+              "type": "object"
+            },
+            "pulumi_config": {
+              "description": "Pulumi-specific settings",
+              "properties": {
+                "secrets_passphrase": {
+                  "description": "Passphrase for Pulumi secrets provider (should be SOPS encrypted)",
+                  "minLength": 32,
+                  "type": "string"
+                },
+                "stack_name": {
+                  "description": "Pulumi stack name",
+                  "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+                  "type": "string"
+                },
+                "swift_container": {
+                  "description": "Swift container for Pulumi state",
+                  "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+                  "type": "string"
+                },
+                "swift_prefix": {
+                  "description": "Swift prefix for state isolation",
+                  "pattern": "^[a-z0-9][a-z0-9-/]*[a-z0-9]$",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "security_config": {
+              "description": "Security-related settings",
+              "properties": {
+                "audit_log_enabled": {
+                  "default": true,
+                  "description": "Enable audit logging",
+                  "type": "boolean"
+                },
+                "barbican_key_id": {
+                  "description": "Barbican key ID for encryption",
+                  "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+                  "type": "string"
+                },
+                "image_verification": {
+                  "default": true,
+                  "description": "Enable cryptographic image verification",
+                  "type": "boolean"
+                },
+                "mfa_required": {
+                  "default": true,
+                  "description": "Require MFA for administrative access",
+                  "type": "boolean"
+                },
+                "vtpm_enabled": {
+                  "default": true,
+                  "description": "Enable vTPM for hardware-backed encryption",
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
+            },
+            "version": {
+              "description": "Talos Linux version",
+              "examples": [
+                "v1.8.0",
+                "v1.7.0"
+              ],
+              "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$",
               "type": "string"
             }
           },

@@ -6,21 +6,21 @@ metadata:
   namespace: longhorn-system
 spec:
   hostnames:
-    - {{ .OpenCenter.Services.longhorn.Hostname | default (printf "longhorn.%s" .OpenCenter.Cluster.ClusterFQDN) | quote }}
+  - {{ .OpenCenter.Services.longhorn.Hostname | default (printf "longhorn.%s" .OpenCenter.Cluster.ClusterFQDN) | quote }}
   parentRefs:
-    - group: gateway.networking.k8s.io
-      kind: Gateway
-      name: rmpk-gateway
-      namespace: rackspace-system
-      sectionName: longhorn-https
+  - group: gateway.networking.k8s.io
+  kind: Gateway
+  name: rmpk-gateway
+  namespace: rackspace-system
+  sectionName: longhorn-https
   rules:
-    - backendRefs:
-        - group: ""
-          kind: Service
-          name: longhorn-frontend
-          port: 80
-          weight: 1
-      matches:
-        - path:
-            type: PathPrefix
-            value: /
+  - backendRefs:
+    - group: ""
+  kind: Service
+  name: longhorn-frontend
+  port: 80
+  weight: 1
+  matches:
+    - path:
+    type: PathPrefix
+    value: /

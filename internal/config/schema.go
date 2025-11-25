@@ -37,6 +37,11 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 				"description": "Enable or disable this service",
 				"default":     false,
 			},
+			"status": map[string]any{
+				"type":        "string",
+				"description": "Service deployment status",
+				"enum":        []string{"pending", "running", "success", "failed"},
+			},
 			"release": map[string]any{
 				"type":        "string",
 				"description": "Release version or tag for this service (mutually exclusive with branch)",
@@ -80,6 +85,11 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 				"description": "Enable cert-manager for automatic TLS certificate management",
 				"default":     false,
 			},
+			"status": map[string]any{
+				"type":        "string",
+				"description": "Service deployment status",
+				"enum":        []string{"pending", "running", "success", "failed"},
+			},
 			"region": map[string]any{
 				"type":        "string",
 				"description": "AWS region for Route53 DNS validation",
@@ -112,6 +122,11 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 				"type":        "boolean",
 				"description": "Enable Calico CNI service",
 				"default":     false,
+			},
+			"status": map[string]any{
+				"type":        "string",
+				"description": "Service deployment status",
+				"enum":        []string{"pending", "running", "success", "failed"},
 			},
 			"release": map[string]any{
 				"type":        "string",
@@ -151,6 +166,11 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 				"description": "Enable automated etcd backups to S3",
 				"default":     false,
 			},
+			"status": map[string]any{
+				"type":        "string",
+				"description": "Service deployment status",
+				"enum":        []string{"pending", "running", "success", "failed"},
+			},
 			"release": map[string]any{
 				"type":        "string",
 				"description": "Etcd-backup release version (mutually exclusive with branch)",
@@ -185,6 +205,7 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 		"type": "object",
 		"properties": map[string]any{
 			"enabled":                    map[string]any{"type": "boolean", "description": "Enable or disable this service"},
+			"status":                     map[string]any{"type": "string", "description": "Service deployment status", "enum": []string{"pending", "running", "success", "failed"}},
 			"email":                      map[string]any{"type": "string", "description": "Email address for service notifications"},
 			"region":                     map[string]any{"type": "string", "description": "Cloud region for service resources"},
 			"s3_host":                    map[string]any{"type": "string", "description": "S3-compatible storage endpoint"},

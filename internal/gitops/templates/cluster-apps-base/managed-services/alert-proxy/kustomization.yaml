@@ -11,8 +11,8 @@ resources:
   - "http-route-fqdn-secret.yaml"
 secretGenerator:
   - name: alert-proxy-values-override
-    namespace: rackspace
-    type: Opaque
-    files: [override.yaml=helm-values/override-values.yaml]
-    options:
-      disableNameSuffixHash: true
+  namespace: rackspace
+  type: Opaque
+  files: [override.yaml=helm-values/override-values.yaml]
+  options:
+  disableNameSuffixHash: true

@@ -5,7 +5,7 @@ resources:
 {{- $hasManagedServices := false }}
 {{- range $name, $service := .OpenCenter.ManagedService }}
   {{- if $service.Enabled }}
-    {{- $hasManagedServices = true }}
+  {{- $hasManagedServices = true }}
   {{- end }}
 {{- end }}
 {{- if $hasManagedServices }}
