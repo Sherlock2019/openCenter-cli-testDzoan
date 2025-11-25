@@ -48,6 +48,7 @@ func newClusterServiceEnableCmd() *cobra.Command {
 		params    []string
 		secrets   []string
 		cluster   string
+		force     bool
 	)
 	cmd := &cobra.Command{
 		Use:   "enable <service-name>",
@@ -61,7 +62,10 @@ Examples:
   openCenter cluster service enable cert-manager --param="email=admin@example.com"
 
   # Enable a managed service with a secret
-  openCenter cluster service enable my-managed-service --managed --secret="api_key=some_secret_value"`,
+  openCenter cluster service enable my-managed-service --managed --secret="api_key=some_secret_value"
+
+  # Force re-enable (re-render) an already enabled service
+  openCenter cluster service enable prometheus --force`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			serviceName := args[0]
@@ -98,12 +102,14 @@ Examples:
 			if err := validateService(serviceName, &newService, &cfg.Secrets); err != nil {
 				return err
 			}
-			// Check if service already exists and is enabled
-			if svc, exists := cfg.OpenCenter.Services[serviceName]; exists && svc.Enabled {
-				return fmt.Errorf("service '%s' is already enabled", serviceName)
-			}
-			if svc, exists := cfg.OpenCenter.ManagedService[serviceName]; exists && svc.Enabled {
-				return fmt.Errorf("managed service '%s' is already enabled", serviceName)
+			// Check if service already exists and is enabled (unless --force is used)
+			if !force {
+				if svc, exists := cfg.OpenCenter.Services[serviceName]; exists && svc.Enabled {
+					return fmt.Errorf("service '%s' is already enabled. Use --force to re-enable", serviceName)
+				}
+				if svc, exists := cfg.OpenCenter.ManagedService[serviceName]; exists && svc.Enabled {
+					return fmt.Errorf("managed service '%s' is already enabled. Use --force to re-enable", serviceName)
+				}
 			}
 			// Enable service in the appropriate map
 			if isManaged {
@@ -111,13 +117,21 @@ Examples:
 					cfg.OpenCenter.ManagedService = make(map[string]config.ServiceCfg)
 				}
 				cfg.OpenCenter.ManagedService[serviceName] = newService
-				fmt.Fprintf(cmd.OutOrStdout(), "Enabling managed service '%s' in cluster '%s'...\n", serviceName, clusterName)
+				if force {
+					fmt.Fprintf(cmd.OutOrStdout(), "Re-enabling managed service '%s' in cluster '%s'...\n", serviceName, clusterName)
+				} else {
+					fmt.Fprintf(cmd.OutOrStdout(), "Enabling managed service '%s' in cluster '%s'...\n", serviceName, clusterName)
+				}
 			} else {
 				if cfg.OpenCenter.Services == nil {
 					cfg.OpenCenter.Services = make(map[string]config.ServiceCfg)
 				}
 				cfg.OpenCenter.Services[serviceName] = newService
-				fmt.Fprintf(cmd.OutOrStdout(), "Enabling service '%s' in cluster '%s'...\n", serviceName, clusterName)
+				if force {
+					fmt.Fprintf(cmd.OutOrStdout(), "Re-enabling service '%s' in cluster '%s'...\n", serviceName, clusterName)
+				} else {
+					fmt.Fprintf(cmd.OutOrStdout(), "Enabling service '%s' in cluster '%s'...\n", serviceName, clusterName)
+				}
 			}
 			// Save the updated configuration
 			if err := config.Save(cfg); err != nil {
@@ -131,6 +145,7 @@ Examples:
 	cmd.Flags().StringSliceVar(&params, "param", []string{}, "Set a service parameter (e.g., --param key=value)")
 	cmd.Flags().StringSliceVar(&secrets, "secret", []string{}, "Set a service secret (e.g., --secret key=value)")
 	cmd.Flags().StringVar(&cluster, "cluster", "", "Specify the cluster name")
+	cmd.Flags().BoolVar(&force, "force", false, "Force re-enable an already enabled service to re-render configuration")
 	return cmd
 }
 

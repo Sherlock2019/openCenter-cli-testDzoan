@@ -112,6 +112,21 @@ func TestClusterServiceEnable(t *testing.T) {
 			validate:    nil,
 		},
 		{
+			name:        "force re-enable already enabled service",
+			clusterName: "test-cluster",
+			serviceName: "prometheus",
+			args:        []string{"prometheus", "--force"},
+			expectError: false,
+			validate: func(t *testing.T, cfg *config.Config) {
+				if _, exists := cfg.OpenCenter.Services["prometheus"]; !exists {
+					t.Error("expected prometheus service to exist")
+				}
+				if !cfg.OpenCenter.Services["prometheus"].Enabled {
+					t.Error("expected prometheus service to be enabled")
+				}
+			},
+		},
+		{
 			name:        "enable service without required parameter",
 			clusterName: "test-cluster",
 			serviceName: "cert-manager",
@@ -150,8 +165,8 @@ func TestClusterServiceEnable(t *testing.T) {
 			_, cleanup := setupServiceTestEnv(t, uniqueCluster)
 			defer cleanup()
 
-			// Pre-populate config if testing "already enabled" scenario
-			if strings.Contains(tt.name, "already enabled") {
+			// Pre-populate config if testing "already enabled" or "force re-enable" scenario
+			if strings.Contains(tt.name, "already enabled") || strings.Contains(tt.name, "force re-enable") {
 				cfg, err := config.Load(uniqueCluster)
 				if err != nil {
 					t.Fatalf("failed to load config: %v", err)
