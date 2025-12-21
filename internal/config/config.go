@@ -269,6 +269,12 @@ type GrafanaSecrets struct {
 	AdminPassword string `yaml:"admin_password" json:"admin_password" jsonschema:"secret=true,description=Grafana admin password"`
 }
 
+// TempoSecrets holds Tempo secret values
+type TempoSecrets struct {
+	AccessKey string `yaml:"access_key" json:"access_key" jsonschema:"secret=true,description=Tempo S3 access key"`
+	SecretKey string `yaml:"secret_key" json:"secret_key" jsonschema:"secret=true,description=Tempo S3 secret key"`
+}
+
 // AlertProxySecrets holds alert-proxy secret values
 type AlertProxySecrets struct {
 	CoreDeviceId        string `yaml:"core_device_id" json:"core_device_id" jsonschema:"secret=true,description=Alert proxy core device ID"`
@@ -298,6 +304,7 @@ type Secrets struct {
 	Headlamp    HeadlampSecrets    `yaml:"headlamp" json:"headlamp"`
 	WeaveGitOps WeaveGitOpsSecrets `yaml:"weave_gitops" json:"weave_gitops"`
 	Grafana     GrafanaSecrets     `yaml:"grafana" json:"grafana"`
+	Tempo       TempoSecrets       `yaml:"tempo" json:"tempo"`
 	AlertProxy  AlertProxySecrets  `yaml:"alert_proxy" json:"alert_proxy"`
 	VSphereCsi  VSphereCsiSecrets  `yaml:"vsphere_csi" json:"vsphere_csi"`
 }
@@ -473,6 +480,7 @@ type ServiceCfg struct {
 	PrometheusStorageClass   string `yaml:"prometheus_storage_class" json:"prometheus_storage_class" jsonschema:"description=Prometheus storage class"`
 	AlertmanagerVolumeSize   int    `yaml:"alertmanager_volume_size" json:"alertmanager_volume_size" jsonschema:"description=Alertmanager persistent volume size in GB"`
 	AlertmanagerStorageClass string `yaml:"alertmanager_storage_class" json:"alertmanager_storage_class" jsonschema:"description=Alertmanager storage class"`
+	WebhookURL               string `yaml:"webhook_url" json:"webhook_url" jsonschema:"description=Webhook URL for alerting integrations"`
 
 	// Headlamp fields
 	HeadlampOIDCIssuerURL string `yaml:"headlamp_oidc_issuer_url" json:"headlamp_oidc_issuer_url" jsonschema:"description=Headlamp OIDC issuer URL"`
@@ -890,6 +898,10 @@ func defaultConfig(name string) Config {
 			},
 			Grafana: GrafanaSecrets{
 				AdminPassword: "",
+			},
+			Tempo: TempoSecrets{
+				AccessKey: "",
+				SecretKey: "",
 			},
 			AlertProxy: AlertProxySecrets{
 				CoreDeviceId:        "",

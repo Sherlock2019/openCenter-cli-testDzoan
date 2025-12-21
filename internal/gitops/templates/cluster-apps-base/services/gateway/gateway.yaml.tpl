@@ -12,7 +12,7 @@ spec:
     - name: keycloak-https
       port: 443
       protocol: HTTPS
-      hostname: auth.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Cluster.ClusterRegion }}.k8s.opencenter.cloud
+      hostname: auth.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud
       allowedRoutes:
         namespaces:
           from: All
@@ -23,7 +23,7 @@ spec:
             kind: Secret
             name: keycloak-tls
     - name: keycloak-http
-      hostname: auth.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Cluster.ClusterRegion }}.k8s.opencenter.cloud
+      hostname: auth.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud
       protocol: HTTP
       port: 80
       allowedRoutes:
@@ -32,7 +32,7 @@ spec:
     - name: gitops-https
       port: 443
       protocol: HTTPS
-      hostname: gitops.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Cluster.ClusterRegion }}.k8s.opencenter.cloud
+      hostname: gitops.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud
       allowedRoutes:
         namespaces:
           from: All
@@ -45,7 +45,7 @@ spec:
     - name: headlamp-https
       port: 443
       protocol: HTTPS
-      hostname: headlamp.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Cluster.ClusterRegion }}.k8s.opencenter.cloud
+      hostname: headlamp.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud
       allowedRoutes:
         namespaces:
           from: All
@@ -58,7 +58,7 @@ spec:
     - name: prometheus-https
       port: 443
       protocol: HTTPS
-      hostname: prometheus.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Cluster.ClusterRegion }}.k8s.opencenter.cloud
+      hostname: prometheus.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud
       allowedRoutes:
         namespaces:
           from: All
@@ -71,7 +71,7 @@ spec:
     - name: alertmanager-https
       port: 443
       protocol: HTTPS
-      hostname: alertmanager.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Cluster.ClusterRegion }}.k8s.opencenter.cloud
+      hostname: alertmanager.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud
       allowedRoutes:
         namespaces:
           from: All
@@ -84,7 +84,7 @@ spec:
     - name: grafana-https
       port: 443
       protocol: HTTPS
-      hostname: grafana.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Cluster.ClusterRegion }}.k8s.opencenter.cloud
+      hostname: grafana.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud
       allowedRoutes:
         namespaces:
           from: All
@@ -97,14 +97,14 @@ spec:
     - name: harbor-http
       protocol: HTTP
       port: 80
-      hostname: harbor.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Cluster.ClusterRegion }}.k8s.opencenter.cloud
+      hostname: harbor.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud
       allowedRoutes:
         namespaces:
           from: All
     - name: harbor-https
       protocol: HTTPS
       port: 443
-      hostname: harbor.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Cluster.ClusterRegion }}.k8s.opencenter.cloud
+      hostname: harbor.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud
       tls:
         mode: Terminate
         certificateRefs:

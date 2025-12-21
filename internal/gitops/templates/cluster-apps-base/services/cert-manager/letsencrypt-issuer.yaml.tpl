@@ -5,7 +5,7 @@ metadata:
 spec:
   acme:
     server: {{ (index .OpenCenter.Services "cert-manager").LetsEncryptServer | default "https://acme-v02.api.letsencrypt.org/directory" }}
-    email: {{ (index .OpenCenter.Services "cert-manager").LetsEncryptEmail | default "mpk-support@rackspace.com" }}
+    email: {{ (index .OpenCenter.Services "cert-manager").Email | default "mpk-support@rackspace.com" }}
     privateKeySecretRef:
       name: letsencrypt-dns01
     solvers:

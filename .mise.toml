@@ -178,6 +178,9 @@ schema = "./bin/openCenter cluster schema  --pretty --out schema/cluster.schema.
 # Convenience tasks for validation
 validate = "./bin/openCenter cluster validate"
 
+# Validate template schema references
+validate-templates = "./hack/validate-template-schema.sh"
+
 # Preflight task for preflight
 preflight = "./bin/openCenter cluster preflight"
 
