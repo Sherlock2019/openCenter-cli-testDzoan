@@ -443,3 +443,6 @@ Feature: Configuration validation rules
     When I run "openCenter cluster validate prosys.dev.dfw3"
     Then the exit code should not be 0
     And stderr should contain "vrrp_ip must be set when use_octavia is false"
+    And stderr should contain "opencenter.infrastructure.cloud.openstack.auth_url must be set when provider is openstack"
+    And stderr should contain "opencenter.infrastructure.cloud.openstack.region must be set when provider is openstack"
+    And stderr should contain "opencenter.secrets.barbican.auth_url must be set when secrets backend is barbican"

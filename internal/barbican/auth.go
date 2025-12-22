@@ -19,7 +19,7 @@ import (
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"io/ioutil"
+	"io"
 	"os"
 )
 
@@ -27,7 +27,7 @@ import (
 func Authenticate(ctx context.Context, cfg *config.BarbicanConfig, username, password string, passwordIn bool) (string, error) {
 	if passwordIn {
 		// Read password from stdin
-		bytePassword, err := ioutil.ReadAll(os.Stdin)
+		bytePassword, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			return "", fmt.Errorf("could not read password from stdin: %w", err)
 		}

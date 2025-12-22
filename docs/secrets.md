@@ -2,6 +2,22 @@
 
 `openCenter secrets` introduces a Barbican-backed control plane for handling the credentials, bootstrap bundles, and opaque data that the rest of the CLI requires. Instead of committing sensitive values into Git or passing them through ad-hoc scripts, the command talks directly to [OpenStack Barbican](https://docs.openstack.org/barbican/latest/) and stores every secret with cluster-aware metadata so it can be fetched on demand by GitOps automation, CI pipelines, or other teams.
 
+## Barbican vs. SOPS
+
+The `openCenter` CLI supports two methods for secret management, each with a distinct purpose:
+
+1.  **SOPS (GitOps/Static Encryption):**
+    *   **Usage:** Used for encrypting configuration files that must be stored in Git (e.g., Kubernetes manifests, Helm values).
+    *   **Mechanism:** Encrypts values in-place using Age keys or KMS, allowing safe commitment to version control.
+    *   **Command:** `openCenter sops`
+    *   **Use Case:** GitOps workflows where configuration is driven by the repository state.
+
+2.  **Barbican (Runtime/Cloud Secrets):**
+    *   **Usage:** Used for storing high-sensitivity credentials (e.g., cloud API keys, bootstrap tokens, PKI assets) that should **never** be committed to Git, even in encrypted form.
+    *   **Mechanism:** Stores secrets in a centralized OpenStack Barbican service, secured by Keystone authentication and RBAC.
+    *   **Command:** `openCenter secrets`
+    *   **Use Case:** Runtime secret retrieval, bootstrapping clusters, and handling credentials that exist outside the GitOps lifecycle.
+
 ## Why Barbican
 
 - **Centralized** – Barbican provides a single API for all OpenStack projects, so OpenCenter can manage secrets without depending on a particular cloud provider or secret store implementation.

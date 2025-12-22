@@ -39,16 +39,6 @@ type Config struct {
 	IAC        IAC                  `yaml:"-" json:"-"` // Hidden from YAML output, for template compatibility
 }
 
-// ClusterMeta holds high-level metadata about the cluster.
-type ClusterMeta struct {
-	Name         string `yaml:"name" json:"name"`
-	Env          string `yaml:"env" json:"env"`
-	Region       string `yaml:"region" json:"region"`
-	Status       string `yaml:"status" json:"status"`
-	Stage        string `yaml:"stage" json:"stage"`
-	Organization string `yaml:"organization" json:"organization"`
-}
-
 // Cluster Stages
 const (
 	StageInit      = "init"
@@ -70,74 +60,6 @@ const (
 	StatusFailed  = "failed"
 )
 
-// OpenTofu holds OpenTofu-specific settings.
-type OpenTofu struct {
-	Enabled bool        `yaml:"enabled" json:"enabled"`
-	Path    string      `yaml:"path" json:"path"`
-	Backend TofuBackend `yaml:"backend" json:"backend"`
-}
-
-// TofuBackend describes the state backend configuration for OpenTofu.
-// Type can be "local" or "s3". When "local", Backend.Local.Path is used.
-// When "s3", Backend.S3 fields are used.
-type TofuBackend struct {
-	Type  string    `yaml:"type" json:"type"`
-	Local TofuLocal `yaml:"local" json:"local"`
-	S3    TofuS3    `yaml:"s3" json:"s3"`
-}
-
-type TofuLocal struct {
-	Path string `yaml:"path" json:"path"`
-}
-
-type TofuS3 struct {
-	Bucket   string `yaml:"bucket" json:"bucket"`
-	Key      string `yaml:"key" json:"key"`
-	Region   string `yaml:"region" json:"region"`
-	Endpoint string `yaml:"endpoint,omitempty" json:"endpoint,omitempty"`
-	Profile  string `yaml:"profile,omitempty" json:"profile,omitempty"`
-	Encrypt  bool   `yaml:"encrypt,omitempty" json:"encrypt,omitempty"`
-}
-
-// OpenCenter holds global openCenter-level settings and secrets.
-// The AWS credentials here are used by the OpenTofu S3 backend when provided.
-type OpenCenter struct {
-	AWSAccessKey       string `yaml:"aws_access_key" json:"aws_access_key"`
-	AWSSecretAccessKey string `yaml:"aws_secret_access_key" json:"aws_secret_access_key"`
-}
-
-// Ansible holds Ansible-specific settings.
-type Ansible struct {
-	Enabled   bool     `yaml:"enabled" json:"enabled"`
-	Path      string   `yaml:"path" json:"path"`
-	Inventory string   `yaml:"inventory,omitempty" json:"inventory,omitempty"`
-	Playbooks []string `yaml:"playbooks,omitempty" json:"playbooks,omitempty"`
-}
-
-// GitOpsConfig holds configuration related to GitOps scaffolding and repositories.
-type GitOpsConfig struct {
-	GitDir    string     `yaml:"git_dir" json:"git_dir"`
-	GitURL    string     `yaml:"git_url" json:"git_url"`
-	GitSSHKey string     `yaml:"git_ssh_key,omitempty" json:"git_ssh_key,omitempty"`
-	GitSSHPub string     `yaml:"git_ssh_pub,omitempty" json:"git_ssh_pub,omitempty"`
-	GitBranch string     `yaml:"git_branch,omitempty" json:"git_branch,omitempty"`
-	Release   string     `yaml:"release,omitempty" json:"release,omitempty"`
-	Branch    string     `yaml:"branch,omitempty" json:"branch,omitempty"`
-	Uri       string     `yaml:"uri,omitempty" json:"uri,omitempty"`
-	Flux      GitOpsFlux `yaml:"flux,omitempty" json:"flux,omitempty"`
-
-	// New fields for GitOps base repository configuration
-	GitOpsBaseRepo    string `yaml:"gitops_base_repo,omitempty" json:"gitops_base_repo,omitempty" jsonschema:"description=URL of the GitOps base repository"`
-	GitOpsBaseRelease string `yaml:"gitops_base_release,omitempty" json:"gitops_base_release,omitempty" jsonschema:"description=Release tag of the GitOps base repository"`
-	GitOpsBranch      string `yaml:"gitops_branch,omitempty" json:"gitops_branch,omitempty" jsonschema:"description=Branch of the GitOps base repository,default=main"`
-}
-
-// GitOpsFlux holds optional FluxCD settings for reconciliation behavior.
-type GitOpsFlux struct {
-	Interval string `yaml:"interval" json:"interval"`
-	Prune    bool   `yaml:"prune" json:"prune"`
-}
-
 // Kubernetes groups settings for the Kubernetes cluster.
 // It nests further objects for counts, images, flavors, and networking.
 // Default values are applied at load time.
@@ -148,660 +70,6 @@ type IAC struct {
 	Main map[string]any `yaml:"main,omitempty" json:"main,omitempty"`
 	// Modules contains per-module attribute maps (rendered into main.tf)
 	Modules map[string]any `yaml:"modules,omitempty" json:"modules,omitempty"`
-}
-
-// Storage describes block volume storage sizes and types for various node roles.
-type Storage struct {
-	MasterNodeBFV        BFV `yaml:"master_node_bfv" json:"master_node_bfv"`
-	WorkerNodeBFV        BFV `yaml:"worker_node_bfv" json:"worker_node_bfv"`
-	WorkerNodeBFVWindows BFV `yaml:"worker_node_bfv_windows" json:"worker_node_bfv_windows"`
-}
-
-// BFV describes the block volume size and type.
-type BFV struct {
-	Size int    `yaml:"size" json:"size"`
-	Type string `yaml:"type" json:"type"`
-}
-
-// Windows holds Windows-specific settings.
-type Windows struct {
-	User          string `yaml:"user" json:"user"`
-	AdminPassword string `yaml:"admin_password" json:"admin_password"`
-}
-
-// Networking groups network settings and options around VRRP and service networks.
-type Networking struct {
-	SubnetNodes          string   `yaml:"subnet_nodes" json:"subnet_nodes"`
-	AllocationPoolStart  string   `yaml:"allocation_pool_start" json:"allocation_pool_start"`
-	AllocationPoolEnd    string   `yaml:"allocation_pool_end" json:"allocation_pool_end"`
-	VRRPEnabled          bool     `yaml:"vrrp_enabled" json:"vrrp_enabled"`
-	VRRPIP               string   `yaml:"vrrp_ip" json:"vrrp_ip"`
-	SubnetServices       string   `yaml:"subnet_services" json:"subnet_services"`
-	SubnetPods           string   `yaml:"subnet_pods" json:"subnet_pods"`
-	UseOctavia           bool     `yaml:"use_octavia" json:"use_octavia"`
-	LoadbalancerProvider string   `yaml:"loadbalancer_provider" json:"loadbalancer_provider"`
-	UseDesignate         bool     `yaml:"use_designate" json:"use_designate"`
-	DNSZoneName          string   `yaml:"dns_zone_name" json:"dns_zone_name"`
-	DNSNameservers       []string `yaml:"dns_nameservers" json:"dns_nameservers"`
-	VLAN                 VLAN     `yaml:"vlan" json:"vlan"`
-}
-
-// VLAN describes VLAN settings for the cluster.
-type VLAN struct {
-	ID       string `yaml:"id" json:"id"`
-	MTU      int    `yaml:"mtu" json:"mtu"`
-	Provider string `yaml:"provider" json:"provider"`
-}
-
-// Cloud holds provider-specific configuration. Currently, only OpenStack is supported.
-type Cloud struct {
-	Provider  string         `yaml:"provider" json:"provider"`
-	OpenStack OpenStackCloud `yaml:"openstack" json:"openstack"`
-	AWS       AWSCloud       `yaml:"aws" json:"aws"`
-}
-
-// OpenStackCloud contains options for connecting to an OpenStack deployment.
-type OpenStackCloud struct {
-	AuthURL                 string `yaml:"auth_url" json:"auth_url"`
-	Insecure                bool   `yaml:"insecure" json:"insecure"`
-	Region                  string `yaml:"region" json:"region"`
-	UserName                string `yaml:"user_name" json:"user_name"`
-	UserPassword            string `yaml:"user_password" json:"user_password"`
-	AdminPassword           string `yaml:"admin_password" json:"admin_password"`
-	ProjectDomainName       string `yaml:"project_domain_name" json:"project_domain_name"`
-	UserDomainName          string `yaml:"user_domain_name" json:"user_domain_name"`
-	TenantName              string `yaml:"tenant_name" json:"tenant_name"`
-	AvailabilityZone        string `yaml:"availability_zone" json:"availability_zone"`
-	FloatingIPPool          string `yaml:"floatingip_pool" json:"floatingip_pool"`
-	RouterExternalNetworkID string `yaml:"router_external_network_id" json:"router_external_network_id"`
-	DisableBastion          bool   `yaml:"disable_bastion" json:"disable_bastion"`
-	CA                      string `yaml:"ca" json:"ca"`
-	ExternalNetwork         string `yaml:"external_network" json:"external_network"`
-	UseOctavia              bool   `yaml:"use_octavia" json:"use_octavia"`
-	VRRPIP                  string `yaml:"vrrp_ip" json:"vrrp_ip"`
-}
-
-// AWSCloud contains options for connecting to AWS environments.
-type AWSCloud struct {
-	Profile        string   `yaml:"profile" json:"profile"`
-	Region         string   `yaml:"region" json:"region"`
-	VPCID          string   `yaml:"vpc_id" json:"vpc_id"`
-	PrivateSubnets []string `yaml:"private_subnets" json:"private_subnets"`
-	PublicSubnets  []string `yaml:"public_subnets" json:"public_subnets"`
-}
-
-// CertManagerSecrets holds cert-manager secret values
-type CertManagerSecrets struct {
-	AWSAccessKey       string `yaml:"aws_access_key" json:"aws_access_key" jsonschema:"secret=true,description=AWS access key for Route53 DNS validation"`
-	AWSSecretAccessKey string `yaml:"aws_secret_access_key" json:"aws_secret_access_key" jsonschema:"secret=true,description=AWS secret access key for Route53 DNS validation"`
-}
-
-// LokiSecrets holds Loki secret values
-type LokiSecrets struct {
-	// Swift secrets
-	SwiftPassword                    string `yaml:"swift_password" json:"swift_password" jsonschema:"secret=true,description=Swift storage password (deprecated: use application credentials)"`
-	SwiftApplicationCredentialSecret string `yaml:"swift_application_credential_secret" json:"swift_application_credential_secret" jsonschema:"secret=true,description=Swift application credential secret"`
-
-	// S3 secrets
-	S3AccessKeyID     string `yaml:"s3_access_key_id" json:"s3_access_key_id" jsonschema:"secret=true,description=S3 access key ID"`
-	S3SecretAccessKey string `yaml:"s3_secret_access_key" json:"s3_secret_access_key" jsonschema:"secret=true,description=S3 secret access key"`
-}
-
-// KeycloakSecrets holds Keycloak secret values
-type KeycloakSecrets struct {
-	ClientSecret  string `yaml:"client_secret" json:"client_secret" jsonschema:"secret=true,description=Keycloak OIDC client secret"`
-	AdminPassword string `yaml:"admin_password" json:"admin_password" jsonschema:"secret=true,description=Keycloak admin user password"`
-}
-
-// HeadlampSecrets holds Headlamp secret values
-type HeadlampSecrets struct {
-	OIDCClientSecret string `yaml:"oidc_client_secret" json:"oidc_client_secret" jsonschema:"secret=true,description=Headlamp OIDC client secret"`
-}
-
-// WeaveGitOpsSecrets holds Weave GitOps secret values
-type WeaveGitOpsSecrets struct {
-	Password     string `yaml:"password" json:"password" jsonschema:"secret=true,description=Weave GitOps admin password"`
-	PasswordHash string `yaml:"password_hash" json:"password_hash" jsonschema:"secret=true,description=Weave GitOps admin password hash (bcrypt)"`
-}
-
-// GrafanaSecrets holds Grafana secret values
-type GrafanaSecrets struct {
-	AdminPassword string `yaml:"admin_password" json:"admin_password" jsonschema:"secret=true,description=Grafana admin password"`
-}
-
-// TempoSecrets holds Tempo secret values
-type TempoSecrets struct {
-	AccessKey string `yaml:"access_key" json:"access_key" jsonschema:"secret=true,description=Tempo S3 access key"`
-	SecretKey string `yaml:"secret_key" json:"secret_key" jsonschema:"secret=true,description=Tempo S3 secret key"`
-}
-
-// AlertProxySecrets holds alert-proxy secret values
-type AlertProxySecrets struct {
-	CoreDeviceId        string `yaml:"core_device_id" json:"core_device_id" jsonschema:"secret=true,description=Alert proxy core device ID"`
-	AccountServiceToken string `yaml:"account_service_token" json:"account_service_token" jsonschema:"secret=true,description=Alert proxy account service token"`
-	CoreAccountNumber   string `yaml:"core_account_number" json:"core_account_number" jsonschema:"secret=true,description=Alert proxy core account number"`
-}
-
-// VSphereCsiSecrets holds vSphere CSI secret values
-type VSphereCsiSecrets struct {
-	VCenterHost  string `yaml:"vcenter_host" json:"vcenter_host" jsonschema:"secret=true,description=vCenter server hostname or IP address"`
-	Username     string `yaml:"username" json:"username" jsonschema:"secret=true,description=vCenter username"`
-	Password     string `yaml:"password" json:"password" jsonschema:"secret=true,description=vCenter password"`
-	Datacenters  string `yaml:"datacenters" json:"datacenters" jsonschema:"secret=true,description=Comma-separated list of datacenters"`
-	InsecureFlag string `yaml:"insecure_flag" json:"insecure_flag" jsonschema:"secret=true,description=Skip SSL certificate verification (true/false)"`
-	Port         string `yaml:"port" json:"port" jsonschema:"secret=true,description=vCenter port (default: 443)"`
-}
-
-// Secrets holds paths or settings for secret management tools.
-type Secrets struct {
-	SopsAgeKeyFile string `yaml:"sops_age_key_file" json:"sops_age_key_file"`
-	SSHKey         SSHKey `yaml:"ssh_key" json:"ssh_key"`
-
-	// Service-specific secrets
-	CertManager CertManagerSecrets `yaml:"cert_manager" json:"cert_manager"`
-	Loki        LokiSecrets        `yaml:"loki" json:"loki"`
-	Keycloak    KeycloakSecrets    `yaml:"keycloak" json:"keycloak"`
-	Headlamp    HeadlampSecrets    `yaml:"headlamp" json:"headlamp"`
-	WeaveGitOps WeaveGitOpsSecrets `yaml:"weave_gitops" json:"weave_gitops"`
-	Grafana     GrafanaSecrets     `yaml:"grafana" json:"grafana"`
-	Tempo       TempoSecrets       `yaml:"tempo" json:"tempo"`
-	AlertProxy  AlertProxySecrets  `yaml:"alert_proxy" json:"alert_proxy"`
-	VSphereCsi  VSphereCsiSecrets  `yaml:"vsphere_csi" json:"vsphere_csi"`
-}
-
-// SSHKey holds SSH key configuration for cluster access
-type SSHKey struct {
-	Private string `yaml:"private" json:"private"`
-	Public  string `yaml:"public" json:"public"`
-	Cypher  string `yaml:"cypher" json:"cypher"`
-}
-
-// Simplified structures based on testdata/schema.yaml
-
-// StorageConfig represents the storage configuration for the cluster
-type StorageConfig struct {
-	DefaultStorageClass string `yaml:"default_storage_class,omitempty" json:"default_storage_class,omitempty" jsonschema:"description=Default storage class for persistent volumes,default=csi-cinder-sc-delete"`
-}
-
-// OpenCenterSecrets holds the configuration for the secrets management backend.
-type OpenCenterSecrets struct {
-	Backend  string         `yaml:"backend,omitempty" json:"backend,omitempty"`
-	Barbican BarbicanConfig `yaml:"barbican,omitempty" json:"barbican,omitempty"`
-}
-
-// BarbicanConfig holds the configuration for the Barbican secrets backend.
-type BarbicanConfig struct {
-	AuthURL           string `yaml:"auth_url,omitempty" json:"auth_url,omitempty"`
-	ProjectID         string `yaml:"project_id,omitempty" json:"project_id,omitempty"`
-	Region            string `yaml:"region,omitempty" json:"region,omitempty"`
-	UserDomainName    string `yaml:"user_domain_name,omitempty" json:"user_domain_name,omitempty"`
-	ProjectDomainName string `yaml:"project_domain_name,omitempty" json:"project_domain_name,omitempty"`
-	CACert            string `yaml:"ca_cert,omitempty" json:"ca_cert,omitempty"`
-}
-
-// SimplifiedOpenCenter represents the opencenter section of the new simplified schema
-type SimplifiedOpenCenter struct {
-	Meta           ClusterMeta           `yaml:"meta" json:"meta"`
-	Secrets        OpenCenterSecrets     `yaml:"secrets,omitempty" json:"secrets,omitempty"`
-	Infrastructure Infrastructure        `yaml:"infrastructure" json:"infrastructure"`
-	Cluster        ClusterConfig         `yaml:"cluster" json:"cluster"`
-	GitOps         GitOpsConfig          `yaml:"gitops" json:"gitops"`
-	Storage        StorageConfig         `yaml:"storage,omitempty" json:"storage,omitempty"`
-	Talos          *TalosConfig          `yaml:"talos,omitempty" json:"talos,omitempty"`
-	ManagedService map[string]ServiceCfg `yaml:"managed-service" json:"managed-service"`
-	Services       map[string]ServiceCfg `yaml:"services" json:"services"`
-}
-
-// TalosConfig represents Talos-specific configuration
-type TalosConfig struct {
-	Enabled        bool                `yaml:"enabled" json:"enabled" jsonschema:"description=Enable Talos Linux provider"`
-	Version        string              `yaml:"version" json:"version" jsonschema:"description=Talos Linux version"`
-	ImageURL       string              `yaml:"image_url" json:"image_url" jsonschema:"description=URL to Talos Linux image"`
-	ImageSignature string              `yaml:"image_signature" json:"image_signature" jsonschema:"description=Cryptographic signature of Talos image"`
-	MachineConfig  TalosMachineConfig  `yaml:"machine_config" json:"machine_config"`
-	NetworkConfig  TalosNetworkConfig  `yaml:"network_config" json:"network_config"`
-	SecurityConfig TalosSecurityConfig `yaml:"security_config" json:"security_config"`
-	PulumiConfig   TalosPulumiConfig   `yaml:"pulumi_config" json:"pulumi_config"`
-}
-
-// TalosMachineConfig holds Talos machine configuration settings
-type TalosMachineConfig struct {
-	AppArmorEnabled  bool     `yaml:"apparmor_enabled" json:"apparmor_enabled" jsonschema:"description=Enable AppArmor security profiles,default=true"`
-	SeccompEnabled   bool     `yaml:"seccomp_enabled" json:"seccomp_enabled" jsonschema:"description=Enable Seccomp security profiles,default=true"`
-	DiskEncryption   bool     `yaml:"disk_encryption" json:"disk_encryption" jsonschema:"description=Enable disk encryption with LUKS,default=true"`
-	KubePrismEnabled bool     `yaml:"kubeprism_enabled" json:"kubeprism_enabled" jsonschema:"description=Enable KubePrism for internal load balancing,default=true"`
-	SystemExtensions []string `yaml:"system_extensions,omitempty" json:"system_extensions,omitempty" jsonschema:"description=List of Talos system extensions to install"`
-	LogDestination   string   `yaml:"log_destination,omitempty" json:"log_destination,omitempty" jsonschema:"description=Destination for Talos system logs"`
-}
-
-// TalosNetworkConfig holds network topology settings
-type TalosNetworkConfig struct {
-	ManagementSubnet string   `yaml:"management_subnet" json:"management_subnet" jsonschema:"description=CIDR for management network,default=10.0.1.0/24"`
-	ControlSubnet    string   `yaml:"control_subnet" json:"control_subnet" jsonschema:"description=CIDR for control plane network,default=10.0.2.0/24"`
-	DataSubnet       string   `yaml:"data_subnet" json:"data_subnet" jsonschema:"description=CIDR for data plane network,default=10.0.3.0/24"`
-	WireGuardPort    int      `yaml:"wireguard_port" json:"wireguard_port" jsonschema:"description=UDP port for WireGuard VPN,default=51820"`
-	TalosAPIPort     int      `yaml:"talos_api_port" json:"talos_api_port" jsonschema:"description=TCP port for Talos API,default=50000"`
-	AllowedCIDRs     []string `yaml:"allowed_cidrs,omitempty" json:"allowed_cidrs,omitempty" jsonschema:"description=List of CIDRs allowed to access cluster"`
-}
-
-// TalosSecurityConfig holds security-related settings
-type TalosSecurityConfig struct {
-	VTPMEnabled       bool   `yaml:"vtpm_enabled" json:"vtpm_enabled" jsonschema:"description=Enable vTPM for hardware-backed encryption,default=true"`
-	BarbicanKeyID     string `yaml:"barbican_key_id,omitempty" json:"barbican_key_id,omitempty" jsonschema:"description=Barbican key ID for encryption"`
-	ImageVerification bool   `yaml:"image_verification" json:"image_verification" jsonschema:"description=Enable cryptographic image verification,default=true"`
-	MFARequired       bool   `yaml:"mfa_required" json:"mfa_required" jsonschema:"description=Require MFA for administrative access,default=true"`
-	AuditLogEnabled   bool   `yaml:"audit_log_enabled" json:"audit_log_enabled" jsonschema:"description=Enable audit logging,default=true"`
-}
-
-// TalosPulumiConfig holds Pulumi-specific settings
-type TalosPulumiConfig struct {
-	StackName         string `yaml:"stack_name" json:"stack_name" jsonschema:"description=Pulumi stack name"`
-	SwiftContainer    string `yaml:"swift_container" json:"swift_container" jsonschema:"description=Swift container for Pulumi state"`
-	SwiftPrefix       string `yaml:"swift_prefix,omitempty" json:"swift_prefix,omitempty" jsonschema:"description=Swift prefix for state isolation"`
-	SecretsPassphrase string `yaml:"secrets_passphrase,omitempty" json:"secrets_passphrase,omitempty" jsonschema:"secret=true,description=Passphrase for Pulumi secrets provider"`
-}
-
-// Infrastructure represents the infrastructure configuration block.
-type Infrastructure struct {
-	Provider string      `yaml:"provider" json:"provider"`
-	Cloud    CloudConfig `yaml:"cloud" json:"cloud"`
-}
-
-// BaseServiceCfg contains common fields for all services
-type BaseServiceCfg struct {
-	Enabled   bool   `yaml:"enabled" json:"enabled"`
-	Status    string `yaml:"status,omitempty" json:"status,omitempty" jsonschema:"description=Service deployment status (pending/running/success/failed)"`
-	Namespace string `yaml:"namespace,omitempty" json:"namespace,omitempty" jsonschema:"description=Kubernetes namespace for the service"`
-	Hostname  string `yaml:"hostname,omitempty" json:"hostname,omitempty" jsonschema:"description=Hostname for HTTPRoute configuration"`
-}
-
-// ServiceCfg captures the on/off toggle plus optional metadata for a service.
-// For backward compatibility, this still contains all fields but they should be
-// migrated to specific service types over time.
-type ServiceCfg struct {
-	Enabled  bool   `yaml:"enabled" json:"enabled"`
-	Status   string `yaml:"status,omitempty" json:"status,omitempty" jsonschema:"description=Service deployment status (pending/running/success/failed)"`
-	
-	// Common service fields
-	Namespace string `yaml:"namespace,omitempty" json:"namespace,omitempty" jsonschema:"description=Kubernetes namespace for the service"`
-	Hostname  string `yaml:"hostname,omitempty" json:"hostname,omitempty" jsonschema:"description=Hostname for HTTPRoute configuration"`
-	
-	// Image configuration
-	ImageRepository string `yaml:"image_repository,omitempty" json:"image_repository,omitempty" jsonschema:"description=Container image repository"`
-	ImageTag        string `yaml:"image_tag,omitempty" json:"image_tag,omitempty" jsonschema:"description=Container image tag"`
-	
-	// Version control fields (for GitOps managed services)
-	Release string `yaml:"release,omitempty" json:"release,omitempty" jsonschema:"description=Release version"`
-	Branch  string `yaml:"branch,omitempty" json:"branch,omitempty" jsonschema:"description=Git branch"`
-	Uri     string `yaml:"uri,omitempty" json:"uri,omitempty" jsonschema:"description=Git repository URI"`
-	
-	// GitOps source fields (for managed services)
-	GitOpsSourceRepo    string `yaml:"gitops_source_repo,omitempty" json:"gitops_source_repo,omitempty" jsonschema:"description=GitOps source repository URL"`
-	GitOpsSourceRelease string `yaml:"gitops_source_release,omitempty" json:"gitops_source_release,omitempty" jsonschema:"description=GitOps source release tag"`
-	GitOpsSourceBranch  string `yaml:"gitops_source_branch,omitempty" json:"gitops_source_branch,omitempty" jsonschema:"description=GitOps source branch"`
-
-	// Legacy fields - kept for backward compatibility but should be avoided in new services
-	// TODO: Remove these fields and migrate to service-specific configuration types
-	Email    string `yaml:"email,omitempty" json:"email,omitempty" jsonschema:"description=Email address (deprecated: use service-specific config)"`
-	Region   string `yaml:"region,omitempty" json:"region,omitempty" jsonschema:"description=Cloud region (deprecated: use service-specific config)"`
-	S3Host   string `yaml:"s3_host,omitempty" json:"s3_host,omitempty" jsonschema:"description=S3 host (deprecated: use service-specific config)"`
-	S3Region string `yaml:"s3_region,omitempty" json:"s3_region,omitempty" jsonschema:"description=S3 region (deprecated: use service-specific config)"`
-
-	// Alert-proxy specific fields (deprecated: should be in alert-proxy specific config)
-	AlertManagerBaseUrl string `yaml:"alert_manager_base_url,omitempty" json:"alert_manager_base_url,omitempty" jsonschema:"description=Alert manager base URL (deprecated)"`
-	HTTPRouteFQDN       string `yaml:"http_route_fqdn,omitempty" json:"http_route_fqdn,omitempty" jsonschema:"description=HTTPRoute FQDN (deprecated)"`
-
-	// Cert-manager fields (deprecated: should be in cert-manager specific config)
-	LetsEncryptServer string `yaml:"letsencrypt_server,omitempty" json:"letsencrypt_server,omitempty" jsonschema:"description=LetsEncrypt ACME server URL (deprecated)"`
-
-	// Loki fields (deprecated: should be in loki specific config)
-	LokiStorageType  string `yaml:"loki_storage_type,omitempty" json:"loki_storage_type,omitempty" jsonschema:"description=Loki storage backend type (deprecated)"`
-	LokiBucketName   string `yaml:"loki_bucket_name,omitempty" json:"loki_bucket_name,omitempty" jsonschema:"description=Loki storage bucket/container name (deprecated)"`
-	LokiVolumeSize   int    `yaml:"loki_volume_size,omitempty" json:"loki_volume_size,omitempty" jsonschema:"description=Loki persistent volume size in GB (deprecated)"`
-	LokiStorageClass string `yaml:"loki_storage_class,omitempty" json:"loki_storage_class,omitempty" jsonschema:"description=Loki storage class (deprecated)"`
-
-	// Swift storage fields (deprecated: should be in loki specific config)
-	SwiftAuthURL                 string `yaml:"swift_auth_url,omitempty" json:"swift_auth_url,omitempty" jsonschema:"description=Swift Keystone V3 authentication URL (deprecated)"`
-	SwiftRegion                  string `yaml:"swift_region,omitempty" json:"swift_region,omitempty" jsonschema:"description=Swift region name (deprecated)"`
-	SwiftAuthVersion             int    `yaml:"swift_auth_version,omitempty" json:"swift_auth_version,omitempty" jsonschema:"description=Swift authentication version (deprecated)"`
-	SwiftApplicationCredentialID string `yaml:"swift_application_credential_id,omitempty" json:"swift_application_credential_id,omitempty" jsonschema:"description=Swift application credential ID (deprecated)"`
-	SwiftContainerName           string `yaml:"swift_container_name,omitempty" json:"swift_container_name,omitempty" jsonschema:"description=Swift container name for Loki logs (deprecated)"`
-	SwiftUserDomainName          string `yaml:"swift_user_domain_name,omitempty" json:"swift_user_domain_name,omitempty" jsonschema:"description=Swift user domain name (deprecated)"`
-
-	// Legacy Swift fields (deprecated)
-	SwiftUsername    string `yaml:"swift_username,omitempty" json:"swift_username,omitempty" jsonschema:"description=Swift username (deprecated)"`
-	SwiftProjectName string `yaml:"swift_project_name,omitempty" json:"swift_project_name,omitempty" jsonschema:"description=Swift project name (deprecated)"`
-	SwiftDomainName  string `yaml:"swift_domain_name,omitempty" json:"swift_domain_name,omitempty" jsonschema:"description=Swift domain name (deprecated)"`
-
-	// S3 storage fields (deprecated: should be in loki specific config)
-	LokiS3Endpoint       string `yaml:"loki_s3_endpoint,omitempty" json:"loki_s3_endpoint,omitempty" jsonschema:"description=S3 endpoint URL (deprecated)"`
-	LokiS3Region         string `yaml:"loki_s3_region,omitempty" json:"loki_s3_region,omitempty" jsonschema:"description=S3 region (deprecated)"`
-	LokiS3ForcePathStyle bool   `yaml:"loki_s3_force_path_style,omitempty" json:"loki_s3_force_path_style,omitempty" jsonschema:"description=Force S3 path style (deprecated)"`
-	LokiS3Insecure       bool   `yaml:"loki_s3_insecure,omitempty" json:"loki_s3_insecure,omitempty" jsonschema:"description=Allow insecure S3 connections (deprecated)"`
-
-	// Velero fields (deprecated: should be in velero specific config)
-	VeleroBackupBucket string `yaml:"velero_backup_bucket,omitempty" json:"velero_backup_bucket,omitempty" jsonschema:"description=Velero backup bucket name (deprecated)"`
-	VeleroRegion       string `yaml:"velero_region,omitempty" json:"velero_region,omitempty" jsonschema:"description=Velero backup region (deprecated)"`
-
-	// Keycloak fields (deprecated: should be in keycloak specific config)
-	KeycloakRealm       string `yaml:"keycloak_realm,omitempty" json:"keycloak_realm,omitempty" jsonschema:"description=Keycloak realm name (deprecated)"`
-	KeycloakFrontendURL string `yaml:"keycloak_frontend_url,omitempty" json:"keycloak_frontend_url,omitempty" jsonschema:"description=Keycloak frontend URL (deprecated)"`
-	KeycloakClientID    string `yaml:"keycloak_client_id,omitempty" json:"keycloak_client_id,omitempty" jsonschema:"description=Keycloak client ID (deprecated)"`
-
-	// Grafana/Prometheus fields (deprecated: should be in prometheus-stack specific config)
-	GrafanaVolumeSize        int    `yaml:"grafana_volume_size,omitempty" json:"grafana_volume_size,omitempty" jsonschema:"description=Grafana persistent volume size in GB (deprecated)"`
-	GrafanaStorageClass      string `yaml:"grafana_storage_class,omitempty" json:"grafana_storage_class,omitempty" jsonschema:"description=Grafana storage class (deprecated)"`
-	PrometheusVolumeSize     int    `yaml:"prometheus_volume_size,omitempty" json:"prometheus_volume_size,omitempty" jsonschema:"description=Prometheus persistent volume size in GB (deprecated)"`
-	PrometheusStorageClass   string `yaml:"prometheus_storage_class,omitempty" json:"prometheus_storage_class,omitempty" jsonschema:"description=Prometheus storage class (deprecated)"`
-	AlertmanagerVolumeSize   int    `yaml:"alertmanager_volume_size,omitempty" json:"alertmanager_volume_size,omitempty" jsonschema:"description=Alertmanager persistent volume size in GB (deprecated)"`
-	AlertmanagerStorageClass string `yaml:"alertmanager_storage_class,omitempty" json:"alertmanager_storage_class,omitempty" jsonschema:"description=Alertmanager storage class (deprecated)"`
-	WebhookURL               string `yaml:"webhook_url,omitempty" json:"webhook_url,omitempty" jsonschema:"description=Webhook URL for alerting integrations (deprecated)"`
-
-	// Headlamp fields (deprecated: should be in headlamp specific config)
-	HeadlampOIDCIssuerURL string `yaml:"headlamp_oidc_issuer_url,omitempty" json:"headlamp_oidc_issuer_url,omitempty" jsonschema:"description=Headlamp OIDC issuer URL (deprecated)"`
-	HeadlampOIDCClientID  string `yaml:"headlamp_oidc_client_id,omitempty" json:"headlamp_oidc_client_id,omitempty" jsonschema:"description=Headlamp OIDC client ID (deprecated)"`
-
-	// Calico fields (deprecated: should be in calico specific config)
-	CalicoKubeAPIServer string `yaml:"calico_kube_api_server,omitempty" json:"calico_kube_api_server,omitempty" jsonschema:"description=Calico Kubernetes API server address (deprecated)"`
-}
-
-// Specific service configuration types for services that need additional fields
-
-// LokiServiceCfg extends BaseServiceCfg with Loki-specific configuration
-type LokiServiceCfg struct {
-	BaseServiceCfg `yaml:",inline"`
-	
-	// Storage configuration
-	StorageType  string `yaml:"loki_storage_type,omitempty" json:"loki_storage_type,omitempty" jsonschema:"description=Loki storage backend type (s3 or swift),enum=s3,enum=swift,default=swift"`
-	BucketName   string `yaml:"loki_bucket_name,omitempty" json:"loki_bucket_name,omitempty" jsonschema:"description=Loki storage bucket/container name"`
-	VolumeSize   int    `yaml:"loki_volume_size,omitempty" json:"loki_volume_size,omitempty" jsonschema:"description=Loki persistent volume size in GB"`
-	StorageClass string `yaml:"loki_storage_class,omitempty" json:"loki_storage_class,omitempty" jsonschema:"description=Loki storage class"`
-	
-	// Swift storage fields
-	SwiftAuthURL                 string `yaml:"swift_auth_url,omitempty" json:"swift_auth_url,omitempty" jsonschema:"description=Swift Keystone V3 authentication URL (must end in /v3)"`
-	SwiftRegion                  string `yaml:"swift_region,omitempty" json:"swift_region,omitempty" jsonschema:"description=Swift region name"`
-	SwiftAuthVersion             int    `yaml:"swift_auth_version,omitempty" json:"swift_auth_version,omitempty" jsonschema:"description=Swift authentication version,default=3"`
-	SwiftApplicationCredentialID string `yaml:"swift_application_credential_id,omitempty" json:"swift_application_credential_id,omitempty" jsonschema:"description=Swift application credential ID (UUID)"`
-	SwiftContainerName           string `yaml:"swift_container_name,omitempty" json:"swift_container_name,omitempty" jsonschema:"description=Swift container name for Loki logs"`
-	SwiftUserDomainName          string `yaml:"swift_user_domain_name,omitempty" json:"swift_user_domain_name,omitempty" jsonschema:"description=Swift user domain name"`
-	SwiftDomainName              string `yaml:"swift_domain_name,omitempty" json:"swift_domain_name,omitempty" jsonschema:"description=Swift domain name"`
-	
-	// S3 storage fields
-	S3Endpoint       string `yaml:"loki_s3_endpoint,omitempty" json:"loki_s3_endpoint,omitempty" jsonschema:"description=S3 endpoint URL"`
-	S3Region         string `yaml:"loki_s3_region,omitempty" json:"loki_s3_region,omitempty" jsonschema:"description=S3 region"`
-	S3ForcePathStyle bool   `yaml:"loki_s3_force_path_style,omitempty" json:"loki_s3_force_path_style,omitempty" jsonschema:"description=Force S3 path style"`
-	S3Insecure       bool   `yaml:"loki_s3_insecure,omitempty" json:"loki_s3_insecure,omitempty" jsonschema:"description=Allow insecure S3 connections"`
-}
-
-// PrometheusStackServiceCfg extends BaseServiceCfg with Prometheus stack configuration
-type PrometheusStackServiceCfg struct {
-	BaseServiceCfg `yaml:",inline"`
-	
-	// Storage configuration for each component
-	GrafanaVolumeSize        int    `yaml:"grafana_volume_size,omitempty" json:"grafana_volume_size,omitempty" jsonschema:"description=Grafana persistent volume size in GB"`
-	GrafanaStorageClass      string `yaml:"grafana_storage_class,omitempty" json:"grafana_storage_class,omitempty" jsonschema:"description=Grafana storage class"`
-	PrometheusVolumeSize     int    `yaml:"prometheus_volume_size,omitempty" json:"prometheus_volume_size,omitempty" jsonschema:"description=Prometheus persistent volume size in GB"`
-	PrometheusStorageClass   string `yaml:"prometheus_storage_class,omitempty" json:"prometheus_storage_class,omitempty" jsonschema:"description=Prometheus storage class"`
-	AlertmanagerVolumeSize   int    `yaml:"alertmanager_volume_size,omitempty" json:"alertmanager_volume_size,omitempty" jsonschema:"description=Alertmanager persistent volume size in GB"`
-	AlertmanagerStorageClass string `yaml:"alertmanager_storage_class,omitempty" json:"alertmanager_storage_class,omitempty" jsonschema:"description=Alertmanager storage class"`
-	WebhookURL               string `yaml:"webhook_url,omitempty" json:"webhook_url,omitempty" jsonschema:"description=Webhook URL for alerting integrations"`
-}
-
-// KeycloakServiceCfg extends BaseServiceCfg with Keycloak-specific configuration
-type KeycloakServiceCfg struct {
-	BaseServiceCfg `yaml:",inline"`
-	
-	Realm       string `yaml:"keycloak_realm,omitempty" json:"keycloak_realm,omitempty" jsonschema:"description=Keycloak realm name"`
-	FrontendURL string `yaml:"keycloak_frontend_url,omitempty" json:"keycloak_frontend_url,omitempty" jsonschema:"description=Keycloak frontend URL"`
-	ClientID    string `yaml:"keycloak_client_id,omitempty" json:"keycloak_client_id,omitempty" jsonschema:"description=Keycloak client ID"`
-}
-
-// HeadlampServiceCfg extends BaseServiceCfg with Headlamp-specific configuration
-type HeadlampServiceCfg struct {
-	BaseServiceCfg `yaml:",inline"`
-	
-	OIDCIssuerURL string `yaml:"headlamp_oidc_issuer_url,omitempty" json:"headlamp_oidc_issuer_url,omitempty" jsonschema:"description=Headlamp OIDC issuer URL"`
-	OIDCClientID  string `yaml:"headlamp_oidc_client_id,omitempty" json:"headlamp_oidc_client_id,omitempty" jsonschema:"description=Headlamp OIDC client ID"`
-}
-
-// VeleroServiceCfg extends BaseServiceCfg with Velero-specific configuration
-type VeleroServiceCfg struct {
-	BaseServiceCfg `yaml:",inline"`
-	
-	BackupBucket string `yaml:"velero_backup_bucket,omitempty" json:"velero_backup_bucket,omitempty" jsonschema:"description=Velero backup bucket name"`
-	Region       string `yaml:"velero_region,omitempty" json:"velero_region,omitempty" jsonschema:"description=Velero backup region"`
-}
-
-// CertManagerServiceCfg extends BaseServiceCfg with cert-manager configuration
-type CertManagerServiceCfg struct {
-	BaseServiceCfg `yaml:",inline"`
-	
-	LetsEncryptServer string `yaml:"letsencrypt_server,omitempty" json:"letsencrypt_server,omitempty" jsonschema:"description=LetsEncrypt ACME server URL"`
-	Email             string `yaml:"email,omitempty" json:"email,omitempty" jsonschema:"description=Email for LetsEncrypt registration"`
-}
-
-// VSphereCSIServiceCfg extends BaseServiceCfg with vSphere CSI configuration
-type VSphereCSIServiceCfg struct {
-	BaseServiceCfg `yaml:",inline"`
-	
-	ImageRepository string `yaml:"image_repository,omitempty" json:"image_repository,omitempty" jsonschema:"description=vSphere CSI image repository"`
-	ImageTag        string `yaml:"image_tag,omitempty" json:"image_tag,omitempty" jsonschema:"description=vSphere CSI image tag"`
-}
-
-// CalicoServiceCfg extends BaseServiceCfg with Calico-specific configuration
-type CalicoServiceCfg struct {
-	BaseServiceCfg `yaml:",inline"`
-	
-	KubeAPIServer string `yaml:"calico_kube_api_server,omitempty" json:"calico_kube_api_server,omitempty" jsonschema:"description=Calico Kubernetes API server address"`
-}
-
-// CloudConfig represents the cloud configuration within opencenter
-type CloudConfig struct {
-	AWS       SimplifiedAWSCloud       `yaml:"aws" json:"aws"`
-	OpenStack SimplifiedOpenStackCloud `yaml:"openstack" json:"openstack"`
-}
-
-// ClusterConfig represents the cluster configuration section
-type ClusterConfig struct {
-	ClusterName        string           `yaml:"cluster_name" json:"cluster_name" jsonschema:"description=Name of the cluster"`
-	AWSAccessKey       string           `yaml:"aws_access_key" json:"aws_access_key"`
-	AWSSecretAccessKey string           `yaml:"aws_secret_access_key" json:"aws_secret_access_key"`
-	K8sAPIPortACL      []string         `yaml:"k8s_api_port_acl" json:"k8s_api_port_acl"`
-	SSHAuthorizedKeys  []string         `yaml:"ssh_authorized_keys" json:"ssh_authorized_keys"`
-	Kubernetes         KubernetesConfig `yaml:"kubernetes" json:"kubernetes"`
-
-	// New fields for configuration-driven templates
-	BaseDomain  string `yaml:"base_domain,omitempty" json:"base_domain,omitempty" jsonschema:"description=Base domain for the cluster (e.g. k8s.opencenter.cloud)"`
-	ClusterFQDN string `yaml:"cluster_fqdn,omitempty" json:"cluster_fqdn,omitempty" jsonschema:"description=Fully qualified domain name for the cluster"`
-	AdminEmail  string `yaml:"admin_email,omitempty" json:"admin_email,omitempty" jsonschema:"description=Administrator email address for certificates and notifications"`
-}
-
-// KubernetesConfig represents the kubernetes configuration
-type KubernetesConfig struct {
-	Version              string         `yaml:"version" json:"version"`
-	FlavorBastion        string         `yaml:"flavor_bastion" json:"flavor_bastion"`
-	FlavorMaster         string         `yaml:"flavor_master" json:"flavor_master"`
-	FlavorWorker         string         `yaml:"flavor_worker" json:"flavor_worker"`
-	SubnetPods           string         `yaml:"subnet_pods" json:"subnet_pods"`
-	SubnetServices       string         `yaml:"subnet_services" json:"subnet_services"`
-	LoadbalancerProvider string         `yaml:"loadbalancer_provider" json:"loadbalancer_provider"`
-	DNSZoneName          string         `yaml:"dns_zone_name" json:"dns_zone_name"`
-	MasterCount          int            `yaml:"master_count" json:"master_count"`
-	WorkerCount          int            `yaml:"worker_count" json:"worker_count"`
-	WorkerCountWindows   int            `yaml:"worker_count_windows" json:"worker_count_windows"`
-	MasterNodes          []NodeConfig   `yaml:"master_nodes,omitempty" json:"master_nodes,omitempty"`
-	WorkerNodes          []NodeConfig   `yaml:"worker_nodes,omitempty" json:"worker_nodes,omitempty"`
-	WindowsNodes         []NodeConfig   `yaml:"windows_nodes,omitempty" json:"windows_nodes,omitempty"`
-	NetworkPlugin        NetworkPlugin  `yaml:"network_plugin" json:"network_plugin"`
-	OIDC                 OIDCConfig     `yaml:"oidc" json:"oidc"`
-	WindowsWorkers       WindowsWorkers `yaml:"windows_workers" json:"windows_workers"`
-	// AdditionalServerPoolsWorker defines additional worker node pools with custom configurations
-	AdditionalServerPoolsWorker []AdditionalServerPool `yaml:"additional_server_pools_worker,omitempty" json:"additional_server_pools_worker,omitempty"`
-	// AdditionalServerPoolsWorkerWindows defines additional Windows worker node pools
-	AdditionalServerPoolsWorkerWindows []AdditionalServerPoolWindows `yaml:"additional_server_pools_worker_windows,omitempty" json:"additional_server_pools_worker_windows,omitempty"`
-}
-
-// NodeConfig represents a baremetal node configuration with id, name, and IP
-type NodeConfig struct {
-	ID         string `yaml:"id" json:"id"`
-	Name       string `yaml:"name" json:"name"`
-	AccessIPv4 string `yaml:"access_ip_v4" json:"access_ip_v4"`
-}
-
-// NetworkPlugin represents the network plugin configuration
-type NetworkPlugin struct {
-	Calico  CalicoConfig  `yaml:"calico" json:"calico"`
-	Cilium  CiliumConfig  `yaml:"cilium" json:"cilium"`
-	KubeOVN KubeOVNConfig `yaml:"kube-ovn" json:"kube-ovn"`
-}
-
-// CalicoConfig represents the Calico configuration
-type CalicoConfig struct {
-	Enabled                   bool   `yaml:"enabled" json:"enabled"`
-	CNIIface                  string `yaml:"cni_iface" json:"cni_iface"`
-	CalicoInterfaceAutodetect string `yaml:"calico_interface_autodetect" json:"calico_interface_autodetect"`
-}
-
-// CiliumConfig represents the Cilium configuration
-type CiliumConfig struct {
-	Enabled              bool `yaml:"enabled" json:"enabled"`
-	OperatorEnabled      bool `yaml:"operator_enabled" json:"operator_enabled"`
-	KubeProxyReplacement bool `yaml:"kubeProxyReplacement" json:"kubeProxyReplacement"`
-}
-
-// KubeOVNConfig represents the Kube-OVN configuration
-type KubeOVNConfig struct {
-	Enabled           bool `yaml:"enabled" json:"enabled"`
-	CiliumIntegration bool `yaml:"cilium_integration" json:"cilium_integration"`
-}
-
-// OIDCConfig represents the OIDC configuration
-type OIDCConfig struct {
-	Enabled                bool   `yaml:"enabled" json:"enabled"`
-	KubeOIDCURL            string `yaml:"kube_oidc_url" json:"kube_oidc_url"`
-	KubeOIDCClientID       string `yaml:"kube_oidc_client_id" json:"kube_oidc_client_id"`
-	KubeOIDCCAFile         string `yaml:"kube_oidc_ca_file" json:"kube_oidc_ca_file"`
-	KubeOIDCUsernameClaim  string `yaml:"kube_oidc_username_claim" json:"kube_oidc_username_claim"`
-	KubeOIDCUsernamePrefix string `yaml:"kube_oidc_username_prefix" json:"kube_oidc_username_prefix"`
-	KubeOIDCGroupsClaim    string `yaml:"kube_oidc_groups_claim" json:"kube_oidc_groups_claim"`
-	KubeOIDCGroupsPrefix   string `yaml:"kube_oidc_groups_prefix" json:"kube_oidc_groups_prefix"`
-}
-
-// WindowsWorkers represents the Windows workers configuration
-type WindowsWorkers struct {
-	Enabled                  bool   `yaml:"enabled" json:"enabled"`
-	WindowsUser              string `yaml:"windows_user" json:"windows_user"`
-	WindowsAdminPassword     string `yaml:"windows_admin_password" json:"windows_admin_password"`
-	WorkerNodeBFVSizeWindows int    `yaml:"worker_node_bfv_size_windows" json:"worker_node_bfv_size_windows"`
-	WorkerNodeBFVTypeWindows string `yaml:"worker_node_bfv_type_windows" json:"worker_node_bfv_type_windows"`
-}
-
-// AdditionalServerPool defines configuration for an additional worker node pool
-type AdditionalServerPool struct {
-	// Name is the unique identifier for this worker pool
-	Name string `yaml:"name" json:"name" jsonschema:"required,minLength=1,pattern=^[a-z0-9][a-z0-9-]*[a-z0-9]$,description=Unique name for this worker pool"`
-	// WorkerCount is the number of worker nodes in this pool
-	WorkerCount int `yaml:"worker_count" json:"worker_count" jsonschema:"required,minimum=0,maximum=100,description=Number of worker nodes in this pool"`
-	// FlavorWorker is the instance flavor/size for this worker pool
-	FlavorWorker string `yaml:"flavor_worker" json:"flavor_worker" jsonschema:"required,minLength=1,description=Instance flavor/size for this worker pool"`
-	// NodeWorker is the node suffix identifier for this worker pool
-	NodeWorker string `yaml:"node_worker" json:"node_worker" jsonschema:"required,minLength=1,description=Node suffix identifier for this worker pool"`
-	// ServerGroupAffinity defines the server group affinity policy
-	ServerGroupAffinity string `yaml:"server_group_affinity,omitempty" json:"server_group_affinity,omitempty" jsonschema:"enum=affinity;anti-affinity;soft-affinity;soft-anti-affinity,description=Server group affinity policy for this worker pool"`
-	// ImageID is the OpenStack image ID for this worker pool
-	ImageID string `yaml:"image_id,omitempty" json:"image_id,omitempty" jsonschema:"pattern=^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$,description=OpenStack image ID for this worker pool"`
-	// ImageName is the OpenStack image name (alternative to ImageID)
-	ImageName string `yaml:"image_name,omitempty" json:"image_name,omitempty" jsonschema:"description=OpenStack image name (alternative to image_id)"`
-	// WorkerNodeBFVVolumeSize is the boot volume size in GB
-	WorkerNodeBFVVolumeSize int `yaml:"worker_node_bfv_volume_size,omitempty" json:"worker_node_bfv_volume_size,omitempty" jsonschema:"default=40,minimum=10,maximum=1000,description=Boot volume size in GB"`
-	// WorkerNodeBFVDestinationType is the boot volume destination type
-	WorkerNodeBFVDestinationType string `yaml:"worker_node_bfv_destination_type,omitempty" json:"worker_node_bfv_destination_type,omitempty" jsonschema:"default=volume,enum=volume;local,description=Boot volume destination type"`
-	// WorkerNodeBFVSourceType is the boot volume source type
-	WorkerNodeBFVSourceType string `yaml:"worker_node_bfv_source_type,omitempty" json:"worker_node_bfv_source_type,omitempty" jsonschema:"default=image,enum=image;volume;snapshot,description=Boot volume source type"`
-	// WorkerNodeBFVVolumeType is the boot volume type
-	WorkerNodeBFVVolumeType string `yaml:"worker_node_bfv_volume_type,omitempty" json:"worker_node_bfv_volume_type,omitempty" jsonschema:"description=Boot volume type (e.g. HA-Standard HA-Performance)"`
-	// WorkerNodeBFVDeleteOnTermination controls whether to delete boot volume when instance is terminated
-	WorkerNodeBFVDeleteOnTermination bool `yaml:"worker_node_bfv_delete_on_termination,omitempty" json:"worker_node_bfv_delete_on_termination,omitempty" jsonschema:"default=true,description=Delete boot volume when instance is terminated"`
-	// AdditionalBlockDevicesWorker defines additional block devices for this worker pool
-	AdditionalBlockDevicesWorker []map[string]any `yaml:"additional_block_devices_worker,omitempty" json:"additional_block_devices_worker,omitempty" jsonschema:"description=Additional block devices for this worker pool"`
-	// PF9Onboard enables Platform9 onboarding for this pool
-	PF9Onboard bool `yaml:"pf9_onboard,omitempty" json:"pf9_onboard,omitempty" jsonschema:"default=false,description=Enable Platform9 onboarding for this pool"`
-	// SubnetID is the specific subnet ID for this worker pool (optional)
-	SubnetID string `yaml:"subnet_id,omitempty" json:"subnet_id,omitempty" jsonschema:"pattern=^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$,description=Specific subnet ID for this worker pool (optional)"`
-}
-
-// AdditionalServerPoolWindows defines configuration for an additional Windows worker node pool
-type AdditionalServerPoolWindows struct {
-	// Name is the unique identifier for this Windows worker pool
-	Name string `yaml:"name" json:"name" jsonschema:"required,minLength=1,pattern=^[a-z0-9][a-z0-9-]*[a-z0-9]$,description=Unique name for this Windows worker pool"`
-	// WorkerCount is the number of Windows worker nodes in this pool
-	WorkerCount int `yaml:"worker_count" json:"worker_count" jsonschema:"required,minimum=0,maximum=50,description=Number of Windows worker nodes in this pool"`
-	// FlavorWorker is the instance flavor/size for this Windows worker pool
-	FlavorWorker string `yaml:"flavor_worker" json:"flavor_worker" jsonschema:"required,minLength=1,description=Instance flavor/size for this Windows worker pool"`
-	// NodeWorker is the node suffix identifier for this Windows worker pool
-	NodeWorker string `yaml:"node_worker" json:"node_worker" jsonschema:"required,minLength=1,description=Node suffix identifier for this Windows worker pool"`
-	// ServerGroupAffinity defines the server group affinity policy
-	ServerGroupAffinity string `yaml:"server_group_affinity,omitempty" json:"server_group_affinity,omitempty" jsonschema:"enum=affinity;anti-affinity;soft-affinity;soft-anti-affinity,description=Server group affinity policy for this Windows worker pool"`
-	// ImageID is the OpenStack Windows image ID for this worker pool
-	ImageID string `yaml:"image_id,omitempty" json:"image_id,omitempty" jsonschema:"pattern=^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$,description=OpenStack Windows image ID for this worker pool"`
-}
-
-// SimplifiedOpenTofu represents the opentofu section
-type SimplifiedOpenTofu struct {
-	Enabled bool                  `yaml:"enabled" json:"enabled"`
-	Path    string                `yaml:"path" json:"path"`
-	Backend SimplifiedTofuBackend `yaml:"backend" json:"backend"`
-}
-
-// SimplifiedTofuBackend represents the backend configuration
-type SimplifiedTofuBackend struct {
-	Type  string              `yaml:"type" json:"type"`
-	Local SimplifiedTofuLocal `yaml:"local,omitempty" json:"local,omitempty"`
-	S3    SimplifiedTofuS3    `yaml:"s3,omitempty" json:"s3,omitempty"`
-}
-
-// SimplifiedTofuLocal represents the local backend
-type SimplifiedTofuLocal struct {
-	Path string `yaml:"path" json:"path"`
-}
-
-// SimplifiedTofuS3 represents the S3 backend
-type SimplifiedTofuS3 struct {
-	Bucket   string `yaml:"bucket" json:"bucket"`
-	Key      string `yaml:"key" json:"key"`
-	Region   string `yaml:"region" json:"region"`
-	Endpoint string `yaml:"endpoint,omitempty" json:"endpoint,omitempty"`
-	Profile  string `yaml:"profile,omitempty" json:"profile,omitempty"`
-	Encrypt  bool   `yaml:"encrypt,omitempty" json:"encrypt,omitempty"`
-}
-
-// SimplifiedCloud represents the cloud section
-type SimplifiedCloud struct {
-	Provider  string                   `yaml:"provider" json:"provider"`
-	OpenStack SimplifiedOpenStackCloud `yaml:"openstack" json:"openstack"`
-	AWS       SimplifiedAWSCloud       `yaml:"aws" json:"aws"`
-}
-
-// SimplifiedOpenStackCloud represents the OpenStack configuration
-type SimplifiedOpenStackCloud struct {
-	AuthURL                     string `yaml:"auth_url" json:"auth_url"`
-	Insecure                    bool   `yaml:"insecure" json:"insecure"`
-	Region                      string `yaml:"region" json:"region"`
-	ApplicationCredentialID     string `yaml:"application_credential_id" json:"application_credential_id"`
-	ApplicationCredentialSecret string `yaml:"application_credential_secret" json:"application_credential_secret"`
-	Domain                      string `yaml:"domain" json:"domain"`
-	TenantName                  string `yaml:"tenant_name" json:"tenant_name"`
-	FloatingNetworkId           string `yaml:"floating_network_id" json:"floating_network_id"`
-	SubnetId                    string `yaml:"subnet_id" json:"subnet_id"`
-}
-
-// SimplifiedAWSCloud represents the AWS configuration
-type SimplifiedAWSCloud struct {
-	Profile        string   `yaml:"profile" json:"profile"`
-	Region         string   `yaml:"region" json:"region"`
-	VPCID          string   `yaml:"vpc_id" json:"vpc_id"`
-	PrivateSubnets []string `yaml:"private_subnets" json:"private_subnets"`
-	PublicSubnets  []string `yaml:"public_subnets" json:"public_subnets"`
 }
 
 // defaultConfig returns a Config pre-populated with the default
@@ -820,11 +88,11 @@ func defaultConfig(name string) Config {
 			Secrets: OpenCenterSecrets{
 				Backend: "barbican",
 				Barbican: BarbicanConfig{
-					AuthURL:           "https://identity.example.com/v3",
+					AuthURL:           "",
 					ProjectID:         "",
-					Region:            "regionOne",
-					UserDomainName:    "Default",
-					ProjectDomainName: "Default",
+					Region:            "",
+					UserDomainName:    "",
+					ProjectDomainName: "",
 					CACert:            "",
 				},
 			},
@@ -839,13 +107,13 @@ func defaultConfig(name string) Config {
 						PublicSubnets:  []string{},
 					},
 					OpenStack: SimplifiedOpenStackCloud{
-						AuthURL:                     "https://keystone.api.sjc3.rackspacecloud.com/v3/",
+						AuthURL:                     "",
 						Insecure:                    false,
-						Region:                      "SJC3",
+						Region:                      "",
 						ApplicationCredentialID:     "",
 						ApplicationCredentialSecret: "",
-						Domain:                      "Default",
-						TenantName:                  "default-tenant",
+						Domain:                      "",
+						TenantName:                  "",
 						FloatingNetworkId:           "",
 						SubnetId:                    "",
 					},
@@ -856,15 +124,15 @@ func defaultConfig(name string) Config {
 				AWSAccessKey:       "",
 				AWSSecretAccessKey: "",
 				K8sAPIPortACL:      []string{"0.0.0.0/0"},
-				SSHAuthorizedKeys:  []string{"ssh-rsa ..."},
+				SSHAuthorizedKeys:  []string{""},
 				BaseDomain:         "k8s.opencenter.cloud",
 				ClusterFQDN:        fmt.Sprintf("%s.sjc3.k8s.opencenter.cloud", name),
-				AdminEmail:         "admin@example.com",
+				AdminEmail:         "",
 				Kubernetes: KubernetesConfig{
 					Version:              "1.31.4",
-					FlavorBastion:        "gp.0.2.2",
-					FlavorMaster:         "gp.0.4.4",
-					FlavorWorker:         "gp.0.4.8",
+					FlavorBastion:        "",
+					FlavorMaster:         "",
+					FlavorWorker:         "",
 					SubnetPods:           "10.42.0.0/16",
 					SubnetServices:       "10.43.0.0/16",
 					LoadbalancerProvider: "ovn",
@@ -930,7 +198,7 @@ func defaultConfig(name string) Config {
 					Enabled:             true,
 					ImageRepository:     "ghcr.io/rackerlabs/alert-proxy",
 					ImageTag:            "latest",
-					AlertManagerBaseUrl: fmt.Sprintf("http://alertmanager.example.com/api/v2/alerts"),
+					AlertManagerBaseUrl: "",
 					HTTPRouteFQDN:       fmt.Sprintf("https://alerts.%s.sjc3.k8s.opencenter.cloud", name),
 					GitOpsSourceRepo:    "ssh://git@github.com/rackerlabs/openCenter-gitops-base.git",
 					GitOpsSourceRelease: "v0.1.0",
@@ -1470,9 +738,14 @@ func Load(name string) (Config, error) {
 		return Config{}, fmt.Errorf("failed to read cluster configuration file '%s': %w", path, readErr)
 	}
 
+	// Expand environment variables in the raw YAML data
+	// This allows users to use ${VAR} or $VAR in their config file to reference secrets
+	// stored in environment variables, avoiding plaintext secrets in the file.
+	expandedData := []byte(os.ExpandEnv(string(data)))
+
 	// Unmarshal YAML then overlay onto default config (use actual cluster name, not full identifier)
 	cfg := defaultConfig(clusterName)
-	if unmarshalErr := yaml.Unmarshal(data, &cfg); unmarshalErr != nil {
+	if unmarshalErr := yaml.Unmarshal(expandedData, &cfg); unmarshalErr != nil {
 		return Config{}, fmt.Errorf("failed to parse YAML configuration from '%s': %w", path, unmarshalErr)
 	}
 
@@ -1486,6 +759,7 @@ func Load(name string) (Config, error) {
 
 	return cfg, nil
 }
+
 
 // applyOrganizationDefaults applies organization-based defaults to the configuration.
 // This ensures that S3 bucket names use the organization name (lowercase) by default.
@@ -2323,6 +1597,22 @@ func Validate(cfg Config) []string {
 
 	// Validate service secrets
 	errs = append(errs, validateServiceSecretsSimple(cfg)...)
+
+	// Validate OpenStack provider configuration
+	if cfg.OpenCenter.Infrastructure.Provider == "openstack" {
+		if cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL == "" {
+			errs = append(errs, "opencenter.infrastructure.cloud.openstack.auth_url must be set when provider is openstack")
+		}
+		if cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Region == "" {
+			errs = append(errs, "opencenter.infrastructure.cloud.openstack.region must be set when provider is openstack")
+		}
+	}
+	// Validate Barbican configuration if enabled
+	if cfg.OpenCenter.Secrets.Backend == "barbican" {
+		if cfg.OpenCenter.Secrets.Barbican.AuthURL == "" {
+			errs = append(errs, "opencenter.secrets.barbican.auth_url must be set when secrets backend is barbican")
+		}
+	}
 
 	return errs
 }

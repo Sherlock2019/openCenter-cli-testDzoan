@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -287,6 +286,12 @@ func normalizeLegacyConfigMap(src map[string]any) (map[string]any, bool) {
 // file into the isolated configuration directory.
 func (w *world) createCluster(name string) error {
 	cfg := config.NewDefault(name)
+
+	// Inject required values for tests since defaults were removed
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://identity.example.com/v3"
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Region = "RegionOne"
+	cfg.OpenCenter.Secrets.Barbican.AuthURL = "https://identity.example.com/v3"
+
 	// Save using w.configDir; temporarily override env
 	orig := os.Getenv("OPENCENTER_CONFIG_DIR")
 	os.Setenv("OPENCENTER_CONFIG_DIR", w.configDir)
@@ -748,18 +753,18 @@ func (w *world) aFileWithContent(path string, content *godog.DocString) error {
 	if ext := strings.ToLower(filepath.Ext(p)); ext == ".yaml" || ext == ".yml" {
 		body = normalizeConfigYAML(body)
 	}
-	return ioutil.WriteFile(p, []byte(body), 0644)
+	return os.WriteFile(p, []byte(body), 0644)
 }
 
 func (w *world) theFileShouldMatchRegex(path, pattern string) error {
 	p := w.replaceTmp(path)
-	content, err := ioutil.ReadFile(p)
+	content, err := os.ReadFile(p)
 	if err != nil {
 		// Support ".active" fallback when feature uses "active"
 		base := filepath.Base(p)
 		if !strings.HasPrefix(base, ".") {
 			alt := filepath.Join(filepath.Dir(p), "."+base)
-			if data, e2 := ioutil.ReadFile(alt); e2 == nil {
+			if data, e2 := os.ReadFile(alt); e2 == nil {
 				content = data
 			} else {
 				return err
@@ -902,7 +907,7 @@ func deepMerge(dst, src map[string]interface{}) {
 
 func (w *world) iUpdateTheYAMLToSet(path string, content *godog.DocString) error {
 	p := w.replaceTmp(path)
-	data, err := ioutil.ReadFile(p)
+	data, err := os.ReadFile(p)
 	if err != nil {
 		// If the file doesn't exist at the old location, check if it's a cluster config file
 		// and look for it in the new directory structure
@@ -912,7 +917,7 @@ func (w *world) iUpdateTheYAMLToSet(path string, content *godog.DocString) error
 
 			// Try to resolve using the cluster config path resolution
 			if resolvedPath, resolveErr := w.resolveClusterConfigPath(clusterName); resolveErr == nil {
-				if newData, newErr := ioutil.ReadFile(resolvedPath); newErr == nil {
+				if newData, newErr := os.ReadFile(resolvedPath); newErr == nil {
 					data = newData
 					p = resolvedPath // Update path for writing back
 				} else {
@@ -942,7 +947,7 @@ func (w *world) iUpdateTheYAMLToSet(path string, content *godog.DocString) error
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(p, data, 0644)
+	return os.WriteFile(p, data, 0644)
 }
 
 func (w *world) stdoutShouldBeEmpty() error {
@@ -991,7 +996,7 @@ func (w *world) theDirectoryShouldContainADirectory(parent, child string) error 
 
 func (w *world) theDirectoryShouldContainAFileMatching(parent, pattern string) error {
 	p := w.replaceTmp(parent)
-	files, err := ioutil.ReadDir(p)
+	files, err := os.ReadDir(p)
 	if err != nil {
 		return err
 	}
@@ -1017,7 +1022,7 @@ func (w *world) theFileDoesNotExist(path string) error {
 
 func (w *world) theFileShouldNotContain(path, substr string) error {
 	p := w.replaceTmp(path)
-	data, err := ioutil.ReadFile(p)
+	data, err := os.ReadFile(p)
 	if err != nil {
 		return err
 	}

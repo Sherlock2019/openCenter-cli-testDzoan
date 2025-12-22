@@ -14,11 +14,26 @@
 package barbican
 
 import (
-	"io/ioutil"
+	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/zalando/go-keyring"
 )
 
+const (
+	serviceName = "openCenter-cli"
+)
+
+func getUser() string {
+	user := os.Getenv("USER")
+	if user == "" {
+		return "default-user"
+	}
+	return user
+}
+
+// Fallback path for headless environments
 func getTokenCachePath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -28,25 +43,45 @@ func getTokenCachePath() (string, error) {
 }
 
 func StoreToken(token string) error {
-	path, err := getTokenCachePath()
-	if err != nil {
-		return err
+	err := keyring.Set(serviceName, getUser(), token)
+	if err == nil {
+		return nil
 	}
-	err = os.MkdirAll(filepath.Dir(path), 0700)
-	if err != nil {
-		return err
+
+	// Fallback to file storage if keyring fails (e.g., headless environment)
+	path, pathErr := getTokenCachePath()
+	if pathErr != nil {
+		return fmt.Errorf("keyring failed (%v) and unable to get cache path: %w", err, pathErr)
 	}
-	return ioutil.WriteFile(path, []byte(token), 0600)
+
+	if mkdirErr := os.MkdirAll(filepath.Dir(path), 0700); mkdirErr != nil {
+		return fmt.Errorf("keyring failed (%v) and unable to create cache dir: %w", err, mkdirErr)
+	}
+
+	if writeErr := os.WriteFile(path, []byte(token), 0600); writeErr != nil {
+		return fmt.Errorf("keyring failed (%v) and unable to write token file: %w", err, writeErr)
+	}
+
+	return nil
 }
 
 func LoadToken() (string, error) {
-	path, err := getTokenCachePath()
-	if err != nil {
-		return "", err
+	token, err := keyring.Get(serviceName, getUser())
+	if err == nil {
+		return token, nil
 	}
-	token, err := ioutil.ReadFile(path)
-	if err != nil {
-		return "", err
+
+	// Fallback to file storage
+	path, pathErr := getTokenCachePath()
+	if pathErr != nil {
+		return "", fmt.Errorf("keyring failed (%v) and unable to get cache path: %w", err, pathErr)
 	}
-	return string(token), nil
+
+	fileToken, readErr := os.ReadFile(path)
+	if readErr != nil {
+		// If both fail, return the keyring error as primary, but hint at file error
+		return "", fmt.Errorf("failed to retrieve token from keyring (%v) and file (%v)", err, readErr)
+	}
+
+	return string(fileToken), nil
 }

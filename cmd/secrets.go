@@ -17,7 +17,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -49,18 +49,6 @@ func NewSecretsCmd() *cobra.Command {
 	return cmd
 }
 
-func parseLabels(labels []string) (map[string]string, error) {
-	result := make(map[string]string)
-	for _, label := range labels {
-		parts := strings.SplitN(label, "=", 2)
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid label format: %s", label)
-		}
-		result[parts[0]] = parts[1]
-	}
-	return result, nil
-}
-
 func newSecretsLoginCmd() *cobra.Command {
 	var (
 		username   string
@@ -82,7 +70,22 @@ func newSecretsLoginCmd() *cobra.Command {
 				barbicanCfg.ProjectID = projectID
 			}
 
-			token, err := barbican.Authenticate(cmd.Context(), barbicanCfg, username, "", passwordIn)
+			client, err := barbican.NewClient(barbicanCfg)
+			if err != nil {
+				return err
+			}
+
+			var password string
+			if passwordIn {
+				// Read password from stdin
+				bytePassword, err := io.ReadAll(os.Stdin)
+				if err != nil {
+					return fmt.Errorf("could not read password from stdin: %w", err)
+				}
+				password = strings.TrimSpace(string(bytePassword))
+			}
+
+			token, err := client.Login(cmd.Context(), username, password)
 			if err != nil {
 				return err
 			}
@@ -121,7 +124,7 @@ func newSecretsListCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			labelMap, err := parseLabels(labels)
+			labelMap, err := barbican.ParseLabels(labels)
 			if err != nil {
 				return err
 			}
@@ -197,6 +200,7 @@ func newSecretsDescribeCmd() *cobra.Command {
 func newSecretsGetCmd() *cobra.Command {
 	var (
 		outputFile string
+		show       bool
 	)
 	cmd := &cobra.Command{
 		Use:   "get <name>",
@@ -213,31 +217,44 @@ func newSecretsGetCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			if outputFile == "" && !show {
+				return fmt.Errorf("use --output-file to save the secret or --show to print it to stdout (warning: printing to stdout is insecure)")
+			}
+
 			payload, err := client.GetSecret(cmd.Context(), name)
 			if err != nil {
 				return err
 			}
 			if outputFile != "" {
-				err := ioutil.WriteFile(outputFile, payload, 0600)
+				err := os.WriteFile(outputFile, payload, 0600)
 				if err != nil {
 					return err
 				}
 				fmt.Printf("Secret '%s' saved to %s\n", name, outputFile)
-			} else {
+			}
+			if show {
+				if outputFile != "" {
+					fmt.Println("--- Secret Content ---")
+				} else {
+					fmt.Fprintln(os.Stderr, "Warning: Printing secret to stdout is insecure.")
+				}
 				fmt.Println(string(payload))
 			}
 			return nil
 		},
 	}
 	cmd.Flags().StringVar(&outputFile, "output-file", "", "Path to save the secret")
+	cmd.Flags().BoolVar(&show, "show", false, "Print secret to stdout (insecure)")
 	return cmd
 }
 
 func newSecretsPutCmd() *cobra.Command {
 	var (
-		fromFile string
-		value    string
-		labels   []string
+		fromFile               string
+		labels                 []string
+		secretType             string
+		payloadContentEncoding string
 	)
 	cmd := &cobra.Command{
 		Use:   "put <name>",
@@ -248,14 +265,18 @@ func newSecretsPutCmd() *cobra.Command {
 			var payload []byte
 			var err error
 			if fromFile != "" {
-				payload, err = ioutil.ReadFile(fromFile)
+				payload, err = os.ReadFile(fromFile)
 				if err != nil {
 					return err
 				}
-			} else if value != "" {
-				payload = []byte(value)
 			} else {
-				return fmt.Errorf("either --from-file or --value must be specified")
+				payload, err = io.ReadAll(os.Stdin)
+				if err != nil {
+					return err
+				}
+				if len(payload) == 0 {
+					return fmt.Errorf("secret payload must be provided via --from-file or stdin")
+				}
 			}
 
 			clusterName, _ := cmd.Flags().GetString("cluster")
@@ -269,13 +290,26 @@ func newSecretsPutCmd() *cobra.Command {
 				return err
 			}
 
-			labelMap, err := parseLabels(labels)
+			labelMap, err := barbican.ParseLabels(labels)
 			if err != nil {
 				return err
 			}
 
-			encodedPayload := base64.StdEncoding.EncodeToString(payload)
-			err = client.PutSecret(cmd.Context(), name, []byte(encodedPayload), labelMap)
+			encodedPayload := payload
+			if payloadContentEncoding == "base64" {
+				// If the user specified base64, we assume they are providing raw bytes that need encoding,
+				// OR they are providing a string that is already encoded?
+				// The Barbican API expects the payload to be consistent with the encoding specified.
+				// If we look at the previous implementation:
+				// encodedPayload := base64.StdEncoding.EncodeToString(payload)
+				// It was always base64 encoding the input.
+				// If we allow 'text/plain' type, we might not want to base64 encode.
+				// For now, let's keep the behavior that if encoding is base64, we encode it.
+				b64 := base64.StdEncoding.EncodeToString(payload)
+				encodedPayload = []byte(b64)
+			}
+
+			err = client.PutSecret(cmd.Context(), name, encodedPayload, labelMap, secretType, payloadContentEncoding)
 			if err != nil {
 				return err
 			}
@@ -284,8 +318,9 @@ func newSecretsPutCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&fromFile, "from-file", "", "Path to a file containing the secret")
-	cmd.Flags().StringVar(&value, "value", "", "Value of the secret")
 	cmd.Flags().StringArrayVar(&labels, "label", []string{}, "Additional Barbican labels in key=value form")
+	cmd.Flags().StringVar(&secretType, "secret-type", "opaque", "Type of the secret (e.g. opaque, passphrase)")
+	cmd.Flags().StringVar(&payloadContentEncoding, "payload-encoding", "base64", "Encoding of the payload (e.g. base64)")
 	return cmd
 }
 
@@ -341,7 +376,7 @@ func newSecretsSyncCmd() *cobra.Command {
 				return err
 			}
 
-			labelMap, err := parseLabels(labels)
+			labelMap, err := barbican.ParseLabels(labels)
 			if err != nil {
 				return err
 			}
@@ -380,7 +415,7 @@ func newSecretsSyncCmd() *cobra.Command {
 
 				fileName := fmt.Sprintf("%s.%s", secret.Name, format)
 				filePath := fmt.Sprintf("%s/%s", directory, fileName)
-				err = ioutil.WriteFile(filePath, data, 0600)
+				err = os.WriteFile(filePath, data, 0600)
 				if err != nil {
 					return err
 				}

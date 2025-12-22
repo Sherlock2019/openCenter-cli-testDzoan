@@ -78,8 +78,18 @@ func NewClient(cfg *config.BarbicanConfig) (*Client, error) {
 
 // Login authenticates with Keystone and returns a token.
 func (c *Client) Login(ctx context.Context, username, password string) (string, error) {
-	// Implementation to be added
-	return "", fmt.Errorf("Login not implemented")
+	// Re-use the existing Authenticate function logic but through the client or direct call.
+	// Since Authenticate is stateless and takes config, we can call it.
+	// However, the signature of Authenticate is slightly different (takes passwordIn bool).
+	// We can refactor Authenticate or just inline the logic here since we have the password string.
+
+	// Actually, I can just call Authenticate passing passwordIn=false since I have the password.
+	// But Authenticate reads from stdin if passwordIn is true.
+	// Wait, Authenticate signature is:
+	// func Authenticate(ctx context.Context, cfg *config.BarbicanConfig, username, password string, passwordIn bool) (string, error)
+	// So if I pass passwordIn=false, it uses the password argument.
+
+	return Authenticate(ctx, c.config, username, password, false)
 }
 
 // GetSecret retrieves a secret from Barbican.
@@ -89,11 +99,11 @@ func (c *Client) GetSecret(ctx context.Context, name string) ([]byte, error) {
 	}
 	allPages, err := secrets.List(c.client, listOpts).AllPages()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list secrets for retrieval: %w", err)
 	}
 	allSecrets, err := secrets.ExtractSecrets(allPages)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to extract secrets: %w", err)
 	}
 	if len(allSecrets) == 0 {
 		return nil, fmt.Errorf("secret '%s' not found", name)
@@ -101,13 +111,13 @@ func (c *Client) GetSecret(ctx context.Context, name string) ([]byte, error) {
 
 	payload, err := secrets.GetPayload(c.client, allSecrets[0].SecretRef, nil).Extract()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get secret payload: %w", err)
 	}
 	return []byte(strings.Trim(string(payload), `"`)), nil
 }
 
 // PutSecret creates or updates a secret in Barbican.
-func (c *Client) PutSecret(ctx context.Context, name string, payload []byte, labels map[string]string) error {
+func (c *Client) PutSecret(ctx context.Context, name string, payload []byte, labels map[string]string, secretType, payloadContentEncoding string) error {
 	existingSecret, err := c.DescribeSecret(ctx, name)
 	if err == nil && existingSecret != nil {
 		err = c.DeleteSecret(ctx, name)
@@ -121,28 +131,37 @@ func (c *Client) PutSecret(ctx context.Context, name string, payload []byte, lab
 		tags = append(tags, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	type secretRequest struct {
-		Name                   string   `json:"name"`
-		Payload                string   `json:"payload"`
-		SecretType             string   `json:"secret_type"`
-		PayloadContentEncoding string   `json:"payload_content_encoding"`
-		Tags                   []string `json:"tags,omitempty"`
+	createOpts := createOptsWithTags{
+		CreateOpts: secrets.CreateOpts{
+			Name:                   name,
+			Payload:                string(payload),
+			SecretType:             secrets.SecretType(secretType),
+			PayloadContentEncoding: payloadContentEncoding,
+		},
+		Tags: tags,
 	}
 
-	reqBody := secretRequest{
-		Name:                   name,
-		Payload:                string(payload),
-		SecretType:             "opaque",
-		PayloadContentEncoding: "base64",
-		Tags:                   tags,
+	_, err = secrets.Create(c.client, createOpts).Extract()
+	if err != nil {
+		return fmt.Errorf("failed to create secret: %w", err)
 	}
+	return nil
+}
 
-	url := c.client.ServiceURL("secrets")
-	var res gophercloud.Result
-	_, err = c.client.Post(url, reqBody, &res.Body, &gophercloud.RequestOpts{
-		OkCodes: []int{201},
-	})
-	return err
+type createOptsWithTags struct {
+	secrets.CreateOpts
+	Tags []string `json:"tags,omitempty"`
+}
+
+func (opts createOptsWithTags) ToSecretCreateMap() (map[string]interface{}, error) {
+	b, err := opts.CreateOpts.ToSecretCreateMap()
+	if err != nil {
+		return nil, err
+	}
+	if len(opts.Tags) > 0 {
+		b["tags"] = opts.Tags
+	}
+	return b, nil
 }
 
 // ListSecrets lists secrets in Barbican.
@@ -171,7 +190,7 @@ func (c *Client) ListSecrets(ctx context.Context, labels map[string]string) ([]s
 		return true, nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list secrets: %w", err)
 	}
 
 	return allSecrets, nil
@@ -184,18 +203,18 @@ func (c *Client) DescribeSecret(ctx context.Context, name string) (*secrets.Secr
 	}
 	allPages, err := secrets.List(c.client, listOpts).AllPages()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list secrets for description: %w", err)
 	}
 	allSecrets, err := secrets.ExtractSecrets(allPages)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to extract secrets: %w", err)
 	}
 	if len(allSecrets) == 0 {
 		return nil, fmt.Errorf("secret '%s' not found", name)
 	}
 	detailedSecret, err := secrets.Get(c.client, allSecrets[0].SecretRef).Extract()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get secret details: %w", err)
 	}
 	return detailedSecret, nil
 }
@@ -207,15 +226,19 @@ func (c *Client) DeleteSecret(ctx context.Context, name string) error {
 	}
 	allPages, err := secrets.List(c.client, listOpts).AllPages()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to list secrets for deletion: %w", err)
 	}
 	allSecrets, err := secrets.ExtractSecrets(allPages)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to extract secrets: %w", err)
 	}
 	if len(allSecrets) == 0 {
 		return fmt.Errorf("secret '%s' not found", name)
 	}
 
-	return secrets.Delete(c.client, allSecrets[0].SecretRef).ExtractErr()
+	err = secrets.Delete(c.client, allSecrets[0].SecretRef).ExtractErr()
+	if err != nil {
+		return fmt.Errorf("failed to delete secret: %w", err)
+	}
+	return nil
 }
