@@ -635,6 +635,10 @@ type KubernetesConfig struct {
 	NetworkPlugin        NetworkPlugin  `yaml:"network_plugin" json:"network_plugin"`
 	OIDC                 OIDCConfig     `yaml:"oidc" json:"oidc"`
 	WindowsWorkers       WindowsWorkers `yaml:"windows_workers" json:"windows_workers"`
+	// AdditionalServerPoolsWorker defines additional worker node pools with custom configurations
+	AdditionalServerPoolsWorker []AdditionalServerPool `yaml:"additional_server_pools_worker,omitempty" json:"additional_server_pools_worker,omitempty"`
+	// AdditionalServerPoolsWorkerWindows defines additional Windows worker node pools
+	AdditionalServerPoolsWorkerWindows []AdditionalServerPoolWindows `yaml:"additional_server_pools_worker_windows,omitempty" json:"additional_server_pools_worker_windows,omitempty"`
 }
 
 // NodeConfig represents a baremetal node configuration with id, name, and IP
@@ -690,6 +694,56 @@ type WindowsWorkers struct {
 	WindowsAdminPassword     string `yaml:"windows_admin_password" json:"windows_admin_password"`
 	WorkerNodeBFVSizeWindows int    `yaml:"worker_node_bfv_size_windows" json:"worker_node_bfv_size_windows"`
 	WorkerNodeBFVTypeWindows string `yaml:"worker_node_bfv_type_windows" json:"worker_node_bfv_type_windows"`
+}
+
+// AdditionalServerPool defines configuration for an additional worker node pool
+type AdditionalServerPool struct {
+	// Name is the unique identifier for this worker pool
+	Name string `yaml:"name" json:"name" jsonschema:"required,minLength=1,pattern=^[a-z0-9][a-z0-9-]*[a-z0-9]$,description=Unique name for this worker pool"`
+	// WorkerCount is the number of worker nodes in this pool
+	WorkerCount int `yaml:"worker_count" json:"worker_count" jsonschema:"required,minimum=0,maximum=100,description=Number of worker nodes in this pool"`
+	// FlavorWorker is the instance flavor/size for this worker pool
+	FlavorWorker string `yaml:"flavor_worker" json:"flavor_worker" jsonschema:"required,minLength=1,description=Instance flavor/size for this worker pool"`
+	// NodeWorker is the node suffix identifier for this worker pool
+	NodeWorker string `yaml:"node_worker" json:"node_worker" jsonschema:"required,minLength=1,description=Node suffix identifier for this worker pool"`
+	// ServerGroupAffinity defines the server group affinity policy
+	ServerGroupAffinity string `yaml:"server_group_affinity,omitempty" json:"server_group_affinity,omitempty" jsonschema:"enum=affinity;anti-affinity;soft-affinity;soft-anti-affinity,description=Server group affinity policy for this worker pool"`
+	// ImageID is the OpenStack image ID for this worker pool
+	ImageID string `yaml:"image_id,omitempty" json:"image_id,omitempty" jsonschema:"pattern=^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$,description=OpenStack image ID for this worker pool"`
+	// ImageName is the OpenStack image name (alternative to ImageID)
+	ImageName string `yaml:"image_name,omitempty" json:"image_name,omitempty" jsonschema:"description=OpenStack image name (alternative to image_id)"`
+	// WorkerNodeBFVVolumeSize is the boot volume size in GB
+	WorkerNodeBFVVolumeSize int `yaml:"worker_node_bfv_volume_size,omitempty" json:"worker_node_bfv_volume_size,omitempty" jsonschema:"default=40,minimum=10,maximum=1000,description=Boot volume size in GB"`
+	// WorkerNodeBFVDestinationType is the boot volume destination type
+	WorkerNodeBFVDestinationType string `yaml:"worker_node_bfv_destination_type,omitempty" json:"worker_node_bfv_destination_type,omitempty" jsonschema:"default=volume,enum=volume;local,description=Boot volume destination type"`
+	// WorkerNodeBFVSourceType is the boot volume source type
+	WorkerNodeBFVSourceType string `yaml:"worker_node_bfv_source_type,omitempty" json:"worker_node_bfv_source_type,omitempty" jsonschema:"default=image,enum=image;volume;snapshot,description=Boot volume source type"`
+	// WorkerNodeBFVVolumeType is the boot volume type
+	WorkerNodeBFVVolumeType string `yaml:"worker_node_bfv_volume_type,omitempty" json:"worker_node_bfv_volume_type,omitempty" jsonschema:"description=Boot volume type (e.g. HA-Standard HA-Performance)"`
+	// WorkerNodeBFVDeleteOnTermination controls whether to delete boot volume when instance is terminated
+	WorkerNodeBFVDeleteOnTermination bool `yaml:"worker_node_bfv_delete_on_termination,omitempty" json:"worker_node_bfv_delete_on_termination,omitempty" jsonschema:"default=true,description=Delete boot volume when instance is terminated"`
+	// AdditionalBlockDevicesWorker defines additional block devices for this worker pool
+	AdditionalBlockDevicesWorker []map[string]any `yaml:"additional_block_devices_worker,omitempty" json:"additional_block_devices_worker,omitempty" jsonschema:"description=Additional block devices for this worker pool"`
+	// PF9Onboard enables Platform9 onboarding for this pool
+	PF9Onboard bool `yaml:"pf9_onboard,omitempty" json:"pf9_onboard,omitempty" jsonschema:"default=false,description=Enable Platform9 onboarding for this pool"`
+	// SubnetID is the specific subnet ID for this worker pool (optional)
+	SubnetID string `yaml:"subnet_id,omitempty" json:"subnet_id,omitempty" jsonschema:"pattern=^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$,description=Specific subnet ID for this worker pool (optional)"`
+}
+
+// AdditionalServerPoolWindows defines configuration for an additional Windows worker node pool
+type AdditionalServerPoolWindows struct {
+	// Name is the unique identifier for this Windows worker pool
+	Name string `yaml:"name" json:"name" jsonschema:"required,minLength=1,pattern=^[a-z0-9][a-z0-9-]*[a-z0-9]$,description=Unique name for this Windows worker pool"`
+	// WorkerCount is the number of Windows worker nodes in this pool
+	WorkerCount int `yaml:"worker_count" json:"worker_count" jsonschema:"required,minimum=0,maximum=50,description=Number of Windows worker nodes in this pool"`
+	// FlavorWorker is the instance flavor/size for this Windows worker pool
+	FlavorWorker string `yaml:"flavor_worker" json:"flavor_worker" jsonschema:"required,minLength=1,description=Instance flavor/size for this Windows worker pool"`
+	// NodeWorker is the node suffix identifier for this Windows worker pool
+	NodeWorker string `yaml:"node_worker" json:"node_worker" jsonschema:"required,minLength=1,description=Node suffix identifier for this Windows worker pool"`
+	// ServerGroupAffinity defines the server group affinity policy
+	ServerGroupAffinity string `yaml:"server_group_affinity,omitempty" json:"server_group_affinity,omitempty" jsonschema:"enum=affinity;anti-affinity;soft-affinity;soft-anti-affinity,description=Server group affinity policy for this Windows worker pool"`
+	// ImageID is the OpenStack Windows image ID for this worker pool
+	ImageID string `yaml:"image_id,omitempty" json:"image_id,omitempty" jsonschema:"pattern=^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$,description=OpenStack Windows image ID for this worker pool"`
 }
 
 // SimplifiedOpenTofu represents the opentofu section
@@ -1591,6 +1645,14 @@ func mergeUserConfigIntoIAC(cfg *Config) error {
 	}
 	if len(k8s.WorkerNodes) > 0 {
 		cfg.IAC.Main["worker_nodes"] = k8s.WorkerNodes
+	}
+
+	// Map additional server pools
+	if len(k8s.AdditionalServerPoolsWorker) > 0 {
+		cfg.IAC.Main["additional_server_pools_worker"] = k8s.AdditionalServerPoolsWorker
+	}
+	if len(k8s.AdditionalServerPoolsWorkerWindows) > 0 {
+		cfg.IAC.Main["additional_server_pools_worker_windows"] = k8s.AdditionalServerPoolsWorkerWindows
 	}
 
 	return nil

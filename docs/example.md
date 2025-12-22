@@ -71,6 +71,148 @@ This renders templates without git initialization:
 mise run terraform-generate gdo.prod.sjc3 ./terraform-output
 ```
 
+## Additional Server Pools Configuration
+
+The openCenter CLI supports defining additional worker node pools with custom configurations. This is useful for heterogeneous clusters with specialized workloads (GPU nodes, high-memory nodes, etc.).
+
+### Example: Cluster with Additional Server Pools
+
+```bash
+# Initialize cluster with additional server pools
+./bin/openCenter cluster init gpu-cluster \
+  --org opencenter \
+  --opencenter.infrastructure.provider=openstack \
+  --opencenter.cluster.kubernetes.version="1.31.4" \
+  --opencenter.cluster.kubernetes.master_count=3 \
+  --opencenter.cluster.kubernetes.worker_count=2 \
+  --opencenter.cluster.kubernetes.flavor_master="gp.0.4.4" \
+  --opencenter.cluster.kubernetes.flavor_worker="gp.0.4.8"
+```
+
+After initialization, edit the cluster configuration to add additional server pools:
+
+```yaml
+# ~/.config/openCenter/clusters/opencenter/.gpu-cluster-config.yaml
+opencenter:
+  cluster:
+    cluster_name: gpu-cluster
+    kubernetes:
+      version: "1.31.4"
+      master_count: 3
+      worker_count: 2
+      flavor_master: "gp.0.4.4"
+      flavor_worker: "gp.0.4.8"
+      # Additional server pools for specialized workloads
+      additional_server_pools_worker:
+        - name: gpu-pool
+          worker_count: 2
+          flavor_worker: "ao.2.24.64_A30"
+          node_worker: "gpu"
+          server_group_affinity: "anti-affinity"
+          image_id: "6006f785-f307-47ee-937d-6b54a8bc1419"
+          worker_node_bfv_volume_size: 100
+          worker_node_bfv_destination_type: "volume"
+          worker_node_bfv_source_type: "volume"
+          worker_node_bfv_delete_on_termination: true
+        - name: highmem-pool
+          worker_count: 1
+          flavor_worker: "gp.0.8.64"
+          node_worker: "highmem"
+          server_group_affinity: "soft-anti-affinity"
+          image_id: "799dcf97-3656-4361-8187-13ab1b295e33"
+          worker_node_bfv_volume_size: 200
+      # Windows worker pools (optional)
+      additional_server_pools_worker_windows:
+        - name: windows-pool
+          worker_count: 1
+          flavor_worker: "gp.0.8.16"
+          node_worker: "win"
+          server_group_affinity: "anti-affinity"
+          image_id: "a2083759-f341-445b-b717-dafb5e31fa6b"
+```
+
+### Generated main.tf with Additional Server Pools
+
+The configuration above generates these additional locals in main.tf:
+
+```hcl
+locals {
+  # Standard configuration...
+  worker_count = 2
+  flavor_worker = "gp.0.4.8"
+  
+  # Additional server pools
+  additional_server_pools_worker = [{
+    name                                = "gpu-pool"
+    server_group_affinity               = "anti-affinity"
+    worker_count                        = 2
+    flavor_worker                       = "ao.2.24.64_A30"
+    node_worker                         = "gpu"
+    image_id                           = "6006f785-f307-47ee-937d-6b54a8bc1419"
+    worker_node_bfv_volume_size        = 100
+    worker_node_bfv_destination_type   = "volume"
+    worker_node_bfv_source_type        = "volume"
+    worker_node_bfv_delete_on_termination = true
+  }, {
+    name                                = "highmem-pool"
+    server_group_affinity               = "soft-anti-affinity"
+    worker_count                        = 1
+    flavor_worker                       = "gp.0.8.64"
+    node_worker                         = "highmem"
+    image_id                           = "799dcf97-3656-4361-8187-13ab1b295e33"
+    worker_node_bfv_volume_size        = 200
+  }]
+  
+  additional_server_pools_worker_windows = [{
+    name                                = "windows-pool"
+    server_group_affinity               = "anti-affinity"
+    worker_count                        = 1
+    flavor_worker                       = "gp.0.8.16"
+    node_worker                         = "win"
+    image_id                           = "a2083759-f341-445b-b717-dafb5e31fa6b"
+  }]
+}
+
+module "openstack-nova" {
+  source = "github.com/rackerlabs/openCenter.git//install/iac/infra/openstack-nova?ref=main"
+  
+  # Standard configuration passed to module...
+  
+  # Additional server pools passed to module
+  additional_server_pools_worker = local.additional_server_pools_worker
+  additional_server_pools_worker_windows = local.additional_server_pools_worker_windows
+}
+```
+
+### Additional Server Pool Configuration Options
+
+Each additional server pool supports these configuration options:
+
+| Field | Required | Description | Example |
+|-------|----------|-------------|---------|
+| `name` | ✅ | Unique identifier for the pool | `"gpu-pool"` |
+| `worker_count` | ✅ | Number of nodes in this pool | `2` |
+| `flavor_worker` | ✅ | OpenStack flavor for nodes | `"ao.2.24.64_A30"` |
+| `node_worker` | ✅ | Node suffix for identification | `"gpu"` |
+| `server_group_affinity` | ❌ | Placement policy | `"anti-affinity"` |
+| `image_id` | ❌ | Custom OpenStack image ID | `"6006f785-f307-47ee-937d-6b54a8bc1419"` |
+| `image_name` | ❌ | Alternative to image_id | `"ubuntu-gpu-22.04"` |
+| `worker_node_bfv_volume_size` | ❌ | Boot volume size in GB | `100` |
+| `worker_node_bfv_destination_type` | ❌ | Boot volume type | `"volume"` or `"local"` |
+| `worker_node_bfv_source_type` | ❌ | Boot volume source | `"image"`, `"volume"`, `"snapshot"` |
+| `worker_node_bfv_volume_type` | ❌ | Storage class | `"HA-Performance"` |
+| `worker_node_bfv_delete_on_termination` | ❌ | Delete volume on termination | `true` |
+| `additional_block_devices_worker` | ❌ | Extra storage devices | `[]` |
+| `pf9_onboard` | ❌ | Platform9 integration | `false` |
+| `subnet_id` | ❌ | Custom subnet ID | `"subnet-12345"` |
+
+### Server Group Affinity Options
+
+- `"affinity"`: Place nodes on the same physical host
+- `"anti-affinity"`: Place nodes on different physical hosts
+- `"soft-affinity"`: Prefer same host, but allow different if needed
+- `"soft-anti-affinity"`: Prefer different hosts, but allow same if needed
+
 ## Key Configuration Values Explained
 
 The command above sets specific values that generate the testdata/main.tf content:
@@ -152,7 +294,7 @@ The main.tf values are populated from your cluster configuration file:
 
 ```yaml
 # Example cluster configuration (~/.config/openCenter/clusters/org/my-cluster/.my-cluster-config.yaml)
-openCenter:
+opencenter:
   meta:
     name: my-cluster
     organization: my-org
@@ -160,21 +302,42 @@ openCenter:
     provider: openstack
     cloud:
       openstack:
-        authURL: "https://keystone.api.region.provider.com/v3/"
+        auth_url: "https://keystone.api.region.provider.com/v3/"
         region: "REGION"
   cluster:
     kubernetes:
       version: "1.32.8"
+      master_count: 3
+      worker_count: 4
+      flavor_master: "gp.0.4.8"
+      flavor_worker: "gp.0.4.16"
+      # Additional server pools for specialized workloads
+      additional_server_pools_worker:
+        - name: gpu-pool
+          worker_count: 2
+          flavor_worker: "ao.2.24.64_A30"
+          node_worker: "gpu"
+          server_group_affinity: "anti-affinity"
+          image_id: "6006f785-f307-47ee-937d-6b54a8bc1419"
+          worker_node_bfv_volume_size: 100
+        - name: storage-pool
+          worker_count: 1
+          flavor_worker: "gp.0.4.32"
+          node_worker: "storage"
+          server_group_affinity: "soft-anti-affinity"
+          worker_node_bfv_volume_size: 500
+          worker_node_bfv_volume_type: "HA-Performance"
+      # Windows worker pools (optional)
+      additional_server_pools_worker_windows:
+        - name: windows-pool
+          worker_count: 1
+          flavor_worker: "gp.0.8.16"
+          node_worker: "win"
+          image_id: "a2083759-f341-445b-b717-dafb5e31fa6b"
     networking:
-      podSubnet: "10.42.0.0/16"
-      serviceSubnet: "10.43.0.0/16"
-    nodes:
-      master:
-        count: 3
-        flavor: "gp.0.4.8"
-      worker:
-        count: 4
-        flavor: "gp.0.4.16"
+      pod_subnet: "10.42.0.0/16"
+      service_subnet: "10.43.0.0/16"
+      node_subnet: "10.2.128.0/22"
 ```
 
 ## Verification
@@ -213,17 +376,69 @@ terraform validate
   --org production \
   --opencenter.meta.env=prod \
   --opencenter.cluster.kubernetes.version=1.32.8 \
-  --opencenter.cluster.nodes.master.count=3 \
-  --opencenter.cluster.nodes.worker.count=6
+  --opencenter.cluster.kubernetes.master_count=3 \
+  --opencenter.cluster.kubernetes.worker_count=6
 
 # Setup GitOps repository
 ./bin/openCenter cluster setup prod-cluster --render
 ```
 
+### Heterogeneous Cluster with GPU and Storage Nodes
+```bash
+# Initialize base cluster
+./bin/openCenter cluster init ml-cluster \
+  --org ai-team \
+  --opencenter.meta.env=prod \
+  --opencenter.cluster.kubernetes.version="1.31.4" \
+  --opencenter.cluster.kubernetes.master_count=3 \
+  --opencenter.cluster.kubernetes.worker_count=3 \
+  --opencenter.cluster.kubernetes.flavor_worker="gp.0.4.8"
+
+# Edit configuration to add specialized node pools
+# ~/.config/openCenter/clusters/ai-team/.ml-cluster-config.yaml
+```
+
+Then add this to your configuration file:
+
+```yaml
+opencenter:
+  cluster:
+    kubernetes:
+      additional_server_pools_worker:
+        # GPU nodes for ML workloads
+        - name: gpu-a30
+          worker_count: 4
+          flavor_worker: "ao.2.24.64_A30"
+          node_worker: "gpu-a30"
+          server_group_affinity: "anti-affinity"
+          image_id: "6006f785-f307-47ee-937d-6b54a8bc1419"
+          worker_node_bfv_volume_size: 200
+          worker_node_bfv_volume_type: "HA-Performance"
+        # High-memory nodes for data processing
+        - name: highmem
+          worker_count: 2
+          flavor_worker: "gp.0.8.128"
+          node_worker: "highmem"
+          server_group_affinity: "soft-anti-affinity"
+          worker_node_bfv_volume_size: 100
+        # Storage nodes with large volumes
+        - name: storage
+          worker_count: 3
+          flavor_worker: "gp.0.4.16"
+          node_worker: "storage"
+          server_group_affinity: "anti-affinity"
+          worker_node_bfv_volume_size: 1000
+          worker_node_bfv_volume_type: "HA-Performance"
+          additional_block_devices_worker:
+            - size: 2000
+              type: "HA-Performance"
+              device_name: "/dev/vdb"
+```
+
 ### Configuration Updates
 ```bash
 # Update existing cluster configuration
-./bin/openCenter cluster update gdo.prod.sjc3 --opencenter.cluster.nodes.worker.count=6
+./bin/openCenter cluster update gdo.prod.sjc3 --opencenter.cluster.kubernetes.worker_count=6
 
 # Re-render templates with updated values
 ./bin/openCenter cluster render gdo.prod.sjc3

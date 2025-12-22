@@ -58,6 +58,170 @@
             "kubernetes": {
               "description": "Kubernetes cluster settings",
               "properties": {
+                "additional_server_pools_worker": {
+                  "description": "Additional worker node pools with custom configurations",
+                  "items": {
+                    "additionalProperties": false,
+                    "description": "Configuration for an additional worker node pool",
+                    "properties": {
+                      "additional_block_devices_worker": {
+                        "description": "Additional block devices for this worker pool",
+                        "items": {
+                          "type": "object"
+                        },
+                        "type": "array"
+                      },
+                      "flavor_worker": {
+                        "description": "Instance flavor/size for this worker pool",
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "image_id": {
+                        "description": "OpenStack image ID for this worker pool",
+                        "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+                        "type": "string"
+                      },
+                      "image_name": {
+                        "description": "OpenStack image name (alternative to image_id)",
+                        "type": "string"
+                      },
+                      "name": {
+                        "description": "Unique name for this worker pool",
+                        "minLength": 1,
+                        "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+                        "type": "string"
+                      },
+                      "node_worker": {
+                        "description": "Node suffix identifier for this worker pool",
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "pf9_onboard": {
+                        "default": false,
+                        "description": "Enable Platform9 onboarding for this pool",
+                        "type": "boolean"
+                      },
+                      "server_group_affinity": {
+                        "description": "Server group affinity policy for this worker pool",
+                        "enum": [
+                          "affinity",
+                          "anti-affinity",
+                          "soft-affinity",
+                          "soft-anti-affinity"
+                        ],
+                        "type": "string"
+                      },
+                      "subnet_id": {
+                        "description": "Specific subnet ID for this worker pool (optional)",
+                        "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+                        "type": "string"
+                      },
+                      "worker_count": {
+                        "description": "Number of worker nodes in this pool",
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "worker_node_bfv_delete_on_termination": {
+                        "default": true,
+                        "description": "Delete boot volume when instance is terminated",
+                        "type": "boolean"
+                      },
+                      "worker_node_bfv_destination_type": {
+                        "default": "volume",
+                        "description": "Boot volume destination type",
+                        "enum": [
+                          "volume",
+                          "local"
+                        ],
+                        "type": "string"
+                      },
+                      "worker_node_bfv_source_type": {
+                        "default": "image",
+                        "description": "Boot volume source type",
+                        "enum": [
+                          "image",
+                          "volume",
+                          "snapshot"
+                        ],
+                        "type": "string"
+                      },
+                      "worker_node_bfv_volume_size": {
+                        "default": 40,
+                        "description": "Boot volume size in GB",
+                        "maximum": 1000,
+                        "minimum": 10,
+                        "type": "integer"
+                      },
+                      "worker_node_bfv_volume_type": {
+                        "description": "Boot volume type (e.g., HA-Standard, HA-Performance)",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "worker_count",
+                      "flavor_worker",
+                      "node_worker"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "additional_server_pools_worker_windows": {
+                  "description": "Additional Windows worker node pools with custom configurations",
+                  "items": {
+                    "additionalProperties": false,
+                    "description": "Configuration for an additional Windows worker node pool",
+                    "properties": {
+                      "flavor_worker": {
+                        "description": "Instance flavor/size for this Windows worker pool",
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "image_id": {
+                        "description": "OpenStack Windows image ID for this worker pool",
+                        "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+                        "type": "string"
+                      },
+                      "name": {
+                        "description": "Unique name for this Windows worker pool",
+                        "minLength": 1,
+                        "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+                        "type": "string"
+                      },
+                      "node_worker": {
+                        "description": "Node suffix identifier for this Windows worker pool",
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "server_group_affinity": {
+                        "description": "Server group affinity policy for this Windows worker pool",
+                        "enum": [
+                          "affinity",
+                          "anti-affinity",
+                          "soft-affinity",
+                          "soft-anti-affinity"
+                        ],
+                        "type": "string"
+                      },
+                      "worker_count": {
+                        "description": "Number of Windows worker nodes in this pool",
+                        "maximum": 50,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "worker_count",
+                      "flavor_worker",
+                      "node_worker"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
                 "dns_zone_name": {
                   "description": "DNS zone name for cluster services",
                   "format": "hostname",

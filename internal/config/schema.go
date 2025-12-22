@@ -570,6 +570,143 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 							},
 						},
 					},
+					"additional_server_pools_worker": map[string]any{
+						"type":        "array",
+						"description": "Additional worker node pools with custom configurations",
+						"items": map[string]any{
+							"type":        "object",
+							"description": "Configuration for an additional worker node pool",
+							"required":    []string{"name", "worker_count", "flavor_worker", "node_worker"},
+							"additionalProperties": false,
+							"properties": map[string]any{
+								"name": map[string]any{
+									"type":        "string",
+									"description": "Unique name for this worker pool",
+									"pattern":     "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+									"minLength":   1,
+								},
+								"worker_count": map[string]any{
+									"type":        "integer",
+									"description": "Number of worker nodes in this pool",
+									"minimum":     0,
+									"maximum":     100,
+								},
+								"flavor_worker": map[string]any{
+									"type":        "string",
+									"description": "Instance flavor/size for this worker pool",
+									"minLength":   1,
+								},
+								"node_worker": map[string]any{
+									"type":        "string",
+									"description": "Node suffix identifier for this worker pool",
+									"minLength":   1,
+								},
+								"server_group_affinity": map[string]any{
+									"type":        "string",
+									"description": "Server group affinity policy for this worker pool",
+									"enum":        []string{"affinity", "anti-affinity", "soft-affinity", "soft-anti-affinity"},
+								},
+								"image_id": map[string]any{
+									"type":        "string",
+									"description": "OpenStack image ID for this worker pool",
+									"pattern":     "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+								},
+								"image_name": map[string]any{
+									"type":        "string",
+									"description": "OpenStack image name (alternative to image_id)",
+								},
+								"worker_node_bfv_volume_size": map[string]any{
+									"type":        "integer",
+									"description": "Boot volume size in GB",
+									"default":     40,
+									"minimum":     10,
+									"maximum":     1000,
+								},
+								"worker_node_bfv_destination_type": map[string]any{
+									"type":        "string",
+									"description": "Boot volume destination type",
+									"enum":        []string{"volume", "local"},
+									"default":     "volume",
+								},
+								"worker_node_bfv_source_type": map[string]any{
+									"type":        "string",
+									"description": "Boot volume source type",
+									"enum":        []string{"image", "volume", "snapshot"},
+									"default":     "image",
+								},
+								"worker_node_bfv_volume_type": map[string]any{
+									"type":        "string",
+									"description": "Boot volume type (e.g., HA-Standard, HA-Performance)",
+								},
+								"worker_node_bfv_delete_on_termination": map[string]any{
+									"type":        "boolean",
+									"description": "Delete boot volume when instance is terminated",
+									"default":     true,
+								},
+								"additional_block_devices_worker": map[string]any{
+									"type":        "array",
+									"description": "Additional block devices for this worker pool",
+									"items": map[string]any{
+										"type": "object",
+									},
+								},
+								"pf9_onboard": map[string]any{
+									"type":        "boolean",
+									"description": "Enable Platform9 onboarding for this pool",
+									"default":     false,
+								},
+								"subnet_id": map[string]any{
+									"type":        "string",
+									"description": "Specific subnet ID for this worker pool (optional)",
+									"pattern":     "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+								},
+							},
+						},
+					},
+					"additional_server_pools_worker_windows": map[string]any{
+						"type":        "array",
+						"description": "Additional Windows worker node pools with custom configurations",
+						"items": map[string]any{
+							"type":        "object",
+							"description": "Configuration for an additional Windows worker node pool",
+							"required":    []string{"name", "worker_count", "flavor_worker", "node_worker"},
+							"additionalProperties": false,
+							"properties": map[string]any{
+								"name": map[string]any{
+									"type":        "string",
+									"description": "Unique name for this Windows worker pool",
+									"pattern":     "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+									"minLength":   1,
+								},
+								"worker_count": map[string]any{
+									"type":        "integer",
+									"description": "Number of Windows worker nodes in this pool",
+									"minimum":     0,
+									"maximum":     50,
+								},
+								"flavor_worker": map[string]any{
+									"type":        "string",
+									"description": "Instance flavor/size for this Windows worker pool",
+									"minLength":   1,
+								},
+								"node_worker": map[string]any{
+									"type":        "string",
+									"description": "Node suffix identifier for this Windows worker pool",
+									"minLength":   1,
+								},
+								"server_group_affinity": map[string]any{
+									"type":        "string",
+									"description": "Server group affinity policy for this Windows worker pool",
+									"enum":        []string{"affinity", "anti-affinity", "soft-affinity", "soft-anti-affinity"},
+								},
+								"image_id": map[string]any{
+									"type":        "string",
+									"description": "OpenStack Windows image ID for this worker pool",
+									"pattern":     "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+								},
+							},
+						},
+					},
 					"network_plugin": networkPlugin,
 					"oidc": map[string]any{
 						"type": "object",
