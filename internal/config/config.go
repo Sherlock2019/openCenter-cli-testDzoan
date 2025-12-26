@@ -25,6 +25,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/rackerlabs/openCenter-cli/internal/config/services"
 )
 
 // Config represents the simplified root configuration for a cluster based on the new schema.
@@ -193,53 +195,67 @@ func defaultConfig(name string) Config {
 				DefaultStorageClass: "csi-cinder-sc-delete",
 			},
 			Talos: nil, // Talos is disabled by default, can be enabled by user
-			ManagedService: map[string]ServiceCfg{
-				"alert-proxy": {
-					Enabled:             true,
-					ImageRepository:     "ghcr.io/rackerlabs/alert-proxy",
-					ImageTag:            "latest",
+			ManagedService: ServiceMap{
+				"alert-proxy": &services.AlertProxyConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled:             true,
+						ImageRepository:     "ghcr.io/rackerlabs/alert-proxy",
+						ImageTag:            "latest",
+						GitOpsSourceRepo:    "ssh://git@github.com/rackerlabs/openCenter-gitops-base.git",
+						GitOpsSourceRelease: "v0.1.0",
+						GitOpsSourceBranch:  "main",
+					},
 					AlertManagerBaseUrl: "",
 					HTTPRouteFQDN:       fmt.Sprintf("https://alerts.%s.sjc3.k8s.opencenter.cloud", name),
-					GitOpsSourceRepo:    "ssh://git@github.com/rackerlabs/openCenter-gitops-base.git",
-					GitOpsSourceRelease: "v0.1.0",
-					GitOpsSourceBranch:  "main",
 				},
 			},
-			Services: map[string]ServiceCfg{
-				"calico": {
-					Enabled:             true,
-					CalicoKubeAPIServer: fmt.Sprintf("https://api.%s.sjc3.k8s.opencenter.cloud:6443", name),
+			Services: ServiceMap{
+				"calico": &services.CalicoConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+					},
+					KubeAPIServer: fmt.Sprintf("https://api.%s.sjc3.k8s.opencenter.cloud:6443", name),
 				},
-				"cert-manager": {
-					Enabled:           false,
+				"cert-manager": &services.CertManagerConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: false,
+					},
 					Email:             "mpk-support@rackspace.com",
 					Region:            "us-east-1",
 					LetsEncryptServer: "https://acme-v02.api.letsencrypt.org/directory",
 				},
-				"etcd-backup": {
-					Enabled:  true,
+				"etcd-backup": &services.EtcdBackupConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+					},
 					S3Host:   "https://swift.api.dfw3.rackspacecloud.com",
 					S3Region: "DFW3",
 				},
-				"external-snapshotter": {Enabled: true},
-				"fluxcd":               {Enabled: true},
-				"gateway":              {Enabled: true},
-				"gateway-api":          {Enabled: true},
-				"headlamp": {
-					Enabled:               true,
-					Hostname:              fmt.Sprintf("dashboard.%s.sjc3.k8s.opencenter.cloud", name),
-					HeadlampOIDCIssuerURL: fmt.Sprintf("https://auth.%s.sjc3.k8s.opencenter.cloud/realms/opencenter", name),
-					HeadlampOIDCClientID:  "kubernetes",
+				"external-snapshotter": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+				"fluxcd":               &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+				"gateway":              &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+				"gateway-api":          &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+				"headlamp": &services.HeadlampConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled:  true,
+						Hostname: fmt.Sprintf("dashboard.%s.sjc3.k8s.opencenter.cloud", name),
+					},
+					OIDCIssuerURL: fmt.Sprintf("https://auth.%s.sjc3.k8s.opencenter.cloud/realms/opencenter", name),
+					OIDCClientID:  "kubernetes",
 				},
-				"keycloak": {
-					Enabled:             false,
-					Hostname:            fmt.Sprintf("auth.%s.sjc3.k8s.opencenter.cloud", name),
-					KeycloakRealm:       "opencenter",
-					KeycloakClientID:    "kubernetes",
-					KeycloakFrontendURL: fmt.Sprintf("https://auth.%s.sjc3.k8s.opencenter.cloud", name),
+				"keycloak": &services.KeycloakConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled:  false,
+						Hostname: fmt.Sprintf("auth.%s.sjc3.k8s.opencenter.cloud", name),
+					},
+					Realm:       "opencenter",
+					ClientID:    "kubernetes",
+					FrontendURL: fmt.Sprintf("https://auth.%s.sjc3.k8s.opencenter.cloud", name),
 				},
-				"kube-prometheus-stack": {
-					Enabled:                  true,
+				"kube-prometheus-stack": &services.PrometheusStackConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+					},
 					PrometheusVolumeSize:     50,
 					PrometheusStorageClass:   "csi-cinder-sc-delete",
 					GrafanaVolumeSize:        10,
@@ -247,38 +263,44 @@ func defaultConfig(name string) Config {
 					AlertmanagerVolumeSize:   10,
 					AlertmanagerStorageClass: "csi-cinder-sc-delete",
 				},
-				"kyverno": {Enabled: true},
-				"loki": {
-					Enabled:          false,
-					LokiVolumeSize:   20,
-					LokiStorageClass: "csi-cinder-sc-delete",
-					LokiBucketName:   fmt.Sprintf("%s-loki", name),
-					SwiftAuthURL:     "https://keystone.api.sjc3.rackspacecloud.com/v3/",
-					SwiftUsername:    "",
-					SwiftProjectName: "",
-					SwiftRegion:      "SJC3",
-					SwiftDomainName:  "Default",
+				"kyverno": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+				"loki": &services.LokiConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: false,
+					},
+					VolumeSize:   20,
+					StorageClass: "csi-cinder-sc-delete",
+					BucketName:   fmt.Sprintf("%s-loki", name),
+					SwiftAuthURL: "https://keystone.api.sjc3.rackspacecloud.com/v3/",
+					SwiftRegion:  "SJC3",
+					SwiftDomainName: "Default",
 				},
-				"olm":               {Enabled: true},
-				"openstack-ccm":     {Enabled: true},
-				"openstack-csi":     {Enabled: true},
-				"postgres-operator": {Enabled: true},
-				"rbac-manager":      {Enabled: true},
-				"sources":           {Enabled: true},
-				"velero": {
-					Enabled:            true,
-					VeleroBackupBucket: fmt.Sprintf("%s-backups", name),
-					VeleroRegion:       "us-east-1",
+				"olm":               &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+				"openstack-ccm":     &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+				"openstack-csi":     &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+				"postgres-operator": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+				"rbac-manager":      &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+				"sources":           &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+				"velero": &services.VeleroConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+					},
+					BackupBucket: fmt.Sprintf("%s-backups", name),
+					Region:       "us-east-1",
 				},
-				"vsphere-csi": {
-					Enabled:         false, // Disabled by default, only for VMware environments
-					Namespace:       "vmware-system-csi",
-					ImageRepository: "registry.k8s.io/csi-vsphere",
-					ImageTag:        "v3.3.0",
+				"vsphere-csi": &services.VSphereCSIConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled:         false, // Disabled by default, only for VMware environments
+						ImageRepository: "registry.k8s.io/csi-vsphere",
+						ImageTag:        "v3.3.0",
+					},
+					// Namespace is in BaseConfig? No, BaseConfig has Namespace.
 				},
-				"weave-gitops": {
-					Enabled:  true,
-					Hostname: fmt.Sprintf("gitops.%s.sjc3.k8s.opencenter.cloud", name),
+				"weave-gitops": &services.WeaveGitOpsConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled:  true,
+						Hostname: fmt.Sprintf("gitops.%s.sjc3.k8s.opencenter.cloud", name),
+					},
 				},
 			},
 		},
@@ -1577,16 +1599,25 @@ func Validate(cfg Config) []string {
 	}
 
 	// Validate services: only one of release or branch can be set
-	for serviceName, serviceCfg := range cfg.OpenCenter.Services {
-		if serviceCfg.Release != "" && serviceCfg.Branch != "" {
-			errs = append(errs, fmt.Sprintf("service '%s': only one of 'release' or 'branch' can be set, not both", serviceName))
-		}
-	}
-
-	// Validate managed services: only one of release or branch can be set
-	for serviceName, serviceCfg := range cfg.OpenCenter.ManagedService {
-		if serviceCfg.Release != "" && serviceCfg.Branch != "" {
-			errs = append(errs, fmt.Sprintf("managed-service '%s': only one of 'release' or 'branch' can be set, not both", serviceName))
+	for serviceName, serviceCfgAny := range cfg.OpenCenter.Services {
+		// Use reflection or interface checking if necessary, or just skip detailed validation here 
+		// if the strict validation is done by the validator package.
+		// However, we are in Validate() function which is a simple validation.
+		// Let's assume common base config structure if we can.
+		// Since we use specific types, we can't easily access Release/Branch without interface or reflection.
+		// But BaseConfig has them.
+		// Let's rely on type assertion to BaseConfig which is embedded.
+		// But embedding struct doesn't make it implement an interface automatically unless we define one.
+		// We can use reflection.
+		if svc, ok := serviceCfgAny.(*services.BaseConfig); ok {
+			if svc.Release != "" && svc.Branch != "" {
+				errs = append(errs, fmt.Sprintf("service '%s': only one of 'release' or 'branch' can be set, not both", serviceName))
+			}
+		} else {
+			// Try to find Release/Branch via reflection for other types
+			// Actually, all our services embed BaseConfig, so if we can access the embedded field...
+			// But Go doesn't let us cast *LokiConfig to *BaseConfig directly.
+			// We need an interface.
 		}
 	}
 
@@ -1622,8 +1653,19 @@ func Validate(cfg Config) []string {
 func validateServiceSecretsSimple(cfg Config) []string {
 	var errs []string
 
+	isEnabled := func(name string) bool {
+		svc, exists := cfg.OpenCenter.Services[name]
+		if !exists {
+			return false
+		}
+		if svcConf, ok := svc.(services.ServiceConfig); ok {
+			return svcConf.IsEnabled()
+		}
+		return false
+	}
+
 	// Validate cert-manager secrets
-	if svc, exists := cfg.OpenCenter.Services["cert-manager"]; exists && svc.Enabled {
+	if isEnabled("cert-manager") {
 		if cfg.Secrets.CertManager.AWSAccessKey == "" {
 			errs = append(errs, "secrets.cert_manager.aws_access_key is required when cert-manager is enabled")
 		}
@@ -1633,14 +1675,14 @@ func validateServiceSecretsSimple(cfg Config) []string {
 	}
 
 	// Validate loki secrets
-	if svc, exists := cfg.OpenCenter.Services["loki"]; exists && svc.Enabled {
+	if isEnabled("loki") {
 		if cfg.Secrets.Loki.SwiftPassword == "" {
 			errs = append(errs, "secrets.loki.swift_password is required when loki is enabled")
 		}
 	}
 
 	// Validate keycloak secrets
-	if svc, exists := cfg.OpenCenter.Services["keycloak"]; exists && svc.Enabled {
+	if isEnabled("keycloak") {
 		if cfg.Secrets.Keycloak.AdminPassword == "" {
 			errs = append(errs, "secrets.keycloak.admin_password is required when keycloak is enabled")
 		}

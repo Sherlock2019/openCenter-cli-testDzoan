@@ -24,6 +24,7 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
+	"github.com/rackerlabs/openCenter-cli/internal/config/services"
 	"gopkg.in/yaml.v3"
 )
 
@@ -870,10 +871,12 @@ func TestValidateServiceReleaseAndBranch(t *testing.T) {
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
 				cfg.OpenCenter.GitOps.GitDir = "test-dir"
-				cfg.OpenCenter.Services["cert-manager"] = ServiceCfg{
-					Enabled: true,
-					Release: "v1.0.0",
-					Branch:  "main",
+				cfg.OpenCenter.Services["cert-manager"] = &services.CertManagerConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+						Release: "v1.0.0",
+						Branch:  "main",
+					},
 				}
 				// Provide required secrets to avoid validation errors
 				cfg.Secrets.CertManager.AWSAccessKey = "AKIA..."
@@ -887,9 +890,11 @@ func TestValidateServiceReleaseAndBranch(t *testing.T) {
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
 				cfg.OpenCenter.GitOps.GitDir = "test-dir"
-				cfg.OpenCenter.Services["cert-manager"] = ServiceCfg{
-					Enabled: true,
-					Release: "v1.0.0",
+				cfg.OpenCenter.Services["cert-manager"] = &services.CertManagerConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+						Release: "v1.0.0",
+					},
 				}
 				// Provide required secrets to avoid validation errors
 				cfg.Secrets.CertManager.AWSAccessKey = "AKIA..."
@@ -903,9 +908,11 @@ func TestValidateServiceReleaseAndBranch(t *testing.T) {
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
 				cfg.OpenCenter.GitOps.GitDir = "test-dir"
-				cfg.OpenCenter.Services["cert-manager"] = ServiceCfg{
-					Enabled: true,
-					Branch:  "main",
+				cfg.OpenCenter.Services["cert-manager"] = &services.CertManagerConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+						Branch:  "main",
+					},
 				}
 				// Provide required secrets to avoid validation errors
 				cfg.Secrets.CertManager.AWSAccessKey = "AKIA..."
@@ -919,8 +926,10 @@ func TestValidateServiceReleaseAndBranch(t *testing.T) {
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
 				cfg.OpenCenter.GitOps.GitDir = "test-dir"
-				cfg.OpenCenter.Services["cert-manager"] = ServiceCfg{
-					Enabled: true,
+				cfg.OpenCenter.Services["cert-manager"] = &services.CertManagerConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+					},
 				}
 				// Provide required secrets to avoid validation errors
 				cfg.Secrets.CertManager.AWSAccessKey = "AKIA..."
@@ -934,10 +943,12 @@ func TestValidateServiceReleaseAndBranch(t *testing.T) {
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
 				cfg.OpenCenter.GitOps.GitDir = "test-dir"
-				cfg.OpenCenter.ManagedService["alert-proxy"] = ServiceCfg{
-					Enabled: true,
-					Release: "v1.0.0",
-					Branch:  "main",
+				cfg.OpenCenter.ManagedService["alert-proxy"] = &services.AlertProxyConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+						Release: "v1.0.0",
+						Branch:  "main",
+					},
 				}
 				return cfg
 			},
@@ -979,15 +990,19 @@ func TestValidateServiceReleaseAndBranch(t *testing.T) {
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
 				cfg.OpenCenter.GitOps.GitDir = "test-dir"
-				cfg.OpenCenter.Services["cert-manager"] = ServiceCfg{
-					Enabled: true,
-					Release: "v1.0.0",
-					Branch:  "main",
+				cfg.OpenCenter.Services["cert-manager"] = &services.CertManagerConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+						Release: "v1.0.0",
+						Branch:  "main",
+					},
 				}
-				cfg.OpenCenter.Services["fluxcd"] = ServiceCfg{
-					Enabled: true,
-					Release: "v2.0.0",
-					Branch:  "develop",
+				cfg.OpenCenter.Services["fluxcd"] = &services.DefaultServiceConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+						Release: "v2.0.0",
+						Branch:  "develop",
+					},
 				}
 				cfg.OpenCenter.GitOps.Release = "v1.0.0"
 				cfg.OpenCenter.GitOps.Branch = "main"
@@ -1076,9 +1091,13 @@ func TestDefaultConfigNewFields(t *testing.T) {
 	// Test ServiceCfg new fields
 	t.Run("ServiceCfg fields", func(t *testing.T) {
 		// Test cert-manager
-		certManager, ok := cfg.OpenCenter.Services["cert-manager"]
+		certManagerAny, ok := cfg.OpenCenter.Services["cert-manager"]
 		if !ok {
 			t.Fatal("cert-manager service not found")
+		}
+		certManager, ok := certManagerAny.(*services.CertManagerConfig)
+		if !ok {
+			t.Fatalf("cert-manager service is not of type *services.CertManagerConfig, got %T", certManagerAny)
 		}
 		if certManager.LetsEncryptServer != "https://acme-v02.api.letsencrypt.org/directory" {
 			t.Errorf("expected LetsEncryptServer 'https://acme-v02.api.letsencrypt.org/directory', got %s", certManager.LetsEncryptServer)
@@ -1088,21 +1107,29 @@ func TestDefaultConfigNewFields(t *testing.T) {
 		}
 
 		// Test loki
-		loki, ok := cfg.OpenCenter.Services["loki"]
+		lokiAny, ok := cfg.OpenCenter.Services["loki"]
 		if !ok {
 			t.Fatal("loki service not found")
 		}
-		if loki.LokiVolumeSize != 20 {
-			t.Errorf("expected LokiVolumeSize 20, got %d", loki.LokiVolumeSize)
+		loki, ok := lokiAny.(*services.LokiConfig)
+		if !ok {
+			t.Fatalf("loki service is not of type *services.LokiConfig, got %T", lokiAny)
 		}
-		if loki.LokiStorageClass != "csi-cinder-sc-delete" {
-			t.Errorf("expected LokiStorageClass 'csi-cinder-sc-delete', got %s", loki.LokiStorageClass)
+		if loki.VolumeSize != 20 {
+			t.Errorf("expected VolumeSize 20, got %d", loki.VolumeSize)
+		}
+		if loki.StorageClass != "csi-cinder-sc-delete" {
+			t.Errorf("expected StorageClass 'csi-cinder-sc-delete', got %s", loki.StorageClass)
 		}
 
 		// Test kube-prometheus-stack
-		promStack, ok := cfg.OpenCenter.Services["kube-prometheus-stack"]
+		promStackAny, ok := cfg.OpenCenter.Services["kube-prometheus-stack"]
 		if !ok {
 			t.Fatal("kube-prometheus-stack service not found")
+		}
+		promStack, ok := promStackAny.(*services.PrometheusStackConfig)
+		if !ok {
+			t.Fatalf("kube-prometheus-stack service is not of type *services.PrometheusStackConfig, got %T", promStackAny)
 		}
 		if promStack.PrometheusVolumeSize != 50 {
 			t.Errorf("expected PrometheusVolumeSize 50, got %d", promStack.PrometheusVolumeSize)
@@ -1205,22 +1232,22 @@ func TestDefaultConfigMatchesSpecifications(t *testing.T) {
 		},
 		{
 			name:     "LetsEncryptServer default",
-			getValue: func(c Config) any { return c.OpenCenter.Services["cert-manager"].LetsEncryptServer },
+			getValue: func(c Config) any { return c.OpenCenter.Services["cert-manager"].(*services.CertManagerConfig).LetsEncryptServer },
 			expected: "https://acme-v02.api.letsencrypt.org/directory",
 		},
 		{
-			name:     "LokiVolumeSize default",
-			getValue: func(c Config) any { return c.OpenCenter.Services["loki"].LokiVolumeSize },
+			name:     "VolumeSize default",
+			getValue: func(c Config) any { return c.OpenCenter.Services["loki"].(*services.LokiConfig).VolumeSize },
 			expected: 20,
 		},
 		{
 			name:     "PrometheusVolumeSize default",
-			getValue: func(c Config) any { return c.OpenCenter.Services["kube-prometheus-stack"].PrometheusVolumeSize },
+			getValue: func(c Config) any { return c.OpenCenter.Services["kube-prometheus-stack"].(*services.PrometheusStackConfig).PrometheusVolumeSize },
 			expected: 50,
 		},
 		{
 			name:     "GrafanaVolumeSize default",
-			getValue: func(c Config) any { return c.OpenCenter.Services["kube-prometheus-stack"].GrafanaVolumeSize },
+			getValue: func(c Config) any { return c.OpenCenter.Services["kube-prometheus-stack"].(*services.PrometheusStackConfig).GrafanaVolumeSize },
 			expected: 10,
 		},
 	}
@@ -1426,7 +1453,11 @@ func TestValidateServiceSpecificRequirements(t *testing.T) {
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
 				cfg.OpenCenter.GitOps.GitDir = "test-dir"
-				cfg.OpenCenter.Services["cert-manager"] = ServiceCfg{Enabled: true}
+				cfg.OpenCenter.Services["cert-manager"] = &services.CertManagerConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+					},
+				}
 				cfg.Secrets.CertManager.AWSAccessKey = ""
 				cfg.Secrets.CertManager.AWSSecretAccessKey = "secret"
 				return cfg
@@ -1439,7 +1470,11 @@ func TestValidateServiceSpecificRequirements(t *testing.T) {
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
 				cfg.OpenCenter.GitOps.GitDir = "test-dir"
-				cfg.OpenCenter.Services["cert-manager"] = ServiceCfg{Enabled: true}
+				cfg.OpenCenter.Services["cert-manager"] = &services.CertManagerConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+					},
+				}
 				cfg.Secrets.CertManager.AWSAccessKey = "AKIA..."
 				cfg.Secrets.CertManager.AWSSecretAccessKey = ""
 				return cfg
@@ -1452,7 +1487,11 @@ func TestValidateServiceSpecificRequirements(t *testing.T) {
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
 				cfg.OpenCenter.GitOps.GitDir = "test-dir"
-				cfg.OpenCenter.Services["cert-manager"] = ServiceCfg{Enabled: true}
+				cfg.OpenCenter.Services["cert-manager"] = &services.CertManagerConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+					},
+				}
 				cfg.Secrets.CertManager.AWSAccessKey = "AKIA..."
 				cfg.Secrets.CertManager.AWSSecretAccessKey = "secret"
 				return cfg
@@ -1465,8 +1504,10 @@ func TestValidateServiceSpecificRequirements(t *testing.T) {
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
 				cfg.OpenCenter.GitOps.GitDir = "test-dir"
-				cfg.OpenCenter.Services["loki"] = ServiceCfg{
-					Enabled:          true,
+				cfg.OpenCenter.Services["loki"] = &services.LokiConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+					},
 					SwiftAuthURL:     "",
 					SwiftUsername:    "user",
 					SwiftProjectName: "project",
@@ -1482,8 +1523,10 @@ func TestValidateServiceSpecificRequirements(t *testing.T) {
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
 				cfg.OpenCenter.GitOps.GitDir = "test-dir"
-				cfg.OpenCenter.Services["loki"] = ServiceCfg{
-					Enabled:          true,
+				cfg.OpenCenter.Services["loki"] = &services.LokiConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+					},
 					SwiftAuthURL:     "https://keystone.api.example.com/v3/",
 					SwiftUsername:    "user",
 					SwiftProjectName: "project",
@@ -1499,7 +1542,11 @@ func TestValidateServiceSpecificRequirements(t *testing.T) {
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
 				cfg.OpenCenter.GitOps.GitDir = "test-dir"
-				cfg.OpenCenter.Services["keycloak"] = ServiceCfg{Enabled: true}
+				cfg.OpenCenter.Services["keycloak"] = &services.KeycloakConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+					},
+				}
 				cfg.Secrets.Keycloak.AdminPassword = ""
 				return cfg
 			},
@@ -1511,7 +1558,11 @@ func TestValidateServiceSpecificRequirements(t *testing.T) {
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
 				cfg.OpenCenter.GitOps.GitDir = "test-dir"
-				cfg.OpenCenter.Services["weave-gitops"] = ServiceCfg{Enabled: true}
+				cfg.OpenCenter.Services["weave-gitops"] = &services.WeaveGitOpsConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+					},
+				}
 				cfg.Secrets.WeaveGitOps.PasswordHash = ""
 				return cfg
 			},
@@ -1523,7 +1574,11 @@ func TestValidateServiceSpecificRequirements(t *testing.T) {
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
 				cfg.OpenCenter.GitOps.GitDir = "test-dir"
-				cfg.OpenCenter.Services["kube-prometheus-stack"] = ServiceCfg{Enabled: true}
+				cfg.OpenCenter.Services["kube-prometheus-stack"] = &services.PrometheusStackConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: true,
+					},
+				}
 				cfg.Secrets.Grafana.AdminPassword = ""
 				return cfg
 			},
@@ -1672,7 +1727,7 @@ func TestTemplateRenderingWithNewFields(t *testing.T) {
 			templateText: `server: {{ (index .OpenCenter.Services "cert-manager").LetsEncryptServer }}`,
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
-				cfg.OpenCenter.Services["cert-manager"] = ServiceCfg{
+				cfg.OpenCenter.Services["cert-manager"] = &services.CertManagerConfig{
 					LetsEncryptServer: "https://acme-v02.api.letsencrypt.org/directory",
 				}
 				return cfg
@@ -1680,12 +1735,12 @@ func TestTemplateRenderingWithNewFields(t *testing.T) {
 			expected: "server: https://acme-v02.api.letsencrypt.org/directory",
 		},
 		{
-			name:         "LokiVolumeSize rendering",
-			templateText: "size: {{ .OpenCenter.Services.loki.LokiVolumeSize }}Gi",
+			name:         "VolumeSize rendering",
+			templateText: "size: {{ .OpenCenter.Services.loki.VolumeSize }}Gi",
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
-				cfg.OpenCenter.Services["loki"] = ServiceCfg{
-					LokiVolumeSize: 20,
+				cfg.OpenCenter.Services["loki"] = &services.LokiConfig{
+					VolumeSize: 20,
 				}
 				return cfg
 			},
@@ -1808,11 +1863,11 @@ func TestTemplateRenderingWithSprigFunctions(t *testing.T) {
 		},
 		{
 			name:         "default function with value",
-			templateText: "size: {{ .OpenCenter.Services.loki.LokiVolumeSize | default 20 }}",
+			templateText: "size: {{ .OpenCenter.Services.loki.VolumeSize | default 20 }}",
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
-				cfg.OpenCenter.Services["loki"] = ServiceCfg{
-					LokiVolumeSize: 50,
+				cfg.OpenCenter.Services["loki"] = &services.LokiConfig{
+					VolumeSize: 50,
 				}
 				return cfg
 			},
@@ -1820,11 +1875,11 @@ func TestTemplateRenderingWithSprigFunctions(t *testing.T) {
 		},
 		{
 			name:         "default function with empty value",
-			templateText: "size: {{ .OpenCenter.Services.loki.LokiVolumeSize | default 20 }}",
+			templateText: "size: {{ .OpenCenter.Services.loki.VolumeSize | default 20 }}",
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
-				cfg.OpenCenter.Services["loki"] = ServiceCfg{
-					LokiVolumeSize: 0,
+				cfg.OpenCenter.Services["loki"] = &services.LokiConfig{
+					VolumeSize: 0,
 				}
 				return cfg
 			},
@@ -1842,12 +1897,12 @@ func TestTemplateRenderingWithSprigFunctions(t *testing.T) {
 		},
 		{
 			name:         "nested default with printf",
-			templateText: "bucket: {{ .OpenCenter.Services.loki.LokiBucketName | default (printf \"%s-loki\" .OpenCenter.Cluster.ClusterName) }}",
+			templateText: "bucket: {{ .OpenCenter.Services.loki.BucketName | default (printf \"%s-loki\" .OpenCenter.Cluster.ClusterName) }}",
 			setupConfig: func() Config {
 				cfg := NewDefault("test")
 				cfg.OpenCenter.Cluster.ClusterName = "my-cluster"
-				cfg.OpenCenter.Services["loki"] = ServiceCfg{
-					LokiBucketName: "",
+				cfg.OpenCenter.Services["loki"] = &services.LokiConfig{
+					BucketName: "",
 				}
 				return cfg
 			},
@@ -1894,12 +1949,12 @@ func TestTemplateRenderingDefaultValues(t *testing.T) {
 		},
 		{
 			name:         "StorageClass with default",
-			templateText: "{{ .OpenCenter.Services.loki.LokiStorageClass | default .OpenCenter.Storage.DefaultStorageClass | default \"csi-cinder-sc-delete\" }}",
+			templateText: "{{ .OpenCenter.Services.loki.StorageClass | default .OpenCenter.Storage.DefaultStorageClass | default \"csi-cinder-sc-delete\" }}",
 			expected:     "csi-cinder-sc-delete",
 		},
 		{
 			name:         "VolumeSize with default",
-			templateText: "{{ .OpenCenter.Services.loki.LokiVolumeSize | default 20 }}Gi",
+			templateText: "{{ .OpenCenter.Services.loki.VolumeSize | default 20 }}Gi",
 			expected:     "20Gi",
 		},
 	}

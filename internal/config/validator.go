@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/rackerlabs/openCenter-cli/internal/config/services"
 )
 
 // ClusterConfigValidator implements the ConfigValidatorInterface for comprehensive configuration validation.
@@ -711,15 +713,23 @@ func (cv *ClusterConfigValidator) isValidDomain(domain string) bool {
 }
 
 // validateService validates service-specific configuration (non-secret fields).
-func (cv *ClusterConfigValidator) validateService(serviceName string, svc ServiceCfg, secrets Secrets, result *ConfigValidationResult) {
-	if !svc.Enabled {
-		return
+func (cv *ClusterConfigValidator) validateService(serviceName string, svcAny any, secrets Secrets, result *ConfigValidationResult) {
+	// Check if enabled first using interface
+	if svcConf, ok := svcAny.(services.ServiceConfig); ok {
+		if !svcConf.IsEnabled() {
+			return
+		}
 	}
 
 	// Validate service-specific required configuration fields (non-secrets)
 	switch serviceName {
 	case "loki":
-		storageType := svc.LokiStorageType
+		svc, ok := svcAny.(*services.LokiConfig)
+		if !ok {
+			return
+		}
+		
+		storageType := svc.StorageType
 		if storageType == "" {
 			storageType = "swift" // default
 		}
@@ -738,7 +748,7 @@ func (cv *ClusterConfigValidator) validateService(serviceName string, svc Servic
 
 		// Validate mutual exclusivity: only one storage backend can be configured
 		hasSwiftConfig := svc.SwiftAuthURL != "" || svc.SwiftRegion != "" || svc.SwiftApplicationCredentialID != "" || svc.SwiftUsername != ""
-		hasS3Config := svc.LokiS3Region != "" || svc.LokiS3Endpoint != ""
+		hasS3Config := svc.S3Region != "" || svc.S3Endpoint != ""
 
 		if hasSwiftConfig && hasS3Config {
 			result.Errors = append(result.Errors, &ConfigValidationError{
@@ -778,7 +788,7 @@ func (cv *ClusterConfigValidator) validateService(serviceName string, svc Servic
 		}
 
 		// Validate bucket/container name
-		if svc.LokiBucketName == "" {
+		if svc.BucketName == "" {
 			result.Errors = append(result.Errors, &ConfigValidationError{
 				Type:    "validation",
 				Field:   "opencenter.services.loki.loki_bucket_name",
@@ -829,7 +839,7 @@ func (cv *ClusterConfigValidator) validateService(serviceName string, svc Servic
 			}
 		} else if storageType == "s3" {
 			// S3 validation
-			if svc.LokiS3Region == "" && svc.LokiS3Endpoint == "" {
+			if svc.S3Region == "" && svc.S3Endpoint == "" {
 				result.Errors = append(result.Errors, &ConfigValidationError{
 					Type:    "validation",
 					Field:   "opencenter.services.loki.loki_s3_region",
@@ -845,14 +855,21 @@ func (cv *ClusterConfigValidator) validateService(serviceName string, svc Servic
 }
 
 // validateManagedService validates managed service-specific configuration and secrets.
-func (cv *ClusterConfigValidator) validateManagedService(serviceName string, svc ServiceCfg, secrets Secrets, result *ConfigValidationResult) {
-	if !svc.Enabled {
-		return
+func (cv *ClusterConfigValidator) validateManagedService(serviceName string, svcAny any, secrets Secrets, result *ConfigValidationResult) {
+	// Check if enabled first using interface
+	if svcConf, ok := svcAny.(services.ServiceConfig); ok {
+		if !svcConf.IsEnabled() {
+			return
+		}
 	}
 
 	// Validate managed service-specific required fields and secrets
 	switch serviceName {
 	case "alert-proxy":
+		svc, ok := svcAny.(*services.AlertProxyConfig)
+		if !ok {
+			return
+		}
 		// Check required secrets
 		if secrets.AlertProxy.CoreDeviceId == "" {
 			result.Errors = append(result.Errors, &ConfigValidationError{
@@ -906,8 +923,20 @@ func (cv *ClusterConfigValidator) validateManagedService(serviceName string, svc
 // validateServiceSecrets validates service-specific secrets configuration.
 // This function checks that required secrets are present when corresponding services are enabled.
 func (cv *ClusterConfigValidator) validateServiceSecrets(config *Config, result *ConfigValidationResult) {
+	// Helper to check if a service is enabled
+	isEnabled := func(name string) bool {
+		svc, exists := config.OpenCenter.Services[name]
+		if !exists {
+			return false
+		}
+		if svcConf, ok := svc.(services.ServiceConfig); ok {
+			return svcConf.IsEnabled()
+		}
+		return false
+	}
+
 	// Validate cert-manager secrets
-	if svc, exists := config.OpenCenter.Services["cert-manager"]; exists && svc.Enabled {
+	if isEnabled("cert-manager") {
 		if config.Secrets.CertManager.AWSAccessKey == "" {
 			result.Errors = append(result.Errors, &ConfigValidationError{
 				Type:    "validation",
@@ -933,7 +962,7 @@ func (cv *ClusterConfigValidator) validateServiceSecrets(config *Config, result 
 	}
 
 	// Validate loki secrets
-	if svc, exists := config.OpenCenter.Services["loki"]; exists && svc.Enabled {
+	if isEnabled("loki") {
 		if config.Secrets.Loki.SwiftPassword == "" {
 			result.Errors = append(result.Errors, &ConfigValidationError{
 				Type:    "validation",
@@ -948,7 +977,7 @@ func (cv *ClusterConfigValidator) validateServiceSecrets(config *Config, result 
 	}
 
 	// Validate keycloak secrets
-	if svc, exists := config.OpenCenter.Services["keycloak"]; exists && svc.Enabled {
+	if isEnabled("keycloak") {
 		if config.Secrets.Keycloak.ClientSecret == "" {
 			result.Warnings = append(result.Warnings, &ConfigValidationError{
 				Type:    "validation",
@@ -974,7 +1003,7 @@ func (cv *ClusterConfigValidator) validateServiceSecrets(config *Config, result 
 	}
 
 	// Validate headlamp secrets
-	if svc, exists := config.OpenCenter.Services["headlamp"]; exists && svc.Enabled {
+	if isEnabled("headlamp") {
 		if config.Secrets.Headlamp.OIDCClientSecret == "" {
 			result.Errors = append(result.Errors, &ConfigValidationError{
 				Type:    "validation",
@@ -989,7 +1018,7 @@ func (cv *ClusterConfigValidator) validateServiceSecrets(config *Config, result 
 	}
 
 	// Validate weave-gitops secrets
-	if svc, exists := config.OpenCenter.Services["weave-gitops"]; exists && svc.Enabled {
+	if isEnabled("weave-gitops") {
 		if config.Secrets.WeaveGitOps.PasswordHash == "" {
 			result.Errors = append(result.Errors, &ConfigValidationError{
 				Type:    "validation",
@@ -1005,7 +1034,7 @@ func (cv *ClusterConfigValidator) validateServiceSecrets(config *Config, result 
 	}
 
 	// Validate kube-prometheus-stack (Grafana) secrets
-	if svc, exists := config.OpenCenter.Services["kube-prometheus-stack"]; exists && svc.Enabled {
+	if isEnabled("kube-prometheus-stack") {
 		if config.Secrets.Grafana.AdminPassword == "" {
 			result.Errors = append(result.Errors, &ConfigValidationError{
 				Type:    "validation",

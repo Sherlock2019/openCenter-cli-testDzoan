@@ -26,8 +26,8 @@ type SimplifiedOpenCenter struct {
 	GitOps         GitOpsConfig          `yaml:"gitops" json:"gitops"`
 	Storage        StorageConfig         `yaml:"storage,omitempty" json:"storage,omitempty"`
 	Talos          *TalosConfig          `yaml:"talos,omitempty" json:"talos,omitempty"`
-	ManagedService map[string]ServiceCfg `yaml:"managed-service" json:"managed-service"`
-	Services       map[string]ServiceCfg `yaml:"services" json:"services"`
+	ManagedService ServiceMap `yaml:"managed-service" json:"managed-service"`
+	Services       ServiceMap `yaml:"services" json:"services"`
 }
 
 // TalosConfig represents Talos-specific configuration

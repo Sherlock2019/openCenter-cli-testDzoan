@@ -20,6 +20,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/rackerlabs/openCenter-cli/internal/config/services"
 )
 
 // addDefaultSecrets adds all required secrets for services that are enabled by default.
@@ -383,7 +385,7 @@ func TestFullClusterRendering(t *testing.T) {
 		}
 
 		// Verify cert-manager configuration
-		certManager := config.OpenCenter.Services["cert-manager"]
+		certManager := config.OpenCenter.Services["cert-manager"].(*services.CertManagerConfig)
 		if !certManager.Enabled {
 			t.Error("cert-manager should be enabled")
 		}
@@ -395,64 +397,64 @@ func TestFullClusterRendering(t *testing.T) {
 		}
 
 		// Verify Loki configuration
-		loki := config.OpenCenter.Services["loki"]
+		loki := config.OpenCenter.Services["loki"].(*services.LokiConfig)
 		if !loki.Enabled {
 			t.Error("loki should be enabled")
 		}
-		if loki.LokiBucketName != "test-integration-loki" {
-			t.Errorf("Expected bucket name 'test-integration-loki', got '%s'", loki.LokiBucketName)
+		if loki.BucketName != "test-integration-loki" {
+			t.Errorf("Expected bucket name 'test-integration-loki', got '%s'", loki.BucketName)
 		}
-		if loki.LokiVolumeSize != 50 {
-			t.Errorf("Expected volume size 50, got %d", loki.LokiVolumeSize)
+		if loki.VolumeSize != 50 {
+			t.Errorf("Expected volume size 50, got %d", loki.VolumeSize)
 		}
-		if loki.LokiStorageClass != "csi-cinder-sc-delete" {
-			t.Errorf("Expected storage class 'csi-cinder-sc-delete', got '%s'", loki.LokiStorageClass)
+		if loki.StorageClass != "csi-cinder-sc-delete" {
+			t.Errorf("Expected storage class 'csi-cinder-sc-delete', got '%s'", loki.StorageClass)
 		}
 		if loki.SwiftAuthURL != "https://keystone.api.test.example.com/v3/" {
 			t.Errorf("Expected Swift auth URL 'https://keystone.api.test.example.com/v3/', got '%s'", loki.SwiftAuthURL)
 		}
 
 		// Verify Velero configuration
-		velero := config.OpenCenter.Services["velero"]
+		velero := config.OpenCenter.Services["velero"].(*services.VeleroConfig)
 		if !velero.Enabled {
 			t.Error("velero should be enabled")
 		}
-		if velero.VeleroBackupBucket != "test-integration-backups" {
-			t.Errorf("Expected backup bucket 'test-integration-backups', got '%s'", velero.VeleroBackupBucket)
+		if velero.BackupBucket != "test-integration-backups" {
+			t.Errorf("Expected backup bucket 'test-integration-backups', got '%s'", velero.BackupBucket)
 		}
-		if velero.VeleroRegion != "us-east-1" {
-			t.Errorf("Expected region 'us-east-1', got '%s'", velero.VeleroRegion)
+		if velero.Region != "us-east-1" {
+			t.Errorf("Expected region 'us-east-1', got '%s'", velero.Region)
 		}
 
 		// Verify Keycloak configuration
-		keycloak := config.OpenCenter.Services["keycloak"]
+		keycloak := config.OpenCenter.Services["keycloak"].(*services.KeycloakConfig)
 		if !keycloak.Enabled {
 			t.Error("keycloak should be enabled")
 		}
-		if keycloak.KeycloakRealm != "opencenter" {
-			t.Errorf("Expected realm 'opencenter', got '%s'", keycloak.KeycloakRealm)
+		if keycloak.Realm != "opencenter" {
+			t.Errorf("Expected realm 'opencenter', got '%s'", keycloak.Realm)
 		}
-		if keycloak.KeycloakClientID != "opencenter" {
-			t.Errorf("Expected client ID 'opencenter', got '%s'", keycloak.KeycloakClientID)
+		if keycloak.ClientID != "opencenter" {
+			t.Errorf("Expected client ID 'opencenter', got '%s'", keycloak.ClientID)
 		}
 		if keycloak.Hostname != "auth.test-integration.us-east-1.k8s.test.example.com" {
 			t.Errorf("Expected hostname 'auth.test-integration.us-east-1.k8s.test.example.com', got '%s'", keycloak.Hostname)
 		}
 
 		// Verify Headlamp configuration
-		headlamp := config.OpenCenter.Services["headlamp"]
+		headlamp := config.OpenCenter.Services["headlamp"].(*services.HeadlampConfig)
 		if !headlamp.Enabled {
 			t.Error("headlamp should be enabled")
 		}
-		if headlamp.HeadlampOIDCClientID != "opencenter" {
-			t.Errorf("Expected OIDC client ID 'opencenter', got '%s'", headlamp.HeadlampOIDCClientID)
+		if headlamp.OIDCClientID != "opencenter" {
+			t.Errorf("Expected OIDC client ID 'opencenter', got '%s'", headlamp.OIDCClientID)
 		}
 		if headlamp.Hostname != "headlamp.test-integration.us-east-1.k8s.test.example.com" {
 			t.Errorf("Expected hostname 'headlamp.test-integration.us-east-1.k8s.test.example.com', got '%s'", headlamp.Hostname)
 		}
 
 		// Verify kube-prometheus-stack configuration
-		prometheus := config.OpenCenter.Services["kube-prometheus-stack"]
+		prometheus := config.OpenCenter.Services["kube-prometheus-stack"].(*services.PrometheusStackConfig)
 		if !prometheus.Enabled {
 			t.Error("kube-prometheus-stack should be enabled")
 		}
@@ -467,12 +469,12 @@ func TestFullClusterRendering(t *testing.T) {
 		}
 
 		// Verify Calico configuration
-		calico := config.OpenCenter.Services["calico"]
+		calico := config.OpenCenter.Services["calico"].(*services.CalicoConfig)
 		if !calico.Enabled {
 			t.Error("calico should be enabled")
 		}
-		if calico.CalicoKubeAPIServer != "https://test-integration-api.us-east-1.k8s.test.example.com:6443" {
-			t.Errorf("Expected API server 'https://test-integration-api.us-east-1.k8s.test.example.com:6443', got '%s'", calico.CalicoKubeAPIServer)
+		if calico.KubeAPIServer != "https://test-integration-api.us-east-1.k8s.test.example.com:6443" {
+			t.Errorf("Expected API server 'https://test-integration-api.us-east-1.k8s.test.example.com:6443', got '%s'", calico.KubeAPIServer)
 		}
 	})
 
@@ -564,7 +566,7 @@ func TestFullClusterRendering(t *testing.T) {
 		}
 
 		// Verify alert-proxy configuration
-		alertProxy := config.OpenCenter.ManagedService["alert-proxy"]
+		alertProxy := config.OpenCenter.ManagedService["alert-proxy"].(*services.AlertProxyConfig)
 		if !alertProxy.Enabled {
 			t.Error("alert-proxy should be enabled")
 		}
@@ -627,8 +629,16 @@ func TestFullClusterRendering(t *testing.T) {
 			t.Error("GitOpsBaseRelease should not be empty")
 		}
 
+		// Helper to check if enabled
+		isEnabled := func(name string) bool {
+			if svc, ok := config.OpenCenter.Services[name].(services.ServiceConfig); ok {
+				return svc.IsEnabled()
+			}
+			return false
+		}
+
 		// Check that secrets are present for enabled services
-		if config.OpenCenter.Services["cert-manager"].Enabled {
+		if isEnabled("cert-manager") {
 			if config.Secrets.CertManager.AWSAccessKey == "" {
 				t.Error("CertManager AWS access key should not be empty when cert-manager is enabled")
 			}
@@ -637,25 +647,25 @@ func TestFullClusterRendering(t *testing.T) {
 			}
 		}
 
-		if config.OpenCenter.Services["loki"].Enabled {
+		if isEnabled("loki") {
 			if config.Secrets.Loki.SwiftPassword == "" {
 				t.Error("Loki Swift password should not be empty when loki is enabled")
 			}
 		}
 
-		if config.OpenCenter.Services["keycloak"].Enabled {
+		if isEnabled("keycloak") {
 			if config.Secrets.Keycloak.AdminPassword == "" {
 				t.Error("Keycloak admin password should not be empty when keycloak is enabled")
 			}
 		}
 
-		if config.OpenCenter.Services["kube-prometheus-stack"].Enabled {
+		if isEnabled("kube-prometheus-stack") {
 			if config.Secrets.Grafana.AdminPassword == "" {
 				t.Error("Grafana admin password should not be empty when kube-prometheus-stack is enabled")
 			}
 		}
 
-		if config.OpenCenter.Services["weave-gitops"].Enabled {
+		if isEnabled("weave-gitops") {
 			if config.Secrets.WeaveGitOps.PasswordHash == "" {
 				t.Error("Weave GitOps password hash should not be empty when weave-gitops is enabled")
 			}
@@ -784,8 +794,10 @@ func TestConfigurationValidation(t *testing.T) {
 
 	t.Run("DetectMissingCertManagerSecrets", func(t *testing.T) {
 		config := NewDefault("test-cluster")
-		config.OpenCenter.Services["cert-manager"] = ServiceCfg{
-			Enabled: true,
+		config.OpenCenter.Services["cert-manager"] = &services.CertManagerConfig{
+			BaseConfig: services.BaseConfig{
+				Enabled: true,
+			},
 		}
 		// Don't set cert-manager secrets
 
@@ -817,8 +829,10 @@ func TestConfigurationValidation(t *testing.T) {
 
 	t.Run("DetectMissingLokiSecrets", func(t *testing.T) {
 		config := NewDefault("test-cluster")
-		config.OpenCenter.Services["loki"] = ServiceCfg{
-			Enabled: true,
+		config.OpenCenter.Services["loki"] = &services.LokiConfig{
+			BaseConfig: services.BaseConfig{
+				Enabled: true,
+			},
 		}
 		// Don't set loki secrets
 
@@ -847,16 +861,18 @@ func TestConfigurationValidation(t *testing.T) {
 
 	t.Run("DetectLokiMixedStorageBackends", func(t *testing.T) {
 		config := NewDefault("test-cluster")
-		config.OpenCenter.Services["loki"] = ServiceCfg{
-			Enabled:                      true,
-			LokiStorageType:              "swift",
-			LokiBucketName:               "loki-logs",
+		config.OpenCenter.Services["loki"] = &services.LokiConfig{
+			BaseConfig: services.BaseConfig{
+				Enabled: true,
+			},
+			StorageType:                  "swift",
+			BucketName:                   "loki-logs",
 			SwiftAuthURL:                 "https://auth.cloud.ovh.net/v3",
 			SwiftRegion:                  "GRA9",
 			SwiftApplicationCredentialID: "test-app-cred-id",
 			// Also configure S3 (should fail)
-			LokiS3Region:   "us-east-1",
-			LokiS3Endpoint: "https://s3.amazonaws.com",
+			S3Region:   "us-east-1",
+			S3Endpoint: "https://s3.amazonaws.com",
 		}
 		config.Secrets.Loki.SwiftApplicationCredentialSecret = "test-secret"
 
@@ -885,13 +901,15 @@ func TestConfigurationValidation(t *testing.T) {
 
 	t.Run("DetectLokiStorageTypeMismatch", func(t *testing.T) {
 		config := NewDefault("test-cluster")
-		config.OpenCenter.Services["loki"] = ServiceCfg{
-			Enabled:         true,
-			LokiStorageType: "swift", // Set to swift
-			LokiBucketName:  "loki-logs",
+		config.OpenCenter.Services["loki"] = &services.LokiConfig{
+			BaseConfig: services.BaseConfig{
+				Enabled: true,
+			},
+			StorageType: "swift", // Set to swift
+			BucketName:  "loki-logs",
 			// But only configure S3
-			LokiS3Region:   "us-east-1",
-			LokiS3Endpoint: "https://s3.amazonaws.com",
+			S3Region:   "us-east-1",
+			S3Endpoint: "https://s3.amazonaws.com",
 		}
 		config.Secrets.Loki.S3AccessKeyID = "AKIA..."
 		config.Secrets.Loki.S3SecretAccessKey = "secret"
@@ -921,8 +939,10 @@ func TestConfigurationValidation(t *testing.T) {
 
 	t.Run("DetectMissingKeycloakSecrets", func(t *testing.T) {
 		config := NewDefault("test-cluster")
-		config.OpenCenter.Services["keycloak"] = ServiceCfg{
-			Enabled: true,
+		config.OpenCenter.Services["keycloak"] = &services.KeycloakConfig{
+			BaseConfig: services.BaseConfig{
+				Enabled: true,
+			},
 		}
 		// Don't set keycloak secrets
 
@@ -953,8 +973,10 @@ func TestConfigurationValidation(t *testing.T) {
 
 	t.Run("DetectMissingGrafanaSecrets", func(t *testing.T) {
 		config := NewDefault("test-cluster")
-		config.OpenCenter.Services["kube-prometheus-stack"] = ServiceCfg{
-			Enabled: true,
+		config.OpenCenter.Services["kube-prometheus-stack"] = &services.PrometheusStackConfig{
+			BaseConfig: services.BaseConfig{
+				Enabled: true,
+			},
 		}
 		// Don't set grafana secrets
 
@@ -985,8 +1007,10 @@ func TestConfigurationValidation(t *testing.T) {
 
 	t.Run("DetectMissingWeaveGitOpsSecrets", func(t *testing.T) {
 		config := NewDefault("test-cluster")
-		config.OpenCenter.Services["weave-gitops"] = ServiceCfg{
-			Enabled: true,
+		config.OpenCenter.Services["weave-gitops"] = &services.WeaveGitOpsConfig{
+			BaseConfig: services.BaseConfig{
+				Enabled: true,
+			},
 		}
 		// Don't set weave-gitops secrets
 
@@ -1017,8 +1041,10 @@ func TestConfigurationValidation(t *testing.T) {
 
 	t.Run("DetectMissingHeadlampSecrets", func(t *testing.T) {
 		config := NewDefault("test-cluster")
-		config.OpenCenter.Services["headlamp"] = ServiceCfg{
-			Enabled: true,
+		config.OpenCenter.Services["headlamp"] = &services.HeadlampConfig{
+			BaseConfig: services.BaseConfig{
+				Enabled: true,
+			},
 		}
 		// Don't set headlamp secrets
 
@@ -1049,8 +1075,10 @@ func TestConfigurationValidation(t *testing.T) {
 
 	t.Run("DetectMissingAlertProxySecrets", func(t *testing.T) {
 		config := NewDefault("test-cluster")
-		config.OpenCenter.ManagedService["alert-proxy"] = ServiceCfg{
-			Enabled: true,
+		config.OpenCenter.ManagedService["alert-proxy"] = &services.AlertProxyConfig{
+			BaseConfig: services.BaseConfig{
+				Enabled: true,
+			},
 		}
 		// Don't set alert-proxy secrets
 
