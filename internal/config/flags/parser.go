@@ -39,6 +39,7 @@ func NewEnhancedFlagParser() *EnhancedFlagParser {
 			FlagTypeYAML,
 			FlagTypeTemplate,
 			FlagTypeFile,
+			FlagTypeOutput,
 			FlagTypeDotNotation, // Default fallback
 		},
 	}
@@ -83,8 +84,11 @@ func (p *EnhancedFlagParser) ParseFlags(args []string) (*ParsedFlags, error) {
 		YAMLFlags:       []YAMLFlag{},
 		TemplateVars:    make(map[string]string),
 		ConfigFiles:     []ConfigFile{},
+		ConfigFileFlags: []*ConfigFileFlag{},
 		ArrayOperations: []ArrayOperationFlag{},
 		MapOperations:   []MapFlag{},
+		OutputFormat:    nil,
+		OutputMode:      nil,
 	}
 	
 	for _, arg := range args {
@@ -200,10 +204,45 @@ func (p *EnhancedFlagParser) routeToHandler(handler FlagHandler, flagName, value
 	case FlagTypeTemplate:
 		result.TemplateVars[p.extractVariableName(flagName)] = value
 	case FlagTypeFile:
-		result.ConfigFiles = append(result.ConfigFiles, ConfigFile{
-			Path: value,
-			Type: p.detectFileType(value),
-		})
+		parsed, err := handler.ParseFlag(flagName, value)
+		if err != nil {
+			return err
+		}
+		
+		// Handle both single file flags and config stack flags
+		switch parsedValue := parsed.(type) {
+		case *ConfigFileFlag:
+			result.ConfigFileFlags = append(result.ConfigFileFlags, parsedValue)
+		case []*ConfigFileFlag:
+			result.ConfigFileFlags = append(result.ConfigFileFlags, parsedValue...)
+		default:
+			// Fallback to old ConfigFile format for backward compatibility
+			result.ConfigFiles = append(result.ConfigFiles, ConfigFile{
+				Path: value,
+				Type: p.detectFileType(value),
+			})
+		}
+	case FlagTypeOutput:
+		parsed, err := handler.ParseFlag(flagName, value)
+		if err != nil {
+			return err
+		}
+		
+		// Handle output format and mode flags
+		switch parsedValue := parsed.(type) {
+		case *OutputFormatFlag:
+			result.OutputFormat = parsedValue
+		case *OutputModeFlag:
+			// Merge output mode flags (dry-run and quiet can both be set)
+			if result.OutputMode == nil {
+				result.OutputMode = parsedValue
+			} else {
+				// If both dry-run and quiet are set, quiet takes precedence
+				if parsedValue.Mode == OutputModeQuiet {
+					result.OutputMode = parsedValue
+				}
+			}
+		}
 	default:
 		// Default to dot notation
 		result.DotNotation[flagName] = value

@@ -97,8 +97,11 @@ func TestProperty_JSONRoundTripIntegrity(t *testing.T) {
 			// Create a copy of the base configuration
 			targetConfig := make(map[string]interface{})
 			for k, v := range baseConfig {
-				targetConfig[k] = v
+				targetConfig[k] = deepCopy(v)
 			}
+			
+			// Get the original value at the path (if any)
+			originalValue := getValueAtPath(targetConfig, jsonPath)
 			
 			// Create a JSON flag
 			jsonFlag := &JSONFlag{
@@ -120,8 +123,41 @@ func TestProperty_JSONRoundTripIntegrity(t *testing.T) {
 				return false // The value should be present after merging
 			}
 			
-			// Verify structural equality of the merged value
-			return deepEqual(jsonValue, retrievedValue)
+			// Verify merge behavior based on value types
+			switch newVal := jsonValue.(type) {
+			case map[string]interface{}:
+				if originalMap, ok := originalValue.(map[string]interface{}); ok {
+					// Both are maps - verify deep merge occurred
+					retrievedMap, ok := retrievedValue.(map[string]interface{})
+					if !ok {
+						return false
+					}
+					
+					// All keys from the new value should be present
+					for key, value := range newVal {
+						if !deepEqual(retrievedMap[key], value) {
+							return false
+						}
+					}
+					
+					// All keys from the original value should still be present (unless overwritten)
+					for key, value := range originalMap {
+						if _, exists := newVal[key]; !exists {
+							// Key wasn't overwritten, should still exist
+							if !deepEqual(retrievedMap[key], value) {
+								return false
+							}
+						}
+					}
+					return true
+				} else {
+					// Original wasn't a map, should be replaced
+					return deepEqual(jsonValue, retrievedValue)
+				}
+			default:
+				// For non-maps, the value should be replaced
+				return deepEqual(jsonValue, retrievedValue)
+			}
 		},
 		genConfigMap(),
 		genConfigPath(),
@@ -181,6 +217,27 @@ func genConfigPath() gopter.Gen {
 		"networking.dns",
 		"services.monitoring.enabled",
 	)
+}
+
+// deepCopy creates a deep copy of a value
+func deepCopy(value interface{}) interface{} {
+	switch v := value.(type) {
+	case map[string]interface{}:
+		copy := make(map[string]interface{})
+		for key, val := range v {
+			copy[key] = deepCopy(val)
+		}
+		return copy
+	case []interface{}:
+		copy := make([]interface{}, len(v))
+		for i, val := range v {
+			copy[i] = deepCopy(val)
+		}
+		return copy
+	default:
+		// Primitive types can be copied directly
+		return v
+	}
 }
 
 // deepEqual compares two JSON values for structural equality

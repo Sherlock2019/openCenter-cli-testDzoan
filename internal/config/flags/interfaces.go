@@ -25,6 +25,8 @@ const (
 	FlagTypeYAML       FlagType = "yaml"
 	FlagTypeTemplate   FlagType = "template"
 	FlagTypeFile       FlagType = "file"
+	FlagTypeOutput     FlagType = "output"           // New type for output flags
+	FlagTypeSecurity   FlagType = "security"         // New type for security flags
 )
 
 // FlagParser handles all types of CLI flag parsing
@@ -86,8 +88,12 @@ type ParsedFlags struct {
 	YAMLFlags        []YAMLFlag
 	TemplateVars     map[string]string
 	ConfigFiles      []ConfigFile
+	ConfigFileFlags  []*ConfigFileFlag     // New configuration file flags with merge info
 	ArrayOperations  []ArrayOperationFlag  // Array operations (append, insert, remove)
 	MapOperations    []MapFlag             // Map operations (set, merge, remove)
+	OutputFormat     *OutputFormatFlag     // Output format flag
+	OutputMode       *OutputModeFlag       // Output mode flag
+	SecurityFlags    []SecurityFlag        // Security-related flags
 }
 
 // ArrayFlag represents a parsed array flag (for dedicated handlers)
@@ -120,4 +126,92 @@ type YAMLFlag struct {
 type ConfigFile struct {
 	Path string
 	Type string
+}
+
+// ConfigFileFlag represents a parsed configuration file flag with merge information
+type ConfigFileFlag struct {
+	Path      string
+	Type      string
+	Priority  int
+	MergeType ConfigFileMergeType
+}
+
+// ConfigFileMergeType defines how configuration files should be merged
+type ConfigFileMergeType string
+
+const (
+	ConfigFileMergeBase     ConfigFileMergeType = "base"     // Base configuration (lowest priority)
+	ConfigFileMergeOverride ConfigFileMergeType = "override" // Override configuration (higher priority)
+	ConfigFileMergeStack    ConfigFileMergeType = "stack"    // Stack configuration (priority by order)
+)
+// SecurityFlag represents a security-related flag
+type SecurityFlag interface {
+	GetSecurityType() SecurityFlagType
+}
+
+// SecurityFlagType represents the type of security flag
+type SecurityFlagType string
+
+const (
+	SecurityFlagTypeSecureTemplateVar SecurityFlagType = "secure_template_var"
+	SecurityFlagTypeMaskSensitive     SecurityFlagType = "mask_sensitive"
+	SecurityFlagTypeSecurityWarnings  SecurityFlagType = "security_warnings"
+	SecurityFlagTypeSOPSConfig        SecurityFlagType = "sops_config"
+	SecurityFlagTypeEncryptedConfig   SecurityFlagType = "encrypted_config"
+)
+
+// SecureTemplateVarFlag represents a secure template variable flag
+type SecureTemplateVarFlag struct {
+	Key    string
+	Value  string
+	IsFile bool
+}
+
+func (f *SecureTemplateVarFlag) GetSecurityType() SecurityFlagType {
+	return SecurityFlagTypeSecureTemplateVar
+}
+
+// MaskSensitiveFlag represents a flag to enable/disable sensitive data masking
+type MaskSensitiveFlag struct {
+	Enabled bool
+}
+
+func (f *MaskSensitiveFlag) GetSecurityType() SecurityFlagType {
+	return SecurityFlagTypeMaskSensitive
+}
+
+// SecurityWarningsFlag represents a flag to enable/disable security warnings
+type SecurityWarningsFlag struct {
+	Enabled bool
+}
+
+func (f *SecurityWarningsFlag) GetSecurityType() SecurityFlagType {
+	return SecurityFlagTypeSecurityWarnings
+}
+
+// SOPSConfigFlag represents a SOPS configuration flag
+type SOPSConfigFlag struct {
+	ConfigPath string
+}
+
+func (f *SOPSConfigFlag) GetSecurityType() SecurityFlagType {
+	return SecurityFlagTypeSOPSConfig
+}
+
+// EncryptedConfigFlag represents an encrypted configuration file flag
+type EncryptedConfigFlag struct {
+	ConfigPath string
+}
+
+func (f *EncryptedConfigFlag) GetSecurityType() SecurityFlagType {
+	return SecurityFlagTypeEncryptedConfig
+}
+
+// SecurityWarning represents a security warning
+type SecurityWarning struct {
+	Type       string
+	Severity   string
+	Message    string
+	Field      string
+	Suggestion string
 }

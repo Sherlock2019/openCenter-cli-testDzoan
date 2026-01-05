@@ -427,52 +427,9 @@ func TestDefaultConfigurationMerger_PrecedenceOrdering(t *testing.T) {
 
 // Helper functions
 
-func compareConfigValues(a, b map[string]interface{}) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	
-	for key, aVal := range a {
-		bVal, exists := b[key]
-		if !exists {
-			return false
-		}
-		
-		if !compareValues(aVal, bVal) {
-			return false
-		}
-	}
-	
-	return true
-}
-
-func compareArrays(a, b []interface{}) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	
-	for i, aVal := range a {
-		if !compareValues(aVal, b[i]) {
-			return false
-		}
-	}
-	
-	return true
-}
-
-func compareValues(a, b interface{}) bool {
-	switch aVal := a.(type) {
-	case map[string]interface{}:
-		if bMap, ok := b.(map[string]interface{}); ok {
-			return compareConfigValues(aVal, bMap)
-		}
-		return false
-	case []interface{}:
-		if bArray, ok := b.([]interface{}); ok {
-			return compareArrays(aVal, bArray)
-		}
-		return false
-	default:
-		return a == b
+func createTestConfiguration(data map[string]interface{}, sourceType SourceType) Configuration {
+	return Configuration{
+		Data:    data,
+		Sources: []ConfigSource{{Type: sourceType, Path: "test"}},
 	}
 }
