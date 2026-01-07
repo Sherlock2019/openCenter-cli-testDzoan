@@ -31,7 +31,6 @@ import (
 //
 // It checks for the presence of:
 //   - README.md: Base GitOps structure file
-//   - .gitignore: Git configuration file
 //   - .git directory: Git repository initialization
 //
 // Returns true if the directory appears to be initialized, false otherwise.
@@ -48,7 +47,6 @@ func IsGitOpsInitialized(gitDir string) (bool, error) {
 	// Check for marker files that indicate initialization
 	markerFiles := []string{
 		"README.md",
-		".gitignore",
 	}
 
 	for _, marker := range markerFiles {

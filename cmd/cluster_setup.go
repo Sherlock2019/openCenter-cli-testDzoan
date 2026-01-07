@@ -16,7 +16,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -31,15 +30,19 @@ import (
 func newClusterSetupCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "setup [name]",
-		Short: "Setup GitOps directory (one-time initialization with Git)",
-		Long: `Setup GitOps directory structure and initialize Git repository.
+		Short: "Setup GitOps directory (depends on cluster init)",
+		Long: `Setup GitOps directory structure for an initialized cluster.
 
-This command performs one-time GitOps repository initialization including:
-- Creating organization-based directory structure
-- Rendering all templates
-- Initializing Git repository
-- Setting up SOPS configuration
-- Making initial commit
+This command performs GitOps repository setup for a cluster that has already been
+initialized with 'cluster init'. It includes:
+- Rendering all templates to organization structure
+- Setting up SOPS configuration using existing keys
+- Creating cluster-specific manifests
+
+Prerequisites:
+- Cluster must be initialized first with 'cluster init'
+- SOPS keys must exist (created during init)
+- Organization directory structure must exist (created during init)
 
 For iterative development and template re-rendering, use 'cluster render' instead.`,
 		Args:  cobra.MaximumNArgs(1),
@@ -100,17 +103,6 @@ For iterative development and template re-rendering, use 'cluster render' instea
 	return cmd
 }
 
-// runGit executes a git command in the given directory, streaming
-// output to the provided cobra.Command's stdout/stderr. It returns an
-// error if the command fails.
-func runGit(dir string, args []string, cmd *cobra.Command) error {
-	g := exec.Command("git", args...)
-	g.Dir = dir
-	g.Stdout = cmd.OutOrStdout()
-	g.Stderr = cmd.ErrOrStderr()
-	return g.Run()
-}
-
 // setupOrganizationGitOps sets up the organization-based GitOps repository structure.
 // This function implements the enhanced GitOps integration with organization support.
 func setupOrganizationGitOps(cfg config.Config, organization string, render, force bool, cmd *cobra.Command) error {
@@ -141,6 +133,11 @@ func setupOrganizationGitOps(cfg config.Config, organization string, render, for
 		updatedCfg.OpenCenter.GitOps.GitDir = paths.GitOpsDir
 	}
 
+	// Validate that cluster init has been run first
+	if err := validateClusterInitCompleted(clusterName, organization, paths); err != nil {
+		return fmt.Errorf("cluster init required: %w", err)
+	}
+
 	// Check if already initialized unless force is specified
 	if !force {
 		initialized, err := gitops.IsGitOpsInitialized(updatedCfg.GitOps().GitDir)
@@ -158,16 +155,6 @@ func setupOrganizationGitOps(cfg config.Config, organization string, render, for
 		}
 	} else {
 		fmt.Fprintln(cmd.OutOrStdout(), "Force flag set: reinitializing GitOps directory")
-	}
-
-	// Create organization directory structure
-	if err := pathResolver.CreateOrganizationStructure(organization); err != nil {
-		return fmt.Errorf("failed to create organization structure: %w", err)
-	}
-
-	// Create cluster-specific directories
-	if err := pathResolver.CreateClusterDirectories(clusterName, organization); err != nil {
-		return fmt.Errorf("failed to create cluster directories: %w", err)
 	}
 
 	// Setup GitOps base structure at organization level
@@ -189,18 +176,13 @@ func setupOrganizationGitOps(cfg config.Config, organization string, render, for
 		return fmt.Errorf("failed to provision opentofu: %w", err)
 	}
 
-	// Setup shared SOPS configuration at organization level
+	// Setup shared SOPS configuration at organization level using existing keys
 	if err := setupOrganizationSOPS(cfg, paths, organization); err != nil {
 		return fmt.Errorf("failed to setup organization SOPS: %w", err)
 	}
 
-	// Initialize Git repository at the configured git_dir location
-	gitDir := updatedCfg.GitOps().GitDir
-	if err := initializeOrganizationGitRepo(gitDir, cmd); err != nil {
-		return fmt.Errorf("failed to initialize git repository: %w", err)
-	}
-
 	// Write .opencenter marker with cluster name
+	gitDir := updatedCfg.GitOps().GitDir
 	markerPath := filepath.Join(gitDir, ".opencenter")
 	markerContent := fmt.Sprintf("organization: %s\nclusters:\n  - %s\n", organization, clusterName)
 
@@ -219,14 +201,32 @@ func setupOrganizationGitOps(cfg config.Config, organization string, render, for
 		return fmt.Errorf("failed to write .opencenter marker: %w", err)
 	}
 
-	// Add and commit changes
-	if err := runGit(gitDir, []string{"add", "."}, cmd); err != nil {
-		return fmt.Errorf("failed to add files to git: %w", err)
+	return nil
+}
+
+// validateClusterInitCompleted validates that cluster init has been run first.
+// It checks for the existence of required files and directories created during init.
+func validateClusterInitCompleted(clusterName, organization string, paths config.ClusterPaths) error {
+	// Check if cluster configuration file exists at organization level
+	configPath := filepath.Join(paths.OrganizationDir, "."+clusterName+"-config.yaml")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		return fmt.Errorf("cluster configuration not found at %s\n\n"+
+			"Please run 'openCenter cluster init %s' first to create the cluster configuration", 
+			configPath, clusterName)
 	}
 
-	commitMsg := fmt.Sprintf("Setup cluster %s in organization %s", clusterName, organization)
-	if err := runGit(gitDir, []string{"commit", "-m", commitMsg, "--allow-empty"}, cmd); err != nil {
-		return fmt.Errorf("failed to commit changes: %w", err)
+	// Check if SOPS key exists
+	if _, err := os.Stat(paths.SOPSKeyPath); os.IsNotExist(err) {
+		return fmt.Errorf("SOPS key not found at %s\n\n"+
+			"Please run 'openCenter cluster init %s' first to generate the required SOPS key", 
+			paths.SOPSKeyPath, clusterName)
+	}
+
+	// Check if organization directory structure exists
+	if _, err := os.Stat(paths.OrganizationDir); os.IsNotExist(err) {
+		return fmt.Errorf("organization directory not found at %s\n\n"+
+			"Please run 'openCenter cluster init %s' first to create the organization structure", 
+			paths.OrganizationDir, clusterName)
 	}
 
 	return nil
@@ -239,7 +239,7 @@ func setupOrganizationSOPS(cfg config.Config, paths config.ClusterPaths, organiz
 
 	clusterName := cfg.ClusterName()
 
-	// Try to load existing SOPS key first (created during cluster init)
+	// Load existing SOPS key (created during cluster init)
 	keyPair, err := keyManager.LoadAgeKey(clusterName)
 	if err != nil {
 		return fmt.Errorf("SOPS key for cluster %s not found: %v\n\n"+
@@ -341,61 +341,6 @@ func extractAgeKey(line string) string {
 		}
 	}
 	return ""
-}
-
-// initializeOrganizationGitRepo initializes the Git repository at the organization level.
-func initializeOrganizationGitRepo(gitDir string, cmd *cobra.Command) error {
-	// Check if git repo already exists
-	if _, err := os.Stat(filepath.Join(gitDir, ".git")); err == nil {
-		fmt.Fprintln(cmd.OutOrStdout(), "Using existing Git repository")
-		return nil // Already initialized
-	}
-
-	// Initialize git repository
-	cmdGit := exec.Command("git", "init", "-b", "main")
-	cmdGit.Dir = gitDir
-	cmdGit.Stdout = cmd.OutOrStdout()
-	cmdGit.Stderr = cmd.ErrOrStderr()
-	if err := cmdGit.Run(); err != nil {
-		return fmt.Errorf("git init failed: %w", err)
-	}
-
-	// Create .gitignore for organization
-	gitignoreContent := `# SOPS-related files
-.sops.yaml.bak
-*.dec
-*.dec.*
-*.tmp
-
-# Terraform/OpenTofu files
-*.tfstate
-*.tfstate.*
-.terraform/
-.terraform.lock.hcl
-
-# IDE and editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Local development files
-.env
-.env.local
-`
-
-	gitignorePath := filepath.Join(gitDir, ".gitignore")
-	if err := os.WriteFile(gitignorePath, []byte(gitignoreContent), 0644); err != nil {
-		return fmt.Errorf("failed to create .gitignore: %w", err)
-	}
-
-	fmt.Fprintln(cmd.OutOrStdout(), "Created GitOps repo")
-	return nil
 }
 
 // validateGitDir validates that the git_dir is set and accessible.

@@ -641,7 +641,7 @@ Troubleshooting:
 				return fmt.Errorf("failed to marshal final config: %w", err)
 			}
 
-			// Get the config path at organization level (primary location per design document)
+			// Get the config path at organization level (per structure document)
 			configPath := filepath.Join(clusterPaths.OrganizationDir, "."+name+"-config.yaml")
 
 			// Write the config file with proper permissions (0600 for files)
