@@ -384,41 +384,6 @@ Thumbs.db
 	fmt.Fprintln(cmd.OutOrStdout(), "Created GitOps repo")
 	return nil
 }
-.sops.yaml.bak
-*.dec
-*.dec.*
-*.tmp
-
-# Terraform/OpenTofu files
-*.tfstate
-*.tfstate.*
-.terraform/
-.terraform.lock.hcl
-
-# IDE and editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Local development files
-.env
-.env.local
-`
-
-	gitignorePath := filepath.Join(gitDir, ".gitignore")
-	if err := os.WriteFile(gitignorePath, []byte(gitignoreContent), 0644); err != nil {
-		return fmt.Errorf("failed to create .gitignore: %w", err)
-	}
-
-	fmt.Fprintln(cmd.OutOrStdout(), "Created GitOps repo")
-	return nil
-}
 
 // validateGitDir validates that the git_dir is set and accessible.
 // It returns a clear error message if validation fails.
