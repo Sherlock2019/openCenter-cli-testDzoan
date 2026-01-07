@@ -999,8 +999,8 @@ func TestConfigValidatorComprehensive(t *testing.T) {
 			},
 			autoRepair:     false,
 			expectValid:    false,
-			expectErrors:   7, // level, format, output, maxSize, maxBackups, maxAge, configDir, clustersDir
-			expectWarnings: 6, // autoConfirm without dryRun, provider, region, environment, disk space warnings
+			expectErrors:   8, // level, format, output, maxSize, maxBackups, maxAge, configDir, clustersDir, pluginsDir
+			expectWarnings: 7, // autoConfirm without dryRun, provider, region, environment, disk space warnings (configDir, clustersDir, pluginsDir)
 			expectRepairs:  0,
 		},
 		{
@@ -1034,7 +1034,7 @@ func TestConfigValidatorComprehensive(t *testing.T) {
 			expectValid:    true,
 			expectErrors:   0,
 			expectWarnings: 4, // Warnings are not auto-repaired (excluding disk space warnings which are repaired)
-			expectRepairs:  7, // All validation errors should be repaired
+			expectRepairs:  8, // All validation errors should be repaired (including pluginsDir)
 		},
 		{
 			name:           "valid config",

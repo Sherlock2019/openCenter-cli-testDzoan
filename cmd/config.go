@@ -99,6 +99,7 @@ func newConfigSetCmd() *cobra.Command {
 Examples:
   openCenter config set logging.level debug
   openCenter config set paths.clustersDir ~/my-clusters
+  openCenter config set paths.pluginsDir ~/my-plugins
   openCenter config set behavior.autoConfirm true
   openCenter config set defaults.provider openstack
 
@@ -112,6 +113,7 @@ Supported configuration sections:
   - logging.file.compress (boolean)
   - paths.configDir (string)
   - paths.clustersDir (string)
+  - paths.pluginsDir (string)
   - behavior.autoConfirm (boolean)
   - behavior.dryRun (boolean)
   - behavior.verbose (boolean)
@@ -161,6 +163,7 @@ func newConfigGetCmd() *cobra.Command {
 Examples:
   openCenter config get logging.level
   openCenter config get paths.clustersDir
+  openCenter config get paths.pluginsDir
   openCenter config get behavior.autoConfirm
 
 Use dot notation to access nested configuration values. If the key doesn't exist,
@@ -226,6 +229,7 @@ Default values:
   - logging.output: stderr
   - paths.configDir: ~/.config/openCenter
   - paths.clustersDir: ~/.config/openCenter/clusters
+  - paths.pluginsDir: ~/.config/openCenter/plugins
   - behavior.autoConfirm: false
   - behavior.dryRun: false
   - behavior.verbose: false
