@@ -16,6 +16,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -648,6 +649,11 @@ Troubleshooting:
 				return fmt.Errorf("failed to write cluster configuration file to '%s': %w", configPath, err)
 			}
 
+			// Initialize git repository in the GitOps directory
+			if err := initializeGitRepository(clusterPaths.GitOpsDir, cmd); err != nil {
+				return fmt.Errorf("failed to initialize git repository: %w", err)
+			}
+
 			fmt.Fprintf(cmd.OutOrStdout(), "Created cluster configuration in organization '%s' at '%s'\n", organization, clusterPaths.ClusterDir)
 			fmt.Fprintf(cmd.OutOrStdout(), "GitOps repository root: %s\n", clusterPaths.GitOpsDir)
 			fmt.Fprintf(cmd.OutOrStdout(), "SOPS key location: %s\n", clusterPaths.SOPSKeyPath)
@@ -662,6 +668,82 @@ Troubleshooting:
 	cmd.Flags().Bool("no-sops-keygen", false, "do not auto-generate SOPS age keys (alias for no-keygen)")
 	cmd.Flags().Bool("regenerate-keys", false, "regenerate SOPS age keys and SSH key pairs even if they already exist")
 	return cmd
+}
+
+// initializeGitRepository initializes a git repository in the specified directory
+// and makes an initial commit with the configuration files.
+func initializeGitRepository(gitDir string, cmd *cobra.Command) error {
+	// Check if git repository already exists
+	if _, err := os.Stat(filepath.Join(gitDir, ".git")); err == nil {
+		// Git repository already exists, skip initialization
+		return nil
+	}
+
+	// Create the directory if it doesn't exist
+	if err := os.MkdirAll(gitDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create git directory: %w", err)
+	}
+
+	// Initialize git repository
+	if err := runGitCommand(gitDir, []string{"init", "-b", "main"}, cmd); err != nil {
+		return fmt.Errorf("failed to initialize git repository: %w", err)
+	}
+
+	// Create a basic .gitignore file
+	gitignoreContent := `# SOPS-related files
+.sops.yaml.bak
+*.dec
+*.dec.*
+*.tmp
+
+# Terraform/OpenTofu files
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local development files
+.env
+.env.local
+`
+
+	gitignorePath := filepath.Join(gitDir, ".gitignore")
+	if err := os.WriteFile(gitignorePath, []byte(gitignoreContent), 0o644); err != nil {
+		return fmt.Errorf("failed to create .gitignore: %w", err)
+	}
+
+	// Add all files to git
+	if err := runGitCommand(gitDir, []string{"add", "."}, cmd); err != nil {
+		return fmt.Errorf("failed to add files to git: %w", err)
+	}
+
+	// Make initial commit
+	if err := runGitCommand(gitDir, []string{"commit", "-m", "initializing git repo", "--allow-empty"}, cmd); err != nil {
+		return fmt.Errorf("failed to make initial commit: %w", err)
+	}
+
+	fmt.Fprintf(cmd.OutOrStdout(), "Initialized git repository at %s\n", gitDir)
+	return nil
+}
+
+// runGitCommand executes a git command in the specified directory
+func runGitCommand(dir string, args []string, cmd *cobra.Command) error {
+	gitCmd := exec.Command("git", args...)
+	gitCmd.Dir = dir
+	gitCmd.Stdout = cmd.OutOrStdout()
+	gitCmd.Stderr = cmd.ErrOrStderr()
+	return gitCmd.Run()
 }
 
 // cleanupClusterDirectory removes the existing cluster directory and all its contents
