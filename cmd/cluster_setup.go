@@ -138,7 +138,7 @@ func setupOrganizationGitOps(cfg config.Config, organization string, render, for
 			return fmt.Errorf("failed to check if GitOps is initialized: %w", err)
 		}
 		if initialized {
-			fmt.Fprintln(cmd.OutOrStdout(), "already initialized")
+			fmt.Fprintln(cmd.OutOrStdout(), "GitOps directory already initialized")
 			fmt.Fprintf(cmd.OutOrStdout(), "GitOps directory: %s\n", updatedCfg.GitOps().GitDir)
 			fmt.Fprintln(cmd.OutOrStdout(), "Use --force to reinitialize and overwrite existing files")
 			return nil
@@ -229,12 +229,12 @@ func setupOrganizationSOPS(cfg config.Config, paths config.ClusterPaths, organiz
 	// Try to load existing SOPS key first (created during cluster init)
 	keyPair, err := keyManager.LoadAgeKey(clusterName)
 	if err != nil {
-		// If key doesn't exist, generate a new one
-		keyPair, err = keyManager.GenerateKeyForCluster(clusterName)
-		if err != nil {
-			return fmt.Errorf("failed to generate or load SOPS key for cluster %s: %w", clusterName, err)
-		}
+		return fmt.Errorf("SOPS key for cluster %s not found: %w\n\n"+
+			"Please run 'openCenter cluster init %s' first to create the required SOPS key, "+
+			"or ensure the key exists at: %s", clusterName, clusterName, paths.SOPSKeyPath)
 	}
+
+	fmt.Printf("Using existing SOPS key for cluster %s\n", clusterName)
 
 	// Create or update organization-wide SOPS configuration
 	if err := createOrganizationSOPSConfigForSetup(paths.SOPSConfigPath, organization, clusterName, keyPair.PublicKey); err != nil {
@@ -334,6 +334,7 @@ func extractAgeKey(line string) string {
 func initializeOrganizationGitRepo(gitDir string, cmd *cobra.Command) error {
 	// Check if git repo already exists
 	if _, err := os.Stat(filepath.Join(gitDir, ".git")); err == nil {
+		fmt.Fprintln(cmd.OutOrStdout(), "Using existing Git repository")
 		return nil // Already initialized
 	}
 
@@ -348,6 +349,41 @@ func initializeOrganizationGitRepo(gitDir string, cmd *cobra.Command) error {
 
 	// Create .gitignore for organization
 	gitignoreContent := `# SOPS-related files
+.sops.yaml.bak
+*.dec
+*.dec.*
+*.tmp
+
+# Terraform/OpenTofu files
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local development files
+.env
+.env.local
+`
+
+	gitignorePath := filepath.Join(gitDir, ".gitignore")
+	if err := os.WriteFile(gitignorePath, []byte(gitignoreContent), 0644); err != nil {
+		return fmt.Errorf("failed to create .gitignore: %w", err)
+	}
+
+	fmt.Fprintln(cmd.OutOrStdout(), "Created GitOps repo")
+	return nil
+}
 .sops.yaml.bak
 *.dec
 *.dec.*
