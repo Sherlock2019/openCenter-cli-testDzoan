@@ -23,7 +23,7 @@ import (
 )
 
 // Feature: cli-configuration-enhancement, Property 9: Error reporting completeness
-// For any invalid configuration input, the CLI should report all errors with specific locations, 
+// For any invalid configuration input, the CLI should report all errors with specific locations,
 // suggested fixes, and clear error messages
 // Validates: Requirements 2.3, 3.4, 4.2, 5.3, 7.5, 10.1, 10.2, 10.3, 10.5
 func TestProperty_ErrorReportingCompleteness(t *testing.T) {
@@ -35,26 +35,26 @@ func TestProperty_ErrorReportingCompleteness(t *testing.T) {
 		func(invalidPath string) bool {
 			engine := NewEnhancedReflectionEngine()
 			config := &TestErrorConfig{}
-			
+
 			// Try to set a field with invalid path syntax
 			err := engine.SetField(config, invalidPath, "test-value")
-			
+
 			// Should produce an error
 			if err == nil {
 				return false
 			}
-			
+
 			// Error message should contain the invalid path
 			errorMsg := err.Error()
 			if !strings.Contains(errorMsg, invalidPath) {
 				return false
 			}
-			
+
 			// Error message should be descriptive (not just "error")
 			if len(errorMsg) < 10 {
 				return false
 			}
-			
+
 			return true
 		},
 		genInvalidPath(),
@@ -64,27 +64,27 @@ func TestProperty_ErrorReportingCompleteness(t *testing.T) {
 		func(fieldPath string, invalidValue string) bool {
 			engine := NewEnhancedReflectionEngine()
 			config := &TestErrorConfig{}
-			
+
 			// Try to set an integer field with invalid value
 			err := engine.SetField(config, fieldPath, invalidValue)
-			
+
 			// Should produce an error for invalid integer values
 			if err == nil {
 				return false
 			}
-			
+
 			errorMsg := err.Error()
-			
+
 			// Error should mention the invalid value
 			if !strings.Contains(errorMsg, invalidValue) {
 				return false
 			}
-			
+
 			// Error should be informative
 			if len(errorMsg) < 15 {
 				return false
 			}
-			
+
 			return true
 		},
 		gen.OneConstOf("intField", "count", "number"), // integer field paths
@@ -95,28 +95,28 @@ func TestProperty_ErrorReportingCompleteness(t *testing.T) {
 		func(invalidField string) bool {
 			engine := NewEnhancedReflectionEngine()
 			config := &TestErrorConfig{}
-			
+
 			// Try to set a nonexistent field
 			err := engine.SetField(config, invalidField, "test-value")
-			
+
 			// Should produce an error
 			if err == nil {
 				return false
 			}
-			
+
 			errorMsg := err.Error()
-			
+
 			// Error should mention the field name
 			if !strings.Contains(errorMsg, invalidField) {
 				return false
 			}
-			
+
 			// Error should indicate field not found
 			lowerMsg := strings.ToLower(errorMsg)
 			if !strings.Contains(lowerMsg, "not found") && !strings.Contains(lowerMsg, "invalid") {
 				return false
 			}
-			
+
 			return true
 		},
 		genNonexistentField(),
@@ -126,28 +126,28 @@ func TestProperty_ErrorReportingCompleteness(t *testing.T) {
 		func(largeIndex int) bool {
 			engine := NewEnhancedReflectionEngine()
 			config := &TestErrorConfig{}
-			
+
 			// Initialize a small array
 			if err := engine.SetField(config, "items[0].name", "first"); err != nil {
 				return false
 			}
-			
+
 			// Try to access way beyond bounds without expansion
 			path := "items.name" // This should fail because items[0] is a struct, not an array
 			err := engine.SetField(config, path, "test")
-			
+
 			// Should produce an error
 			if err == nil {
 				return false
 			}
-			
+
 			errorMsg := err.Error()
-			
+
 			// Error should be descriptive
 			if len(errorMsg) < 10 {
 				return false
 			}
-			
+
 			return true
 		},
 		gen.IntRange(100, 1000), // Large indices
@@ -156,7 +156,7 @@ func TestProperty_ErrorReportingCompleteness(t *testing.T) {
 	properties.Property("error reporter aggregates multiple errors", prop.ForAll(
 		func(errorCount int) bool {
 			reporter := NewErrorReporter()
-			
+
 			// Add multiple errors
 			for i := 0; i < errorCount; i++ {
 				err := &ConfigError{
@@ -166,22 +166,22 @@ func TestProperty_ErrorReportingCompleteness(t *testing.T) {
 				}
 				reporter.Add(err)
 			}
-			
+
 			// Should have the correct number of errors
 			if len(reporter.Errors()) != errorCount {
 				return false
 			}
-			
+
 			// Should report having errors if count > 0
 			if errorCount > 0 && !reporter.HasErrors() {
 				return false
 			}
-			
+
 			// Should not report having errors if count == 0
 			if errorCount == 0 && reporter.HasErrors() {
 				return false
 			}
-			
+
 			// Error message should mention the count if multiple errors
 			errorMsg := reporter.Error()
 			if errorCount > 1 {
@@ -189,7 +189,7 @@ func TestProperty_ErrorReportingCompleteness(t *testing.T) {
 					return false
 				}
 			}
-			
+
 			return true
 		},
 		gen.IntRange(0, 5), // Number of errors
@@ -202,33 +202,33 @@ func TestProperty_ErrorReportingCompleteness(t *testing.T) {
 				Path:    path,
 				Message: message,
 			}
-			
+
 			// Error should preserve type
 			if err.Type != errorType {
 				return false
 			}
-			
+
 			// Error should preserve path
 			if err.Path != path {
 				return false
 			}
-			
+
 			// Error should preserve message
 			if err.Message != message {
 				return false
 			}
-			
+
 			// String representation should include type
 			errorStr := err.Error()
 			if !strings.Contains(errorStr, string(errorType)) {
 				return false
 			}
-			
+
 			// String representation should include path if not empty
 			if path != "" && !strings.Contains(errorStr, path) {
 				return false
 			}
-			
+
 			return true
 		},
 		genErrorType(),
@@ -260,18 +260,18 @@ type TestErrorItem struct {
 
 func genInvalidPath() gopter.Gen {
 	return gen.OneConstOf(
-		"",                    // Empty path
-		".",                   // Just dot
-		".field",              // Starting with dot
-		"field.",              // Ending with dot
-		"field..subfield",     // Double dot
-		"field[",              // Unclosed bracket
-		"field]",              // Unmatched bracket
-		"field[-1]",           // Negative index
-		"field[abc]",          // Non-numeric index
-		"field[0",             // Unclosed bracket with index
-		"123field",            // Starting with number
-		"field-with-spaces ",  // Trailing space
+		"",                      // Empty path
+		".",                     // Just dot
+		".field",                // Starting with dot
+		"field.",                // Ending with dot
+		"field..subfield",       // Double dot
+		"field[",                // Unclosed bracket
+		"field]",                // Unmatched bracket
+		"field[-1]",             // Negative index
+		"field[abc]",            // Non-numeric index
+		"field[0",               // Unclosed bracket with index
+		"123field",              // Starting with number
+		"field-with-spaces ",    // Trailing space
 		"field\nwith\nnewlines", // Newlines
 	)
 }

@@ -49,10 +49,10 @@ func (h *SubnetFlagHandler) ParseArrayFlag(flagName, value string) (*ArrayConfig
 	if value == "" {
 		return nil, fmt.Errorf("subnet flag value cannot be empty")
 	}
-	
+
 	// Parse comma-separated key=value pairs for subnet configuration
 	fields := make(map[string]interface{})
-	
+
 	// Split by comma and parse each key=value pair
 	pairs := strings.Split(value, ",")
 	for _, pair := range pairs {
@@ -60,22 +60,22 @@ func (h *SubnetFlagHandler) ParseArrayFlag(flagName, value string) (*ArrayConfig
 		if pair == "" {
 			continue
 		}
-		
+
 		parts := strings.SplitN(pair, "=", 2)
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid key=value pair in subnet flag: '%s'", pair)
 		}
-		
+
 		key := strings.TrimSpace(parts[0])
 		val := strings.TrimSpace(parts[1])
-		
+
 		if key == "" {
 			return nil, fmt.Errorf("empty key in subnet flag pair: '%s'", pair)
 		}
-		
+
 		fields[key] = val
 	}
-	
+
 	// Validate CIDR if provided
 	if cidr, exists := fields["cidr"]; exists {
 		if cidrStr, ok := cidr.(string); ok {
@@ -84,19 +84,19 @@ func (h *SubnetFlagHandler) ParseArrayFlag(flagName, value string) (*ArrayConfig
 			}
 		}
 	}
-	
+
 	// Validate required fields
 	if err := h.validateRequiredFields(fields); err != nil {
 		return nil, err
 	}
-	
+
 	config := &ArrayConfig{
 		Path:   "opencenter.networking.subnets",
 		Index:  -1, // Will be determined during merging
 		Fields: fields,
 		Type:   "subnet",
 	}
-	
+
 	return config, nil
 }
 
@@ -110,11 +110,11 @@ func (h *SubnetFlagHandler) ValidateArrayConfig(config *ArrayConfig) error {
 	if config == nil {
 		return fmt.Errorf("array config cannot be nil")
 	}
-	
+
 	if config.Type != "subnet" {
 		return fmt.Errorf("invalid array config type: expected 'subnet', got '%s'", config.Type)
 	}
-	
+
 	return h.validateRequiredFields(config.Fields)
 }
 
@@ -126,7 +126,7 @@ func (h *SubnetFlagHandler) validateRequiredFields(fields map[string]interface{}
 			return fmt.Errorf("subnet must have either 'name' or 'cidr' field")
 		}
 	}
-	
+
 	// Validate CIDR format if present
 	if cidr, exists := fields["cidr"]; exists {
 		if cidrStr, ok := cidr.(string); ok {
@@ -137,6 +137,6 @@ func (h *SubnetFlagHandler) validateRequiredFields(fields map[string]interface{}
 			return fmt.Errorf("cidr field must be a string")
 		}
 	}
-	
+
 	return nil
 }

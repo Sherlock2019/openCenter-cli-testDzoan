@@ -21,7 +21,7 @@ import (
 
 func TestServerPoolFlagHandler_ParseArrayFlag_ValidInput(t *testing.T) {
 	handler := NewServerPoolFlagHandler()
-	
+
 	testCases := []struct {
 		name     string
 		input    string
@@ -50,22 +50,22 @@ func TestServerPoolFlagHandler_ParseArrayFlag_ValidInput(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			config, err := handler.ParseArrayFlag("server-pool", tc.input)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			
+
 			if config.Type != "server-pool" {
 				t.Errorf("expected type 'server-pool', got '%s'", config.Type)
 			}
-			
+
 			if config.Path != "opencenter.infrastructure.server_pools" {
 				t.Errorf("expected path 'opencenter.infrastructure.server_pools', got '%s'", config.Path)
 			}
-			
+
 			for key, expectedValue := range tc.expected {
 				if actualValue, exists := config.Fields[key]; !exists {
 					t.Errorf("missing field '%s'", key)
@@ -79,7 +79,7 @@ func TestServerPoolFlagHandler_ParseArrayFlag_ValidInput(t *testing.T) {
 
 func TestServerPoolFlagHandler_ParseArrayFlag_InvalidInput(t *testing.T) {
 	handler := NewServerPoolFlagHandler()
-	
+
 	testCases := []struct {
 		name  string
 		input string
@@ -105,7 +105,7 @@ func TestServerPoolFlagHandler_ParseArrayFlag_InvalidInput(t *testing.T) {
 			input: "name=compute,worker_count=3,invalid_pair,node_worker=worker",
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := handler.ParseArrayFlag("server-pool", tc.input)
@@ -118,7 +118,7 @@ func TestServerPoolFlagHandler_ParseArrayFlag_InvalidInput(t *testing.T) {
 
 func TestServerPoolFlagHandler_CanHandle(t *testing.T) {
 	handler := NewServerPoolFlagHandler()
-	
+
 	testCases := []struct {
 		flagName string
 		expected bool
@@ -131,7 +131,7 @@ func TestServerPoolFlagHandler_CanHandle(t *testing.T) {
 		{"subnet", false},
 		{"other-flag", false},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.flagName, func(t *testing.T) {
 			result := handler.CanHandle(tc.flagName)
@@ -146,7 +146,7 @@ func TestServerPoolFlagHandler_CanHandle(t *testing.T) {
 
 func TestSSHKeyFlagHandler_ParseArrayFlag_ValidInput(t *testing.T) {
 	handler := NewSSHKeyFlagHandler()
-	
+
 	testCases := []struct {
 		name     string
 		input    string
@@ -169,22 +169,22 @@ func TestSSHKeyFlagHandler_ParseArrayFlag_ValidInput(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			config, err := handler.ParseArrayFlag("ssh-key", tc.input)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			
+
 			if config.Type != "ssh-key" {
 				t.Errorf("expected type 'ssh-key', got '%s'", config.Type)
 			}
-			
+
 			if config.Path != "opencenter.infrastructure.ssh_keys" {
 				t.Errorf("expected path 'opencenter.infrastructure.ssh_keys', got '%s'", config.Path)
 			}
-			
+
 			for key, expectedValue := range tc.expected {
 				if actualValue, exists := config.Fields[key]; !exists {
 					t.Errorf("missing field '%s'", key)
@@ -198,7 +198,7 @@ func TestSSHKeyFlagHandler_ParseArrayFlag_ValidInput(t *testing.T) {
 
 func TestSSHKeyFlagHandler_ParseArrayFlag_InvalidInput(t *testing.T) {
 	handler := NewSSHKeyFlagHandler()
-	
+
 	_, err := handler.ParseArrayFlag("ssh-key", "")
 	if err == nil {
 		t.Error("expected error for empty input, but got none")
@@ -209,7 +209,7 @@ func TestSSHKeyFlagHandler_ParseArrayFlag_InvalidInput(t *testing.T) {
 
 func TestDNSServerFlagHandler_ParseArrayFlag_ValidInput(t *testing.T) {
 	handler := NewDNSServerFlagHandler()
-	
+
 	testCases := []struct {
 		name     string
 		input    string
@@ -230,22 +230,22 @@ func TestDNSServerFlagHandler_ParseArrayFlag_ValidInput(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			config, err := handler.ParseArrayFlag("dns-server", tc.input)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			
+
 			if config.Type != "dns-server" {
 				t.Errorf("expected type 'dns-server', got '%s'", config.Type)
 			}
-			
+
 			if config.Path != "opencenter.networking.dns_servers" {
 				t.Errorf("expected path 'opencenter.networking.dns_servers', got '%s'", config.Path)
 			}
-			
+
 			for key, expectedValue := range tc.expected {
 				if actualValue, exists := config.Fields[key]; !exists {
 					t.Errorf("missing field '%s'", key)
@@ -259,7 +259,7 @@ func TestDNSServerFlagHandler_ParseArrayFlag_ValidInput(t *testing.T) {
 
 func TestDNSServerFlagHandler_ParseArrayFlag_InvalidInput(t *testing.T) {
 	handler := NewDNSServerFlagHandler()
-	
+
 	testCases := []struct {
 		name  string
 		input string
@@ -277,7 +277,7 @@ func TestDNSServerFlagHandler_ParseArrayFlag_InvalidInput(t *testing.T) {
 			input: "256.256.256.256",
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := handler.ParseArrayFlag("dns-server", tc.input)
@@ -292,7 +292,7 @@ func TestDNSServerFlagHandler_ParseArrayFlag_InvalidInput(t *testing.T) {
 
 func TestSubnetFlagHandler_ParseArrayFlag_ValidInput(t *testing.T) {
 	handler := NewSubnetFlagHandler()
-	
+
 	testCases := []struct {
 		name     string
 		input    string
@@ -321,22 +321,22 @@ func TestSubnetFlagHandler_ParseArrayFlag_ValidInput(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			config, err := handler.ParseArrayFlag("subnet", tc.input)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			
+
 			if config.Type != "subnet" {
 				t.Errorf("expected type 'subnet', got '%s'", config.Type)
 			}
-			
+
 			if config.Path != "opencenter.networking.subnets" {
 				t.Errorf("expected path 'opencenter.networking.subnets', got '%s'", config.Path)
 			}
-			
+
 			for key, expectedValue := range tc.expected {
 				if actualValue, exists := config.Fields[key]; !exists {
 					t.Errorf("missing field '%s'", key)
@@ -350,7 +350,7 @@ func TestSubnetFlagHandler_ParseArrayFlag_ValidInput(t *testing.T) {
 
 func TestSubnetFlagHandler_ParseArrayFlag_InvalidInput(t *testing.T) {
 	handler := NewSubnetFlagHandler()
-	
+
 	testCases := []struct {
 		name  string
 		input string
@@ -372,7 +372,7 @@ func TestSubnetFlagHandler_ParseArrayFlag_InvalidInput(t *testing.T) {
 			input: "name=test,invalid_pair",
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := handler.ParseArrayFlag("subnet", tc.input)
@@ -388,28 +388,28 @@ func TestSubnetFlagHandler_ParseArrayFlag_InvalidInput(t *testing.T) {
 func TestMultipleFlagInstances(t *testing.T) {
 	serverPoolHandler := NewServerPoolFlagHandler()
 	dnsHandler := NewDNSServerFlagHandler()
-	
+
 	// Test multiple server pool configurations
 	config1, err1 := serverPoolHandler.ParseArrayFlag("server-pool", "name=compute,worker_count=3,flavor_worker=large,node_worker=worker")
 	config2, err2 := serverPoolHandler.ParseArrayFlag("server-pool", "name=storage,worker_count=5,flavor_worker=xlarge,node_worker=storage")
-	
+
 	if err1 != nil || err2 != nil {
 		t.Fatalf("unexpected errors: %v, %v", err1, err2)
 	}
-	
+
 	// Verify configurations are independent
 	if config1.Fields["name"] == config2.Fields["name"] {
 		t.Error("configurations should be independent")
 	}
-	
+
 	// Test multiple DNS server configurations
 	dns1, err3 := dnsHandler.ParseArrayFlag("dns-server", "8.8.8.8")
 	dns2, err4 := dnsHandler.ParseArrayFlag("dns-server", "8.8.4.4")
-	
+
 	if err3 != nil || err4 != nil {
 		t.Fatalf("unexpected errors: %v, %v", err3, err4)
 	}
-	
+
 	// Verify DNS configurations are independent
 	if dns1.Fields["ip"] == dns2.Fields["ip"] {
 		t.Error("DNS configurations should be independent")

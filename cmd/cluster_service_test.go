@@ -695,4 +695,3 @@ func TestClusterServiceStatus(t *testing.T) {
 		})
 	}
 }
-

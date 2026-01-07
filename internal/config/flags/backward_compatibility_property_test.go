@@ -38,33 +38,33 @@ func TestProperty_BackwardCompatibilityPreservation(t *testing.T) {
 			if len(pathValue) != 2 {
 				return true
 			}
-			
+
 			path, ok1 := pathValue[0].(string)
 			value := pathValue[1]
-			
+
 			if !ok1 || path == "" {
 				return true
 			}
-			
+
 			// Test with legacy setField function (if it exists)
 			legacyConfig := &BackwardCompatTestConfig{}
 			legacyErr := setFieldLegacy(legacyConfig, path, value)
-			
+
 			// Test with enhanced reflection engine
 			engine := NewEnhancedReflectionEngine()
 			enhancedConfig := &BackwardCompatTestConfig{}
 			enhancedErr := engine.SetField(enhancedConfig, path, value)
-			
+
 			// Both should have same error status
 			if (legacyErr == nil) != (enhancedErr == nil) {
 				return false
 			}
-			
+
 			// If both succeeded, results should be identical
 			if legacyErr == nil && enhancedErr == nil {
 				return reflect.DeepEqual(legacyConfig, enhancedConfig)
 			}
-			
+
 			return true
 		},
 		genCompatiblePathValue(),
@@ -76,18 +76,18 @@ func TestProperty_BackwardCompatibilityPreservation(t *testing.T) {
 			if dotPath == "" || !isValidDotPath(dotPath) {
 				return true
 			}
-			
+
 			parser := NewEnhancedPathParser()
-			
+
 			// Parse the dot notation path
 			structuredPath, err := parser.ParsePath(dotPath)
 			if err != nil {
 				return false // Valid dot paths should always parse
 			}
-			
+
 			// Verify the structured path can be converted back to equivalent dot notation
 			reconstructed := reconstructDotPath(*structuredPath)
-			
+
 			// The reconstructed path should be functionally equivalent
 			// (may not be identical due to normalization, but should access same field)
 			return isEquivalentPath(dotPath, reconstructed)
@@ -101,23 +101,23 @@ func TestProperty_BackwardCompatibilityPreservation(t *testing.T) {
 			if arrayPath == "" || index < 0 || index > 9 {
 				return true
 			}
-			
+
 			// Create legacy-style array path (field.index)
 			legacyPath := arrayPath + "." + strconv.Itoa(index)
-			
+
 			// Create enhanced-style array path (field[index])
 			enhancedPath := arrayPath + "[" + strconv.Itoa(index) + "]"
-			
+
 			parser := NewEnhancedPathParser()
-			
+
 			// Both should parse successfully
 			legacyStructured, legacyErr := parser.ParsePath(legacyPath)
 			enhancedStructured, enhancedErr := parser.ParsePath(enhancedPath)
-			
+
 			if legacyErr != nil || enhancedErr != nil {
 				return true // Skip if either fails to parse
 			}
-			
+
 			// Both should result in equivalent structured paths
 			return isEquivalentStructuredPath(*legacyStructured, *enhancedStructured)
 		},
@@ -131,16 +131,16 @@ func TestProperty_BackwardCompatibilityPreservation(t *testing.T) {
 			if len(configs) < 2 {
 				return true
 			}
-			
+
 			// Create configurations with different source types (simulating legacy behavior)
 			legacyConfigs := make([]Configuration, len(configs))
 			enhancedConfigs := make([]Configuration, len(configs))
-			
+
 			sourceTypes := []SourceType{SourceDefault, SourceFile, SourceCLI}
-			
+
 			for i, config := range configs {
 				sourceType := sourceTypes[i%len(sourceTypes)]
-				
+
 				legacyConfigs[i] = Configuration{
 					Data:    config,
 					Sources: []ConfigSource{{Type: sourceType, Path: "test"}},
@@ -150,24 +150,24 @@ func TestProperty_BackwardCompatibilityPreservation(t *testing.T) {
 					Sources: []ConfigSource{{Type: sourceType, Path: "test"}},
 				}
 			}
-			
+
 			// Merge with both systems
 			legacyMerger := NewDefaultConfigurationMerger()
 			enhancedMerger := NewDefaultConfigurationMerger()
-			
+
 			legacyResult, legacyErr := legacyMerger.MergeConfigurations(legacyConfigs)
 			enhancedResult, enhancedErr := enhancedMerger.MergeConfigurations(enhancedConfigs)
-			
+
 			// Both should have same error status
 			if (legacyErr == nil) != (enhancedErr == nil) {
 				return false
 			}
-			
+
 			// If both succeeded, results should be equivalent
 			if legacyErr == nil && enhancedErr == nil {
 				return isEquivalentConfiguration(*legacyResult, *enhancedResult)
 			}
-			
+
 			return true
 		},
 		genConfigurationList(),
@@ -204,11 +204,11 @@ func setFieldLegacy(config interface{}, path string, value interface{}) error {
 			Message: "target must be a pointer to struct",
 		}
 	}
-	
+
 	// Simple dot notation parsing (legacy behavior)
 	parts := splitPathCompat(path, ".")
 	current := v.Elem()
-	
+
 	for i, part := range parts {
 		if i == len(parts)-1 {
 			// Check if this is an array index
@@ -220,7 +220,7 @@ func setFieldLegacy(config interface{}, path string, value interface{}) error {
 					Message: "legacy system cannot set array elements directly",
 				}
 			}
-			
+
 			// Set the final field
 			field := current.FieldByName(capitalizeFirst(part))
 			if !field.IsValid() || !field.CanSet() {
@@ -230,7 +230,7 @@ func setFieldLegacy(config interface{}, path string, value interface{}) error {
 					Message: "field not found or cannot be set",
 				}
 			}
-			
+
 			// Handle different field types
 			if field.Kind() == reflect.Map {
 				// Initialize map if nil
@@ -245,7 +245,7 @@ func setFieldLegacy(config interface{}, path string, value interface{}) error {
 					Message: "legacy system cannot set map values directly",
 				}
 			}
-			
+
 			// Convert value to appropriate type
 			convertedValue := reflect.ValueOf(value)
 			if field.Type() == convertedValue.Type() {
@@ -270,7 +270,7 @@ func setFieldLegacy(config interface{}, path string, value interface{}) error {
 					Message: "legacy system cannot navigate through arrays",
 				}
 			}
-			
+
 			// Navigate to nested field
 			field := current.FieldByName(capitalizeFirst(part))
 			if !field.IsValid() {
@@ -280,7 +280,7 @@ func setFieldLegacy(config interface{}, path string, value interface{}) error {
 					Message: "field not found",
 				}
 			}
-			
+
 			// Handle map navigation (legacy limitation)
 			if field.Kind() == reflect.Map {
 				return &ConfigError{
@@ -289,11 +289,11 @@ func setFieldLegacy(config interface{}, path string, value interface{}) error {
 					Message: "legacy system cannot navigate through maps",
 				}
 			}
-			
+
 			current = field
 		}
 	}
-	
+
 	return nil
 }
 
@@ -322,10 +322,10 @@ func splitPathCompat(path, separator string) []string {
 	if path == "" {
 		return []string{}
 	}
-	
+
 	var parts []string
 	current := ""
-	
+
 	for _, char := range path {
 		if string(char) == separator {
 			if current != "" {
@@ -336,11 +336,11 @@ func splitPathCompat(path, separator string) []string {
 			current += string(char)
 		}
 	}
-	
+
 	if current != "" {
 		parts = append(parts, current)
 	}
-	
+
 	return parts
 }
 
@@ -348,24 +348,24 @@ func isValidDotPath(path string) bool {
 	if path == "" {
 		return false
 	}
-	
+
 	// Check for valid dot notation (no consecutive dots, no leading/trailing dots)
 	if path[0] == '.' || path[len(path)-1] == '.' {
 		return false
 	}
-	
+
 	for i := 0; i < len(path)-1; i++ {
 		if path[i] == '.' && path[i+1] == '.' {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
 func reconstructDotPath(structuredPath StructuredPath) string {
 	var parts []string
-	
+
 	for _, part := range structuredPath.Parts {
 		if part.HasIndex {
 			// Convert index back to dot notation
@@ -374,7 +374,7 @@ func reconstructDotPath(structuredPath StructuredPath) string {
 			parts = append(parts, part.Name)
 		}
 	}
-	
+
 	return joinParts(parts, ".")
 }
 
@@ -382,12 +382,12 @@ func joinParts(parts []string, separator string) string {
 	if len(parts) == 0 {
 		return ""
 	}
-	
+
 	result := parts[0]
 	for i := 1; i < len(parts); i++ {
 		result += separator + parts[i]
 	}
-	
+
 	return result
 }
 
@@ -395,17 +395,17 @@ func isEquivalentPath(path1, path2 string) bool {
 	// Normalize both paths and compare
 	parts1 := splitPathCompat(path1, ".")
 	parts2 := splitPathCompat(path2, ".")
-	
+
 	if len(parts1) != len(parts2) {
 		return false
 	}
-	
+
 	for i := range parts1 {
 		if parts1[i] != parts2[i] {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -413,24 +413,24 @@ func isEquivalentStructuredPath(path1, path2 StructuredPath) bool {
 	// Convert both paths to a normalized form for comparison
 	norm1 := normalizeStructuredPath(path1)
 	norm2 := normalizeStructuredPath(path2)
-	
+
 	if len(norm1) != len(norm2) {
 		return false
 	}
-	
+
 	for i := range norm1 {
 		if norm1[i] != norm2[i] {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
 // normalizeStructuredPath converts a structured path to a normalized string representation
 func normalizeStructuredPath(path StructuredPath) []string {
 	var normalized []string
-	
+
 	for _, part := range path.Parts {
 		if part.HasIndex {
 			if part.Name != "" {
@@ -445,7 +445,7 @@ func normalizeStructuredPath(path StructuredPath) []string {
 			normalized = append(normalized, part.Name)
 		}
 	}
-	
+
 	return normalized
 }
 
@@ -459,7 +459,7 @@ func isEquivalentConfiguration(config1, config2 Configuration) bool {
 func genLegacyPath() gopter.Gen {
 	return gen.OneConstOf(
 		"name",    // string field
-		"count",   // int field  
+		"count",   // int field
 		"enabled", // bool field
 	)
 }

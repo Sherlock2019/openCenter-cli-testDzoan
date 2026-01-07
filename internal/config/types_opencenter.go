@@ -19,15 +19,15 @@ type ClusterMeta struct {
 
 // SimplifiedOpenCenter represents the opencenter section of the new simplified schema
 type SimplifiedOpenCenter struct {
-	Meta           ClusterMeta           `yaml:"meta" json:"meta"`
-	Secrets        OpenCenterSecrets     `yaml:"secrets,omitempty" json:"secrets,omitempty"`
-	Infrastructure Infrastructure        `yaml:"infrastructure" json:"infrastructure"`
-	Cluster        ClusterConfig         `yaml:"cluster" json:"cluster"`
-	GitOps         GitOpsConfig          `yaml:"gitops" json:"gitops"`
-	Storage        StorageConfig         `yaml:"storage,omitempty" json:"storage,omitempty"`
-	Talos          *TalosConfig          `yaml:"talos,omitempty" json:"talos,omitempty"`
-	ManagedService ServiceMap `yaml:"managed-service" json:"managed-service"`
-	Services       ServiceMap `yaml:"services" json:"services"`
+	Meta           ClusterMeta       `yaml:"meta" json:"meta"`
+	Secrets        OpenCenterSecrets `yaml:"secrets,omitempty" json:"secrets,omitempty"`
+	Infrastructure Infrastructure    `yaml:"infrastructure" json:"infrastructure"`
+	Cluster        ClusterConfig     `yaml:"cluster" json:"cluster"`
+	GitOps         GitOpsConfig      `yaml:"gitops" json:"gitops"`
+	Storage        StorageConfig     `yaml:"storage,omitempty" json:"storage,omitempty"`
+	Talos          *TalosConfig      `yaml:"talos,omitempty" json:"talos,omitempty"`
+	ManagedService ServiceMap        `yaml:"managed-service" json:"managed-service"`
+	Services       ServiceMap        `yaml:"services" json:"services"`
 }
 
 // TalosConfig represents Talos-specific configuration

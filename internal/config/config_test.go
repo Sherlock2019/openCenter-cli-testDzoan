@@ -96,7 +96,7 @@ func TestConfig(t *testing.T) {
 		cfg := NewDefault("test")
 		cfg.OpenCenter.GitOps.GitDir = ""
 		populateInfraFields(&cfg) // Add required fields
-		
+
 		// Missing git_dir should produce a validation error
 		errs := Validate(cfg)
 		if len(errs) == 0 {
@@ -115,7 +115,7 @@ func TestConfig(t *testing.T) {
 		cfg := NewDefault("test")
 		cfg.OpenCenter.GitOps.GitDir = "testdata/gitops"
 		populateInfraFields(&cfg) // Add required fields
-		
+
 		cfg.OpenTofu.Enabled = true
 		cfg.OpenTofu.Backend.Type = "s3"
 		cfg.OpenTofu.Backend.S3.Bucket = "my-bucket"
@@ -1092,9 +1092,9 @@ func TestDefaultConfigNewFields(t *testing.T) {
 	t.Run("CheckTestMode", func(t *testing.T) {
 		os.Setenv("OPENCENTER_TEST_MODE", "true")
 		defer os.Unsetenv("OPENCENTER_TEST_MODE")
-		
+
 		cfg := NewDefault("test-mode-cluster")
-		
+
 		if cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL != "https://identity.example.com/v3" {
 			t.Errorf("Expected AuthURL to be populated in test mode")
 		}
@@ -1104,7 +1104,7 @@ func TestDefaultConfigNewFields(t *testing.T) {
 	})
 
 	cfg := NewDefault("test-cluster")
-	
+
 	// Test ClusterConfig new fields
 	t.Run("ClusterConfig fields", func(t *testing.T) {
 		if cfg.OpenCenter.Cluster.BaseDomain != "k8s.opencenter.cloud" {
@@ -1287,8 +1287,10 @@ func TestDefaultConfigMatchesSpecifications(t *testing.T) {
 			expected: "csi-cinder-sc-delete",
 		},
 		{
-			name:     "LetsEncryptServer default",
-			getValue: func(c Config) any { return c.OpenCenter.Services["cert-manager"].(*services.CertManagerConfig).LetsEncryptServer },
+			name: "LetsEncryptServer default",
+			getValue: func(c Config) any {
+				return c.OpenCenter.Services["cert-manager"].(*services.CertManagerConfig).LetsEncryptServer
+			},
 			expected: "https://acme-v02.api.letsencrypt.org/directory",
 		},
 		{
@@ -1297,13 +1299,17 @@ func TestDefaultConfigMatchesSpecifications(t *testing.T) {
 			expected: 20,
 		},
 		{
-			name:     "PrometheusVolumeSize default",
-			getValue: func(c Config) any { return c.OpenCenter.Services["kube-prometheus-stack"].(*services.PrometheusStackConfig).PrometheusVolumeSize },
+			name: "PrometheusVolumeSize default",
+			getValue: func(c Config) any {
+				return c.OpenCenter.Services["kube-prometheus-stack"].(*services.PrometheusStackConfig).PrometheusVolumeSize
+			},
 			expected: 50,
 		},
 		{
-			name:     "GrafanaVolumeSize default",
-			getValue: func(c Config) any { return c.OpenCenter.Services["kube-prometheus-stack"].(*services.PrometheusStackConfig).GrafanaVolumeSize },
+			name: "GrafanaVolumeSize default",
+			getValue: func(c Config) any {
+				return c.OpenCenter.Services["kube-prometheus-stack"].(*services.PrometheusStackConfig).GrafanaVolumeSize
+			},
 			expected: 10,
 		},
 	}

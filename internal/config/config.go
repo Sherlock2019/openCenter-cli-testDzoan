@@ -86,7 +86,7 @@ func defaultConfig(name string) Config {
 	region := ""
 	tenantName := ""
 	barbicanAuthURL := ""
-	
+
 	// Dummy secrets for test mode
 	certManagerAccessKey := ""
 	certManagerSecretKey := ""
@@ -106,7 +106,7 @@ func defaultConfig(name string) Config {
 		region = "RegionOne"
 		tenantName = "admin"
 		barbicanAuthURL = "https://identity.example.com/v3"
-		
+
 		certManagerAccessKey = "test-access-key"
 		certManagerSecretKey = "test-secret-key"
 		lokiSwiftPassword = "test-password"
@@ -311,11 +311,11 @@ func defaultConfig(name string) Config {
 					BaseConfig: services.BaseConfig{
 						Enabled: false,
 					},
-					VolumeSize:   20,
-					StorageClass: "csi-cinder-sc-delete",
-					BucketName:   fmt.Sprintf("%s-loki", name),
-					SwiftAuthURL: "https://keystone.api.sjc3.rackspacecloud.com/v3/",
-					SwiftRegion:  "SJC3",
+					VolumeSize:      20,
+					StorageClass:    "csi-cinder-sc-delete",
+					BucketName:      fmt.Sprintf("%s-loki", name),
+					SwiftAuthURL:    "https://keystone.api.sjc3.rackspacecloud.com/v3/",
+					SwiftRegion:     "SJC3",
 					SwiftDomainName: "Default",
 				},
 				"olm":               &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
@@ -824,7 +824,6 @@ func Load(name string) (Config, error) {
 
 	return cfg, nil
 }
-
 
 // applyOrganizationDefaults applies organization-based defaults to the configuration.
 // This ensures that S3 bucket names use the organization name (lowercase) by default.

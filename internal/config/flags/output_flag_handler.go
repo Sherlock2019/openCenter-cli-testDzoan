@@ -57,12 +57,12 @@ func (h *OutputFlagHandler) parseOutputFormat(value string) (*OutputFormatFlag, 
 	if value == "" {
 		return nil, fmt.Errorf("empty output format value")
 	}
-	
+
 	format, err := ParseOutputFormat(value)
 	if err != nil {
 		return nil, fmt.Errorf("invalid output format: %w", err)
 	}
-	
+
 	return &OutputFormatFlag{
 		Format: format,
 	}, nil
@@ -76,13 +76,13 @@ func (h *OutputFlagHandler) parseDryRun(value string) (*OutputModeFlag, error) {
 			Mode: OutputModeDryRun,
 		}, nil
 	}
-	
+
 	if value == "false" {
 		return &OutputModeFlag{
 			Mode: OutputModeNormal,
 		}, nil
 	}
-	
+
 	return nil, fmt.Errorf("invalid dry-run value: %s (expected true/false or no value)", value)
 }
 
@@ -94,13 +94,13 @@ func (h *OutputFlagHandler) parseQuiet(value string) (*OutputModeFlag, error) {
 			Mode: OutputModeQuiet,
 		}, nil
 	}
-	
+
 	if value == "false" {
 		return &OutputModeFlag{
 			Mode: OutputModeNormal,
 		}, nil
 	}
-	
+
 	return nil, fmt.Errorf("invalid quiet value: %s (expected true/false or no value)", value)
 }
 

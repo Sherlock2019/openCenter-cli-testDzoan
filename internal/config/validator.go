@@ -728,7 +728,7 @@ func (cv *ClusterConfigValidator) validateService(serviceName string, svcAny any
 		if !ok {
 			return
 		}
-		
+
 		storageType := svc.StorageType
 		if storageType == "" {
 			storageType = "swift" // default

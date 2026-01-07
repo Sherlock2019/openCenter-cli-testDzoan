@@ -36,41 +36,41 @@ func TestProperty_JSONRoundTripIntegrity(t *testing.T) {
 			if jsonData == nil {
 				return true
 			}
-			
+
 			// Convert the generated data to JSON string
 			jsonBytes, err := json.Marshal(jsonData)
 			if err != nil {
 				return true // Skip invalid JSON structures
 			}
 			jsonString := string(jsonBytes)
-			
+
 			// Create a JSON flag handler
 			handler := NewJSONFlagHandler()
-			
+
 			// Parse the JSON through the flag handler
 			flagName := "json-set-test.config"
 			parsed, err := handler.ParseFlag(flagName, jsonString)
 			if err != nil {
 				return false // JSON parsing should not fail for valid JSON
 			}
-			
+
 			// Verify the parsed result is a JSONFlag
 			jsonFlag, ok := parsed.(*JSONFlag)
 			if !ok {
 				return false
 			}
-			
+
 			// Verify the path is correctly extracted
 			if jsonFlag.Path != "test.config" {
 				return false
 			}
-			
+
 			// Convert the parsed value back to JSON
 			roundTripBytes, err := json.Marshal(jsonFlag.Value)
 			if err != nil {
 				return false // Round-trip serialization should not fail
 			}
-			
+
 			// Compare the original and round-trip JSON
 			// We compare the unmarshaled structures to handle JSON formatting differences
 			var original, roundTrip interface{}
@@ -80,7 +80,7 @@ func TestProperty_JSONRoundTripIntegrity(t *testing.T) {
 			if err := json.Unmarshal(roundTripBytes, &roundTrip); err != nil {
 				return false
 			}
-			
+
 			// Verify structural equality
 			return deepEqual(original, roundTrip)
 		},
@@ -93,22 +93,22 @@ func TestProperty_JSONRoundTripIntegrity(t *testing.T) {
 			if jsonPath == "" || jsonValue == nil {
 				return true
 			}
-			
+
 			// Create a copy of the base configuration
 			targetConfig := make(map[string]interface{})
 			for k, v := range baseConfig {
 				targetConfig[k] = deepCopy(v)
 			}
-			
+
 			// Get the original value at the path (if any)
 			originalValue := getValueAtPath(targetConfig, jsonPath)
-			
+
 			// Create a JSON flag
 			jsonFlag := &JSONFlag{
 				Path:  jsonPath,
 				Value: jsonValue,
 			}
-			
+
 			// Create handler and merge the JSON flag
 			handler := NewJSONFlagHandler()
 			err := handler.MergeIntoConfiguration(jsonFlag, targetConfig)
@@ -116,13 +116,13 @@ func TestProperty_JSONRoundTripIntegrity(t *testing.T) {
 				// Some merge operations may fail due to path conflicts, which is expected
 				return true
 			}
-			
+
 			// Verify that the merged value can be retrieved
 			retrievedValue := getValueAtPath(targetConfig, jsonPath)
 			if retrievedValue == nil {
 				return false // The value should be present after merging
 			}
-			
+
 			// Verify merge behavior based on value types
 			switch newVal := jsonValue.(type) {
 			case map[string]interface{}:
@@ -132,14 +132,14 @@ func TestProperty_JSONRoundTripIntegrity(t *testing.T) {
 					if !ok {
 						return false
 					}
-					
+
 					// All keys from the new value should be present
 					for key, value := range newVal {
 						if !deepEqual(retrievedMap[key], value) {
 							return false
 						}
 					}
-					
+
 					// All keys from the original value should still be present (unless overwritten)
 					for key, value := range originalMap {
 						if _, exists := newVal[key]; !exists {
@@ -174,22 +174,22 @@ func genValidJSONData() gopter.Gen {
 		"test-string",
 		int64(42),
 		true,
-		
+
 		// Simple objects
 		map[string]interface{}{"key": "value", "count": int64(3)},
-		
+
 		// Simple arrays
 		[]interface{}{"item1", "item2", "item3"},
 		[]interface{}{int64(1), int64(2), int64(3)},
-		
+
 		// Nested objects
 		map[string]interface{}{
 			"config": map[string]interface{}{
-				"name": "test",
+				"name":    "test",
 				"enabled": true,
 			},
 		},
-		
+
 		// Mixed arrays
 		[]interface{}{"string", int64(42), true},
 	)
@@ -299,13 +299,13 @@ func deepEqual(a, b interface{}) bool {
 func getValueAtPath(config map[string]interface{}, path string) interface{} {
 	parts := splitPath(path)
 	current := config
-	
+
 	for i, part := range parts {
 		if i == len(parts)-1 {
 			// Last part, return the value
 			return current[part]
 		}
-		
+
 		// Navigate deeper
 		if next, exists := current[part]; exists {
 			if nextMap, ok := next.(map[string]interface{}); ok {
@@ -317,7 +317,7 @@ func getValueAtPath(config map[string]interface{}, path string) interface{} {
 			return nil // Path doesn't exist
 		}
 	}
-	
+
 	return nil
 }
 
@@ -326,10 +326,10 @@ func splitPath(path string) []string {
 	if path == "" {
 		return []string{}
 	}
-	
+
 	var parts []string
 	current := ""
-	
+
 	for _, char := range path {
 		if char == '.' {
 			if current != "" {
@@ -340,10 +340,10 @@ func splitPath(path string) []string {
 			current += string(char)
 		}
 	}
-	
+
 	if current != "" {
 		parts = append(parts, current)
 	}
-	
+
 	return parts
 }

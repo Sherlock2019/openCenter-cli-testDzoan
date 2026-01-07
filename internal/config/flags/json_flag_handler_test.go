@@ -19,7 +19,7 @@ import (
 
 func TestJSONFlagHandler_CanHandle(t *testing.T) {
 	handler := NewJSONFlagHandler()
-	
+
 	tests := []struct {
 		name     string
 		flagName string
@@ -30,7 +30,7 @@ func TestJSONFlagHandler_CanHandle(t *testing.T) {
 		{"other flag", "server-pool", false},
 		{"empty flag", "", false},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := handler.CanHandle(tt.flagName)
@@ -43,7 +43,7 @@ func TestJSONFlagHandler_CanHandle(t *testing.T) {
 
 func TestJSONFlagHandler_GetFlagType(t *testing.T) {
 	handler := NewJSONFlagHandler()
-	
+
 	if handler.GetFlagType() != FlagTypeJSON {
 		t.Errorf("GetFlagType() = %v, want %v", handler.GetFlagType(), FlagTypeJSON)
 	}
@@ -51,7 +51,7 @@ func TestJSONFlagHandler_GetFlagType(t *testing.T) {
 
 func TestJSONFlagHandler_ParseFlag(t *testing.T) {
 	handler := NewJSONFlagHandler()
-	
+
 	tests := []struct {
 		name      string
 		flagName  string
@@ -105,33 +105,33 @@ func TestJSONFlagHandler_ParseFlag(t *testing.T) {
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := handler.ParseFlag(tt.flagName, tt.value)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("ParseFlag() expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("ParseFlag() unexpected error: %v", err)
 				return
 			}
-			
+
 			jsonFlag, ok := result.(*JSONFlag)
 			if !ok {
 				t.Errorf("ParseFlag() returned wrong type: %T", result)
 				return
 			}
-			
+
 			if jsonFlag.Path != tt.expected.Path {
 				t.Errorf("ParseFlag() path = %v, want %v", jsonFlag.Path, tt.expected.Path)
 			}
-			
+
 			// Compare values based on type
 			if !compareJSONValues(jsonFlag.Value, tt.expected.Value) {
 				t.Errorf("ParseFlag() value = %v, want %v", jsonFlag.Value, tt.expected.Value)
@@ -142,12 +142,12 @@ func TestJSONFlagHandler_ParseFlag(t *testing.T) {
 
 func TestJSONFlagHandler_MergeIntoConfiguration(t *testing.T) {
 	handler := NewJSONFlagHandler()
-	
+
 	tests := []struct {
-		name     string
-		config   *JSONFlag
-		target   map[string]interface{}
-		expected map[string]interface{}
+		name      string
+		config    *JSONFlag
+		target    map[string]interface{}
+		expected  map[string]interface{}
 		expectErr bool
 	}{
 		{
@@ -213,23 +213,23 @@ func TestJSONFlagHandler_MergeIntoConfiguration(t *testing.T) {
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := handler.MergeIntoConfiguration(tt.config, tt.target)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("MergeIntoConfiguration() expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("MergeIntoConfiguration() unexpected error: %v", err)
 				return
 			}
-			
+
 			if !compareJSONValues(tt.target, tt.expected) {
 				t.Errorf("MergeIntoConfiguration() result = %v, want %v", tt.target, tt.expected)
 			}

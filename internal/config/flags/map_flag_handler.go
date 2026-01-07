@@ -64,7 +64,7 @@ func (h *MapFlagHandler) GetFlagType() FlagType {
 // ParseFlag parses map operation flags
 func (h *MapFlagHandler) ParseFlag(flagName, flagValue string) (interface{}, error) {
 	var operation MapOperation
-	
+
 	// Determine operation from flag name
 	switch {
 	case strings.HasPrefix(flagName, "map-set"):
@@ -76,13 +76,13 @@ func (h *MapFlagHandler) ParseFlag(flagName, flagValue string) (interface{}, err
 	default:
 		return nil, fmt.Errorf("unsupported map operation flag: %s", flagName)
 	}
-	
+
 	// Parse path and value
 	path, key, value, err := h.parseMapFlag(flagValue, operation)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse map flag '%s=%s': %w", flagName, flagValue, err)
 	}
-	
+
 	return &MapFlag{
 		Operation: operation,
 		Path:      path,
@@ -97,18 +97,18 @@ func (h *MapFlagHandler) MergeIntoConfiguration(flag ParsedFlag, config map[stri
 	if !ok {
 		return fmt.Errorf("expected MapFlag, got %T", flag)
 	}
-	
+
 	// Navigate to the map location
 	pathParts := strings.Split(mapFlag.Path, ".")
 	current := config
-	
+
 	// Navigate to the target map
 	for i, part := range pathParts {
 		if i == len(pathParts)-1 {
 			// This is the target map
 			break
 		}
-		
+
 		if next, exists := current[part]; exists {
 			if nextMap, ok := next.(map[string]interface{}); ok {
 				current = nextMap
@@ -122,10 +122,10 @@ func (h *MapFlagHandler) MergeIntoConfiguration(flag ParsedFlag, config map[stri
 			current = newMap
 		}
 	}
-	
+
 	// Get the map field name
 	mapField := pathParts[len(pathParts)-1]
-	
+
 	// Get or create the target map
 	var targetMap map[string]interface{}
 	if existing, exists := current[mapField]; exists {
@@ -138,7 +138,7 @@ func (h *MapFlagHandler) MergeIntoConfiguration(flag ParsedFlag, config map[stri
 		targetMap = make(map[string]interface{})
 		current[mapField] = targetMap
 	}
-	
+
 	// Apply the operation
 	switch mapFlag.Operation {
 	case MapOpSet:
@@ -157,7 +157,7 @@ func (h *MapFlagHandler) MergeIntoConfiguration(flag ParsedFlag, config map[stri
 	default:
 		return fmt.Errorf("unsupported map operation: %s", mapFlag.Operation)
 	}
-	
+
 	return nil
 }
 
@@ -170,51 +170,51 @@ func (h *MapFlagHandler) parseMapFlag(flagValue string, operation MapOperation) 
 		if len(parts) != 2 {
 			return "", "", nil, fmt.Errorf("expected format 'path.key=value', got '%s'", flagValue)
 		}
-		
+
 		pathAndKey := parts[0]
 		value := parts[1]
-		
+
 		// Split path and key
 		lastDot := strings.LastIndex(pathAndKey, ".")
 		if lastDot == -1 {
 			return "", "", nil, fmt.Errorf("map-set requires path.key format, got '%s'", pathAndKey)
 		}
-		
+
 		path := pathAndKey[:lastDot]
 		key := pathAndKey[lastDot+1:]
-		
+
 		return path, key, h.parseValue(value), nil
-		
+
 	case MapOpMerge:
 		// Format: path={"key": "value"}
 		parts := strings.SplitN(flagValue, "=", 2)
 		if len(parts) != 2 {
 			return "", "", nil, fmt.Errorf("expected format 'path={\"key\": \"value\"}', got '%s'", flagValue)
 		}
-		
+
 		path := parts[0]
 		jsonValue := parts[1]
-		
+
 		// Parse JSON
 		var mergeData map[string]interface{}
 		if err := json.Unmarshal([]byte(jsonValue), &mergeData); err != nil {
 			return "", "", nil, fmt.Errorf("invalid JSON for merge operation: %w", err)
 		}
-		
+
 		return path, "", mergeData, nil
-		
+
 	case MapOpRemove:
 		// Format: path.key
 		lastDot := strings.LastIndex(flagValue, ".")
 		if lastDot == -1 {
 			return "", "", nil, fmt.Errorf("map-remove requires path.key format, got '%s'", flagValue)
 		}
-		
+
 		path := flagValue[:lastDot]
 		key := flagValue[lastDot+1:]
-		
+
 		return path, key, nil, nil
-		
+
 	default:
 		return "", "", nil, fmt.Errorf("unsupported operation: %s", operation)
 	}
@@ -227,7 +227,7 @@ func (h *MapFlagHandler) parseValue(value string) interface{} {
 	if err := json.Unmarshal([]byte(value), &jsonValue); err == nil {
 		return jsonValue
 	}
-	
+
 	// Return as string if JSON parsing fails
 	return value
 }

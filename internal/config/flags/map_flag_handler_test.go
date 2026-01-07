@@ -19,7 +19,7 @@ import (
 
 func TestMapFlagHandler_ParseFlag(t *testing.T) {
 	handler := NewMapFlagHandler()
-	
+
 	tests := []struct {
 		name      string
 		flagName  string
@@ -131,41 +131,41 @@ func TestMapFlagHandler_ParseFlag(t *testing.T) {
 			wantErr:   true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := handler.ParseFlag(tt.flagName, tt.flagValue)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("ParseFlag() expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("ParseFlag() unexpected error: %v", err)
 				return
 			}
-			
+
 			mapFlag, ok := result.(*MapFlag)
 			if !ok {
 				t.Errorf("ParseFlag() returned %T, expected *MapFlag", result)
 				return
 			}
-			
+
 			if mapFlag.Operation != tt.wantOp {
 				t.Errorf("ParseFlag() operation = %v, want %v", mapFlag.Operation, tt.wantOp)
 			}
-			
+
 			if mapFlag.Path != tt.wantPath {
 				t.Errorf("ParseFlag() path = %v, want %v", mapFlag.Path, tt.wantPath)
 			}
-			
+
 			if mapFlag.Key != tt.wantKey {
 				t.Errorf("ParseFlag() key = %v, want %v", mapFlag.Key, tt.wantKey)
 			}
-			
+
 			if !compareValues(mapFlag.Value, tt.wantValue) {
 				t.Errorf("ParseFlag() value = %v, want %v", mapFlag.Value, tt.wantValue)
 			}
@@ -175,7 +175,7 @@ func TestMapFlagHandler_ParseFlag(t *testing.T) {
 
 func TestMapFlagHandler_MergeIntoConfiguration(t *testing.T) {
 	handler := NewMapFlagHandler()
-	
+
 	tests := []struct {
 		name       string
 		config     map[string]interface{}
@@ -248,9 +248,9 @@ func TestMapFlagHandler_MergeIntoConfiguration(t *testing.T) {
 			name: "remove key from map",
 			config: map[string]interface{}{
 				"config": map[string]interface{}{
-					"name":     "test-cluster",
-					"old_key":  "old_value",
-					"version":  "1.0",
+					"name":    "test-cluster",
+					"old_key": "old_value",
+					"version": "1.0",
 				},
 			},
 			flag: &MapFlag{
@@ -312,23 +312,23 @@ func TestMapFlagHandler_MergeIntoConfiguration(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := handler.MergeIntoConfiguration(tt.flag, tt.config)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("MergeIntoConfiguration() expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("MergeIntoConfiguration() unexpected error: %v", err)
 				return
 			}
-			
+
 			// Compare the resulting configuration
 			if !compareConfigValues(tt.config, tt.wantConfig) {
 				t.Errorf("MergeIntoConfiguration() config = %v, want %v", tt.config, tt.wantConfig)

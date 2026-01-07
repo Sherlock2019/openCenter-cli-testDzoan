@@ -28,59 +28,59 @@ type CLIIntegration struct {
 // NewCLIIntegration creates a new CLI integration with registered handlers
 func NewCLIIntegration() (*CLIIntegration, error) {
 	parser := NewEnhancedFlagParser()
-	
+
 	// Register dedicated array handlers
 	if err := parser.RegisterHandler("server-pool", NewServerPoolFlagHandler()); err != nil {
 		return nil, fmt.Errorf("failed to register server-pool handler: %w", err)
 	}
-	
+
 	if err := parser.RegisterHandler("ssh-key", NewSSHKeyFlagHandler()); err != nil {
 		return nil, fmt.Errorf("failed to register ssh-key handler: %w", err)
 	}
-	
+
 	if err := parser.RegisterHandler("dns-server", NewDNSServerFlagHandler()); err != nil {
 		return nil, fmt.Errorf("failed to register dns-server handler: %w", err)
 	}
-	
+
 	if err := parser.RegisterHandler("^subnet$|^subnet-", NewSubnetFlagHandler()); err != nil {
 		return nil, fmt.Errorf("failed to register subnet handler: %w", err)
 	}
-	
+
 	// Register JSON flag handler
 	if err := parser.RegisterHandler("json-set", NewJSONFlagHandler()); err != nil {
 		return nil, fmt.Errorf("failed to register json-set handler: %w", err)
 	}
-	
+
 	// Register YAML flag handler
 	if err := parser.RegisterHandler("yaml-set|yaml-data|yaml-file", NewYAMLFlagHandler()); err != nil {
 		return nil, fmt.Errorf("failed to register yaml handler: %w", err)
 	}
-	
+
 	// Register template flag handler
 	if err := parser.RegisterHandler("template-var-.*", NewTemplateFlagHandler()); err != nil {
 		return nil, fmt.Errorf("failed to register template handler: %w", err)
 	}
-	
+
 	// Register array operation handlers
 	if err := parser.RegisterHandler("array-append|array-insert|array-remove", NewArrayFlagHandler()); err != nil {
 		return nil, fmt.Errorf("failed to register array operation handler: %w", err)
 	}
-	
+
 	// Register map operation handlers
 	if err := parser.RegisterHandler("map-set|map-merge|map-remove", NewMapFlagHandler()); err != nil {
 		return nil, fmt.Errorf("failed to register map operation handler: %w", err)
 	}
-	
+
 	// Register file flag handler
 	if err := parser.RegisterHandler("base-config|merge-config|config-stack", NewFileFlagHandler()); err != nil {
 		return nil, fmt.Errorf("failed to register file flag handler: %w", err)
 	}
-	
+
 	// Register output flag handler
 	if err := parser.RegisterHandler("output-format|dry-run|quiet", NewOutputFlagHandler()); err != nil {
 		return nil, fmt.Errorf("failed to register output flag handler: %w", err)
 	}
-	
+
 	return &CLIIntegration{
 		parser: parser,
 	}, nil
@@ -98,23 +98,23 @@ func (c *CLIIntegration) ProcessFlagsWithValidation(args []string, configStruct 
 	if err != nil {
 		return fmt.Errorf("failed to parse flags: %w", err)
 	}
-	
+
 	// Validate flags if requested
 	if validationMode == ValidationModeValidateOnly {
 		return c.validateOnly(parsed, configStruct, configMap)
 	}
-	
+
 	// Validate flags before applying
 	validator := NewDefaultConfigurationValidator()
 	validationResult, err := validator.ValidateFlags(parsed)
 	if err != nil {
 		return fmt.Errorf("failed to validate flags: %w", err)
 	}
-	
+
 	if !validationResult.Valid {
 		return c.formatValidationErrors(validationResult)
 	}
-	
+
 	// Apply flags to configuration
 	return c.applyFlags(parsed, configStruct, configMap)
 }
@@ -122,24 +122,24 @@ func (c *CLIIntegration) ProcessFlagsWithValidation(args []string, configStruct 
 // validateOnly performs validation without applying changes
 func (c *CLIIntegration) validateOnly(parsed *ParsedFlags, configStruct interface{}, configMap map[string]interface{}) error {
 	validator := NewDefaultConfigurationValidator()
-	
+
 	// Validate flags
 	flagValidation, err := validator.ValidateFlags(parsed)
 	if err != nil {
 		return fmt.Errorf("failed to validate flags: %w", err)
 	}
-	
+
 	// Create a temporary configuration for validation
 	tempConfig := make(map[string]interface{})
 	for key, value := range configMap {
 		tempConfig[key] = value
 	}
-	
+
 	// Apply flags to temporary configuration
 	if err := c.applyFlags(parsed, nil, tempConfig); err != nil {
 		return fmt.Errorf("failed to apply flags for validation: %w", err)
 	}
-	
+
 	// Create configuration object for validation
 	config := &Configuration{
 		Data: tempConfig,
@@ -147,24 +147,24 @@ func (c *CLIIntegration) validateOnly(parsed *ParsedFlags, configStruct interfac
 			{Type: SourceCLI, Path: "validation", Priority: 1},
 		},
 	}
-	
+
 	// Validate the resulting configuration
 	configValidation, err := validator.ValidateConfiguration(config)
 	if err != nil {
 		return fmt.Errorf("failed to validate configuration: %w", err)
 	}
-	
+
 	// Report validation results
 	fmt.Printf("Validation Results:\n")
 	fmt.Printf("==================\n\n")
-	
+
 	if flagValidation.Valid && configValidation.Valid {
 		fmt.Printf("✓ Configuration is valid\n")
 		fmt.Printf("  - Flags processed: %d\n", flagValidation.Summary.FlagsProcessed)
 		fmt.Printf("  - Configuration paths: %d\n", configValidation.Summary.ConfigPaths)
 	} else {
 		fmt.Printf("✗ Configuration has errors\n")
-		
+
 		// Report flag validation errors
 		if !flagValidation.Valid {
 			fmt.Printf("\nFlag Validation Errors:\n")
@@ -175,7 +175,7 @@ func (c *CLIIntegration) validateOnly(parsed *ParsedFlags, configStruct interfac
 				}
 			}
 		}
-		
+
 		// Report configuration validation errors
 		if !configValidation.Valid {
 			fmt.Printf("\nConfiguration Validation Errors:\n")
@@ -186,10 +186,10 @@ func (c *CLIIntegration) validateOnly(parsed *ParsedFlags, configStruct interfac
 				}
 			}
 		}
-		
+
 		return fmt.Errorf("validation failed")
 	}
-	
+
 	return nil
 }
 
@@ -208,87 +208,87 @@ func (c *CLIIntegration) applyFlags(parsed *ParsedFlags, configStruct interface{
 			return fmt.Errorf("error setting config map from flag '%s': %w", key, err)
 		}
 	}
-	
+
 	// Apply array flags
 	for _, arrayFlag := range parsed.ArrayFlags {
 		if err := c.applyArrayFlag(arrayFlag, configStruct, configMap); err != nil {
 			return fmt.Errorf("error applying array flag: %w", err)
 		}
 	}
-	
+
 	// Apply JSON flags
 	for _, jsonFlag := range parsed.JSONFlags {
 		if err := c.applyJSONFlag(jsonFlag, configStruct, configMap); err != nil {
 			return fmt.Errorf("error applying JSON flag: %w", err)
 		}
 	}
-	
+
 	// Apply YAML flags
 	for _, yamlFlag := range parsed.YAMLFlags {
 		if err := c.applyYAMLFlag(yamlFlag, configStruct, configMap); err != nil {
 			return fmt.Errorf("error applying YAML flag: %w", err)
 		}
 	}
-	
+
 	// Apply template variables (process templates after all other flags)
 	if len(parsed.TemplateVars) > 0 {
 		if err := c.applyTemplateVariables(parsed.TemplateVars, configStruct, configMap); err != nil {
 			return fmt.Errorf("error applying template variables: %w", err)
 		}
 	}
-	
+
 	// Apply array operations
 	for _, arrayOp := range parsed.ArrayOperations {
 		if err := c.applyArrayOperation(arrayOp, configStruct, configMap); err != nil {
 			return fmt.Errorf("error applying array operation: %w", err)
 		}
 	}
-	
+
 	// Apply map operations
 	for _, mapOp := range parsed.MapOperations {
 		if err := c.applyMapOperation(mapOp, configStruct, configMap); err != nil {
 			return fmt.Errorf("error applying map operation: %w", err)
 		}
 	}
-	
+
 	// Apply configuration file merging
 	if len(parsed.ConfigFileFlags) > 0 {
 		if err := c.applyConfigFileFlags(parsed.ConfigFileFlags, configStruct, configMap); err != nil {
 			return fmt.Errorf("error applying configuration file flags: %w", err)
 		}
 	}
-	
+
 	return nil
 }
 
 // formatValidationErrors formats validation errors into a readable error message
 func (c *CLIIntegration) formatValidationErrors(result *ValidationResult) error {
 	var errorMsg strings.Builder
-	
+
 	errorMsg.WriteString(fmt.Sprintf("Configuration validation failed (%d errors", result.Summary.TotalErrors))
 	if result.Summary.TotalWarnings > 0 {
 		errorMsg.WriteString(fmt.Sprintf(", %d warnings", result.Summary.TotalWarnings))
 	}
 	errorMsg.WriteString("):\n\n")
-	
+
 	for _, err := range result.Errors {
 		errorMsg.WriteString(fmt.Sprintf("Error: %s", err.Message))
 		if err.Path != "" {
 			errorMsg.WriteString(fmt.Sprintf(" (path: %s)", err.Path))
 		}
 		errorMsg.WriteString("\n")
-		
+
 		if err.Suggestion != "" {
 			errorMsg.WriteString(fmt.Sprintf("  Suggestion: %s\n", err.Suggestion))
 		}
-		
+
 		if err.Example != "" {
 			errorMsg.WriteString(fmt.Sprintf("  Example: %s\n", err.Example))
 		}
-		
+
 		errorMsg.WriteString("\n")
 	}
-	
+
 	if len(result.Warnings) > 0 {
 		errorMsg.WriteString("Warnings:\n")
 		for _, warning := range result.Warnings {
@@ -299,52 +299,52 @@ func (c *CLIIntegration) formatValidationErrors(result *ValidationResult) error 
 			errorMsg.WriteString("\n")
 		}
 	}
-	
+
 	return fmt.Errorf("%s", errorMsg.String())
 }
 
 // FormatOutput formats the configuration output based on parsed output flags
 func (c *CLIIntegration) FormatOutput(config *Configuration, parsed *ParsedFlags) (string, error) {
 	formatter := NewDefaultOutputFormatter()
-	
+
 	// Determine output format (default to YAML)
 	format := OutputFormatYAML
 	if parsed.OutputFormat != nil {
 		format = parsed.OutputFormat.Format
 	}
-	
+
 	// Determine output mode (default to normal)
 	mode := OutputModeNormal
 	if parsed.OutputMode != nil {
 		mode = parsed.OutputMode.Mode
 	}
-	
+
 	return formatter.FormatConfiguration(config, format, mode)
 }
 
 // FormatDiff formats a diff between two configurations
 func (c *CLIIntegration) FormatDiff(original, updated *Configuration, parsed *ParsedFlags) (string, error) {
 	formatter := NewDefaultOutputFormatter()
-	
+
 	// Determine output mode (default to normal)
 	mode := OutputModeNormal
 	if parsed.OutputMode != nil {
 		mode = parsed.OutputMode.Mode
 	}
-	
+
 	return formatter.FormatDiff(original, updated, mode)
 }
 
 // FormatConflicts formats conflict information
 func (c *CLIIntegration) FormatConflicts(conflicts []ConfigConflict, parsed *ParsedFlags) (string, error) {
 	formatter := NewDefaultOutputFormatter()
-	
+
 	// Determine output mode (default to normal)
 	mode := OutputModeNormal
 	if parsed.OutputMode != nil {
 		mode = parsed.OutputMode.Mode
 	}
-	
+
 	return formatter.FormatConflicts(conflicts, mode)
 }
 
@@ -392,12 +392,12 @@ func (c *CLIIntegration) applyArrayFlag(arrayFlag ArrayFlag, configStruct interf
 func (c *CLIIntegration) applyServerPoolFlag(config *ArrayConfig, configStruct interface{}, configMap map[string]interface{}) error {
 	// For now, we'll add server pool configurations to a custom field
 	// In a full implementation, this would integrate with the actual config structure
-	
+
 	// Apply to map
 	if err := c.appendToMapArray(configMap, "opencenter.infrastructure.server_pools", config.Fields); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -407,7 +407,7 @@ func (c *CLIIntegration) applySSHKeyFlag(config *ArrayConfig, configStruct inter
 	if err := c.appendToMapArray(configMap, "opencenter.infrastructure.ssh_keys", config.Fields); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -417,7 +417,7 @@ func (c *CLIIntegration) applyDNSServerFlag(config *ArrayConfig, configStruct in
 	if err := c.appendToMapArray(configMap, "opencenter.networking.dns_servers", config.Fields); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -427,7 +427,7 @@ func (c *CLIIntegration) applySubnetFlag(config *ArrayConfig, configStruct inter
 	if err := c.appendToMapArray(configMap, "opencenter.networking.subnets", config.Fields); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -435,15 +435,15 @@ func (c *CLIIntegration) applySubnetFlag(config *ArrayConfig, configStruct inter
 func (c *CLIIntegration) applyJSONFlag(jsonFlag JSONFlag, configStruct interface{}, configMap map[string]interface{}) error {
 	// Create a JSON handler to merge the configuration
 	handler := NewJSONFlagHandler()
-	
+
 	// Apply to map
 	if err := handler.MergeIntoConfiguration(&jsonFlag, configMap); err != nil {
 		return fmt.Errorf("failed to merge JSON flag into configuration map: %w", err)
 	}
-	
+
 	// TODO: Apply to struct in future implementation
 	// For now, we focus on map-based configuration
-	
+
 	return nil
 }
 
@@ -451,15 +451,15 @@ func (c *CLIIntegration) applyJSONFlag(jsonFlag JSONFlag, configStruct interface
 func (c *CLIIntegration) applyYAMLFlag(yamlFlag YAMLFlag, configStruct interface{}, configMap map[string]interface{}) error {
 	// Create a YAML handler to merge the configuration
 	handler := NewYAMLFlagHandler()
-	
+
 	// Apply to map
 	if err := handler.MergeIntoConfiguration(&yamlFlag, configMap); err != nil {
 		return fmt.Errorf("failed to merge YAML flag into configuration map: %w", err)
 	}
-	
+
 	// TODO: Apply to struct in future implementation
 	// For now, we focus on map-based configuration
-	
+
 	return nil
 }
 
@@ -467,25 +467,25 @@ func (c *CLIIntegration) applyYAMLFlag(yamlFlag YAMLFlag, configStruct interface
 func (c *CLIIntegration) applyTemplateVariables(templateVars map[string]string, configStruct interface{}, configMap map[string]interface{}) error {
 	// Create a template processor
 	processor := NewDefaultTemplateProcessor()
-	
+
 	// Create a configuration object for template processing
 	config := &Configuration{
 		Data: configMap,
 	}
-	
+
 	// Process templates with the provided variables
 	if err := processor.ProcessTemplates(config, templateVars); err != nil {
 		return fmt.Errorf("failed to process templates: %w", err)
 	}
-	
+
 	// Update the configuration map with processed data
 	for key, value := range config.Data {
 		configMap[key] = value
 	}
-	
+
 	// TODO: Apply to struct in future implementation
 	// For now, we focus on map-based configuration
-	
+
 	return nil
 }
 
@@ -493,15 +493,15 @@ func (c *CLIIntegration) applyTemplateVariables(templateVars map[string]string, 
 func (c *CLIIntegration) applyArrayOperation(arrayOp ArrayOperationFlag, configStruct interface{}, configMap map[string]interface{}) error {
 	// Create an array handler to apply the operation
 	handler := NewArrayFlagHandler()
-	
+
 	// Apply to map
 	if err := handler.MergeIntoConfiguration(&arrayOp, configMap); err != nil {
 		return fmt.Errorf("failed to apply array operation to configuration map: %w", err)
 	}
-	
+
 	// TODO: Apply to struct in future implementation
 	// For now, we focus on map-based configuration
-	
+
 	return nil
 }
 
@@ -509,15 +509,15 @@ func (c *CLIIntegration) applyArrayOperation(arrayOp ArrayOperationFlag, configS
 func (c *CLIIntegration) applyMapOperation(mapOp MapFlag, configStruct interface{}, configMap map[string]interface{}) error {
 	// Create a map handler to apply the operation
 	handler := NewMapFlagHandler()
-	
+
 	// Apply to map
 	if err := handler.MergeIntoConfiguration(&mapOp, configMap); err != nil {
 		return fmt.Errorf("failed to apply map operation to configuration map: %w", err)
 	}
-	
+
 	// TODO: Apply to struct in future implementation
 	// For now, we focus on map-based configuration
-	
+
 	return nil
 }
 
@@ -527,10 +527,10 @@ func (c *CLIIntegration) applyConfigFileFlags(configFileFlags []*ConfigFileFlag,
 	fileHandler := NewFileFlagHandler()
 	merger := NewDefaultConfigurationMerger()
 	conflictDetector := NewConflictDetector()
-	
+
 	// Load all configuration files
 	configurations := make([]Configuration, 0, len(configFileFlags)+1)
-	
+
 	// Add current configuration as base
 	currentConfig := Configuration{
 		Data: make(map[string]interface{}),
@@ -538,12 +538,12 @@ func (c *CLIIntegration) applyConfigFileFlags(configFileFlags []*ConfigFileFlag,
 			{Type: SourceCLI, Path: "current", Priority: 1000}, // High priority for current config
 		},
 	}
-	
+
 	// Copy current config map data
 	for key, value := range configMap {
 		currentConfig.Data[key] = value
 	}
-	
+
 	// Load file configurations
 	for _, configFileFlag := range configFileFlags {
 		fileConfig, err := fileHandler.LoadConfigurationFile(configFileFlag)
@@ -552,35 +552,35 @@ func (c *CLIIntegration) applyConfigFileFlags(configFileFlags []*ConfigFileFlag,
 		}
 		configurations = append(configurations, *fileConfig)
 	}
-	
+
 	// Add current configuration last (highest precedence)
 	configurations = append(configurations, currentConfig)
-	
+
 	// Detect conflicts before merging
 	conflicts, err := conflictDetector.DetectConflicts(configurations)
 	if err != nil {
 		return fmt.Errorf("failed to detect configuration conflicts: %w", err)
 	}
-	
+
 	// Report conflicts if any exist
 	if len(conflicts) > 0 {
 		fmt.Printf("Configuration conflicts detected:\n%s", conflictDetector.GetConflictReport())
 	}
-	
+
 	// Merge all configurations
 	mergedConfig, err := merger.MergeConfigurations(configurations)
 	if err != nil {
 		return fmt.Errorf("failed to merge configuration files: %w", err)
 	}
-	
+
 	// Update the configuration map with merged data
 	for key, value := range mergedConfig.Data {
 		configMap[key] = value
 	}
-	
+
 	// TODO: Apply to struct in future implementation
 	// For now, we focus on map-based configuration
-	
+
 	return nil
 }
 
@@ -588,7 +588,7 @@ func (c *CLIIntegration) applyConfigFileFlags(configFileFlags []*ConfigFileFlag,
 func (c *CLIIntegration) appendToMapArray(configMap map[string]interface{}, path string, value interface{}) error {
 	parts := strings.Split(path, ".")
 	current := configMap
-	
+
 	// Navigate to the parent of the target array
 	for i, part := range parts[:len(parts)-1] {
 		if next, exists := current[part]; exists {
@@ -604,7 +604,7 @@ func (c *CLIIntegration) appendToMapArray(configMap map[string]interface{}, path
 			current = newMap
 		}
 	}
-	
+
 	// Handle the final array field
 	arrayField := parts[len(parts)-1]
 	if existing, exists := current[arrayField]; exists {
@@ -618,7 +618,7 @@ func (c *CLIIntegration) appendToMapArray(configMap map[string]interface{}, path
 		// Create new array
 		current[arrayField] = []interface{}{value}
 	}
-	
+
 	return nil
 }
 
@@ -626,36 +626,36 @@ func (c *CLIIntegration) appendToMapArray(configMap map[string]interface{}, path
 func (c *CLIIntegration) setField(obj interface{}, path string, value string) error {
 	v := reflect.ValueOf(obj).Elem()
 	parts := strings.Split(path, ".")
-	
+
 	for i, part := range parts {
 		field := c.findField(v, part)
-		
+
 		if !field.IsValid() {
 			if v.Kind() == reflect.Map {
 				if i != len(parts)-1 {
 					return fmt.Errorf("setting nested fields in maps is not supported: %s", path)
 				}
-				
+
 				if v.Type().Key().Kind() != reflect.String {
 					return fmt.Errorf("map key type must be string for path-based setting, got %s", v.Type().Key().Kind())
 				}
-				
+
 				mapValueType := v.Type().Elem()
 				newValue := reflect.New(mapValueType).Elem()
 				if err := c.setReflectValue(newValue, value); err != nil {
 					return fmt.Errorf("failed to set map value for key '%s': %w", part, err)
 				}
-				
+
 				v.SetMapIndex(reflect.ValueOf(part), newValue)
 				return nil
 			}
 			return fmt.Errorf("field not found: '%s' in struct '%s'", part, v.Type().Name())
 		}
-		
+
 		if i == len(parts)-1 {
 			return c.setFieldValue(field, value)
 		}
-		
+
 		if field.Kind() == reflect.Struct {
 			v = field
 		} else if field.Kind() == reflect.Ptr && field.Type().Elem().Kind() == reflect.Struct {
@@ -737,13 +737,13 @@ func (c *CLIIntegration) setReflectValue(field reflect.Value, value string) erro
 func (c *CLIIntegration) setMapField(obj map[string]interface{}, path string, value string) error {
 	parts := strings.Split(path, ".")
 	current := obj
-	
+
 	for i, part := range parts {
 		if i == len(parts)-1 {
 			current[part] = c.convertStringValue(value)
 			return nil
 		}
-		
+
 		if next, exists := current[part]; exists {
 			if nextMap, ok := next.(map[string]interface{}); ok {
 				current = nextMap

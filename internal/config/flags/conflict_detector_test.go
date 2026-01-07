@@ -20,12 +20,12 @@ import (
 
 func TestConflictDetector_DetectConflicts(t *testing.T) {
 	detector := NewConflictDetector()
-	
+
 	tests := []struct {
-		name           string
-		configurations []Configuration
+		name            string
+		configurations  []Configuration
 		expectConflicts int
-		checkFunc      func(*testing.T, []ConfigConflict)
+		checkFunc       func(*testing.T, []ConfigConflict)
 	}{
 		{
 			name: "no conflicts - identical values",
@@ -75,16 +75,16 @@ func TestConflictDetector_DetectConflicts(t *testing.T) {
 					t.Errorf("Expected 1 conflict, got %d", len(conflicts))
 					return
 				}
-				
+
 				conflict := conflicts[0]
 				if conflict.Path != "cluster.name" {
 					t.Errorf("Expected conflict path 'cluster.name', got '%s'", conflict.Path)
 				}
-				
+
 				if len(conflict.Sources) != 2 {
 					t.Errorf("Expected 2 sources in conflict, got %d", len(conflict.Sources))
 				}
-				
+
 				// Higher priority should win
 				if conflict.ResolvedValue != "override-cluster" {
 					t.Errorf("Expected resolved value 'override-cluster', got %v", conflict.ResolvedValue)
@@ -97,7 +97,7 @@ func TestConflictDetector_DetectConflicts(t *testing.T) {
 				{
 					Data: map[string]interface{}{
 						"cluster": map[string]interface{}{
-							"name": "base-cluster",
+							"name":    "base-cluster",
 							"version": "1.0.0",
 						},
 						"infrastructure": map[string]interface{}{
@@ -109,7 +109,7 @@ func TestConflictDetector_DetectConflicts(t *testing.T) {
 				{
 					Data: map[string]interface{}{
 						"cluster": map[string]interface{}{
-							"name": "override-cluster",
+							"name":    "override-cluster",
 							"version": "2.0.0",
 						},
 						"infrastructure": map[string]interface{}{
@@ -125,14 +125,14 @@ func TestConflictDetector_DetectConflicts(t *testing.T) {
 					t.Errorf("Expected 3 conflicts, got %d", len(conflicts))
 					return
 				}
-				
+
 				// Check that all expected paths have conflicts
 				expectedPaths := map[string]bool{
-					"cluster.name":           false,
-					"cluster.version":        false,
+					"cluster.name":            false,
+					"cluster.version":         false,
 					"infrastructure.provider": false,
 				}
-				
+
 				for _, conflict := range conflicts {
 					if _, exists := expectedPaths[conflict.Path]; exists {
 						expectedPaths[conflict.Path] = true
@@ -140,7 +140,7 @@ func TestConflictDetector_DetectConflicts(t *testing.T) {
 						t.Errorf("Unexpected conflict path: %s", conflict.Path)
 					}
 				}
-				
+
 				for path, found := range expectedPaths {
 					if !found {
 						t.Errorf("Expected conflict for path '%s' not found", path)
@@ -198,19 +198,19 @@ func TestConflictDetector_DetectConflicts(t *testing.T) {
 					t.Errorf("Expected 1 conflict, got %d", len(conflicts))
 					return
 				}
-				
+
 				conflict := conflicts[0]
 				if conflict.ResolvedValue != "high-priority" {
 					t.Errorf("Expected resolved value 'high-priority', got %v", conflict.ResolvedValue)
 				}
-				
+
 				if len(conflict.Sources) != 3 {
 					t.Errorf("Expected 3 sources in conflict, got %d", len(conflict.Sources))
 				}
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			conflicts, err := detector.DetectConflicts(tt.configurations)
@@ -218,11 +218,11 @@ func TestConflictDetector_DetectConflicts(t *testing.T) {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if len(conflicts) != tt.expectConflicts {
 				t.Errorf("Expected %d conflicts, got %d", tt.expectConflicts, len(conflicts))
 			}
-			
+
 			if tt.checkFunc != nil {
 				tt.checkFunc(t, conflicts)
 			}
@@ -232,13 +232,13 @@ func TestConflictDetector_DetectConflicts(t *testing.T) {
 
 func TestConflictDetector_GetConflictReport(t *testing.T) {
 	detector := NewConflictDetector()
-	
+
 	// Test with no conflicts
 	report := detector.GetConflictReport()
 	if !strings.Contains(report, "No configuration conflicts detected") {
 		t.Errorf("Expected no conflicts message, got: %s", report)
 	}
-	
+
 	// Test with conflicts
 	configurations := []Configuration{
 		{
@@ -258,18 +258,18 @@ func TestConflictDetector_GetConflictReport(t *testing.T) {
 			Sources: []ConfigSource{{Type: SourceCLI, Path: "cli", Priority: 2}},
 		},
 	}
-	
+
 	conflicts, err := detector.DetectConflicts(configurations)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
-	
+
 	if len(conflicts) == 0 {
 		t.Fatal("Expected conflicts to be detected")
 	}
-	
+
 	report = detector.GetConflictReport()
-	
+
 	// Check that report contains expected information
 	expectedStrings := []string{
 		"Configuration conflicts detected",
@@ -280,7 +280,7 @@ func TestConflictDetector_GetConflictReport(t *testing.T) {
 		"override-cluster",
 		"Resolution:",
 	}
-	
+
 	for _, expected := range expectedStrings {
 		if !strings.Contains(report, expected) {
 			t.Errorf("Expected report to contain '%s', but it didn't. Report: %s", expected, report)
@@ -290,12 +290,12 @@ func TestConflictDetector_GetConflictReport(t *testing.T) {
 
 func TestConflictDetector_HasConflicts(t *testing.T) {
 	detector := NewConflictDetector()
-	
+
 	// Initially no conflicts
 	if detector.HasConflicts() {
 		t.Error("Expected no conflicts initially")
 	}
-	
+
 	// After detecting conflicts
 	configurations := []Configuration{
 		{
@@ -311,12 +311,12 @@ func TestConflictDetector_HasConflicts(t *testing.T) {
 			Sources: []ConfigSource{{Type: SourceFile, Path: "file2.yaml", Priority: 2}},
 		},
 	}
-	
+
 	_, err := detector.DetectConflicts(configurations)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
-	
+
 	if !detector.HasConflicts() {
 		t.Error("Expected conflicts to be detected")
 	}
@@ -324,7 +324,7 @@ func TestConflictDetector_HasConflicts(t *testing.T) {
 
 func TestConflictDetector_GetConflicts(t *testing.T) {
 	detector := NewConflictDetector()
-	
+
 	configurations := []Configuration{
 		{
 			Data: map[string]interface{}{
@@ -349,29 +349,29 @@ func TestConflictDetector_GetConflicts(t *testing.T) {
 			Sources: []ConfigSource{{Type: SourceCLI, Path: "cli", Priority: 2}},
 		},
 	}
-	
+
 	detectedConflicts, err := detector.DetectConflicts(configurations)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
-	
+
 	retrievedConflicts := detector.GetConflicts()
-	
+
 	if len(detectedConflicts) != len(retrievedConflicts) {
 		t.Errorf("Expected %d conflicts from GetConflicts(), got %d", len(detectedConflicts), len(retrievedConflicts))
 	}
-	
+
 	// Verify conflicts are the same
 	for i, detected := range detectedConflicts {
 		if i >= len(retrievedConflicts) {
 			break
 		}
-		
+
 		retrieved := retrievedConflicts[i]
 		if detected.Path != retrieved.Path {
 			t.Errorf("Conflict %d: expected path '%s', got '%s'", i, detected.Path, retrieved.Path)
 		}
-		
+
 		if len(detected.Sources) != len(retrieved.Sources) {
 			t.Errorf("Conflict %d: expected %d sources, got %d", i, len(detected.Sources), len(retrieved.Sources))
 		}
@@ -380,7 +380,7 @@ func TestConflictDetector_GetConflicts(t *testing.T) {
 
 func TestConflictDetector_ComplexNestedConflicts(t *testing.T) {
 	detector := NewConflictDetector()
-	
+
 	configurations := []Configuration{
 		{
 			Data: map[string]interface{}{
@@ -397,7 +397,7 @@ func TestConflictDetector_ComplexNestedConflicts(t *testing.T) {
 						"provider": "openstack",
 						"server_pools": []interface{}{
 							map[string]interface{}{
-								"name": "control",
+								"name":  "control",
 								"count": 3,
 							},
 						},
@@ -421,7 +421,7 @@ func TestConflictDetector_ComplexNestedConflicts(t *testing.T) {
 						"provider": "aws",
 						"server_pools": []interface{}{
 							map[string]interface{}{
-								"name": "compute",
+								"name":  "compute",
 								"count": 5,
 							},
 						},
@@ -431,12 +431,12 @@ func TestConflictDetector_ComplexNestedConflicts(t *testing.T) {
 			Sources: []ConfigSource{{Type: SourceCLI, Path: "cli", Priority: 2}},
 		},
 	}
-	
+
 	conflicts, err := detector.DetectConflicts(configurations)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
-	
+
 	// Should detect conflicts in nested paths
 	expectedPaths := []string{
 		"opencenter.cluster.name",
@@ -444,17 +444,17 @@ func TestConflictDetector_ComplexNestedConflicts(t *testing.T) {
 		"opencenter.infrastructure.provider",
 		"opencenter.infrastructure.server_pools",
 	}
-	
+
 	if len(conflicts) != len(expectedPaths) {
 		t.Errorf("Expected %d conflicts, got %d", len(expectedPaths), len(conflicts))
 	}
-	
+
 	// Check that all expected paths are found
 	foundPaths := make(map[string]bool)
 	for _, conflict := range conflicts {
 		foundPaths[conflict.Path] = true
 	}
-	
+
 	for _, expectedPath := range expectedPaths {
 		if !foundPaths[expectedPath] {
 			t.Errorf("Expected conflict for path '%s' not found", expectedPath)

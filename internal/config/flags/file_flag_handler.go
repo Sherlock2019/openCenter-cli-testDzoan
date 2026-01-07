@@ -47,7 +47,7 @@ func (h *FileFlagHandler) ParseFlag(flagName, value string) (interface{}, error)
 	if strings.HasPrefix(flagName, "config-stack") {
 		return h.parseConfigStack(value)
 	}
-	
+
 	return h.parseConfigFile(flagName, value)
 }
 
@@ -56,25 +56,25 @@ func (h *FileFlagHandler) parseConfigFile(flagName, value string) (*ConfigFileFl
 	if value == "" {
 		return nil, fmt.Errorf("empty file path in --%s flag", flagName)
 	}
-	
+
 	// Resolve relative paths
 	absPath, err := filepath.Abs(value)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve path '%s': %w", value, err)
 	}
-	
+
 	// Check if file exists
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("configuration file does not exist: %s", absPath)
 	}
-	
+
 	// Determine file type
 	fileType := h.detectFileType(absPath)
-	
+
 	// Determine merge priority based on flag type
 	var priority int
 	var mergeType ConfigFileMergeType
-	
+
 	switch {
 	case strings.HasPrefix(flagName, "base-config"):
 		priority = 1
@@ -86,7 +86,7 @@ func (h *FileFlagHandler) parseConfigFile(flagName, value string) (*ConfigFileFl
 		priority = 2
 		mergeType = ConfigFileMergeOverride
 	}
-	
+
 	return &ConfigFileFlag{
 		Path:      absPath,
 		Type:      fileType,
@@ -100,30 +100,30 @@ func (h *FileFlagHandler) parseConfigStack(value string) ([]*ConfigFileFlag, err
 	if value == "" {
 		return nil, fmt.Errorf("empty file list in --config-stack flag")
 	}
-	
+
 	filePaths := strings.Split(value, ",")
 	configFiles := make([]*ConfigFileFlag, 0, len(filePaths))
-	
+
 	for i, filePath := range filePaths {
 		filePath = strings.TrimSpace(filePath)
 		if filePath == "" {
 			continue
 		}
-		
+
 		// Resolve relative paths
 		absPath, err := filepath.Abs(filePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve path '%s' in config stack: %w", filePath, err)
 		}
-		
+
 		// Check if file exists
 		if _, err := os.Stat(absPath); os.IsNotExist(err) {
 			return nil, fmt.Errorf("configuration file does not exist in stack: %s", absPath)
 		}
-		
+
 		// Determine file type
 		fileType := h.detectFileType(absPath)
-		
+
 		configFiles = append(configFiles, &ConfigFileFlag{
 			Path:      absPath,
 			Type:      fileType,
@@ -131,11 +131,11 @@ func (h *FileFlagHandler) parseConfigStack(value string) ([]*ConfigFileFlag, err
 			MergeType: ConfigFileMergeStack,
 		})
 	}
-	
+
 	if len(configFiles) == 0 {
 		return nil, fmt.Errorf("no valid files found in config stack")
 	}
-	
+
 	return configFiles, nil
 }
 
@@ -158,9 +158,9 @@ func (h *FileFlagHandler) LoadConfigurationFile(configFile *ConfigFileFlag) (*Co
 	if err != nil {
 		return nil, fmt.Errorf("failed to read configuration file '%s': %w", configFile.Path, err)
 	}
-	
+
 	var configData map[string]interface{}
-	
+
 	switch configFile.Type {
 	case "yaml":
 		if err := yaml.Unmarshal(data, &configData); err != nil {
@@ -173,11 +173,11 @@ func (h *FileFlagHandler) LoadConfigurationFile(configFile *ConfigFileFlag) (*Co
 	default:
 		return nil, fmt.Errorf("unsupported file type '%s' for file '%s'", configFile.Type, configFile.Path)
 	}
-	
+
 	if configData == nil {
 		configData = make(map[string]interface{})
 	}
-	
+
 	return &Configuration{
 		Data: configData,
 		Sources: []ConfigSource{

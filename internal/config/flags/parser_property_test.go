@@ -35,7 +35,7 @@ func TestProperty_FlagCategorizationConsistency(t *testing.T) {
 	properties.Property("flag parser categorizes flags consistently", prop.ForAll(
 		func(dotFlag string, arrayFlag string, jsonFlag string, yamlFlag string, templateFlag string) bool {
 			parser := NewEnhancedFlagParser()
-			
+
 			// Register mock handlers for testing
 			if err := registerMockHandlers(parser); err != nil {
 				return false
@@ -44,31 +44,31 @@ func TestProperty_FlagCategorizationConsistency(t *testing.T) {
 			// Build command line arguments - only include non-empty flags
 			var args []string
 			expectedCounts := 0
-			
+
 			// Add dot notation flag (should go to DotNotation category)
 			if dotFlag != "" {
 				args = append(args, fmt.Sprintf("--%s=value", dotFlag))
 				expectedCounts++
 			}
-			
-			// Add array flag (should go to ArrayFlags category)  
+
+			// Add array flag (should go to ArrayFlags category)
 			if arrayFlag != "" {
 				args = append(args, fmt.Sprintf("--%s=name=test,worker_count=3", arrayFlag))
 				expectedCounts++
 			}
-			
+
 			// Add JSON flag (should go to JSONFlags category)
 			if jsonFlag != "" {
 				args = append(args, fmt.Sprintf("--%s={\"key\":\"value\"}", jsonFlag))
 				expectedCounts++
 			}
-			
+
 			// Add YAML flag (should go to YAMLFlags category)
 			if yamlFlag != "" {
 				args = append(args, fmt.Sprintf("--%s=key: value", yamlFlag))
 				expectedCounts++
 			}
-			
+
 			// Add template flag (should go to TemplateVars category)
 			if templateFlag != "" {
 				args = append(args, fmt.Sprintf("--%s=testvalue", templateFlag))
@@ -88,7 +88,7 @@ func TestProperty_FlagCategorizationConsistency(t *testing.T) {
 
 			// Verify categorization consistency
 			actualCounts := 0
-			
+
 			// Check dot notation flags
 			if dotFlag != "" {
 				if len(parsed.DotNotation) != 1 {
@@ -96,7 +96,7 @@ func TestProperty_FlagCategorizationConsistency(t *testing.T) {
 				}
 				actualCounts++
 			}
-			
+
 			// Check array flags
 			if arrayFlag != "" {
 				if len(parsed.ArrayFlags) != 1 {
@@ -104,7 +104,7 @@ func TestProperty_FlagCategorizationConsistency(t *testing.T) {
 				}
 				actualCounts++
 			}
-			
+
 			// Check JSON flags
 			if jsonFlag != "" {
 				if len(parsed.JSONFlags) != 1 {
@@ -112,7 +112,7 @@ func TestProperty_FlagCategorizationConsistency(t *testing.T) {
 				}
 				actualCounts++
 			}
-			
+
 			// Check YAML flags
 			if yamlFlag != "" {
 				if len(parsed.YAMLFlags) != 1 {
@@ -120,7 +120,7 @@ func TestProperty_FlagCategorizationConsistency(t *testing.T) {
 				}
 				actualCounts++
 			}
-			
+
 			// Check template flags
 			if templateFlag != "" {
 				if len(parsed.TemplateVars) != 1 {
@@ -149,25 +149,25 @@ func registerMockHandlers(parser *EnhancedFlagParser) error {
 	if err := parser.RegisterHandler("server-pool|ssh-key|dns-server|subnet", arrayHandler); err != nil {
 		return err
 	}
-	
+
 	// Register JSON flag handler
 	jsonHandler := &mockJSONFlagHandler{}
 	if err := parser.RegisterHandler("json-set.*", jsonHandler); err != nil {
 		return err
 	}
-	
+
 	// Register YAML flag handler
 	yamlHandler := &mockYAMLFlagHandler{}
 	if err := parser.RegisterHandler("yaml-set.*|yaml-data.*", yamlHandler); err != nil {
 		return err
 	}
-	
+
 	// Register template flag handler
 	templateHandler := &mockTemplateFlagHandler{}
 	if err := parser.RegisterHandler("template-var-.*", templateHandler); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -176,10 +176,10 @@ func registerMockHandlers(parser *EnhancedFlagParser) error {
 type mockArrayFlagHandler struct{}
 
 func (h *mockArrayFlagHandler) CanHandle(flagName string) bool {
-	return strings.Contains(flagName, "server-pool") || 
-		   strings.Contains(flagName, "ssh-key") || 
-		   strings.Contains(flagName, "dns-server") || 
-		   strings.Contains(flagName, "subnet")
+	return strings.Contains(flagName, "server-pool") ||
+		strings.Contains(flagName, "ssh-key") ||
+		strings.Contains(flagName, "dns-server") ||
+		strings.Contains(flagName, "subnet")
 }
 
 func (h *mockArrayFlagHandler) ParseFlag(flagName, value string) (interface{}, error) {

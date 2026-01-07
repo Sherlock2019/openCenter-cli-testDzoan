@@ -6,7 +6,7 @@ type BaseConfig struct {
 	Status    string `yaml:"status,omitempty" json:"status,omitempty" jsonschema:"description=Service deployment status (pending/running/success/failed)"`
 	Namespace string `yaml:"namespace,omitempty" json:"namespace,omitempty" jsonschema:"description=Kubernetes namespace for the service"`
 	Hostname  string `yaml:"hostname,omitempty" json:"hostname,omitempty" jsonschema:"description=Hostname for HTTPRoute configuration"`
-	
+
 	// Image configuration
 	ImageRepository string `yaml:"image_repository,omitempty" json:"image_repository,omitempty" jsonschema:"description=Container image repository"`
 	ImageTag        string `yaml:"image_tag,omitempty" json:"image_tag,omitempty" jsonschema:"description=Container image tag"`

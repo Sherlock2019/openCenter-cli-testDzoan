@@ -64,7 +64,7 @@ func (h *ArrayOperationFlagHandler) GetFlagType() FlagType {
 // ParseFlag parses array operation flags
 func (h *ArrayOperationFlagHandler) ParseFlag(flagName, flagValue string) (interface{}, error) {
 	var operation ArrayOperation
-	
+
 	// Determine operation from flag name
 	switch {
 	case strings.HasPrefix(flagName, "array-append"):
@@ -76,13 +76,13 @@ func (h *ArrayOperationFlagHandler) ParseFlag(flagName, flagValue string) (inter
 	default:
 		return nil, fmt.Errorf("unsupported array operation flag: %s", flagName)
 	}
-	
+
 	// Parse path and value
 	path, value, index, err := h.parseArrayFlag(flagValue, operation)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse array flag '%s=%s': %w", flagName, flagValue, err)
 	}
-	
+
 	return &ArrayOperationFlag{
 		Operation: operation,
 		Path:      path,
@@ -97,11 +97,11 @@ func (h *ArrayOperationFlagHandler) MergeIntoConfiguration(flag ParsedFlag, conf
 	if !ok {
 		return fmt.Errorf("expected ArrayOperationFlag, got %T", flag)
 	}
-	
+
 	// Navigate to the array location
 	pathParts := strings.Split(arrayFlag.Path, ".")
 	current := config
-	
+
 	// Navigate to the parent of the array
 	for i, part := range pathParts[:len(pathParts)-1] {
 		if next, exists := current[part]; exists {
@@ -117,10 +117,10 @@ func (h *ArrayOperationFlagHandler) MergeIntoConfiguration(flag ParsedFlag, conf
 			current = newMap
 		}
 	}
-	
+
 	// Get the array field name
 	arrayField := pathParts[len(pathParts)-1]
-	
+
 	// Get or create the array
 	var targetArray []interface{}
 	if existing, exists := current[arrayField]; exists {
@@ -132,7 +132,7 @@ func (h *ArrayOperationFlagHandler) MergeIntoConfiguration(flag ParsedFlag, conf
 	} else {
 		targetArray = []interface{}{}
 	}
-	
+
 	// Apply the operation
 	switch arrayFlag.Operation {
 	case ArrayOpAppend:
@@ -155,7 +155,7 @@ func (h *ArrayOperationFlagHandler) MergeIntoConfiguration(flag ParsedFlag, conf
 	default:
 		return fmt.Errorf("unsupported array operation: %s", arrayFlag.Operation)
 	}
-	
+
 	// Update the configuration
 	current[arrayField] = targetArray
 	return nil
@@ -171,33 +171,33 @@ func (h *ArrayOperationFlagHandler) parseArrayFlag(flagValue string, operation A
 			return "", nil, -1, fmt.Errorf("expected format 'path=value', got '%s'", flagValue)
 		}
 		return parts[0], h.parseValue(parts[1]), -1, nil
-		
+
 	case ArrayOpInsert:
 		// Format: path[index]=value
 		if !strings.Contains(flagValue, "[") || !strings.Contains(flagValue, "]") {
 			return "", nil, -1, fmt.Errorf("insert operation requires format 'path[index]=value', got '%s'", flagValue)
 		}
-		
+
 		// Extract path, index, and value
 		bracketStart := strings.Index(flagValue, "[")
 		bracketEnd := strings.Index(flagValue, "]")
 		equalPos := strings.Index(flagValue, "=")
-		
+
 		if bracketStart == -1 || bracketEnd == -1 || equalPos == -1 || bracketEnd >= equalPos {
 			return "", nil, -1, fmt.Errorf("invalid insert format, expected 'path[index]=value', got '%s'", flagValue)
 		}
-		
+
 		path := flagValue[:bracketStart]
 		indexStr := flagValue[bracketStart+1 : bracketEnd]
 		value := flagValue[equalPos+1:]
-		
+
 		index, err := strconv.Atoi(indexStr)
 		if err != nil {
 			return "", nil, -1, fmt.Errorf("invalid array index '%s': %w", indexStr, err)
 		}
-		
+
 		return path, h.parseValue(value), index, nil
-		
+
 	default:
 		return "", nil, -1, fmt.Errorf("unsupported operation: %s", operation)
 	}
@@ -209,12 +209,12 @@ func (h *ArrayOperationFlagHandler) parseValue(value string) interface{} {
 	if intVal, err := strconv.Atoi(value); err == nil {
 		return intVal
 	}
-	
+
 	// Try to parse as boolean
 	if boolVal, err := strconv.ParseBool(value); err == nil {
 		return boolVal
 	}
-	
+
 	// Return as string
 	return value
 }

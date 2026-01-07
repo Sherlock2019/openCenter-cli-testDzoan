@@ -36,27 +36,27 @@ func TestProperty_ConfigurationMergingConsistency(t *testing.T) {
 			if reflect.DeepEqual(baseConfig, fileConfig) && reflect.DeepEqual(fileConfig, cliConfig) {
 				return true
 			}
-			
+
 			// Skip empty configurations to focus on meaningful merging
 			if len(baseConfig) == 0 && len(fileConfig) == 0 && len(cliConfig) == 0 {
 				return true
 			}
-			
+
 			// Skip cases where file and CLI configs are identical but base is different
 			// This creates ambiguous precedence scenarios
 			if reflect.DeepEqual(fileConfig, cliConfig) && len(fileConfig) > 0 {
 				return true
 			}
-			
+
 			merger := NewDefaultConfigurationMerger()
-			
+
 			// Set merge strategy to use replace mode for arrays to test precedence properly
 			merger.SetMergeStrategy(MergeStrategy{
 				ArrayMergeMode:  ArrayMergeReplace,
 				ObjectMergeMode: ObjectMergeDeep,
 				Precedence:      []SourceType{SourceDefault, SourceFile, SourceCLI},
 			})
-			
+
 			// Create configurations with different source types
 			configs := []Configuration{
 				{
@@ -72,16 +72,16 @@ func TestProperty_ConfigurationMergingConsistency(t *testing.T) {
 					Sources: []ConfigSource{{Type: SourceCLI, Path: "command-line"}},
 				},
 			}
-			
+
 			// Merge configurations
 			result, err := merger.MergeConfigurations(configs)
 			if err != nil {
 				return false // Merging should not fail for valid configurations
 			}
-			
+
 			// Precedence check: CLI values should override conflicting keys from lower precedence sources
 			// and all non-conflicting keys should be preserved
-			
+
 			// 1. All CLI keys should exist in result with CLI values (CLI has highest precedence)
 			for key, cliValue := range cliConfig {
 				if resultValue, exists := result.Data[key]; exists {
@@ -92,13 +92,13 @@ func TestProperty_ConfigurationMergingConsistency(t *testing.T) {
 					return false // CLI key should always be in result
 				}
 			}
-			
+
 			// 2. For keys not in CLI config, check file config takes precedence over base config
 			for key, fileValue := range fileConfig {
 				if _, inCLI := cliConfig[key]; inCLI {
 					continue // Skip keys that CLI overrides
 				}
-				
+
 				if resultValue, exists := result.Data[key]; exists {
 					if !compareValues(resultValue, fileValue) {
 						return false // File value should have precedence over base when CLI doesn't override
@@ -107,7 +107,7 @@ func TestProperty_ConfigurationMergingConsistency(t *testing.T) {
 					return false // File key should be in result when not overridden by CLI
 				}
 			}
-			
+
 			// 3. For keys only in base config, they should be preserved
 			for key, baseValue := range baseConfig {
 				if _, inCLI := cliConfig[key]; inCLI {
@@ -116,7 +116,7 @@ func TestProperty_ConfigurationMergingConsistency(t *testing.T) {
 				if _, inFile := fileConfig[key]; inFile {
 					continue // Skip keys that file overrides
 				}
-				
+
 				if resultValue, exists := result.Data[key]; exists {
 					if !compareValues(resultValue, baseValue) {
 						return false // Base value should be preserved when not overridden
@@ -125,7 +125,7 @@ func TestProperty_ConfigurationMergingConsistency(t *testing.T) {
 					return false // Base key should be in result when not overridden
 				}
 			}
-			
+
 			return true
 		},
 		genConfigData(),
@@ -139,30 +139,30 @@ func TestProperty_ConfigurationMergingConsistency(t *testing.T) {
 			if len(config1) == 0 && len(config2) == 0 && len(config3) == 0 {
 				return true
 			}
-			
+
 			merger := NewDefaultConfigurationMerger()
-			
+
 			// Create configurations with same source type (same precedence)
 			configs1 := []Configuration{
 				{Data: config1, Sources: []ConfigSource{{Type: SourceFile, Path: "config1.yaml"}}},
 				{Data: config2, Sources: []ConfigSource{{Type: SourceFile, Path: "config2.yaml"}}},
 				{Data: config3, Sources: []ConfigSource{{Type: SourceFile, Path: "config3.yaml"}}},
 			}
-			
+
 			configs2 := []Configuration{
 				{Data: config1, Sources: []ConfigSource{{Type: SourceFile, Path: "config1.yaml"}}},
 				{Data: config3, Sources: []ConfigSource{{Type: SourceFile, Path: "config3.yaml"}}},
 				{Data: config2, Sources: []ConfigSource{{Type: SourceFile, Path: "config2.yaml"}}},
 			}
-			
+
 			// Merge in different orders
 			result1, err1 := merger.MergeConfigurations(configs1)
 			result2, err2 := merger.MergeConfigurations(configs2)
-			
+
 			if err1 != nil || err2 != nil {
 				return false // Both should succeed
 			}
-			
+
 			// Results should be equivalent (last config wins for same precedence)
 			// Since config3 and config2 are swapped, the final result depends on merge strategy
 			// For deep merge, the structure should be consistent
@@ -179,14 +179,14 @@ func TestProperty_ConfigurationMergingConsistency(t *testing.T) {
 			if len(baseArray) == 0 && len(overrideArray) == 0 {
 				return true
 			}
-			
+
 			merger := NewDefaultConfigurationMerger()
 			merger.SetMergeStrategy(MergeStrategy{
 				ArrayMergeMode:  mergeMode,
 				ObjectMergeMode: ObjectMergeDeep,
 				Precedence:      []SourceType{SourceDefault, SourceCLI},
 			})
-			
+
 			configs := []Configuration{
 				{
 					Data:    map[string]interface{}{"array": baseArray},
@@ -197,17 +197,17 @@ func TestProperty_ConfigurationMergingConsistency(t *testing.T) {
 					Sources: []ConfigSource{{Type: SourceCLI, Path: "cli"}},
 				},
 			}
-			
+
 			result, err := merger.MergeConfigurations(configs)
 			if err != nil {
 				return false
 			}
-			
+
 			resultArray, ok := result.Data["array"].([]interface{})
 			if !ok {
 				return false
 			}
-			
+
 			// Verify merge behavior based on strategy
 			switch mergeMode {
 			case ArrayMergeReplace:
@@ -236,14 +236,14 @@ func TestProperty_ConfigurationMergingConsistency(t *testing.T) {
 			if len(baseObj) == 0 && len(overrideObj) == 0 {
 				return true
 			}
-			
+
 			merger := NewDefaultConfigurationMerger()
 			merger.SetMergeStrategy(MergeStrategy{
 				ArrayMergeMode:  ArrayMergeAppend,
 				ObjectMergeMode: mergeMode,
 				Precedence:      []SourceType{SourceDefault, SourceCLI},
 			})
-			
+
 			configs := []Configuration{
 				{
 					Data:    map[string]interface{}{"object": baseObj},
@@ -254,17 +254,17 @@ func TestProperty_ConfigurationMergingConsistency(t *testing.T) {
 					Sources: []ConfigSource{{Type: SourceCLI, Path: "cli"}},
 				},
 			}
-			
+
 			result, err := merger.MergeConfigurations(configs)
 			if err != nil {
 				return false
 			}
-			
+
 			resultObj, ok := result.Data["object"].(map[string]interface{})
 			if !ok {
 				return false
 			}
-			
+
 			// Verify merge behavior based on strategy
 			switch mergeMode {
 			case ObjectMergeReplace:

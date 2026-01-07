@@ -46,11 +46,11 @@ func (h *ServerPoolFlagHandler) GetFlagType() FlagType {
 func (h *ServerPoolFlagHandler) ParseArrayFlag(flagName, value string) (*ArrayConfig, error) {
 	// Parse comma-separated key=value pairs
 	fields := make(map[string]interface{})
-	
+
 	if value == "" {
 		return nil, fmt.Errorf("server-pool flag value cannot be empty")
 	}
-	
+
 	// Split by comma and parse each key=value pair
 	pairs := strings.Split(value, ",")
 	for _, pair := range pairs {
@@ -58,19 +58,19 @@ func (h *ServerPoolFlagHandler) ParseArrayFlag(flagName, value string) (*ArrayCo
 		if pair == "" {
 			continue
 		}
-		
+
 		parts := strings.SplitN(pair, "=", 2)
 		if len(parts) != 2 {
 			return nil, fmt.Errorf("invalid key=value pair in server-pool flag: '%s'", pair)
 		}
-		
+
 		key := strings.TrimSpace(parts[0])
 		val := strings.TrimSpace(parts[1])
-		
+
 		if key == "" {
 			return nil, fmt.Errorf("empty key in server-pool flag pair: '%s'", pair)
 		}
-		
+
 		// Convert numeric values
 		if key == "worker_count" || key == "volume_size" {
 			if intVal, err := strconv.Atoi(val); err == nil {
@@ -82,19 +82,19 @@ func (h *ServerPoolFlagHandler) ParseArrayFlag(flagName, value string) (*ArrayCo
 			fields[key] = val
 		}
 	}
-	
+
 	// Validate required fields
 	if err := h.validateRequiredFields(fields); err != nil {
 		return nil, err
 	}
-	
+
 	config := &ArrayConfig{
 		Path:   "opencenter.infrastructure.server_pools",
 		Index:  -1, // Will be determined during merging
 		Fields: fields,
 		Type:   "server-pool",
 	}
-	
+
 	return config, nil
 }
 
@@ -108,38 +108,38 @@ func (h *ServerPoolFlagHandler) ValidateArrayConfig(config *ArrayConfig) error {
 	if config == nil {
 		return fmt.Errorf("array config cannot be nil")
 	}
-	
+
 	if config.Type != "server-pool" {
 		return fmt.Errorf("invalid array config type: expected 'server-pool', got '%s'", config.Type)
 	}
-	
+
 	return h.validateRequiredFields(config.Fields)
 }
 
 // validateRequiredFields checks that all required fields are present
 func (h *ServerPoolFlagHandler) validateRequiredFields(fields map[string]interface{}) error {
 	requiredFields := []string{"name", "worker_count", "flavor_worker", "node_worker"}
-	
+
 	for _, field := range requiredFields {
 		if _, exists := fields[field]; !exists {
 			return fmt.Errorf("missing required field '%s' in server-pool configuration", field)
 		}
 	}
-	
+
 	// Validate worker_count range
 	if workerCount, ok := fields["worker_count"].(int); ok {
 		if workerCount < 0 || workerCount > 100 {
 			return fmt.Errorf("worker_count must be between 0 and 100, got %d", workerCount)
 		}
 	}
-	
+
 	// Validate volume_size if present
 	if volumeSize, ok := fields["volume_size"].(int); ok {
 		if volumeSize < 1 {
 			return fmt.Errorf("volume_size must be at least 1, got %d", volumeSize)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -163,7 +163,7 @@ func (h *ServerPoolFlagHandler) ToServerPoolConfig(fields map[string]interface{}
 	config := &ServerPoolConfig{
 		CustomFields: make(map[string]string),
 	}
-	
+
 	for key, value := range fields {
 		switch key {
 		case "name":
@@ -217,6 +217,6 @@ func (h *ServerPoolFlagHandler) ToServerPoolConfig(fields map[string]interface{}
 			}
 		}
 	}
-	
+
 	return config, nil
 }

@@ -53,11 +53,11 @@ func (h *YAMLFlagHandler) parseYAMLFlag(flagName, value string) (*YAMLFlag, erro
 	if value == "" {
 		return nil, fmt.Errorf("YAML flag value cannot be empty")
 	}
-	
+
 	var parsedValue interface{}
 	var path string
 	var err error
-	
+
 	if strings.HasPrefix(flagName, "yaml-file") {
 		// Handle --yaml-file path=filename format
 		path, parsedValue, err = h.parseYAMLFile(flagName, value)
@@ -70,23 +70,23 @@ func (h *YAMLFlagHandler) parseYAMLFlag(flagName, value string) (*YAMLFlag, erro
 		if path == "" {
 			return nil, fmt.Errorf("invalid YAML flag format: expected --yaml-set path or --yaml-data path, got %s", flagName)
 		}
-		
+
 		// Parse the YAML value
 		if err := yaml.Unmarshal([]byte(value), &parsedValue); err != nil {
 			return nil, fmt.Errorf("invalid YAML syntax in flag '%s': %w", flagName, err)
 		}
 	}
-	
+
 	// Validate the parsed YAML
 	if err := h.validateYAMLValue(parsedValue); err != nil {
 		return nil, fmt.Errorf("invalid YAML value in flag '%s': %w", flagName, err)
 	}
-	
+
 	yamlFlag := &YAMLFlag{
 		Path:  path,
 		Value: parsedValue,
 	}
-	
+
 	return yamlFlag, nil
 }
 
@@ -97,24 +97,24 @@ func (h *YAMLFlagHandler) parseYAMLFile(flagName, value string) (string, interfa
 	if len(parts) != 2 {
 		return "", nil, fmt.Errorf("invalid --yaml-file format: expected path=filename, got %s", value)
 	}
-	
+
 	path := strings.TrimSpace(parts[0])
 	filename := strings.TrimSpace(parts[1])
-	
+
 	if path == "" {
 		return "", nil, fmt.Errorf("empty path in --yaml-file flag")
 	}
-	
+
 	if filename == "" {
 		return "", nil, fmt.Errorf("empty filename in --yaml-file flag")
 	}
-	
+
 	// Load and parse the YAML file
 	parsedValue, err := h.loadYAMLFile(filename)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to load YAML file '%s': %w", filename, err)
 	}
-	
+
 	return path, parsedValue, nil
 }
 
@@ -125,18 +125,18 @@ func (h *YAMLFlagHandler) loadYAMLFile(filename string) (interface{}, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve file path: %w", err)
 	}
-	
+
 	// Check if file exists
 	if _, err := os.Stat(absPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("YAML file does not exist: %s", absPath)
 	}
-	
+
 	// Read the file
 	data, err := ioutil.ReadFile(absPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read YAML file: %w", err)
 	}
-	
+
 	// Handle multi-document YAML
 	documents := strings.Split(string(data), "---")
 	if len(documents) == 1 {
@@ -147,7 +147,7 @@ func (h *YAMLFlagHandler) loadYAMLFile(filename string) (interface{}, error) {
 		}
 		return parsedValue, nil
 	}
-	
+
 	// Multi-document YAML
 	var parsedDocuments []interface{}
 	for i, doc := range documents {
@@ -155,18 +155,18 @@ func (h *YAMLFlagHandler) loadYAMLFile(filename string) (interface{}, error) {
 		if doc == "" {
 			continue // Skip empty documents
 		}
-		
+
 		var parsedDoc interface{}
 		if err := yaml.Unmarshal([]byte(doc), &parsedDoc); err != nil {
 			return nil, fmt.Errorf("failed to parse YAML document %d: %w", i+1, err)
 		}
 		parsedDocuments = append(parsedDocuments, parsedDoc)
 	}
-	
+
 	if len(parsedDocuments) == 1 {
 		return parsedDocuments[0], nil
 	}
-	
+
 	return parsedDocuments, nil
 }
 
@@ -181,7 +181,7 @@ func (h *YAMLFlagHandler) extractPath(flagName string) string {
 	if strings.HasPrefix(flagName, "yaml-data-") {
 		return strings.TrimPrefix(flagName, "yaml-data-")
 	}
-	
+
 	return ""
 }
 
@@ -219,7 +219,7 @@ func (h *YAMLFlagHandler) validateYAMLValue(value interface{}) error {
 	default:
 		return fmt.Errorf("unsupported YAML value type: %T", v)
 	}
-	
+
 	return nil
 }
 
@@ -228,11 +228,11 @@ func (h *YAMLFlagHandler) MergeIntoConfiguration(config *YAMLFlag, target map[st
 	if config == nil {
 		return fmt.Errorf("YAML config cannot be nil")
 	}
-	
+
 	if target == nil {
 		return fmt.Errorf("target configuration cannot be nil")
 	}
-	
+
 	// Handle multi-document YAML
 	if docs, ok := config.Value.([]interface{}); ok {
 		// For multi-document YAML, merge each document
@@ -247,25 +247,25 @@ func (h *YAMLFlagHandler) MergeIntoConfiguration(config *YAMLFlag, target map[st
 		}
 		return nil
 	}
-	
+
 	// Split the path into components
 	pathParts := strings.Split(config.Path, ".")
 	if len(pathParts) == 0 {
 		return fmt.Errorf("invalid configuration path: '%s'", config.Path)
 	}
-	
+
 	// Navigate to the target location and set the value
 	current := target
 	for i, part := range pathParts[:len(pathParts)-1] {
 		if part == "" {
 			return fmt.Errorf("empty path component at position %d in path '%s'", i, config.Path)
 		}
-		
+
 		// Create nested maps as needed
 		if _, exists := current[part]; !exists {
 			current[part] = make(map[string]interface{})
 		}
-		
+
 		// Ensure the current value is a map
 		if nextMap, ok := current[part].(map[string]interface{}); ok {
 			current = nextMap
@@ -273,31 +273,31 @@ func (h *YAMLFlagHandler) MergeIntoConfiguration(config *YAMLFlag, target map[st
 			return fmt.Errorf("path conflict: '%s' is not an object at path '%s'", part, strings.Join(pathParts[:i+1], "."))
 		}
 	}
-	
+
 	// Set the final value
 	finalKey := pathParts[len(pathParts)-1]
 	if finalKey == "" {
 		return fmt.Errorf("empty final key in path '%s'", config.Path)
 	}
-	
+
 	// Merge the value based on its type
 	if err := h.mergeValue(current, finalKey, config.Value); err != nil {
 		return fmt.Errorf("failed to merge YAML value at path '%s': %w", config.Path, err)
 	}
-	
+
 	return nil
 }
 
 // mergeValue merges a YAML value into the target configuration
 func (h *YAMLFlagHandler) mergeValue(target map[string]interface{}, key string, value interface{}) error {
 	existingValue, exists := target[key]
-	
+
 	if !exists {
 		// Simple case: key doesn't exist, just set it
 		target[key] = value
 		return nil
 	}
-	
+
 	// Handle merging based on value types
 	switch newVal := value.(type) {
 	case map[string]interface{}:
@@ -315,7 +315,7 @@ func (h *YAMLFlagHandler) mergeValue(target map[string]interface{}, key string, 
 		// For primitives, replace the existing value
 		target[key] = value
 	}
-	
+
 	return nil
 }
 

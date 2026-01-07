@@ -22,10 +22,10 @@ import (
 type ConfigurationMerger interface {
 	// MergeConfigurations combines configs with precedence rules
 	MergeConfigurations(configs []Configuration) (*Configuration, error)
-	
+
 	// SetMergeStrategy defines how conflicts are resolved
 	SetMergeStrategy(strategy MergeStrategy) error
-	
+
 	// AddConfigSource adds a new configuration source
 	AddConfigSource(source ConfigSource) error
 }
@@ -67,9 +67,9 @@ const (
 
 // Configuration represents a complete configuration
 type Configuration struct {
-	Data      map[string]interface{} `json:"data"`
-	Sources   []ConfigSource         `json:"sources"`
-	Metadata  ConfigMetadata         `json:"metadata"`
+	Data     map[string]interface{} `json:"data"`
+	Sources  []ConfigSource         `json:"sources"`
+	Metadata ConfigMetadata         `json:"metadata"`
 }
 
 // ConfigSource tracks where configuration came from
@@ -100,10 +100,10 @@ func NewDefaultConfigurationMerger() *DefaultConfigurationMerger {
 			ArrayMergeMode:  ArrayMergeAppend,
 			ObjectMergeMode: ObjectMergeDeep,
 			Precedence: []SourceType{
-				SourceDefault,  // Lowest precedence
+				SourceDefault, // Lowest precedence
 				SourceFile,
 				SourceTemplate,
-				SourceCLI,      // Highest precedence
+				SourceCLI, // Highest precedence
 			},
 		},
 		sources: []ConfigSource{},
@@ -115,7 +115,7 @@ func (m *DefaultConfigurationMerger) SetMergeStrategy(strategy MergeStrategy) er
 	if len(strategy.Precedence) == 0 {
 		return fmt.Errorf("precedence order cannot be empty")
 	}
-	
+
 	m.strategy = strategy
 	return nil
 }
@@ -125,7 +125,7 @@ func (m *DefaultConfigurationMerger) AddConfigSource(source ConfigSource) error 
 	if source.Type == "" {
 		return fmt.Errorf("config source type cannot be empty")
 	}
-	
+
 	m.sources = append(m.sources, source)
 	return nil
 }
@@ -139,30 +139,30 @@ func (m *DefaultConfigurationMerger) MergeConfigurations(configs []Configuration
 			Metadata: ConfigMetadata{ProcessedAt: time.Now()},
 		}, nil
 	}
-	
+
 	// Sort configurations by precedence
 	sortedConfigs, err := m.sortConfigsByPrecedence(configs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sort configurations by precedence: %w", err)
 	}
-	
+
 	// Start with an empty result configuration
 	result := &Configuration{
 		Data:     make(map[string]interface{}),
 		Sources:  []ConfigSource{},
 		Metadata: ConfigMetadata{ProcessedAt: time.Now()},
 	}
-	
+
 	// Merge configurations in precedence order (lowest to highest)
 	for _, config := range sortedConfigs {
 		if err := m.mergeConfiguration(result, &config); err != nil {
 			return nil, fmt.Errorf("failed to merge configuration: %w", err)
 		}
 	}
-	
+
 	// Update metadata
 	result.Metadata.Sources = result.Sources
-	
+
 	return result, nil
 }
 
@@ -173,23 +173,23 @@ func (m *DefaultConfigurationMerger) sortConfigsByPrecedence(configs []Configura
 	for i, sourceType := range m.strategy.Precedence {
 		precedenceMap[sourceType] = i
 	}
-	
+
 	// Sort configurations by precedence
 	sortedConfigs := make([]Configuration, len(configs))
 	copy(sortedConfigs, configs)
-	
+
 	// Simple bubble sort by precedence (could be optimized for large datasets)
 	for i := 0; i < len(sortedConfigs); i++ {
 		for j := i + 1; j < len(sortedConfigs); j++ {
 			iPrecedence := m.getConfigPrecedence(sortedConfigs[i], precedenceMap)
 			jPrecedence := m.getConfigPrecedence(sortedConfigs[j], precedenceMap)
-			
+
 			if iPrecedence > jPrecedence {
 				sortedConfigs[i], sortedConfigs[j] = sortedConfigs[j], sortedConfigs[i]
 			}
 		}
 	}
-	
+
 	return sortedConfigs, nil
 }
 
@@ -204,12 +204,12 @@ func (m *DefaultConfigurationMerger) getConfigPrecedence(config Configuration, p
 			}
 		}
 	}
-	
+
 	// If no known source type, assign lowest precedence
 	if maxPrecedence == -1 {
 		return -1
 	}
-	
+
 	return maxPrecedence
 }
 
@@ -219,10 +219,10 @@ func (m *DefaultConfigurationMerger) mergeConfiguration(target, source *Configur
 	if err := m.mergeData(target.Data, source.Data); err != nil {
 		return fmt.Errorf("failed to merge configuration data: %w", err)
 	}
-	
+
 	// Merge sources
 	target.Sources = append(target.Sources, source.Sources...)
-	
+
 	return nil
 }
 
@@ -230,22 +230,22 @@ func (m *DefaultConfigurationMerger) mergeConfiguration(target, source *Configur
 func (m *DefaultConfigurationMerger) mergeData(target, source map[string]interface{}) error {
 	for key, sourceValue := range source {
 		targetValue, exists := target[key]
-		
+
 		if !exists {
 			// Key doesn't exist in target, just copy it
 			target[key] = sourceValue
 			continue
 		}
-		
+
 		// Key exists in both, need to merge based on strategy
 		mergedValue, err := m.mergeValues(targetValue, sourceValue)
 		if err != nil {
 			return fmt.Errorf("failed to merge values for key '%s': %w", key, err)
 		}
-		
+
 		target[key] = mergedValue
 	}
-	
+
 	return nil
 }
 
@@ -258,7 +258,7 @@ func (m *DefaultConfigurationMerger) mergeValues(target, source interface{}) (in
 	if target == nil {
 		return source, nil
 	}
-	
+
 	// Handle different type combinations
 	switch sourceVal := source.(type) {
 	case map[string]interface{}:
@@ -344,19 +344,19 @@ func (m *DefaultConfigurationMerger) mergeArrays(target, source []interface{}) (
 			maxLen = len(source)
 		}
 		result := make([]interface{}, maxLen)
-		
+
 		// Copy target elements
 		for i, v := range target {
 			result[i] = v
 		}
-		
+
 		// Override with source elements
 		for i, v := range source {
 			if i < len(result) {
 				result[i] = v
 			}
 		}
-		
+
 		return result, nil
 	default:
 		return nil, fmt.Errorf("unsupported array merge mode: %s", m.strategy.ArrayMergeMode)

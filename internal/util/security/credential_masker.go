@@ -53,32 +53,38 @@ func NewDefaultCredentialMasker() *DefaultCredentialMasker {
 // initializeDefaultPatterns adds common credential patterns
 func (m *DefaultCredentialMasker) initializeDefaultPatterns() {
 	patterns := []string{
-		// API Keys and tokens
+		// API Keys and tokens (field=value format)
 		`(?i)(api[_-]?key|apikey)[\s:=]+['"]*([a-zA-Z0-9_\-]{20,})`,
 		`(?i)(access[_-]?token|accesstoken)[\s:=]+['"]*([a-zA-Z0-9_\-\.]{20,})`,
 		`(?i)(secret[_-]?key|secretkey)[\s:=]+['"]*([a-zA-Z0-9_\-]{20,})`,
 		`(?i)(auth[_-]?token|authtoken)[\s:=]+['"]*([a-zA-Z0-9_\-\.]{20,})`,
 
-		// Passwords
+		// Standalone API keys and tokens (without field names)
+		`sk-[a-zA-Z0-9]{48,}`,                    // Secret keys
+		`pk-[a-zA-Z0-9]{48,}`,                    // Public keys  
+		`AKIA[A-Z0-9]{16}`,                       // AWS access keys
+		`[a-zA-Z0-9/+=]{40}`,                     // AWS secret keys (40 chars base64)
+		`AGE-SECRET-KEY-[A-Z0-9]{59}`,            // Age keys
+		`Bearer\s+[a-zA-Z0-9._-]{20,}`,           // Bearer tokens
+		`Basic\s+[a-zA-Z0-9+/=]{20,}`,            // Basic auth tokens
+
+		// Passwords (field=value format)
 		`(?i)(password|passwd|pwd)[\s:=]+['"]*([^\s'"]{8,})`,
 
-		// AWS credentials
+		// AWS credentials (field=value format)
 		`(?i)(aws[_-]?access[_-]?key[_-]?id)[\s:=]+['"]*([A-Z0-9]{20})`,
 		`(?i)(aws[_-]?secret[_-]?access[_-]?key)[\s:=]+['"]*([a-zA-Z0-9/+=]{40})`,
 
 		// Private keys (PEM format)
 		`-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----[\s\S]*?-----END\s+(?:RSA\s+)?PRIVATE\s+KEY-----`,
 
-		// Age keys
-		`AGE-SECRET-KEY-[A-Z0-9]{59}`,
-
 		// Generic secrets in environment variable format
 		`(?i)([A-Z_]+(?:PASSWORD|SECRET|TOKEN|KEY|CREDENTIAL)[A-Z_]*)=([^\s]+)`,
 
-		// Bearer tokens
+		// Bearer tokens (field=value format)
 		`(?i)bearer\s+([a-zA-Z0-9_\-\.]{20,})`,
 
-		// Basic auth
+		// Basic auth (field=value format)
 		`(?i)basic\s+([a-zA-Z0-9+/=]{20,})`,
 
 		// Connection strings with passwords
@@ -102,7 +108,7 @@ func (m *DefaultCredentialMasker) initializeDefaultFields() {
 		"auth_token", "authtoken", "auth-token",
 		"private_key", "privatekey", "private-key",
 		"credential", "credentials",
-		"token",
+		"token", "key",
 		"age_key", "agekey", "age-key",
 		"sops_key", "sopskey", "sops-key",
 		"encryption_key", "encryptionkey", "encryption-key",
@@ -130,16 +136,18 @@ func (m *DefaultCredentialMasker) MaskString(input string) string {
 	// Apply all sensitive patterns
 	for _, pattern := range m.sensitivePatterns {
 		masked = pattern.ReplaceAllStringFunc(masked, func(match string) string {
-			// Keep the field name but mask the value
+			// Check if this pattern has capture groups
 			parts := pattern.FindStringSubmatch(match)
-			if len(parts) >= 2 {
-				// parts[1] is the field name, parts[2] is the value
-				if len(parts) >= 3 {
-					return parts[1] + "=" + MaskString
-				}
+			if len(parts) >= 3 {
+				// Field=value pattern: parts[1] is the field name, parts[2] is the value
+				return parts[1] + "=" + MaskString
+			} else if len(parts) == 2 {
+				// Single capture group pattern: parts[1] is the value to mask
+				return MaskString
+			} else {
+				// No capture groups, mask the entire match
 				return MaskString
 			}
-			return MaskString
 		})
 	}
 

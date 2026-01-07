@@ -20,7 +20,7 @@ import (
 
 func TestDefaultTemplateProcessor_ProcessTemplates(t *testing.T) {
 	processor := NewDefaultTemplateProcessor()
-	
+
 	tests := []struct {
 		name      string
 		config    *Configuration
@@ -155,23 +155,23 @@ func TestDefaultTemplateProcessor_ProcessTemplates(t *testing.T) {
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := processor.ProcessTemplates(tt.config, tt.vars)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("ProcessTemplates() expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("ProcessTemplates() unexpected error: %v", err)
 				return
 			}
-			
+
 			if !compareTemplateValues(tt.config.Data, tt.expected) {
 				t.Errorf("ProcessTemplates() result = %v, want %v", tt.config.Data, tt.expected)
 			}
@@ -181,7 +181,7 @@ func TestDefaultTemplateProcessor_ProcessTemplates(t *testing.T) {
 
 func TestDefaultTemplateProcessor_RegisterFunction(t *testing.T) {
 	processor := NewDefaultTemplateProcessor()
-	
+
 	tests := []struct {
 		name      string
 		funcName  string
@@ -212,18 +212,18 @@ func TestDefaultTemplateProcessor_RegisterFunction(t *testing.T) {
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := processor.RegisterFunction(tt.funcName, tt.function)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("RegisterFunction() expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("RegisterFunction() unexpected error: %v", err)
 				return
@@ -234,7 +234,7 @@ func TestDefaultTemplateProcessor_RegisterFunction(t *testing.T) {
 
 func TestDefaultTemplateProcessor_BuiltinFunctions(t *testing.T) {
 	processor := NewDefaultTemplateProcessor()
-	
+
 	tests := []struct {
 		name     string
 		config   *Configuration
@@ -270,7 +270,7 @@ func TestDefaultTemplateProcessor_BuiltinFunctions(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := processor.ProcessTemplates(tt.config, tt.vars)
@@ -278,7 +278,7 @@ func TestDefaultTemplateProcessor_BuiltinFunctions(t *testing.T) {
 				t.Errorf("ProcessTemplates() unexpected error: %v", err)
 				return
 			}
-			
+
 			if !compareTemplateValues(tt.config.Data, tt.expected) {
 				t.Errorf("ProcessTemplates() result = %v, want %v", tt.config.Data, tt.expected)
 			}
@@ -288,7 +288,7 @@ func TestDefaultTemplateProcessor_BuiltinFunctions(t *testing.T) {
 
 func TestDefaultTemplateProcessor_ValidateTemplates(t *testing.T) {
 	processor := NewDefaultTemplateProcessor()
-	
+
 	tests := []struct {
 		name      string
 		config    *Configuration
@@ -324,23 +324,23 @@ func TestDefaultTemplateProcessor_ValidateTemplates(t *testing.T) {
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			vars, err := processor.ValidateTemplates(tt.config)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("ValidateTemplates() expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("ValidateTemplates() unexpected error: %v", err)
 				return
 			}
-			
+
 			if len(vars) < tt.minVars {
 				t.Errorf("ValidateTemplates() found %d variables, expected at least %d", len(vars), tt.minVars)
 			}
@@ -350,7 +350,7 @@ func TestDefaultTemplateProcessor_ValidateTemplates(t *testing.T) {
 
 func TestTemplateFlagHandler_ParseFlag(t *testing.T) {
 	handler := NewTemplateFlagHandler()
-	
+
 	tests := []struct {
 		name      string
 		flagName  string
@@ -389,33 +389,33 @@ func TestTemplateFlagHandler_ParseFlag(t *testing.T) {
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := handler.ParseFlag(tt.flagName, tt.value)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("ParseFlag() expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("ParseFlag() unexpected error: %v", err)
 				return
 			}
-			
+
 			templateVar, ok := result.(*TemplateVariable)
 			if !ok {
 				t.Errorf("ParseFlag() returned wrong type: %T", result)
 				return
 			}
-			
+
 			if templateVar.Name != tt.expected.Name {
 				t.Errorf("ParseFlag() name = %v, want %v", templateVar.Name, tt.expected.Name)
 			}
-			
+
 			if templateVar.Value != tt.expected.Value {
 				t.Errorf("ParseFlag() value = %v, want %v", templateVar.Value, tt.expected.Value)
 			}
@@ -428,18 +428,18 @@ func compareTemplateValues(a, b map[string]interface{}) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	
+
 	for key, aVal := range a {
 		bVal, exists := b[key]
 		if !exists {
 			return false
 		}
-		
+
 		if !compareTemplateValue(aVal, bVal) {
 			return false
 		}
 	}
-	
+
 	return true
 }
 

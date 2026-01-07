@@ -31,14 +31,14 @@ import (
 // Feature: cli-configuration-enhancement, Property 11: Output format consistency
 func TestOutputFormatConsistency(t *testing.T) {
 	properties := gopter.NewProperties(nil)
-	
+
 	properties.Property("output format consistency", prop.ForAll(
 		func(configData map[string]interface{}) bool {
 			// Skip empty configurations to focus on meaningful formatting
 			if len(configData) == 0 {
 				return true
 			}
-			
+
 			// Create a configuration
 			config := &Configuration{
 				Data: configData,
@@ -49,63 +49,63 @@ func TestOutputFormatConsistency(t *testing.T) {
 					ProcessedAt: time.Now(),
 				},
 			}
-			
+
 			formatter := NewDefaultOutputFormatter()
-			
+
 			// Test JSON format
 			jsonOutput, err := formatter.FormatConfiguration(config, OutputFormatJSON, OutputModeNormal)
 			if err != nil {
 				t.Logf("JSON formatting failed: %v", err)
 				return false
 			}
-			
+
 			// Verify JSON output is valid JSON
 			var jsonData interface{}
 			if err := json.Unmarshal([]byte(extractConfigFromOutput(jsonOutput)), &jsonData); err != nil {
 				t.Logf("JSON output is not valid JSON: %v", err)
 				return false
 			}
-			
+
 			// Test YAML format
 			yamlOutput, err := formatter.FormatConfiguration(config, OutputFormatYAML, OutputModeNormal)
 			if err != nil {
 				t.Logf("YAML formatting failed: %v", err)
 				return false
 			}
-			
+
 			// Verify YAML output is valid YAML
 			var yamlData interface{}
 			if err := yaml.Unmarshal([]byte(extractConfigFromOutput(yamlOutput)), &yamlData); err != nil {
 				t.Logf("YAML output is not valid YAML: %v", err)
 				return false
 			}
-			
+
 			// Test diff format (should be same as YAML for single config)
 			diffOutput, err := formatter.FormatConfiguration(config, OutputFormatDiff, OutputModeNormal)
 			if err != nil {
 				t.Logf("Diff formatting failed: %v", err)
 				return false
 			}
-			
+
 			// Verify diff output is valid YAML
 			var diffData interface{}
 			if err := yaml.Unmarshal([]byte(extractConfigFromOutput(diffOutput)), &diffData); err != nil {
 				t.Logf("Diff output is not valid YAML: %v", err)
 				return false
 			}
-			
+
 			return true
 		},
 		genConfigData(),
 	))
-	
+
 	properties.Property("output mode consistency", prop.ForAll(
 		func(configData map[string]interface{}) bool {
 			// Skip empty configurations
 			if len(configData) == 0 {
 				return true
 			}
-			
+
 			config := &Configuration{
 				Data: configData,
 				Sources: []ConfigSource{
@@ -115,25 +115,25 @@ func TestOutputFormatConsistency(t *testing.T) {
 					ProcessedAt: time.Now(),
 				},
 			}
-			
+
 			formatter := NewDefaultOutputFormatter()
-			
+
 			// Test all output modes
 			modes := []OutputMode{OutputModeNormal, OutputModeDryRun, OutputModeQuiet}
-			
+
 			for _, mode := range modes {
 				output, err := formatter.FormatConfiguration(config, OutputFormatYAML, mode)
 				if err != nil {
 					t.Logf("Formatting failed for mode %s: %v", mode, err)
 					return false
 				}
-				
+
 				// Verify output is not empty
 				if strings.TrimSpace(output) == "" {
 					t.Logf("Output is empty for mode %s", mode)
 					return false
 				}
-				
+
 				// Verify mode-specific characteristics
 				switch mode {
 				case OutputModeQuiet:
@@ -156,19 +156,19 @@ func TestOutputFormatConsistency(t *testing.T) {
 					}
 				}
 			}
-			
+
 			return true
 		},
 		genConfigData(),
 	))
-	
+
 	properties.Property("diff format consistency", prop.ForAll(
 		func(originalData, updatedData map[string]interface{}) bool {
 			// Skip cases where both configs are empty
 			if len(originalData) == 0 && len(updatedData) == 0 {
 				return true
 			}
-			
+
 			original := &Configuration{
 				Data: originalData,
 				Sources: []ConfigSource{
@@ -178,7 +178,7 @@ func TestOutputFormatConsistency(t *testing.T) {
 					ProcessedAt: time.Now(),
 				},
 			}
-			
+
 			updated := &Configuration{
 				Data: updatedData,
 				Sources: []ConfigSource{
@@ -188,22 +188,22 @@ func TestOutputFormatConsistency(t *testing.T) {
 					ProcessedAt: time.Now(),
 				},
 			}
-			
+
 			formatter := NewDefaultOutputFormatter()
-			
+
 			// Test diff formatting
 			diffOutput, err := formatter.FormatDiff(original, updated, OutputModeNormal)
 			if err != nil {
 				t.Logf("Diff formatting failed: %v", err)
 				return false
 			}
-			
+
 			// Verify diff output is not empty
 			if strings.TrimSpace(diffOutput) == "" {
 				t.Logf("Diff output is empty")
 				return false
 			}
-			
+
 			// If configs are identical, should indicate no changes
 			if deepEqual(originalData, updatedData) {
 				if !strings.Contains(diffOutput, "No changes detected") {
@@ -211,13 +211,13 @@ func TestOutputFormatConsistency(t *testing.T) {
 					return false
 				}
 			}
-			
+
 			return true
 		},
 		genConfigData(),
 		genConfigData(),
 	))
-	
+
 	properties.Property("conflict formatting consistency", prop.ForAll(
 		func(numConflicts int) bool {
 			// Generate simple conflicts manually
@@ -233,25 +233,25 @@ func TestOutputFormatConsistency(t *testing.T) {
 					ResolvedValue: fmt.Sprintf("newvalue%d", i),
 				}
 			}
-			
+
 			formatter := NewDefaultOutputFormatter()
-			
+
 			// Test conflict formatting in all modes
 			modes := []OutputMode{OutputModeNormal, OutputModeDryRun, OutputModeQuiet}
-			
+
 			for _, mode := range modes {
 				output, err := formatter.FormatConflicts(conflicts, mode)
 				if err != nil {
 					t.Logf("Conflict formatting failed for mode %s: %v", mode, err)
 					return false
 				}
-				
+
 				// Verify output is not empty (even for no conflicts)
 				if strings.TrimSpace(output) == "" && mode != OutputModeQuiet {
 					t.Logf("Conflict output is empty for mode %s", mode)
 					return false
 				}
-				
+
 				// If no conflicts, should indicate that
 				if len(conflicts) == 0 && mode != OutputModeQuiet {
 					if !strings.Contains(output, "No configuration conflicts detected") {
@@ -260,12 +260,12 @@ func TestOutputFormatConsistency(t *testing.T) {
 					}
 				}
 			}
-			
+
 			return true
 		},
 		gen.IntRange(0, 3), // Generate 0-3 conflicts
 	))
-	
+
 	properties.TestingRun(t, gopter.ConsoleReporter(false))
 }
 
@@ -293,13 +293,13 @@ func extractConfigFromOutput(output string) string {
 	lines := strings.Split(output, "\n")
 	configStarted := false
 	var configLines []string
-	
+
 	for _, line := range lines {
 		if strings.Contains(line, "Configuration:") {
 			configStarted = true
 			continue
 		}
-		
+
 		if configStarted {
 			// Stop at empty line or next section
 			if strings.TrimSpace(line) == "" && len(configLines) > 0 {
@@ -311,11 +311,11 @@ func extractConfigFromOutput(output string) string {
 			configLines = append(configLines, line)
 		}
 	}
-	
+
 	// If no "Configuration:" header found, assume entire output is config
 	if !configStarted {
 		return output
 	}
-	
+
 	return strings.Join(configLines, "\n")
 }

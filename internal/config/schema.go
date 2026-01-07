@@ -574,9 +574,9 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 						"type":        "array",
 						"description": "Additional worker node pools with custom configurations",
 						"items": map[string]any{
-							"type":        "object",
-							"description": "Configuration for an additional worker node pool",
-							"required":    []string{"name", "worker_count", "flavor_worker", "node_worker"},
+							"type":                 "object",
+							"description":          "Configuration for an additional worker node pool",
+							"required":             []string{"name", "worker_count", "flavor_worker", "node_worker"},
 							"additionalProperties": false,
 							"properties": map[string]any{
 								"name": map[string]any{
@@ -667,9 +667,9 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 						"type":        "array",
 						"description": "Additional Windows worker node pools with custom configurations",
 						"items": map[string]any{
-							"type":        "object",
-							"description": "Configuration for an additional Windows worker node pool",
-							"required":    []string{"name", "worker_count", "flavor_worker", "node_worker"},
+							"type":                 "object",
+							"description":          "Configuration for an additional Windows worker node pool",
+							"required":             []string{"name", "worker_count", "flavor_worker", "node_worker"},
 							"additionalProperties": false,
 							"properties": map[string]any{
 								"name": map[string]any{

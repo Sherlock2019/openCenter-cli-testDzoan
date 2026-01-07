@@ -425,7 +425,7 @@ func displayClusterSelectOutput(output ClusterSelectOutput, cmd *cobra.Command) 
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "\n")
 		fmt.Fprintf(cmd.OutOrStdout(), "To configure your shell environment, run:\n")
-		
+
 		// Provide shell-specific instructions
 		switch output.Shell {
 		case "fish":
@@ -571,7 +571,7 @@ KUBECONFIG, ANSIBLE_INVENTORY, virtual environment, and PATH variables.`,
 
 	// Add flag for export-only mode (useful for shell evaluation)
 	cmd.Flags().BoolVar(&showExportOnly, "export-only", false, "Only output export commands for shell evaluation")
-	
+
 	// Add flag to override shell detection
 	cmd.Flags().StringVar(&shellOverride, "shell", "", "Override shell detection (bash, zsh, fish, powershell)")
 

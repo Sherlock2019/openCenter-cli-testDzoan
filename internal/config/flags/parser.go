@@ -53,13 +53,13 @@ func (p *EnhancedFlagParser) RegisterHandler(pattern string, handler FlagHandler
 	if handler == nil {
 		return fmt.Errorf("handler cannot be nil")
 	}
-	
+
 	// Compile the pattern as a regex
 	regex, err := regexp.Compile(pattern)
 	if err != nil {
 		return fmt.Errorf("invalid pattern '%s': %w", pattern, err)
 	}
-	
+
 	p.handlers[pattern] = handler
 	p.patterns[pattern] = regex
 	return nil
@@ -90,12 +90,12 @@ func (p *EnhancedFlagParser) ParseFlags(args []string) (*ParsedFlags, error) {
 		OutputFormat:    nil,
 		OutputMode:      nil,
 	}
-	
+
 	for _, arg := range args {
 		if !strings.HasPrefix(arg, "--") {
 			continue
 		}
-		
+
 		// Handle special JSON flag format: --json-set path=value
 		if strings.HasPrefix(arg, "--json-set ") {
 			if err := p.parseJSONSetFlag(arg, result); err != nil {
@@ -103,7 +103,7 @@ func (p *EnhancedFlagParser) ParseFlags(args []string) (*ParsedFlags, error) {
 			}
 			continue
 		}
-		
+
 		// Handle special YAML flag formats: --yaml-set path, --yaml-data path, --yaml-file path=file
 		if strings.HasPrefix(arg, "--yaml-set ") || strings.HasPrefix(arg, "--yaml-data ") {
 			if err := p.parseYAMLSetFlag(arg, result); err != nil {
@@ -111,16 +111,16 @@ func (p *EnhancedFlagParser) ParseFlags(args []string) (*ParsedFlags, error) {
 			}
 			continue
 		}
-		
+
 		// Split flag name and value
 		parts := strings.SplitN(strings.TrimPrefix(arg, "--"), "=", 2)
 		if len(parts) != 2 {
 			continue // Skip flags without values
 		}
-		
+
 		flagName := parts[0]
 		value := parts[1]
-		
+
 		// Find the appropriate handler
 		handler := p.findHandler(flagName)
 		if handler == nil {
@@ -128,13 +128,13 @@ func (p *EnhancedFlagParser) ParseFlags(args []string) (*ParsedFlags, error) {
 			result.DotNotation[flagName] = value
 			continue
 		}
-		
+
 		// Route to the appropriate handler
 		if err := p.routeToHandler(handler, flagName, value, result); err != nil {
 			return nil, fmt.Errorf("error processing flag '%s': %w", flagName, err)
 		}
 	}
-	
+
 	return result, nil
 }
 
@@ -208,7 +208,7 @@ func (p *EnhancedFlagParser) routeToHandler(handler FlagHandler, flagName, value
 		if err != nil {
 			return err
 		}
-		
+
 		// Handle both single file flags and config stack flags
 		switch parsedValue := parsed.(type) {
 		case *ConfigFileFlag:
@@ -227,7 +227,7 @@ func (p *EnhancedFlagParser) routeToHandler(handler FlagHandler, flagName, value
 		if err != nil {
 			return err
 		}
-		
+
 		// Handle output format and mode flags
 		switch parsedValue := parsed.(type) {
 		case *OutputFormatFlag:
@@ -254,24 +254,24 @@ func (p *EnhancedFlagParser) routeToHandler(handler FlagHandler, flagName, value
 func (p *EnhancedFlagParser) parseJSONSetFlag(arg string, result *ParsedFlags) error {
 	// Remove "--json-set " prefix
 	content := strings.TrimPrefix(arg, "--json-set ")
-	
+
 	// Split on first '=' to separate path from JSON value
 	parts := strings.SplitN(content, "=", 2)
 	if len(parts) != 2 {
 		return fmt.Errorf("invalid --json-set format: expected --json-set path=value, got %s", arg)
 	}
-	
+
 	path := strings.TrimSpace(parts[0])
 	jsonValue := strings.TrimSpace(parts[1])
-	
+
 	if path == "" {
 		return fmt.Errorf("empty path in --json-set flag")
 	}
-	
+
 	if jsonValue == "" {
 		return fmt.Errorf("empty JSON value in --json-set flag")
 	}
-	
+
 	// Find JSON handler
 	var jsonHandler FlagHandler
 	for _, handler := range p.handlers {
@@ -280,31 +280,31 @@ func (p *EnhancedFlagParser) parseJSONSetFlag(arg string, result *ParsedFlags) e
 			break
 		}
 	}
-	
+
 	if jsonHandler == nil {
 		return fmt.Errorf("no JSON handler registered")
 	}
-	
+
 	// Create a synthetic flag name for the handler
 	syntheticFlagName := "json-set-" + path
-	
+
 	// Parse using the JSON handler
 	parsed, err := jsonHandler.ParseFlag(syntheticFlagName, jsonValue)
 	if err != nil {
 		return err
 	}
-	
+
 	if jsonFlag, ok := parsed.(*JSONFlag); ok {
 		result.JSONFlags = append(result.JSONFlags, *jsonFlag)
 	}
-	
+
 	return nil
 }
 
 // parseYAMLSetFlag handles the special --yaml-set path and --yaml-data path formats
 func (p *EnhancedFlagParser) parseYAMLSetFlag(arg string, result *ParsedFlags) error {
 	var prefix, content string
-	
+
 	if strings.HasPrefix(arg, "--yaml-set ") {
 		prefix = "--yaml-set "
 		content = strings.TrimPrefix(arg, prefix)
@@ -314,16 +314,16 @@ func (p *EnhancedFlagParser) parseYAMLSetFlag(arg string, result *ParsedFlags) e
 	} else {
 		return fmt.Errorf("invalid YAML flag format: %s", arg)
 	}
-	
+
 	// For YAML flags, we expect the path to be provided separately from the YAML content
 	// This is a simplified implementation - in practice, you might want to handle this differently
 	// For now, we'll treat the content as the path and expect the YAML data to be provided via stdin or another mechanism
-	
+
 	path := strings.TrimSpace(content)
 	if path == "" {
 		return fmt.Errorf("empty path in YAML flag")
 	}
-	
+
 	// Find YAML handler
 	var yamlHandler FlagHandler
 	for _, handler := range p.handlers {
@@ -332,15 +332,15 @@ func (p *EnhancedFlagParser) parseYAMLSetFlag(arg string, result *ParsedFlags) e
 			break
 		}
 	}
-	
+
 	if yamlHandler == nil {
 		return fmt.Errorf("no YAML handler registered")
 	}
-	
+
 	// For this implementation, we'll use a placeholder YAML content
 	// In a real implementation, this would be handled differently
 	yamlContent := "key: value"
-	
+
 	// Create a synthetic flag name for the handler
 	var syntheticFlagName string
 	if strings.HasPrefix(arg, "--yaml-set ") {
@@ -348,17 +348,17 @@ func (p *EnhancedFlagParser) parseYAMLSetFlag(arg string, result *ParsedFlags) e
 	} else {
 		syntheticFlagName = "yaml-data-" + path
 	}
-	
+
 	// Parse using the YAML handler
 	parsed, err := yamlHandler.ParseFlag(syntheticFlagName, yamlContent)
 	if err != nil {
 		return err
 	}
-	
+
 	if yamlFlag, ok := parsed.(*YAMLFlag); ok {
 		result.YAMLFlags = append(result.YAMLFlags, *yamlFlag)
 	}
-	
+
 	return nil
 }
 

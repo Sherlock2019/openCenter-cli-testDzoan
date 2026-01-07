@@ -43,30 +43,30 @@ func (s *SOPSIntegration) LoadEncryptedConfig(configPath string) (map[string]int
 	if configPath == "" {
 		return nil, fmt.Errorf("encrypted config path cannot be empty")
 	}
-	
+
 	// Validate that the file exists
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("encrypted config file does not exist: %s", configPath)
 	}
-	
+
 	// Check if the file is actually encrypted
 	if !s.isSOPSEncrypted(configPath) {
 		return nil, fmt.Errorf("file %s does not appear to be SOPS encrypted", configPath)
 	}
-	
+
 	// Decrypt the file using SOPS manager
 	encryptor := s.sopsManager.GetEncryptor()
 	decryptedContent, err := encryptor.GetEncryptedContent(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt config file %s: %w", configPath, err)
 	}
-	
+
 	// Parse the decrypted content based on file extension
 	config, err := s.parseDecryptedContent([]byte(decryptedContent), configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse decrypted config: %w", err)
 	}
-	
+
 	return config, nil
 }
 
@@ -75,16 +75,16 @@ func (s *SOPSIntegration) EncryptConfigFile(configPath string, config map[string
 	if configPath == "" {
 		return fmt.Errorf("config path cannot be empty")
 	}
-	
+
 	// Serialize the configuration based on file extension
 	content, err := s.serializeConfig(config, configPath)
 	if err != nil {
 		return fmt.Errorf("failed to serialize config: %w", err)
 	}
-	
+
 	// Encrypt the content using SOPS manager
 	encryptor := s.sopsManager.GetEncryptor()
-	
+
 	// Create a temporary file with the content
 	tempFile, err := os.CreateTemp("", "config-*.yaml")
 	if err != nil {
@@ -92,24 +92,24 @@ func (s *SOPSIntegration) EncryptConfigFile(configPath string, config map[string
 	}
 	defer os.Remove(tempFile.Name())
 	defer tempFile.Close()
-	
+
 	_, err = tempFile.Write(content)
 	if err != nil {
 		return fmt.Errorf("failed to write content to temporary file: %w", err)
 	}
 	tempFile.Close()
-	
+
 	// Encrypt the temporary file and move to target location
 	encryptionConfig := sops.EncryptionConfig{
 		InPlace: false,
 		DryRun:  false,
 	}
-	
+
 	err = encryptor.EncryptFile(context.Background(), tempFile.Name(), encryptionConfig)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt config file %s: %w", configPath, err)
 	}
-	
+
 	return nil
 }
 
@@ -118,19 +118,19 @@ func (s *SOPSIntegration) ValidateSOPSConfig(sopsConfigPath string) error {
 	if sopsConfigPath == "" {
 		return fmt.Errorf("SOPS config path cannot be empty")
 	}
-	
+
 	// Check if SOPS config file exists
 	if _, err := os.Stat(sopsConfigPath); os.IsNotExist(err) {
 		return fmt.Errorf("SOPS config file does not exist: %s", sopsConfigPath)
 	}
-	
+
 	// Validate SOPS configuration using the SOPS manager
 	validator := s.sopsManager.GetValidator()
 	err := validator.ValidateSOPSConfig(sopsConfigPath)
 	if err != nil {
 		return fmt.Errorf("invalid SOPS configuration: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -139,22 +139,22 @@ func (s *SOPSIntegration) CreateSOPSConfig(configPath, ageKeyPath string) error 
 	if configPath == "" {
 		return fmt.Errorf("SOPS config path cannot be empty")
 	}
-	
+
 	if ageKeyPath == "" {
 		return fmt.Errorf("Age key path cannot be empty")
 	}
-	
+
 	// Check if Age key exists
 	if _, err := os.Stat(ageKeyPath); os.IsNotExist(err) {
 		return fmt.Errorf("Age key file does not exist: %s", ageKeyPath)
 	}
-	
+
 	// Read the Age public key
 	ageKey, err := s.readAgePublicKey(ageKeyPath)
 	if err != nil {
 		return fmt.Errorf("failed to read Age key: %w", err)
 	}
-	
+
 	// Create SOPS configuration content
 	sopsConfig := fmt.Sprintf(`creation_rules:
   - path_regex: .*\.(yaml|yml)$
@@ -165,13 +165,13 @@ func (s *SOPSIntegration) CreateSOPSConfig(configPath, ageKeyPath string) error 
   - path_regex: .*-credentials\.yaml$
     age: %s
 `, ageKey, ageKey, ageKey)
-	
+
 	// Write SOPS configuration file
 	err = os.WriteFile(configPath, []byte(sopsConfig), 0600)
 	if err != nil {
 		return fmt.Errorf("failed to write SOPS config file: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -181,9 +181,9 @@ func (s *SOPSIntegration) isSOPSEncrypted(filePath string) bool {
 	if err != nil {
 		return false
 	}
-	
+
 	contentStr := string(content)
-	
+
 	// Check for SOPS metadata markers
 	sopsMarkers := []string{
 		"sops:",
@@ -192,14 +192,14 @@ func (s *SOPSIntegration) isSOPSEncrypted(filePath string) bool {
 		"encrypted_regex:",
 		"version:",
 	}
-	
+
 	markerCount := 0
 	for _, marker := range sopsMarkers {
 		if strings.Contains(contentStr, marker) {
 			markerCount++
 		}
 	}
-	
+
 	// If we find multiple SOPS markers, it's likely encrypted
 	return markerCount >= 2
 }
@@ -207,7 +207,7 @@ func (s *SOPSIntegration) isSOPSEncrypted(filePath string) bool {
 // parseDecryptedContent parses decrypted content based on file extension
 func (s *SOPSIntegration) parseDecryptedContent(content []byte, filePath string) (map[string]interface{}, error) {
 	ext := strings.ToLower(filepath.Ext(filePath))
-	
+
 	switch ext {
 	case ".yaml", ".yml":
 		return s.parseYAMLContent(content)
@@ -221,7 +221,7 @@ func (s *SOPSIntegration) parseDecryptedContent(content []byte, filePath string)
 // serializeConfig serializes configuration based on file extension
 func (s *SOPSIntegration) serializeConfig(config map[string]interface{}, filePath string) ([]byte, error) {
 	ext := strings.ToLower(filepath.Ext(filePath))
-	
+
 	switch ext {
 	case ".yaml", ".yml":
 		return s.serializeYAMLConfig(config)
@@ -266,7 +266,7 @@ func (s *SOPSIntegration) readAgePublicKey(keyPath string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to read Age key file: %w", err)
 	}
-	
+
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -274,7 +274,7 @@ func (s *SOPSIntegration) readAgePublicKey(keyPath string) (string, error) {
 			return line, nil
 		}
 	}
-	
+
 	return "", fmt.Errorf("no Age public key found in file %s", keyPath)
 }
 
@@ -289,14 +289,14 @@ func (s *SOPSIntegration) GetSOPSStatus() SOPSStatus {
 		Available: s.sopsManager != nil,
 		Version:   "unknown",
 	}
-	
+
 	// Try to get SOPS version if available
 	if s.sopsManager != nil {
 		// This would call a method to get SOPS version
 		// For now, set a placeholder
 		status.Version = "3.7.0"
 	}
-	
+
 	return status
 }
 
@@ -308,12 +308,12 @@ type SOPSStatus struct {
 
 // EncryptedConfigInfo represents information about an encrypted configuration file
 type EncryptedConfigInfo struct {
-	Path        string            `json:"path"`
-	Encrypted   bool              `json:"encrypted"`
-	KeyType     string            `json:"key_type"`
-	KeyCount    int               `json:"key_count"`
-	LastModified string           `json:"last_modified"`
-	Metadata    map[string]string `json:"metadata"`
+	Path         string            `json:"path"`
+	Encrypted    bool              `json:"encrypted"`
+	KeyType      string            `json:"key_type"`
+	KeyCount     int               `json:"key_count"`
+	LastModified string            `json:"last_modified"`
+	Metadata     map[string]string `json:"metadata"`
 }
 
 // GetEncryptedConfigInfo returns information about an encrypted configuration file
@@ -321,25 +321,25 @@ func (s *SOPSIntegration) GetEncryptedConfigInfo(configPath string) (*EncryptedC
 	if configPath == "" {
 		return nil, fmt.Errorf("config path cannot be empty")
 	}
-	
+
 	// Check if file exists
 	fileInfo, err := os.Stat(configPath)
 	if os.IsNotExist(err) {
 		return nil, fmt.Errorf("config file does not exist: %s", configPath)
 	}
-	
+
 	info := &EncryptedConfigInfo{
 		Path:         configPath,
 		Encrypted:    s.isSOPSEncrypted(configPath),
 		LastModified: fileInfo.ModTime().Format("2006-01-02 15:04:05"),
 		Metadata:     make(map[string]string),
 	}
-	
+
 	if info.Encrypted {
 		// Extract SOPS metadata if encrypted
-		info.KeyType = "age"  // Placeholder
-		info.KeyCount = 1     // Placeholder
+		info.KeyType = "age" // Placeholder
+		info.KeyCount = 1    // Placeholder
 	}
-	
+
 	return info, nil
 }

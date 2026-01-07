@@ -303,7 +303,7 @@ Troubleshooting:
 			if err != nil {
 				return fmt.Errorf("failed to initialize flag integration: %w", err)
 			}
-			
+
 			// Filter out cobra-handled flags from os.Args
 			var filteredArgs []string
 			for _, arg := range os.Args {
@@ -319,7 +319,7 @@ Troubleshooting:
 					}
 				}
 			}
-			
+
 			// Process flags using enhanced parser
 			if err := flagIntegration.ProcessFlags(filteredArgs, &cfg, configMap); err != nil {
 				return fmt.Errorf("error processing flags: %w", err)

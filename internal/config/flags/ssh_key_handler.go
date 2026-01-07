@@ -46,26 +46,26 @@ func (h *SSHKeyFlagHandler) ParseArrayFlag(flagName, value string) (*ArrayConfig
 	if value == "" {
 		return nil, fmt.Errorf("ssh-key flag value cannot be empty")
 	}
-	
+
 	// SSH key can be either a file path or the key content itself
 	fields := map[string]interface{}{
 		"key": strings.TrimSpace(value),
 	}
-	
+
 	// Determine if it's a file path or key content
 	if strings.HasPrefix(value, "ssh-") || strings.Contains(value, " ") {
 		fields["type"] = "content"
 	} else {
 		fields["type"] = "file"
 	}
-	
+
 	config := &ArrayConfig{
 		Path:   "opencenter.infrastructure.ssh_keys",
 		Index:  -1, // Will be determined during merging
 		Fields: fields,
 		Type:   "ssh-key",
 	}
-	
+
 	return config, nil
 }
 
@@ -79,14 +79,14 @@ func (h *SSHKeyFlagHandler) ValidateArrayConfig(config *ArrayConfig) error {
 	if config == nil {
 		return fmt.Errorf("array config cannot be nil")
 	}
-	
+
 	if config.Type != "ssh-key" {
 		return fmt.Errorf("invalid array config type: expected 'ssh-key', got '%s'", config.Type)
 	}
-	
+
 	if _, exists := config.Fields["key"]; !exists {
 		return fmt.Errorf("missing required field 'key' in ssh-key configuration")
 	}
-	
+
 	return nil
 }

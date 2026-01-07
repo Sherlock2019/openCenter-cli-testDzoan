@@ -47,29 +47,29 @@ func (h *JSONFlagHandler) parseJSONFlag(flagName, value string) (*JSONFlag, erro
 	if value == "" {
 		return nil, fmt.Errorf("JSON flag value cannot be empty")
 	}
-	
+
 	// Extract the path from the flag name
 	path := h.extractPath(flagName)
 	if path == "" {
 		return nil, fmt.Errorf("invalid JSON flag format: expected --json-set path=value, got %s", flagName)
 	}
-	
+
 	// Parse the JSON value
 	var parsedValue interface{}
 	if err := json.Unmarshal([]byte(value), &parsedValue); err != nil {
 		return nil, fmt.Errorf("invalid JSON syntax in flag '%s': %w. Expected format: --json-set 'path={\"key\": \"value\"}'", flagName, err)
 	}
-	
+
 	// Validate the parsed JSON
 	if err := h.validateJSONValue(parsedValue); err != nil {
 		return nil, fmt.Errorf("invalid JSON value in flag '%s': %w", flagName, err)
 	}
-	
+
 	config := &JSONFlag{
 		Path:  path,
 		Value: parsedValue,
 	}
-	
+
 	return config, nil
 }
 
@@ -81,7 +81,7 @@ func (h *JSONFlagHandler) extractPath(flagName string) string {
 	if strings.HasPrefix(flagName, "json-set-") {
 		return strings.TrimPrefix(flagName, "json-set-")
 	}
-	
+
 	// For --json-set path=value format, the path is extracted differently
 	// This will be handled by the parser that splits on '=' first
 	return ""
@@ -115,7 +115,7 @@ func (h *JSONFlagHandler) validateJSONValue(value interface{}) error {
 	default:
 		return fmt.Errorf("unsupported JSON value type: %T", v)
 	}
-	
+
 	return nil
 }
 
@@ -124,29 +124,29 @@ func (h *JSONFlagHandler) MergeIntoConfiguration(config *JSONFlag, target map[st
 	if config == nil {
 		return fmt.Errorf("JSON config cannot be nil")
 	}
-	
+
 	if target == nil {
 		return fmt.Errorf("target configuration cannot be nil")
 	}
-	
+
 	// Split the path into components
 	pathParts := strings.Split(config.Path, ".")
 	if len(pathParts) == 0 {
 		return fmt.Errorf("invalid configuration path: '%s'", config.Path)
 	}
-	
+
 	// Navigate to the target location and set the value
 	current := target
 	for i, part := range pathParts[:len(pathParts)-1] {
 		if part == "" {
 			return fmt.Errorf("empty path component at position %d in path '%s'", i, config.Path)
 		}
-		
+
 		// Create nested maps as needed
 		if _, exists := current[part]; !exists {
 			current[part] = make(map[string]interface{})
 		}
-		
+
 		// Ensure the current value is a map
 		if nextMap, ok := current[part].(map[string]interface{}); ok {
 			current = nextMap
@@ -154,31 +154,31 @@ func (h *JSONFlagHandler) MergeIntoConfiguration(config *JSONFlag, target map[st
 			return fmt.Errorf("path conflict: '%s' is not an object at path '%s'", part, strings.Join(pathParts[:i+1], "."))
 		}
 	}
-	
+
 	// Set the final value
 	finalKey := pathParts[len(pathParts)-1]
 	if finalKey == "" {
 		return fmt.Errorf("empty final key in path '%s'", config.Path)
 	}
-	
+
 	// Merge the value based on its type
 	if err := h.mergeValue(current, finalKey, config.Value); err != nil {
 		return fmt.Errorf("failed to merge JSON value at path '%s': %w", config.Path, err)
 	}
-	
+
 	return nil
 }
 
 // mergeValue merges a JSON value into the target configuration
 func (h *JSONFlagHandler) mergeValue(target map[string]interface{}, key string, value interface{}) error {
 	existingValue, exists := target[key]
-	
+
 	if !exists {
 		// Simple case: key doesn't exist, just set it
 		target[key] = value
 		return nil
 	}
-	
+
 	// Handle merging based on value types
 	switch newVal := value.(type) {
 	case map[string]interface{}:
@@ -196,7 +196,7 @@ func (h *JSONFlagHandler) mergeValue(target map[string]interface{}, key string, 
 		// For primitives, replace the existing value
 		target[key] = value
 	}
-	
+
 	return nil
 }
 

@@ -22,7 +22,7 @@ import (
 
 func TestYAMLFlagHandler_CanHandle(t *testing.T) {
 	handler := NewYAMLFlagHandler()
-	
+
 	tests := []struct {
 		name     string
 		flagName string
@@ -37,7 +37,7 @@ func TestYAMLFlagHandler_CanHandle(t *testing.T) {
 		{"other flag", "server-pool", false},
 		{"empty flag", "", false},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := handler.CanHandle(tt.flagName)
@@ -50,7 +50,7 @@ func TestYAMLFlagHandler_CanHandle(t *testing.T) {
 
 func TestYAMLFlagHandler_GetFlagType(t *testing.T) {
 	handler := NewYAMLFlagHandler()
-	
+
 	if handler.GetFlagType() != FlagTypeYAML {
 		t.Errorf("GetFlagType() = %v, want %v", handler.GetFlagType(), FlagTypeYAML)
 	}
@@ -58,7 +58,7 @@ func TestYAMLFlagHandler_GetFlagType(t *testing.T) {
 
 func TestYAMLFlagHandler_ParseFlag(t *testing.T) {
 	handler := NewYAMLFlagHandler()
-	
+
 	tests := []struct {
 		name      string
 		flagName  string
@@ -112,33 +112,33 @@ func TestYAMLFlagHandler_ParseFlag(t *testing.T) {
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := handler.ParseFlag(tt.flagName, tt.value)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("ParseFlag() expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("ParseFlag() unexpected error: %v", err)
 				return
 			}
-			
+
 			yamlFlag, ok := result.(*YAMLFlag)
 			if !ok {
 				t.Errorf("ParseFlag() returned wrong type: %T", result)
 				return
 			}
-			
+
 			if yamlFlag.Path != tt.expected.Path {
 				t.Errorf("ParseFlag() path = %v, want %v", yamlFlag.Path, tt.expected.Path)
 			}
-			
+
 			// Compare values based on type
 			if !compareYAMLValues(yamlFlag.Value, tt.expected.Value) {
 				t.Errorf("ParseFlag() value = %v, want %v", yamlFlag.Value, tt.expected.Value)
@@ -149,14 +149,14 @@ func TestYAMLFlagHandler_ParseFlag(t *testing.T) {
 
 func TestYAMLFlagHandler_ParseYAMLFile(t *testing.T) {
 	handler := NewYAMLFlagHandler()
-	
+
 	// Create a temporary YAML file
 	tmpDir, err := ioutil.TempDir("", "yaml_test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	defer os.RemoveAll(tmpDir)
-	
+
 	yamlContent := `
 cluster:
   name: test-cluster
@@ -166,12 +166,12 @@ infrastructure:
     count: 3
     flavor: large
 `
-	
+
 	tmpFile := filepath.Join(tmpDir, "test.yaml")
 	if err := ioutil.WriteFile(tmpFile, []byte(yamlContent), 0644); err != nil {
 		t.Fatalf("Failed to write temp file: %v", err)
 	}
-	
+
 	tests := []struct {
 		name      string
 		flagName  string
@@ -196,33 +196,33 @@ infrastructure:
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := handler.ParseFlag(tt.flagName, tt.value)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("ParseFlag() expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("ParseFlag() unexpected error: %v", err)
 				return
 			}
-			
+
 			yamlFlag, ok := result.(*YAMLFlag)
 			if !ok {
 				t.Errorf("ParseFlag() returned wrong type: %T", result)
 				return
 			}
-			
+
 			if yamlFlag.Path != "config" {
 				t.Errorf("ParseFlag() path = %v, want %v", yamlFlag.Path, "config")
 			}
-			
+
 			// Verify the loaded content has the expected structure
 			if configMap, ok := yamlFlag.Value.(map[string]interface{}); ok {
 				if cluster, exists := configMap["cluster"]; exists {
@@ -241,12 +241,12 @@ infrastructure:
 
 func TestYAMLFlagHandler_MergeIntoConfiguration(t *testing.T) {
 	handler := NewYAMLFlagHandler()
-	
+
 	tests := []struct {
-		name     string
-		config   *YAMLFlag
-		target   map[string]interface{}
-		expected map[string]interface{}
+		name      string
+		config    *YAMLFlag
+		target    map[string]interface{}
+		expected  map[string]interface{}
 		expectErr bool
 	}{
 		{
@@ -312,23 +312,23 @@ func TestYAMLFlagHandler_MergeIntoConfiguration(t *testing.T) {
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := handler.MergeIntoConfiguration(tt.config, tt.target)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("MergeIntoConfiguration() expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("MergeIntoConfiguration() unexpected error: %v", err)
 				return
 			}
-			
+
 			if !compareYAMLValues(tt.target, tt.expected) {
 				t.Errorf("MergeIntoConfiguration() result = %v, want %v", tt.target, tt.expected)
 			}

@@ -25,10 +25,10 @@ import (
 type TemplateProcessor interface {
 	// ProcessTemplates substitutes variables in configuration
 	ProcessTemplates(config *Configuration, vars map[string]string) error
-	
+
 	// ValidateTemplates checks for undefined variables
 	ValidateTemplates(config *Configuration) ([]string, error)
-	
+
 	// RegisterFunction adds custom template functions
 	RegisterFunction(name string, fn interface{}) error
 }
@@ -50,10 +50,10 @@ func NewDefaultTemplateProcessor() *DefaultTemplateProcessor {
 	processor := &DefaultTemplateProcessor{
 		functions: make(map[string]interface{}),
 	}
-	
+
 	// Register built-in template functions
 	processor.registerBuiltinFunctions()
-	
+
 	return processor
 }
 
@@ -62,17 +62,17 @@ func (p *DefaultTemplateProcessor) RegisterFunction(name string, fn interface{})
 	if name == "" {
 		return fmt.Errorf("function name cannot be empty")
 	}
-	
+
 	if fn == nil {
 		return fmt.Errorf("function cannot be nil")
 	}
-	
+
 	// Validate that fn is actually a function
 	fnType := reflect.TypeOf(fn)
 	if fnType.Kind() != reflect.Func {
 		return fmt.Errorf("provided value is not a function: %T", fn)
 	}
-	
+
 	p.functions[name] = fn
 	return nil
 }
@@ -82,31 +82,31 @@ func (p *DefaultTemplateProcessor) ProcessTemplates(config *Configuration, vars 
 	if config == nil {
 		return fmt.Errorf("configuration cannot be nil")
 	}
-	
+
 	if vars == nil {
 		vars = make(map[string]string)
 	}
-	
+
 	// Create template context
 	context := TemplateContext{
 		Variables: vars,
 		Functions: p.functions,
 		Config:    config,
 	}
-	
+
 	// Process the configuration data recursively
 	processedData, err := p.processValue(config.Data, context)
 	if err != nil {
 		return fmt.Errorf("failed to process configuration templates: %w", err)
 	}
-	
+
 	// Update the configuration with processed data
 	if processedMap, ok := processedData.(map[string]interface{}); ok {
 		config.Data = processedMap
 	} else {
 		return fmt.Errorf("processed configuration is not a map: %T", processedData)
 	}
-	
+
 	return nil
 }
 
@@ -115,19 +115,19 @@ func (p *DefaultTemplateProcessor) ValidateTemplates(config *Configuration) ([]s
 	if config == nil {
 		return nil, fmt.Errorf("configuration cannot be nil")
 	}
-	
+
 	var undefinedVars []string
-	
+
 	// Find all template variables in the configuration
 	templateVars, err := p.findTemplateVariables(config.Data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find template variables: %w", err)
 	}
-	
+
 	// Check which variables are undefined (this would require actual variable context)
 	// For now, we'll return all found variables as potentially undefined
 	undefinedVars = append(undefinedVars, templateVars...)
-	
+
 	return undefinedVars, nil
 }
 
@@ -145,12 +145,12 @@ func (p *DefaultTemplateProcessor) processValue(value interface{}, context Templ
 			if err != nil {
 				return nil, fmt.Errorf("failed to process template in key '%s': %w", key, err)
 			}
-			
+
 			processedVal, err := p.processValue(val, context)
 			if err != nil {
 				return nil, fmt.Errorf("failed to process template in value for key '%s': %w", key, err)
 			}
-			
+
 			if keyStr, ok := processedKey.(string); ok {
 				result[keyStr] = processedVal
 			} else {
@@ -181,27 +181,27 @@ func (p *DefaultTemplateProcessor) processStringTemplate(str string, context Tem
 	if !strings.Contains(str, "{{") || !strings.Contains(str, "}}") {
 		return str, nil
 	}
-	
+
 	// Create a new template
 	tmpl := template.New("config")
-	
+
 	// Add custom functions
 	tmpl = tmpl.Funcs(p.functions)
-	
+
 	// Parse the template
 	tmpl, err := tmpl.Parse(str)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template '%s': %w", str, err)
 	}
-	
+
 	// Execute the template
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, context.Variables); err != nil {
 		return nil, fmt.Errorf("failed to execute template '%s': %w", str, err)
 	}
-	
+
 	result := buf.String()
-	
+
 	// Try to convert the result to appropriate type
 	return p.convertTemplateResult(result), nil
 }
@@ -216,7 +216,7 @@ func (p *DefaultTemplateProcessor) convertTemplateResult(result string) interfac
 // findTemplateVariables finds all template variables in a configuration
 func (p *DefaultTemplateProcessor) findTemplateVariables(value interface{}) ([]string, error) {
 	var variables []string
-	
+
 	switch v := value.(type) {
 	case string:
 		vars := p.extractVariablesFromString(v)
@@ -226,7 +226,7 @@ func (p *DefaultTemplateProcessor) findTemplateVariables(value interface{}) ([]s
 			// Check key for templates
 			keyVars := p.extractVariablesFromString(key)
 			variables = append(variables, keyVars...)
-			
+
 			// Check value recursively
 			valVars, err := p.findTemplateVariables(val)
 			if err != nil {
@@ -243,7 +243,7 @@ func (p *DefaultTemplateProcessor) findTemplateVariables(value interface{}) ([]s
 			variables = append(variables, valVars...)
 		}
 	}
-	
+
 	// Remove duplicates
 	return p.removeDuplicates(variables), nil
 }
@@ -251,7 +251,7 @@ func (p *DefaultTemplateProcessor) findTemplateVariables(value interface{}) ([]s
 // extractVariablesFromString extracts template variables from a string
 func (p *DefaultTemplateProcessor) extractVariablesFromString(str string) []string {
 	var variables []string
-	
+
 	// Simple regex-like extraction of {{.VAR}} patterns
 	start := 0
 	for {
@@ -260,17 +260,17 @@ func (p *DefaultTemplateProcessor) extractVariablesFromString(str string) []stri
 			break
 		}
 		openIndex += start
-		
+
 		closeIndex := strings.Index(str[openIndex:], "}}")
 		if closeIndex == -1 {
 			break
 		}
 		closeIndex += openIndex
-		
+
 		// Extract the variable name
 		varExpr := str[openIndex+2 : closeIndex]
 		varExpr = strings.TrimSpace(varExpr)
-		
+
 		// Simple extraction of .VAR pattern
 		if strings.HasPrefix(varExpr, ".") {
 			varName := strings.TrimPrefix(varExpr, ".")
@@ -278,10 +278,10 @@ func (p *DefaultTemplateProcessor) extractVariablesFromString(str string) []stri
 				variables = append(variables, varName)
 			}
 		}
-		
+
 		start = closeIndex + 2
 	}
-	
+
 	return variables
 }
 
@@ -289,14 +289,14 @@ func (p *DefaultTemplateProcessor) extractVariablesFromString(str string) []stri
 func (p *DefaultTemplateProcessor) removeDuplicates(slice []string) []string {
 	seen := make(map[string]bool)
 	var result []string
-	
+
 	for _, item := range slice {
 		if !seen[item] {
 			seen[item] = true
 			result = append(result, item)
 		}
 	}
-	
+
 	return result
 }
 
@@ -307,17 +307,17 @@ func (p *DefaultTemplateProcessor) registerBuiltinFunctions() {
 	p.functions["lower"] = strings.ToLower
 	p.functions["title"] = strings.Title
 	p.functions["trim"] = strings.TrimSpace
-	
+
 	// String replacement
 	p.functions["replace"] = func(old, new, str string) string {
 		return strings.ReplaceAll(str, old, new)
 	}
-	
+
 	// String joining
 	p.functions["join"] = func(sep string, elems []string) string {
 		return strings.Join(elems, sep)
 	}
-	
+
 	// Default value function
 	p.functions["default"] = func(defaultVal, val interface{}) interface{} {
 		if val == nil || val == "" {
@@ -325,7 +325,7 @@ func (p *DefaultTemplateProcessor) registerBuiltinFunctions() {
 		}
 		return val
 	}
-	
+
 	// Environment-like functions (placeholder implementations)
 	p.functions["env"] = func(key string) string {
 		// In a real implementation, this would read from environment variables

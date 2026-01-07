@@ -47,24 +47,24 @@ func (h *DNSServerFlagHandler) ParseArrayFlag(flagName, value string) (*ArrayCon
 	if value == "" {
 		return nil, fmt.Errorf("dns-server flag value cannot be empty")
 	}
-	
+
 	// Validate IP address format
 	ip := strings.TrimSpace(value)
 	if net.ParseIP(ip) == nil {
 		return nil, fmt.Errorf("invalid IP address format for dns-server: '%s'", ip)
 	}
-	
+
 	fields := map[string]interface{}{
 		"ip": ip,
 	}
-	
+
 	config := &ArrayConfig{
 		Path:   "opencenter.networking.dns_servers",
 		Index:  -1, // Will be determined during merging
 		Fields: fields,
 		Type:   "dns-server",
 	}
-	
+
 	return config, nil
 }
 
@@ -78,16 +78,16 @@ func (h *DNSServerFlagHandler) ValidateArrayConfig(config *ArrayConfig) error {
 	if config == nil {
 		return fmt.Errorf("array config cannot be nil")
 	}
-	
+
 	if config.Type != "dns-server" {
 		return fmt.Errorf("invalid array config type: expected 'dns-server', got '%s'", config.Type)
 	}
-	
+
 	ip, exists := config.Fields["ip"]
 	if !exists {
 		return fmt.Errorf("missing required field 'ip' in dns-server configuration")
 	}
-	
+
 	if ipStr, ok := ip.(string); ok {
 		if net.ParseIP(ipStr) == nil {
 			return fmt.Errorf("invalid IP address in dns-server configuration: '%s'", ipStr)
@@ -95,6 +95,6 @@ func (h *DNSServerFlagHandler) ValidateArrayConfig(config *ArrayConfig) error {
 	} else {
 		return fmt.Errorf("ip field must be a string in dns-server configuration")
 	}
-	
+
 	return nil
 }

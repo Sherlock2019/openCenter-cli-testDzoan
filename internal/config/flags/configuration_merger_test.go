@@ -19,16 +19,16 @@ import (
 
 func TestDefaultConfigurationMerger_MergeConfigurations(t *testing.T) {
 	merger := NewDefaultConfigurationMerger()
-	
+
 	tests := []struct {
-		name     string
-		configs  []Configuration
-		expected map[string]interface{}
+		name      string
+		configs   []Configuration
+		expected  map[string]interface{}
 		expectErr bool
 	}{
 		{
-			name:    "empty configurations",
-			configs: []Configuration{},
+			name:     "empty configurations",
+			configs:  []Configuration{},
 			expected: map[string]interface{}{},
 		},
 		{
@@ -98,23 +98,23 @@ func TestDefaultConfigurationMerger_MergeConfigurations(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := merger.MergeConfigurations(tt.configs)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("MergeConfigurations() expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("MergeConfigurations() unexpected error: %v", err)
 				return
 			}
-			
+
 			if !compareConfigValues(result.Data, tt.expected) {
 				t.Errorf("MergeConfigurations() result = %v, want %v", result.Data, tt.expected)
 			}
@@ -124,7 +124,7 @@ func TestDefaultConfigurationMerger_MergeConfigurations(t *testing.T) {
 
 func TestDefaultConfigurationMerger_SetMergeStrategy(t *testing.T) {
 	merger := NewDefaultConfigurationMerger()
-	
+
 	tests := []struct {
 		name      string
 		strategy  MergeStrategy
@@ -148,18 +148,18 @@ func TestDefaultConfigurationMerger_SetMergeStrategy(t *testing.T) {
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := merger.SetMergeStrategy(tt.strategy)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("SetMergeStrategy() expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("SetMergeStrategy() unexpected error: %v", err)
 				return
@@ -198,7 +198,7 @@ func TestDefaultConfigurationMerger_ArrayMergeModes(t *testing.T) {
 			expected: []interface{}{"x", "y", "c"},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			merger := NewDefaultConfigurationMerger()
@@ -207,19 +207,19 @@ func TestDefaultConfigurationMerger_ArrayMergeModes(t *testing.T) {
 				ObjectMergeMode: ObjectMergeDeep,
 				Precedence:      []SourceType{SourceDefault, SourceCLI},
 			})
-			
+
 			result, err := merger.mergeArrays(tt.target, tt.source)
 			if err != nil {
 				t.Errorf("mergeArrays() unexpected error: %v", err)
 				return
 			}
-			
+
 			resultArray, ok := result.([]interface{})
 			if !ok {
 				t.Errorf("mergeArrays() returned non-array: %T", result)
 				return
 			}
-			
+
 			if !compareArrays(resultArray, tt.expected) {
 				t.Errorf("mergeArrays() result = %v, want %v", resultArray, tt.expected)
 			}
@@ -308,7 +308,7 @@ func TestDefaultConfigurationMerger_ObjectMergeModes(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			merger := NewDefaultConfigurationMerger()
@@ -317,19 +317,19 @@ func TestDefaultConfigurationMerger_ObjectMergeModes(t *testing.T) {
 				ObjectMergeMode: tt.mode,
 				Precedence:      []SourceType{SourceDefault, SourceCLI},
 			})
-			
+
 			result, err := merger.mergeObjects(tt.target, tt.source)
 			if err != nil {
 				t.Errorf("mergeObjects() unexpected error: %v", err)
 				return
 			}
-			
+
 			resultMap, ok := result.(map[string]interface{})
 			if !ok {
 				t.Errorf("mergeObjects() returned non-map: %T", result)
 				return
 			}
-			
+
 			if !compareConfigValues(resultMap, tt.expected) {
 				t.Errorf("mergeObjects() result = %v, want %v", resultMap, tt.expected)
 			}
@@ -339,7 +339,7 @@ func TestDefaultConfigurationMerger_ObjectMergeModes(t *testing.T) {
 
 func TestDefaultConfigurationMerger_AddConfigSource(t *testing.T) {
 	merger := NewDefaultConfigurationMerger()
-	
+
 	tests := []struct {
 		name      string
 		source    ConfigSource
@@ -363,18 +363,18 @@ func TestDefaultConfigurationMerger_AddConfigSource(t *testing.T) {
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := merger.AddConfigSource(tt.source)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("AddConfigSource() expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("AddConfigSource() unexpected error: %v", err)
 				return
@@ -385,14 +385,14 @@ func TestDefaultConfigurationMerger_AddConfigSource(t *testing.T) {
 
 func TestDefaultConfigurationMerger_PrecedenceOrdering(t *testing.T) {
 	merger := NewDefaultConfigurationMerger()
-	
+
 	// Set custom precedence: File < Template < CLI
 	merger.SetMergeStrategy(MergeStrategy{
 		ArrayMergeMode:  ArrayMergeAppend,
 		ObjectMergeMode: ObjectMergeDeep,
 		Precedence:      []SourceType{SourceFile, SourceTemplate, SourceCLI},
 	})
-	
+
 	configs := []Configuration{
 		{
 			Data: map[string]interface{}{
@@ -413,12 +413,12 @@ func TestDefaultConfigurationMerger_PrecedenceOrdering(t *testing.T) {
 			Sources: []ConfigSource{{Type: SourceTemplate, Path: "template.yaml"}},
 		},
 	}
-	
+
 	result, err := merger.MergeConfigurations(configs)
 	if err != nil {
 		t.Fatalf("MergeConfigurations() unexpected error: %v", err)
 	}
-	
+
 	// CLI should have highest precedence
 	if result.Data["value"] != "cli-value" {
 		t.Errorf("Expected CLI value to have highest precedence, got %v", result.Data["value"])

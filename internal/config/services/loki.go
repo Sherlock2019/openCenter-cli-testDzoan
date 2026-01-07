@@ -33,8 +33,8 @@ type LokiConfig struct {
 	S3Insecure       bool   `yaml:"loki_s3_insecure,omitempty" json:"loki_s3_insecure,omitempty" jsonschema:"description=Allow insecure S3 connections"`
 
 	// Backward compatibility fields that were in the god object
-	LokiStorageType  string `yaml:"-" json:"-"` // Alias for StorageType
-	LokiVolumeSize   int    `yaml:"-" json:"-"` // Alias for VolumeSize
+	LokiStorageType string `yaml:"-" json:"-"` // Alias for StorageType
+	LokiVolumeSize  int    `yaml:"-" json:"-"` // Alias for VolumeSize
 }
 
 func init() {

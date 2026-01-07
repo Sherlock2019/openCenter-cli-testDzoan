@@ -19,7 +19,7 @@ import (
 
 func TestArrayFlagHandler_ParseFlag(t *testing.T) {
 	handler := NewArrayFlagHandler()
-	
+
 	tests := []struct {
 		name      string
 		flagName  string
@@ -115,41 +115,41 @@ func TestArrayFlagHandler_ParseFlag(t *testing.T) {
 			wantErr:   true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := handler.ParseFlag(tt.flagName, tt.flagValue)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("ParseFlag() expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("ParseFlag() unexpected error: %v", err)
 				return
 			}
-			
+
 			arrayFlag, ok := result.(*ArrayOperationFlag)
 			if !ok {
 				t.Errorf("ParseFlag() returned %T, expected *ArrayOperationFlag", result)
 				return
 			}
-			
+
 			if arrayFlag.Operation != tt.wantOp {
 				t.Errorf("ParseFlag() operation = %v, want %v", arrayFlag.Operation, tt.wantOp)
 			}
-			
+
 			if arrayFlag.Path != tt.wantPath {
 				t.Errorf("ParseFlag() path = %v, want %v", arrayFlag.Path, tt.wantPath)
 			}
-			
+
 			if arrayFlag.Index != tt.wantIndex {
 				t.Errorf("ParseFlag() index = %v, want %v", arrayFlag.Index, tt.wantIndex)
 			}
-			
+
 			if arrayFlag.Value != tt.wantValue {
 				t.Errorf("ParseFlag() value = %v, want %v", arrayFlag.Value, tt.wantValue)
 			}
@@ -159,7 +159,7 @@ func TestArrayFlagHandler_ParseFlag(t *testing.T) {
 
 func TestArrayFlagHandler_MergeIntoConfiguration(t *testing.T) {
 	handler := NewArrayFlagHandler()
-	
+
 	tests := []struct {
 		name       string
 		config     map[string]interface{}
@@ -272,23 +272,23 @@ func TestArrayFlagHandler_MergeIntoConfiguration(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := handler.MergeIntoConfiguration(tt.flag, tt.config)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("MergeIntoConfiguration() expected error, got nil")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("MergeIntoConfiguration() unexpected error: %v", err)
 				return
 			}
-			
+
 			// Compare the resulting configuration
 			if !compareConfigValues(tt.config, tt.wantConfig) {
 				t.Errorf("MergeIntoConfiguration() config = %v, want %v", tt.config, tt.wantConfig)

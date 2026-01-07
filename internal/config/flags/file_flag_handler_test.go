@@ -21,7 +21,7 @@ import (
 
 func TestFileFlagHandler_CanHandle(t *testing.T) {
 	handler := NewFileFlagHandler()
-	
+
 	tests := []struct {
 		name     string
 		flagName string
@@ -37,7 +37,7 @@ func TestFileFlagHandler_CanHandle(t *testing.T) {
 		{"json flag", "json-set", false},
 		{"yaml flag", "yaml-set", false},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := handler.CanHandle(tt.flagName)
@@ -50,7 +50,7 @@ func TestFileFlagHandler_CanHandle(t *testing.T) {
 
 func TestFileFlagHandler_GetFlagType(t *testing.T) {
 	handler := NewFileFlagHandler()
-	
+
 	if handler.GetFlagType() != FlagTypeFile {
 		t.Errorf("GetFlagType() = %v, expected %v", handler.GetFlagType(), FlagTypeFile)
 	}
@@ -58,14 +58,14 @@ func TestFileFlagHandler_GetFlagType(t *testing.T) {
 
 func TestFileFlagHandler_ParseFlag_SingleFile(t *testing.T) {
 	handler := NewFileFlagHandler()
-	
+
 	// Create a temporary YAML file
 	tmpFile, err := os.CreateTemp("", "test-config-*.yaml")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
 	defer os.Remove(tmpFile.Name())
-	
+
 	// Write some YAML content
 	yamlContent := `
 opencenter:
@@ -78,7 +78,7 @@ opencenter:
 		t.Fatalf("Failed to write to temp file: %v", err)
 	}
 	tmpFile.Close()
-	
+
 	tests := []struct {
 		name      string
 		flagName  string
@@ -138,23 +138,23 @@ opencenter:
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := handler.ParseFlag(tt.flagName, tt.value)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("Expected error, but got none")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if tt.checkFunc != nil {
 				tt.checkFunc(t, result)
 			}
@@ -164,7 +164,7 @@ opencenter:
 
 func TestFileFlagHandler_ParseFlag_ConfigStack(t *testing.T) {
 	handler := NewFileFlagHandler()
-	
+
 	// Create temporary files
 	tmpFile1, err := os.CreateTemp("", "test-config1-*.yaml")
 	if err != nil {
@@ -173,7 +173,7 @@ func TestFileFlagHandler_ParseFlag_ConfigStack(t *testing.T) {
 	defer os.Remove(tmpFile1.Name())
 	tmpFile1.WriteString("config1: value1")
 	tmpFile1.Close()
-	
+
 	tmpFile2, err := os.CreateTemp("", "test-config2-*.json")
 	if err != nil {
 		t.Fatalf("Failed to create temp file 2: %v", err)
@@ -181,7 +181,7 @@ func TestFileFlagHandler_ParseFlag_ConfigStack(t *testing.T) {
 	defer os.Remove(tmpFile2.Name())
 	tmpFile2.WriteString(`{"config2": "value2"}`)
 	tmpFile2.Close()
-	
+
 	tests := []struct {
 		name      string
 		flagName  string
@@ -203,7 +203,7 @@ func TestFileFlagHandler_ParseFlag_ConfigStack(t *testing.T) {
 					t.Errorf("Expected 2 config flags, got %d", len(configFlags))
 					return
 				}
-				
+
 				// Check first file
 				if configFlags[0].Type != "yaml" {
 					t.Errorf("Expected first file type yaml, got %s", configFlags[0].Type)
@@ -214,7 +214,7 @@ func TestFileFlagHandler_ParseFlag_ConfigStack(t *testing.T) {
 				if configFlags[0].MergeType != ConfigFileMergeStack {
 					t.Errorf("Expected first file merge type %v, got %v", ConfigFileMergeStack, configFlags[0].MergeType)
 				}
-				
+
 				// Check second file
 				if configFlags[1].Type != "json" {
 					t.Errorf("Expected second file type json, got %s", configFlags[1].Type)
@@ -258,23 +258,23 @@ func TestFileFlagHandler_ParseFlag_ConfigStack(t *testing.T) {
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := handler.ParseFlag(tt.flagName, tt.value)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("Expected error, but got none")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if tt.checkFunc != nil {
 				tt.checkFunc(t, result)
 			}
@@ -284,14 +284,14 @@ func TestFileFlagHandler_ParseFlag_ConfigStack(t *testing.T) {
 
 func TestFileFlagHandler_LoadConfigurationFile(t *testing.T) {
 	handler := NewFileFlagHandler()
-	
+
 	// Create temporary YAML file
 	tmpYAMLFile, err := os.CreateTemp("", "test-config-*.yaml")
 	if err != nil {
 		t.Fatalf("Failed to create temp YAML file: %v", err)
 	}
 	defer os.Remove(tmpYAMLFile.Name())
-	
+
 	yamlContent := `
 opencenter:
   cluster:
@@ -304,14 +304,14 @@ opencenter:
 `
 	tmpYAMLFile.WriteString(yamlContent)
 	tmpYAMLFile.Close()
-	
+
 	// Create temporary JSON file
 	tmpJSONFile, err := os.CreateTemp("", "test-config-*.json")
 	if err != nil {
 		t.Fatalf("Failed to create temp JSON file: %v", err)
 	}
 	defer os.Remove(tmpJSONFile.Name())
-	
+
 	jsonContent := `{
 		"opencenter": {
 			"cluster": {
@@ -324,12 +324,12 @@ opencenter:
 	}`
 	tmpJSONFile.WriteString(jsonContent)
 	tmpJSONFile.Close()
-	
+
 	tests := []struct {
-		name      string
+		name       string
 		configFlag *ConfigFileFlag
-		expectErr bool
-		checkFunc func(*testing.T, *Configuration)
+		expectErr  bool
+		checkFunc  func(*testing.T, *Configuration)
 	}{
 		{
 			name: "load YAML file",
@@ -344,24 +344,24 @@ opencenter:
 					t.Error("Expected non-nil data")
 					return
 				}
-				
+
 				// Check nested structure
 				opencenter, ok := config.Data["opencenter"].(map[string]interface{})
 				if !ok {
 					t.Error("Expected opencenter to be a map")
 					return
 				}
-				
+
 				cluster, ok := opencenter["cluster"].(map[string]interface{})
 				if !ok {
 					t.Error("Expected cluster to be a map")
 					return
 				}
-				
+
 				if cluster["name"] != "test-cluster" {
 					t.Errorf("Expected cluster name 'test-cluster', got %v", cluster["name"])
 				}
-				
+
 				// Check sources
 				if len(config.Sources) != 1 {
 					t.Errorf("Expected 1 source, got %d", len(config.Sources))
@@ -389,20 +389,20 @@ opencenter:
 					t.Error("Expected non-nil data")
 					return
 				}
-				
+
 				// Check nested structure
 				opencenter, ok := config.Data["opencenter"].(map[string]interface{})
 				if !ok {
 					t.Error("Expected opencenter to be a map")
 					return
 				}
-				
+
 				cluster, ok := opencenter["cluster"].(map[string]interface{})
 				if !ok {
 					t.Error("Expected cluster to be a map")
 					return
 				}
-				
+
 				if cluster["name"] != "json-cluster" {
 					t.Errorf("Expected cluster name 'json-cluster', got %v", cluster["name"])
 				}
@@ -419,23 +419,23 @@ opencenter:
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config, err := handler.LoadConfigurationFile(tt.configFlag)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Errorf("Expected error, but got none")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if tt.checkFunc != nil {
 				tt.checkFunc(t, config)
 			}
@@ -445,7 +445,7 @@ opencenter:
 
 func TestFileFlagHandler_DetectFileType(t *testing.T) {
 	handler := NewFileFlagHandler()
-	
+
 	tests := []struct {
 		name     string
 		filePath string
@@ -454,11 +454,11 @@ func TestFileFlagHandler_DetectFileType(t *testing.T) {
 		{"YAML file with .yaml extension", "/path/to/config.yaml", "yaml"},
 		{"YAML file with .yml extension", "/path/to/config.yml", "yaml"},
 		{"JSON file", "/path/to/config.json", "json"},
-		{"File without extension", "/path/to/config", "yaml"}, // Default to YAML
+		{"File without extension", "/path/to/config", "yaml"},          // Default to YAML
 		{"File with unknown extension", "/path/to/config.txt", "yaml"}, // Default to YAML
 		{"Uppercase extensions", "/path/to/CONFIG.YAML", "yaml"},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := handler.detectFileType(tt.filePath)
@@ -476,7 +476,7 @@ func TestFileFlagHandler_Integration(t *testing.T) {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
 	defer os.RemoveAll(tmpDir)
-	
+
 	// Create base config file
 	baseConfigPath := filepath.Join(tmpDir, "base.yaml")
 	baseConfig := `
@@ -492,7 +492,7 @@ opencenter:
 	if err := os.WriteFile(baseConfigPath, []byte(baseConfig), 0644); err != nil {
 		t.Fatalf("Failed to write base config: %v", err)
 	}
-	
+
 	// Create override config file
 	overrideConfigPath := filepath.Join(tmpDir, "override.yaml")
 	overrideConfig := `
@@ -507,56 +507,56 @@ opencenter:
 	if err := os.WriteFile(overrideConfigPath, []byte(overrideConfig), 0644); err != nil {
 		t.Fatalf("Failed to write override config: %v", err)
 	}
-	
+
 	handler := NewFileFlagHandler()
-	
+
 	// Test parsing multiple file flags
 	baseFlag, err := handler.ParseFlag("base-config", baseConfigPath)
 	if err != nil {
 		t.Fatalf("Failed to parse base config flag: %v", err)
 	}
-	
+
 	overrideFlag, err := handler.ParseFlag("merge-config", overrideConfigPath)
 	if err != nil {
 		t.Fatalf("Failed to parse override config flag: %v", err)
 	}
-	
+
 	// Test loading configurations
 	baseConfigFlag := baseFlag.(*ConfigFileFlag)
 	baseConfiguration, err := handler.LoadConfigurationFile(baseConfigFlag)
 	if err != nil {
 		t.Fatalf("Failed to load base configuration: %v", err)
 	}
-	
+
 	overrideConfigFlag := overrideFlag.(*ConfigFileFlag)
 	overrideConfiguration, err := handler.LoadConfigurationFile(overrideConfigFlag)
 	if err != nil {
 		t.Fatalf("Failed to load override configuration: %v", err)
 	}
-	
+
 	// Test merging configurations
 	merger := NewDefaultConfigurationMerger()
 	mergedConfig, err := merger.MergeConfigurations([]Configuration{*baseConfiguration, *overrideConfiguration})
 	if err != nil {
 		t.Fatalf("Failed to merge configurations: %v", err)
 	}
-	
+
 	// Verify merged result
 	opencenter, ok := mergedConfig.Data["opencenter"].(map[string]interface{})
 	if !ok {
 		t.Fatal("Expected opencenter to be a map")
 	}
-	
+
 	cluster, ok := opencenter["cluster"].(map[string]interface{})
 	if !ok {
 		t.Fatal("Expected cluster to be a map")
 	}
-	
+
 	// Override should win
 	if cluster["name"] != "override-cluster" {
 		t.Errorf("Expected cluster name 'override-cluster', got %v", cluster["name"])
 	}
-	
+
 	// Check that both sources are tracked
 	if len(mergedConfig.Sources) != 2 {
 		t.Errorf("Expected 2 sources, got %d", len(mergedConfig.Sources))

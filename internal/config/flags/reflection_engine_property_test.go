@@ -23,7 +23,7 @@ import (
 )
 
 // Feature: cli-configuration-enhancement, Property 8: Reflection engine type safety
-// For any Go type (slice, map, pointer, struct), the reflection engine should handle 
+// For any Go type (slice, map, pointer, struct), the reflection engine should handle
 // type-appropriate operations and automatic initialization correctly
 // Validates: Requirements 3.1, 3.2, 3.3, 3.5
 func TestProperty_ReflectionEngineTypeSafety(t *testing.T) {
@@ -35,31 +35,31 @@ func TestProperty_ReflectionEngineTypeSafety(t *testing.T) {
 		func(index int, stringValue string, intValue int, boolValue bool) bool {
 			engine := NewEnhancedReflectionEngine()
 			config := &TestReflectionConfig{}
-			
+
 			// Test string slice
 			stringPath := fmt.Sprintf("stringSlice[%d]", index)
 			if err := engine.SetField(config, stringPath, stringValue); err != nil {
 				return false
 			}
-			
+
 			// Test int slice
 			intPath := fmt.Sprintf("intSlice[%d]", index)
 			if err := engine.SetField(config, intPath, fmt.Sprintf("%d", intValue)); err != nil {
 				return false
 			}
-			
+
 			// Test bool slice
 			boolPath := fmt.Sprintf("boolSlice[%d]", index)
 			if err := engine.SetField(config, boolPath, fmt.Sprintf("%t", boolValue)); err != nil {
 				return false
 			}
-			
+
 			// Verify slices were expanded correctly
 			expectedLen := index + 1
 			if len(config.StringSlice) != expectedLen || len(config.IntSlice) != expectedLen || len(config.BoolSlice) != expectedLen {
 				return false
 			}
-			
+
 			// Verify values were set with correct types
 			if config.StringSlice[index] != stringValue {
 				return false
@@ -70,46 +70,46 @@ func TestProperty_ReflectionEngineTypeSafety(t *testing.T) {
 			if config.BoolSlice[index] != boolValue {
 				return false
 			}
-			
+
 			// Verify other elements are zero-initialized with correct types
 			for i := 0; i < index; i++ {
 				if config.StringSlice[i] != "" || config.IntSlice[i] != 0 || config.BoolSlice[i] != false {
 					return false
 				}
 			}
-			
+
 			return true
 		},
-		gen.IntRange(0, 5),    // index
-		genReflectionString(), // string value
+		gen.IntRange(0, 5),      // index
+		genReflectionString(),   // string value
 		gen.IntRange(-100, 100), // int value
-		gen.Bool(),            // bool value
+		gen.Bool(),              // bool value
 	))
 
 	properties.Property("map operations handle automatic initialization", prop.ForAll(
 		func(key string, value string) bool {
 			engine := NewEnhancedReflectionEngine()
 			config := &TestReflectionConfig{}
-			
+
 			// Set value in map (should auto-initialize map)
 			path := fmt.Sprintf("stringMap.%s", key)
 			if err := engine.SetField(config, path, value); err != nil {
 				return false
 			}
-			
+
 			// Verify map was initialized
 			if config.StringMap == nil {
 				return false
 			}
-			
+
 			// Verify value was set correctly
 			if config.StringMap[key] != value {
 				return false
 			}
-			
+
 			return true
 		},
-		genReflectionMapKey(),           // map key
+		genReflectionMapKey(), // map key
 		genReflectionString(), // map value
 	))
 
@@ -117,23 +117,23 @@ func TestProperty_ReflectionEngineTypeSafety(t *testing.T) {
 		func(value string) bool {
 			engine := NewEnhancedReflectionEngine()
 			config := &TestReflectionConfig{}
-			
+
 			// Set value in nested pointer struct (should auto-initialize pointer)
 			path := fmt.Sprintf("nestedPtr.data")
 			if err := engine.SetField(config, path, value); err != nil {
 				return false
 			}
-			
+
 			// Verify pointer was initialized
 			if config.NestedPtr == nil {
 				return false
 			}
-			
+
 			// Verify value was set correctly
 			if config.NestedPtr.Data != value {
 				return false
 			}
-			
+
 			return true
 		},
 		genReflectionString(), // value
@@ -143,7 +143,7 @@ func TestProperty_ReflectionEngineTypeSafety(t *testing.T) {
 		func(name string, count int, enabled bool) bool {
 			engine := NewEnhancedReflectionEngine()
 			config := &TestReflectionConfig{}
-			
+
 			// Set values in nested struct
 			if err := engine.SetField(config, "nested.name", name); err != nil {
 				return false
@@ -154,7 +154,7 @@ func TestProperty_ReflectionEngineTypeSafety(t *testing.T) {
 			if err := engine.SetField(config, "nested.enabled", fmt.Sprintf("%t", enabled)); err != nil {
 				return false
 			}
-			
+
 			// Verify all values were set correctly with proper types
 			if config.Nested.Name != name {
 				return false
@@ -165,7 +165,7 @@ func TestProperty_ReflectionEngineTypeSafety(t *testing.T) {
 			if config.Nested.Enabled != enabled {
 				return false
 			}
-			
+
 			return true
 		},
 		genReflectionString(), // name
@@ -177,34 +177,34 @@ func TestProperty_ReflectionEngineTypeSafety(t *testing.T) {
 		func(stringValue string, intValue int, boolValue bool) bool {
 			engine := NewEnhancedReflectionEngine()
 			config := &TestReflectionConfig{}
-			
+
 			// Set different types in interface{} slice
 			stringPath := fmt.Sprintf("interfaceSlice[0]")
 			if err := engine.SetField(config, stringPath, stringValue); err != nil {
 				return false
 			}
-			
+
 			intPath := fmt.Sprintf("interfaceSlice[1]")
 			if err := engine.SetField(config, intPath, fmt.Sprintf("%d", intValue)); err != nil {
 				return false
 			}
-			
+
 			boolPath := fmt.Sprintf("interfaceSlice[2]")
 			if err := engine.SetField(config, boolPath, fmt.Sprintf("%t", boolValue)); err != nil {
 				return false
 			}
-			
+
 			// Verify slice was expanded
 			if len(config.InterfaceSlice) != 3 {
 				return false
 			}
-			
+
 			// Verify values were set (interface{} fields should contain the converted values)
 			// When setting from strings, interface{} fields use the automatic type conversion
 			if config.InterfaceSlice[0] != stringValue {
 				return false
 			}
-			
+
 			// For interface{} fields, the setReflectValue method converts strings to appropriate types
 			// Check what type was actually stored
 			switch v := config.InterfaceSlice[1].(type) {
@@ -220,7 +220,7 @@ func TestProperty_ReflectionEngineTypeSafety(t *testing.T) {
 			default:
 				return false
 			}
-			
+
 			// Bool strings are converted to bool or remain as strings
 			switch v := config.InterfaceSlice[2].(type) {
 			case bool:
@@ -235,51 +235,51 @@ func TestProperty_ReflectionEngineTypeSafety(t *testing.T) {
 			default:
 				return false
 			}
-			
+
 			return true
 		},
-		genReflectionString(), // string value
+		genReflectionString(),   // string value
 		gen.IntRange(-100, 100), // int value
-		gen.Bool(),            // bool value
+		gen.Bool(),              // bool value
 	))
 
 	properties.Property("complex nested operations maintain integrity", prop.ForAll(
 		func(outerIndex int, innerKey string, value string) bool {
 			engine := NewEnhancedReflectionEngine()
 			config := &TestReflectionConfig{}
-			
+
 			// Set value in complex nested structure: slice of structs with maps
 			path := fmt.Sprintf("complexNested[%d].data.%s", outerIndex, innerKey)
 			if err := engine.SetField(config, path, value); err != nil {
 				return false
 			}
-			
+
 			// Verify structure was created correctly
 			if len(config.ComplexNested) != outerIndex+1 {
 				return false
 			}
-			
+
 			// Verify the map was initialized
 			if config.ComplexNested[outerIndex].Data == nil {
 				return false
 			}
-			
+
 			// Verify the value was set
 			if config.ComplexNested[outerIndex].Data[innerKey] != value {
 				return false
 			}
-			
+
 			// Verify other elements are properly zero-initialized
 			for i := 0; i < outerIndex; i++ {
 				if config.ComplexNested[i].Data != nil {
 					return false
 				}
 			}
-			
+
 			return true
 		},
 		gen.IntRange(0, 3),    // outer index
-		genReflectionMapKey(),           // inner key
+		genReflectionMapKey(), // inner key
 		genReflectionString(), // value
 	))
 
@@ -289,14 +289,14 @@ func TestProperty_ReflectionEngineTypeSafety(t *testing.T) {
 // Test structures for reflection engine property testing
 
 type TestReflectionConfig struct {
-	StringSlice     []string                 `yaml:"stringSlice"`
-	IntSlice        []int                    `yaml:"intSlice"`
-	BoolSlice       []bool                   `yaml:"boolSlice"`
-	InterfaceSlice  []interface{}            `yaml:"interfaceSlice"`
-	StringMap       map[string]string        `yaml:"stringMap"`
-	Nested          TestNestedReflection     `yaml:"nested"`
-	NestedPtr       *TestNestedReflection    `yaml:"nestedPtr"`
-	ComplexNested   []TestComplexNested      `yaml:"complexNested"`
+	StringSlice    []string              `yaml:"stringSlice"`
+	IntSlice       []int                 `yaml:"intSlice"`
+	BoolSlice      []bool                `yaml:"boolSlice"`
+	InterfaceSlice []interface{}         `yaml:"interfaceSlice"`
+	StringMap      map[string]string     `yaml:"stringMap"`
+	Nested         TestNestedReflection  `yaml:"nested"`
+	NestedPtr      *TestNestedReflection `yaml:"nestedPtr"`
+	ComplexNested  []TestComplexNested   `yaml:"complexNested"`
 }
 
 type TestNestedReflection struct {

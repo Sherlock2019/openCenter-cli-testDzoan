@@ -21,7 +21,7 @@ import (
 
 func TestDefaultConfigurationValidator_ValidateConfiguration(t *testing.T) {
 	validator := NewDefaultConfigurationValidator()
-	
+
 	tests := []struct {
 		name           string
 		config         *Configuration
@@ -31,9 +31,9 @@ func TestDefaultConfigurationValidator_ValidateConfiguration(t *testing.T) {
 		checkFunc      func(*testing.T, *ValidationResult)
 	}{
 		{
-			name:        "nil configuration",
-			config:      nil,
-			expectValid: false,
+			name:         "nil configuration",
+			config:       nil,
+			expectValid:  false,
 			expectErrors: 1,
 			checkFunc: func(t *testing.T, result *ValidationResult) {
 				if len(result.Errors) != 1 {
@@ -62,7 +62,7 @@ func TestDefaultConfigurationValidator_ValidateConfiguration(t *testing.T) {
 					ProcessedAt: time.Now(),
 				},
 			},
-			expectValid: true,
+			expectValid:  true,
 			expectErrors: 0,
 		},
 		{
@@ -119,7 +119,7 @@ func TestDefaultConfigurationValidator_ValidateConfiguration(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := validator.ValidateConfiguration(tt.config)
@@ -127,19 +127,19 @@ func TestDefaultConfigurationValidator_ValidateConfiguration(t *testing.T) {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if result.Valid != tt.expectValid {
 				t.Errorf("Expected valid=%v, got %v", tt.expectValid, result.Valid)
 			}
-			
+
 			if len(result.Errors) != tt.expectErrors {
 				t.Errorf("Expected %d errors, got %d", tt.expectErrors, len(result.Errors))
 			}
-			
+
 			if len(result.Warnings) != tt.expectWarnings {
 				t.Errorf("Expected %d warnings, got %d", tt.expectWarnings, len(result.Warnings))
 			}
-			
+
 			if tt.checkFunc != nil {
 				tt.checkFunc(t, result)
 			}
@@ -149,7 +149,7 @@ func TestDefaultConfigurationValidator_ValidateConfiguration(t *testing.T) {
 
 func TestDefaultConfigurationValidator_ValidateFlags(t *testing.T) {
 	validator := NewDefaultConfigurationValidator()
-	
+
 	tests := []struct {
 		name         string
 		flags        *ParsedFlags
@@ -252,7 +252,7 @@ func TestDefaultConfigurationValidator_ValidateFlags(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := validator.ValidateFlags(tt.flags)
@@ -260,15 +260,15 @@ func TestDefaultConfigurationValidator_ValidateFlags(t *testing.T) {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if result.Valid != tt.expectValid {
 				t.Errorf("Expected valid=%v, got %v", tt.expectValid, result.Valid)
 			}
-			
+
 			if len(result.Errors) != tt.expectErrors {
 				t.Errorf("Expected %d errors, got %d", tt.expectErrors, len(result.Errors))
 			}
-			
+
 			if tt.checkFunc != nil {
 				tt.checkFunc(t, result)
 			}
@@ -278,7 +278,7 @@ func TestDefaultConfigurationValidator_ValidateFlags(t *testing.T) {
 
 func TestDefaultConfigurationValidator_ValidateFlag(t *testing.T) {
 	validator := NewDefaultConfigurationValidator()
-	
+
 	tests := []struct {
 		name      string
 		flagName  string
@@ -303,15 +303,15 @@ func TestDefaultConfigurationValidator_ValidateFlag(t *testing.T) {
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := validator.ValidateFlag(tt.flagName, tt.value)
-			
+
 			if tt.expectErr && err == nil {
 				t.Error("Expected error, but got none")
 			}
-			
+
 			if !tt.expectErr && err != nil {
 				t.Errorf("Unexpected error: %v", err)
 			}
@@ -321,7 +321,7 @@ func TestDefaultConfigurationValidator_ValidateFlag(t *testing.T) {
 
 func TestDefaultHelpSystem_GetFlagHelp(t *testing.T) {
 	helpSystem := NewDefaultHelpSystem()
-	
+
 	tests := []struct {
 		name      string
 		flagType  FlagType
@@ -418,27 +418,27 @@ func TestDefaultHelpSystem_GetFlagHelp(t *testing.T) {
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			help, err := helpSystem.GetFlagHelp(tt.flagType)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Error("Expected error, but got none")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if help == "" {
 				t.Error("Help text should not be empty")
 			}
-			
+
 			if tt.checkFunc != nil {
 				tt.checkFunc(t, help)
 			}
@@ -448,17 +448,17 @@ func TestDefaultHelpSystem_GetFlagHelp(t *testing.T) {
 
 func TestDefaultHelpSystem_GetAllFlagHelp(t *testing.T) {
 	helpSystem := NewDefaultHelpSystem()
-	
+
 	help, err := helpSystem.GetAllFlagHelp()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 		return
 	}
-	
+
 	if help == "" {
 		t.Error("Help text should not be empty")
 	}
-	
+
 	// Check that help contains sections for all flag types
 	expectedSections := []string{
 		"Enhanced CLI Configuration Flags",
@@ -470,7 +470,7 @@ func TestDefaultHelpSystem_GetAllFlagHelp(t *testing.T) {
 		"Configuration File Flags",
 		"Output Format Flags",
 	}
-	
+
 	for _, section := range expectedSections {
 		if !strings.Contains(help, section) {
 			t.Errorf("Help should contain section '%s'", section)
@@ -480,17 +480,17 @@ func TestDefaultHelpSystem_GetAllFlagHelp(t *testing.T) {
 
 func TestDefaultHelpSystem_GetExamples(t *testing.T) {
 	helpSystem := NewDefaultHelpSystem()
-	
+
 	examples, err := helpSystem.GetExamples()
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 		return
 	}
-	
+
 	if examples == "" {
 		t.Error("Examples should not be empty")
 	}
-	
+
 	// Check that examples contain common patterns
 	expectedPatterns := []string{
 		"Common Configuration Examples",
@@ -504,7 +504,7 @@ func TestDefaultHelpSystem_GetExamples(t *testing.T) {
 		"Output Formatting",
 		"Complex Example",
 	}
-	
+
 	for _, pattern := range expectedPatterns {
 		if !strings.Contains(examples, pattern) {
 			t.Errorf("Examples should contain pattern '%s'", pattern)
@@ -514,7 +514,7 @@ func TestDefaultHelpSystem_GetExamples(t *testing.T) {
 
 func TestDefaultHelpSystem_GetFlagExamples(t *testing.T) {
 	helpSystem := NewDefaultHelpSystem()
-	
+
 	tests := []struct {
 		name         string
 		flagType     FlagType
@@ -647,27 +647,27 @@ func TestDefaultHelpSystem_GetFlagExamples(t *testing.T) {
 			expectErr: true,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			examples, err := helpSystem.GetFlagExamples(tt.flagType)
-			
+
 			if tt.expectErr {
 				if err == nil {
 					t.Error("Expected error, but got none")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
-			
+
 			if len(examples) < tt.minExamples {
 				t.Errorf("Expected at least %d examples, got %d", tt.minExamples, len(examples))
 			}
-			
+
 			if tt.checkExample != nil {
 				tt.checkExample(t, examples)
 			}
@@ -680,7 +680,7 @@ func TestCLIIntegration_ValidationAndHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create CLI integration: %v", err)
 	}
-	
+
 	// Test help methods
 	t.Run("GetAllFlagHelp", func(t *testing.T) {
 		help, err := integration.GetAllFlagHelp()
@@ -691,7 +691,7 @@ func TestCLIIntegration_ValidationAndHelp(t *testing.T) {
 			t.Error("Help should not be empty")
 		}
 	})
-	
+
 	t.Run("GetExamples", func(t *testing.T) {
 		examples, err := integration.GetExamples()
 		if err != nil {
@@ -701,7 +701,7 @@ func TestCLIIntegration_ValidationAndHelp(t *testing.T) {
 			t.Error("Examples should not be empty")
 		}
 	})
-	
+
 	t.Run("GetFlagHelp", func(t *testing.T) {
 		help, err := integration.GetFlagHelp(FlagTypeDotNotation)
 		if err != nil {
@@ -711,7 +711,7 @@ func TestCLIIntegration_ValidationAndHelp(t *testing.T) {
 			t.Error("Help should not be empty")
 		}
 	})
-	
+
 	t.Run("GetFlagExamples", func(t *testing.T) {
 		examples, err := integration.GetFlagExamples(FlagTypeArray)
 		if err != nil {

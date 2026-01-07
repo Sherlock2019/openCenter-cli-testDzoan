@@ -24,16 +24,16 @@ import (
 type ReflectionEngine interface {
 	// SetField sets a field using enhanced path syntax
 	SetField(obj interface{}, path string, value interface{}) error
-	
+
 	// SetFieldWithStructuredPath sets a field using a pre-parsed structured path
 	SetFieldWithStructuredPath(obj interface{}, structuredPath *StructuredPath, value interface{}) error
-	
+
 	// GetField retrieves a field value using path syntax
 	GetField(obj interface{}, path string) (interface{}, error)
-	
+
 	// ExpandArray automatically expands arrays to accommodate indices
 	ExpandArray(obj interface{}, path string, index int) error
-	
+
 	// SupportedSyntax returns supported path syntax patterns
 	SupportedSyntax() []string
 }
@@ -56,7 +56,7 @@ func (e *EnhancedReflectionEngine) SetField(obj interface{}, path string, value 
 	if err != nil {
 		return fmt.Errorf("failed to parse path '%s': %w", path, err)
 	}
-	
+
 	return e.SetFieldWithStructuredPath(obj, structuredPath, value)
 }
 
@@ -65,12 +65,12 @@ func (e *EnhancedReflectionEngine) SetFieldWithStructuredPath(obj interface{}, s
 	if obj == nil {
 		return fmt.Errorf("cannot set field on nil object")
 	}
-	
+
 	v := reflect.ValueOf(obj)
 	if v.Kind() != reflect.Ptr {
 		return fmt.Errorf("object must be a pointer to be settable")
 	}
-	
+
 	v = v.Elem()
 	return e.setFieldRecursive(v, structuredPath.Parts, 0, value)
 }
@@ -80,10 +80,10 @@ func (e *EnhancedReflectionEngine) setFieldRecursive(v reflect.Value, parts []Pa
 	if partIndex >= len(parts) {
 		return fmt.Errorf("path index out of bounds")
 	}
-	
+
 	part := parts[partIndex]
 	isLastPart := partIndex == len(parts)-1
-	
+
 	// Handle different part types
 	if part.Name != "" {
 		// This is a named field
@@ -106,17 +106,17 @@ func (e *EnhancedReflectionEngine) handleNamedField(v reflect.Value, part PathPa
 		}
 		return fmt.Errorf("field '%s' not found in struct '%s'", part.Name, v.Type().Name())
 	}
-	
+
 	// If this part has an array index, handle array access
 	if part.HasIndex {
 		return e.handleFieldWithArrayIndex(field, part, parts, partIndex, isLastPart, value)
 	}
-	
+
 	// No array index, handle as regular field
 	if isLastPart {
 		return e.setFieldValue(field, value)
 	}
-	
+
 	// Not the last part, need to traverse deeper
 	return e.traverseField(field, parts, partIndex+1, value)
 }
@@ -127,19 +127,19 @@ func (e *EnhancedReflectionEngine) handleFieldWithArrayIndex(field reflect.Value
 	if field.Kind() != reflect.Slice && field.Kind() != reflect.Array {
 		return fmt.Errorf("field '%s' is not a slice or array, cannot use index access", part.Name)
 	}
-	
+
 	// Expand slice if necessary
 	if err := e.expandSliceToIndex(field, part.Index); err != nil {
 		return fmt.Errorf("failed to expand slice for field '%s': %w", part.Name, err)
 	}
-	
+
 	// Get the element at the specified index
 	element := field.Index(part.Index)
-	
+
 	if isLastPart {
 		return e.setFieldValue(element, value)
 	}
-	
+
 	// Continue traversing with the array element
 	return e.setFieldRecursive(element, parts, partIndex+1, value)
 }
@@ -150,19 +150,19 @@ func (e *EnhancedReflectionEngine) handleIndexAccess(v reflect.Value, part PathP
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return fmt.Errorf("cannot use index access on non-slice/array type %s", v.Type())
 	}
-	
+
 	// Expand slice if necessary
 	if err := e.expandSliceToIndex(v, part.Index); err != nil {
 		return fmt.Errorf("failed to expand slice for index access: %w", err)
 	}
-	
+
 	// Get the element at the specified index
 	element := v.Index(part.Index)
-	
+
 	if isLastPart {
 		return e.setFieldValue(element, value)
 	}
-	
+
 	// Continue traversing with the array element
 	return e.setFieldRecursive(element, parts, partIndex+1, value)
 }
@@ -172,7 +172,7 @@ func (e *EnhancedReflectionEngine) handleMapField(v reflect.Value, part PathPart
 	if v.Type().Key().Kind() != reflect.String {
 		return fmt.Errorf("map key type must be string for path-based setting, got %s", v.Type().Key().Kind())
 	}
-	
+
 	if isLastPart {
 		// Set the map value directly
 		mapValue := reflect.New(v.Type().Elem()).Elem()
@@ -182,7 +182,7 @@ func (e *EnhancedReflectionEngine) handleMapField(v reflect.Value, part PathPart
 		v.SetMapIndex(reflect.ValueOf(part.Name), mapValue)
 		return nil
 	}
-	
+
 	// Get or create the nested map/struct
 	existing := v.MapIndex(reflect.ValueOf(part.Name))
 	if !existing.IsValid() {
@@ -191,7 +191,7 @@ func (e *EnhancedReflectionEngine) handleMapField(v reflect.Value, part PathPart
 		v.SetMapIndex(reflect.ValueOf(part.Name), newValue)
 		existing = v.MapIndex(reflect.ValueOf(part.Name))
 	}
-	
+
 	return e.setFieldRecursive(existing, parts, partIndex+1, value)
 }
 
@@ -225,26 +225,26 @@ func (e *EnhancedReflectionEngine) expandSliceToIndex(slice reflect.Value, index
 	if slice.Kind() != reflect.Slice {
 		return fmt.Errorf("cannot expand non-slice type %s", slice.Type())
 	}
-	
+
 	currentLen := slice.Len()
 	requiredLen := index + 1
-	
+
 	if currentLen >= requiredLen {
 		return nil // Already large enough
 	}
-	
+
 	// Create new slice with required capacity
 	elemType := slice.Type().Elem()
 	newSlice := reflect.MakeSlice(slice.Type(), requiredLen, requiredLen)
-	
+
 	// Copy existing elements
 	reflect.Copy(newSlice, slice)
-	
+
 	// Initialize new elements with zero values
 	for i := currentLen; i < requiredLen; i++ {
 		newSlice.Index(i).Set(reflect.Zero(elemType))
 	}
-	
+
 	// Set the expanded slice back
 	slice.Set(newSlice)
 	return nil
@@ -255,11 +255,11 @@ func (e *EnhancedReflectionEngine) findField(v reflect.Value, name string) refle
 	if v.Kind() != reflect.Struct {
 		return reflect.Value{}
 	}
-	
+
 	t := v.Type()
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
-		
+
 		// Check yaml tag first
 		yamlTag := field.Tag.Get("yaml")
 		if yamlTag != "" {
@@ -268,13 +268,13 @@ func (e *EnhancedReflectionEngine) findField(v reflect.Value, name string) refle
 				return v.Field(i)
 			}
 		}
-		
+
 		// Check field name
 		if field.Name == name {
 			return v.Field(i)
 		}
 	}
-	
+
 	return reflect.Value{}
 }
 
@@ -288,32 +288,32 @@ func (e *EnhancedReflectionEngine) setValueFromInterface(field reflect.Value, va
 	if !field.CanSet() {
 		return fmt.Errorf("cannot set field value")
 	}
-	
+
 	// For interface{} fields with string values, always use setReflectValue for type conversion
 	if field.Kind() == reflect.Interface && field.Type().NumMethod() == 0 {
 		if strValue, ok := value.(string); ok {
 			return e.setReflectValue(field, strValue)
 		}
 	}
-	
+
 	// If value is already the correct type, set it directly
 	valueReflect := reflect.ValueOf(value)
 	if valueReflect.Type().AssignableTo(field.Type()) {
 		field.Set(valueReflect)
 		return nil
 	}
-	
+
 	// Try to convert string values to appropriate types
 	if strValue, ok := value.(string); ok {
 		return e.setReflectValue(field, strValue)
 	}
-	
+
 	// Try to convert the value
 	if valueReflect.Type().ConvertibleTo(field.Type()) {
 		field.Set(valueReflect.Convert(field.Type()))
 		return nil
 	}
-	
+
 	// As a last resort, convert to string and try string conversion
 	return e.setReflectValue(field, fmt.Sprintf("%v", value))
 }
@@ -371,12 +371,12 @@ func (e *EnhancedReflectionEngine) GetField(obj interface{}, path string) (inter
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse path '%s': %w", path, err)
 	}
-	
+
 	v := reflect.ValueOf(obj)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
-	
+
 	return e.getFieldRecursive(v, structuredPath.Parts, 0)
 }
 
@@ -385,10 +385,10 @@ func (e *EnhancedReflectionEngine) getFieldRecursive(v reflect.Value, parts []Pa
 	if partIndex >= len(parts) {
 		return v.Interface(), nil
 	}
-	
+
 	part := parts[partIndex]
 	isLastPart := partIndex == len(parts)-1
-	
+
 	if part.Name != "" {
 		field := e.findField(v, part.Name)
 		if !field.IsValid() {
@@ -404,7 +404,7 @@ func (e *EnhancedReflectionEngine) getFieldRecursive(v reflect.Value, parts []Pa
 			}
 			return nil, fmt.Errorf("field '%s' not found", part.Name)
 		}
-		
+
 		if part.HasIndex {
 			if field.Kind() != reflect.Slice && field.Kind() != reflect.Array {
 				return nil, fmt.Errorf("field '%s' is not a slice or array", part.Name)
@@ -418,7 +418,7 @@ func (e *EnhancedReflectionEngine) getFieldRecursive(v reflect.Value, parts []Pa
 			}
 			return e.getFieldRecursive(element, parts, partIndex+1)
 		}
-		
+
 		if isLastPart {
 			return field.Interface(), nil
 		}
@@ -436,7 +436,7 @@ func (e *EnhancedReflectionEngine) getFieldRecursive(v reflect.Value, parts []Pa
 		}
 		return e.getFieldRecursive(element, parts, partIndex+1)
 	}
-	
+
 	return nil, fmt.Errorf("invalid path part")
 }
 
@@ -446,13 +446,13 @@ func (e *EnhancedReflectionEngine) ExpandArray(obj interface{}, path string, ind
 	if err != nil {
 		return fmt.Errorf("failed to parse path '%s': %w", path, err)
 	}
-	
+
 	v := reflect.ValueOf(obj)
 	if v.Kind() != reflect.Ptr {
 		return fmt.Errorf("object must be a pointer to be settable")
 	}
 	v = v.Elem()
-	
+
 	// Navigate to the array field
 	for i, part := range structuredPath.Parts[:len(structuredPath.Parts)-1] {
 		if part.Name != "" {
@@ -460,7 +460,7 @@ func (e *EnhancedReflectionEngine) ExpandArray(obj interface{}, path string, ind
 			if !field.IsValid() {
 				return fmt.Errorf("field '%s' not found", part.Name)
 			}
-			
+
 			if part.HasIndex {
 				if field.Kind() != reflect.Slice {
 					return fmt.Errorf("field '%s' is not a slice", part.Name)
@@ -482,7 +482,7 @@ func (e *EnhancedReflectionEngine) ExpandArray(obj interface{}, path string, ind
 			v = v.Index(part.Index)
 		}
 	}
-	
+
 	// Handle the final part
 	lastPart := structuredPath.Parts[len(structuredPath.Parts)-1]
 	if lastPart.Name != "" {
@@ -495,7 +495,7 @@ func (e *EnhancedReflectionEngine) ExpandArray(obj interface{}, path string, ind
 		}
 		return e.expandSliceToIndex(field, index)
 	}
-	
+
 	// The current value should be a slice
 	if v.Kind() != reflect.Slice {
 		return fmt.Errorf("cannot expand non-slice type")

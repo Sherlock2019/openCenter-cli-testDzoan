@@ -23,24 +23,24 @@ type ValidationMode string
 
 const (
 	ValidationModeValidateOnly ValidationMode = "validate-only" // Only validate, don't apply
-	ValidationModeNormal       ValidationMode = "normal"       // Normal validation and apply
+	ValidationModeNormal       ValidationMode = "normal"        // Normal validation and apply
 )
 
 // ValidationResult represents the result of configuration validation
 type ValidationResult struct {
-	Valid   bool                      `json:"valid"`
-	Errors  []ConfigValidationError   `json:"errors,omitempty"`
+	Valid    bool                      `json:"valid"`
+	Errors   []ConfigValidationError   `json:"errors,omitempty"`
 	Warnings []ConfigValidationWarning `json:"warnings,omitempty"`
-	Summary ValidationSummary         `json:"summary"`
+	Summary  ValidationSummary         `json:"summary"`
 }
 
 // ConfigValidationError represents a validation error
 type ConfigValidationError struct {
-	Type        string `json:"type"`
-	Path        string `json:"path,omitempty"`
-	Message     string `json:"message"`
-	Suggestion  string `json:"suggestion,omitempty"`
-	Example     string `json:"example,omitempty"`
+	Type       string `json:"type"`
+	Path       string `json:"path,omitempty"`
+	Message    string `json:"message"`
+	Suggestion string `json:"suggestion,omitempty"`
+	Example    string `json:"example,omitempty"`
 }
 
 // ConfigValidationWarning represents a validation warning
@@ -52,9 +52,9 @@ type ConfigValidationWarning struct {
 
 // ValidationSummary provides a summary of validation results
 type ValidationSummary struct {
-	TotalErrors   int `json:"total_errors"`
-	TotalWarnings int `json:"total_warnings"`
-	ConfigPaths   int `json:"config_paths"`
+	TotalErrors    int `json:"total_errors"`
+	TotalWarnings  int `json:"total_warnings"`
+	ConfigPaths    int `json:"config_paths"`
 	FlagsProcessed int `json:"flags_processed"`
 }
 
@@ -62,10 +62,10 @@ type ValidationSummary struct {
 type ConfigurationValidator interface {
 	// ValidateConfiguration validates a complete configuration
 	ValidateConfiguration(config *Configuration) (*ValidationResult, error)
-	
+
 	// ValidateFlags validates parsed flags before applying them
 	ValidateFlags(flags *ParsedFlags) (*ValidationResult, error)
-	
+
 	// ValidateFlag validates a single flag
 	ValidateFlag(flagName, value string) error
 }
@@ -92,19 +92,19 @@ func (v *DefaultConfigurationValidator) ValidateConfiguration(config *Configurat
 			Summary: ValidationSummary{TotalErrors: 1},
 		}, nil
 	}
-	
+
 	var errors []ConfigValidationError
 	var warnings []ConfigValidationWarning
-	
+
 	// Validate configuration data structure
 	configPaths := v.validateConfigurationData(config.Data, "", &errors, &warnings)
-	
+
 	// Validate sources
 	v.validateSources(config.Sources, &errors, &warnings)
-	
+
 	// Validate metadata
 	v.validateMetadata(config.Metadata, &errors, &warnings)
-	
+
 	return &ValidationResult{
 		Valid:    len(errors) == 0,
 		Errors:   errors,
@@ -131,11 +131,11 @@ func (v *DefaultConfigurationValidator) ValidateFlags(flags *ParsedFlags) (*Vali
 			Summary: ValidationSummary{TotalErrors: 1},
 		}, nil
 	}
-	
+
 	var errors []ConfigValidationError
 	var warnings []ConfigValidationWarning
 	flagsProcessed := 0
-	
+
 	// Validate dot notation flags
 	for path, value := range flags.DotNotation {
 		if err := v.validateDotNotationFlag(path, value); err != nil {
@@ -147,7 +147,7 @@ func (v *DefaultConfigurationValidator) ValidateFlags(flags *ParsedFlags) (*Vali
 		}
 		flagsProcessed++
 	}
-	
+
 	// Validate array flags
 	for _, arrayFlag := range flags.ArrayFlags {
 		if err := v.validateArrayFlag(arrayFlag); err != nil {
@@ -163,7 +163,7 @@ func (v *DefaultConfigurationValidator) ValidateFlags(flags *ParsedFlags) (*Vali
 		}
 		flagsProcessed++
 	}
-	
+
 	// Validate JSON flags
 	for _, jsonFlag := range flags.JSONFlags {
 		if err := v.validateJSONFlag(jsonFlag); err != nil {
@@ -175,7 +175,7 @@ func (v *DefaultConfigurationValidator) ValidateFlags(flags *ParsedFlags) (*Vali
 		}
 		flagsProcessed++
 	}
-	
+
 	// Validate YAML flags
 	for _, yamlFlag := range flags.YAMLFlags {
 		if err := v.validateYAMLFlag(yamlFlag); err != nil {
@@ -187,7 +187,7 @@ func (v *DefaultConfigurationValidator) ValidateFlags(flags *ParsedFlags) (*Vali
 		}
 		flagsProcessed++
 	}
-	
+
 	// Validate configuration file flags
 	for _, configFileFlag := range flags.ConfigFileFlags {
 		if err := v.validateConfigFileFlag(configFileFlag); err != nil {
@@ -199,7 +199,7 @@ func (v *DefaultConfigurationValidator) ValidateFlags(flags *ParsedFlags) (*Vali
 		}
 		flagsProcessed++
 	}
-	
+
 	// Validate template variables
 	for name, value := range flags.TemplateVars {
 		if err := v.validateTemplateVar(name, value); err != nil {
@@ -211,7 +211,7 @@ func (v *DefaultConfigurationValidator) ValidateFlags(flags *ParsedFlags) (*Vali
 		}
 		flagsProcessed++
 	}
-	
+
 	return &ValidationResult{
 		Valid:    len(errors) == 0,
 		Errors:   errors,
@@ -229,11 +229,11 @@ func (v *DefaultConfigurationValidator) ValidateFlag(flagName, value string) err
 	if flagName == "" {
 		return fmt.Errorf("flag name cannot be empty")
 	}
-	
+
 	if value == "" {
 		return fmt.Errorf("flag value cannot be empty for flag '%s'", flagName)
 	}
-	
+
 	// Basic validation - could be extended with more specific rules
 	return nil
 }
@@ -243,16 +243,16 @@ func (v *DefaultConfigurationValidator) validateConfigurationData(data map[strin
 	if data == nil {
 		return 0
 	}
-	
+
 	pathCount := 0
-	
+
 	for key, value := range data {
 		currentPath := key
 		if prefix != "" {
 			currentPath = prefix + "." + key
 		}
 		pathCount++
-		
+
 		// Validate key format
 		if strings.Contains(key, " ") {
 			*warnings = append(*warnings, ConfigValidationWarning{
@@ -261,13 +261,13 @@ func (v *DefaultConfigurationValidator) validateConfigurationData(data map[strin
 				Message: "Configuration key contains spaces, which may cause issues",
 			})
 		}
-		
+
 		// Recursively validate nested objects
 		if nestedMap, ok := value.(map[string]interface{}); ok {
 			nestedPaths := v.validateConfigurationData(nestedMap, currentPath, errors, warnings)
 			pathCount += nestedPaths
 		}
-		
+
 		// Validate arrays
 		if array, ok := value.([]interface{}); ok {
 			for i, item := range array {
@@ -279,7 +279,7 @@ func (v *DefaultConfigurationValidator) validateConfigurationData(data map[strin
 			}
 		}
 	}
-	
+
 	return pathCount
 }
 
@@ -292,7 +292,7 @@ func (v *DefaultConfigurationValidator) validateSources(sources []ConfigSource, 
 		})
 		return
 	}
-	
+
 	for _, source := range sources {
 		if source.Type == "" {
 			*errors = append(*errors, ConfigValidationError{
@@ -301,7 +301,7 @@ func (v *DefaultConfigurationValidator) validateSources(sources []ConfigSource, 
 				Message: "Source type cannot be empty",
 			})
 		}
-		
+
 		if source.Path == "" {
 			*errors = append(*errors, ConfigValidationError{
 				Type:    "source_path",
@@ -326,15 +326,15 @@ func (v *DefaultConfigurationValidator) validateDotNotationFlag(path, value stri
 	if path == "" {
 		return fmt.Errorf("dot notation path cannot be empty")
 	}
-	
+
 	if strings.HasPrefix(path, ".") || strings.HasSuffix(path, ".") {
 		return fmt.Errorf("dot notation path cannot start or end with a dot")
 	}
-	
+
 	if strings.Contains(path, "..") {
 		return fmt.Errorf("dot notation path cannot contain consecutive dots")
 	}
-	
+
 	return nil
 }
 
@@ -343,15 +343,15 @@ func (v *DefaultConfigurationValidator) validateArrayFlag(arrayFlag ArrayFlag) e
 	if arrayFlag.Config == nil {
 		return fmt.Errorf("array flag config cannot be nil")
 	}
-	
+
 	if arrayFlag.Config.Path == "" {
 		return fmt.Errorf("array flag path cannot be empty")
 	}
-	
+
 	if arrayFlag.Config.Fields == nil {
 		return fmt.Errorf("array flag fields cannot be nil")
 	}
-	
+
 	return nil
 }
 
@@ -360,11 +360,11 @@ func (v *DefaultConfigurationValidator) validateJSONFlag(jsonFlag JSONFlag) erro
 	if jsonFlag.Path == "" {
 		return fmt.Errorf("JSON flag path cannot be empty")
 	}
-	
+
 	if jsonFlag.Value == nil {
 		return fmt.Errorf("JSON flag value cannot be nil")
 	}
-	
+
 	return nil
 }
 
@@ -373,11 +373,11 @@ func (v *DefaultConfigurationValidator) validateYAMLFlag(yamlFlag YAMLFlag) erro
 	if yamlFlag.Path == "" {
 		return fmt.Errorf("YAML flag path cannot be empty")
 	}
-	
+
 	if yamlFlag.Value == nil {
 		return fmt.Errorf("YAML flag value cannot be nil")
 	}
-	
+
 	return nil
 }
 
@@ -386,15 +386,15 @@ func (v *DefaultConfigurationValidator) validateConfigFileFlag(configFileFlag *C
 	if configFileFlag == nil {
 		return fmt.Errorf("config file flag cannot be nil")
 	}
-	
+
 	if configFileFlag.Path == "" {
 		return fmt.Errorf("config file path cannot be empty")
 	}
-	
+
 	if configFileFlag.Type == "" {
 		return fmt.Errorf("config file type cannot be empty")
 	}
-	
+
 	return nil
 }
 
@@ -403,11 +403,11 @@ func (v *DefaultConfigurationValidator) validateTemplateVar(name, value string) 
 	if name == "" {
 		return fmt.Errorf("template variable name cannot be empty")
 	}
-	
+
 	if strings.Contains(name, " ") {
 		return fmt.Errorf("template variable name cannot contain spaces")
 	}
-	
+
 	return nil
 }
 
@@ -415,13 +415,13 @@ func (v *DefaultConfigurationValidator) validateTemplateVar(name, value string) 
 type HelpSystem interface {
 	// GetFlagHelp returns help text for a specific flag type
 	GetFlagHelp(flagType FlagType) (string, error)
-	
+
 	// GetAllFlagHelp returns help text for all flag types
 	GetAllFlagHelp() (string, error)
-	
+
 	// GetExamples returns common usage examples
 	GetExamples() (string, error)
-	
+
 	// GetFlagExamples returns examples for a specific flag type
 	GetFlagExamples(flagType FlagType) ([]string, error)
 }
@@ -459,10 +459,10 @@ func (h *DefaultHelpSystem) GetFlagHelp(flagType FlagType) (string, error) {
 // GetAllFlagHelp returns help text for all flag types
 func (h *DefaultHelpSystem) GetAllFlagHelp() (string, error) {
 	var help strings.Builder
-	
+
 	help.WriteString("Enhanced CLI Configuration Flags\n")
 	help.WriteString("=================================\n\n")
-	
+
 	flagTypes := []FlagType{
 		FlagTypeDotNotation,
 		FlagTypeArray,
@@ -472,7 +472,7 @@ func (h *DefaultHelpSystem) GetAllFlagHelp() (string, error) {
 		FlagTypeFile,
 		FlagTypeOutput,
 	}
-	
+
 	for _, flagType := range flagTypes {
 		flagHelp, err := h.GetFlagHelp(flagType)
 		if err != nil {
@@ -481,7 +481,7 @@ func (h *DefaultHelpSystem) GetAllFlagHelp() (string, error) {
 		help.WriteString(flagHelp)
 		help.WriteString("\n")
 	}
-	
+
 	return help.String(), nil
 }
 
@@ -524,7 +524,7 @@ Common Configuration Examples
    --template-var ENV=production \
    --output-format yaml --dry-run
 `
-	
+
 	return examples, nil
 }
 

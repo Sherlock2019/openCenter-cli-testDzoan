@@ -24,7 +24,7 @@ func init() {
 		"rbac-manager",
 		"sources",
 	}
-	
+
 	for _, name := range defaults {
 		registry.RegisterServiceConfig(name, DefaultServiceConfig{})
 	}

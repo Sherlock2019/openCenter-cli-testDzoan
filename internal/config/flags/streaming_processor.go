@@ -24,16 +24,16 @@ import (
 
 // StreamingJSONProcessor handles streaming JSON processing for large JSON flags
 type StreamingJSONProcessor struct {
-	maxSize       int64
-	chunkSize     int64
+	maxSize         int64
+	chunkSize       int64
 	progressEnabled bool
 }
 
 // NewStreamingJSONProcessor creates a new streaming JSON processor
 func NewStreamingJSONProcessor() *StreamingJSONProcessor {
 	return &StreamingJSONProcessor{
-		maxSize:       MaxJSONSize,
-		chunkSize:     StreamingThreshold,
+		maxSize:         MaxJSONSize,
+		chunkSize:       StreamingThreshold,
 		progressEnabled: true,
 	}
 }
@@ -45,18 +45,18 @@ func (p *StreamingJSONProcessor) ProcessJSONStream(reader io.Reader) (interface{
 	if err != nil {
 		return nil, fmt.Errorf("failed to read JSON stream: %w", err)
 	}
-	
+
 	// Validate size
 	if int64(len(data)) > p.maxSize {
 		return nil, fmt.Errorf("JSON data size (%d bytes) exceeds maximum allowed size (%d bytes)", len(data), p.maxSize)
 	}
-	
+
 	// Parse JSON
 	var result interface{}
 	if err := json.Unmarshal(data, &result); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)
 	}
-	
+
 	return result, nil
 }
 
@@ -66,13 +66,13 @@ func (p *StreamingJSONProcessor) ProcessJSONString(jsonStr string) (interface{},
 	if int64(len(jsonStr)) > p.maxSize {
 		return nil, fmt.Errorf("JSON string size (%d bytes) exceeds maximum allowed size (%d bytes)", len(jsonStr), p.maxSize)
 	}
-	
+
 	// Parse JSON
 	var result interface{}
 	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)
 	}
-	
+
 	return result, nil
 }
 
@@ -86,16 +86,16 @@ func (p *StreamingJSONProcessor) ValidateJSONSize(data []byte) error {
 
 // StreamingYAMLProcessor handles streaming YAML processing for large YAML flags
 type StreamingYAMLProcessor struct {
-	maxSize       int64
-	chunkSize     int64
+	maxSize         int64
+	chunkSize       int64
 	progressEnabled bool
 }
 
 // NewStreamingYAMLProcessor creates a new streaming YAML processor
 func NewStreamingYAMLProcessor() *StreamingYAMLProcessor {
 	return &StreamingYAMLProcessor{
-		maxSize:       MaxYAMLSize,
-		chunkSize:     StreamingThreshold,
+		maxSize:         MaxYAMLSize,
+		chunkSize:       StreamingThreshold,
 		progressEnabled: true,
 	}
 }
@@ -107,18 +107,18 @@ func (p *StreamingYAMLProcessor) ProcessYAMLStream(reader io.Reader) (interface{
 	if err != nil {
 		return nil, fmt.Errorf("failed to read YAML stream: %w", err)
 	}
-	
+
 	// Validate size
 	if int64(len(data)) > p.maxSize {
 		return nil, fmt.Errorf("YAML data size (%d bytes) exceeds maximum allowed size (%d bytes)", len(data), p.maxSize)
 	}
-	
+
 	// Parse YAML
 	var result interface{}
 	if err := yaml.Unmarshal(data, &result); err != nil {
 		return nil, fmt.Errorf("failed to parse YAML: %w", err)
 	}
-	
+
 	return result, nil
 }
 
@@ -128,13 +128,13 @@ func (p *StreamingYAMLProcessor) ProcessYAMLString(yamlStr string) (interface{},
 	if int64(len(yamlStr)) > p.maxSize {
 		return nil, fmt.Errorf("YAML string size (%d bytes) exceeds maximum allowed size (%d bytes)", len(yamlStr), p.maxSize)
 	}
-	
+
 	// Parse YAML
 	var result interface{}
 	if err := yaml.Unmarshal([]byte(yamlStr), &result); err != nil {
 		return nil, fmt.Errorf("failed to parse YAML: %w", err)
 	}
-	
+
 	return result, nil
 }
 
@@ -145,30 +145,30 @@ func (p *StreamingYAMLProcessor) ProcessMultiDocumentYAML(reader io.Reader) ([]i
 	if err != nil {
 		return nil, fmt.Errorf("failed to read YAML stream: %w", err)
 	}
-	
+
 	// Validate size
 	if int64(len(data)) > p.maxSize {
 		return nil, fmt.Errorf("YAML data size (%d bytes) exceeds maximum allowed size (%d bytes)", len(data), p.maxSize)
 	}
-	
+
 	// Split documents by "---" separator
 	documents := strings.Split(string(data), "---")
 	var results []interface{}
-	
+
 	for i, doc := range documents {
 		doc = strings.TrimSpace(doc)
 		if doc == "" {
 			continue // Skip empty documents
 		}
-		
+
 		var result interface{}
 		if err := yaml.Unmarshal([]byte(doc), &result); err != nil {
 			return nil, fmt.Errorf("failed to parse YAML document %d: %w", i+1, err)
 		}
-		
+
 		results = append(results, result)
 	}
-	
+
 	return results, nil
 }
 
@@ -202,20 +202,20 @@ func (p *LargeConfigurationProcessor) ProcessLargeJSONFlag(flagName, jsonValue s
 	if err := p.jsonProcessor.ValidateJSONSize([]byte(jsonValue)); err != nil {
 		return nil, fmt.Errorf("JSON flag %s: %w", flagName, err)
 	}
-	
+
 	// Process with progress if enabled and size warrants it
 	if len(jsonValue) > int(StreamingThreshold) {
 		progress := NewProgressIndicator(fmt.Sprintf("Processing large JSON flag %s", flagName), int64(len(jsonValue)))
 		progress.Start()
 		defer progress.Stop()
 	}
-	
+
 	// Parse JSON
 	result, err := p.jsonProcessor.ProcessJSONString(jsonValue)
 	if err != nil {
 		return nil, fmt.Errorf("failed to process JSON flag %s: %w", flagName, err)
 	}
-	
+
 	return result, nil
 }
 
@@ -225,20 +225,20 @@ func (p *LargeConfigurationProcessor) ProcessLargeYAMLFlag(flagName, yamlValue s
 	if err := p.yamlProcessor.ValidateYAMLSize([]byte(yamlValue)); err != nil {
 		return nil, fmt.Errorf("YAML flag %s: %w", flagName, err)
 	}
-	
+
 	// Process with progress if enabled and size warrants it
 	if len(yamlValue) > int(StreamingThreshold) {
 		progress := NewProgressIndicator(fmt.Sprintf("Processing large YAML flag %s", flagName), int64(len(yamlValue)))
 		progress.Start()
 		defer progress.Stop()
 	}
-	
+
 	// Parse YAML
 	result, err := p.yamlProcessor.ProcessYAMLString(yamlValue)
 	if err != nil {
 		return nil, fmt.Errorf("failed to process YAML flag %s: %w", flagName, err)
 	}
-	
+
 	return result, nil
 }
 
@@ -248,21 +248,21 @@ func (p *LargeConfigurationProcessor) ProcessLargeConfigurationFile(filePath str
 	if err := p.optimizer.ValidateFileSize(filePath); err != nil {
 		return nil, err
 	}
-	
+
 	// Determine file type and process accordingly
 	if strings.HasSuffix(strings.ToLower(filePath), ".json") {
 		return p.processLargeJSONFile(filePath)
 	} else if strings.HasSuffix(strings.ToLower(filePath), ".yaml") || strings.HasSuffix(strings.ToLower(filePath), ".yml") {
 		return p.processLargeYAMLFile(filePath)
 	}
-	
+
 	return nil, fmt.Errorf("unsupported file type for %s", filePath)
 }
 
 // processLargeJSONFile processes a large JSON file with streaming
 func (p *LargeConfigurationProcessor) processLargeJSONFile(filePath string) (interface{}, error) {
 	var result interface{}
-	
+
 	err := p.optimizer.ProcessLargeFile(filePath, func(reader io.Reader) error {
 		parsed, err := p.jsonProcessor.ProcessJSONStream(reader)
 		if err != nil {
@@ -271,18 +271,18 @@ func (p *LargeConfigurationProcessor) processLargeJSONFile(filePath string) (int
 		result = parsed
 		return nil
 	})
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to process large JSON file %s: %w", filePath, err)
 	}
-	
+
 	return result, nil
 }
 
 // processLargeYAMLFile processes a large YAML file with streaming
 func (p *LargeConfigurationProcessor) processLargeYAMLFile(filePath string) (interface{}, error) {
 	var result interface{}
-	
+
 	err := p.optimizer.ProcessLargeFile(filePath, func(reader io.Reader) error {
 		parsed, err := p.yamlProcessor.ProcessYAMLStream(reader)
 		if err != nil {
@@ -291,60 +291,60 @@ func (p *LargeConfigurationProcessor) processLargeYAMLFile(filePath string) (int
 		result = parsed
 		return nil
 	})
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to process large YAML file %s: %w", filePath, err)
 	}
-	
+
 	return result, nil
 }
 
 // GetProcessingRecommendations returns recommendations for processing large configurations
 func (p *LargeConfigurationProcessor) GetProcessingRecommendations(flagCount int, totalSize int64) []ProcessingRecommendation {
 	var recommendations []ProcessingRecommendation
-	
+
 	// Size-based recommendations
 	if totalSize > MaxConfigSize/2 {
 		recommendations = append(recommendations, ProcessingRecommendation{
-			Type:        "size",
-			Severity:    "medium",
-			Message:     "Large total configuration size detected",
-			Suggestion:  "Consider using file-based configuration instead of command-line flags",
-			Impact:      "Improved performance and reduced memory usage",
+			Type:       "size",
+			Severity:   "medium",
+			Message:    "Large total configuration size detected",
+			Suggestion: "Consider using file-based configuration instead of command-line flags",
+			Impact:     "Improved performance and reduced memory usage",
 		})
 	}
-	
+
 	if totalSize > MaxConfigSize {
 		recommendations = append(recommendations, ProcessingRecommendation{
-			Type:        "size",
-			Severity:    "high",
-			Message:     "Configuration size exceeds recommended limits",
-			Suggestion:  "Break configuration into multiple smaller files",
-			Impact:      "Prevents memory issues and improves processing speed",
+			Type:       "size",
+			Severity:   "high",
+			Message:    "Configuration size exceeds recommended limits",
+			Suggestion: "Break configuration into multiple smaller files",
+			Impact:     "Prevents memory issues and improves processing speed",
 		})
 	}
-	
+
 	// Flag count recommendations
 	if flagCount > 50 {
 		recommendations = append(recommendations, ProcessingRecommendation{
-			Type:        "complexity",
-			Severity:    "medium",
-			Message:     "High number of configuration flags",
-			Suggestion:  "Consider using JSON/YAML flags to group related settings",
-			Impact:      "Simplified command-line usage and better organization",
+			Type:       "complexity",
+			Severity:   "medium",
+			Message:    "High number of configuration flags",
+			Suggestion: "Consider using JSON/YAML flags to group related settings",
+			Impact:     "Simplified command-line usage and better organization",
 		})
 	}
-	
+
 	if flagCount > 200 {
 		recommendations = append(recommendations, ProcessingRecommendation{
-			Type:        "complexity",
-			Severity:    "high",
-			Message:     "Excessive number of configuration flags",
-			Suggestion:  "Use configuration files instead of individual flags",
-			Impact:      "Significant performance improvement and reduced complexity",
+			Type:       "complexity",
+			Severity:   "high",
+			Message:    "Excessive number of configuration flags",
+			Suggestion: "Use configuration files instead of individual flags",
+			Impact:     "Significant performance improvement and reduced complexity",
 		})
 	}
-	
+
 	return recommendations
 }
 
@@ -359,12 +359,12 @@ type ProcessingRecommendation struct {
 
 // ConfigurationSizeAnalyzer analyzes configuration size and complexity
 type ConfigurationSizeAnalyzer struct {
-	totalFlags    int
-	totalSize     int64
-	jsonFlags     int
-	yamlFlags     int
-	fileFlags     int
-	complexFlags  int
+	totalFlags   int
+	totalSize    int64
+	jsonFlags    int
+	yamlFlags    int
+	fileFlags    int
+	complexFlags int
 }
 
 // NewConfigurationSizeAnalyzer creates a new configuration size analyzer
@@ -376,7 +376,7 @@ func NewConfigurationSizeAnalyzer() *ConfigurationSizeAnalyzer {
 func (a *ConfigurationSizeAnalyzer) AnalyzeFlag(flagName, flagValue string, flagType FlagType) {
 	a.totalFlags++
 	a.totalSize += int64(len(flagValue))
-	
+
 	switch flagType {
 	case FlagTypeJSON:
 		a.jsonFlags++
@@ -400,14 +400,14 @@ func (a *ConfigurationSizeAnalyzer) AnalyzeFlag(flagName, flagValue string, flag
 // GetAnalysis returns the configuration analysis
 func (a *ConfigurationSizeAnalyzer) GetAnalysis() ConfigurationAnalysis {
 	return ConfigurationAnalysis{
-		TotalFlags:    a.totalFlags,
-		TotalSize:     a.totalSize,
-		JSONFlags:     a.jsonFlags,
-		YAMLFlags:     a.yamlFlags,
-		FileFlags:     a.fileFlags,
-		ComplexFlags:  a.complexFlags,
-		AverageSize:   a.getAverageSize(),
-		Complexity:    a.getComplexityLevel(),
+		TotalFlags:   a.totalFlags,
+		TotalSize:    a.totalSize,
+		JSONFlags:    a.jsonFlags,
+		YAMLFlags:    a.yamlFlags,
+		FileFlags:    a.fileFlags,
+		ComplexFlags: a.complexFlags,
+		AverageSize:  a.getAverageSize(),
+		Complexity:   a.getComplexityLevel(),
 	}
 }
 
@@ -467,8 +467,8 @@ func (m *MemoryOptimizer) CheckMemoryUsage() MemoryUsageInfo {
 	// This would implement actual memory usage checking
 	// For now, return placeholder data
 	return MemoryUsageInfo{
-		CurrentUsage:  0,
-		MaxUsage:      m.maxMemoryUsage,
+		CurrentUsage: 0,
+		MaxUsage:     m.maxMemoryUsage,
 		Recommendations: []string{
 			"Use streaming processing for large files",
 			"Process configuration in chunks",

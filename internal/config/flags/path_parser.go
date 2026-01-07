@@ -24,20 +24,20 @@ import (
 type PathParser interface {
 	// ParsePath converts path string to structured path
 	ParsePath(path string) (*StructuredPath, error)
-	
+
 	// ValidatePath ensures path syntax is correct
 	ValidatePath(path string) error
-	
+
 	// SupportedSyntax returns supported path syntax patterns
 	SupportedSyntax() []string
 }
 
 // StructuredPath represents a parsed configuration path
 type StructuredPath struct {
-	Parts     []PathPart
-	IsArray   bool
-	HasIndex  bool
-	RawPath   string
+	Parts    []PathPart
+	IsArray  bool
+	HasIndex bool
+	RawPath  string
 }
 
 // PathPart represents a single part of a configuration path
@@ -71,36 +71,36 @@ func (p *EnhancedPathParser) ParsePath(path string) (*StructuredPath, error) {
 	if path == "" {
 		return nil, fmt.Errorf("path cannot be empty")
 	}
-	
+
 	// Split by dots first to handle nested paths
 	parts := strings.Split(path, ".")
 	var structuredParts []PathPart
 	hasIndex := false
 	isArray := false
-	
+
 	for i, part := range parts {
 		if part == "" {
 			return nil, fmt.Errorf("empty path part at position %d in path '%s'", i, path)
 		}
-		
+
 		pathPart, err := p.parseSinglePart(part)
 		if err != nil {
 			return nil, fmt.Errorf("invalid path part '%s' at position %d in path '%s': %w", part, i, path, err)
 		}
-		
+
 		if pathPart.IsArray || pathPart.HasIndex {
 			hasIndex = true
 			isArray = true
 		}
-		
+
 		structuredParts = append(structuredParts, pathPart)
 	}
-	
+
 	return &StructuredPath{
-		Parts:     structuredParts,
-		IsArray:   isArray,
-		HasIndex:  hasIndex,
-		RawPath:   path,
+		Parts:    structuredParts,
+		IsArray:  isArray,
+		HasIndex: hasIndex,
+		RawPath:  path,
 	}, nil
 }
 
@@ -110,16 +110,16 @@ func (p *EnhancedPathParser) parseSinglePart(part string) (PathPart, error) {
 	if matches := p.bracketPattern.FindStringSubmatch(part); matches != nil {
 		fieldName := matches[1]
 		indexStr := matches[2]
-		
+
 		index, err := strconv.Atoi(indexStr)
 		if err != nil {
 			return PathPart{}, fmt.Errorf("invalid array index '%s': %w", indexStr, err)
 		}
-		
+
 		if index < 0 {
 			return PathPart{}, fmt.Errorf("array index cannot be negative: %d", index)
 		}
-		
+
 		return PathPart{
 			Name:     fieldName,
 			Index:    index,
@@ -127,13 +127,13 @@ func (p *EnhancedPathParser) parseSinglePart(part string) (PathPart, error) {
 			HasIndex: true,
 		}, nil
 	}
-	
+
 	// Check if this is just a numeric index (for dot syntax like field.0.subfield)
 	if index, err := strconv.Atoi(part); err == nil {
 		if index < 0 {
 			return PathPart{}, fmt.Errorf("array index cannot be negative: %d", index)
 		}
-		
+
 		return PathPart{
 			Name:     "", // Empty name indicates this is just an index
 			Index:    index,
@@ -141,12 +141,12 @@ func (p *EnhancedPathParser) parseSinglePart(part string) (PathPart, error) {
 			HasIndex: true,
 		}, nil
 	}
-	
+
 	// Regular field name
 	if !isValidFieldName(part) {
 		return PathPart{}, fmt.Errorf("invalid field name '%s': must start with letter or underscore and contain only letters, numbers, and underscores", part)
 	}
-	
+
 	return PathPart{
 		Name:     part,
 		Index:    -1,
@@ -177,13 +177,13 @@ func isValidFieldName(name string) bool {
 	if name == "" {
 		return false
 	}
-	
+
 	// Must start with letter or underscore
 	first := name[0]
 	if !((first >= 'a' && first <= 'z') || (first >= 'A' && first <= 'Z') || first == '_') {
 		return false
 	}
-	
+
 	// Rest can be letters, numbers, underscores, or hyphens
 	for i := 1; i < len(name); i++ {
 		char := name[i]
@@ -191,7 +191,7 @@ func isValidFieldName(name string) bool {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -240,10 +240,10 @@ func (sp *StructuredPath) GetParentPath() *StructuredPath {
 	if len(sp.Parts) <= 1 {
 		return nil
 	}
-	
+
 	parentParts := make([]PathPart, len(sp.Parts)-1)
 	copy(parentParts, sp.Parts[:len(sp.Parts)-1])
-	
+
 	hasIndex := false
 	isArray := false
 	for _, part := range parentParts {
@@ -252,7 +252,7 @@ func (sp *StructuredPath) GetParentPath() *StructuredPath {
 			isArray = true
 		}
 	}
-	
+
 	// Reconstruct the raw path for the parent
 	var pathSegments []string
 	for _, part := range parentParts {
@@ -267,12 +267,12 @@ func (sp *StructuredPath) GetParentPath() *StructuredPath {
 			pathSegments = append(pathSegments, strconv.Itoa(part.Index))
 		}
 	}
-	
+
 	return &StructuredPath{
-		Parts:     parentParts,
-		IsArray:   isArray,
-		HasIndex:  hasIndex,
-		RawPath:   strings.Join(pathSegments, "."),
+		Parts:    parentParts,
+		IsArray:  isArray,
+		HasIndex: hasIndex,
+		RawPath:  strings.Join(pathSegments, "."),
 	}
 }
 

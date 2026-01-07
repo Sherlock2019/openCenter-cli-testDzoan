@@ -14,7 +14,7 @@ func main() {
 	// Generate schema from the Config struct using reflection
 	cfg := config.Config{}
 	schema := generateSchemaFromStruct(reflect.TypeOf(cfg), "Config")
-	
+
 	// Add schema metadata
 	fullSchema := map[string]interface{}{
 		"$id":         "https://opencenter.cloud/schemas/cluster-config.json",
@@ -25,14 +25,14 @@ func main() {
 		"properties":  schema["properties"],
 		"required":    schema["required"],
 	}
-	
+
 	// Pretty print JSON
 	output, err := json.MarshalIndent(fullSchema, "", "  ")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error marshaling schema: %v\n", err)
 		os.Exit(1)
 	}
-	
+
 	fmt.Println(string(output))
 }
 
@@ -40,30 +40,30 @@ func generateSchemaFromStruct(t reflect.Type, name string) map[string]interface{
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
-	
+
 	if t.Kind() != reflect.Struct {
 		return map[string]interface{}{
 			"type": getJSONType(t),
 		}
 	}
-	
+
 	properties := make(map[string]interface{})
 	var required []string
-	
+
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
-		
+
 		// Skip unexported fields
 		if !field.IsExported() {
 			continue
 		}
-		
+
 		// Get JSON tag
 		jsonTag := field.Tag.Get("json")
 		if jsonTag == "-" {
 			continue
 		}
-		
+
 		// Parse JSON tag
 		jsonName := field.Name
 		if jsonTag != "" {
@@ -71,7 +71,7 @@ func generateSchemaFromStruct(t reflect.Type, name string) map[string]interface{
 			if parts[0] != "" {
 				jsonName = parts[0]
 			}
-			
+
 			// Check if field is required (no omitempty)
 			isRequired := true
 			for _, part := range parts[1:] {
@@ -84,40 +84,40 @@ func generateSchemaFromStruct(t reflect.Type, name string) map[string]interface{
 				required = append(required, jsonName)
 			}
 		}
-		
+
 		// Generate field schema
 		fieldSchema := generateFieldSchema(field)
 		properties[jsonName] = fieldSchema
 	}
-	
+
 	result := map[string]interface{}{
 		"type":       "object",
 		"properties": properties,
 	}
-	
+
 	if len(required) > 0 {
 		result["required"] = required
 	}
-	
+
 	return result
 }
 
 func generateFieldSchema(field reflect.StructField) map[string]interface{} {
 	fieldType := field.Type
-	
+
 	// Handle pointers
 	if fieldType.Kind() == reflect.Ptr {
 		fieldType = fieldType.Elem()
 	}
-	
+
 	schema := make(map[string]interface{})
-	
+
 	// Parse jsonschema tag for additional metadata
 	jsonSchemaTag := field.Tag.Get("jsonschema")
 	if jsonSchemaTag != "" {
 		parseJSONSchemaTag(jsonSchemaTag, schema)
 	}
-	
+
 	// Set type based on Go type
 	switch fieldType.Kind() {
 	case reflect.String:
@@ -150,7 +150,7 @@ func generateFieldSchema(field reflect.StructField) map[string]interface{} {
 	default:
 		schema["type"] = "string" // fallback
 	}
-	
+
 	return schema
 }
 
@@ -161,7 +161,7 @@ func parseJSONSchemaTag(tag string, schema map[string]interface{}) {
 		if len(kv) == 2 {
 			key := strings.TrimSpace(kv[0])
 			value := strings.TrimSpace(kv[1])
-			
+
 			switch key {
 			case "description":
 				schema["description"] = value

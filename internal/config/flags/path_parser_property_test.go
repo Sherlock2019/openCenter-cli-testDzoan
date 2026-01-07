@@ -24,7 +24,7 @@ import (
 )
 
 // Feature: cli-configuration-enhancement, Property 2: Syntax equivalence
-// For any configuration path with array indices, bracket syntax `field[0].subfield` 
+// For any configuration path with array indices, bracket syntax `field[0].subfield`
 // and dot syntax `field.0.subfield` should produce identical configuration results
 // Validates: Requirements 1.1, 1.2
 func TestProperty_SyntaxEquivalence(t *testing.T) {
@@ -35,90 +35,90 @@ func TestProperty_SyntaxEquivalence(t *testing.T) {
 	properties.Property("bracket and dot syntax produce equivalent structured paths", prop.ForAll(
 		func(fieldName string, index int, subfield string) bool {
 			parser := NewEnhancedPathParser()
-			
+
 			// Create bracket syntax path: field[index].subfield
 			bracketPath := fmt.Sprintf("%s[%d].%s", fieldName, index, subfield)
-			
-			// Create dot syntax path: field.index.subfield  
+
+			// Create dot syntax path: field.index.subfield
 			dotPath := fmt.Sprintf("%s.%d.%s", fieldName, index, subfield)
-			
+
 			// Parse both paths
 			bracketStructured, err1 := parser.ParsePath(bracketPath)
 			if err1 != nil {
 				return false
 			}
-			
+
 			dotStructured, err2 := parser.ParsePath(dotPath)
 			if err2 != nil {
 				return false
 			}
-			
+
 			// Both should be valid
 			if bracketStructured == nil || dotStructured == nil {
 				return false
 			}
-			
+
 			// Both should have array access
 			if !bracketStructured.HasArrayAccess() || !dotStructured.HasArrayAccess() {
 				return false
 			}
-			
+
 			// Both should be marked as arrays
 			if !bracketStructured.IsArray || !dotStructured.IsArray {
 				return false
 			}
-			
+
 			// The internal structure may differ, but the logical result should be the same
-			
+
 			// Get field names (excluding indices)
 			bracketFields := bracketStructured.GetFieldNames()
 			dotFields := dotStructured.GetFieldNames()
-			
+
 			if len(bracketFields) != len(dotFields) {
 				return false
 			}
-			
+
 			for i, field := range bracketFields {
 				if field != dotFields[i] {
 					return false
 				}
 			}
-			
+
 			// Get indices
 			bracketIndices := bracketStructured.GetIndices()
 			dotIndices := dotStructured.GetIndices()
-			
+
 			if len(bracketIndices) != len(dotIndices) {
 				return false
 			}
-			
+
 			for i, idx := range bracketIndices {
 				if idx != dotIndices[i] {
 					return false
 				}
 			}
-			
+
 			// Both should contain the expected field names
 			expectedFields := []string{fieldName, subfield}
 			if len(bracketFields) != len(expectedFields) {
 				return false
 			}
-			
+
 			for i, expected := range expectedFields {
 				if bracketFields[i] != expected || dotFields[i] != expected {
 					return false
 				}
 			}
-			
+
 			// Both should contain the expected index
 			if len(bracketIndices) != 1 || len(dotIndices) != 1 {
 				return false
 			}
-			
+
 			if bracketIndices[0] != index || dotIndices[0] != index {
 				return false
 			}
-			
+
 			return true
 		},
 		genValidFieldName(),
@@ -129,69 +129,69 @@ func TestProperty_SyntaxEquivalence(t *testing.T) {
 	properties.Property("nested array syntax equivalence", prop.ForAll(
 		func(field1 string, index1 int, field2 string, index2 int, finalField string) bool {
 			parser := NewEnhancedPathParser()
-			
+
 			// Create nested bracket syntax: field1[index1].field2[index2].finalField
 			bracketPath := fmt.Sprintf("%s[%d].%s[%d].%s", field1, index1, field2, index2, finalField)
-			
+
 			// Create nested dot syntax: field1.index1.field2.index2.finalField
 			dotPath := fmt.Sprintf("%s.%d.%s.%d.%s", field1, index1, field2, index2, finalField)
-			
+
 			// Parse both paths
 			bracketStructured, err1 := parser.ParsePath(bracketPath)
 			if err1 != nil {
 				return false
 			}
-			
+
 			dotStructured, err2 := parser.ParsePath(dotPath)
 			if err2 != nil {
 				return false
 			}
-			
+
 			// Both should be valid
 			if bracketStructured == nil || dotStructured == nil {
 				return false
 			}
-			
+
 			// Both should have array access
 			if !bracketStructured.HasArrayAccess() || !dotStructured.HasArrayAccess() {
 				return false
 			}
-			
+
 			// Get field names and indices
 			bracketFields := bracketStructured.GetFieldNames()
 			dotFields := dotStructured.GetFieldNames()
 			bracketIndices := bracketStructured.GetIndices()
 			dotIndices := dotStructured.GetIndices()
-			
+
 			// Should have same number of fields and indices
 			if len(bracketFields) != len(dotFields) || len(bracketIndices) != len(dotIndices) {
 				return false
 			}
-			
+
 			// Should have expected fields
 			expectedFields := []string{field1, field2, finalField}
 			if len(bracketFields) != len(expectedFields) {
 				return false
 			}
-			
+
 			for i, expected := range expectedFields {
 				if bracketFields[i] != expected || dotFields[i] != expected {
 					return false
 				}
 			}
-			
+
 			// Should have expected indices
 			expectedIndices := []int{index1, index2}
 			if len(bracketIndices) != len(expectedIndices) {
 				return false
 			}
-			
+
 			for i, expected := range expectedIndices {
 				if bracketIndices[i] != expected || dotIndices[i] != expected {
 					return false
 				}
 			}
-			
+
 			return true
 		},
 		genValidFieldName(),

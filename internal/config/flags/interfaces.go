@@ -18,25 +18,25 @@ type FlagType string
 
 const (
 	FlagTypeDotNotation FlagType = "dot_notation"
-	FlagTypeArray      FlagType = "array"
-	FlagTypeArrayOp    FlagType = "array_operation"  // New type for array operations
-	FlagTypeMapOp      FlagType = "map_operation"    // New type for map operations
-	FlagTypeJSON       FlagType = "json"
-	FlagTypeYAML       FlagType = "yaml"
-	FlagTypeTemplate   FlagType = "template"
-	FlagTypeFile       FlagType = "file"
-	FlagTypeOutput     FlagType = "output"           // New type for output flags
-	FlagTypeSecurity   FlagType = "security"         // New type for security flags
+	FlagTypeArray       FlagType = "array"
+	FlagTypeArrayOp     FlagType = "array_operation" // New type for array operations
+	FlagTypeMapOp       FlagType = "map_operation"   // New type for map operations
+	FlagTypeJSON        FlagType = "json"
+	FlagTypeYAML        FlagType = "yaml"
+	FlagTypeTemplate    FlagType = "template"
+	FlagTypeFile        FlagType = "file"
+	FlagTypeOutput      FlagType = "output"   // New type for output flags
+	FlagTypeSecurity    FlagType = "security" // New type for security flags
 )
 
 // FlagParser handles all types of CLI flag parsing
 type FlagParser interface {
 	// ParseFlags processes all command-line flags
 	ParseFlags(args []string) (*ParsedFlags, error)
-	
+
 	// RegisterHandler adds a new flag type handler
 	RegisterHandler(pattern string, handler FlagHandler) error
-	
+
 	// SetPrecedence defines flag type precedence order
 	SetPrecedence(order []FlagType) error
 }
@@ -45,10 +45,10 @@ type FlagParser interface {
 type FlagHandler interface {
 	// CanHandle returns true if this handler can process the given flag
 	CanHandle(flagName string) bool
-	
+
 	// ParseFlag processes a single flag and returns the parsed result
 	ParseFlag(flagName, value string) (interface{}, error)
-	
+
 	// GetFlagType returns the type of flags this handler processes
 	GetFlagType() FlagType
 }
@@ -69,31 +69,31 @@ type ConfigurationMergeable interface {
 // ArrayFlagHandler processes array-specific flags (for dedicated handlers like server-pool)
 type ArrayFlagHandler interface {
 	FlagHandler
-	
+
 	// ParseArrayFlag converts string to array configuration
 	ParseArrayFlag(flagName, value string) (*ArrayConfig, error)
-	
+
 	// SupportedTypes returns array types this handler supports
 	SupportedTypes() []string
-	
+
 	// ValidateArrayConfig ensures array configuration is valid
 	ValidateArrayConfig(config *ArrayConfig) error
 }
 
 // ParsedFlags contains all parsed flag information
 type ParsedFlags struct {
-	DotNotation      map[string]string
-	ArrayFlags       []ArrayFlag
-	JSONFlags        []JSONFlag
-	YAMLFlags        []YAMLFlag
-	TemplateVars     map[string]string
-	ConfigFiles      []ConfigFile
-	ConfigFileFlags  []*ConfigFileFlag     // New configuration file flags with merge info
-	ArrayOperations  []ArrayOperationFlag  // Array operations (append, insert, remove)
-	MapOperations    []MapFlag             // Map operations (set, merge, remove)
-	OutputFormat     *OutputFormatFlag     // Output format flag
-	OutputMode       *OutputModeFlag       // Output mode flag
-	SecurityFlags    []SecurityFlag        // Security-related flags
+	DotNotation     map[string]string
+	ArrayFlags      []ArrayFlag
+	JSONFlags       []JSONFlag
+	YAMLFlags       []YAMLFlag
+	TemplateVars    map[string]string
+	ConfigFiles     []ConfigFile
+	ConfigFileFlags []*ConfigFileFlag    // New configuration file flags with merge info
+	ArrayOperations []ArrayOperationFlag // Array operations (append, insert, remove)
+	MapOperations   []MapFlag            // Map operations (set, merge, remove)
+	OutputFormat    *OutputFormatFlag    // Output format flag
+	OutputMode      *OutputModeFlag      // Output mode flag
+	SecurityFlags   []SecurityFlag       // Security-related flags
 }
 
 // ArrayFlag represents a parsed array flag (for dedicated handlers)
@@ -104,10 +104,10 @@ type ArrayFlag struct {
 
 // ArrayConfig represents parsed array configuration
 type ArrayConfig struct {
-	Path     string
-	Index    int
-	Fields   map[string]interface{}
-	Type     string
+	Path   string
+	Index  int
+	Fields map[string]interface{}
+	Type   string
 }
 
 // JSONFlag represents a parsed JSON flag
@@ -144,6 +144,7 @@ const (
 	ConfigFileMergeOverride ConfigFileMergeType = "override" // Override configuration (higher priority)
 	ConfigFileMergeStack    ConfigFileMergeType = "stack"    // Stack configuration (priority by order)
 )
+
 // SecurityFlag represents a security-related flag
 type SecurityFlag interface {
 	GetSecurityType() SecurityFlagType

@@ -46,18 +46,18 @@ func (h *TemplateFlagHandler) parseTemplateFlag(flagName, value string) (*Templa
 	if value == "" {
 		return nil, fmt.Errorf("template variable value cannot be empty")
 	}
-	
+
 	// Extract variable name from flag name
 	varName := h.extractVariableName(flagName)
 	if varName == "" {
 		return nil, fmt.Errorf("invalid template flag format: expected --template-var-NAME, got %s", flagName)
 	}
-	
+
 	templateVar := &TemplateVariable{
 		Name:  varName,
 		Value: value,
 	}
-	
+
 	return templateVar, nil
 }
 
@@ -68,7 +68,7 @@ func (h *TemplateFlagHandler) extractVariableName(flagName string) string {
 	if strings.HasPrefix(flagName, "template-var-") {
 		return strings.TrimPrefix(flagName, "template-var-")
 	}
-	
+
 	return ""
 }
 

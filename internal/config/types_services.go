@@ -12,8 +12,8 @@ type BaseServiceCfg struct {
 // For backward compatibility, this still contains all fields but they should be
 // migrated to specific service types over time.
 type ServiceCfg struct {
-	Enabled  bool   `yaml:"enabled" json:"enabled"`
-	Status   string `yaml:"status,omitempty" json:"status,omitempty" jsonschema:"description=Service deployment status (pending/running/success/failed)"`
+	Enabled bool   `yaml:"enabled" json:"enabled"`
+	Status  string `yaml:"status,omitempty" json:"status,omitempty" jsonschema:"description=Service deployment status (pending/running/success/failed)"`
 
 	// Common service fields
 	Namespace string `yaml:"namespace,omitempty" json:"namespace,omitempty" jsonschema:"description=Kubernetes namespace for the service"`

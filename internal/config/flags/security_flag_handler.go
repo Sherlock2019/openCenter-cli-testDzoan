@@ -42,13 +42,13 @@ func (h *SecurityFlagHandler) CanHandle(flagName string) bool {
 		"--sops-config",
 		"--encrypted-config",
 	}
-	
+
 	for _, flag := range securityFlags {
 		if strings.HasPrefix(flagName, flag) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -82,41 +82,41 @@ func (h *SecurityFlagHandler) parseSecureTemplateVar(flagName, value string) (*S
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid secure template variable format: %s (expected KEY=value or KEY=@file)", value)
 	}
-	
+
 	key := strings.TrimSpace(parts[0])
 	valueSpec := strings.TrimSpace(parts[1])
-	
+
 	if key == "" {
 		return nil, fmt.Errorf("template variable key cannot be empty")
 	}
-	
+
 	var varValue string
 	var isFile bool
-	
+
 	if strings.HasPrefix(valueSpec, "@") {
 		// Load from file
 		filePath := valueSpec[1:]
 		if filePath == "" {
 			return nil, fmt.Errorf("file path cannot be empty for secure template variable %s", key)
 		}
-		
+
 		content, err := os.ReadFile(filePath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read secure template variable file %s: %w", filePath, err)
 		}
-		
+
 		varValue = strings.TrimSpace(string(content))
 		isFile = true
 	} else {
 		varValue = valueSpec
 		isFile = false
 	}
-	
+
 	// Warn about command history exposure for non-file sources
 	if !isFile {
 		h.warnCommandHistoryExposure(key)
 	}
-	
+
 	return &SecureTemplateVarFlag{
 		Key:    key,
 		Value:  varValue,
@@ -137,7 +137,7 @@ func (h *SecurityFlagHandler) parseMaskSensitive(flagName, value string) (*MaskS
 			return nil, fmt.Errorf("invalid mask-sensitive value: %s (expected true/false)", value)
 		}
 	}
-	
+
 	return &MaskSensitiveFlag{
 		Enabled: enabled,
 	}, nil
@@ -156,7 +156,7 @@ func (h *SecurityFlagHandler) parseSecurityWarnings(flagName, value string) (*Se
 			return nil, fmt.Errorf("invalid security-warnings value: %s (expected true/false)", value)
 		}
 	}
-	
+
 	return &SecurityWarningsFlag{
 		Enabled: enabled,
 	}, nil
@@ -167,12 +167,12 @@ func (h *SecurityFlagHandler) parseSOPSConfig(flagName, value string) (*SOPSConf
 	if value == "" {
 		return nil, fmt.Errorf("SOPS config path cannot be empty")
 	}
-	
+
 	// Validate that the SOPS config file exists
 	if _, err := os.Stat(value); os.IsNotExist(err) {
 		return nil, fmt.Errorf("SOPS config file does not exist: %s", value)
 	}
-	
+
 	return &SOPSConfigFlag{
 		ConfigPath: value,
 	}, nil
@@ -183,12 +183,12 @@ func (h *SecurityFlagHandler) parseEncryptedConfig(flagName, value string) (*Enc
 	if value == "" {
 		return nil, fmt.Errorf("encrypted config path cannot be empty")
 	}
-	
+
 	// Validate that the encrypted config file exists
 	if _, err := os.Stat(value); os.IsNotExist(err) {
 		return nil, fmt.Errorf("encrypted config file does not exist: %s", value)
 	}
-	
+
 	return &EncryptedConfigFlag{
 		ConfigPath: value,
 	}, nil
@@ -202,111 +202,104 @@ func (h *SecurityFlagHandler) warnCommandHistoryExposure(key string) {
 
 // MaskFlagValue masks sensitive data in flag values for logging/output
 func (h *SecurityFlagHandler) MaskFlagValue(flagName, value string) string {
+	// Return empty values as-is
+	if value == "" {
+		return value
+	}
+
 	// Check if this is a sensitive flag
 	if h.isSensitiveFlag(flagName) {
-		return h.masker.MaskString(value)
+		// For sensitive flags, always mask the entire value
+		return security.MaskString
 	}
-	
+
 	// Check if the value contains sensitive patterns
 	masked := h.masker.MaskString(value)
 	if masked != value {
 		return masked
 	}
-	
+
 	return value
 }
 
 // isSensitiveFlag checks if a flag name indicates sensitive data
 func (h *SecurityFlagHandler) isSensitiveFlag(flagName string) bool {
-	sensitiveFlags := []string{
-		"password", "passwd", "pwd",
-		"secret", "token", "key",
-		"credential", "auth",
-		"secure-template-var",
-	}
-	
-	lowerFlag := strings.ToLower(flagName)
-	for _, sensitive := range sensitiveFlags {
-		if strings.Contains(lowerFlag, sensitive) {
-			return true
-		}
-	}
-	
-	return false
+	// Use the credential masker's field detection logic
+	return h.masker.IsSensitiveField(flagName)
 }
 
 // ValidateSecurityConfiguration validates security-related configuration
 func (h *SecurityFlagHandler) ValidateSecurityConfiguration(config map[string]interface{}) []SecurityWarning {
 	var warnings []SecurityWarning
-	
+
 	// Check for potential credential exposure
 	warnings = append(warnings, h.scanForCredentials(config)...)
-	
+
 	// Check for insecure template variable usage
 	warnings = append(warnings, h.checkTemplateVariables(config)...)
-	
+
 	// Check for missing SOPS configuration
 	warnings = append(warnings, h.checkSOPSConfiguration(config)...)
-	
+
 	return warnings
 }
 
 // scanForCredentials scans configuration for potential credential exposure
 func (h *SecurityFlagHandler) scanForCredentials(config map[string]interface{}) []SecurityWarning {
 	var warnings []SecurityWarning
-	
+
 	for key, value := range config {
 		if h.masker.IsSensitiveField(key) {
 			if strValue, ok := value.(string); ok && strValue != "" {
 				// Check if the value looks like a credential
 				if h.looksLikeCredential(strValue) {
 					warnings = append(warnings, SecurityWarning{
-						Type:     "credential_exposure",
-						Severity: "high",
-						Message:  fmt.Sprintf("Potential credential found in field '%s'", key),
-						Field:    key,
+						Type:       "credential_exposure",
+						Severity:   "high",
+						Message:    fmt.Sprintf("Potential credential found in field '%s'", key),
+						Field:      key,
 						Suggestion: "Consider using SOPS encryption or secure template variables",
 					})
 				}
 			}
 		}
-		
+
 		// Recursively check nested structures
 		if nestedMap, ok := value.(map[string]interface{}); ok {
 			warnings = append(warnings, h.scanForCredentials(nestedMap)...)
 		}
 	}
-	
+
 	return warnings
 }
 
 // checkTemplateVariables checks for insecure template variable usage
 func (h *SecurityFlagHandler) checkTemplateVariables(config map[string]interface{}) []SecurityWarning {
 	var warnings []SecurityWarning
-	
+
 	// This would be implemented to check for template variables that might contain sensitive data
 	// For now, return empty slice as this is a placeholder
-	
+
 	return warnings
 }
 
 // checkSOPSConfiguration checks for missing SOPS configuration
 func (h *SecurityFlagHandler) checkSOPSConfiguration(config map[string]interface{}) []SecurityWarning {
 	var warnings []SecurityWarning
-	
+
 	// Check if there are sensitive fields but no SOPS configuration
 	hasSensitiveData := h.hasSensitiveData(config)
 	hasSOPSConfig := h.hasSOPSConfig(config)
-	
+
 	if hasSensitiveData && !hasSOPSConfig {
 		warnings = append(warnings, SecurityWarning{
-			Type:     "missing_encryption",
-			Severity: "medium",
-			Message:  "Configuration contains sensitive data but no SOPS encryption is configured",
+			Type:       "missing_encryption",
+			Severity:   "medium",
+			Message:    "Configuration contains sensitive data but no SOPS encryption is configured",
 			Suggestion: "Consider using --sops-config to specify SOPS configuration for encrypting sensitive data",
 		})
 	}
-	
+
 	return warnings
 }
 
@@ -316,14 +309,14 @@ func (h *SecurityFlagHandler) hasSensitiveData(config map[string]interface{}) bo
 		if h.masker.IsSensitiveField(key) {
 			return true
 		}
-		
+
 		if nestedMap, ok := value.(map[string]interface{}); ok {
 			if h.hasSensitiveData(nestedMap) {
 				return true
 			}
 		}
 	}
-	
+
 	return false
 }
 
@@ -331,13 +324,13 @@ func (h *SecurityFlagHandler) hasSensitiveData(config map[string]interface{}) bo
 func (h *SecurityFlagHandler) hasSOPSConfig(config map[string]interface{}) bool {
 	// Check for SOPS-related configuration
 	sopsFields := []string{"sops", "encryption", "age_key", "sops_config"}
-	
+
 	for _, field := range sopsFields {
 		if _, exists := config[field]; exists {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -347,18 +340,18 @@ func (h *SecurityFlagHandler) looksLikeCredential(value string) bool {
 	if len(value) < 8 {
 		return false
 	}
-	
+
 	// Check for common credential patterns
 	credentialPatterns := []string{
 		"sk-", "pk-", "-----BEGIN", "AKIA", "AGE-SECRET-KEY",
 	}
-	
+
 	for _, pattern := range credentialPatterns {
 		if strings.Contains(value, pattern) {
 			return true
 		}
 	}
-	
+
 	// Check for high entropy (potential random keys/tokens)
 	return h.hasHighEntropy(value)
 }
@@ -368,13 +361,13 @@ func (h *SecurityFlagHandler) hasHighEntropy(value string) bool {
 	if len(value) < 20 {
 		return false
 	}
-	
+
 	// Simple entropy check: count unique characters
 	charMap := make(map[rune]bool)
 	for _, char := range value {
 		charMap[char] = true
 	}
-	
+
 	// If more than 60% of characters are unique, consider it high entropy
 	uniqueRatio := float64(len(charMap)) / float64(len(value))
 	return uniqueRatio > 0.6

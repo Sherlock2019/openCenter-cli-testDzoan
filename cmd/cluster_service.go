@@ -103,7 +103,7 @@ Examples:
 			}
 			// Create new instance
 			newService := reflect.New(configType).Interface()
-			
+
 			// Set Enabled = true
 			if err := setEnabled(newService, true); err != nil {
 				return fmt.Errorf("failed to enable service: %w", err)
@@ -700,7 +700,7 @@ func setEnabled(svc any, enabled bool) error {
 	} else {
 		return fmt.Errorf("service config must be a pointer to set fields")
 	}
-	
+
 	if val.Kind() == reflect.Struct {
 		enabledField := val.FieldByName("Enabled")
 		if enabledField.IsValid() && enabledField.CanSet() && enabledField.Kind() == reflect.Bool {

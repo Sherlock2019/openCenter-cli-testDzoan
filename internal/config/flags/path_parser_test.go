@@ -19,7 +19,7 @@ import (
 
 func TestPathParser_BasicParsing(t *testing.T) {
 	parser := NewEnhancedPathParser()
-	
+
 	tests := []struct {
 		name     string
 		path     string
@@ -79,42 +79,42 @@ func TestPathParser_BasicParsing(t *testing.T) {
 			},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := parser.ParsePath(tt.path)
-			
+
 			if tt.wantErr {
 				if err == nil {
 					t.Errorf("expected error but got none")
 				}
 				return
 			}
-			
+
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 				return
 			}
-			
+
 			if result == nil {
 				t.Errorf("expected result but got nil")
 				return
 			}
-			
+
 			// Check basic properties
 			if result.IsArray != tt.expected.IsArray {
 				t.Errorf("IsArray: got %v, want %v", result.IsArray, tt.expected.IsArray)
 			}
-			
+
 			if result.HasIndex != tt.expected.HasIndex {
 				t.Errorf("HasIndex: got %v, want %v", result.HasIndex, tt.expected.HasIndex)
 			}
-			
+
 			if len(result.Parts) != len(tt.expected.Parts) {
 				t.Errorf("Parts length: got %d, want %d", len(result.Parts), len(tt.expected.Parts))
 				return
 			}
-			
+
 			// Check each part
 			for i, part := range result.Parts {
 				expected := tt.expected.Parts[i]
@@ -137,7 +137,7 @@ func TestPathParser_BasicParsing(t *testing.T) {
 
 func TestPathParser_GetFieldNames(t *testing.T) {
 	parser := NewEnhancedPathParser()
-	
+
 	tests := []struct {
 		name     string
 		path     string
@@ -154,20 +154,20 @@ func TestPathParser_GetFieldNames(t *testing.T) {
 			expected: []string{"storage", "compute"},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := parser.ParsePath(tt.path)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			
+
 			fields := result.GetFieldNames()
 			if len(fields) != len(tt.expected) {
 				t.Errorf("field count: got %d, want %d", len(fields), len(tt.expected))
 				return
 			}
-			
+
 			for i, field := range fields {
 				if field != tt.expected[i] {
 					t.Errorf("field[%d]: got %q, want %q", i, field, tt.expected[i])
@@ -179,7 +179,7 @@ func TestPathParser_GetFieldNames(t *testing.T) {
 
 func TestPathParser_GetIndices(t *testing.T) {
 	parser := NewEnhancedPathParser()
-	
+
 	tests := []struct {
 		name     string
 		path     string
@@ -196,20 +196,20 @@ func TestPathParser_GetIndices(t *testing.T) {
 			expected: []int{0},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := parser.ParsePath(tt.path)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			
+
 			indices := result.GetIndices()
 			if len(indices) != len(tt.expected) {
 				t.Errorf("index count: got %d, want %d", len(indices), len(tt.expected))
 				return
 			}
-			
+
 			for i, index := range indices {
 				if index != tt.expected[i] {
 					t.Errorf("index[%d]: got %d, want %d", i, index, tt.expected[i])

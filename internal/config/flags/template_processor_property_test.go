@@ -36,9 +36,9 @@ func TestProperty_TemplateVariableResolution(t *testing.T) {
 			if varName == "" {
 				return true
 			}
-			
+
 			processor := NewDefaultTemplateProcessor()
-			
+
 			// Create a configuration with a template variable
 			config := &Configuration{
 				Data: map[string]interface{}{
@@ -47,18 +47,18 @@ func TestProperty_TemplateVariableResolution(t *testing.T) {
 					},
 				},
 			}
-			
+
 			// Define the variable
 			vars := map[string]string{
 				varName: varValue,
 			}
-			
+
 			// Process templates
 			err := processor.ProcessTemplates(config, vars)
 			if err != nil {
 				return false // Template processing should not fail
 			}
-			
+
 			// Verify the variable was resolved
 			if testObj, ok := config.Data["test"].(map[string]interface{}); ok {
 				if resolvedValue, ok := testObj["value"].(string); ok {
@@ -66,7 +66,7 @@ func TestProperty_TemplateVariableResolution(t *testing.T) {
 					return resolvedValue == varValue
 				}
 			}
-			
+
 			return false
 		},
 		genVariableName(),
@@ -79,25 +79,25 @@ func TestProperty_TemplateVariableResolution(t *testing.T) {
 			if len(configData) == 0 {
 				return true
 			}
-			
+
 			processor := NewDefaultTemplateProcessor()
-			
+
 			// Create original configuration
 			originalConfig := &Configuration{
 				Data: deepCopyMap(configData),
 			}
-			
+
 			// Create configuration to process
 			config := &Configuration{
 				Data: deepCopyMap(configData),
 			}
-			
+
 			// Process templates with empty variables
 			err := processor.ProcessTemplates(config, map[string]string{})
 			if err != nil {
 				return false // Should not fail for configurations without templates
 			}
-			
+
 			// Configuration should remain unchanged
 			return compareTemplateValues(config.Data, originalConfig.Data)
 		},
@@ -110,9 +110,9 @@ func TestProperty_TemplateVariableResolution(t *testing.T) {
 			if var1Name == "" || var2Name == "" || var1Name == var2Name {
 				return true
 			}
-			
+
 			processor := NewDefaultTemplateProcessor()
-			
+
 			// Create configuration with multiple template variables
 			config := &Configuration{
 				Data: map[string]interface{}{
@@ -122,29 +122,29 @@ func TestProperty_TemplateVariableResolution(t *testing.T) {
 					},
 				},
 			}
-			
+
 			// Define both variables
 			vars := map[string]string{
 				var1Name: var1Value,
 				var2Name: var2Value,
 			}
-			
+
 			// Process templates
 			err := processor.ProcessTemplates(config, vars)
 			if err != nil {
 				return false
 			}
-			
+
 			// Verify both variables were resolved correctly
 			if configObj, ok := config.Data["config"].(map[string]interface{}); ok {
 				field1, ok1 := configObj["field1"].(string)
 				field2, ok2 := configObj["field2"].(string)
-				
+
 				if ok1 && ok2 {
 					return field1 == var1Value && field2 == var2Value
 				}
 			}
-			
+
 			return false
 		},
 		genVariableName(),
@@ -159,9 +159,9 @@ func TestProperty_TemplateVariableResolution(t *testing.T) {
 			if varName == "" {
 				return true
 			}
-			
+
 			processor := NewDefaultTemplateProcessor()
-			
+
 			// Create configuration with nested template variables
 			config := &Configuration{
 				Data: map[string]interface{}{
@@ -175,18 +175,18 @@ func TestProperty_TemplateVariableResolution(t *testing.T) {
 					},
 				},
 			}
-			
+
 			// Define the variable
 			vars := map[string]string{
 				varName: varValue,
 			}
-			
+
 			// Process templates
 			err := processor.ProcessTemplates(config, vars)
 			if err != nil {
 				return false
 			}
-			
+
 			// Verify nested variable was resolved
 			if level1, ok := config.Data["level1"].(map[string]interface{}); ok {
 				if level2, ok := level1["level2"].(map[string]interface{}); ok {
@@ -199,7 +199,7 @@ func TestProperty_TemplateVariableResolution(t *testing.T) {
 					}
 				}
 			}
-			
+
 			return false
 		},
 		genVariableName(),
@@ -212,36 +212,36 @@ func TestProperty_TemplateVariableResolution(t *testing.T) {
 			if varName == "" {
 				return true
 			}
-			
+
 			processor := NewDefaultTemplateProcessor()
-			
+
 			// Create configuration with template variable
 			config := &Configuration{
 				Data: map[string]interface{}{
 					"value": "{{." + varName + "}}",
 				},
 			}
-			
+
 			// Define the variable
 			vars := map[string]string{
 				varName: varValue,
 			}
-			
+
 			// Process templates first time
 			err1 := processor.ProcessTemplates(config, vars)
 			if err1 != nil {
 				return false
 			}
-			
+
 			// Save the result
 			firstResult := deepCopyMap(config.Data)
-			
+
 			// Process templates second time
 			err2 := processor.ProcessTemplates(config, vars)
 			if err2 != nil {
 				return false
 			}
-			
+
 			// Results should be identical (idempotent)
 			return compareTemplateValues(config.Data, firstResult)
 		},

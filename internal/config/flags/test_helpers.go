@@ -61,7 +61,7 @@ func compareConfigValues(a, b map[string]interface{}) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	
+
 	for key, aValue := range a {
 		bValue, exists := b[key]
 		if !exists {
@@ -71,7 +71,7 @@ func compareConfigValues(a, b map[string]interface{}) bool {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -79,12 +79,12 @@ func compareArrays(a, b []interface{}) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	
+
 	for i := range a {
 		if !compareValues(a[i], b[i]) {
 			return false
 		}
 	}
-	
+
 	return true
 }

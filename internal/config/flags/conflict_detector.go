@@ -26,10 +26,10 @@ type ConflictDetector struct {
 
 // ConfigConflict represents a conflict between configuration sources
 type ConfigConflict struct {
-	Path         string        `json:"path"`
-	Sources      []ConflictSource `json:"sources"`
-	Resolution   string        `json:"resolution"`
-	ResolvedValue interface{}  `json:"resolved_value"`
+	Path          string           `json:"path"`
+	Sources       []ConflictSource `json:"sources"`
+	Resolution    string           `json:"resolution"`
+	ResolvedValue interface{}      `json:"resolved_value"`
 }
 
 // ConflictSource represents a source involved in a conflict
@@ -50,16 +50,16 @@ func NewConflictDetector() *ConflictDetector {
 // DetectConflicts detects conflicts between configurations
 func (d *ConflictDetector) DetectConflicts(configs []Configuration) ([]ConfigConflict, error) {
 	d.conflicts = []ConfigConflict{}
-	
+
 	// Build a map of all paths and their sources
 	pathSources := make(map[string][]ConflictSource)
-	
+
 	for _, config := range configs {
 		if err := d.extractPathSources(config, "", pathSources); err != nil {
 			return nil, fmt.Errorf("failed to extract path sources: %w", err)
 		}
 	}
-	
+
 	// Identify conflicts (paths with multiple different values)
 	for path, sources := range pathSources {
 		if len(sources) > 1 {
@@ -69,7 +69,7 @@ func (d *ConflictDetector) DetectConflicts(configs []Configuration) ([]ConfigCon
 			}
 		}
 	}
-	
+
 	return d.conflicts, nil
 }
 
@@ -85,7 +85,7 @@ func (d *ConflictDetector) extractPathSourcesFromData(data map[string]interface{
 		if prefix != "" {
 			currentPath = prefix + "." + key
 		}
-		
+
 		// Only add sources for leaf values (not nested objects)
 		if nestedMap, ok := value.(map[string]interface{}); ok {
 			// Recursively process nested objects
@@ -104,7 +104,7 @@ func (d *ConflictDetector) extractPathSourcesFromData(data map[string]interface{
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -114,12 +114,12 @@ func (d *ConflictDetector) analyzeConflict(path string, sources []ConflictSource
 	if d.allValuesEqual(sources) {
 		return nil
 	}
-	
+
 	// Find the highest priority source
 	highestPriority := -1
 	var resolvedValue interface{}
 	var resolution string
-	
+
 	for _, source := range sources {
 		if source.Priority > highestPriority {
 			highestPriority = source.Priority
@@ -127,7 +127,7 @@ func (d *ConflictDetector) analyzeConflict(path string, sources []ConflictSource
 			resolution = fmt.Sprintf("Resolved using %s source '%s' (priority %d)", source.Type, source.Path, source.Priority)
 		}
 	}
-	
+
 	return &ConfigConflict{
 		Path:          path,
 		Sources:       sources,
@@ -141,14 +141,14 @@ func (d *ConflictDetector) allValuesEqual(sources []ConflictSource) bool {
 	if len(sources) <= 1 {
 		return true
 	}
-	
+
 	firstValue := sources[0].Value
 	for i := 1; i < len(sources); i++ {
 		if !reflect.DeepEqual(firstValue, sources[i].Value) {
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -157,23 +157,23 @@ func (d *ConflictDetector) GetConflictReport() string {
 	if len(d.conflicts) == 0 {
 		return "No configuration conflicts detected."
 	}
-	
+
 	var report strings.Builder
 	report.WriteString(fmt.Sprintf("Configuration conflicts detected (%d):\n\n", len(d.conflicts)))
-	
+
 	for i, conflict := range d.conflicts {
 		report.WriteString(fmt.Sprintf("%d. Path: %s\n", i+1, conflict.Path))
 		report.WriteString("   Sources:\n")
-		
+
 		for _, source := range conflict.Sources {
-			report.WriteString(fmt.Sprintf("   - %s '%s' (priority %d): %v\n", 
+			report.WriteString(fmt.Sprintf("   - %s '%s' (priority %d): %v\n",
 				source.Type, source.Path, source.Priority, source.Value))
 		}
-		
+
 		report.WriteString(fmt.Sprintf("   Resolution: %s\n", conflict.Resolution))
 		report.WriteString(fmt.Sprintf("   Resolved Value: %v\n\n", conflict.ResolvedValue))
 	}
-	
+
 	return report.String()
 }
 

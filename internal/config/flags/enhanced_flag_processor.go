@@ -45,14 +45,14 @@ func NewEnhancedFlagProcessor() *EnhancedFlagProcessor {
 // ProcessFlags processes all flags with performance and security optimizations
 func (p *EnhancedFlagProcessor) ProcessFlags(flags *ParsedFlags) (*ProcessedConfiguration, error) {
 	startTime := time.Now()
-	
+
 	// Analyze configuration complexity
 	p.analyzeFlags(flags)
 	analysis := p.sizeAnalyzer.GetAnalysis()
-	
+
 	// Get optimization recommendations
 	recommendations := p.getOptimizationRecommendations(analysis)
-	
+
 	// Show progress indicator for complex configurations
 	var progress *ProgressIndicator
 	if p.progressEnabled && (analysis.TotalFlags > 100 || analysis.TotalSize > StreamingThreshold) {
@@ -60,7 +60,7 @@ func (p *EnhancedFlagProcessor) ProcessFlags(flags *ParsedFlags) (*ProcessedConf
 		progress.Start()
 		defer progress.Stop()
 	}
-	
+
 	// Process flags with memory optimization
 	var result *ProcessedConfiguration
 	err := p.memoryOptimizer.OptimizeMemoryUsage(func() error {
@@ -71,16 +71,16 @@ func (p *EnhancedFlagProcessor) ProcessFlags(flags *ParsedFlags) (*ProcessedConf
 		result = processed
 		return nil
 	})
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to process flags: %w", err)
 	}
-	
+
 	// Add processing metadata
 	result.ProcessingTime = time.Since(startTime)
 	result.Analysis = analysis
 	result.Recommendations = recommendations
-	
+
 	return result, nil
 }
 
@@ -92,9 +92,9 @@ func (p *EnhancedFlagProcessor) processAllFlags(flags *ParsedFlags, progress *Pr
 		Warnings:      []string{},
 		Errors:        []string{},
 	}
-	
+
 	processed := 0
-	
+
 	// Process dot notation flags
 	for key, value := range flags.DotNotation {
 		if err := p.processDotNotationFlag(config, key, value); err != nil {
@@ -105,7 +105,7 @@ func (p *EnhancedFlagProcessor) processAllFlags(flags *ParsedFlags, progress *Pr
 			progress.Update(int64(processed))
 		}
 	}
-	
+
 	// Process JSON flags with streaming for large ones
 	for _, jsonFlag := range flags.JSONFlags {
 		if err := p.processJSONFlag(config, jsonFlag); err != nil {
@@ -116,7 +116,7 @@ func (p *EnhancedFlagProcessor) processAllFlags(flags *ParsedFlags, progress *Pr
 			progress.Update(int64(processed))
 		}
 	}
-	
+
 	// Process YAML flags with streaming for large ones
 	for _, yamlFlag := range flags.YAMLFlags {
 		if err := p.processYAMLFlag(config, yamlFlag); err != nil {
@@ -127,7 +127,7 @@ func (p *EnhancedFlagProcessor) processAllFlags(flags *ParsedFlags, progress *Pr
 			progress.Update(int64(processed))
 		}
 	}
-	
+
 	// Process security flags
 	for _, securityFlag := range flags.SecurityFlags {
 		if err := p.processSecurityFlag(config, securityFlag); err != nil {
@@ -138,7 +138,7 @@ func (p *EnhancedFlagProcessor) processAllFlags(flags *ParsedFlags, progress *Pr
 			progress.Update(int64(processed))
 		}
 	}
-	
+
 	// Process array flags
 	for _, arrayFlag := range flags.ArrayFlags {
 		if err := p.processArrayFlag(config, arrayFlag); err != nil {
@@ -149,7 +149,7 @@ func (p *EnhancedFlagProcessor) processAllFlags(flags *ParsedFlags, progress *Pr
 			progress.Update(int64(processed))
 		}
 	}
-	
+
 	// Apply security validation if enabled
 	if p.securityEnabled {
 		warnings := p.securityHandler.ValidateSecurityConfiguration(config.Configuration)
@@ -157,7 +157,7 @@ func (p *EnhancedFlagProcessor) processAllFlags(flags *ParsedFlags, progress *Pr
 			config.Warnings = append(config.Warnings, fmt.Sprintf("[%s] %s: %s", warning.Severity, warning.Type, warning.Message))
 		}
 	}
-	
+
 	return config, nil
 }
 
@@ -176,7 +176,7 @@ func (p *EnhancedFlagProcessor) processDotNotationFlag(config *ProcessedConfigur
 	} else {
 		config.Configuration[key] = value
 	}
-	
+
 	return nil
 }
 
@@ -187,7 +187,7 @@ func (p *EnhancedFlagProcessor) processJSONFlag(config *ProcessedConfiguration, 
 	if !ok {
 		return fmt.Errorf("JSON flag value is not a string")
 	}
-	
+
 	// Use streaming processor for large JSON
 	if len(jsonStr) > int(StreamingThreshold) {
 		result, err := p.streamingProcessor.ProcessLargeJSONFlag(jsonFlag.Path, jsonStr)
@@ -199,7 +199,7 @@ func (p *EnhancedFlagProcessor) processJSONFlag(config *ProcessedConfiguration, 
 		// Process normally for small JSON
 		config.Configuration[jsonFlag.Path] = jsonFlag.Value
 	}
-	
+
 	return nil
 }
 
@@ -210,7 +210,7 @@ func (p *EnhancedFlagProcessor) processYAMLFlag(config *ProcessedConfiguration, 
 	if !ok {
 		return fmt.Errorf("YAML flag value is not a string")
 	}
-	
+
 	// Use streaming processor for large YAML
 	if len(yamlStr) > int(StreamingThreshold) {
 		result, err := p.streamingProcessor.ProcessLargeYAMLFlag(yamlFlag.Path, yamlStr)
@@ -222,7 +222,7 @@ func (p *EnhancedFlagProcessor) processYAMLFlag(config *ProcessedConfiguration, 
 		// Process normally for small YAML
 		config.Configuration[yamlFlag.Path] = yamlFlag.Value
 	}
-	
+
 	return nil
 }
 
@@ -232,29 +232,29 @@ func (p *EnhancedFlagProcessor) processSecurityFlag(config *ProcessedConfigurati
 	case *SecureTemplateVarFlag:
 		// Store in security section
 		config.SecurityFlags[flag.Key] = flag.Value
-		
+
 		// Add warning if not from file
 		if !flag.IsFile {
 			config.Warnings = append(config.Warnings, fmt.Sprintf("Template variable '%s' provided via command line may be exposed in history", flag.Key))
 		}
-		
+
 	case *MaskSensitiveFlag:
 		config.SecurityFlags["mask_sensitive"] = flag.Enabled
-		
+
 	case *SecurityWarningsFlag:
 		config.SecurityFlags["security_warnings"] = flag.Enabled
 		p.securityEnabled = flag.Enabled
-		
+
 	case *SOPSConfigFlag:
 		config.SecurityFlags["sops_config"] = flag.ConfigPath
-		
+
 	case *EncryptedConfigFlag:
 		config.SecurityFlags["encrypted_config"] = flag.ConfigPath
-		
+
 	default:
 		return fmt.Errorf("unknown security flag type")
 	}
-	
+
 	return nil
 }
 
@@ -264,7 +264,7 @@ func (p *EnhancedFlagProcessor) processArrayFlag(config *ProcessedConfiguration,
 	if arrayFlag.Config != nil {
 		config.Configuration[arrayFlag.Config.Path] = arrayFlag.Config.Fields
 	}
-	
+
 	return nil
 }
 
@@ -274,21 +274,21 @@ func (p *EnhancedFlagProcessor) analyzeFlags(flags *ParsedFlags) {
 	for key, value := range flags.DotNotation {
 		p.sizeAnalyzer.AnalyzeFlag(key, value, FlagTypeDotNotation)
 	}
-	
+
 	// Analyze JSON flags
 	for _, jsonFlag := range flags.JSONFlags {
 		if jsonStr, ok := jsonFlag.Value.(string); ok {
 			p.sizeAnalyzer.AnalyzeFlag(jsonFlag.Path, jsonStr, FlagTypeJSON)
 		}
 	}
-	
+
 	// Analyze YAML flags
 	for _, yamlFlag := range flags.YAMLFlags {
 		if yamlStr, ok := yamlFlag.Value.(string); ok {
 			p.sizeAnalyzer.AnalyzeFlag(yamlFlag.Path, yamlStr, FlagTypeYAML)
 		}
 	}
-	
+
 	// Analyze array flags
 	for _, arrayFlag := range flags.ArrayFlags {
 		p.sizeAnalyzer.AnalyzeFlag(arrayFlag.Type, fmt.Sprintf("%v", arrayFlag.Config), FlagTypeArray)
@@ -314,7 +314,7 @@ func (p *EnhancedFlagProcessor) SetSecurityEnabled(enabled bool) {
 // GetPerformanceMetrics returns performance metrics
 func (p *EnhancedFlagProcessor) GetPerformanceMetrics() PerformanceMetrics {
 	memoryInfo := p.memoryOptimizer.CheckMemoryUsage()
-	
+
 	return PerformanceMetrics{
 		MemoryUsage:     memoryInfo.CurrentUsage,
 		MaxMemoryUsage:  memoryInfo.MaxUsage,
@@ -328,12 +328,12 @@ func (p *EnhancedFlagProcessor) GetPerformanceMetrics() PerformanceMetrics {
 
 // ProcessedConfiguration represents the result of flag processing
 type ProcessedConfiguration struct {
-	Configuration   map[string]interface{}    `json:"configuration"`
-	SecurityFlags   map[string]interface{}    `json:"security_flags"`
-	Warnings        []string                  `json:"warnings"`
-	Errors          []string                  `json:"errors"`
-	ProcessingTime  time.Duration             `json:"processing_time"`
-	Analysis        ConfigurationAnalysis     `json:"analysis"`
+	Configuration   map[string]interface{}     `json:"configuration"`
+	SecurityFlags   map[string]interface{}     `json:"security_flags"`
+	Warnings        []string                   `json:"warnings"`
+	Errors          []string                   `json:"errors"`
+	ProcessingTime  time.Duration              `json:"processing_time"`
+	Analysis        ConfigurationAnalysis      `json:"analysis"`
 	Recommendations []ProcessingRecommendation `json:"recommendations"`
 }
 

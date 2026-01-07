@@ -44,34 +44,34 @@ type ConfigError struct {
 
 // ErrorContext provides additional error information
 type ErrorContext struct {
-	Line        int      `json:"line,omitempty"`
-	Column      int      `json:"column,omitempty"`
-	Source      string   `json:"source,omitempty"`
-	RelatedPath []string `json:"related_paths,omitempty"`
-	Examples    []string `json:"examples,omitempty"`
-	Value       string   `json:"value,omitempty"`
-	ExpectedType string  `json:"expected_type,omitempty"`
+	Line         int      `json:"line,omitempty"`
+	Column       int      `json:"column,omitempty"`
+	Source       string   `json:"source,omitempty"`
+	RelatedPath  []string `json:"related_paths,omitempty"`
+	Examples     []string `json:"examples,omitempty"`
+	Value        string   `json:"value,omitempty"`
+	ExpectedType string   `json:"expected_type,omitempty"`
 }
 
 // Error implements the error interface
 func (e *ConfigError) Error() string {
 	var parts []string
-	
+
 	// Add error type and code
 	if e.Code != "" {
 		parts = append(parts, fmt.Sprintf("[%s:%s]", e.Type, e.Code))
 	} else {
 		parts = append(parts, fmt.Sprintf("[%s]", e.Type))
 	}
-	
+
 	// Add path if available
 	if e.Path != "" {
 		parts = append(parts, fmt.Sprintf("at path '%s'", e.Path))
 	}
-	
+
 	// Add main message
 	parts = append(parts, e.Message)
-	
+
 	// Add context information
 	if e.Context != nil {
 		if e.Context.Value != "" {
@@ -81,7 +81,7 @@ func (e *ConfigError) Error() string {
 			parts = append(parts, fmt.Sprintf("(expected type: %s)", e.Context.ExpectedType))
 		}
 	}
-	
+
 	return strings.Join(parts, " ")
 }
 
@@ -263,7 +263,7 @@ func CreateTemplatedError(templateKey string, errorType ErrorType, path string, 
 			Message: fmt.Sprintf("Unknown error template: %s", templateKey),
 		}
 	}
-	
+
 	return &ConfigError{
 		Type:        errorType,
 		Code:        templateKey,
@@ -319,17 +319,17 @@ func (r *ErrorReporter) Error() string {
 	if len(r.errors) == 0 {
 		return "no errors"
 	}
-	
+
 	if len(r.errors) == 1 {
 		return r.errors[0].Error()
 	}
-	
+
 	var parts []string
 	parts = append(parts, fmt.Sprintf("Multiple configuration errors (%d):", len(r.errors)))
-	
+
 	for i, err := range r.errors {
 		parts = append(parts, fmt.Sprintf("  %d. %s", i+1, err.Error()))
-		
+
 		// Add suggestions for the first few errors
 		if i < 3 && len(err.Suggestions) > 0 {
 			parts = append(parts, "     Suggestions:")
@@ -338,7 +338,7 @@ func (r *ErrorReporter) Error() string {
 			}
 		}
 	}
-	
+
 	return strings.Join(parts, "\n")
 }
 

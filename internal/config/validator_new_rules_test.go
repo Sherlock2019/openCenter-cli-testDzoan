@@ -15,9 +15,9 @@ package config
 
 import (
 	"context"
+	"github.com/rackerlabs/openCenter-cli/internal/config/services"
 	"strings"
 	"testing"
-	"github.com/rackerlabs/openCenter-cli/internal/config/services"
 )
 
 // Helper function to add default secrets and infrastructure fields to avoid validation errors unrelated to the test

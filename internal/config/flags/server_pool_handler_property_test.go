@@ -33,48 +33,48 @@ func TestProperty_DedicatedFlagHandlerConsistency(t *testing.T) {
 
 	properties.Property("server pool flag handler creates consistent configurations", prop.ForAll(
 		func(name1 string, workerCount1 int, flavor1 string, node1 string,
-			 name2 string, workerCount2 int, flavor2 string, node2 string) bool {
-			
+			name2 string, workerCount2 int, flavor2 string, node2 string) bool {
+
 			handler := NewServerPoolFlagHandler()
-			
+
 			// Create two different server pool configurations
 			value1 := fmt.Sprintf("name=%s,worker_count=%d,flavor_worker=%s,node_worker=%s",
 				name1, workerCount1, flavor1, node1)
 			value2 := fmt.Sprintf("name=%s,worker_count=%d,flavor_worker=%s,node_worker=%s",
 				name2, workerCount2, flavor2, node2)
-			
+
 			// Parse both configurations
 			config1, err1 := handler.ParseArrayFlag("server-pool", value1)
 			if err1 != nil {
 				return false
 			}
-			
+
 			config2, err2 := handler.ParseArrayFlag("server-pool", value2)
 			if err2 != nil {
 				return false
 			}
-			
+
 			// Verify both configurations are valid and independent
 			if config1 == nil || config2 == nil {
 				return false
 			}
-			
+
 			// Verify configurations have correct type
 			if config1.Type != "server-pool" || config2.Type != "server-pool" {
 				return false
 			}
-			
+
 			// Verify configurations have correct path
 			expectedPath := "opencenter.infrastructure.server_pools"
 			if config1.Path != expectedPath || config2.Path != expectedPath {
 				return false
 			}
-			
+
 			// Verify configurations contain the expected fields
 			if !hasRequiredFields(config1.Fields) || !hasRequiredFields(config2.Fields) {
 				return false
 			}
-			
+
 			// Verify field values match input
 			if config1.Fields["name"] != name1 || config1.Fields["worker_count"] != workerCount1 {
 				return false
@@ -82,20 +82,20 @@ func TestProperty_DedicatedFlagHandlerConsistency(t *testing.T) {
 			if config1.Fields["flavor_worker"] != flavor1 || config1.Fields["node_worker"] != node1 {
 				return false
 			}
-			
+
 			if config2.Fields["name"] != name2 || config2.Fields["worker_count"] != workerCount2 {
 				return false
 			}
 			if config2.Fields["flavor_worker"] != flavor2 || config2.Fields["node_worker"] != node2 {
 				return false
 			}
-			
+
 			// Verify configurations are independent (changing one doesn't affect the other)
 			config1.Fields["test_field"] = "test_value"
 			if _, exists := config2.Fields["test_field"]; exists {
 				return false
 			}
-			
+
 			return true
 		},
 		genServerPoolName(),

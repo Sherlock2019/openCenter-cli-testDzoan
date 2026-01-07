@@ -35,9 +35,9 @@ func TestProperty_MapOperationConsistency(t *testing.T) {
 			if mapPath == "" || key == "" || value == nil {
 				return true
 			}
-			
+
 			handler := NewMapFlagHandler()
-			
+
 			// Create map flag
 			mapFlag := &MapFlag{
 				Operation: MapOpSet,
@@ -45,27 +45,27 @@ func TestProperty_MapOperationConsistency(t *testing.T) {
 				Key:       key,
 				Value:     value,
 			}
-			
+
 			// Apply operation twice to two identical configurations
 			config1 := copyConfig(baseConfig)
 			config2 := copyConfig(baseConfig)
-			
+
 			err1 := handler.MergeIntoConfiguration(mapFlag, config1)
 			if err1 != nil {
 				return true // Skip configurations that cause errors
 			}
-			
+
 			err2 := handler.MergeIntoConfiguration(mapFlag, config2)
 			if err2 != nil {
 				return false // Should not fail if first succeeded
 			}
-			
+
 			// Apply operation again to first configuration
 			err3 := handler.MergeIntoConfiguration(mapFlag, config1)
 			if err3 != nil {
 				return false // Should not fail on second application
 			}
-			
+
 			// Both configurations should be identical
 			return compareConfigValues(config1, config2)
 		},
@@ -81,40 +81,40 @@ func TestProperty_MapOperationConsistency(t *testing.T) {
 			if mapPath == "" || len(mergeData) == 0 {
 				return true
 			}
-			
+
 			handler := NewMapFlagHandler()
-			
+
 			// Create merge flag
 			mapFlag := &MapFlag{
 				Operation: MapOpMerge,
 				Path:      mapPath,
 				Value:     mergeData,
 			}
-			
+
 			// Record existing keys at the target path
 			existingKeys := getExistingKeysAtPath(baseConfig, mapPath)
-			
+
 			// Apply merge operation
 			config := copyConfig(baseConfig)
 			err := handler.MergeIntoConfiguration(mapFlag, config)
 			if err != nil {
 				return true // Skip configurations that cause errors
 			}
-			
+
 			// Verify all existing keys are still present
 			for _, key := range existingKeys {
 				if !hasKeyAtPath(config, mapPath, key) {
 					return false // Existing key was lost
 				}
 			}
-			
+
 			// Verify all merged keys are present
 			for key := range mergeData {
 				if !hasKeyAtPath(config, mapPath, key) {
 					return false // Merged key is missing
 				}
 			}
-			
+
 			return true
 		},
 		genSimpleConfig(),
@@ -128,38 +128,38 @@ func TestProperty_MapOperationConsistency(t *testing.T) {
 			if mapPath == "" || removeKey == "" {
 				return true
 			}
-			
+
 			handler := NewMapFlagHandler()
-			
+
 			// Create remove flag
 			mapFlag := &MapFlag{
 				Operation: MapOpRemove,
 				Path:      mapPath,
 				Key:       removeKey,
 			}
-			
+
 			// Record all keys except the one being removed
 			otherKeys := getOtherKeysAtPath(baseConfig, mapPath, removeKey)
-			
+
 			// Apply remove operation
 			config := copyConfig(baseConfig)
 			err := handler.MergeIntoConfiguration(mapFlag, config)
 			if err != nil {
 				return true // Skip configurations that cause errors
 			}
-			
+
 			// Verify target key is removed
 			if hasKeyAtPath(config, mapPath, removeKey) {
 				return false // Key should have been removed
 			}
-			
+
 			// Verify all other keys are preserved
 			for _, key := range otherKeys {
 				if !hasKeyAtPath(config, mapPath, key) {
 					return false // Other key was incorrectly removed
 				}
 			}
-			
+
 			return true
 		},
 		genSimpleConfig(),
@@ -173,9 +173,9 @@ func TestProperty_MapOperationConsistency(t *testing.T) {
 			if nestedPath == "" || key == "" || value == nil {
 				return true
 			}
-			
+
 			handler := NewMapFlagHandler()
-			
+
 			// Create set flag for nested path
 			mapFlag := &MapFlag{
 				Operation: MapOpSet,
@@ -183,16 +183,16 @@ func TestProperty_MapOperationConsistency(t *testing.T) {
 				Key:       key,
 				Value:     value,
 			}
-			
+
 			// Start with empty configuration
 			config := make(map[string]interface{})
-			
+
 			// Apply operation
 			err := handler.MergeIntoConfiguration(mapFlag, config)
 			if err != nil {
 				return true // Skip paths that cause errors
 			}
-			
+
 			// Verify the value can be retrieved at the nested path
 			return hasKeyAtPath(config, nestedPath, key)
 		},
@@ -207,9 +207,9 @@ func TestProperty_MapOperationConsistency(t *testing.T) {
 			if mapPath == "" || key == "" || value == nil {
 				return true
 			}
-			
+
 			handler := NewMapFlagHandler()
-			
+
 			// Create set flag
 			mapFlag := &MapFlag{
 				Operation: MapOpSet,
@@ -217,14 +217,14 @@ func TestProperty_MapOperationConsistency(t *testing.T) {
 				Key:       key,
 				Value:     value,
 			}
-			
+
 			// Apply operation
 			config := copyConfig(baseConfig)
 			err := handler.MergeIntoConfiguration(mapFlag, config)
 			if err != nil {
 				return true // Skip configurations that cause errors
 			}
-			
+
 			// Verify the stored value matches the input value
 			storedValue := getValueAtMapPath(config, mapPath, key)
 			return compareValues(storedValue, value)
@@ -321,7 +321,7 @@ func getExistingKeysAtPath(config map[string]interface{}, path string) []string 
 	if targetMap == nil {
 		return []string{}
 	}
-	
+
 	keys := make([]string, 0, len(targetMap))
 	for key := range targetMap {
 		keys = append(keys, key)
@@ -334,7 +334,7 @@ func getOtherKeysAtPath(config map[string]interface{}, path string, excludeKey s
 	if targetMap == nil {
 		return []string{}
 	}
-	
+
 	keys := make([]string, 0, len(targetMap))
 	for key := range targetMap {
 		if key != excludeKey {
@@ -349,7 +349,7 @@ func hasKeyAtPath(config map[string]interface{}, path string, key string) bool {
 	if targetMap == nil {
 		return false
 	}
-	
+
 	_, exists := targetMap[key]
 	return exists
 }
@@ -359,7 +359,7 @@ func getValueAtMapPath(config map[string]interface{}, path string, key string) i
 	if targetMap == nil {
 		return nil
 	}
-	
+
 	return targetMap[key]
 }
 
@@ -367,10 +367,10 @@ func getMapAtPath(config map[string]interface{}, path string) map[string]interfa
 	if path == "" {
 		return config
 	}
-	
+
 	parts := splitPath(path)
 	current := config
-	
+
 	for _, part := range parts {
 		if next, exists := current[part]; exists {
 			if nextMap, ok := next.(map[string]interface{}); ok {
@@ -382,6 +382,6 @@ func getMapAtPath(config map[string]interface{}, path string) map[string]interfa
 			return nil // Path doesn't exist
 		}
 	}
-	
+
 	return current
 }

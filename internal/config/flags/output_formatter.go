@@ -36,19 +36,19 @@ const (
 type OutputMode string
 
 const (
-	OutputModeNormal  OutputMode = "normal"  // Normal output
-	OutputModeDryRun  OutputMode = "dry-run" // Preview mode without applying changes
-	OutputModeQuiet   OutputMode = "quiet"   // Minimal output for scripting
+	OutputModeNormal OutputMode = "normal"  // Normal output
+	OutputModeDryRun OutputMode = "dry-run" // Preview mode without applying changes
+	OutputModeQuiet  OutputMode = "quiet"   // Minimal output for scripting
 )
 
 // OutputFormatter handles formatting configuration output in different formats
 type OutputFormatter interface {
 	// FormatConfiguration formats a configuration in the specified format
 	FormatConfiguration(config *Configuration, format OutputFormat, mode OutputMode) (string, error)
-	
+
 	// FormatDiff formats a diff between two configurations
 	FormatDiff(original, updated *Configuration, mode OutputMode) (string, error)
-	
+
 	// FormatConflicts formats conflict information
 	FormatConflicts(conflicts []ConfigConflict, mode OutputMode) (string, error)
 }
@@ -66,7 +66,7 @@ func (f *DefaultOutputFormatter) FormatConfiguration(config *Configuration, form
 	if config == nil {
 		return "", fmt.Errorf("configuration cannot be nil")
 	}
-	
+
 	switch mode {
 	case OutputModeQuiet:
 		return f.formatQuiet(config, format)
@@ -80,10 +80,10 @@ func (f *DefaultOutputFormatter) FormatConfiguration(config *Configuration, form
 // formatNormal formats configuration in normal mode
 func (f *DefaultOutputFormatter) formatNormal(config *Configuration, format OutputFormat) (string, error) {
 	var result strings.Builder
-	
+
 	// Add header with metadata
 	result.WriteString(fmt.Sprintf("Configuration (processed at %s):\n", config.Metadata.ProcessedAt.Format("2006-01-02 15:04:05")))
-	
+
 	if len(config.Sources) > 0 {
 		result.WriteString("Sources:\n")
 		for _, source := range config.Sources {
@@ -91,25 +91,25 @@ func (f *DefaultOutputFormatter) formatNormal(config *Configuration, format Outp
 		}
 		result.WriteString("\n")
 	}
-	
+
 	// Format the configuration data
 	configOutput, err := f.formatData(config.Data, format)
 	if err != nil {
 		return "", fmt.Errorf("failed to format configuration data: %w", err)
 	}
-	
+
 	result.WriteString("Configuration:\n")
 	result.WriteString(configOutput)
-	
+
 	return result.String(), nil
 }
 
 // formatDryRun formats configuration in dry-run mode
 func (f *DefaultOutputFormatter) formatDryRun(config *Configuration, format OutputFormat) (string, error) {
 	var result strings.Builder
-	
+
 	result.WriteString("DRY RUN - Configuration preview (no changes will be applied):\n\n")
-	
+
 	// Add source information
 	if len(config.Sources) > 0 {
 		result.WriteString("Configuration sources:\n")
@@ -118,17 +118,17 @@ func (f *DefaultOutputFormatter) formatDryRun(config *Configuration, format Outp
 		}
 		result.WriteString("\n")
 	}
-	
+
 	// Format the configuration data
 	configOutput, err := f.formatData(config.Data, format)
 	if err != nil {
 		return "", fmt.Errorf("failed to format configuration data: %w", err)
 	}
-	
+
 	result.WriteString("Resulting configuration:\n")
 	result.WriteString(configOutput)
 	result.WriteString("\nNOTE: This is a preview. Use without --dry-run to apply changes.\n")
-	
+
 	return result.String(), nil
 }
 
@@ -176,24 +176,24 @@ func (f *DefaultOutputFormatter) FormatDiff(original, updated *Configuration, mo
 	if original == nil || updated == nil {
 		return "", fmt.Errorf("both original and updated configurations must be provided")
 	}
-	
+
 	var result strings.Builder
-	
+
 	if mode != OutputModeQuiet {
 		result.WriteString("Configuration Diff:\n")
 		result.WriteString("==================\n\n")
 	}
-	
+
 	// Generate diff
 	diff := f.generateDiff(original.Data, updated.Data, "")
-	
+
 	if len(diff) == 0 {
 		if mode != OutputModeQuiet {
 			result.WriteString("No changes detected.\n")
 		}
 		return result.String(), nil
 	}
-	
+
 	// Format diff output
 	for _, change := range diff {
 		switch change.Type {
@@ -205,11 +205,11 @@ func (f *DefaultOutputFormatter) FormatDiff(original, updated *Configuration, mo
 			result.WriteString(fmt.Sprintf("~ %s: %v -> %v\n", change.Path, change.OldValue, change.NewValue))
 		}
 	}
-	
+
 	if mode != OutputModeQuiet {
 		result.WriteString(fmt.Sprintf("\nSummary: %d changes\n", len(diff)))
 	}
-	
+
 	return result.String(), nil
 }
 
@@ -233,7 +233,7 @@ type DiffChange struct {
 // generateDiff generates a diff between two configuration maps
 func (f *DefaultOutputFormatter) generateDiff(original, updated map[string]interface{}, prefix string) []DiffChange {
 	var changes []DiffChange
-	
+
 	// Find all keys in both maps
 	allKeys := make(map[string]bool)
 	for key := range original {
@@ -242,23 +242,23 @@ func (f *DefaultOutputFormatter) generateDiff(original, updated map[string]inter
 	for key := range updated {
 		allKeys[key] = true
 	}
-	
+
 	// Sort keys for consistent output
 	keys := make([]string, 0, len(allKeys))
 	for key := range allKeys {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
-	
+
 	for _, key := range keys {
 		currentPath := key
 		if prefix != "" {
 			currentPath = prefix + "." + key
 		}
-		
+
 		originalValue, originalExists := original[key]
 		updatedValue, updatedExists := updated[key]
-		
+
 		if !originalExists && updatedExists {
 			// Added
 			changes = append(changes, DiffChange{
@@ -285,7 +285,7 @@ func (f *DefaultOutputFormatter) generateDiff(original, updated map[string]inter
 						continue
 					}
 				}
-				
+
 				// Modified
 				changes = append(changes, DiffChange{
 					Type:     DiffTypeModified,
@@ -296,7 +296,7 @@ func (f *DefaultOutputFormatter) generateDiff(original, updated map[string]inter
 			}
 		}
 	}
-	
+
 	return changes
 }
 
@@ -308,24 +308,24 @@ func (f *DefaultOutputFormatter) FormatConflicts(conflicts []ConfigConflict, mod
 		}
 		return "No configuration conflicts detected.\n", nil
 	}
-	
+
 	var result strings.Builder
-	
+
 	if mode != OutputModeQuiet {
 		result.WriteString(fmt.Sprintf("Configuration Conflicts (%d):\n", len(conflicts)))
 		result.WriteString("==============================\n\n")
 	}
-	
+
 	for i, conflict := range conflicts {
 		if mode != OutputModeQuiet {
 			result.WriteString(fmt.Sprintf("%d. Path: %s\n", i+1, conflict.Path))
 			result.WriteString("   Sources:\n")
-			
+
 			for _, source := range conflict.Sources {
-				result.WriteString(fmt.Sprintf("   - %s '%s' (priority %d): %v\n", 
+				result.WriteString(fmt.Sprintf("   - %s '%s' (priority %d): %v\n",
 					source.Type, source.Path, source.Priority, source.Value))
 			}
-			
+
 			result.WriteString(fmt.Sprintf("   Resolution: %s\n", conflict.Resolution))
 			result.WriteString(fmt.Sprintf("   Resolved Value: %v\n\n", conflict.ResolvedValue))
 		} else {
@@ -333,7 +333,7 @@ func (f *DefaultOutputFormatter) FormatConflicts(conflicts []ConfigConflict, mod
 			result.WriteString(fmt.Sprintf("%s: %v\n", conflict.Path, conflict.ResolvedValue))
 		}
 	}
-	
+
 	return result.String(), nil
 }
 
