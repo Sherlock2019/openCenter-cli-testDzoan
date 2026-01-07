@@ -74,7 +74,45 @@ locals {
 
   additional_block_devices_worker = {{ if .IAC.Main.additional_block_devices_worker }}[{{ range $i, $device := .IAC.Main.additional_block_devices_worker }}{{if $i}}, {{end}}{{ $device }}{{ end }}]{{ else }}[]{{ end }}
 
-  additional_server_pools_worker = {{ if .IAC.Main.additional_server_pools_worker }}[{{ range $i, $pool := .IAC.Main.additional_server_pools_worker }}{{if $i}}, {{end}}{{ $pool }}{{ end }}]{{ else }}[]{{ end }}
+  additional_server_pools_worker = {{ if .IAC.Main.additional_server_pools_worker }}[{{ range $i, $pool := .IAC.Main.additional_server_pools_worker }}{{if $i}}, {{end}}{
+    name                                = "{{ $pool.Name }}"
+    worker_count                        = {{ $pool.WorkerCount }}
+    flavor_worker                       = "{{ $pool.FlavorWorker }}"
+    node_worker                         = "{{ $pool.NodeWorker }}"
+    {{- if $pool.ServerGroupAffinity }}
+    server_group_affinity               = "{{ $pool.ServerGroupAffinity }}"
+    {{- end }}
+    {{- if $pool.ImageID }}
+    image_id                            = "{{ $pool.ImageID }}"
+    {{- end }}
+    {{- if $pool.ImageName }}
+    image_name                          = "{{ $pool.ImageName }}"
+    {{- end }}
+    {{- if $pool.WorkerNodeBFVVolumeSize }}
+    worker_node_bfv_volume_size         = {{ $pool.WorkerNodeBFVVolumeSize }}
+    {{- end }}
+    {{- if $pool.WorkerNodeBFVDestinationType }}
+    worker_node_bfv_destination_type    = "{{ $pool.WorkerNodeBFVDestinationType }}"
+    {{- end }}
+    {{- if $pool.WorkerNodeBFVSourceType }}
+    worker_node_bfv_source_type         = "{{ $pool.WorkerNodeBFVSourceType }}"
+    {{- end }}
+    {{- if $pool.WorkerNodeBFVVolumeType }}
+    worker_node_bfv_volume_type         = "{{ $pool.WorkerNodeBFVVolumeType }}"
+    {{- end }}
+    {{- if $pool.WorkerNodeBFVDeleteOnTermination }}
+    worker_node_bfv_delete_on_termination = {{ $pool.WorkerNodeBFVDeleteOnTermination }}
+    {{- end }}
+    {{- if $pool.PF9Onboard }}
+    pf9_onboard                         = {{ $pool.PF9Onboard }}
+    {{- end }}
+    {{- if $pool.SubnetID }}
+    subnet_id                           = "{{ $pool.SubnetID }}"
+    {{- end }}
+    {{- if $pool.AdditionalBlockDevicesWorker }}
+    additional_block_devices_worker     = [{{ range $j, $device := $pool.AdditionalBlockDevicesWorker }}{{if $j}}, {{end}}{{ $device }}{{ end }}]
+    {{- end }}
+  }{{ end }}]{{ else }}[]{{ end }}
 
   # ====================================
   #ca_certificates add CA certificates to server's trusts. Good for trusting internal private Certificate Authorities.
@@ -123,7 +161,18 @@ locals {
   windows_admin_password                  = "{{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WindowsAdminPassword | default "" }}"
   worker_node_bfv_size_windows            = {{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WorkerNodeBFVSizeWindows | default 0 }}
   worker_node_bfv_type_windows            = "{{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WorkerNodeBFVTypeWindows | default "local" }}"
-  additional_server_pools_worker_windows = {{ if .IAC.Main.additional_server_pools_worker_windows }}[{{ range $i, $pool := .IAC.Main.additional_server_pools_worker_windows }}{{if $i}}, {{end}}{{ $pool }}{{ end }}]{{ else }}[]{{ end }}
+  additional_server_pools_worker_windows = {{ if .IAC.Main.additional_server_pools_worker_windows }}[{{ range $i, $pool := .IAC.Main.additional_server_pools_worker_windows }}{{if $i}}, {{end}}{
+    name                    = "{{ $pool.Name }}"
+    worker_count            = {{ $pool.WorkerCount }}
+    flavor_worker           = "{{ $pool.FlavorWorker }}"
+    node_worker             = "{{ $pool.NodeWorker }}"
+    {{- if $pool.ServerGroupAffinity }}
+    server_group_affinity   = "{{ $pool.ServerGroupAffinity }}"
+    {{- end }}
+    {{- if $pool.ImageID }}
+    image_id                = "{{ $pool.ImageID }}"
+    {{- end }}
+  }{{ end }}]{{ else }}[]{{ end }}
   {{- end }}
 }
 
