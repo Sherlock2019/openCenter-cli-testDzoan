@@ -143,16 +143,6 @@ locals {
   kube_oidc_groups_claim                 = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCGroupsClaim | default "groups" }}"
   kube_oidc_groups_prefix                = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCGroupsPrefix | default "oidc:" }}"
   {{- else }}
-  #OIDC Settings
-  kube_oidc_auth_enabled                 = true
-  kube_oidc_url                          = "https://auth.gdo.prod.sjc3.k8s.opencenter.cloud/realms/opencenter"
-  kube_oidc_client_id                    = "opencenter"
-  # Optional settings fo OIDC
-  kube_oidc_ca_file                      = "/etc/ssl/certs/ca-certificates.crt"
-  kube_oidc_username_claim               = "preferred_username"
-  kube_oidc_username_prefix              = "oidc:"
-  kube_oidc_groups_claim                 = "groups"
-  kube_oidc_groups_prefix                = "oidc:"
   {{- end }}
 
   #Calico Settings
@@ -183,11 +173,6 @@ locals {
     {{- end }}
   }{{ end }}]{{ else }}[]{{ end }}
   {{- else }}
-  # ## Windows settings
-  # windows_user                            = "Administrator"
-  # windows_admin_password                  = ""
-  # worker_node_bfv_size_windows            = 100
-  # worker_node_bfv_type_windows            = "volume"
   additional_server_pools_worker_windows = []
   {{- end }}
 }
@@ -229,7 +214,7 @@ module "openstack-nova" {
   image_id                      = local.image_id
   image_id_windows              = local.image_id_windows
   router_external_network_id    = local.router_external_network_id
-  network_id                    = "{{ .IAC.Main.network_id | default "" }}"
+  network_id                    = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.NetworkID | default "" }}"
   vlan_id                       = local.vlan_id
   vrrp_enabled                  = local.vrrp_enabled
   vrrp_ip                       = local.vrrp_ip
@@ -317,14 +302,6 @@ module "kubespray-cluster" {
   kube_oidc_groups_claim                  = local.kube_oidc_groups_claim
   kube_oidc_groups_prefix                 = local.kube_oidc_groups_prefix
   {{- else }}
-  kube_oidc_auth_enabled                  = local.kube_oidc_auth_enabled
-  kube_oidc_url                           = local.kube_oidc_url
-  kube_oidc_client_id                     = local.kube_oidc_client_id
-  kube_oidc_ca_file                       = local.kube_oidc_ca_file
-  kube_oidc_username_claim                = local.kube_oidc_username_claim
-  kube_oidc_username_prefix               = local.kube_oidc_username_prefix
-  kube_oidc_groups_claim                  = local.kube_oidc_groups_claim
-  kube_oidc_groups_prefix                 = local.kube_oidc_groups_prefix
   {{- end }}
 }
 

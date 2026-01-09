@@ -153,8 +153,8 @@ func defaultConfig(name string) Config {
 				OSVersion:           "24",
 				ServerGroupAffinity: []string{"anti-affinity"},
 				NodeNaming: NodeNaming{
-					Worker:        "wn",
-					Master:        "cp",
+					Worker:        "-wn",
+					Master:        "-cp",
 					WorkerWindows: "win",
 				},
 				Cloud: CloudConfig{
@@ -201,8 +201,8 @@ func defaultConfig(name string) Config {
 					APIPort:              443,
 					KubeVIPEnabled:       true,
 					FlavorBastion:        "gp.0.2.2",
-					FlavorMaster:         "gp.0.4.8",
-					FlavorWorker:         "gp.0.4.16",
+					FlavorMaster:         "gp.0.4.4",
+					FlavorWorker:         "gp.0.4.8",
 					FlavorWorkerWindows:  "gp.5.4.16",
 					SubnetPods:           "10.42.0.0/16",
 					SubnetServices:       "10.43.0.0/16",
@@ -265,10 +265,10 @@ func defaultConfig(name string) Config {
 			},
 			Storage: StorageConfig{
 				DefaultStorageClass:         "csi-cinder-sc-delete",
-				WorkerVolumeSize:            100,
+				WorkerVolumeSize:            40,
 				WorkerVolumeDestinationType: "volume",
 				WorkerVolumeSourceType:      "image",
-				WorkerVolumeType:            "HA-Performance",
+				WorkerVolumeType:            "HA-Standard",
 				AdditionalBlockDevices:      []map[string]any{},
 			},
 			Talos: nil, // Talos is disabled by default, can be enabled by user
@@ -450,18 +450,18 @@ func defaultConfig(name string) Config {
 			},
 		},
 		Networking: Networking{
-			SubnetNodes:          "10.2.128.0/22",
+			SubnetNodes:          "10.2.184.0/22",
 			AllocationPoolStart:  "",
 			AllocationPoolEnd:    "10.2.131.254",
 			VRRPEnabled:          true,
-			VRRPIP:               "",
+			VRRPIP:               "10.2.184.10",
 			SubnetServices:       "10.43.0.0/16",
 			SubnetPods:           "10.42.0.0/16",
 			UseOctavia:           false,
 			LoadbalancerProvider: "amphora",
 			UseDesignate:         false,
 			DNSZoneName:          fmt.Sprintf("gdo.prod.sjc3.k8s.opencenter.cloud"),
-			DNSNameservers:       []string{"1.1.1.1", "8.8.8.8"},
+			DNSNameservers:       []string{"8.8.8.8", "8.8.4.4"},
 			NTPServers:           []string{"time.dfw3.rackspace.com", "time2.dfw3.rackspace.com"},
 			VLAN: VLAN{
 				ID:       "",
@@ -916,270 +916,13 @@ func applyOrganizationDefaults(cfg *Config) {
 	}
 }
 
-// populateIAC populates the IAC field from default YAML data and user configuration.
-// It merges the default IAC structure with values from the user's configuration.
+// populateIAC initializes an empty IAC field for backward compatibility with templates.
+// The IAC system is now deprecated in favor of OpenCenter configuration.
 func populateIAC(cfg *Config) error {
-	// Parse the default IAC YAML structure
-	var defaultIAC struct {
-		Locals  map[string]any `yaml:"locals"`
-		Modules map[string]any `yaml:"modules"`
-	}
-
-	if err := yaml.Unmarshal([]byte(defaultIACYAML), &defaultIAC); err != nil {
-		return fmt.Errorf("failed to parse default IAC YAML: %w", err)
-	}
-
-	// Initialize IAC field
+	// Initialize empty IAC field for backward compatibility with templates
 	cfg.IAC = IAC{
 		Main:    make(map[string]any),
 		Modules: make(map[string]any),
-	}
-
-	// Copy default locals to IAC.Main
-	for k, v := range defaultIAC.Locals {
-		cfg.IAC.Main[k] = v
-	}
-
-	// Copy default modules to IAC.Modules
-	for k, v := range defaultIAC.Modules {
-		cfg.IAC.Modules[k] = v
-	}
-
-	// Override with user configuration values
-	if err := mergeUserConfigIntoIAC(cfg); err != nil {
-		return fmt.Errorf("failed to merge user config into IAC: %w", err)
-	}
-
-	return nil
-}
-
-// mergeUserConfigIntoIAC merges user configuration values into the IAC structure.
-func mergeUserConfigIntoIAC(cfg *Config) error {
-	// Map user configuration to IAC locals
-	if cfg.OpenCenter.Cluster.ClusterName != "" {
-		cfg.IAC.Main["cluster_name"] = cfg.OpenCenter.Cluster.ClusterName
-	}
-
-	// Map OpenStack configuration
-	if cfg.OpenCenter.Infrastructure.Provider == "openstack" {
-		os := cfg.OpenCenter.Infrastructure.Cloud.OpenStack
-		if os.AuthURL != "" {
-			cfg.IAC.Main["openstack_auth_url"] = os.AuthURL
-		}
-		if os.Region != "" {
-			cfg.IAC.Main["openstack_region"] = os.Region
-		}
-		if os.TenantName != "" {
-			cfg.IAC.Main["openstack_tenant_name"] = os.TenantName
-		}
-		if os.Domain != "" {
-			cfg.IAC.Main["openstack_project_domain_name"] = os.Domain
-			cfg.IAC.Main["openstack_user_domain_name"] = os.Domain
-		}
-		// Map additional OpenStack fields
-		if os.ProjectDomainName != "" {
-			cfg.IAC.Main["openstack_project_domain_name"] = os.ProjectDomainName
-		}
-		if os.UserDomainName != "" {
-			cfg.IAC.Main["openstack_user_domain_name"] = os.UserDomainName
-		}
-		if os.AvailabilityZone != "" {
-			cfg.IAC.Main["availability_zone"] = os.AvailabilityZone
-		}
-		if os.FloatingIPPool != "" {
-			cfg.IAC.Main["floatingip_pool"] = os.FloatingIPPool
-		}
-		if os.RouterExternalNetworkID != "" {
-			cfg.IAC.Main["router_external_network_id"] = os.RouterExternalNetworkID
-		}
-		if os.NetworkID != "" {
-			cfg.IAC.Main["network_id"] = os.NetworkID
-		}
-		if os.ImageID != "" {
-			cfg.IAC.Main["image_id"] = os.ImageID
-		}
-		if os.ImageIDWindows != "" {
-			cfg.IAC.Main["image_id_windows"] = os.ImageIDWindows
-		}
-		if os.CA != "" {
-			cfg.IAC.Main["openstack_ca"] = os.CA
-		}
-		cfg.IAC.Main["openstack_insecure"] = os.Insecure
-		if os.ApplicationCredentialID != "" {
-			cfg.IAC.Main["openstack_user_name"] = os.ApplicationCredentialID
-		}
-		if os.ApplicationCredentialSecret != "" {
-			cfg.IAC.Main["openstack_user_password"] = os.ApplicationCredentialSecret
-		}
-		if os.FloatingNetworkId != "" {
-			cfg.IAC.Main["router_external_network_id"] = os.FloatingNetworkId
-		}
-	}
-
-	// Map Networking configuration
-	if cfg.Networking.SubnetNodes != "" {
-		cfg.IAC.Main["subnet_nodes"] = cfg.Networking.SubnetNodes
-	}
-	if cfg.Networking.AllocationPoolEnd != "" {
-		cfg.IAC.Main["allocation_pool_end"] = cfg.Networking.AllocationPoolEnd
-	}
-	cfg.IAC.Main["vrrp_enabled"] = cfg.Networking.VRRPEnabled
-	cfg.IAC.Main["use_octavia"] = cfg.Networking.UseOctavia
-	cfg.IAC.Main["use_designate"] = cfg.Networking.UseDesignate
-	if len(cfg.Networking.DNSNameservers) > 0 {
-		cfg.IAC.Main["dns_nameservers"] = cfg.Networking.DNSNameservers
-	}
-	if len(cfg.Networking.NTPServers) > 0 {
-		cfg.IAC.Main["ntp_servers"] = cfg.Networking.NTPServers
-	}
-	if cfg.Networking.VLAN.ID != "" {
-		cfg.IAC.Main["vlan_id"] = cfg.Networking.VLAN.ID
-	}
-	if cfg.Networking.VLAN.MTU > 0 {
-		cfg.IAC.Main["mtu"] = cfg.Networking.VLAN.MTU
-	}
-	if cfg.Networking.VLAN.Provider != "" {
-		cfg.IAC.Main["network_provider"] = cfg.Networking.VLAN.Provider
-	}
-
-	// Map Infrastructure configuration
-	if cfg.OpenCenter.Infrastructure.SSHUser != "" {
-		cfg.IAC.Main["ssh_user"] = cfg.OpenCenter.Infrastructure.SSHUser
-	}
-	if cfg.OpenCenter.Infrastructure.OSVersion != "" {
-		cfg.IAC.Main["ub_version"] = cfg.OpenCenter.Infrastructure.OSVersion
-	}
-	if cfg.OpenCenter.Infrastructure.NodeNaming.Worker != "" {
-		cfg.IAC.Main["node_worker"] = cfg.OpenCenter.Infrastructure.NodeNaming.Worker
-	}
-	if cfg.OpenCenter.Infrastructure.NodeNaming.Master != "" {
-		cfg.IAC.Main["node_master"] = cfg.OpenCenter.Infrastructure.NodeNaming.Master
-	}
-	if cfg.OpenCenter.Infrastructure.NodeNaming.WorkerWindows != "" {
-		cfg.IAC.Main["node_worker_windows"] = cfg.OpenCenter.Infrastructure.NodeNaming.WorkerWindows
-	}
-
-	// Map Security configuration
-	if cfg.Security.CACertificates != "" {
-		cfg.IAC.Main["ca_certificates"] = cfg.Security.CACertificates
-	}
-	cfg.IAC.Main["k8s_hardening_enabled"] = cfg.Security.K8sHardening
-	cfg.IAC.Main["os_hardening_enabled"] = cfg.Security.OSHardening
-	cfg.IAC.Main["kubelet_rotate_server_certificates"] = cfg.Security.KubeletRotateCerts
-	if len(cfg.Security.PodSecurityExemptions) > 0 {
-		cfg.IAC.Main["kube_pod_security_exemptions_namespaces"] = cfg.Security.PodSecurityExemptions
-	}
-
-	// Map Storage configuration
-	if cfg.OpenCenter.Storage.WorkerVolumeSize > 0 {
-		cfg.IAC.Main["worker_node_bfv_volume_size"] = cfg.OpenCenter.Storage.WorkerVolumeSize
-	}
-	if cfg.OpenCenter.Storage.WorkerVolumeDestinationType != "" {
-		cfg.IAC.Main["worker_node_bfv_destination_type"] = cfg.OpenCenter.Storage.WorkerVolumeDestinationType
-	}
-	if cfg.OpenCenter.Storage.WorkerVolumeSourceType != "" {
-		cfg.IAC.Main["worker_node_bfv_source_type"] = cfg.OpenCenter.Storage.WorkerVolumeSourceType
-	}
-	if cfg.OpenCenter.Storage.WorkerVolumeType != "" {
-		cfg.IAC.Main["worker_node_bfv_volume_type"] = cfg.OpenCenter.Storage.WorkerVolumeType
-	}
-	if len(cfg.OpenCenter.Storage.AdditionalBlockDevices) > 0 {
-		cfg.IAC.Main["additional_block_devices_worker"] = cfg.OpenCenter.Storage.AdditionalBlockDevices
-	}
-
-	// Map Deployment configuration
-	cfg.IAC.Main["deploy_cluster"] = cfg.Deployment.AutoDeploy
-
-	// Map Kubernetes configuration
-	k8s := cfg.OpenCenter.Cluster.Kubernetes
-	if k8s.Version != "" {
-		cfg.IAC.Main["kubernetes_version"] = k8s.Version
-	}
-	if k8s.KubesprayVersion != "" {
-		cfg.IAC.Main["kubespray_version"] = k8s.KubesprayVersion
-	}
-	if k8s.APIPort > 0 {
-		cfg.IAC.Main["k8s_api_port"] = k8s.APIPort
-	}
-	cfg.IAC.Main["kube_vip_enabled"] = k8s.KubeVIPEnabled
-	if k8s.MasterCount > 0 {
-		cfg.IAC.Main["master_count"] = k8s.MasterCount
-	}
-	if k8s.WorkerCount > 0 {
-		cfg.IAC.Main["worker_count"] = k8s.WorkerCount
-	}
-	if k8s.WorkerCountWindows > 0 {
-		cfg.IAC.Main["worker_count_windows"] = k8s.WorkerCountWindows
-	}
-	if k8s.FlavorBastion != "" {
-		cfg.IAC.Main["flavor_bastion"] = k8s.FlavorBastion
-	}
-	if k8s.FlavorMaster != "" {
-		cfg.IAC.Main["flavor_master"] = k8s.FlavorMaster
-	}
-	if k8s.FlavorWorker != "" {
-		cfg.IAC.Main["flavor_worker"] = k8s.FlavorWorker
-	}
-	if k8s.FlavorWorkerWindows != "" {
-		cfg.IAC.Main["flavor_worker_windows"] = k8s.FlavorWorkerWindows
-	}
-	if k8s.SubnetPods != "" {
-		cfg.IAC.Main["subnet_pods"] = k8s.SubnetPods
-	}
-	if k8s.SubnetServices != "" {
-		cfg.IAC.Main["subnet_services"] = k8s.SubnetServices
-	}
-	if k8s.LoadbalancerProvider != "" {
-		cfg.IAC.Main["loadbalancer_provider"] = k8s.LoadbalancerProvider
-	}
-	if k8s.DNSZoneName != "" {
-		cfg.IAC.Main["dns_zone_name"] = k8s.DNSZoneName
-	}
-
-	// Map network plugin configuration with proper conditional logic
-	if k8s.NetworkPlugin.Calico.Enabled {
-		cfg.IAC.Main["network_plugin"] = "calico"
-		if k8s.NetworkPlugin.Calico.CNIIface != "" {
-			cfg.IAC.Main["cni_iface"] = k8s.NetworkPlugin.Calico.CNIIface
-		}
-		if k8s.NetworkPlugin.Calico.CalicoInterfaceAutodetect != "" {
-			cfg.IAC.Main["calico_interface_autodetect"] = k8s.NetworkPlugin.Calico.CalicoInterfaceAutodetect
-		}
-		if k8s.NetworkPlugin.Calico.AutodetectCIDR != "" {
-			cfg.IAC.Main["calico_interface_autodetect_cidr"] = k8s.NetworkPlugin.Calico.AutodetectCIDR
-		}
-		if k8s.NetworkPlugin.Calico.EncapsulationType != "" {
-			cfg.IAC.Main["calico_encapsulation_type"] = k8s.NetworkPlugin.Calico.EncapsulationType
-		}
-		cfg.IAC.Main["calico_nat_outgoing"] = k8s.NetworkPlugin.Calico.NATOutgoing
-	} else if k8s.NetworkPlugin.Cilium.Enabled {
-		cfg.IAC.Main["network_plugin"] = "cilium"
-		cfg.IAC.Main["cilium_operator_enabled"] = k8s.NetworkPlugin.Cilium.OperatorEnabled
-		cfg.IAC.Main["cilium_kube_proxy_replacement"] = k8s.NetworkPlugin.Cilium.KubeProxyReplacement
-	} else if k8s.NetworkPlugin.KubeOVN.Enabled {
-		cfg.IAC.Main["network_plugin"] = "kube-ovn"
-		cfg.IAC.Main["kube_ovn_cilium_integration"] = k8s.NetworkPlugin.KubeOVN.CiliumIntegration
-	}
-
-	// Map SSH authorized keys
-	if len(cfg.OpenCenter.Cluster.SSHAuthorizedKeys) > 0 {
-		cfg.IAC.Main["ssh_authorized_keys"] = cfg.OpenCenter.Cluster.SSHAuthorizedKeys
-	}
-
-	// Map baremetal node configurations
-	if len(k8s.MasterNodes) > 0 {
-		cfg.IAC.Main["master_nodes"] = k8s.MasterNodes
-	}
-	if len(k8s.WorkerNodes) > 0 {
-		cfg.IAC.Main["worker_nodes"] = k8s.WorkerNodes
-	}
-
-	// Map additional server pools
-	if len(k8s.AdditionalServerPoolsWorker) > 0 {
-		cfg.IAC.Main["additional_server_pools_worker"] = k8s.AdditionalServerPoolsWorker
-	}
-	if len(k8s.AdditionalServerPoolsWorkerWindows) > 0 {
-		cfg.IAC.Main["additional_server_pools_worker_windows"] = k8s.AdditionalServerPoolsWorkerWindows
 	}
 
 	return nil
