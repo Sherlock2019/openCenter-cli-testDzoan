@@ -88,6 +88,8 @@ func defaultConfig(name string) Config {
 	barbicanAuthURL := ""
 
 	// Dummy secrets for test mode
+	awsAccessKey := ""
+	awsSecretKey := ""
 	certManagerAccessKey := ""
 	certManagerSecretKey := ""
 	lokiSwiftPassword := ""
@@ -107,6 +109,8 @@ func defaultConfig(name string) Config {
 		tenantName = "admin"
 		barbicanAuthURL = "https://identity.example.com/v3"
 
+		awsAccessKey = "test-aws-access-key"
+		awsSecretKey = "test-aws-secret-key"
 		certManagerAccessKey = "test-access-key"
 		certManagerSecretKey = "test-secret-key"
 		lokiSwiftPassword = "test-password"
@@ -368,6 +372,12 @@ func defaultConfig(name string) Config {
 				Private: fmt.Sprintf("./testdata/test-git-repo-%s/%s/secrets/ssh/%s", name, name, name),
 				Public:  fmt.Sprintf("./testdata/test-git-repo-%s/%s/secrets/ssh/%s.pub", name, name, name),
 				Cypher:  "ed25519",
+			},
+			// Global AWS credentials (fallback for services)
+			AWS: AWSSecrets{
+				AccessKey:       awsAccessKey,
+				SecretAccessKey: awsSecretKey,
+				Region:          "us-east-1",
 			},
 			// Service-specific secrets - must be provided by user
 			CertManager: CertManagerSecrets{
@@ -1597,9 +1607,14 @@ func Validate(cfg Config) []string {
 			if s3.Bucket == "" || s3.Key == "" || s3.Region == "" {
 				errs = append(errs, "opentofu.backend.s3 requires bucket, key, and region")
 			}
-			// When using S3 backend, AWS credentials must be provided via opencenter
-			if strings.TrimSpace(cfg.OpenCenter.Cluster.AWSAccessKey) == "" || strings.TrimSpace(cfg.OpenCenter.Cluster.AWSSecretAccessKey) == "" {
-				errs = append(errs, "opencenter.cluster.aws_access_key and opencenter.cluster.aws_secret_access_key must be set when opentofu.backend.type=s3")
+			// When using S3 backend, AWS credentials must be provided via opencenter cluster or global AWS secrets
+			clusterAccessKey := strings.TrimSpace(cfg.OpenCenter.Cluster.AWSAccessKey)
+			clusterSecretKey := strings.TrimSpace(cfg.OpenCenter.Cluster.AWSSecretAccessKey)
+			globalAccessKey := strings.TrimSpace(cfg.Secrets.AWS.AccessKey)
+			globalSecretKey := strings.TrimSpace(cfg.Secrets.AWS.SecretAccessKey)
+			
+			if (clusterAccessKey == "" && globalAccessKey == "") || (clusterSecretKey == "" && globalSecretKey == "") {
+				errs = append(errs, "AWS credentials required for S3 backend: either set opencenter.cluster.aws_access_key/aws_secret_access_key or secrets.aws.access_key/secret_access_key")
 			}
 		default:
 			errs = append(errs, "opentofu.backend.type must be 'local' or 's3'")
@@ -1731,18 +1746,35 @@ func validateServiceSecretsSimple(cfg Config) []string {
 
 	// Validate cert-manager secrets
 	if isEnabled("cert-manager") {
-		if cfg.Secrets.CertManager.AWSAccessKey == "" {
-			errs = append(errs, "secrets.cert_manager.aws_access_key is required when cert-manager is enabled")
+		accessKey, secretKey := cfg.GetCertManagerAWSCredentials()
+		if accessKey == "" {
+			errs = append(errs, "AWS credentials required for cert-manager: either set secrets.cert_manager.aws_access_key or secrets.aws.access_key")
 		}
-		if cfg.Secrets.CertManager.AWSSecretAccessKey == "" {
-			errs = append(errs, "secrets.cert_manager.aws_secret_access_key is required when cert-manager is enabled")
+		if secretKey == "" {
+			errs = append(errs, "AWS credentials required for cert-manager: either set secrets.cert_manager.aws_secret_access_key or secrets.aws.secret_access_key")
 		}
 	}
 
 	// Validate loki secrets
 	if isEnabled("loki") {
+		// Check for Swift credentials (legacy)
 		if cfg.Secrets.Loki.SwiftPassword == "" {
-			errs = append(errs, "secrets.loki.swift_password is required when loki is enabled")
+			// If no Swift password, check for S3 credentials (with fallback)
+			accessKey, secretKey := cfg.GetLokiS3Credentials()
+			if accessKey == "" || secretKey == "" {
+				errs = append(errs, "Loki requires either Swift password (secrets.loki.swift_password) or S3 credentials (secrets.loki.s3_access_key_id/secrets.loki.s3_secret_access_key or secrets.aws.access_key/secrets.aws.secret_access_key)")
+			}
+		}
+	}
+
+	// Validate tempo secrets
+	if isEnabled("tempo") {
+		accessKey, secretKey := cfg.GetTempoS3Credentials()
+		if accessKey == "" {
+			errs = append(errs, "S3 credentials required for Tempo: either set secrets.tempo.access_key or secrets.aws.access_key")
+		}
+		if secretKey == "" {
+			errs = append(errs, "S3 credentials required for Tempo: either set secrets.tempo.secret_key or secrets.aws.secret_access_key")
 		}
 	}
 
@@ -1764,4 +1796,82 @@ func validateServiceSecretsSimple(cfg Config) []string {
 //   - error: An error if the configuration cannot be marshaled.
 func (c Config) ToJSON() ([]byte, error) {
 	return json.MarshalIndent(c, "", "  ")
+}
+
+// GetAWSCredentials returns AWS credentials with fallback logic.
+// If service-specific credentials are not provided, it falls back to global AWS credentials.
+//
+// Parameters:
+//   - serviceAccessKey: Service-specific AWS access key
+//   - serviceSecretKey: Service-specific AWS secret access key
+//
+// Returns:
+//   - accessKey: The resolved AWS access key
+//   - secretKey: The resolved AWS secret access key
+func (c Config) GetAWSCredentials(serviceAccessKey, serviceSecretKey string) (accessKey, secretKey string) {
+	// Use service-specific credentials if provided
+	if serviceAccessKey != "" && serviceSecretKey != "" {
+		return serviceAccessKey, serviceSecretKey
+	}
+	
+	// Fall back to global AWS credentials
+	return c.Secrets.AWS.AccessKey, c.Secrets.AWS.SecretAccessKey
+}
+
+// GetCertManagerAWSCredentials returns cert-manager AWS credentials with fallback to global AWS credentials.
+func (c Config) GetCertManagerAWSCredentials() (accessKey, secretKey string) {
+	return c.GetAWSCredentials(c.Secrets.CertManager.AWSAccessKey, c.Secrets.CertManager.AWSSecretAccessKey)
+}
+
+// GetLokiS3Credentials returns Loki S3 credentials with fallback to global AWS credentials.
+func (c Config) GetLokiS3Credentials() (accessKey, secretKey string) {
+	return c.GetAWSCredentials(c.Secrets.Loki.S3AccessKeyID, c.Secrets.Loki.S3SecretAccessKey)
+}
+
+// GetTempoS3Credentials returns Tempo S3 credentials with fallback to global AWS credentials.
+func (c Config) GetTempoS3Credentials() (accessKey, secretKey string) {
+	return c.GetAWSCredentials(c.Secrets.Tempo.AccessKey, c.Secrets.Tempo.SecretKey)
+}
+
+// GetS3BackendCredentials returns S3 backend credentials with fallback to global AWS credentials.
+func (c Config) GetS3BackendCredentials() (accessKey, secretKey string) {
+	return c.GetAWSCredentials(c.OpenCenter.Cluster.AWSAccessKey, c.OpenCenter.Cluster.AWSSecretAccessKey)
+}
+
+// Template-friendly functions that return single values for use in Go templates
+
+// GetCertManagerAWSAccessKey returns cert-manager AWS access key with fallback.
+func (c Config) GetCertManagerAWSAccessKey() string {
+	accessKey, _ := c.GetCertManagerAWSCredentials()
+	return accessKey
+}
+
+// GetCertManagerAWSSecretKey returns cert-manager AWS secret key with fallback.
+func (c Config) GetCertManagerAWSSecretKey() string {
+	_, secretKey := c.GetCertManagerAWSCredentials()
+	return secretKey
+}
+
+// GetLokiS3AccessKey returns Loki S3 access key with fallback.
+func (c Config) GetLokiS3AccessKey() string {
+	accessKey, _ := c.GetLokiS3Credentials()
+	return accessKey
+}
+
+// GetLokiS3SecretKey returns Loki S3 secret key with fallback.
+func (c Config) GetLokiS3SecretKey() string {
+	_, secretKey := c.GetLokiS3Credentials()
+	return secretKey
+}
+
+// GetTempoS3AccessKey returns Tempo S3 access key with fallback.
+func (c Config) GetTempoS3AccessKey() string {
+	accessKey, _ := c.GetTempoS3Credentials()
+	return accessKey
+}
+
+// GetTempoS3SecretKey returns Tempo S3 secret key with fallback.
+func (c Config) GetTempoS3SecretKey() string {
+	_, secretKey := c.GetTempoS3Credentials()
+	return secretKey
 }

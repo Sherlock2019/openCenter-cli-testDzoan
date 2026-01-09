@@ -1,7 +1,7 @@
 apiVersion: v1
 data:
-  access-key-id: {{ .Secrets.CertManager.AWSAccessKey }}
-  secret-access-key: {{ .Secrets.CertManager.AWSSecretAccessKey }}
+  access-key-id: {{ .GetCertManagerAWSAccessKey }}
+  secret-access-key: {{ .GetCertManagerAWSSecretKey }}
 kind: Secret
 metadata:
   name: opencenter-aws-credentials-secret

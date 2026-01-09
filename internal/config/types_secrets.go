@@ -5,6 +5,9 @@ type Secrets struct {
 	SopsAgeKeyFile string `yaml:"sops_age_key_file" json:"sops_age_key_file"`
 	SSHKey         SSHKey `yaml:"ssh_key" json:"ssh_key"`
 
+	// Global AWS credentials (fallback for services)
+	AWS AWSSecrets `yaml:"aws" json:"aws"`
+
 	// Service-specific secrets
 	CertManager CertManagerSecrets `yaml:"cert_manager" json:"cert_manager"`
 	Loki        LokiSecrets        `yaml:"loki" json:"loki"`
@@ -38,6 +41,13 @@ type BarbicanConfig struct {
 	UserDomainName    string `yaml:"user_domain_name,omitempty" json:"user_domain_name,omitempty"`
 	ProjectDomainName string `yaml:"project_domain_name,omitempty" json:"project_domain_name,omitempty"`
 	CACert            string `yaml:"ca_cert,omitempty" json:"ca_cert,omitempty"`
+}
+
+// AWSSecrets holds global AWS credentials that can be used as fallback for services
+type AWSSecrets struct {
+	AccessKey       string `yaml:"access_key" json:"access_key" jsonschema:"secret=true,description=Global AWS access key (fallback for services)"`
+	SecretAccessKey string `yaml:"secret_access_key" json:"secret_access_key" jsonschema:"secret=true,description=Global AWS secret access key (fallback for services)"`
+	Region          string `yaml:"region,omitempty" json:"region,omitempty" jsonschema:"description=Default AWS region"`
 }
 
 // CertManagerSecrets holds cert-manager secret values
