@@ -1681,10 +1681,10 @@ func validateServiceSecretsSimple(cfg Config) []string {
 	if isEnabled("cert-manager") {
 		accessKey, secretKey := cfg.GetCertManagerAWSCredentials()
 		if accessKey == "" {
-			errs = append(errs, "AWS credentials required for cert-manager: either set secrets.cert_manager.aws_access_key or secrets.global.aws.infrastructure.access_key or secrets.aws.access_key (deprecated)")
+			errs = append(errs, "AWS credentials required for cert-manager: either set secrets.cert_manager.aws_access_key or secrets.global.aws.application.access_key or secrets.global.aws.infrastructure.access_key or secrets.aws.access_key (deprecated)")
 		}
 		if secretKey == "" {
-			errs = append(errs, "AWS credentials required for cert-manager: either set secrets.cert_manager.aws_secret_access_key or secrets.global.aws.infrastructure.secret_access_key or secrets.aws.secret_access_key (deprecated)")
+			errs = append(errs, "AWS credentials required for cert-manager: either set secrets.cert_manager.aws_secret_access_key or secrets.global.aws.application.secret_access_key or secrets.global.aws.infrastructure.secret_access_key or secrets.aws.secret_access_key (deprecated)")
 		}
 	}
 
@@ -1695,7 +1695,7 @@ func validateServiceSecretsSimple(cfg Config) []string {
 			// If no Swift password, check for S3 credentials (with fallback)
 			accessKey, secretKey := cfg.GetLokiS3Credentials()
 			if accessKey == "" || secretKey == "" {
-				errs = append(errs, "Loki requires either Swift password (secrets.loki.swift_password) or S3 credentials (secrets.loki.s3_access_key_id/secrets.loki.s3_secret_access_key or secrets.global.aws.infrastructure.access_key/secret_access_key or secrets.aws.access_key/secret_access_key (deprecated))")
+				errs = append(errs, "Loki requires either Swift password (secrets.loki.swift_password) or S3 credentials (secrets.loki.s3_access_key_id/secrets.loki.s3_secret_access_key or secrets.global.aws.application.access_key/secret_access_key or secrets.global.aws.infrastructure.access_key/secret_access_key or secrets.aws.access_key/secret_access_key (deprecated))")
 			}
 		}
 	}
@@ -1704,10 +1704,10 @@ func validateServiceSecretsSimple(cfg Config) []string {
 	if isEnabled("tempo") {
 		accessKey, secretKey := cfg.GetTempoS3Credentials()
 		if accessKey == "" {
-			errs = append(errs, "S3 credentials required for Tempo: either set secrets.tempo.access_key or secrets.global.aws.infrastructure.access_key or secrets.aws.access_key (deprecated)")
+			errs = append(errs, "S3 credentials required for Tempo: either set secrets.tempo.access_key or secrets.global.aws.application.access_key or secrets.global.aws.infrastructure.access_key or secrets.aws.access_key (deprecated)")
 		}
 		if secretKey == "" {
-			errs = append(errs, "S3 credentials required for Tempo: either set secrets.tempo.secret_key or secrets.global.aws.infrastructure.secret_access_key or secrets.aws.secret_access_key (deprecated)")
+			errs = append(errs, "S3 credentials required for Tempo: either set secrets.tempo.secret_key or secrets.global.aws.application.secret_access_key or secrets.global.aws.infrastructure.secret_access_key or secrets.aws.secret_access_key (deprecated)")
 		}
 	}
 
@@ -1757,19 +1757,37 @@ func (c Config) GetAWSCredentials(serviceAccessKey, serviceSecretKey string) (ac
 	return c.Secrets.AWS.AccessKey, c.Secrets.AWS.SecretAccessKey
 }
 
-// GetCertManagerAWSCredentials returns cert-manager AWS credentials with fallback to global AWS credentials.
+// GetCertManagerAWSCredentials returns cert-manager AWS credentials with fallback to global AWS application credentials.
 func (c Config) GetCertManagerAWSCredentials() (accessKey, secretKey string) {
-	return c.GetAWSCredentials(c.Secrets.CertManager.AWSAccessKey, c.Secrets.CertManager.AWSSecretAccessKey)
+	// Use service-specific credentials if provided
+	if c.Secrets.CertManager.AWSAccessKey != "" && c.Secrets.CertManager.AWSSecretAccessKey != "" {
+		return c.Secrets.CertManager.AWSAccessKey, c.Secrets.CertManager.AWSSecretAccessKey
+	}
+	
+	// Fall back to global application AWS credentials
+	return c.GetAWSApplicationCredentials()
 }
 
-// GetLokiS3Credentials returns Loki S3 credentials with fallback to global AWS credentials.
+// GetLokiS3Credentials returns Loki S3 credentials with fallback to global AWS application credentials.
 func (c Config) GetLokiS3Credentials() (accessKey, secretKey string) {
-	return c.GetAWSCredentials(c.Secrets.Loki.S3AccessKeyID, c.Secrets.Loki.S3SecretAccessKey)
+	// Use service-specific credentials if provided
+	if c.Secrets.Loki.S3AccessKeyID != "" && c.Secrets.Loki.S3SecretAccessKey != "" {
+		return c.Secrets.Loki.S3AccessKeyID, c.Secrets.Loki.S3SecretAccessKey
+	}
+	
+	// Fall back to global application AWS credentials
+	return c.GetAWSApplicationCredentials()
 }
 
-// GetTempoS3Credentials returns Tempo S3 credentials with fallback to global AWS credentials.
+// GetTempoS3Credentials returns Tempo S3 credentials with fallback to global AWS application credentials.
 func (c Config) GetTempoS3Credentials() (accessKey, secretKey string) {
-	return c.GetAWSCredentials(c.Secrets.Tempo.AccessKey, c.Secrets.Tempo.SecretKey)
+	// Use service-specific credentials if provided
+	if c.Secrets.Tempo.AccessKey != "" && c.Secrets.Tempo.SecretKey != "" {
+		return c.Secrets.Tempo.AccessKey, c.Secrets.Tempo.SecretKey
+	}
+	
+	// Fall back to global application AWS credentials
+	return c.GetAWSApplicationCredentials()
 }
 
 // GetS3BackendCredentials returns S3 backend credentials with fallback to global AWS credentials.

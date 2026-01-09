@@ -2118,3 +2118,69 @@ func TestAWSCredentialFallback(t *testing.T) {
 		}
 	})
 }
+// TestApplicationServicesUseApplicationCredentials tests that cert-manager, Loki, and Tempo use application credentials
+func TestApplicationServicesUseApplicationCredentials(t *testing.T) {
+	t.Run("cert-manager uses application credentials", func(t *testing.T) {
+		cfg := NewDefault("test")
+		cfg.Secrets.Global.AWS.Application.AccessKey = "app-access-key"
+		cfg.Secrets.Global.AWS.Application.SecretAccessKey = "app-secret-key"
+		cfg.Secrets.Global.AWS.Infrastructure.AccessKey = "infra-access-key"
+		cfg.Secrets.Global.AWS.Infrastructure.SecretAccessKey = "infra-secret-key"
+
+		accessKey, secretKey := cfg.GetCertManagerAWSCredentials()
+		if accessKey != "app-access-key" {
+			t.Errorf("expected app-access-key, got %s", accessKey)
+		}
+		if secretKey != "app-secret-key" {
+			t.Errorf("expected app-secret-key, got %s", secretKey)
+		}
+	})
+
+	t.Run("Loki uses application credentials", func(t *testing.T) {
+		cfg := NewDefault("test")
+		cfg.Secrets.Global.AWS.Application.AccessKey = "app-access-key"
+		cfg.Secrets.Global.AWS.Application.SecretAccessKey = "app-secret-key"
+		cfg.Secrets.Global.AWS.Infrastructure.AccessKey = "infra-access-key"
+		cfg.Secrets.Global.AWS.Infrastructure.SecretAccessKey = "infra-secret-key"
+
+		accessKey, secretKey := cfg.GetLokiS3Credentials()
+		if accessKey != "app-access-key" {
+			t.Errorf("expected app-access-key, got %s", accessKey)
+		}
+		if secretKey != "app-secret-key" {
+			t.Errorf("expected app-secret-key, got %s", secretKey)
+		}
+	})
+
+	t.Run("Tempo uses application credentials", func(t *testing.T) {
+		cfg := NewDefault("test")
+		cfg.Secrets.Global.AWS.Application.AccessKey = "app-access-key"
+		cfg.Secrets.Global.AWS.Application.SecretAccessKey = "app-secret-key"
+		cfg.Secrets.Global.AWS.Infrastructure.AccessKey = "infra-access-key"
+		cfg.Secrets.Global.AWS.Infrastructure.SecretAccessKey = "infra-secret-key"
+
+		accessKey, secretKey := cfg.GetTempoS3Credentials()
+		if accessKey != "app-access-key" {
+			t.Errorf("expected app-access-key, got %s", accessKey)
+		}
+		if secretKey != "app-secret-key" {
+			t.Errorf("expected app-secret-key, got %s", secretKey)
+		}
+	})
+
+	t.Run("Service-specific credentials still take priority", func(t *testing.T) {
+		cfg := NewDefault("test")
+		cfg.Secrets.Global.AWS.Application.AccessKey = "app-access-key"
+		cfg.Secrets.Global.AWS.Application.SecretAccessKey = "app-secret-key"
+		cfg.Secrets.CertManager.AWSAccessKey = "cert-manager-access-key"
+		cfg.Secrets.CertManager.AWSSecretAccessKey = "cert-manager-secret-key"
+
+		accessKey, secretKey := cfg.GetCertManagerAWSCredentials()
+		if accessKey != "cert-manager-access-key" {
+			t.Errorf("expected cert-manager-access-key, got %s", accessKey)
+		}
+		if secretKey != "cert-manager-secret-key" {
+			t.Errorf("expected cert-manager-secret-key, got %s", secretKey)
+		}
+	})
+}
