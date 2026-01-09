@@ -1453,10 +1453,17 @@ func encryptConfigIfNeeded(configPath string, cfg config.Config, cmd *cobra.Comm
 	}
 
 	// Initialize SOPS manager
-	sopsManager := sops.NewManager(cfg.Secrets.SopsAgeKeyFile)
+	sopsManager := sops.NewSOPSManager()
+
+	// Create encryption config
+	encryptConfig := sops.EncryptionConfig{
+		AgeKeys: []string{cfg.Secrets.SopsAgeKeyFile},
+		DryRun:  false,
+	}
 
 	// Encrypt the file in place
-	if err := sopsManager.EncryptFile(configPath); err != nil {
+	ctx := context.Background()
+	if err := sopsManager.GetEncryptor().EncryptFile(ctx, configPath, encryptConfig); err != nil {
 		return fmt.Errorf("failed to encrypt configuration file with SOPS: %w", err)
 	}
 
