@@ -715,6 +715,11 @@ Troubleshooting:
 				return fmt.Errorf("failed to write cluster configuration file to '%s': %w", configPath, err)
 			}
 
+			// Check if the configuration contains sensitive data and encrypt it with SOPS if needed
+			if err := encryptConfigIfNeeded(configPath, cfg, cmd); err != nil {
+				return fmt.Errorf("failed to encrypt configuration file: %w", err)
+			}
+
 			// Initialize git repository in the GitOps directory
 			if err := initializeGitRepository(clusterPaths.GitOpsDir, cmd); err != nil {
 				return fmt.Errorf("failed to initialize git repository: %w", err)
@@ -741,23 +746,31 @@ Troubleshooting:
 // and makes an initial commit with the configuration files.
 func initializeGitRepository(gitDir string, cmd *cobra.Command) error {
 	// Check if git repository already exists
-	if _, err := os.Stat(filepath.Join(gitDir, ".git")); err == nil {
-		// Git repository already exists, skip initialization
-		return nil
+	if _, err := os.Stat(filepath.Join(gitDir, ".git")); err != nil {
+		// Git repository doesn't exist, initialize it
+		
+		// Create the directory if it doesn't exist
+		if err := os.MkdirAll(gitDir, 0o755); err != nil {
+			return fmt.Errorf("failed to create git directory: %w", err)
+		}
+
+		// Initialize git repository
+		if err := runGitCommand(gitDir, []string{"init", "-b", "main"}, cmd); err != nil {
+			return fmt.Errorf("failed to initialize git repository: %w", err)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Initialized git repository at %s\n", gitDir)
 	}
 
-	// Create the directory if it doesn't exist
-	if err := os.MkdirAll(gitDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create git directory: %w", err)
+	// Install pre-commit hook for SOPS encryption validation
+	if err := installSOPSPreCommitHook(gitDir, cmd); err != nil {
+		return fmt.Errorf("failed to install SOPS pre-commit hook: %w", err)
 	}
 
-	// Initialize git repository
-	if err := runGitCommand(gitDir, []string{"init", "-b", "main"}, cmd); err != nil {
-		return fmt.Errorf("failed to initialize git repository: %w", err)
-	}
-
-	// Create a basic .gitignore file
-	gitignoreContent := `# SOPS-related files
+	// Create a basic .gitignore file if it doesn't exist
+	gitignorePath := filepath.Join(gitDir, ".gitignore")
+	if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
+		gitignoreContent := `# SOPS-related files
 .sops.yaml.bak
 *.dec
 *.dec.*
@@ -785,9 +798,9 @@ Thumbs.db
 .env.local
 `
 
-	gitignorePath := filepath.Join(gitDir, ".gitignore")
-	if err := os.WriteFile(gitignorePath, []byte(gitignoreContent), 0o644); err != nil {
-		return fmt.Errorf("failed to create .gitignore: %w", err)
+		if err := os.WriteFile(gitignorePath, []byte(gitignoreContent), 0o644); err != nil {
+			return fmt.Errorf("failed to create .gitignore: %w", err)
+		}
 	}
 
 	// Add all files to git
@@ -800,7 +813,6 @@ Thumbs.db
 		return fmt.Errorf("failed to make initial commit: %w", err)
 	}
 
-	fmt.Fprintf(cmd.OutOrStdout(), "Initialized git repository at %s\n", gitDir)
 	return nil
 }
 
@@ -811,6 +823,213 @@ func runGitCommand(dir string, args []string, cmd *cobra.Command) error {
 	gitCmd.Stdout = cmd.OutOrStdout()
 	gitCmd.Stderr = cmd.ErrOrStderr()
 	return gitCmd.Run()
+}
+
+// installSOPSPreCommitHook installs a pre-commit hook that validates SOPS encryption
+// of cluster configuration files containing sensitive data
+func installSOPSPreCommitHook(gitDir string, cmd *cobra.Command) error {
+	hooksDir := filepath.Join(gitDir, ".git", "hooks")
+	preCommitPath := filepath.Join(hooksDir, "pre-commit")
+
+	// Create hooks directory if it doesn't exist
+	if err := os.MkdirAll(hooksDir, 0o755); err != nil {
+		return fmt.Errorf("failed to create git hooks directory: %w", err)
+	}
+
+	// Check if pre-commit hook already exists
+	if _, err := os.Stat(preCommitPath); err == nil {
+		// Hook already exists, don't overwrite it
+		fmt.Fprintf(cmd.OutOrStdout(), "Pre-commit hook already exists at %s\n", preCommitPath)
+		return nil
+	}
+
+	// Pre-commit hook content
+	hookContent := `#!/usr/bin/env bash
+#
+# Pre-commit hook to ensure cluster config secret sections are encrypted via SOPS
+#
+# This hook checks that any cluster configuration files containing sensitive data
+# are properly encrypted with SOPS before being committed to the repository.
+#
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_error() {
+    echo -e "${RED}ERROR: $1${NC}" >&2
+}
+
+print_warning() {
+    echo -e "${YELLOW}WARNING: $1${NC}" >&2
+}
+
+print_success() {
+    echo -e "${GREEN}SUCCESS: $1${NC}"
+}
+
+# Function to check if a file is SOPS encrypted
+is_sops_encrypted() {
+    local file="$1"
+    
+    # Check if file contains SOPS metadata
+    if grep -q "sops:" "$file" 2>/dev/null; then
+        # Check for encrypted data patterns
+        if grep -q "ENC\[AES256_GCM\|age:" "$file" 2>/dev/null; then
+            return 0  # File is encrypted
+        fi
+    fi
+    return 1  # File is not encrypted
+}
+
+# Function to check if file contains sensitive data that should be encrypted
+contains_sensitive_data() {
+    local file="$1"
+    
+    # List of sensitive field patterns that should be encrypted
+    local sensitive_patterns=(
+        "application_credential_secret:"
+        "application_credential_id:"
+        "aws_access_key:"
+        "aws_secret_access_key:"
+        "password:"
+        "secret:"
+        "token:"
+        "key:"
+        "credential:"
+    )
+    
+    # Check if file contains any sensitive patterns with actual values
+    for pattern in "${sensitive_patterns[@]}"; do
+        # Look for the pattern and extract the value
+        local matches=$(grep -E "${pattern}" "$file" 2>/dev/null || true)
+        if [[ -n "$matches" ]]; then
+            # Check each match to see if it has a real value
+            while IFS= read -r line; do
+                # Extract the value part after the colon
+                local value=$(echo "$line" | sed -E "s/.*${pattern}[[:space:]]*//" | sed -E 's/^["\'"'"']?([^"'"'"']*)["\'"'"']?[[:space:]]*$/\1/')
+                
+                # Skip empty values, quotes only, or common placeholders
+                if [[ -n "$value" && "$value" != '""' && "$value" != "''" && "$value" != "<placeholder>" && "$value" != "PLACEHOLDER" && "$value" != "TODO" && "$value" != "CHANGEME" ]]; then
+                    return 0  # Contains sensitive data
+                fi
+            done <<< "$matches"
+        fi
+    done
+    
+    return 1  # No sensitive data found
+}
+
+# Function to check if file is a cluster config
+is_cluster_config() {
+    local file="$1"
+    
+    # Check if it's a cluster config file by pattern
+    if [[ "$file" =~ \..*-config\.yaml$ ]] || [[ "$file" =~ cluster.*\.yaml$ ]]; then
+        return 0
+    fi
+    
+    # Check if file contains openCenter configuration structure
+    if grep -q "opencenter:" "$file" 2>/dev/null; then
+        return 0
+    fi
+    
+    return 1
+}
+
+# Main validation function
+validate_file() {
+    local file="$1"
+    local errors=0
+    
+    # Skip if file doesn't exist (deleted files)
+    if [[ ! -f "$file" ]]; then
+        return 0
+    fi
+    
+    # Check if this is a cluster config file
+    if ! is_cluster_config "$file"; then
+        return 0
+    fi
+    
+    print_warning "Checking cluster config: $file"
+    
+    # Check if file contains sensitive data
+    if contains_sensitive_data "$file"; then
+        # File contains sensitive data, check if it's encrypted
+        if ! is_sops_encrypted "$file"; then
+            print_error "File '$file' contains sensitive data but is not SOPS encrypted!"
+            print_error "Please encrypt the file using: sops -e -i '$file'"
+            print_error "Or use: openCenter sops secrets-encrypt '$file'"
+            errors=1
+        else
+            print_success "File '$file' is properly SOPS encrypted"
+        fi
+    else
+        print_success "File '$file' contains no sensitive data"
+    fi
+    
+    return $errors
+}
+
+# Main execution
+main() {
+    local exit_code=0
+    local files_checked=0
+    
+    echo "🔒 Checking for unencrypted secrets in cluster configurations..."
+    
+    # Get list of staged files
+    while IFS= read -r -d '' file; do
+        if validate_file "$file"; then
+            ((files_checked++))
+        else
+            exit_code=1
+        fi
+    done < <(git diff --cached --name-only -z)
+    
+    if [[ $files_checked -eq 0 ]]; then
+        echo "ℹ️  No cluster configuration files found in staged changes"
+        return 0
+    fi
+    
+    if [[ $exit_code -eq 0 ]]; then
+        print_success "All cluster configurations are properly secured! ✅"
+    else
+        echo ""
+        print_error "❌ Commit blocked: Unencrypted secrets detected!"
+        echo ""
+        echo "To fix this issue:"
+        echo "1. Encrypt sensitive files with SOPS:"
+        echo "   sops -e -i <file>"
+        echo "2. Or use the openCenter CLI:"
+        echo "   openCenter sops secrets-encrypt <file>"
+        echo "3. Stage the encrypted files:"
+        echo "   git add <file>"
+        echo "4. Commit again"
+        echo ""
+        echo "For more information, see: docs/reference/sops.md"
+    fi
+    
+    return $exit_code
+}
+
+# Run the main function
+main "$@"
+`
+
+	// Write the hook file with executable permissions
+	if err := os.WriteFile(preCommitPath, []byte(hookContent), 0o755); err != nil {
+		return fmt.Errorf("failed to write pre-commit hook: %w", err)
+	}
+
+	fmt.Fprintf(cmd.OutOrStdout(), "Installed SOPS pre-commit hook at %s\n", preCommitPath)
+	return nil
 }
 
 // cleanupClusterDirectory removes the existing cluster directory and all its contents
@@ -1217,4 +1436,80 @@ func convertServerPoolsToMap(pools []config.AdditionalServerPool) []map[string]a
 		result = append(result, poolMap)
 	}
 	return result
+}
+// encryptConfigIfNeeded checks if the configuration file contains sensitive data
+// and encrypts it with SOPS if needed and if SOPS key is available
+func encryptConfigIfNeeded(configPath string, cfg config.Config, cmd *cobra.Command) error {
+	// Check if SOPS key is available
+	if cfg.Secrets.SopsAgeKeyFile == "" {
+		// No SOPS key available, skip encryption
+		return nil
+	}
+
+	// Check if the file contains sensitive data using the same logic as the pre-commit hook
+	if !containsSensitiveData(configPath) {
+		// No sensitive data found, no need to encrypt
+		return nil
+	}
+
+	// Initialize SOPS manager
+	sopsManager := sops.NewManager(cfg.Secrets.SopsAgeKeyFile)
+
+	// Encrypt the file in place
+	if err := sopsManager.EncryptFile(configPath); err != nil {
+		return fmt.Errorf("failed to encrypt configuration file with SOPS: %w", err)
+	}
+
+	fmt.Fprintf(cmd.OutOrStdout(), "Encrypted configuration file with SOPS: %s\n", configPath)
+	return nil
+}
+
+// containsSensitiveData checks if a file contains sensitive data that should be encrypted
+// This uses the same logic as the pre-commit hook
+func containsSensitiveData(filePath string) bool {
+	// List of sensitive field patterns that should be encrypted
+	sensitivePatterns := []string{
+		"application_credential_secret:",
+		"application_credential_id:",
+		"aws_access_key:",
+		"aws_secret_access_key:",
+		"password:",
+		"secret:",
+		"token:",
+		"key:",
+		"credential:",
+	}
+
+	// Read the file
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return false
+	}
+
+	fileContent := string(content)
+	lines := strings.Split(fileContent, "\n")
+
+	// Check each line for sensitive patterns
+	for _, line := range lines {
+		for _, pattern := range sensitivePatterns {
+			if strings.Contains(line, pattern) {
+				// Extract the value part after the colon
+				parts := strings.SplitN(line, pattern, 2)
+				if len(parts) == 2 {
+					value := strings.TrimSpace(parts[1])
+					// Remove quotes and whitespace
+					value = strings.Trim(value, `"' `)
+					
+					// Skip empty values or common placeholders
+					if value != "" && value != `""` && value != "''" && 
+					   value != "<placeholder>" && value != "PLACEHOLDER" && 
+					   value != "TODO" && value != "CHANGEME" {
+						return true // Contains sensitive data
+					}
+				}
+			}
+		}
+	}
+
+	return false // No sensitive data found
 }

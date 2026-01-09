@@ -383,3 +383,149 @@ schema-verify = [
   "echo '5. Test with existing cluster configurations'",
   "echo '=== Schema verification complete ==='",
 ]
+# Install git hooks for development
+install-hooks = '''
+#!/usr/bin/env bash
+set -e
+
+echo "Installing git hooks for openCenter development..."
+
+# Create hooks directory if it doesn't exist
+mkdir -p .git/hooks
+
+# Install pre-commit hook for SOPS encryption validation
+if [ ! -f .git/hooks/pre-commit ]; then
+    echo "ERROR: Pre-commit hook not found in repository"
+    echo "This should be committed to the repository for all developers"
+    exit 1
+fi
+
+# Make sure the hook is executable
+chmod +x .git/hooks/pre-commit
+
+echo "✅ Git hooks installed successfully!"
+echo ""
+echo "Installed hooks:"
+echo "  - pre-commit: Validates SOPS encryption of cluster config secrets"
+echo ""
+echo "The pre-commit hook will:"
+echo "  - Check cluster configuration files for sensitive data"
+echo "  - Ensure sensitive data is encrypted with SOPS"
+echo "  - Block commits with unencrypted secrets"
+echo ""
+echo "To encrypt a file with SOPS:"
+echo "  sops -e -i <file>"
+echo "  # or"
+echo "  openCenter sops secrets-encrypt <file>"
+'''
+
+# Test the pre-commit hook with sample files
+test-hooks = '''
+#!/usr/bin/env bash
+set -e
+
+echo "Testing pre-commit hook functionality..."
+
+# Create a temporary test directory
+TEST_DIR=$(mktemp -d)
+cd "$TEST_DIR"
+
+# Initialize a git repo
+git init
+git config user.email "test@example.com"
+git config user.name "Test User"
+
+# Copy the pre-commit hook
+cp "$OLDPWD/.git/hooks/pre-commit" .git/hooks/
+chmod +x .git/hooks/pre-commit
+
+echo "Creating test files..."
+
+# Test 1: File with no sensitive data (should pass)
+cat > test-safe-config.yaml << EOF
+opencenter:
+  cluster:
+    cluster_name: test-cluster
+    provider: openstack
+  infrastructure:
+    cloud:
+      openstack:
+        auth_url: https://keystone.example.com/v3
+        region: RegionOne
+        application_credential_id: ""
+        application_credential_secret: ""
+EOF
+
+# Test 2: File with sensitive data (should fail)
+cat > test-unsafe-config.yaml << EOF
+opencenter:
+  cluster:
+    cluster_name: test-cluster
+    provider: openstack
+  infrastructure:
+    cloud:
+      openstack:
+        auth_url: https://keystone.example.com/v3
+        region: RegionOne
+        application_credential_id: "real-credential-id"
+        application_credential_secret: "real-secret-value"
+EOF
+
+# Test 3: File with SOPS encrypted data (should pass)
+cat > test-encrypted-config.yaml << EOF
+opencenter:
+  cluster:
+    cluster_name: test-cluster
+    provider: openstack
+  infrastructure:
+    cloud:
+      openstack:
+        auth_url: https://keystone.example.com/v3
+        region: RegionOne
+        application_credential_id: ENC[AES256_GCM,data:encrypted_data_here,iv:iv_here,tag:tag_here,type:str]
+        application_credential_secret: ENC[AES256_GCM,data:encrypted_secret_here,iv:iv_here,tag:tag_here,type:str]
+sops:
+    age:
+        - recipient: age1234567890abcdef
+          enc: ENC[AES256_GCM,data:encrypted_key_here,type:str]
+    lastmodified: "2024-01-01T00:00:00Z"
+    mac: ENC[AES256_GCM,data:mac_here,type:str]
+EOF
+
+echo "Running tests..."
+
+# Test safe file (should pass)
+git add test-safe-config.yaml
+if git commit -m "Test safe config"; then
+    echo "✅ Test 1 PASSED: Safe config file accepted"
+else
+    echo "❌ Test 1 FAILED: Safe config file rejected"
+    exit 1
+fi
+
+# Test unsafe file (should fail)
+git add test-unsafe-config.yaml
+if git commit -m "Test unsafe config" 2>/dev/null; then
+    echo "❌ Test 2 FAILED: Unsafe config file was accepted (should have been rejected)"
+    exit 1
+else
+    echo "✅ Test 2 PASSED: Unsafe config file correctly rejected"
+fi
+
+# Test encrypted file (should pass)
+git add test-encrypted-config.yaml
+if git commit -m "Test encrypted config"; then
+    echo "✅ Test 3 PASSED: Encrypted config file accepted"
+else
+    echo "❌ Test 3 FAILED: Encrypted config file rejected"
+    exit 1
+fi
+
+# Cleanup
+cd "$OLDPWD"
+rm -rf "$TEST_DIR"
+
+echo ""
+echo "🎉 All pre-commit hook tests passed!"
+echo "The hook is working correctly and will protect against committing unencrypted secrets."
+'''

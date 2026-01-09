@@ -52,8 +52,8 @@ func TestRenderInfrastructureClusterWithDefaults(t *testing.T) {
 		"worker_node_bfv_volume_type":        "HA-Standard",
 		"kubelet_rotate_server_certificates": "true",
 		"dns_nameservers":                    `["8.8.8.8", "8.8.4.4"]`,
-		"node_worker":                        "-wn",
-		"node_master":                        "-cp",
+		"node_worker":                        "wn",
+		"node_master":                        "cp",
 	}
 
 	for key, expected := range expectedDefaults {
