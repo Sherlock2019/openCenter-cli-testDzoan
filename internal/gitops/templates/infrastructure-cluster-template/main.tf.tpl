@@ -181,9 +181,7 @@ module "openstack-nova" {
   source = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.Modules.OpenstackNova.Source | default "github.com/rackerlabs/openCenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main" }}"
   # source = "../../../gitclones/openCenter-gitops-base/iac/cloud/openstack/openstack-nova"
   availability_zone             = local.availability_zone
-  {{- if .OpenCenter.Storage.AdditionalBlockDevices }}
   additional_block_devices_worker      = local.additional_block_devices_worker
-  {{- end }}
   {{- if .OpenCenter.Cluster.Kubernetes.AdditionalServerPoolsWorkerWindows }}
   additional_server_pools_worker_windows = local.additional_server_pools_worker_windows
   {{- end }}

@@ -153,8 +153,8 @@ func defaultConfig(name string) Config {
 				OSVersion:           "24",
 				ServerGroupAffinity: []string{"anti-affinity"},
 				NodeNaming: NodeNaming{
-					Worker:        "-wn",
-					Master:        "-cp",
+					Worker:        "wn",
+					Master:        "cp",
 					WorkerWindows: "win",
 				},
 				Cloud: CloudConfig{
