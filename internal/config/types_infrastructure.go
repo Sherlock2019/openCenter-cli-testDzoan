@@ -2,8 +2,19 @@ package config
 
 // Infrastructure represents the infrastructure configuration block.
 type Infrastructure struct {
-	Provider string      `yaml:"provider" json:"provider"`
-	Cloud    CloudConfig `yaml:"cloud" json:"cloud"`
+	Provider             string      `yaml:"provider" json:"provider"`
+	Cloud                CloudConfig `yaml:"cloud" json:"cloud"`
+	SSHUser              string      `yaml:"ssh_user" json:"ssh_user"`
+	OSVersion            string      `yaml:"os_version" json:"os_version"`
+	ServerGroupAffinity  []string    `yaml:"server_group_affinity" json:"server_group_affinity"`
+	NodeNaming           NodeNaming  `yaml:"node_naming" json:"node_naming"`
+}
+
+// NodeNaming represents node naming conventions
+type NodeNaming struct {
+	Worker        string `yaml:"worker" json:"worker"`
+	Master        string `yaml:"master" json:"master"`
+	WorkerWindows string `yaml:"worker_windows" json:"worker_windows"`
 }
 
 // CloudConfig represents the cloud configuration within opencenter
@@ -67,6 +78,14 @@ type SimplifiedOpenStackCloud struct {
 	TenantName                  string `yaml:"tenant_name" json:"tenant_name"`
 	FloatingNetworkId           string `yaml:"floating_network_id" json:"floating_network_id"`
 	SubnetId                    string `yaml:"subnet_id" json:"subnet_id"`
+	AvailabilityZone            string `yaml:"availability_zone" json:"availability_zone"`
+	ProjectDomainName           string `yaml:"project_domain_name" json:"project_domain_name"`
+	UserDomainName              string `yaml:"user_domain_name" json:"user_domain_name"`
+	FloatingIPPool              string `yaml:"floating_ip_pool" json:"floating_ip_pool"`
+	RouterExternalNetworkID     string `yaml:"router_external_network_id" json:"router_external_network_id"`
+	CA                          string `yaml:"ca" json:"ca"`
+	ImageID                     string `yaml:"image_id" json:"image_id"`
+	ImageIDWindows              string `yaml:"image_id_windows" json:"image_id_windows"`
 }
 
 // SimplifiedAWSCloud represents the AWS configuration

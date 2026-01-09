@@ -38,6 +38,8 @@ type Config struct {
 	OpenTofu   SimplifiedOpenTofu   `yaml:"opentofu" json:"opentofu"`
 	Secrets    Secrets              `yaml:"secrets" json:"secrets"`
 	Networking Networking           `yaml:"networking,omitempty" json:"networking,omitempty"`
+	Security   Security             `yaml:"security,omitempty" json:"security,omitempty"`
+	Deployment Deployment           `yaml:"deployment,omitempty" json:"deployment,omitempty"`
 	Overrides  map[string]any       `yaml:"overrides,omitempty" json:"overrides,omitempty"`
 	IAC        IAC                  `yaml:"-" json:"-"` // Hidden from YAML output, for template compatibility
 }
@@ -146,7 +148,15 @@ func defaultConfig(name string) Config {
 				},
 			},
 			Infrastructure: Infrastructure{
-				Provider: "openstack",
+				Provider:            "openstack",
+				SSHUser:             "ubuntu",
+				OSVersion:           "24",
+				ServerGroupAffinity: []string{"anti-affinity"},
+				NodeNaming: NodeNaming{
+					Worker:        "wn",
+					Master:        "cp",
+					WorkerWindows: "win",
+				},
 				Cloud: CloudConfig{
 					AWS: SimplifiedAWSCloud{
 						Profile:        "",
@@ -165,6 +175,14 @@ func defaultConfig(name string) Config {
 						TenantName:                  tenantName,
 						FloatingNetworkId:           "",
 						SubnetId:                    "",
+						AvailabilityZone:            "az1",
+						ProjectDomainName:           "rackspace_cloud_domain",
+						UserDomainName:              "rackspace_cloud_domain",
+						FloatingIPPool:              "PUBLICNET",
+						RouterExternalNetworkID:     "723f8fa2-dbf7-4cec-8d5f-017e62c12f79",
+						CA:                          "",
+						ImageID:                     "799dcf97-3656-4361-8187-13ab1b295e33",
+						ImageIDWindows:              "a2083759-f341-445b-b717-dafb5e31fa6b",
 					},
 				},
 			},
@@ -179,9 +197,13 @@ func defaultConfig(name string) Config {
 				AdminEmail:         "",
 				Kubernetes: KubernetesConfig{
 					Version:              "1.31.4",
-					FlavorBastion:        "",
-					FlavorMaster:         "",
-					FlavorWorker:         "",
+					KubesprayVersion:     "v2.28.1",
+					APIPort:              443,
+					KubeVIPEnabled:       true,
+					FlavorBastion:        "gp.0.2.2",
+					FlavorMaster:         "gp.0.4.8",
+					FlavorWorker:         "gp.0.4.16",
+					FlavorWorkerWindows:  "gp.5.4.16",
 					SubnetPods:           "10.42.0.0/16",
 					SubnetServices:       "10.43.0.0/16",
 					LoadbalancerProvider: "ovn",
@@ -194,6 +216,9 @@ func defaultConfig(name string) Config {
 							Enabled:                   true,
 							CNIIface:                  "enp3s0",
 							CalicoInterfaceAutodetect: "interface",
+							AutodetectCIDR:            "",
+							EncapsulationType:         "VXLAN",
+							NATOutgoing:               true,
 						},
 						Cilium: CiliumConfig{
 							Enabled:              false,
@@ -239,7 +264,12 @@ func defaultConfig(name string) Config {
 				},
 			},
 			Storage: StorageConfig{
-				DefaultStorageClass: "csi-cinder-sc-delete",
+				DefaultStorageClass:         "csi-cinder-sc-delete",
+				WorkerVolumeSize:            100,
+				WorkerVolumeDestinationType: "volume",
+				WorkerVolumeSourceType:      "image",
+				WorkerVolumeType:            "HA-Performance",
+				AdditionalBlockDevices:      []map[string]any{},
 			},
 			Talos: nil, // Talos is disabled by default, can be enabled by user
 			ManagedService: ServiceMap{
@@ -418,6 +448,36 @@ func defaultConfig(name string) Config {
 				InsecureFlag: "false",
 				Port:         "443",
 			},
+		},
+		Networking: Networking{
+			SubnetNodes:          "10.2.128.0/22",
+			AllocationPoolStart:  "",
+			AllocationPoolEnd:    "10.2.131.254",
+			VRRPEnabled:          true,
+			VRRPIP:               "",
+			SubnetServices:       "10.43.0.0/16",
+			SubnetPods:           "10.42.0.0/16",
+			UseOctavia:           false,
+			LoadbalancerProvider: "amphora",
+			UseDesignate:         false,
+			DNSZoneName:          fmt.Sprintf("gdo.prod.sjc3.k8s.opencenter.cloud"),
+			DNSNameservers:       []string{"1.1.1.1", "8.8.8.8"},
+			NTPServers:           []string{"time.dfw3.rackspace.com", "time2.dfw3.rackspace.com"},
+			VLAN: VLAN{
+				ID:       "",
+				MTU:      0,
+				Provider: "physnet1",
+			},
+		},
+		Security: Security{
+			CACertificates:        "",
+			K8sHardening:          true,
+			OSHardening:           true,
+			KubeletRotateCerts:    true,
+			PodSecurityExemptions: []string{"trivy-temp"},
+		},
+		Deployment: Deployment{
+			AutoDeploy: true,
 		},
 	}
 

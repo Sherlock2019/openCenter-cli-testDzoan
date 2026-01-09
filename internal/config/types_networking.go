@@ -14,6 +14,7 @@ type Networking struct {
 	UseDesignate         bool     `yaml:"use_designate" json:"use_designate"`
 	DNSZoneName          string   `yaml:"dns_zone_name" json:"dns_zone_name"`
 	DNSNameservers       []string `yaml:"dns_nameservers" json:"dns_nameservers"`
+	NTPServers           []string `yaml:"ntp_servers" json:"ntp_servers"`
 	VLAN                 VLAN     `yaml:"vlan" json:"vlan"`
 }
 

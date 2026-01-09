@@ -3,9 +3,13 @@ package config
 // KubernetesConfig represents the kubernetes configuration
 type KubernetesConfig struct {
 	Version              string         `yaml:"version" json:"version"`
+	KubesprayVersion     string         `yaml:"kubespray_version" json:"kubespray_version"`
+	APIPort              int            `yaml:"api_port" json:"api_port"`
+	KubeVIPEnabled       bool           `yaml:"kube_vip_enabled" json:"kube_vip_enabled"`
 	FlavorBastion        string         `yaml:"flavor_bastion" json:"flavor_bastion"`
 	FlavorMaster         string         `yaml:"flavor_master" json:"flavor_master"`
 	FlavorWorker         string         `yaml:"flavor_worker" json:"flavor_worker"`
+	FlavorWorkerWindows  string         `yaml:"flavor_worker_windows" json:"flavor_worker_windows"`
 	SubnetPods           string         `yaml:"subnet_pods" json:"subnet_pods"`
 	SubnetServices       string         `yaml:"subnet_services" json:"subnet_services"`
 	LoadbalancerProvider string         `yaml:"loadbalancer_provider" json:"loadbalancer_provider"`
@@ -44,6 +48,9 @@ type CalicoConfig struct {
 	Enabled                   bool   `yaml:"enabled" json:"enabled"`
 	CNIIface                  string `yaml:"cni_iface" json:"cni_iface"`
 	CalicoInterfaceAutodetect string `yaml:"calico_interface_autodetect" json:"calico_interface_autodetect"`
+	AutodetectCIDR            string `yaml:"autodetect_cidr" json:"autodetect_cidr"`
+	EncapsulationType         string `yaml:"encapsulation_type" json:"encapsulation_type"`
+	NATOutgoing               bool   `yaml:"nat_outgoing" json:"nat_outgoing"`
 }
 
 // CiliumConfig represents the Cilium configuration
