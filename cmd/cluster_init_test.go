@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -321,7 +322,7 @@ func TestGenerateOrganizationSOPSKey(t *testing.T) {
 				t.Fatalf("failed to create config manager: %v", err)
 			}
 
-			pathResolver := config.NewPathResolver(configManager)
+			pathResolver := config.NewPathResolverImpl(configManager)
 
 			// Create a test config
 			cfg := config.NewDefault(tt.clusterName)
@@ -353,7 +354,10 @@ func TestGenerateOrganizationSOPSKey(t *testing.T) {
 			}
 
 			// Resolve expected paths
-			clusterPaths := pathResolver.ResolveClusterPaths(tt.clusterName, expectedOrg)
+			clusterPaths, err := pathResolver.ResolveClusterPaths(context.Background(), tt.clusterName, expectedOrg)
+			if err != nil {
+				t.Fatalf("failed to resolve cluster paths: %v", err)
+			}
 
 			// Verify the organization secrets directory was created
 			expectedSecretsDir := filepath.Dir(clusterPaths.SOPSKeyPath)
@@ -491,7 +495,7 @@ func TestOrganizationBasedClusterInit(t *testing.T) {
 				t.Fatalf("failed to create config manager: %v", err)
 			}
 
-			pathResolver := config.NewPathResolver(configManager)
+			pathResolver := config.NewPathResolverImpl(configManager)
 
 			// Set expected organization (opencenter if empty)
 			expectedOrg := tt.organization
@@ -500,19 +504,22 @@ func TestOrganizationBasedClusterInit(t *testing.T) {
 			}
 
 			// Create organization structure
-			err = pathResolver.CreateOrganizationStructure(expectedOrg)
+			err = pathResolver.CreateOrganizationStructure(context.Background(), expectedOrg)
 			if err != nil {
 				t.Fatalf("failed to create organization structure: %v", err)
 			}
 
 			// Create cluster directories
-			err = pathResolver.CreateClusterDirectories(tt.clusterName, expectedOrg)
+			err = pathResolver.CreateClusterDirectories(context.Background(), tt.clusterName, expectedOrg)
 			if err != nil {
 				t.Fatalf("failed to create cluster directories: %v", err)
 			}
 
 			// Resolve cluster paths
-			clusterPaths := pathResolver.ResolveClusterPaths(tt.clusterName, expectedOrg)
+			clusterPaths, err := pathResolver.ResolveClusterPaths(context.Background(), tt.clusterName, expectedOrg)
+			if err != nil {
+				t.Fatalf("failed to resolve cluster paths: %v", err)
+			}
 
 			// Verify organization directory structure was created
 			expectedDirs := []string{
