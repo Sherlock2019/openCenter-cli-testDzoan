@@ -62,11 +62,8 @@ to switch to a different cluster or work in a clean environment.`,
   openCenter cluster deactivate myorg/my-cluster`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Resolve cluster name from args or active cluster
-			var name string
-			if len(args) > 0 {
-				name = args[0]
-			} else {
+			// Resolve cluster name from args or active cluster for validation
+			if len(args) == 0 {
 				// No name provided, try to use active cluster
 				activeName, err := config.GetActive()
 				if err != nil {
@@ -75,7 +72,6 @@ to switch to a different cluster or work in a clean environment.`,
 				if activeName == "" {
 					return fmt.Errorf("no cluster name provided and no active cluster set; specify a cluster name or use 'openCenter cluster select <name>' to set an active cluster")
 				}
-				name = activeName
 			}
 
 			var output strings.Builder
