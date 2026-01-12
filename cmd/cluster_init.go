@@ -808,11 +808,6 @@ Thumbs.db
 		return fmt.Errorf("failed to add files to git: %w", err)
 	}
 
-	// Make initial commit
-	if err := runGitCommand(gitDir, []string{"commit", "-m", "initializing git repo", "--allow-empty"}, cmd); err != nil {
-		return fmt.Errorf("failed to make initial commit: %w", err)
-	}
-
 	return nil
 }
 
