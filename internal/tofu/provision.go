@@ -37,7 +37,7 @@ func Provision(cfg config.Config) error {
 	if backendType == "" {
 		backendType = "local"
 	}
-	
+
 	var templateName string
 	switch backendType {
 	case "local":

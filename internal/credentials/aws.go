@@ -96,7 +96,7 @@ func (c *AWSCredentials) ToTerraform() string {
 	var output strings.Builder
 
 	output.WriteString("provider \"aws\" {\n")
-	
+
 	if c.AccessKeyID != "" {
 		output.WriteString(fmt.Sprintf("  access_key = \"%s\"\n", c.AccessKeyID))
 	}

@@ -284,7 +284,7 @@ Troubleshooting:
 			// Check if a configuration file was provided via --config flag
 			var cfg config.Config
 			var configMap map[string]any
-			
+
 			configFile, _ := cmd.Flags().GetString("config")
 			if configFile != "" {
 				// Load configuration from the specified file
@@ -292,14 +292,14 @@ Troubleshooting:
 				if err != nil {
 					return fmt.Errorf("failed to read configuration file '%s': %w", configFile, err)
 				}
-				
+
 				loader := config.NewConfigLoader(pathResolver)
 				loadedCfg, err := loader.LoadFromBytes(context.Background(), data, name)
 				if err != nil {
 					return fmt.Errorf("failed to load configuration from file '%s': %w", configFile, err)
 				}
 				cfg = *loadedCfg
-				
+
 				// Convert loaded config to map for YAML output
 				cfgYAML, err := yaml.Marshal(cfg)
 				if err != nil {
@@ -397,10 +397,10 @@ Troubleshooting:
 					}
 					additionalServerPools = append(additionalServerPools, pool)
 				}
-				
+
 				// Update the configuration struct
 				cfg.OpenCenter.Cluster.Kubernetes.AdditionalServerPoolsWorker = additionalServerPools
-				
+
 				// Also update the map for consistency
 				if opencenter, ok := configMap["opencenter"].(map[string]any); ok {
 					if cluster, ok := opencenter["cluster"].(map[string]any); ok {
@@ -748,7 +748,7 @@ func initializeGitRepository(gitDir string, cmd *cobra.Command) error {
 	// Check if git repository already exists
 	if _, err := os.Stat(filepath.Join(gitDir, ".git")); err != nil {
 		// Git repository doesn't exist, initialize it
-		
+
 		// Create the directory if it doesn't exist
 		if err := os.MkdirAll(gitDir, 0o755); err != nil {
 			return fmt.Errorf("failed to create git directory: %w", err)
@@ -1304,11 +1304,12 @@ func validateOrganizationName(organization string) error {
 	// Use the same validation as cluster names since they both become directory names
 	return config.ValidateClusterName(organization)
 }
+
 // parseServerPoolString parses a server pool configuration string in the format:
 // "name=value,key=value,..." and returns an AdditionalServerPool struct
 func parseServerPoolString(poolStr string) (config.AdditionalServerPool, error) {
 	pool := config.AdditionalServerPool{}
-	
+
 	// Split by comma to get key=value pairs
 	pairs := strings.Split(poolStr, ",")
 	for _, pair := range pairs {
@@ -1317,10 +1318,10 @@ func parseServerPoolString(poolStr string) (config.AdditionalServerPool, error) 
 		if len(kv) != 2 {
 			return pool, fmt.Errorf("invalid key=value pair: %s", pair)
 		}
-		
+
 		key := strings.TrimSpace(kv[0])
 		value := strings.TrimSpace(kv[1])
-		
+
 		// Map the key to the appropriate field
 		switch key {
 		case "name":
@@ -1371,7 +1372,7 @@ func parseServerPoolString(poolStr string) (config.AdditionalServerPool, error) 
 			return pool, fmt.Errorf("unknown server pool field: %s", key)
 		}
 	}
-	
+
 	// Validate required fields
 	if pool.Name == "" {
 		return pool, fmt.Errorf("server pool name is required")
@@ -1385,7 +1386,7 @@ func parseServerPoolString(poolStr string) (config.AdditionalServerPool, error) 
 	if pool.NodeWorker == "" {
 		return pool, fmt.Errorf("server pool node_worker is required")
 	}
-	
+
 	return pool, nil
 }
 
@@ -1395,12 +1396,12 @@ func convertServerPoolsToMap(pools []config.AdditionalServerPool) []map[string]a
 	var result []map[string]any
 	for _, pool := range pools {
 		poolMap := map[string]any{
-			"name":         pool.Name,
-			"worker_count": pool.WorkerCount,
+			"name":          pool.Name,
+			"worker_count":  pool.WorkerCount,
 			"flavor_worker": pool.FlavorWorker,
-			"node_worker":  pool.NodeWorker,
+			"node_worker":   pool.NodeWorker,
 		}
-		
+
 		// Add optional fields if they're set
 		if pool.ServerGroupAffinity != "" {
 			poolMap["server_group_affinity"] = pool.ServerGroupAffinity
@@ -1432,11 +1433,12 @@ func convertServerPoolsToMap(pools []config.AdditionalServerPool) []map[string]a
 		if pool.SubnetID != "" {
 			poolMap["subnet_id"] = pool.SubnetID
 		}
-		
+
 		result = append(result, poolMap)
 	}
 	return result
 }
+
 // encryptConfigIfNeeded checks if the configuration file contains sensitive data
 // and encrypts it with SOPS if needed and if SOPS key is available
 func encryptConfigIfNeeded(configPath string, cfg config.Config, cmd *cobra.Command) error {
@@ -1506,11 +1508,11 @@ func containsSensitiveData(filePath string) bool {
 					value := strings.TrimSpace(parts[1])
 					// Remove quotes and whitespace
 					value = strings.Trim(value, `"' `)
-					
+
 					// Skip empty values or common placeholders
-					if value != "" && value != `""` && value != "''" && 
-					   value != "<placeholder>" && value != "PLACEHOLDER" && 
-					   value != "TODO" && value != "CHANGEME" {
+					if value != "" && value != `""` && value != "''" &&
+						value != "<placeholder>" && value != "PLACEHOLDER" &&
+						value != "TODO" && value != "CHANGEME" {
 						return true // Contains sensitive data
 					}
 				}

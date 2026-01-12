@@ -37,35 +37,35 @@ func TestProperty_SecurityAndPrivacyProtection(t *testing.T) {
 	// NOTE: This property test is temporarily disabled due to generator complexity
 	// The underlying functionality is tested by unit tests
 	/*
-	properties.Property("sensitive data is consistently masked in all outputs", prop.ForAll(
-		func(sensitiveData map[string]string) bool {
-			handler := NewSecurityFlagHandler()
+		properties.Property("sensitive data is consistently masked in all outputs", prop.ForAll(
+			func(sensitiveData map[string]string) bool {
+				handler := NewSecurityFlagHandler()
 
-			// Test that all sensitive data is masked appropriately
-			for key, value := range sensitiveData {
-				if value == "" {
-					continue // Skip empty values
-				}
+				// Test that all sensitive data is masked appropriately
+				for key, value := range sensitiveData {
+					if value == "" {
+						continue // Skip empty values
+					}
 
-				maskedValue := handler.MaskFlagValue(key, value)
+					maskedValue := handler.MaskFlagValue(key, value)
 
-				// Basic invariant: masked value should not be longer than original + mask string
-				if len(maskedValue) > len(value)+20 { // 20 is longer than any reasonable mask string
-					return false // Masking produced unexpectedly long result
-				}
+					// Basic invariant: masked value should not be longer than original + mask string
+					if len(maskedValue) > len(value)+20 { // 20 is longer than any reasonable mask string
+						return false // Masking produced unexpectedly long result
+					}
 
-				// If field name is explicitly sensitive, value should be masked
-				if handler.masker.IsSensitiveField(key) && len(value) > 4 {
-					if maskedValue == value {
-						return false // Sensitive field was not masked
+					// If field name is explicitly sensitive, value should be masked
+					if handler.masker.IsSensitiveField(key) && len(value) > 4 {
+						if maskedValue == value {
+							return false // Sensitive field was not masked
+						}
 					}
 				}
-			}
 
-			return true
-		},
-		genSensitiveDataMap(),
-	))
+				return true
+			},
+			genSensitiveDataMap(),
+		))
 	*/
 
 	// Property 12.2: Security warnings are provided for risky configurations

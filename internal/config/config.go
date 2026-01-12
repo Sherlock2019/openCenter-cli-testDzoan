@@ -884,8 +884,6 @@ func applyOrganizationDefaults(cfg *Config) {
 	}
 }
 
-
-
 // GenerateCompleteConfig generates a complete configuration by merging schema defaults
 // with the actual cluster configuration. The opencenter values take precedence over
 // schema defaults.
@@ -1490,15 +1488,15 @@ func Validate(cfg Config) []string {
 			// When using S3/AWS backend, AWS credentials must be provided via opencenter cluster or global AWS secrets
 			clusterAccessKey := strings.TrimSpace(cfg.OpenCenter.Cluster.AWSAccessKey)
 			clusterSecretKey := strings.TrimSpace(cfg.OpenCenter.Cluster.AWSSecretAccessKey)
-			
+
 			// Check new global infrastructure credentials
 			globalInfraAccessKey := strings.TrimSpace(cfg.Secrets.Global.AWS.Infrastructure.AccessKey)
 			globalInfraSecretKey := strings.TrimSpace(cfg.Secrets.Global.AWS.Infrastructure.SecretAccessKey)
-			
+
 			// Check if any valid credential combination exists
 			hasClusterCreds := clusterAccessKey != "" && clusterSecretKey != ""
 			hasInfraCreds := globalInfraAccessKey != "" && globalInfraSecretKey != ""
-			
+
 			if !hasClusterCreds && !hasInfraCreds {
 				errs = append(errs, "AWS credentials required for S3/AWS backend: either set opencenter.cluster.aws_access_key/aws_secret_access_key or secrets.global.aws.infrastructure.access_key/secret_access_key")
 			}
@@ -1699,7 +1697,7 @@ func (c Config) GetAWSCredentials(serviceAccessKey, serviceSecretKey string) (ac
 	if serviceAccessKey != "" && serviceSecretKey != "" {
 		return serviceAccessKey, serviceSecretKey
 	}
-	
+
 	// Fall back to global infrastructure AWS credentials
 	return c.Secrets.Global.AWS.Infrastructure.AccessKey, c.Secrets.Global.AWS.Infrastructure.SecretAccessKey
 }
@@ -1710,7 +1708,7 @@ func (c Config) GetCertManagerAWSCredentials() (accessKey, secretKey string) {
 	if c.Secrets.CertManager.AWSAccessKey != "" && c.Secrets.CertManager.AWSSecretAccessKey != "" {
 		return c.Secrets.CertManager.AWSAccessKey, c.Secrets.CertManager.AWSSecretAccessKey
 	}
-	
+
 	// Fall back to global application AWS credentials
 	return c.GetAWSApplicationCredentials()
 }
@@ -1721,7 +1719,7 @@ func (c Config) GetLokiS3Credentials() (accessKey, secretKey string) {
 	if c.Secrets.Loki.S3AccessKeyID != "" && c.Secrets.Loki.S3SecretAccessKey != "" {
 		return c.Secrets.Loki.S3AccessKeyID, c.Secrets.Loki.S3SecretAccessKey
 	}
-	
+
 	// Fall back to global application AWS credentials
 	return c.GetAWSApplicationCredentials()
 }
@@ -1732,7 +1730,7 @@ func (c Config) GetTempoS3Credentials() (accessKey, secretKey string) {
 	if c.Secrets.Tempo.AccessKey != "" && c.Secrets.Tempo.SecretKey != "" {
 		return c.Secrets.Tempo.AccessKey, c.Secrets.Tempo.SecretKey
 	}
-	
+
 	// Fall back to global application AWS credentials
 	return c.GetAWSApplicationCredentials()
 }
@@ -1753,7 +1751,7 @@ func (c Config) GetAWSApplicationCredentials() (accessKey, secretKey string) {
 	if c.Secrets.Global.AWS.Application.AccessKey != "" && c.Secrets.Global.AWS.Application.SecretAccessKey != "" {
 		return c.Secrets.Global.AWS.Application.AccessKey, c.Secrets.Global.AWS.Application.SecretAccessKey
 	}
-	
+
 	// Fall back to infrastructure credentials
 	return c.Secrets.Global.AWS.Infrastructure.AccessKey, c.Secrets.Global.AWS.Infrastructure.SecretAccessKey
 }

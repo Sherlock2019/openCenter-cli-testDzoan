@@ -2,27 +2,27 @@ package config
 
 // KubernetesConfig represents the kubernetes configuration
 type KubernetesConfig struct {
-	Version              string         `yaml:"version" json:"version"`
-	KubesprayVersion     string         `yaml:"kubespray_version" json:"kubespray_version"`
-	APIPort              int            `yaml:"api_port" json:"api_port"`
-	KubeVIPEnabled       bool           `yaml:"kube_vip_enabled" json:"kube_vip_enabled"`
-	FlavorBastion        string         `yaml:"flavor_bastion" json:"flavor_bastion"`
-	FlavorMaster         string         `yaml:"flavor_master" json:"flavor_master"`
-	FlavorWorker         string         `yaml:"flavor_worker" json:"flavor_worker"`
-	FlavorWorkerWindows  string         `yaml:"flavor_worker_windows" json:"flavor_worker_windows"`
-	SubnetPods           string         `yaml:"subnet_pods" json:"subnet_pods"`
-	SubnetServices       string         `yaml:"subnet_services" json:"subnet_services"`
-	LoadbalancerProvider string         `yaml:"loadbalancer_provider" json:"loadbalancer_provider"`
-	DNSZoneName          string         `yaml:"dns_zone_name" json:"dns_zone_name"`
-	MasterCount          int            `yaml:"master_count" json:"master_count"`
-	WorkerCount          int            `yaml:"worker_count" json:"worker_count"`
-	WorkerCountWindows   int            `yaml:"worker_count_windows" json:"worker_count_windows"`
-	MasterNodes          []NodeConfig   `yaml:"master_nodes,omitempty" json:"master_nodes,omitempty"`
-	WorkerNodes          []NodeConfig   `yaml:"worker_nodes,omitempty" json:"worker_nodes,omitempty"`
-	WindowsNodes         []NodeConfig   `yaml:"windows_nodes,omitempty" json:"windows_nodes,omitempty"`
-	NetworkPlugin        NetworkPlugin  `yaml:"network_plugin" json:"network_plugin"`
-	OIDC                 OIDCConfig     `yaml:"oidc" json:"oidc"`
-	WindowsWorkers       WindowsWorkers `yaml:"windows_workers" json:"windows_workers"`
+	Version              string                  `yaml:"version" json:"version"`
+	KubesprayVersion     string                  `yaml:"kubespray_version" json:"kubespray_version"`
+	APIPort              int                     `yaml:"api_port" json:"api_port"`
+	KubeVIPEnabled       bool                    `yaml:"kube_vip_enabled" json:"kube_vip_enabled"`
+	FlavorBastion        string                  `yaml:"flavor_bastion" json:"flavor_bastion"`
+	FlavorMaster         string                  `yaml:"flavor_master" json:"flavor_master"`
+	FlavorWorker         string                  `yaml:"flavor_worker" json:"flavor_worker"`
+	FlavorWorkerWindows  string                  `yaml:"flavor_worker_windows" json:"flavor_worker_windows"`
+	SubnetPods           string                  `yaml:"subnet_pods" json:"subnet_pods"`
+	SubnetServices       string                  `yaml:"subnet_services" json:"subnet_services"`
+	LoadbalancerProvider string                  `yaml:"loadbalancer_provider" json:"loadbalancer_provider"`
+	DNSZoneName          string                  `yaml:"dns_zone_name" json:"dns_zone_name"`
+	MasterCount          int                     `yaml:"master_count" json:"master_count"`
+	WorkerCount          int                     `yaml:"worker_count" json:"worker_count"`
+	WorkerCountWindows   int                     `yaml:"worker_count_windows" json:"worker_count_windows"`
+	MasterNodes          []NodeConfig            `yaml:"master_nodes,omitempty" json:"master_nodes,omitempty"`
+	WorkerNodes          []NodeConfig            `yaml:"worker_nodes,omitempty" json:"worker_nodes,omitempty"`
+	WindowsNodes         []NodeConfig            `yaml:"windows_nodes,omitempty" json:"windows_nodes,omitempty"`
+	NetworkPlugin        NetworkPlugin           `yaml:"network_plugin" json:"network_plugin"`
+	OIDC                 OIDCConfig              `yaml:"oidc" json:"oidc"`
+	WindowsWorkers       WindowsWorkers          `yaml:"windows_workers" json:"windows_workers"`
 	Modules              KubernetesModulesConfig `yaml:"modules" json:"modules"`
 	// AdditionalServerPoolsWorker defines additional worker node pools with custom configurations
 	AdditionalServerPoolsWorker []AdditionalServerPool `yaml:"additional_server_pools_worker" json:"additional_server_pools_worker,omitempty"`
@@ -46,28 +46,28 @@ type NetworkPlugin struct {
 
 // CalicoConfig represents the Calico configuration
 type CalicoConfig struct {
-	Enabled                   bool                    `yaml:"enabled" json:"enabled"`
-	CNIIface                  string                  `yaml:"cni_iface" json:"cni_iface"`
-	CalicoInterfaceAutodetect string                  `yaml:"calico_interface_autodetect" json:"calico_interface_autodetect"`
-	AutodetectCIDR            string                  `yaml:"autodetect_cidr" json:"autodetect_cidr"`
-	EncapsulationType         string                  `yaml:"encapsulation_type" json:"encapsulation_type"`
-	NATOutgoing               bool                    `yaml:"nat_outgoing" json:"nat_outgoing"`
-	Modules                   CalicoModulesConfig     `yaml:"modules" json:"modules"`
+	Enabled                   bool                `yaml:"enabled" json:"enabled"`
+	CNIIface                  string              `yaml:"cni_iface" json:"cni_iface"`
+	CalicoInterfaceAutodetect string              `yaml:"calico_interface_autodetect" json:"calico_interface_autodetect"`
+	AutodetectCIDR            string              `yaml:"autodetect_cidr" json:"autodetect_cidr"`
+	EncapsulationType         string              `yaml:"encapsulation_type" json:"encapsulation_type"`
+	NATOutgoing               bool                `yaml:"nat_outgoing" json:"nat_outgoing"`
+	Modules                   CalicoModulesConfig `yaml:"modules" json:"modules"`
 }
 
 // CiliumConfig represents the Cilium configuration
 type CiliumConfig struct {
-	Enabled              bool                   `yaml:"enabled" json:"enabled"`
-	OperatorEnabled      bool                   `yaml:"operator_enabled" json:"operator_enabled"`
-	KubeProxyReplacement bool                   `yaml:"kubeProxyReplacement" json:"kubeProxyReplacement"`
-	Modules              CiliumModulesConfig    `yaml:"modules" json:"modules"`
+	Enabled              bool                `yaml:"enabled" json:"enabled"`
+	OperatorEnabled      bool                `yaml:"operator_enabled" json:"operator_enabled"`
+	KubeProxyReplacement bool                `yaml:"kubeProxyReplacement" json:"kubeProxyReplacement"`
+	Modules              CiliumModulesConfig `yaml:"modules" json:"modules"`
 }
 
 // KubeOVNConfig represents the Kube-OVN configuration
 type KubeOVNConfig struct {
-	Enabled           bool                   `yaml:"enabled" json:"enabled"`
-	CiliumIntegration bool                   `yaml:"cilium_integration" json:"cilium_integration"`
-	Modules           KubeOVNModulesConfig   `yaml:"modules" json:"modules"`
+	Enabled           bool                 `yaml:"enabled" json:"enabled"`
+	CiliumIntegration bool                 `yaml:"cilium_integration" json:"cilium_integration"`
+	Modules           KubeOVNModulesConfig `yaml:"modules" json:"modules"`
 }
 
 // OIDCConfig represents the OIDC configuration
@@ -140,6 +140,7 @@ type AdditionalServerPoolWindows struct {
 	// ImageID is the OpenStack Windows image ID for this worker pool
 	ImageID string `yaml:"image_id,omitempty" json:"image_id,omitempty" jsonschema:"pattern=^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$,description=OpenStack Windows image ID for this worker pool"`
 }
+
 // KubernetesModulesConfig represents the Kubernetes module configurations
 type KubernetesModulesConfig struct {
 	KubesprayCluster KubesprayClusterModuleConfig `yaml:"kubespray_cluster" json:"kubespray_cluster"`

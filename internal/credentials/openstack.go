@@ -29,13 +29,13 @@ type OpenStackCredentials struct {
 	FloatingNetworkID           string `json:"floating_network_id,omitempty"`
 	SubnetID                    string `json:"subnet_id,omitempty"`
 	Insecure                    bool   `json:"insecure,omitempty"`
-	
+
 	// Legacy username/password authentication (if available)
-	Username                    string `json:"username,omitempty"`
-	Password                    string `json:"password,omitempty"`
-	ProjectName                 string `json:"project_name,omitempty"`
-	UserDomainName              string `json:"user_domain_name,omitempty"`
-	ProjectDomainName           string `json:"project_domain_name,omitempty"`
+	Username          string `json:"username,omitempty"`
+	Password          string `json:"password,omitempty"`
+	ProjectName       string `json:"project_name,omitempty"`
+	UserDomainName    string `json:"user_domain_name,omitempty"`
+	ProjectDomainName string `json:"project_domain_name,omitempty"`
 }
 
 // IsEmpty returns true if the credentials are empty or incomplete
@@ -44,13 +44,13 @@ func (c *OpenStackCredentials) IsEmpty() bool {
 	if c.AuthURL == "" {
 		return true
 	}
-	
+
 	// Check for application credentials
 	hasAppCreds := c.ApplicationCredentialID != "" && c.ApplicationCredentialSecret != ""
-	
+
 	// Check for username/password authentication
 	hasUserPass := c.Username != "" && c.Password != ""
-	
+
 	return !hasAppCreds && !hasUserPass
 }
 
@@ -161,7 +161,7 @@ func (c *OpenStackCredentials) ToTerraform() string {
 	var output strings.Builder
 
 	output.WriteString("provider \"openstack\" {\n")
-	
+
 	if c.AuthURL != "" {
 		output.WriteString(fmt.Sprintf("  auth_url    = \"%s\"\n", c.AuthURL))
 	}
@@ -207,7 +207,7 @@ func (c *OpenStackCredentials) ToCloudsYAML() string {
 	output.WriteString("clouds:\n")
 	output.WriteString("  openstack:\n")
 	output.WriteString("    auth:\n")
-	
+
 	if c.AuthURL != "" {
 		output.WriteString(fmt.Sprintf("      auth_url: \"%s\"\n", c.AuthURL))
 	}
@@ -246,7 +246,7 @@ func (c *OpenStackCredentials) ToCloudsYAML() string {
 	if c.Region != "" {
 		output.WriteString(fmt.Sprintf("    region_name: \"%s\"\n", c.Region))
 	}
-	
+
 	output.WriteString("    interface: public\n")
 	output.WriteString("    identity_api_version: 3\n")
 

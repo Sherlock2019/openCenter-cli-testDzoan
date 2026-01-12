@@ -53,7 +53,7 @@ func TestConfig(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		
+
 		// Since we removed the IAC field, both configs should now be identical
 		if !reflect.DeepEqual(cfg, loaded) {
 			t.Errorf("loaded config does not match saved config")
@@ -2041,6 +2041,7 @@ func TestTemplateRenderingDefaultValues(t *testing.T) {
 		})
 	}
 }
+
 // TestAWSCredentialFallback tests the new AWS credential structure with fallback logic
 func TestAWSCredentialFallback(t *testing.T) {
 	t.Run("GetAWSCredentials with new infrastructure credentials", func(t *testing.T) {
@@ -2101,6 +2102,7 @@ func TestAWSCredentialFallback(t *testing.T) {
 		}
 	})
 }
+
 // TestApplicationServicesUseApplicationCredentials tests that cert-manager, Loki, and Tempo use application credentials
 func TestApplicationServicesUseApplicationCredentials(t *testing.T) {
 	t.Run("cert-manager uses application credentials", func(t *testing.T) {

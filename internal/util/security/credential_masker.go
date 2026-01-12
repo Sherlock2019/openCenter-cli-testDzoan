@@ -60,13 +60,13 @@ func (m *DefaultCredentialMasker) initializeDefaultPatterns() {
 		`(?i)(auth[_-]?token|authtoken)[\s:=]+['"]*([a-zA-Z0-9_\-\.]{20,})`,
 
 		// Standalone API keys and tokens (without field names)
-		`sk-[a-zA-Z0-9]{48,}`,                    // Secret keys
-		`pk-[a-zA-Z0-9]{48,}`,                    // Public keys  
-		`AKIA[A-Z0-9]{16}`,                       // AWS access keys
-		`[a-zA-Z0-9/+=]{40}`,                     // AWS secret keys (40 chars base64)
-		`AGE-SECRET-KEY-[A-Z0-9]{59}`,            // Age keys
-		`Bearer\s+[a-zA-Z0-9._-]{20,}`,           // Bearer tokens
-		`Basic\s+[a-zA-Z0-9+/=]{20,}`,            // Basic auth tokens
+		`sk-[a-zA-Z0-9]{48,}`,          // Secret keys
+		`pk-[a-zA-Z0-9]{48,}`,          // Public keys
+		`AKIA[A-Z0-9]{16}`,             // AWS access keys
+		`[a-zA-Z0-9/+=]{40}`,           // AWS secret keys (40 chars base64)
+		`AGE-SECRET-KEY-[A-Z0-9]{59}`,  // Age keys
+		`Bearer\s+[a-zA-Z0-9._-]{20,}`, // Bearer tokens
+		`Basic\s+[a-zA-Z0-9+/=]{20,}`,  // Basic auth tokens
 
 		// Passwords (field=value format)
 		`(?i)(password|passwd|pwd)[\s:=]+['"]*([^\s'"]{8,})`,

@@ -102,7 +102,7 @@ shell context, properly removing the environment variables.`,
 // unsetAWSCredentials generates unset commands for AWS credentials
 func unsetAWSCredentials(cmd *cobra.Command) error {
 	unsetVars := credentials.GetAWSEnvVars()
-	
+
 	var output strings.Builder
 	for _, envVar := range unsetVars {
 		output.WriteString(fmt.Sprintf("unset %s\n", envVar))
@@ -115,7 +115,7 @@ func unsetAWSCredentials(cmd *cobra.Command) error {
 // unsetOpenStackCredentials generates unset commands for OpenStack credentials
 func unsetOpenStackCredentials(cmd *cobra.Command) error {
 	unsetVars := credentials.GetOpenStackEnvVars()
-	
+
 	var output strings.Builder
 	for _, envVar := range unsetVars {
 		output.WriteString(fmt.Sprintf("unset %s\n", envVar))
@@ -128,7 +128,7 @@ func unsetOpenStackCredentials(cmd *cobra.Command) error {
 // unsetAllCredentials generates unset commands for all cloud provider credentials
 func unsetAllCredentials(cmd *cobra.Command) error {
 	var output strings.Builder
-	
+
 	// AWS credentials
 	awsVars := credentials.GetAWSEnvVars()
 	for _, envVar := range awsVars {

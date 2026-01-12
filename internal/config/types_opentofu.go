@@ -8,7 +8,7 @@ type OpenTofu struct {
 }
 
 // TofuBackend describes the state backend configuration for OpenTofu.
-// Type can be "local", "s3", or "aws" (aws is an alias for s3). 
+// Type can be "local", "s3", or "aws" (aws is an alias for s3).
 // When "local", Backend.Local.Path is used.
 // When "s3" or "aws", Backend.S3 fields are used.
 type TofuBackend struct {
