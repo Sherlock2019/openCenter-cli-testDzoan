@@ -472,7 +472,7 @@ func defaultConfig(name string) Config {
 			CACertificates:        "",
 			K8sHardening:          true,
 			OSHardening:           true,
-			KubeletRotateCerts:    true,
+			KubeletRotateCerts:    false,
 			PodSecurityExemptions: []string{"trivy-temp"},
 		},
 		Deployment: Deployment{
