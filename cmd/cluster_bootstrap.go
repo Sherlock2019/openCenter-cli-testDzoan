@@ -77,7 +77,12 @@ func newClusterBootstrapCmd() *cobra.Command {
 				clusterDir = filepath.Join(gitDir, "infrastructure", "clusters", cfg.ClusterName())
 			}
 			if logPath == "" && clusterDir != "" {
-				logPath = filepath.Join(clusterDir, "logs", "bootstrap.log")
+				// Generate timestamped log filename: bootstrap-YYYY-MM-DD-TIMESTAMP.log
+				timestamp := time.Now()
+				logFilename := fmt.Sprintf("bootstrap-%s-%d.log",
+					timestamp.Format("2006-01-02"),
+					timestamp.Unix())
+				logPath = filepath.Join(clusterDir, "logs", logFilename)
 			}
 
 			runner, err := newBootstrapRunner(cmd, cfg.ClusterName(), clusterDir, logPath, dryRun)
@@ -161,7 +166,7 @@ func newClusterBootstrapCmd() *cobra.Command {
 
 	cmd.Flags().Bool("dry-run", false, "show planned actions without executing")
 	cmd.Flags().String("kubeconfig", "./kubeconfig.yaml", "path to kubeconfig used by bootstrap actions")
-	cmd.Flags().String("log", "", "log file path (defaults to <git_dir>/infrastructure/clusters/<name>/logs/bootstrap.log)")
+	cmd.Flags().String("log", "", "log file path (defaults to <git_dir>/infrastructure/clusters/<name>/logs/bootstrap-YYYY-MM-DD-TIMESTAMP.log)")
 	cmd.Flags().String("container-runtime", "", "container runtime for kind clusters (docker or podman)")
 
 	return cmd
