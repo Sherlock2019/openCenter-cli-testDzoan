@@ -103,9 +103,23 @@ func newClusterBootstrapCmd() *cobra.Command {
 				if kubeconf != "" {
 					env["KUBECONFIG"] = kubeconf
 				}
-				runner.Infof("Running make in %s", clusterDir)
-				if err := runner.Run(clusterDir, env, "make"); err != nil {
-					return err
+				
+				// Step 1: Run make terraform
+				runner.Infof("Running make terraform in %s", clusterDir)
+				if err := runner.Run(clusterDir, env, "make", "terraform"); err != nil {
+					return fmt.Errorf("make terraform failed: %w", err)
+				}
+				
+				// Step 2: Run terraform init
+				runner.Infof("Initializing Terraform in %s", clusterDir)
+				if err := runner.Run(clusterDir, env, "terraform", "init"); err != nil {
+					return fmt.Errorf("terraform init failed: %w", err)
+				}
+				
+				// Step 3: Run terraform apply -auto-approve (this might take a long time)
+				runner.Infof("Applying Terraform configuration (this may take several minutes)...")
+				if err := runner.RunLongRunning(clusterDir, env, "terraform", "apply", "-auto-approve"); err != nil {
+					return fmt.Errorf("terraform apply failed: %w", err)
 				}
 			case "kind":
 				runtime := resolveContainerRuntime(runtimeFlag)
@@ -223,6 +237,65 @@ func (r *bootstrapRunner) Infof(format string, args ...interface{}) {
 
 func (r *bootstrapRunner) Run(dir string, env map[string]string, name string, args ...string) error {
 	return r.execute(dir, env, nil, name, args...)
+}
+
+func (r *bootstrapRunner) RunLongRunning(dir string, env map[string]string, name string, args ...string) error {
+	return r.executeLongRunning(dir, env, nil, name, args...)
+}
+
+func (r *bootstrapRunner) executeLongRunning(dir string, env map[string]string, stdin io.Reader, name string, args ...string) error {
+	printable := formatCommand(env, name, args)
+	fmt.Fprintf(r.stdout, "$ %s\n", printable)
+
+	if r.dryRun {
+		return nil
+	}
+
+	cmd := exec.Command(name, args...)
+	cmd.Dir = dir
+	if stdin != nil {
+		cmd.Stdin = stdin
+	}
+
+	envList := os.Environ()
+	for k, v := range env {
+		envList = append(envList, fmt.Sprintf("%s=%s", k, v))
+	}
+	cmd.Env = envList
+	cmd.Stdout = r.stdout
+	cmd.Stderr = r.stderr
+
+	// Start the command
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start command: %s: %w", printable, err)
+	}
+
+	// Log progress for long-running commands
+	done := make(chan error, 1)
+	go func() {
+		done <- cmd.Wait()
+	}()
+
+	// Progress ticker for long-running operations
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	startTime := time.Now()
+	for {
+		select {
+		case err := <-done:
+			elapsed := time.Since(startTime)
+			if err != nil {
+				fmt.Fprintf(r.stdout, "Command completed with error after %v\n", elapsed.Round(time.Second))
+				return fmt.Errorf("command failed: %s: %w", printable, err)
+			}
+			fmt.Fprintf(r.stdout, "Command completed successfully after %v\n", elapsed.Round(time.Second))
+			return nil
+		case <-ticker.C:
+			elapsed := time.Since(startTime)
+			fmt.Fprintf(r.stdout, "Still running... (elapsed: %v)\n", elapsed.Round(time.Second))
+		}
+	}
 }
 
 func (r *bootstrapRunner) RunWithInput(dir string, env map[string]string, input string, name string, args ...string) error {
