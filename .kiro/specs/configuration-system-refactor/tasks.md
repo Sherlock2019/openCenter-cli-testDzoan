@@ -184,11 +184,11 @@ This document breaks down the configuration system refactor into discrete, imple
 5. Create comprehensive validation test suite
 
 **Acceptance Criteria:**
-- [ ] Validation errors include field paths and suggestions
-- [ ] Cross-field validation catches configuration conflicts
-- [ ] Provider-specific validation enforces provider requirements
-- [ ] Validation suggestions guide users to correct configurations
-- [ ] Validation performance is acceptable for large configurations
+- [x] Validation errors include field paths and suggestions
+- [x] Cross-field validation catches configuration conflicts
+- [x] Provider-specific validation enforces provider requirements
+- [x] Validation suggestions guide users to correct configurations
+- [x] Validation performance is acceptable for large configurations
 
 **Files to Create/Modify:**
 - `internal/config/validator.go` (modify existing)
