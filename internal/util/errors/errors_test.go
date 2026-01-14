@@ -385,7 +385,7 @@ func TestDefaultErrorAggregator(t *testing.T) {
 
 	t.Run("GetSummary", func(t *testing.T) {
 		agg := NewDefaultErrorAggregator()
-		
+
 		// Test with no errors
 		summary := agg.GetSummary()
 		if summary != "No errors" {
@@ -404,7 +404,7 @@ func TestDefaultErrorAggregator(t *testing.T) {
 		agg.AddError(&StructuredError{Type: ValidationError, Message: "validation error 1"})
 		agg.AddError(&StructuredError{Type: ValidationError, Message: "validation error 2"})
 		agg.AddError(&StructuredError{Type: ConfigError, Message: "config error"})
-		
+
 		summary = agg.GetSummary()
 		if summary == "" {
 			t.Error("GetSummary() with multiple errors should not be empty")
@@ -432,7 +432,7 @@ func TestValidationAggregator(t *testing.T) {
 	t.Run("AddWarningWithContext", func(t *testing.T) {
 		agg := NewValidationAggregator()
 		agg.AddWarningWithContext("test_field", errors.New("warning"))
-		
+
 		if !agg.HasWarnings() {
 			t.Error("aggregator should have warnings")
 		}
@@ -1819,21 +1819,21 @@ func TestWrapWithContextNilContext(t *testing.T) {
 // TestToValidationResultWithStructuredErrors verifies ToValidationResult with structured errors
 func TestToValidationResultWithStructuredErrors(t *testing.T) {
 	agg := NewValidationAggregator()
-	
+
 	// Add structured errors
 	agg.AddError(&StructuredError{Type: ValidationError, Message: "error 1"})
 	agg.AddError(&StructuredError{Type: ConfigError, Message: "error 2"})
-	
+
 	// Add structured warnings
 	agg.AddWarning(&StructuredError{Type: ValidationError, Message: "warning 1"})
 	agg.AddWarning(&StructuredError{Type: ConfigError, Message: "warning 2"})
 
 	result := agg.ToValidationResult()
-	
+
 	if len(result.Errors) != 2 {
 		t.Errorf("should have 2 errors, got %d", len(result.Errors))
 	}
-	
+
 	if len(result.Warnings) != 2 {
 		t.Errorf("should have 2 warnings, got %d", len(result.Warnings))
 	}
@@ -1859,17 +1859,17 @@ func TestMultiFieldAggregatorToErrorMultiple(t *testing.T) {
 // TestWrapErrorWithContextWithContextValues verifies WrapErrorWithContext with context values
 func TestWrapErrorWithContextWithContextValues(t *testing.T) {
 	wrapper := NewDefaultErrorWrapper()
-	
+
 	ctx := context.WithValue(context.Background(), "request_id", "req-123")
 	ctx = context.WithValue(ctx, "user_id", "user-456")
 	ctx = context.WithValue(ctx, "operation", "test_op")
-	
+
 	err := &StructuredError{
 		Type:    ValidationError,
 		Message: "test error",
 		Context: nil,
 	}
-	
+
 	wrapped := wrapper.WrapErrorWithContext(ctx, err, "additional context")
 
 	structuredErr, ok := wrapped.(*StructuredError)
@@ -1891,14 +1891,14 @@ func TestWrapErrorWithContextWithContextValues(t *testing.T) {
 // TestUnwrapErrorWithStructuredError verifies UnwrapError with structured error
 func TestUnwrapErrorWithStructuredError(t *testing.T) {
 	wrapper := NewDefaultErrorWrapper()
-	
+
 	cause := errors.New("original cause")
 	err := &StructuredError{
 		Type:    ValidationError,
 		Message: "wrapped error",
 		Cause:   cause,
 	}
-	
+
 	unwrapped := wrapper.UnwrapError(err)
 	if unwrapped != cause {
 		t.Error("should unwrap to original cause")
@@ -1947,7 +1947,7 @@ func TestDetermineErrorTypeEdgeCases(t *testing.T) {
 // TestFormatErrorWithNilError verifies FormatError with nil error
 func TestFormatErrorWithNilError(t *testing.T) {
 	handler := NewDefaultErrorHandler()
-	
+
 	formatted := handler.FormatError(nil)
 	if formatted != "" {
 		t.Error("FormatError(nil) should return empty string")
@@ -1957,18 +1957,18 @@ func TestFormatErrorWithNilError(t *testing.T) {
 // TestGetSuggestionsWithStructuredError verifies GetSuggestions with structured error
 func TestGetSuggestionsWithStructuredError(t *testing.T) {
 	handler := NewDefaultErrorHandler()
-	
+
 	err := &StructuredError{
 		Type:        ValidationError,
 		Message:     "test error",
 		Suggestions: []string{"existing suggestion 1", "existing suggestion 2"},
 	}
-	
+
 	suggestions := handler.GetSuggestions(err)
 	if len(suggestions) < 2 {
 		t.Error("should return existing suggestions from structured error")
 	}
-	
+
 	// Check that existing suggestions are preserved
 	found := false
 	for _, s := range suggestions {
@@ -1985,7 +1985,7 @@ func TestGetSuggestionsWithStructuredError(t *testing.T) {
 // TestGetSuggestionsWithNilError verifies GetSuggestions with nil error
 func TestGetSuggestionsWithNilError(t *testing.T) {
 	handler := NewDefaultErrorHandler()
-	
+
 	suggestions := handler.GetSuggestions(nil)
 	if suggestions != nil {
 		t.Error("GetSuggestions(nil) should return nil")

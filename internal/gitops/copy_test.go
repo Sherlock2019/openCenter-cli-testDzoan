@@ -14,6 +14,7 @@
 package gitops
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -161,5 +162,188 @@ func TestRenderClusterAppsSkipsDisabledServices(t *testing.T) {
 	// Since all managed services are disabled, sources.yaml should also not be included
 	if strings.Contains(content, "./sources.yaml") {
 		t.Errorf("sources.yaml should not be included when all managed services are disabled")
+	}
+}
+
+// TestCopyBaseAtomic tests atomic file operations for CopyBase.
+func TestCopyBaseAtomic(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewWorkspaceManager(tempDir)
+	ctx := context.Background()
+
+	cfg := config.NewDefault("test-atomic")
+	workspace, err := manager.CreateWorkspace(ctx, cfg)
+	if err != nil {
+		t.Fatalf("Failed to create workspace: %v", err)
+	}
+	defer manager.CleanupWorkspace(ctx, workspace)
+
+	// Copy base files atomically
+	if err := CopyBaseAtomic(cfg, false, workspace); err != nil {
+		t.Fatalf("CopyBaseAtomic failed: %v", err)
+	}
+
+	// Verify files were created
+	if !workspace.Exists(".gitignore") {
+		t.Error(".gitignore was not copied")
+	}
+
+	// Verify file content
+	gitignoreContent, err := os.ReadFile(workspace.GetPath(".gitignore"))
+	if err != nil {
+		t.Fatalf("Failed to read .gitignore: %v", err)
+	}
+
+	if len(gitignoreContent) == 0 {
+		t.Error(".gitignore is empty")
+	}
+}
+
+// TestRenderInfrastructureClusterAtomic tests atomic file operations for infrastructure rendering.
+func TestRenderInfrastructureClusterAtomic(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewWorkspaceManager(tempDir)
+	ctx := context.Background()
+
+	cfg := config.NewDefault("render-test-atomic")
+	cfg.OpenCenter.Cluster.ClusterName = "render-test-atomic"
+	cfg.OpenCenter.Cluster.Kubernetes.Version = "9.9.9"
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://auth.example.local/v3/"
+
+	workspace, err := manager.CreateWorkspace(ctx, cfg)
+	if err != nil {
+		t.Fatalf("Failed to create workspace: %v", err)
+	}
+	defer manager.CleanupWorkspace(ctx, workspace)
+
+	// Render infrastructure atomically
+	if err := RenderInfrastructureClusterAtomic(cfg, workspace); err != nil {
+		t.Fatalf("RenderInfrastructureClusterAtomic failed: %v", err)
+	}
+
+	// Verify main.tf was created
+	mainTfPath := filepath.Join("infrastructure", "clusters", cfg.ClusterName(), "main.tf")
+	if !workspace.Exists(mainTfPath) {
+		t.Error("main.tf was not created")
+	}
+
+	// Verify content
+	data, err := os.ReadFile(workspace.GetPath(mainTfPath))
+	if err != nil {
+		t.Fatalf("Failed to read main.tf: %v", err)
+	}
+
+	content := string(data)
+	if !strings.Contains(content, cfg.OpenCenter.Cluster.Kubernetes.Version) {
+		t.Errorf("main.tf missing kubernetes version %q", cfg.OpenCenter.Cluster.Kubernetes.Version)
+	}
+
+	if !strings.Contains(content, cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL) {
+		t.Errorf("main.tf missing auth_url %q", cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL)
+	}
+}
+
+// TestRenderClusterAppsAtomic tests atomic file operations for cluster apps rendering.
+func TestRenderClusterAppsAtomic(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewWorkspaceManager(tempDir)
+	ctx := context.Background()
+
+	cfg := config.NewDefault("cluster-apps-atomic")
+	cfg.OpenCenter.Cluster.ClusterName = "cluster-apps-atomic"
+
+	workspace, err := manager.CreateWorkspace(ctx, cfg)
+	if err != nil {
+		t.Fatalf("Failed to create workspace: %v", err)
+	}
+	defer manager.CleanupWorkspace(ctx, workspace)
+
+	// Render cluster apps atomically
+	if err := RenderClusterAppsAtomic(cfg, workspace); err != nil {
+		t.Fatalf("RenderClusterAppsAtomic failed: %v", err)
+	}
+
+	// Verify sources.yaml was created
+	sourcesPath := filepath.Join("applications", "overlays", cfg.ClusterName(), "managed-services", "fluxcd", "sources.yaml")
+	if !workspace.Exists(sourcesPath) {
+		t.Error("sources.yaml was not created")
+	}
+
+	// Verify content
+	data, err := os.ReadFile(workspace.GetPath(sourcesPath))
+	if err != nil {
+		t.Fatalf("Failed to read sources.yaml: %v", err)
+	}
+
+	if !strings.Contains(string(data), cfg.ClusterName()) {
+		t.Errorf("sources.yaml missing cluster name %q", cfg.ClusterName())
+	}
+}
+
+// TestAtomicOperationsPreventPartialWrites tests that atomic operations prevent partial file writes.
+func TestAtomicOperationsPreventPartialWrites(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewWorkspaceManager(tempDir)
+	ctx := context.Background()
+
+	cfg := config.NewDefault("partial-write-test")
+	workspace, err := manager.CreateWorkspace(ctx, cfg)
+	if err != nil {
+		t.Fatalf("Failed to create workspace: %v", err)
+	}
+	defer manager.CleanupWorkspace(ctx, workspace)
+
+	// Create a transaction with multiple operations
+	tx := NewTransaction(workspace)
+
+	// Add multiple file operations
+	tx.WriteFile("file1.txt", []byte("content1"), 0o644)
+	tx.WriteFile("file2.txt", []byte("content2"), 0o644)
+	tx.WriteFile("file3.txt", []byte("content3"), 0o644)
+
+	// Add an operation that will fail (invalid path with null byte)
+	tx.WriteFile("invalid\x00path.txt", []byte("content"), 0o644)
+
+	// Commit transaction (should fail and rollback)
+	err = tx.Commit()
+	if err == nil {
+		t.Error("Transaction should fail with invalid path")
+	}
+
+	// Verify no files were created (all rolled back)
+	if workspace.Exists("file1.txt") {
+		t.Error("file1.txt should not exist after rollback")
+	}
+
+	if workspace.Exists("file2.txt") {
+		t.Error("file2.txt should not exist after rollback")
+	}
+
+	if workspace.Exists("file3.txt") {
+		t.Error("file3.txt should not exist after rollback")
+	}
+
+	// Now test successful atomic operations
+	tx2 := NewTransaction(workspace)
+	tx2.WriteFile("success1.txt", []byte("success content 1"), 0o644)
+	tx2.WriteFile("success2.txt", []byte("success content 2"), 0o644)
+
+	if err := tx2.Commit(); err != nil {
+		t.Fatalf("Successful transaction should not fail: %v", err)
+	}
+
+	// Verify all files were created
+	if !workspace.Exists("success1.txt") {
+		t.Error("success1.txt should exist after successful commit")
+	}
+
+	if !workspace.Exists("success2.txt") {
+		t.Error("success2.txt should exist after successful commit")
+	}
+
+	// Verify content
+	content1, _ := os.ReadFile(workspace.GetPath("success1.txt"))
+	if string(content1) != "success content 1" {
+		t.Errorf("Expected 'success content 1', got '%s'", string(content1))
 	}
 }

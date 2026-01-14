@@ -92,7 +92,7 @@ type GoTemplateEngine struct {
 	cache        map[string]*template.Template
 	cacheEnabled bool
 	mu           sync.RWMutex
-	fsys         fs.FS // Optional embedded filesystem
+	fsys         fs.FS              // Optional embedded filesystem
 	rootTemplate *template.Template // Root template for named template collections
 }
 

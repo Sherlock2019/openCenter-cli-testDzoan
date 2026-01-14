@@ -127,7 +127,7 @@ func (h *DefaultErrorHandler) GetSuggestions(err error) []string {
 
 	errorType := h.determineErrorType(err)
 	suggestions := make([]string, 0)
-	
+
 	// Start with type-specific suggestions
 	if typeSuggestions, ok := h.suggestionMap[errorType]; ok {
 		suggestions = append(suggestions, typeSuggestions...)

@@ -477,27 +477,27 @@ func TestMigrationErrorMessages(t *testing.T) {
 	mgr := NewVersionedSchemaManager(CurrentSchemaVersion, nil)
 
 	tests := []struct {
-		name        string
-		fromVersion string
-		toVersion   string
+		name          string
+		fromVersion   string
+		toVersion     string
 		shouldContain []string
 	}{
 		{
-			name:        "invalid source version error",
-			fromVersion: "v99.0.0",
-			toVersion:   SchemaVersion1_0_0,
+			name:          "invalid source version error",
+			fromVersion:   "v99.0.0",
+			toVersion:     SchemaVersion1_0_0,
 			shouldContain: []string{"no migration path", "v99.0.0", SchemaVersion1_0_0},
 		},
 		{
-			name:        "invalid target version error",
-			fromVersion: SchemaVersion1_0_0,
-			toVersion:   "v99.0.0",
+			name:          "invalid target version error",
+			fromVersion:   SchemaVersion1_0_0,
+			toVersion:     "v99.0.0",
 			shouldContain: []string{"no migration path", SchemaVersion1_0_0, "v99.0.0"},
 		},
 		{
-			name:        "both invalid error",
-			fromVersion: "v98.0.0",
-			toVersion:   "v99.0.0",
+			name:          "both invalid error",
+			fromVersion:   "v98.0.0",
+			toVersion:     "v99.0.0",
 			shouldContain: []string{"no migration path", "v98.0.0", "v99.0.0"},
 		},
 	}

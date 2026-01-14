@@ -189,12 +189,12 @@ Line 5: End`
 // TestParseTemplateError tests the parseTemplateError function.
 func TestParseTemplateError(t *testing.T) {
 	tests := []struct {
-		name           string
-		errorMsg       string
-		expectedLine   int
-		expectedCol    int
-		expectedMsg    string
-		description    string
+		name         string
+		errorMsg     string
+		expectedLine int
+		expectedCol  int
+		expectedMsg  string
+		description  string
 	}{
 		{
 			name:         "line_and_column",

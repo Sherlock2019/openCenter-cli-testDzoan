@@ -1429,4 +1429,3 @@ func convertServerPoolsToMap(pools []config.AdditionalServerPool) []map[string]a
 	}
 	return result
 }
-

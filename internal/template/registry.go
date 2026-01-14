@@ -13,6 +13,7 @@ type TemplateRegistry interface {
 	GetTemplatesForProvider(provider string) []TemplateDefinition
 	GetTemplatesForService(service string) []TemplateDefinition
 	GetTemplatesForEnabledServices(enabledServices []string) []TemplateDefinition
+	GetTemplatesForType(templateType TemplateType) []TemplateDefinition
 	ResolveTemplateDependencies(templates []string) ([]TemplateDefinition, error)
 	ListTemplates() []TemplateDefinition
 	UnregisterTemplate(name string) error
@@ -26,18 +27,19 @@ const (
 	TemplateTypeService        TemplateType = "service"
 	TemplateTypeBase           TemplateType = "base"
 	TemplateTypeOverlay        TemplateType = "overlay"
+	TemplateTypeConfig         TemplateType = "config"
 )
 
 // ConditionType represents the type of rendering condition
 type ConditionType string
 
 const (
-	ConditionTypeEquals       ConditionType = "equals"
-	ConditionTypeNotEquals    ConditionType = "not_equals"
-	ConditionTypeContains     ConditionType = "contains"
-	ConditionTypeExists       ConditionType = "exists"
-	ConditionTypeGreaterThan  ConditionType = "greater_than"
-	ConditionTypeLessThan     ConditionType = "less_than"
+	ConditionTypeEquals      ConditionType = "equals"
+	ConditionTypeNotEquals   ConditionType = "not_equals"
+	ConditionTypeContains    ConditionType = "contains"
+	ConditionTypeExists      ConditionType = "exists"
+	ConditionTypeGreaterThan ConditionType = "greater_than"
+	ConditionTypeLessThan    ConditionType = "less_than"
 )
 
 // RenderCondition defines a condition for template rendering
@@ -287,6 +289,29 @@ func (r *InMemoryTemplateRegistry) GetTemplatesForEnabledServices(enabledService
 		}
 
 		if hasEnabledService {
+			result = append(result, template)
+		}
+	}
+
+	// Sort by priority and name
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Metadata.Priority != result[j].Metadata.Priority {
+			return result[i].Metadata.Priority > result[j].Metadata.Priority
+		}
+		return result[i].Name < result[j].Name
+	})
+
+	return result
+}
+
+// GetTemplatesForType returns all templates of a specific type
+func (r *InMemoryTemplateRegistry) GetTemplatesForType(templateType TemplateType) []TemplateDefinition {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	var result []TemplateDefinition
+	for _, template := range r.templates {
+		if template.Type == templateType {
 			result = append(result, template)
 		}
 	}

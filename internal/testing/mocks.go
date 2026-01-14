@@ -40,11 +40,11 @@ type MockTemplateEngine struct {
 	ClearCacheFunc func()
 
 	// Tracking fields for verification
-	RenderCalls          []RenderCall
+	RenderCalls           []RenderCall
 	ValidateTemplateCalls []string
-	RegisteredFunctions  map[string]interface{}
-	CacheEnabled         bool
-	CacheClearCount      int
+	RegisteredFunctions   map[string]interface{}
+	CacheEnabled          bool
+	CacheClearCount       int
 }
 
 // RenderCall tracks a call to Render
@@ -56,8 +56,8 @@ type RenderCall struct {
 // NewMockTemplateEngine creates a new mock template engine with default behaviors.
 func NewMockTemplateEngine() *MockTemplateEngine {
 	return &MockTemplateEngine{
-		RegisteredFunctions: make(map[string]interface{}),
-		RenderCalls:         make([]RenderCall, 0),
+		RegisteredFunctions:   make(map[string]interface{}),
+		RenderCalls:           make([]RenderCall, 0),
 		ValidateTemplateCalls: make([]string, 0),
 	}
 }
@@ -300,29 +300,40 @@ type MockTemplateRegistry struct {
 	templates map[string]interface{}
 
 	// Function customization
-	RegisterTemplateFunc            func(template interface{}) error
-	GetTemplateFunc                 func(name string) (interface{}, error)
-	GetTemplatesForProviderFunc     func(provider string) []interface{}
-	GetTemplatesForServiceFunc      func(service string) []interface{}
-	ResolveTemplateDependenciesFunc func(templates []string) ([]interface{}, error)
+	RegisterTemplateFunc               func(template interface{}) error
+	GetTemplateFunc                    func(name string) (interface{}, error)
+	GetTemplatesForProviderFunc        func(provider string) []interface{}
+	GetTemplatesForServiceFunc         func(service string) []interface{}
+	GetTemplatesForEnabledServicesFunc func(enabledServices []string) []interface{}
+	GetTemplatesForTypeFunc            func(templateType interface{}) []interface{}
+	ResolveTemplateDependenciesFunc    func(templates []string) ([]interface{}, error)
+	ListTemplatesFunc                  func() []interface{}
+	UnregisterTemplateFunc             func(name string) error
 
 	// Tracking fields
-	RegisterTemplateCalls            []interface{}
-	GetTemplateCalls                 []string
-	GetTemplatesForProviderCalls     []string
-	GetTemplatesForServiceCalls      []string
-	ResolveTemplateDependenciesCalls [][]string
+	RegisterTemplateCalls               []interface{}
+	GetTemplateCalls                    []string
+	GetTemplatesForProviderCalls        []string
+	GetTemplatesForServiceCalls         []string
+	GetTemplatesForEnabledServicesCalls [][]string
+	GetTemplatesForTypeCalls            []interface{}
+	ResolveTemplateDependenciesCalls    [][]string
+	ListTemplatesCalls                  int
+	UnregisterTemplateCalls             []string
 }
 
 // NewMockTemplateRegistry creates a new mock template registry.
 func NewMockTemplateRegistry() *MockTemplateRegistry {
 	return &MockTemplateRegistry{
-		templates:                        make(map[string]interface{}),
-		RegisterTemplateCalls:            make([]interface{}, 0),
-		GetTemplateCalls:                 make([]string, 0),
-		GetTemplatesForProviderCalls:     make([]string, 0),
-		GetTemplatesForServiceCalls:      make([]string, 0),
-		ResolveTemplateDependenciesCalls: make([][]string, 0),
+		templates:                           make(map[string]interface{}),
+		RegisterTemplateCalls:               make([]interface{}, 0),
+		GetTemplateCalls:                    make([]string, 0),
+		GetTemplatesForProviderCalls:        make([]string, 0),
+		GetTemplatesForServiceCalls:         make([]string, 0),
+		GetTemplatesForEnabledServicesCalls: make([][]string, 0),
+		GetTemplatesForTypeCalls:            make([]interface{}, 0),
+		ResolveTemplateDependenciesCalls:    make([][]string, 0),
+		UnregisterTemplateCalls:             make([]string, 0),
 	}
 }
 
@@ -395,6 +406,58 @@ func (m *MockTemplateRegistry) ResolveTemplateDependencies(templates []string) (
 	}
 
 	return []interface{}{}, nil
+}
+
+// GetTemplatesForEnabledServices implements TemplateRegistry.GetTemplatesForEnabledServices
+func (m *MockTemplateRegistry) GetTemplatesForEnabledServices(enabledServices []string) []interface{} {
+	m.mu.Lock()
+	m.GetTemplatesForEnabledServicesCalls = append(m.GetTemplatesForEnabledServicesCalls, enabledServices)
+	m.mu.Unlock()
+
+	if m.GetTemplatesForEnabledServicesFunc != nil {
+		return m.GetTemplatesForEnabledServicesFunc(enabledServices)
+	}
+
+	return []interface{}{}
+}
+
+// GetTemplatesForType implements TemplateRegistry.GetTemplatesForType
+func (m *MockTemplateRegistry) GetTemplatesForType(templateType interface{}) []interface{} {
+	m.mu.Lock()
+	m.GetTemplatesForTypeCalls = append(m.GetTemplatesForTypeCalls, templateType)
+	m.mu.Unlock()
+
+	if m.GetTemplatesForTypeFunc != nil {
+		return m.GetTemplatesForTypeFunc(templateType)
+	}
+
+	return []interface{}{}
+}
+
+// ListTemplates implements TemplateRegistry.ListTemplates
+func (m *MockTemplateRegistry) ListTemplates() []interface{} {
+	m.mu.Lock()
+	m.ListTemplatesCalls++
+	m.mu.Unlock()
+
+	if m.ListTemplatesFunc != nil {
+		return m.ListTemplatesFunc()
+	}
+
+	return []interface{}{}
+}
+
+// UnregisterTemplate implements TemplateRegistry.UnregisterTemplate
+func (m *MockTemplateRegistry) UnregisterTemplate(name string) error {
+	m.mu.Lock()
+	m.UnregisterTemplateCalls = append(m.UnregisterTemplateCalls, name)
+	m.mu.Unlock()
+
+	if m.UnregisterTemplateFunc != nil {
+		return m.UnregisterTemplateFunc(name)
+	}
+
+	return nil
 }
 
 // MockGitOpsGenerator provides a mock implementation of GitOps generator for testing.
@@ -742,14 +805,14 @@ type MockMigrationManager struct {
 	mu sync.RWMutex
 
 	// Configuration
-	currentVersion     string
-	supportedVersions  []string
+	currentVersion    string
+	supportedVersions []string
 
 	// Function customization
-	MigrateConfigFunc          func(cfg config.Config, targetVersion string) (config.Config, error)
-	GetCurrentVersionFunc      func() string
-	GetSupportedVersionsFunc   func() []string
-	ValidateMigrationPathFunc  func(fromVersion, toVersion string) error
+	MigrateConfigFunc         func(cfg config.Config, targetVersion string) (config.Config, error)
+	GetCurrentVersionFunc     func() string
+	GetSupportedVersionsFunc  func() []string
+	ValidateMigrationPathFunc func(fromVersion, toVersion string) error
 
 	// Tracking fields
 	MigrateConfigCalls         []MigrateConfigCall

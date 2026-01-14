@@ -211,13 +211,13 @@ func TestCompareConfigs_MetadataTimestampChange(t *testing.T) {
 	// Test with full default configs to avoid zero-value issues
 	config1 := NewDefault("test-cluster")
 	config2 := NewDefault("test-cluster")
-	
+
 	// Set explicit timestamps
 	baseTime := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	config1.Metadata.CreatedAt = baseTime
 	config1.Metadata.UpdatedAt = baseTime
 	config1.Metadata.CreatedBy = "user1"
-	
+
 	config2.Metadata.CreatedAt = baseTime
 	config2.Metadata.UpdatedAt = baseTime.Add(24 * time.Hour)
 	config2.Metadata.CreatedBy = "user1"

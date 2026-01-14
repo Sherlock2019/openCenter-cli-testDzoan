@@ -7,7 +7,7 @@ import (
 
 func BenchmarkRegisterTemplate(b *testing.B) {
 	registry := NewInMemoryTemplateRegistry()
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		template := TemplateDefinition{
@@ -25,7 +25,7 @@ func BenchmarkRegisterTemplate(b *testing.B) {
 
 func BenchmarkGetTemplate(b *testing.B) {
 	registry := NewInMemoryTemplateRegistry()
-	
+
 	// Pre-populate registry
 	for i := 0; i < 1000; i++ {
 		template := TemplateDefinition{
@@ -35,7 +35,7 @@ func BenchmarkGetTemplate(b *testing.B) {
 		}
 		_ = registry.RegisterTemplate(template)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = registry.GetTemplate(fmt.Sprintf("template-%d", i%1000))
@@ -44,7 +44,7 @@ func BenchmarkGetTemplate(b *testing.B) {
 
 func BenchmarkGetTemplatesForProvider(b *testing.B) {
 	registry := NewInMemoryTemplateRegistry()
-	
+
 	// Pre-populate with mixed providers
 	providers := []string{"openstack", "aws", "azure", ""}
 	for i := 0; i < 1000; i++ {
@@ -57,7 +57,7 @@ func BenchmarkGetTemplatesForProvider(b *testing.B) {
 		}
 		_ = registry.RegisterTemplate(template)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = registry.GetTemplatesForProvider("openstack")
@@ -66,7 +66,7 @@ func BenchmarkGetTemplatesForProvider(b *testing.B) {
 
 func BenchmarkGetTemplatesForService(b *testing.B) {
 	registry := NewInMemoryTemplateRegistry()
-	
+
 	// Pre-populate with services
 	services := [][]string{
 		{"prometheus", "monitoring"},
@@ -74,7 +74,7 @@ func BenchmarkGetTemplatesForService(b *testing.B) {
 		{"loki", "logging"},
 		{"elasticsearch", "logging"},
 	}
-	
+
 	for i := 0; i < 1000; i++ {
 		template := TemplateDefinition{
 			Name:     fmt.Sprintf("template-%d", i),
@@ -85,7 +85,7 @@ func BenchmarkGetTemplatesForService(b *testing.B) {
 		}
 		_ = registry.RegisterTemplate(template)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = registry.GetTemplatesForService("monitoring")
@@ -94,14 +94,14 @@ func BenchmarkGetTemplatesForService(b *testing.B) {
 
 func BenchmarkResolveTemplateDependencies(b *testing.B) {
 	registry := NewInMemoryTemplateRegistry()
-	
+
 	// Create a dependency chain: base -> layer1 -> layer2 -> ... -> layer10
 	_ = registry.RegisterTemplate(TemplateDefinition{
 		Name: "base",
 		Path: "/path/to/base",
 		Type: TemplateTypeBase,
 	})
-	
+
 	for i := 1; i <= 10; i++ {
 		template := TemplateDefinition{
 			Name:         fmt.Sprintf("layer%d", i),
@@ -114,7 +114,7 @@ func BenchmarkResolveTemplateDependencies(b *testing.B) {
 		}
 		_ = registry.RegisterTemplate(template)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = registry.ResolveTemplateDependencies([]string{"layer10"})
@@ -123,7 +123,7 @@ func BenchmarkResolveTemplateDependencies(b *testing.B) {
 
 func BenchmarkListTemplates(b *testing.B) {
 	registry := NewInMemoryTemplateRegistry()
-	
+
 	// Pre-populate registry
 	for i := 0; i < 1000; i++ {
 		template := TemplateDefinition{
@@ -133,7 +133,7 @@ func BenchmarkListTemplates(b *testing.B) {
 		}
 		_ = registry.RegisterTemplate(template)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = registry.ListTemplates()
@@ -142,7 +142,7 @@ func BenchmarkListTemplates(b *testing.B) {
 
 func BenchmarkConcurrentReads(b *testing.B) {
 	registry := NewInMemoryTemplateRegistry()
-	
+
 	// Pre-populate registry
 	for i := 0; i < 100; i++ {
 		template := TemplateDefinition{
@@ -153,7 +153,7 @@ func BenchmarkConcurrentReads(b *testing.B) {
 		}
 		_ = registry.RegisterTemplate(template)
 	}
-	
+
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
@@ -167,7 +167,7 @@ func BenchmarkConcurrentReads(b *testing.B) {
 
 func BenchmarkConcurrentWrites(b *testing.B) {
 	registry := NewInMemoryTemplateRegistry()
-	
+
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
@@ -185,7 +185,7 @@ func BenchmarkConcurrentWrites(b *testing.B) {
 
 func BenchmarkMixedOperations(b *testing.B) {
 	registry := NewInMemoryTemplateRegistry()
-	
+
 	// Pre-populate
 	for i := 0; i < 100; i++ {
 		template := TemplateDefinition{
@@ -196,7 +196,7 @@ func BenchmarkMixedOperations(b *testing.B) {
 		}
 		_ = registry.RegisterTemplate(template)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Mix of operations

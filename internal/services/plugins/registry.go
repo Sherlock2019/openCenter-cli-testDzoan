@@ -17,34 +17,34 @@ func RegisterBuiltInServices(registry svc.ServiceRegistry) error {
 		{plugin: NewDefaultServicePlugin("fluxcd", svc.ServiceTypeGitOps), dependencies: []string{}},
 		{plugin: NewDefaultServicePlugin("gateway-api", svc.ServiceTypeNetworking), dependencies: []string{}},
 		{plugin: NewDefaultServicePlugin("gateway", svc.ServiceTypeNetworking), dependencies: []string{"gateway-api"}},
-		
+
 		// Networking services
 		{plugin: NewCalicoPlugin(), dependencies: []string{}},
-		
+
 		// Security services
 		{plugin: NewCertManagerPlugin(), dependencies: []string{}},
 		{plugin: NewKeycloakPlugin(), dependencies: []string{"cert-manager"}},
 		{plugin: NewDefaultServicePlugin("kyverno", svc.ServiceTypeSecurity), dependencies: []string{}},
 		{plugin: NewDefaultServicePlugin("rbac-manager", svc.ServiceTypeSecurity), dependencies: []string{}},
-		
+
 		// Storage services
 		{plugin: NewDefaultServicePlugin("external-snapshotter", svc.ServiceTypeStorage), dependencies: []string{}},
 		{plugin: NewDefaultServicePlugin("openstack-csi", svc.ServiceTypeStorage), dependencies: []string{}},
 		{plugin: NewVSphereCSIPlugin(), dependencies: []string{}},
 		{plugin: NewVeleroPlugin(), dependencies: []string{}},
 		{plugin: NewEtcdBackupPlugin(), dependencies: []string{}},
-		
+
 		// Monitoring services
 		{plugin: NewPrometheusStackPlugin(), dependencies: []string{}},
 		{plugin: NewAlertProxyPlugin(), dependencies: []string{"kube-prometheus-stack"}},
-		
+
 		// Logging services
 		{plugin: NewLokiPlugin(), dependencies: []string{}},
-		
+
 		// Dashboard services
 		{plugin: NewHeadlampPlugin(), dependencies: []string{}},
 		{plugin: NewWeaveGitOpsPlugin(), dependencies: []string{"fluxcd"}},
-		
+
 		// Other services
 		{plugin: NewDefaultServicePlugin("openstack-ccm", svc.ServiceTypeCore), dependencies: []string{}},
 		{plugin: NewDefaultServicePlugin("olm", svc.ServiceTypeCore), dependencies: []string{}},

@@ -445,7 +445,7 @@ func TestFeatureFlagOutputIdentity(t *testing.T) {
 			data:     map[string][]string{"Items": {"a", "b", "c"}},
 		},
 		{
-			name: "conditional_logic",
+			name:     "conditional_logic",
 			template: `{{if .Enabled}}enabled{{else}}disabled{{end}}`,
 			data:     map[string]bool{"Enabled": true},
 		},
@@ -795,12 +795,12 @@ kubernetes:
   workers:
     count: {{.WorkerCount | default 3}}`,
 			data: map[string]interface{}{
-				"Organization":       "test-org",
-				"ClusterName":        "test-cluster",
-				"Provider":           "openstack",
-				"KubernetesVersion":  "1.29.0",
-				"ControlPlaneCount":  3,
-				"WorkerCount":        5,
+				"Organization":      "test-org",
+				"ClusterName":       "test-cluster",
+				"Provider":          "openstack",
+				"KubernetesVersion": "1.29.0",
+				"ControlPlaneCount": 3,
+				"WorkerCount":       5,
 			},
 		},
 		{

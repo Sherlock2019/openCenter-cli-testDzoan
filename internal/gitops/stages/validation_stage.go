@@ -1,0 +1,186 @@
+// Copyright 2025 Victor Palma <victor.palma@rackspace.com>
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package stages
+
+import (
+	"context"
+	"fmt"
+	"path/filepath"
+	"strings"
+
+	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/openCenter-cli/internal/gitops"
+)
+
+// ValidationStage validates that the generated GitOps repository structure
+// meets all requirements before completion.
+// This stage should typically be the last stage in the generation pipeline.
+type ValidationStage struct {
+	BaseStage
+}
+
+// NewValidationStage creates a new validation stage.
+// This stage depends on all other generation stages completing first.
+func NewValidationStage(dependencies []string) *ValidationStage {
+	return &ValidationStage{
+		BaseStage: NewBaseStage(
+			"validation",
+			"Validate generated repository structure",
+			dependencies,
+		),
+	}
+}
+
+// Execute validates the generated repository structure.
+// This performs comprehensive checks to ensure all required components exist.
+func (vs *ValidationStage) Execute(ctx context.Context, workspace *gitops.GitOpsWorkspace) error {
+	// Validate base directory structure
+	if err := vs.validateBaseStructure(workspace); err != nil {
+		return fmt.Errorf("base structure validation failed: %w", err)
+	}
+
+	// Validate required files
+	if err := vs.validateRequiredFiles(workspace); err != nil {
+		return fmt.Errorf("required files validation failed: %w", err)
+	}
+
+	// Validate cluster-specific structure
+	if err := vs.validateClusterStructure(workspace); err != nil {
+		return fmt.Errorf("cluster structure validation failed: %w", err)
+	}
+
+	// Validate organization structure
+	if err := vs.validateOrganizationStructure(workspace); err != nil {
+		return fmt.Errorf("organization structure validation failed: %w", err)
+	}
+
+	return nil
+}
+
+// validateBaseStructure checks that the base directory structure exists.
+func (vs *ValidationStage) validateBaseStructure(workspace *gitops.GitOpsWorkspace) error {
+	requiredDirs := []string{
+		"applications",
+		"applications/base",
+		"applications/overlays",
+		"infrastructure",
+		"infrastructure/base",
+		"infrastructure/clusters",
+	}
+
+	var missing []string
+	for _, dir := range requiredDirs {
+		if !workspace.Exists(dir) {
+			missing = append(missing, dir)
+		}
+	}
+
+	if len(missing) > 0 {
+		return fmt.Errorf("missing required directories: %s", strings.Join(missing, ", "))
+	}
+
+	return nil
+}
+
+// validateRequiredFiles checks that required files exist.
+func (vs *ValidationStage) validateRequiredFiles(workspace *gitops.GitOpsWorkspace) error {
+	requiredFiles := []string{
+		".gitignore",
+		"README.md",
+	}
+
+	var missing []string
+	for _, file := range requiredFiles {
+		if !workspace.Exists(file) {
+			missing = append(missing, file)
+		}
+	}
+
+	if len(missing) > 0 {
+		return fmt.Errorf("missing required files: %s", strings.Join(missing, ", "))
+	}
+
+	return nil
+}
+
+// validateClusterStructure checks that cluster-specific directories exist.
+func (vs *ValidationStage) validateClusterStructure(workspace *gitops.GitOpsWorkspace) error {
+	clusterName := workspace.Config.ClusterName()
+	if clusterName == "" {
+		return fmt.Errorf("cluster name is empty")
+	}
+
+	// Check cluster-specific directories
+	clusterDirs := []string{
+		filepath.Join("applications/overlays", clusterName),
+		filepath.Join("infrastructure/clusters", clusterName),
+	}
+
+	var missing []string
+	for _, dir := range clusterDirs {
+		if !workspace.Exists(dir) {
+			missing = append(missing, dir)
+		}
+	}
+
+	if len(missing) > 0 {
+		return fmt.Errorf("missing cluster-specific directories: %s", strings.Join(missing, ", "))
+	}
+
+	return nil
+}
+
+// validateOrganizationStructure checks organization-level structure.
+func (vs *ValidationStage) validateOrganizationStructure(workspace *gitops.GitOpsWorkspace) error {
+	// Check for SOPS configuration if secrets backend is configured
+	// Secrets are considered enabled if a backend is specified
+	if workspace.Config.OpenCenter.Secrets.Backend != "" {
+		if !workspace.Exists(".sops.yaml") {
+			return fmt.Errorf("SOPS configuration file (.sops.yaml) is missing but secrets backend is configured")
+		}
+	}
+
+	// Check for .opencenter marker file
+	if !workspace.Exists(".opencenter") {
+		// This is a warning, not an error - marker file may be created later
+		// Just log it for now
+	}
+
+	return nil
+}
+
+// Rollback is a no-op for validation stage since it doesn't modify anything.
+func (vs *ValidationStage) Rollback(ctx context.Context, workspace *gitops.GitOpsWorkspace) error {
+	// Validation doesn't modify anything, so no rollback needed
+	return nil
+}
+
+// Validate checks that validation completed successfully.
+// For the validation stage itself, this is a no-op since Execute already validates.
+func (vs *ValidationStage) Validate(ctx context.Context, workspace *gitops.GitOpsWorkspace) error {
+	// The Execute method already performs validation
+	// This method is called after Execute, so if we got here, validation passed
+	return nil
+}
+
+// DryRun returns a plan for the validation stage.
+func (vs *ValidationStage) DryRun(ctx context.Context, cfg config.Config) (*gitops.StagePlan, error) {
+	return &gitops.StagePlan{
+		Name:         vs.Name(),
+		Description:  vs.Description(),
+		Files:        []string{}, // Validation doesn't create files
+		Directories:  []string{}, // Validation doesn't create directories
+		Dependencies: vs.Dependencies(),
+	}, nil
+}

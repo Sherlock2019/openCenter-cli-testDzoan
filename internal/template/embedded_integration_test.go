@@ -39,7 +39,7 @@ func TestRegisterRealGitOpsTemplates(t *testing.T) {
 	// Log registered templates for debugging
 	t.Logf("Registered %d templates from gitops.Files", len(templates))
 	for _, tmpl := range templates {
-		t.Logf("  - %s (type: %s, provider: %s, services: %v)", 
+		t.Logf("  - %s (type: %s, provider: %s, services: %v)",
 			tmpl.Name, tmpl.Type, tmpl.Provider, tmpl.Services)
 	}
 
@@ -81,7 +81,7 @@ func TestRegisterRealProvisionTemplates(t *testing.T) {
 	// Note: provision package uses templatesFS which is not exported
 	// We'll test with a mock filesystem that matches the structure
 	t.Skip("Skipping: provision.templatesFS is not exported, tested via mock in other tests")
-	
+
 	// Register templates from the actual provision embedded filesystem
 	// err := RegisterProvisionTemplates(registry, provision.templatesFS)
 	// require.NoError(t, err)
@@ -98,7 +98,7 @@ func TestRegisterRealProvisionTemplates(t *testing.T) {
 
 	// Verify all are infrastructure type
 	for _, tmpl := range templates {
-		assert.Equal(t, TemplateTypeInfrastructure, tmpl.Type, 
+		assert.Equal(t, TemplateTypeInfrastructure, tmpl.Type,
 			"provision templates should be infrastructure type")
 	}
 
@@ -170,7 +170,7 @@ func TestTemplateRegistryFiltering(t *testing.T) {
 			// Verify all returned templates match the provider or are universal
 			for _, tmpl := range templates {
 				if tmpl.Provider != "" {
-					assert.Equal(t, provider, tmpl.Provider, 
+					assert.Equal(t, provider, tmpl.Provider,
 						"template %s should match provider filter", tmpl.Name)
 				}
 			}

@@ -150,7 +150,7 @@ func TestGetTemplatesForProvider(t *testing.T) {
 	t.Run("openstack provider", func(t *testing.T) {
 		result := registry.GetTemplatesForProvider("openstack")
 		assert.Len(t, result, 3) // 2 openstack + 1 universal
-		
+
 		// Check that openstack templates are included
 		names := make([]string, len(result))
 		for i, tmpl := range result {
@@ -164,7 +164,7 @@ func TestGetTemplatesForProvider(t *testing.T) {
 	t.Run("aws provider", func(t *testing.T) {
 		result := registry.GetTemplatesForProvider("aws")
 		assert.Len(t, result, 2) // 1 aws + 1 universal
-		
+
 		names := make([]string, len(result))
 		for i, tmpl := range result {
 			names[i] = tmpl.Name
@@ -214,7 +214,7 @@ func TestGetTemplatesForService(t *testing.T) {
 	t.Run("monitoring service", func(t *testing.T) {
 		result := registry.GetTemplatesForService("monitoring")
 		assert.Len(t, result, 2)
-		
+
 		names := make([]string, len(result))
 		for i, tmpl := range result {
 			names[i] = tmpl.Name
@@ -275,17 +275,17 @@ func TestResolveTemplateDependencies(t *testing.T) {
 		result, err := registry.ResolveTemplateDependencies([]string{"app"})
 		assert.NoError(t, err)
 		assert.Len(t, result, 3)
-		
+
 		// Dependencies should come before dependents
 		names := make([]string, len(result))
 		for i, tmpl := range result {
 			names[i] = tmpl.Name
 		}
-		
+
 		baseIdx := indexOf(names, "base")
 		middlewareIdx := indexOf(names, "middleware")
 		appIdx := indexOf(names, "app")
-		
+
 		assert.True(t, baseIdx < middlewareIdx)
 		assert.True(t, middlewareIdx < appIdx)
 	})
@@ -348,7 +348,7 @@ func TestListTemplates(t *testing.T) {
 
 	result := registry.ListTemplates()
 	assert.Len(t, result, 3)
-	
+
 	// Should be sorted by name
 	assert.Equal(t, "template-a", result[0].Name)
 	assert.Equal(t, "template-b", result[1].Name)
@@ -386,7 +386,7 @@ func TestUnregisterTemplate(t *testing.T) {
 	t.Run("can unregister without dependents", func(t *testing.T) {
 		err := registry.UnregisterTemplate("dependent")
 		assert.NoError(t, err)
-		
+
 		_, err = registry.GetTemplate("dependent")
 		assert.Error(t, err)
 	})
@@ -411,7 +411,7 @@ func TestConcurrentAccess(t *testing.T) {
 
 	// Concurrent reads and writes
 	done := make(chan bool)
-	
+
 	// Writer goroutine
 	go func() {
 		for i := 0; i < 100; i++ {
@@ -461,11 +461,11 @@ func TestTemplateRegistryManagesMetadataCorrectly(t *testing.T) {
 	// Test 1: Register template with complete metadata
 	t.Run("stores complete metadata", func(t *testing.T) {
 		template := TemplateDefinition{
-			Name:     "complete-template",
-			Path:     "/path/to/complete",
-			Type:     TemplateTypeInfrastructure,
-			Provider: "openstack",
-			Services: []string{"prometheus", "grafana"},
+			Name:         "complete-template",
+			Path:         "/path/to/complete",
+			Type:         TemplateTypeInfrastructure,
+			Provider:     "openstack",
+			Services:     []string{"prometheus", "grafana"},
 			Dependencies: []string{"base-template"},
 			Conditions: []RenderCondition{
 				{
@@ -598,7 +598,7 @@ func TestTemplateRegistryManagesMetadataCorrectly(t *testing.T) {
 		// Perform various operations
 		_ = registry.ListTemplates()
 		_ = registry.GetTemplatesForProvider("")
-		
+
 		// Verify metadata is still intact
 		retrieved, err := registry.GetTemplate("persistent-template")
 		require.NoError(t, err)
@@ -632,9 +632,9 @@ func TestTemplateRegistryManagesMetadataCorrectly(t *testing.T) {
 				},
 			},
 			{
-				Name:     "template-c",
-				Path:     "/c",
-				Type:     TemplateTypeOverlay,
+				Name: "template-c",
+				Path: "/c",
+				Type: TemplateTypeOverlay,
 				Metadata: TemplateMetadata{
 					Priority: 1,
 					Tags:     []string{"overlay"},
@@ -700,11 +700,11 @@ func TestProperty6_TemplateMetadataCompleteness(t *testing.T) {
 
 	// Register a template with complete metadata
 	template := TemplateDefinition{
-		Name:     "test-template",
-		Path:     "/path/to/template",
-		Type:     TemplateTypeInfrastructure,
-		Provider: "openstack",
-		Services: []string{"prometheus", "grafana"},
+		Name:         "test-template",
+		Path:         "/path/to/template",
+		Type:         TemplateTypeInfrastructure,
+		Provider:     "openstack",
+		Services:     []string{"prometheus", "grafana"},
 		Dependencies: []string{"base"},
 		Conditions: []RenderCondition{
 			{Type: ConditionTypeEquals, Field: "env", Value: "prod"},
@@ -761,7 +761,7 @@ func TestProperty6_TemplateMetadataCompleteness(t *testing.T) {
 	t.Run("has complete metadata", func(t *testing.T) {
 		retrieved, err := registry.GetTemplate("test-template")
 		require.NoError(t, err)
-		
+
 		// Verify all metadata fields are preserved
 		assert.NotEmpty(t, retrieved.Name)
 		assert.NotEmpty(t, retrieved.Path)
@@ -1075,7 +1075,7 @@ func TestServiceFilteringEdgeCases(t *testing.T) {
 
 		// Enabled services with duplicates
 		result := registry.GetTemplatesForEnabledServices([]string{"service1", "service1", "service1"})
-		
+
 		// Should still only return the template once
 		count := 0
 		for _, tmpl := range result {
@@ -1489,4 +1489,3 @@ func TestDependencyAndConditionValidationTogether(t *testing.T) {
 		assert.Contains(t, err.Error(), "invalid dependencies")
 	})
 }
-

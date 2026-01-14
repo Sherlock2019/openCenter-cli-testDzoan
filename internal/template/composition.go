@@ -38,13 +38,13 @@ type OverlayOrderingStrategy string
 const (
 	// OrderByPriorityDesc orders overlays by priority (highest first), then by name
 	OrderByPriorityDesc OverlayOrderingStrategy = "priority-desc"
-	
+
 	// OrderByPriorityAsc orders overlays by priority (lowest first), then by name
 	OrderByPriorityAsc OverlayOrderingStrategy = "priority-asc"
-	
+
 	// OrderByName orders overlays alphabetically by name
 	OrderByName OverlayOrderingStrategy = "name"
-	
+
 	// OrderByRegistration orders overlays in the order they were registered
 	OrderByRegistration OverlayOrderingStrategy = "registration"
 )
@@ -76,10 +76,10 @@ type TemplateComposer interface {
 
 	// ValidateComposition validates that a composition is valid
 	ValidateComposition(composition TemplateComposition) error
-	
+
 	// SetOrderingConfig sets the overlay ordering configuration
 	SetOrderingConfig(config OverlayOrderingConfig)
-	
+
 	// GetOrderingConfig returns the current overlay ordering configuration
 	GetOrderingConfig() OverlayOrderingConfig
 }
@@ -249,7 +249,7 @@ func (c *DefaultTemplateComposer) sortOverlays(overlays []TemplateOverlay) []Tem
 }
 
 // ApplyPatches applies patches to template content
-// 
+//
 // Patch System Overview:
 // The patch system supports three operations: add, remove, and replace.
 // Each operation supports multiple path strategies for flexible content manipulation.
@@ -257,27 +257,26 @@ func (c *DefaultTemplateComposer) sortOverlays(overlays []TemplateOverlay) []Tem
 // Path Strategies:
 //
 // 1. ADD Operation:
-//    - Path "." or empty: Append to end of content
-//    - Path "line:N": Insert after line number N (0-indexed)
-//    - Path "pattern": Insert after first line containing pattern
-//    - Example: {Operation: "add", Path: "line:5", Value: "new content"}
+//   - Path "." or empty: Append to end of content
+//   - Path "line:N": Insert after line number N (0-indexed)
+//   - Path "pattern": Insert after first line containing pattern
+//   - Example: {Operation: "add", Path: "line:5", Value: "new content"}
 //
 // 2. REMOVE Operation:
-//    - Path "line:N": Remove line number N (0-indexed)
-//    - Path "lines:N-M": Remove line range from N to M (inclusive)
-//    - Path "pattern": Remove all lines containing pattern
-//    - Example: {Operation: "remove", Path: "lines:10-15"}
+//   - Path "line:N": Remove line number N (0-indexed)
+//   - Path "lines:N-M": Remove line range from N to M (inclusive)
+//   - Path "pattern": Remove all lines containing pattern
+//   - Example: {Operation: "remove", Path: "lines:10-15"}
 //
 // 3. REPLACE Operation:
-//    - Path "line:N": Replace line number N (0-indexed)
-//    - Path "pattern": Replace first line containing pattern
-//    - For YAML key-value lines, preserves indentation and key
-//    - Example: {Operation: "replace", Path: "replicas", Value: "5"}
+//   - Path "line:N": Replace line number N (0-indexed)
+//   - Path "pattern": Replace first line containing pattern
+//   - For YAML key-value lines, preserves indentation and key
+//   - Example: {Operation: "replace", Path: "replicas", Value: "5"}
 //
 // Conditional Patches:
 // All patches support optional conditions that must be met for the patch to apply.
 // Example: {Operation: "add", Path: ".", Value: "debug: true", Condition: {Type: "equals", Field: "env", Value: "dev"}}
-//
 func (c *DefaultTemplateComposer) ApplyPatches(content string, patches []TemplatePatch, data interface{}) (string, error) {
 	result := content
 
@@ -324,7 +323,7 @@ func (c *DefaultTemplateComposer) ValidateComposition(composition TemplateCompos
 	}
 
 	var baseTemplateDef *TemplateDefinition
-	
+
 	// Check if base template exists in registry (only if registry is available)
 	// Note: We allow file paths as well, so we only check registry if the template name doesn't look like a path
 	if c.registry != nil && !strings.Contains(composition.BaseTemplate, "/") && !strings.Contains(composition.BaseTemplate, "\\") {
@@ -526,7 +525,7 @@ func (c *DefaultTemplateComposer) validateOverlayConflicts(overlays []TemplateOv
 			position int
 		}
 		var overlayProviders []overlayProviderInfo
-		
+
 		for i, overlay := range overlays {
 			// Try to get overlay definition from registry
 			if !strings.Contains(overlay.Name, "/") && !strings.Contains(overlay.Name, "\\") {
@@ -638,7 +637,7 @@ func (c *DefaultTemplateComposer) mergeTemplateContent(base, overlay string) (st
 // 4. Otherwise, append to end with path as comment
 func (c *DefaultTemplateComposer) applyAddPatch(content string, patch TemplatePatch) (string, error) {
 	valueStr := fmt.Sprintf("%v", patch.Value)
-	
+
 	// Strategy 1: Empty path or "." means append to end
 	if patch.Path == "" || patch.Path == "." {
 		if !strings.HasSuffix(content, "\n") {
@@ -646,7 +645,7 @@ func (c *DefaultTemplateComposer) applyAddPatch(content string, patch TemplatePa
 		}
 		return content + valueStr + "\n", nil
 	}
-	
+
 	// Strategy 2: Line number insertion (e.g., "line:5")
 	if strings.HasPrefix(patch.Path, "line:") {
 		lineNumStr := strings.TrimPrefix(patch.Path, "line:")
@@ -654,12 +653,12 @@ func (c *DefaultTemplateComposer) applyAddPatch(content string, patch TemplatePa
 		if _, err := fmt.Sscanf(lineNumStr, "%d", &lineNum); err != nil {
 			return "", fmt.Errorf("invalid line number in path %s: %w", patch.Path, err)
 		}
-		
+
 		lines := strings.Split(content, "\n")
 		if lineNum < 0 || lineNum > len(lines) {
 			return "", fmt.Errorf("line number %d out of range (0-%d)", lineNum, len(lines))
 		}
-		
+
 		// Insert after the specified line
 		result := make([]string, 0, len(lines)+1)
 		result = append(result, lines[:lineNum]...)
@@ -667,12 +666,12 @@ func (c *DefaultTemplateComposer) applyAddPatch(content string, patch TemplatePa
 		result = append(result, lines[lineNum:]...)
 		return strings.Join(result, "\n"), nil
 	}
-	
+
 	// Strategy 3: Key-based insertion (insert after first line containing the key)
 	lines := strings.Split(content, "\n")
 	inserted := false
 	var result []string
-	
+
 	for i, line := range lines {
 		result = append(result, line)
 		if !inserted && strings.Contains(line, patch.Path) {
@@ -686,7 +685,7 @@ func (c *DefaultTemplateComposer) applyAddPatch(content string, patch TemplatePa
 			break
 		}
 	}
-	
+
 	// If not inserted, append to end with comment
 	if !inserted {
 		if !strings.HasSuffix(content, "\n") {
@@ -695,7 +694,7 @@ func (c *DefaultTemplateComposer) applyAddPatch(content string, patch TemplatePa
 		result = append(result, fmt.Sprintf("# Added by patch at path: %s", patch.Path))
 		result = append(result, valueStr)
 	}
-	
+
 	return strings.Join(result, "\n"), nil
 }
 
@@ -707,7 +706,7 @@ func (c *DefaultTemplateComposer) applyAddPatch(content string, patch TemplatePa
 // 4. If path is a YAML key (e.g., "metadata.name"), remove that key and its value
 func (c *DefaultTemplateComposer) applyRemovePatch(content string, patch TemplatePatch) (string, error) {
 	lines := strings.Split(content, "\n")
-	
+
 	// Strategy 1: Single line removal (e.g., "line:5")
 	if strings.HasPrefix(patch.Path, "line:") {
 		lineNumStr := strings.TrimPrefix(patch.Path, "line:")
@@ -715,11 +714,11 @@ func (c *DefaultTemplateComposer) applyRemovePatch(content string, patch Templat
 		if _, err := fmt.Sscanf(lineNumStr, "%d", &lineNum); err != nil {
 			return "", fmt.Errorf("invalid line number in path %s: %w", patch.Path, err)
 		}
-		
+
 		if lineNum < 0 || lineNum >= len(lines) {
 			return "", fmt.Errorf("line number %d out of range (0-%d)", lineNum, len(lines)-1)
 		}
-		
+
 		// Remove the specified line
 		result := make([]string, 0, len(lines)-1)
 		result = append(result, lines[:lineNum]...)
@@ -728,7 +727,7 @@ func (c *DefaultTemplateComposer) applyRemovePatch(content string, patch Templat
 		}
 		return strings.Join(result, "\n"), nil
 	}
-	
+
 	// Strategy 2: Line range removal (e.g., "lines:5-10")
 	if strings.HasPrefix(patch.Path, "lines:") {
 		rangeStr := strings.TrimPrefix(patch.Path, "lines:")
@@ -736,11 +735,11 @@ func (c *DefaultTemplateComposer) applyRemovePatch(content string, patch Templat
 		if _, err := fmt.Sscanf(rangeStr, "%d-%d", &startLine, &endLine); err != nil {
 			return "", fmt.Errorf("invalid line range in path %s: %w", patch.Path, err)
 		}
-		
+
 		if startLine < 0 || endLine >= len(lines) || startLine > endLine {
 			return "", fmt.Errorf("line range %d-%d out of range or invalid (0-%d)", startLine, endLine, len(lines)-1)
 		}
-		
+
 		// Remove the specified range
 		result := make([]string, 0, len(lines)-(endLine-startLine+1))
 		result = append(result, lines[:startLine]...)
@@ -749,11 +748,11 @@ func (c *DefaultTemplateComposer) applyRemovePatch(content string, patch Templat
 		}
 		return strings.Join(result, "\n"), nil
 	}
-	
+
 	// Strategy 3: Pattern-based removal (remove all lines containing the pattern)
 	var result []string
 	removed := false
-	
+
 	for _, line := range lines {
 		if strings.Contains(line, patch.Path) {
 			removed = true
@@ -761,11 +760,11 @@ func (c *DefaultTemplateComposer) applyRemovePatch(content string, patch Templat
 		}
 		result = append(result, line)
 	}
-	
+
 	if !removed {
 		return "", fmt.Errorf("no lines found matching path pattern: %s", patch.Path)
 	}
-	
+
 	return strings.Join(result, "\n"), nil
 }
 
@@ -777,7 +776,7 @@ func (c *DefaultTemplateComposer) applyRemovePatch(content string, patch Templat
 func (c *DefaultTemplateComposer) applyReplacePatch(content string, patch TemplatePatch) (string, error) {
 	valueStr := fmt.Sprintf("%v", patch.Value)
 	lines := strings.Split(content, "\n")
-	
+
 	// Strategy 1: Line number replacement (e.g., "line:5")
 	if strings.HasPrefix(patch.Path, "line:") {
 		lineNumStr := strings.TrimPrefix(patch.Path, "line:")
@@ -785,20 +784,20 @@ func (c *DefaultTemplateComposer) applyReplacePatch(content string, patch Templa
 		if _, err := fmt.Sscanf(lineNumStr, "%d", &lineNum); err != nil {
 			return "", fmt.Errorf("invalid line number in path %s: %w", patch.Path, err)
 		}
-		
+
 		if lineNum < 0 || lineNum >= len(lines) {
 			return "", fmt.Errorf("line number %d out of range (0-%d)", lineNum, len(lines)-1)
 		}
-		
+
 		// Replace the specified line
 		lines[lineNum] = valueStr
 		return strings.Join(lines, "\n"), nil
 	}
-	
+
 	// Strategy 2: Pattern-based replacement (replace first matching line)
 	replaced := false
 	var result []string
-	
+
 	for _, line := range lines {
 		if !replaced && strings.Contains(line, patch.Path) {
 			// Check if this is a YAML key-value line
@@ -820,11 +819,11 @@ func (c *DefaultTemplateComposer) applyReplacePatch(content string, patch Templa
 			result = append(result, line)
 		}
 	}
-	
+
 	if !replaced {
 		return "", fmt.Errorf("no lines found matching path pattern: %s", patch.Path)
 	}
-	
+
 	return strings.Join(result, "\n"), nil
 }
 

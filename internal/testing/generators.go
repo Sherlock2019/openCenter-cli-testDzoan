@@ -97,8 +97,8 @@ func (g *ConfigGenerator) GenerateMinimalConfig(provider string) config.Config {
 			VRRPEnabled:          false,
 		},
 		Security: config.Security{
-			K8sHardening:       true,
-			OSHardening:        true,
+			K8sHardening: true,
+			OSHardening:  true,
 		},
 		Deployment: config.Deployment{
 			AutoDeploy: false,
@@ -110,7 +110,7 @@ func (g *ConfigGenerator) GenerateMinimalConfig(provider string) config.Config {
 // GenerateComplexConfig creates a complex configuration with many services enabled
 func (g *ConfigGenerator) GenerateComplexConfig(provider string) config.Config {
 	cfg := g.GenerateConfig(provider)
-	
+
 	// Enable all services
 	cfg.OpenCenter.Services = config.ServiceMap{
 		"cert-manager": map[string]interface{}{
@@ -140,7 +140,7 @@ func (g *ConfigGenerator) GenerateComplexConfig(provider string) config.Config {
 			"enabled": true,
 		},
 	}
-	
+
 	// Add complex overrides
 	cfg.Overrides = map[string]any{
 		"kubernetes.apiserver.extraArgs": map[string]string{
@@ -149,7 +149,7 @@ func (g *ConfigGenerator) GenerateComplexConfig(provider string) config.Config {
 		},
 		"networking.cni": "calico",
 	}
-	
+
 	return cfg
 }
 
@@ -157,7 +157,7 @@ func (g *ConfigGenerator) GenerateComplexConfig(provider string) config.Config {
 func (g *ConfigGenerator) generateOpenCenter(provider string) config.SimplifiedOpenCenter {
 	clusterName := g.randomClusterName()
 	region := g.randomRegion()
-	
+
 	return config.SimplifiedOpenCenter{
 		Meta: config.ClusterMeta{
 			Name:         clusterName,
@@ -401,16 +401,16 @@ func NewTemplateDataGenerator(seed int64) *TemplateDataGenerator {
 // GenerateTemplateData creates realistic data for template rendering tests
 func (g *TemplateDataGenerator) GenerateTemplateData() map[string]interface{} {
 	return map[string]interface{}{
-		"ClusterName":  g.randomClusterName(),
-		"Namespace":    g.randomNamespace(),
-		"Version":      g.randomVersion(),
-		"Replicas":     g.randomReplicas(),
-		"Image":        g.randomImage(),
-		"Port":         g.randomPort(),
-		"Environment":  g.randomEnvironment(),
-		"Labels":       g.randomLabels(),
-		"Annotations":  g.randomAnnotations(),
-		"Resources":    g.randomResources(),
+		"ClusterName": g.randomClusterName(),
+		"Namespace":   g.randomNamespace(),
+		"Version":     g.randomVersion(),
+		"Replicas":    g.randomReplicas(),
+		"Image":       g.randomImage(),
+		"Port":        g.randomPort(),
+		"Environment": g.randomEnvironment(),
+		"Labels":      g.randomLabels(),
+		"Annotations": g.randomAnnotations(),
+		"Resources":   g.randomResources(),
 	}
 }
 
@@ -679,12 +679,12 @@ func (g *InfrastructureDataGenerator) GenerateNodePool() map[string]interface{} 
 		"labels":    g.randomNodeLabels(),
 		"taints":    g.randomTaints(),
 	}
-	
+
 	// Only add auto_scaling if it's not nil
 	if autoScaling := g.randomAutoScaling(); autoScaling != nil {
 		pool["auto_scaling"] = autoScaling
 	}
-	
+
 	return pool
 }
 
@@ -759,13 +759,13 @@ func NewSecurityDataGenerator(seed int64) *SecurityDataGenerator {
 // GenerateSecurityConfig creates a realistic security configuration for testing
 func (g *SecurityDataGenerator) GenerateSecurityConfig() map[string]interface{} {
 	return map[string]interface{}{
-		"k8s_hardening":        g.randomBool(),
-		"os_hardening":         g.randomBool(),
-		"pod_security":         g.randomPodSecurity(),
-		"network_policies":     g.randomBool(),
-		"encryption_at_rest":   g.randomBool(),
-		"audit_logging":        g.randomBool(),
-		"rbac_enabled":         true, // Always enabled in modern clusters
+		"k8s_hardening":         g.randomBool(),
+		"os_hardening":          g.randomBool(),
+		"pod_security":          g.randomPodSecurity(),
+		"network_policies":      g.randomBool(),
+		"encryption_at_rest":    g.randomBool(),
+		"audit_logging":         g.randomBool(),
+		"rbac_enabled":          true, // Always enabled in modern clusters
 		"admission_controllers": g.randomAdmissionControllers(),
 	}
 }
@@ -852,16 +852,16 @@ func (g *WorkloadDataGenerator) randomImage() string {
 func (g *WorkloadDataGenerator) randomPorts() []map[string]interface{} {
 	ports := []map[string]interface{}{
 		{
-			"name":           "http",
-			"containerPort":  8080,
-			"protocol":       "TCP",
+			"name":          "http",
+			"containerPort": 8080,
+			"protocol":      "TCP",
 		},
 	}
 	if g.rand.Intn(2) == 1 {
 		ports = append(ports, map[string]interface{}{
-			"name":           "metrics",
-			"containerPort":  9090,
-			"protocol":       "TCP",
+			"name":          "metrics",
+			"containerPort": 9090,
+			"protocol":      "TCP",
 		})
 	}
 	return ports
@@ -948,7 +948,7 @@ func (g *ScenarioGenerator) GenerateProductionScenario(provider string) map[stri
 	infraGen := &InfrastructureDataGenerator{rand: g.rand}
 	securityGen := &SecurityDataGenerator{rand: g.rand}
 	networkGen := &NetworkingDataGenerator{rand: g.rand}
-	
+
 	return map[string]interface{}{
 		"config": configGen.GenerateComplexConfig(provider),
 		"node_pools": []map[string]interface{}{
@@ -956,11 +956,11 @@ func (g *ScenarioGenerator) GenerateProductionScenario(provider string) map[stri
 			infraGen.GenerateNodePool(), // Worker nodes
 			infraGen.GenerateNodePool(), // Infra nodes
 		},
-		"security":   securityGen.GenerateSecurityConfig(),
-		"networking": networkGen.GenerateNetworkingConfig(),
-		"environment": "production",
-		"high_availability": true,
-		"backup_enabled": true,
+		"security":           securityGen.GenerateSecurityConfig(),
+		"networking":         networkGen.GenerateNetworkingConfig(),
+		"environment":        "production",
+		"high_availability":  true,
+		"backup_enabled":     true,
 		"monitoring_enabled": true,
 	}
 }
@@ -969,15 +969,15 @@ func (g *ScenarioGenerator) GenerateProductionScenario(provider string) map[stri
 func (g *ScenarioGenerator) GenerateDevelopmentScenario(provider string) map[string]interface{} {
 	configGen := &ConfigGenerator{rand: g.rand}
 	infraGen := &InfrastructureDataGenerator{rand: g.rand}
-	
+
 	return map[string]interface{}{
 		"config": configGen.GenerateMinimalConfig(provider),
 		"node_pools": []map[string]interface{}{
 			infraGen.GenerateNodePool(), // Single node pool
 		},
-		"environment": "development",
-		"high_availability": false,
-		"backup_enabled": false,
+		"environment":        "development",
+		"high_availability":  false,
+		"backup_enabled":     false,
 		"monitoring_enabled": false,
 	}
 }
@@ -987,17 +987,17 @@ func (g *ScenarioGenerator) GenerateStagingScenario(provider string) map[string]
 	configGen := &ConfigGenerator{rand: g.rand}
 	infraGen := &InfrastructureDataGenerator{rand: g.rand}
 	securityGen := &SecurityDataGenerator{rand: g.rand}
-	
+
 	return map[string]interface{}{
 		"config": configGen.GenerateConfig(provider),
 		"node_pools": []map[string]interface{}{
 			infraGen.GenerateNodePool(), // Master nodes
 			infraGen.GenerateNodePool(), // Worker nodes
 		},
-		"security":   securityGen.GenerateSecurityConfig(),
-		"environment": "staging",
-		"high_availability": true,
-		"backup_enabled": true,
+		"security":           securityGen.GenerateSecurityConfig(),
+		"environment":        "staging",
+		"high_availability":  true,
+		"backup_enabled":     true,
 		"monitoring_enabled": true,
 	}
 }
@@ -1005,10 +1005,10 @@ func (g *ScenarioGenerator) GenerateStagingScenario(provider string) map[string]
 // GenerateMultiRegionScenario creates a realistic multi-region deployment scenario
 func (g *ScenarioGenerator) GenerateMultiRegionScenario(provider string) map[string]interface{} {
 	configGen := &ConfigGenerator{rand: g.rand}
-	
+
 	regions := []string{"us-east-1", "us-west-2", "eu-central-1"}
 	clusters := make([]map[string]interface{}, 0, len(regions))
-	
+
 	for _, region := range regions {
 		cfg := configGen.GenerateConfig(provider)
 		cfg.OpenCenter.Meta.Region = region
@@ -1017,10 +1017,10 @@ func (g *ScenarioGenerator) GenerateMultiRegionScenario(provider string) map[str
 			"config": cfg,
 		})
 	}
-	
+
 	return map[string]interface{}{
-		"clusters": clusters,
-		"multi_region": true,
+		"clusters":            clusters,
+		"multi_region":        true,
 		"replication_enabled": true,
 	}
 }
@@ -1028,18 +1028,18 @@ func (g *ScenarioGenerator) GenerateMultiRegionScenario(provider string) map[str
 // GenerateUpgradeScenario creates a realistic cluster upgrade scenario
 func (g *ScenarioGenerator) GenerateUpgradeScenario(provider string) map[string]interface{} {
 	configGen := &ConfigGenerator{rand: g.rand}
-	
+
 	oldConfig := configGen.GenerateConfig(provider)
 	oldConfig.OpenCenter.Cluster.Kubernetes.Version = "1.28.0"
-	
+
 	newConfig := configGen.GenerateConfig(provider)
 	newConfig.OpenCenter.Cluster.Kubernetes.Version = "1.29.0"
 	newConfig.OpenCenter.Meta = oldConfig.OpenCenter.Meta // Keep same cluster identity
-	
+
 	return map[string]interface{}{
-		"old_config": oldConfig,
-		"new_config": newConfig,
-		"upgrade_type": "minor",
+		"old_config":       oldConfig,
+		"new_config":       newConfig,
+		"upgrade_type":     "minor",
 		"rollback_enabled": true,
 	}
 }
@@ -1047,15 +1047,15 @@ func (g *ScenarioGenerator) GenerateUpgradeScenario(provider string) map[string]
 // GenerateMigrationScenario creates a realistic provider migration scenario
 func (g *ScenarioGenerator) GenerateMigrationScenario(fromProvider, toProvider string) map[string]interface{} {
 	configGen := &ConfigGenerator{rand: g.rand}
-	
+
 	sourceConfig := configGen.GenerateConfig(fromProvider)
 	targetConfig := configGen.GenerateConfig(toProvider)
 	targetConfig.OpenCenter.Meta = sourceConfig.OpenCenter.Meta // Keep same cluster identity
-	
+
 	return map[string]interface{}{
-		"source_config": sourceConfig,
-		"target_config": targetConfig,
-		"migration_type": "provider",
+		"source_config":           sourceConfig,
+		"target_config":           targetConfig,
+		"migration_type":          "provider",
 		"data_migration_required": true,
 	}
 }
@@ -1063,21 +1063,21 @@ func (g *ScenarioGenerator) GenerateMigrationScenario(fromProvider, toProvider s
 // GenerateDisasterRecoveryScenario creates a realistic DR scenario
 func (g *ScenarioGenerator) GenerateDisasterRecoveryScenario(provider string) map[string]interface{} {
 	configGen := &ConfigGenerator{rand: g.rand}
-	
+
 	primaryConfig := configGen.GenerateComplexConfig(provider)
 	primaryConfig.OpenCenter.Meta.Region = "us-east-1"
-	
+
 	drConfig := configGen.GenerateComplexConfig(provider)
 	drConfig.OpenCenter.Meta.Region = "us-west-2"
 	drConfig.OpenCenter.Meta.Name = primaryConfig.OpenCenter.Meta.Name + "-dr"
-	
+
 	return map[string]interface{}{
-		"primary_config": primaryConfig,
-		"dr_config": drConfig,
+		"primary_config":      primaryConfig,
+		"dr_config":           drConfig,
 		"replication_enabled": true,
-		"failover_enabled": true,
-		"rpo_minutes": 15,
-		"rto_minutes": 30,
+		"failover_enabled":    true,
+		"rpo_minutes":         15,
+		"rto_minutes":         30,
 	}
 }
 
@@ -1085,7 +1085,7 @@ func (g *ScenarioGenerator) GenerateDisasterRecoveryScenario(provider string) ma
 func (g *ScenarioGenerator) GenerateEdgeCaseScenario(provider string) map[string]interface{} {
 	configGen := &ConfigGenerator{rand: g.rand}
 	cfg := configGen.GenerateConfig(provider)
-	
+
 	// Add edge case configurations
 	edgeCases := []string{
 		"empty_services",
@@ -1094,9 +1094,9 @@ func (g *ScenarioGenerator) GenerateEdgeCaseScenario(provider string) map[string
 		"special_characters_in_names",
 		"long_cluster_name",
 	}
-	
+
 	selectedCase := edgeCases[g.rand.Intn(len(edgeCases))]
-	
+
 	switch selectedCase {
 	case "empty_services":
 		cfg.OpenCenter.Services = make(config.ServiceMap)
@@ -1111,9 +1111,9 @@ func (g *ScenarioGenerator) GenerateEdgeCaseScenario(provider string) map[string
 	case "long_cluster_name":
 		cfg.OpenCenter.Meta.Name = "very-long-cluster-name-that-tests-length-limits-and-validation"
 	}
-	
+
 	return map[string]interface{}{
-		"config": cfg,
+		"config":    cfg,
 		"edge_case": selectedCase,
 		"test_type": "boundary",
 	}
@@ -1123,25 +1123,25 @@ func (g *ScenarioGenerator) GenerateEdgeCaseScenario(provider string) map[string
 func (g *ScenarioGenerator) GeneratePerformanceTestScenario(provider string) map[string]interface{} {
 	configGen := &ConfigGenerator{rand: g.rand}
 	workloadGen := &WorkloadDataGenerator{rand: g.rand}
-	
+
 	// Generate multiple configurations
 	configs := make([]config.Config, 0, 10)
 	for i := 0; i < 10; i++ {
 		configs = append(configs, configGen.GenerateConfig(provider))
 	}
-	
+
 	// Generate multiple workloads
 	workloads := make([]map[string]interface{}, 0, 50)
 	for i := 0; i < 50; i++ {
 		workloads = append(workloads, workloadGen.GenerateDeployment())
 	}
-	
+
 	return map[string]interface{}{
-		"configs": configs,
-		"workloads": workloads,
-		"test_type": "performance",
+		"configs":               configs,
+		"workloads":             workloads,
+		"test_type":             "performance",
 		"concurrent_operations": 10,
-		"duration_minutes": 30,
+		"duration_minutes":      30,
 	}
 }
 
@@ -1149,10 +1149,10 @@ func (g *ScenarioGenerator) GeneratePerformanceTestScenario(provider string) map
 func (g *ScenarioGenerator) GenerateSecurityAuditScenario(provider string) map[string]interface{} {
 	configGen := &ConfigGenerator{rand: g.rand}
 	securityGen := &SecurityDataGenerator{rand: g.rand}
-	
+
 	cfg := configGen.GenerateConfig(provider)
 	securityConfig := securityGen.GenerateSecurityConfig()
-	
+
 	// Add security-specific test data
 	vulnerabilities := []string{
 		"exposed_api_server",
@@ -1161,13 +1161,13 @@ func (g *ScenarioGenerator) GenerateSecurityAuditScenario(provider string) map[s
 		"missing_network_policies",
 		"outdated_kubernetes_version",
 	}
-	
+
 	return map[string]interface{}{
-		"config": cfg,
-		"security_config": securityConfig,
-		"test_vulnerabilities": vulnerabilities,
+		"config":                cfg,
+		"security_config":       securityConfig,
+		"test_vulnerabilities":  vulnerabilities,
 		"compliance_frameworks": []string{"CIS", "PCI-DSS", "HIPAA"},
-		"test_type": "security_audit",
+		"test_type":             "security_audit",
 	}
 }
 
@@ -1175,22 +1175,22 @@ func (g *ScenarioGenerator) GenerateSecurityAuditScenario(provider string) map[s
 func (g *ScenarioGenerator) GenerateComplianceScenario(provider string, framework string) map[string]interface{} {
 	configGen := &ConfigGenerator{rand: g.rand}
 	securityGen := &SecurityDataGenerator{rand: g.rand}
-	
+
 	cfg := configGen.GenerateComplexConfig(provider)
 	securityConfig := securityGen.GenerateSecurityConfig()
-	
+
 	// Ensure compliance-required settings
 	cfg.Security.K8sHardening = true
 	cfg.Security.OSHardening = true
 	cfg.OpenCenter.Cluster.Kubernetes.KubeletRotateServerCerts = true
-	
+
 	return map[string]interface{}{
-		"config": cfg,
-		"security_config": securityConfig,
-		"compliance_framework": framework,
+		"config":                cfg,
+		"security_config":       securityConfig,
+		"compliance_framework":  framework,
 		"audit_logging_enabled": true,
-		"encryption_at_rest": true,
-		"test_type": "compliance",
+		"encryption_at_rest":    true,
+		"test_type":             "compliance",
 	}
 }
 
@@ -1199,21 +1199,21 @@ func (g *ScenarioGenerator) GenerateIntegrationTestScenario(provider string) map
 	configGen := &ConfigGenerator{rand: g.rand}
 	gitopsGen := &GitOpsDataGenerator{rand: g.rand}
 	serviceGen := &ServiceDataGenerator{rand: g.rand}
-	
+
 	cfg := configGen.GenerateConfig(provider)
 	gitopsConfig := gitopsGen.GenerateGitOpsConfig()
-	
+
 	// Generate multiple services
 	services := make([]map[string]interface{}, 0, 5)
 	for i := 0; i < 5; i++ {
 		services = append(services, serviceGen.GenerateServiceDefinition())
 	}
-	
+
 	return map[string]interface{}{
-		"config": cfg,
+		"config":        cfg,
 		"gitops_config": gitopsConfig,
-		"services": services,
-		"test_type": "integration",
-		"test_phases": []string{"provision", "configure", "deploy", "validate"},
+		"services":      services,
+		"test_type":     "integration",
+		"test_phases":   []string{"provision", "configure", "deploy", "validate"},
 	}
 }

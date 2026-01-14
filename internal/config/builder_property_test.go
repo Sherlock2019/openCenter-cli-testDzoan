@@ -33,14 +33,14 @@ func TestProperty_BuilderMethodChaining(t *testing.T) {
 	properties.Property("builder methods support chaining", prop.ForAll(
 		func(clusterName, org, provider string) bool {
 			builder := NewConfigBuilder(clusterName)
-			
+
 			// Chain multiple methods and verify builder is returned
 			result := builder.
 				WithOrganization(org).
 				WithProvider(provider).
 				WithEnvironment("test").
 				WithRegion("us-east-1")
-			
+
 			// Verify result is still a ConfigBuilder
 			_, ok := result.(ConfigBuilder)
 			return ok
@@ -66,27 +66,27 @@ func TestProperty_BuilderImmutability(t *testing.T) {
 			builder1 := NewConfigBuilder(name1).
 				WithOrganization(org1).
 				WithProvider("kind")
-			
+
 			builder2 := NewConfigBuilder(name2).
 				WithOrganization(org2).
 				WithProvider("baremetal")
-			
+
 			// Build both configurations
 			config1, err1 := builder1.
 				WithMasterCount(3).
 				WithWorkerCount(3).
 				Build()
-			
+
 			config2, err2 := builder2.
 				WithMasterCount(5).
 				WithWorkerCount(5).
 				Build()
-			
+
 			// Both should succeed
 			if err1 != nil || err2 != nil {
 				return false
 			}
-			
+
 			// Verify configurations are independent
 			return config1.OpenCenter.Meta.Name == name1 &&
 				config2.OpenCenter.Meta.Name == name2 &&
@@ -118,23 +118,23 @@ func TestProperty_ValidationConsistency(t *testing.T) {
 				WithProvider(provider).
 				WithMasterCount(masterCount).
 				WithWorkerCount(workerCount)
-			
+
 			// Run validation twice
 			errors1 := builder.Validate()
 			errors2 := builder.Validate()
-			
+
 			// Should produce same number of errors
 			if len(errors1) != len(errors2) {
 				return false
 			}
-			
+
 			// Should produce same error fields
 			for i := range errors1 {
 				if errors1[i].Field != errors2[i].Field {
 					return false
 				}
 			}
-			
+
 			return true
 		},
 		genValidClusterName(),
@@ -158,16 +158,16 @@ func TestProperty_RequiredFieldsValidation(t *testing.T) {
 		func(clusterName string) bool {
 			// Create builder and explicitly clear required fields
 			builder := NewConfigBuilder(clusterName).
-				WithOrganization("").  // Clear the default
-				WithProvider("")       // Clear the default
-			
+				WithOrganization(""). // Clear the default
+				WithProvider("")      // Clear the default
+
 			// Validate
 			errors := builder.Validate()
-			
+
 			// Check for specific required field errors
 			hasOrgError := false
 			hasProviderError := false
-			
+
 			for _, err := range errors {
 				if err.Field == "opencenter.meta.organization" {
 					hasOrgError = true
@@ -176,7 +176,7 @@ func TestProperty_RequiredFieldsValidation(t *testing.T) {
 					hasProviderError = true
 				}
 			}
-			
+
 			// Both org and provider errors must be present
 			return hasOrgError && hasProviderError
 		},
@@ -200,9 +200,9 @@ func TestProperty_NodeCountValidation(t *testing.T) {
 				WithProvider("openstack").
 				WithMasterCount(masterCount).
 				WithWorkerCount(workerCount)
-			
+
 			errors := builder.Validate()
-			
+
 			// If master count is < 1, should have error
 			if masterCount < 1 {
 				hasError := false
@@ -216,7 +216,7 @@ func TestProperty_NodeCountValidation(t *testing.T) {
 					return false
 				}
 			}
-			
+
 			// If worker count is negative, should have error
 			if workerCount < 0 {
 				hasError := false
@@ -230,7 +230,7 @@ func TestProperty_NodeCountValidation(t *testing.T) {
 					return false
 				}
 			}
-			
+
 			return true
 		},
 		gen.IntRange(-5, 10),
@@ -257,9 +257,9 @@ func TestProperty_ProviderSpecificValidation(t *testing.T) {
 				WithSubnetNodes("10.0.0.0/24").
 				WithSubnetPods("10.244.0.0/16").
 				WithSubnetServices("10.96.0.0/12")
-			
+
 			errors := builder.Validate()
-			
+
 			// OpenStack requires auth_url
 			if provider == "openstack" {
 				hasAuthURLError := false
@@ -271,7 +271,7 @@ func TestProperty_ProviderSpecificValidation(t *testing.T) {
 				}
 				return hasAuthURLError
 			}
-			
+
 			// AWS requires region
 			if provider == "aws" {
 				hasRegionError := false
@@ -283,7 +283,7 @@ func TestProperty_ProviderSpecificValidation(t *testing.T) {
 				}
 				return hasRegionError
 			}
-			
+
 			// Other providers don't have specific requirements
 			return true
 		},
@@ -313,20 +313,20 @@ func TestProperty_BuildSuccessWithValidConfig(t *testing.T) {
 			if workerCount < 0 {
 				workerCount = 0
 			}
-			
+
 			builder := NewConfigBuilder(clusterName).
 				WithOrganization(org).
 				WithProvider("kind"). // kind has no specific requirements
 				WithMasterCount(masterCount).
 				WithWorkerCount(workerCount)
-			
+
 			config, err := builder.Build()
-			
+
 			// Should build successfully
 			if err != nil {
 				return false
 			}
-			
+
 			// Verify configuration values
 			return config.OpenCenter.Meta.Name == clusterName &&
 				config.OpenCenter.Meta.Organization == org &&
@@ -360,12 +360,12 @@ func TestProperty_MetadataTimestamps(t *testing.T) {
 				WithSubnetNodes("10.0.0.0/24").
 				WithSubnetPods("10.244.0.0/16").
 				WithSubnetServices("10.96.0.0/12")
-			
+
 			config, err := builder.Build()
 			if err != nil {
 				return false
 			}
-			
+
 			// Timestamps should be set
 			return !config.Metadata.CreatedAt.IsZero() &&
 				!config.Metadata.UpdatedAt.IsZero() &&
@@ -398,12 +398,12 @@ func TestProperty_TagsAndAnnotations(t *testing.T) {
 				WithSubnetServices("10.96.0.0/12").
 				WithTag(tagKey, tagValue).
 				WithAnnotation(annoKey, annoValue)
-			
+
 			config, err := builder.Build()
 			if err != nil {
 				return false
 			}
-			
+
 			// Verify tags and annotations
 			return config.Metadata.Tags[tagKey] == tagValue &&
 				config.Metadata.Annotations[annoKey] == annoValue
@@ -435,12 +435,12 @@ func TestProperty_ServiceConfiguration(t *testing.T) {
 				WithSubnetPods("10.244.0.0/16").
 				WithSubnetServices("10.96.0.0/12").
 				WithService("cert-manager", enabled)
-			
+
 			config, err := builder.Build()
 			if err != nil {
 				return false
 			}
-			
+
 			// Verify service configuration
 			if svc, exists := config.OpenCenter.Services["cert-manager"]; exists {
 				// Type assert to access Enabled field
@@ -448,7 +448,7 @@ func TestProperty_ServiceConfiguration(t *testing.T) {
 					return certMgr.Enabled == enabled
 				}
 			}
-			
+
 			return false
 		},
 		gen.Bool(),
@@ -474,17 +474,17 @@ func TestProperty_OverrideStorage(t *testing.T) {
 				WithSubnetPods("10.244.0.0/16").
 				WithSubnetServices("10.96.0.0/12").
 				WithOverride(path, value)
-			
+
 			config, err := builder.Build()
 			if err != nil {
 				return false
 			}
-			
+
 			// Verify override is stored
 			if storedValue, exists := config.Overrides[path]; exists {
 				return storedValue == value
 			}
-			
+
 			return false
 		},
 		gen.AlphaString(),

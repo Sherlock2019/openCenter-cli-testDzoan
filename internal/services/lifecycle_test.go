@@ -72,12 +72,12 @@ func TestServiceDefinitionExecuteLifecycleHook(t *testing.T) {
 
 	t.Run("all lifecycle hooks", func(t *testing.T) {
 		hooks := []string{"PreInstall", "PostInstall", "PreUpdate", "PostUpdate", "PreRemove", "PostRemove"}
-		
+
 		for _, hookName := range hooks {
 			t.Run(hookName, func(t *testing.T) {
 				executed := false
 				lifecycle := ServiceLifecycle{}
-				
+
 				hookFunc := func(ctx context.Context, cfg interface{}) error {
 					executed = true
 					return nil
@@ -212,7 +212,7 @@ func TestRegistryExecuteLifecycleHooks(t *testing.T) {
 		// Verify execution order: dependencies before dependents
 		require.Len(t, executionOrder, 3)
 		assert.Equal(t, "core", executionOrder[0], "Core should execute first")
-		
+
 		// Storage should come before monitoring
 		storageIdx := -1
 		monitoringIdx := -1
@@ -281,7 +281,7 @@ func TestRegistryExecuteLifecycleHooks(t *testing.T) {
 		// Verify execution order: dependents before dependencies (reverse)
 		require.Len(t, executionOrder, 3)
 		assert.Equal(t, "monitoring", executionOrder[0], "Monitoring should execute first for removal")
-		
+
 		// Core should come last
 		assert.Equal(t, "core", executionOrder[2], "Core should execute last for removal")
 	})

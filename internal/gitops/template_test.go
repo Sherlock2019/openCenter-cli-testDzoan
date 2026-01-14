@@ -113,7 +113,7 @@ func TestKubeletRotateServerCertsDefaultValue(t *testing.T) {
 			},
 			Cluster: config.ClusterConfig{
 				ClusterName: "test-cluster-default",
-				Kubernetes: config.KubernetesConfig{
+				Kubernetes:  config.KubernetesConfig{
 					// KubeletRotateServerCerts not set - will be false (Go zero value)
 					// In production, cluster init sets this to true
 				},
@@ -146,7 +146,7 @@ func extractModuleSnippet(content, searchTerm string) string {
 	lines := strings.Split(content, "\n")
 	inModule := false
 	var moduleLines []string
-	
+
 	for _, line := range lines {
 		if strings.Contains(line, "module \"kubespray-cluster\"") {
 			inModule = true
@@ -163,7 +163,7 @@ func extractModuleSnippet(content, searchTerm string) string {
 			}
 		}
 	}
-	
+
 	// Find the specific line with our search term
 	for i, line := range moduleLines {
 		if strings.Contains(line, searchTerm) {

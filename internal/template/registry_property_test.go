@@ -55,11 +55,11 @@ func TestProperty10_TemplateDependencyOrdering(t *testing.T) {
 				for _, dep := range tmpl.Dependencies {
 					depPos, depExists := position[dep]
 					tmplPos, tmplExists := position[tmpl.Name]
-					
+
 					if !depExists || !tmplExists {
 						return false
 					}
-					
+
 					// Dependency must come before dependent
 					if depPos >= tmplPos {
 						return false
@@ -160,7 +160,7 @@ func TestProperty_CircularDependencyDetection(t *testing.T) {
 
 			// Attempting to resolve should detect the cycle
 			_, err := registry.ResolveTemplateDependencies([]string{cycle[0]})
-			
+
 			// Should return an error about circular dependency
 			return err != nil
 		},
@@ -202,7 +202,7 @@ func TestProperty_TransitiveDependencyResolution(t *testing.T) {
 				if i > 0 {
 					deps = []string{chain[i-1]}
 				}
-				
+
 				tmpl := TemplateDefinition{
 					Name:         chain[i],
 					Path:         fmt.Sprintf("/path/%s", chain[i]),
@@ -430,7 +430,7 @@ func TestProperty8_ProviderSpecificTemplateFiltering(t *testing.T) {
 				// 1. It has no provider specified (universal template), OR
 				// 2. Its provider matches the filter provider
 				isCompatible := tmpl.Provider == "" || tmpl.Provider == filterProvider
-				
+
 				if !isCompatible {
 					// Found an incompatible template - property violated
 					return false
@@ -573,7 +573,7 @@ func TestProperty_ProviderFilteringPrioritySorting(t *testing.T) {
 			for i := 0; i < len(result)-1; i++ {
 				currentPriority := result[i].Metadata.Priority
 				nextPriority := result[i+1].Metadata.Priority
-				
+
 				// If priorities are equal, should be sorted by name
 				if currentPriority == nextPriority {
 					if result[i].Name > result[i+1].Name {
@@ -694,11 +694,10 @@ func genTemplateDefinition() gopter.Gen {
 		FlatMap(func(name interface{}) gopter.Gen {
 			nameStr := name.(string)
 			return gen.Const(TemplateDefinition{
-				Name: nameStr,
-				Path: "/path/" + nameStr,
-				Type: TemplateTypeBase,
+				Name:         nameStr,
+				Path:         "/path/" + nameStr,
+				Type:         TemplateTypeBase,
 				Dependencies: []string{}, // Start with no dependencies
 			})
 		}, reflect.TypeOf(TemplateDefinition{}))
 }
-

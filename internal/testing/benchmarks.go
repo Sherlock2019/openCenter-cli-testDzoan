@@ -47,15 +47,15 @@ type BenchmarkFramework struct {
 
 // BenchmarkResult captures the results of a benchmark run.
 type BenchmarkResult struct {
-	Name            string
-	NsPerOp         int64
-	AllocsPerOp     int64
-	BytesPerOp      int64
-	MemAllocsPerOp  int64
-	MemBytesPerOp   int64
-	Timestamp       time.Time
-	Version         string
-	Description     string
+	Name           string
+	NsPerOp        int64
+	AllocsPerOp    int64
+	BytesPerOp     int64
+	MemAllocsPerOp int64
+	MemBytesPerOp  int64
+	Timestamp      time.Time
+	Version        string
+	Description    string
 }
 
 // NewBenchmarkFramework creates a new benchmark framework with default settings.

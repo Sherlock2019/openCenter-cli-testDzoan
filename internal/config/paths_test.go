@@ -67,26 +67,26 @@ func TestConfigPathsExist(t *testing.T) {
 // This test demonstrates that the type system works correctly by showing valid usage patterns.
 func TestConfigPathTypeSystem(t *testing.T) {
 	// These should compile successfully because types match
-	
+
 	// String paths
 	var _ TypedConfigPath[string] = TypedConfigPaths.Organization
 	var _ TypedConfigPath[string] = TypedConfigPaths.ClusterName
 	var _ TypedConfigPath[string] = TypedConfigPaths.Provider
-	
+
 	// Int paths
 	var _ TypedConfigPath[int] = TypedConfigPaths.MasterCount
 	var _ TypedConfigPath[int] = TypedConfigPaths.WorkerCount
 	var _ TypedConfigPath[int] = TypedConfigPaths.WindowsWorkerCount
-	
+
 	// Bool paths
 	var _ TypedConfigPath[bool] = TypedConfigPaths.K8sHardening
 	var _ TypedConfigPath[bool] = TypedConfigPaths.OSHardening
-	
+
 	// String slice paths
 	var _ TypedConfigPath[[]string] = TypedConfigPaths.DNSNameservers
 	var _ TypedConfigPath[[]string] = TypedConfigPaths.NTPServers
 	var _ TypedConfigPath[[]string] = TypedConfigPaths.SSHAuthorizedKeys
-	
+
 	// The following would NOT compile (demonstrating compile-time type safety):
 	// var _ TypedConfigPath[int] = TypedConfigPaths.Organization  // Type mismatch: string vs int
 	// var _ TypedConfigPath[bool] = TypedConfigPaths.MasterCount  // Type mismatch: int vs bool
@@ -96,7 +96,7 @@ func TestConfigPathTypeSystem(t *testing.T) {
 // TestConfigPathUsageWithBuilder demonstrates type-safe path usage with the builder.
 func TestConfigPathUsageWithBuilder(t *testing.T) {
 	builder := NewConfigBuilder("test-cluster")
-	
+
 	// These should compile and work correctly
 	builder = builder.
 		WithPath(TypedConfigPaths.Organization, "test-org").
@@ -106,12 +106,12 @@ func TestConfigPathUsageWithBuilder(t *testing.T) {
 		WithPathBool(TypedConfigPaths.K8sHardening, true).
 		WithPathBool(TypedConfigPaths.OSHardening, true).
 		WithPathStringSlice(TypedConfigPaths.DNSNameservers, []string{"8.8.8.8", "8.8.4.4"})
-	
+
 	// The following would NOT compile (demonstrating compile-time type safety):
 	// builder.WithPath(TypedConfigPaths.MasterCount, "3")  // Type error: expects int, got string
 	// builder.WithPathInt(TypedConfigPaths.Organization, 3)  // Type error: expects string path, got int path
 	// builder.WithPathBool(TypedConfigPaths.Provider, true)  // Type error: expects string path, got bool path
-	
+
 	if builder == nil {
 		t.Fatal("Builder should not be nil")
 	}
@@ -124,34 +124,34 @@ func TestTypeSafePathsInOverrides(t *testing.T) {
 		WithPathInt(TypedConfigPaths.MasterCount, 7).
 		WithPathBool(TypedConfigPaths.K8sHardening, true).
 		WithPathStringSlice(TypedConfigPaths.DNSNameservers, []string{"1.1.1.1"})
-	
+
 	// Access the internal config to verify overrides
 	fluentBuilder, ok := builder.(*FluentConfigBuilder)
 	if !ok {
 		t.Fatal("Builder should be a FluentConfigBuilder")
 	}
-	
+
 	// Verify string path
 	if val, exists := fluentBuilder.config.Overrides[TypedConfigPaths.Organization.Path()]; !exists {
 		t.Error("Organization override should exist")
 	} else if strVal, ok := val.(string); !ok || strVal != "typed-org" {
 		t.Errorf("Expected organization 'typed-org', got %v", val)
 	}
-	
+
 	// Verify int path
 	if val, exists := fluentBuilder.config.Overrides[TypedConfigPaths.MasterCount.Path()]; !exists {
 		t.Error("MasterCount override should exist")
 	} else if intVal, ok := val.(int); !ok || intVal != 7 {
 		t.Errorf("Expected master count 7, got %v", val)
 	}
-	
+
 	// Verify bool path
 	if val, exists := fluentBuilder.config.Overrides[TypedConfigPaths.K8sHardening.Path()]; !exists {
 		t.Error("K8sHardening override should exist")
 	} else if boolVal, ok := val.(bool); !ok || !boolVal {
 		t.Errorf("Expected K8s hardening true, got %v", val)
 	}
-	
+
 	// Verify string slice path
 	if val, exists := fluentBuilder.config.Overrides[TypedConfigPaths.DNSNameservers.Path()]; !exists {
 		t.Error("DNSNameservers override should exist")
@@ -166,27 +166,27 @@ func TestTypeSafeVsUntypedPaths(t *testing.T) {
 	typeSafeBuilder := NewConfigBuilder("test-cluster").
 		WithPath(TypedConfigPaths.Organization, "test-org").
 		WithPathInt(TypedConfigPaths.MasterCount, 3)
-	
+
 	// Untyped approach (runtime validation only)
 	untypedBuilder := NewConfigBuilder("test-cluster").
 		WithOverride("opencenter.meta.organization", "test-org").
 		WithOverride("opencenter.cluster.kubernetes.master_count", 3)
-	
+
 	// Both should work, but type-safe approach prevents errors at compile time
 	if typeSafeBuilder == nil || untypedBuilder == nil {
 		t.Fatal("Builders should not be nil")
 	}
-	
+
 	// Verify both produce the same result
 	typeSafeConfig := typeSafeBuilder.(*FluentConfigBuilder).config
 	untypedConfig := untypedBuilder.(*FluentConfigBuilder).config
-	
+
 	if typeSafeConfig.Overrides[TypedConfigPaths.Organization.Path()] != untypedConfig.Overrides["opencenter.meta.organization"] {
 		t.Errorf("Type-safe and untyped approaches should produce the same result, got %v vs %v",
 			typeSafeConfig.Overrides[TypedConfigPaths.Organization.Path()],
 			untypedConfig.Overrides["opencenter.meta.organization"])
 	}
-	
+
 	if typeSafeConfig.Overrides[TypedConfigPaths.MasterCount.Path()] != untypedConfig.Overrides["opencenter.cluster.kubernetes.master_count"] {
 		t.Errorf("Type-safe and untyped approaches should produce the same result for master count, got %v vs %v",
 			typeSafeConfig.Overrides[TypedConfigPaths.MasterCount.Path()],
@@ -207,14 +207,14 @@ func TestMethodChainingWithTypeSafePaths(t *testing.T) {
 		WithPathBool(TypedConfigPaths.OSHardening, false).
 		WithPathStringSlice(TypedConfigPaths.DNSNameservers, []string{"8.8.8.8"}).
 		WithPathStringSlice(TypedConfigPaths.NTPServers, []string{"time.google.com"})
-	
+
 	if builder == nil {
 		t.Fatal("Builder should not be nil after method chaining")
 	}
-	
+
 	// Verify all values were set
 	fluentBuilder := builder.(*FluentConfigBuilder)
-	
+
 	tests := []struct {
 		path     string
 		expected interface{}
@@ -227,7 +227,7 @@ func TestMethodChainingWithTypeSafePaths(t *testing.T) {
 		{TypedConfigPaths.K8sHardening.Path(), true},
 		{TypedConfigPaths.OSHardening.Path(), false},
 	}
-	
+
 	for _, tt := range tests {
 		if val, exists := fluentBuilder.config.Overrides[tt.path]; !exists {
 			t.Errorf("Override for path '%s' should exist", tt.path)

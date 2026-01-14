@@ -95,9 +95,9 @@ func TestValidationErrorsAggregatedWithContext(t *testing.T) {
 // which returns structured errors with full context.
 func TestValidationReportWithStructuredErrors(t *testing.T) {
 	builder := NewConfigBuilder("test-cluster").
-		WithOrganization(""). // Missing organization
+		WithOrganization("").             // Missing organization
 		WithProvider("invalid-provider"). // Invalid provider
-		WithMasterCount(2) // Even master count
+		WithMasterCount(2)                // Even master count
 
 	// Get validation report
 	fluentBuilder, ok := builder.(*FluentConfigBuilder)
@@ -171,9 +171,9 @@ func TestBuildFailureWithDetailedErrors(t *testing.T) {
 // TestValidationErrorSuggestions tests that validation errors provide helpful suggestions.
 func TestValidationErrorSuggestions(t *testing.T) {
 	tests := []struct {
-		name              string
-		setupBuilder      func(ConfigBuilder) ConfigBuilder
-		expectedField     string
+		name               string
+		setupBuilder       func(ConfigBuilder) ConfigBuilder
+		expectedField      string
 		expectedSuggestion string
 	}{
 		{
@@ -264,7 +264,7 @@ func TestValidationErrorSuggestions(t *testing.T) {
 
 			// Verify suggestions contain expected text
 			if !containsSuggestion(foundError.Suggestions, tt.expectedSuggestion) {
-				t.Errorf("Expected suggestion containing '%s', got: %v", 
+				t.Errorf("Expected suggestion containing '%s', got: %v",
 					tt.expectedSuggestion, foundError.Suggestions)
 			}
 		})
@@ -313,9 +313,9 @@ func TestValidationErrorFormatting(t *testing.T) {
 // errors provide relevant suggestions.
 func TestProviderSpecificValidationSuggestions(t *testing.T) {
 	tests := []struct {
-		name              string
-		provider          string
-		setupBuilder      func(ConfigBuilder) ConfigBuilder
+		name               string
+		provider           string
+		setupBuilder       func(ConfigBuilder) ConfigBuilder
 		expectedSuggestion string
 	}{
 		{

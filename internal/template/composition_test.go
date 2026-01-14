@@ -485,7 +485,7 @@ line3: value3`
 
 		resultStr := string(result)
 		lines := strings.Split(resultStr, "\n")
-		
+
 		// Should have original 3 lines + 1 inserted = 4 lines (plus potential empty line)
 		assert.GreaterOrEqual(t, len(lines), 4)
 		assert.Equal(t, "line1: value1", lines[0])
@@ -511,7 +511,7 @@ line3: value3`
 		resultStr := string(result)
 		assert.Contains(t, resultStr, "line2: value2")
 		assert.Contains(t, resultStr, "inserted: after-line2")
-		
+
 		// Verify insertion order
 		line2Idx := strings.Index(resultStr, "line2: value2")
 		insertedIdx := strings.Index(resultStr, "inserted: after-line2")
@@ -1055,7 +1055,7 @@ func TestTemplateComposition_ConfigurableOrdering(t *testing.T) {
 		require.NoError(t, err)
 
 		resultStr := string(result)
-		
+
 		// With priority desc: overlayA (priority 2, name A), overlayC (priority 2, name C), overlayB (priority 1)
 		baseIdx := indexOfSubstring(resultStr, "base: true")
 		overlayAIdx := indexOfSubstring(resultStr, "overlayA: priority-2")
@@ -1077,7 +1077,7 @@ func TestTemplateComposition_ConfigurableOrdering(t *testing.T) {
 		require.NoError(t, err)
 
 		resultStr := string(result)
-		
+
 		// With priority asc: overlayB (priority 1), overlayA (priority 2, name A), overlayC (priority 2, name C)
 		baseIdx := indexOfSubstring(resultStr, "base: true")
 		overlayAIdx := indexOfSubstring(resultStr, "overlayA: priority-2")
@@ -1099,7 +1099,7 @@ func TestTemplateComposition_ConfigurableOrdering(t *testing.T) {
 		require.NoError(t, err)
 
 		resultStr := string(result)
-		
+
 		// With name ordering: overlayA, overlayB, overlayC (alphabetical)
 		baseIdx := indexOfSubstring(resultStr, "base: true")
 		overlayAIdx := indexOfSubstring(resultStr, "overlayA: priority-2")
@@ -1121,7 +1121,7 @@ func TestTemplateComposition_ConfigurableOrdering(t *testing.T) {
 		require.NoError(t, err)
 
 		resultStr := string(result)
-		
+
 		// With registration ordering: overlayB, overlayA, overlayC (as provided in composition)
 		baseIdx := indexOfSubstring(resultStr, "base: true")
 		overlayAIdx := indexOfSubstring(resultStr, "overlayA: priority-2")
@@ -1135,7 +1135,7 @@ func TestTemplateComposition_ConfigurableOrdering(t *testing.T) {
 
 	t.Run("custom ordering function", func(t *testing.T) {
 		composer := NewDefaultTemplateComposer(engine, registry)
-		
+
 		// Custom sort: reverse alphabetical order
 		composer.SetOrderingConfig(OverlayOrderingConfig{
 			CustomSort: func(overlays []TemplateOverlay) []TemplateOverlay {
@@ -1152,7 +1152,7 @@ func TestTemplateComposition_ConfigurableOrdering(t *testing.T) {
 		require.NoError(t, err)
 
 		resultStr := string(result)
-		
+
 		// With custom reverse alphabetical: overlayC, overlayB, overlayA
 		baseIdx := indexOfSubstring(resultStr, "base: true")
 		overlayAIdx := indexOfSubstring(resultStr, "overlayA: priority-2")
@@ -1305,9 +1305,9 @@ spec:
 	composer := NewDefaultTemplateComposer(engine, registry)
 
 	data := map[string]interface{}{
-		"Name":      "myapp",
-		"Namespace": "production",
-		"Image":     "myapp:v1.0.0",
+		"Name":        "myapp",
+		"Namespace":   "production",
+		"Image":       "myapp:v1.0.0",
 		"Environment": "production",
 	}
 
@@ -1331,7 +1331,7 @@ spec:
 				{
 					Operation: "add",
 					Path:      "image:",
-					Value:     `        env:
+					Value: `        env:
         - name: ENV
           value: production`,
 				},
@@ -1339,7 +1339,7 @@ spec:
 				{
 					Operation: "add",
 					Path:      ".",
-					Value:     `        resources:
+					Value: `        resources:
           limits:
             cpu: "1"
             memory: "512Mi"`,
@@ -1351,7 +1351,7 @@ spec:
 		require.NoError(t, err)
 
 		resultStr := string(result)
-		
+
 		// Verify all patches were applied
 		assert.Contains(t, resultStr, "replicas: 5")
 		assert.Contains(t, resultStr, "version: v1.0.0")
@@ -1393,10 +1393,10 @@ spec:
 		require.NoError(t, err)
 
 		resultStr := string(result)
-		
+
 		// Debug annotations should NOT be added (we're in production)
 		assert.NotContains(t, resultStr, "debug: \"true\"")
-		
+
 		// Replicas should be increased (we're in production)
 		assert.Contains(t, resultStr, "replicas: 10")
 	})
@@ -1423,10 +1423,10 @@ spec:
 		require.NoError(t, err)
 
 		resultStr := string(result)
-		
+
 		// Comment should be inserted
 		assert.Contains(t, resultStr, "# This is a production deployment")
-		
+
 		// Selector line should be removed
 		assert.NotContains(t, resultStr, "selector:")
 	})
@@ -1657,7 +1657,7 @@ func TestTemplateComposition_CompatibilityValidation(t *testing.T) {
 			Provider:     "openstack",
 			Dependencies: []string{"self-dependent-overlay"}, // Depends on itself
 		})
-		
+
 		// The registry should catch this circular dependency
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "template cannot depend on itself")
@@ -1749,17 +1749,17 @@ func TestTemplateComposition_DependencyValidation(t *testing.T) {
 	t.Run("circular dependency via file path", func(t *testing.T) {
 		// Create a temporary directory for test files
 		tmpDir := t.TempDir()
-		
+
 		// Create a base template file
 		baseFile := filepath.Join(tmpDir, "base.tmpl")
 		err := os.WriteFile(baseFile, []byte("base content"), 0644)
 		require.NoError(t, err)
-		
+
 		// Create an overlay file (we'll simulate circular dependency in validation)
 		overlayFile := filepath.Join(tmpDir, "circular.tmpl")
 		err = os.WriteFile(overlayFile, []byte("overlay content"), 0644)
 		require.NoError(t, err)
-		
+
 		// For file-based templates, we can't easily test circular dependencies
 		// since the registry validates them at registration time.
 		// This test documents that circular dependencies are caught at registration.
@@ -1787,7 +1787,7 @@ func TestTemplateComposition_DependencyValidation(t *testing.T) {
 			Type:         TemplateTypeOverlay,
 			Dependencies: []string{"circular-overlay"},
 		})
-		
+
 		// Registry should reject this at registration time
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "cannot depend on itself")
@@ -1801,7 +1801,7 @@ func TestTemplateComposition_DependencyValidation(t *testing.T) {
 			Type:         TemplateTypeOverlay,
 			Dependencies: []string{""},
 		})
-		
+
 		// Registry should reject this at registration time
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "dependency name cannot be empty")

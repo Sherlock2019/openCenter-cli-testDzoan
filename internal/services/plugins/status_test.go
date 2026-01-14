@@ -12,11 +12,11 @@ import (
 // This validates Task 3.3 acceptance criteria: "Service status reporting provides accurate information"
 func TestServiceStatusReporting(t *testing.T) {
 	tests := []struct {
-		name           string
-		plugin         svc.ServicePlugin
-		config         interface{}
-		expectedState  string
-		expectedMsg    string
+		name              string
+		plugin            svc.ServicePlugin
+		config            interface{}
+		expectedState     string
+		expectedMsg       string
 		shouldHaveDetails bool
 	}{
 		{
@@ -27,8 +27,8 @@ func TestServiceStatusReporting(t *testing.T) {
 					Enabled: false,
 				},
 			},
-			expectedState: "disabled",
-			expectedMsg:   "Service is disabled",
+			expectedState:     "disabled",
+			expectedMsg:       "Service is disabled",
 			shouldHaveDetails: false,
 		},
 		{
@@ -41,8 +41,8 @@ func TestServiceStatusReporting(t *testing.T) {
 				},
 				BackupBucket: "my-bucket",
 			},
-			expectedState: "pending",
-			expectedMsg:   "Velero",
+			expectedState:     "pending",
+			expectedMsg:       "Velero",
 			shouldHaveDetails: true,
 		},
 		{
@@ -55,8 +55,8 @@ func TestServiceStatusReporting(t *testing.T) {
 				},
 				BackupBucket: "my-bucket",
 			},
-			expectedState: "running",
-			expectedMsg:   "Velero",
+			expectedState:     "running",
+			expectedMsg:       "Velero",
 			shouldHaveDetails: true,
 		},
 		{
@@ -68,8 +68,8 @@ func TestServiceStatusReporting(t *testing.T) {
 					Status:  "success",
 				},
 			},
-			expectedState: "success",
-			expectedMsg:   "Prometheus",
+			expectedState:     "success",
+			expectedMsg:       "Prometheus",
 			shouldHaveDetails: true,
 		},
 		{
@@ -81,16 +81,16 @@ func TestServiceStatusReporting(t *testing.T) {
 					Status:  "failed",
 				},
 			},
-			expectedState: "failed",
-			expectedMsg:   "Loki",
+			expectedState:     "failed",
+			expectedMsg:       "Loki",
 			shouldHaveDetails: true,
 		},
 		{
-			name:   "Invalid config type returns failed status",
-			plugin: NewVeleroPlugin(),
-			config: &services.LokiConfig{}, // Wrong config type
-			expectedState: "failed",
-			expectedMsg:   "Invalid configuration type",
+			name:              "Invalid config type returns failed status",
+			plugin:            NewVeleroPlugin(),
+			config:            &services.LokiConfig{}, // Wrong config type
+			expectedState:     "failed",
+			expectedMsg:       "Invalid configuration type",
 			shouldHaveDetails: false,
 		},
 		{
@@ -103,8 +103,8 @@ func TestServiceStatusReporting(t *testing.T) {
 				LetsEncryptServer: "https://acme-v02.api.letsencrypt.org/directory",
 				Email:             "admin@example.com",
 			},
-			expectedState: "pending",
-			expectedMsg:   "Cert-manager",
+			expectedState:     "pending",
+			expectedMsg:       "Cert-manager",
 			shouldHaveDetails: true,
 		},
 		{
@@ -119,8 +119,8 @@ func TestServiceStatusReporting(t *testing.T) {
 				FrontendURL: "https://keycloak.example.com",
 				ClientID:    "myclient",
 			},
-			expectedState: "running",
-			expectedMsg:   "Keycloak",
+			expectedState:     "running",
+			expectedMsg:       "Keycloak",
 			shouldHaveDetails: true,
 		},
 		{
@@ -135,8 +135,8 @@ func TestServiceStatusReporting(t *testing.T) {
 				BucketName:  "loki-logs",
 				VolumeSize:  100,
 			},
-			expectedState: "running",
-			expectedMsg:   "Loki",
+			expectedState:     "running",
+			expectedMsg:       "Loki",
 			shouldHaveDetails: true,
 		},
 	}
@@ -170,7 +170,7 @@ func TestAllPluginsProvideStatus(t *testing.T) {
 			name:   "Velero",
 			plugin: NewVeleroPlugin(),
 			config: &services.VeleroConfig{
-				BaseConfig: services.BaseConfig{Enabled: true},
+				BaseConfig:   services.BaseConfig{Enabled: true},
 				BackupBucket: "test-bucket",
 			},
 		},

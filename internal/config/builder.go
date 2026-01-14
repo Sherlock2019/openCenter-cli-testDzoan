@@ -30,14 +30,14 @@ type ConfigBuilder interface {
 	WithClusterName(name string) ConfigBuilder
 	WithEnvironment(env string) ConfigBuilder
 	WithRegion(region string) ConfigBuilder
-	
+
 	// Kubernetes configuration
 	WithKubernetesVersion(version string) ConfigBuilder
 	WithNodeCounts(masters, workers int) ConfigBuilder
 	WithMasterCount(count int) ConfigBuilder
 	WithWorkerCount(count int) ConfigBuilder
 	WithWindowsWorkerCount(count int) ConfigBuilder
-	
+
 	// Networking configuration
 	WithNetworking(config Networking) ConfigBuilder
 	WithSubnetNodes(subnet string) ConfigBuilder
@@ -45,62 +45,62 @@ type ConfigBuilder interface {
 	WithSubnetServices(subnet string) ConfigBuilder
 	WithDNSNameservers(nameservers []string) ConfigBuilder
 	WithNTPServers(servers []string) ConfigBuilder
-	
+
 	// Infrastructure configuration
 	WithSSHUser(user string) ConfigBuilder
 	WithSSHAuthorizedKeys(keys []string) ConfigBuilder
 	WithBaseDomain(domain string) ConfigBuilder
 	WithAdminEmail(email string) ConfigBuilder
-	
+
 	// Service configuration
 	WithServices(services ...string) ConfigBuilder
 	WithService(name string, enabled bool) ConfigBuilder
-	
+
 	// Cloud provider configuration
 	WithAWSConfig(config SimplifiedAWSCloud) ConfigBuilder
 	WithOpenStackConfig(config SimplifiedOpenStackCloud) ConfigBuilder
-	
+
 	// Secrets configuration
 	WithSecretsBackend(backend string) ConfigBuilder
 	WithBarbicanConfig(config BarbicanConfig) ConfigBuilder
-	
+
 	// GitOps configuration
 	WithGitOpsConfig(config GitOpsConfig) ConfigBuilder
 	WithGitURL(url string) ConfigBuilder
 	WithGitBranch(branch string) ConfigBuilder
-	
+
 	// Storage configuration
 	WithStorageConfig(config StorageConfig) ConfigBuilder
 	WithDefaultStorageClass(class string) ConfigBuilder
-	
+
 	// Security configuration
 	WithSecurityConfig(config Security) ConfigBuilder
 	WithK8sHardening(enabled bool) ConfigBuilder
 	WithOSHardening(enabled bool) ConfigBuilder
-	
+
 	// Talos configuration
 	WithTalosConfig(config *TalosConfig) ConfigBuilder
 	WithTalosEnabled(enabled bool) ConfigBuilder
-	
+
 	// Generic override (string-based, runtime validation)
 	WithOverride(path string, value interface{}) ConfigBuilder
-	
+
 	// Type-safe path override (compile-time type safety)
 	WithPath(path TypedConfigPath[string], value string) ConfigBuilder
 	WithPathInt(path TypedConfigPath[int], value int) ConfigBuilder
 	WithPathBool(path TypedConfigPath[bool], value bool) ConfigBuilder
 	WithPathStringSlice(path TypedConfigPath[[]string], value []string) ConfigBuilder
-	
+
 	// Conditional configuration based on provider
 	WhenProvider(provider string, configureFn func(ConfigBuilder) ConfigBuilder) ConfigBuilder
 	WhenProviderIn(providers []string, configureFn func(ConfigBuilder) ConfigBuilder) ConfigBuilder
 	WhenNotProvider(provider string, configureFn func(ConfigBuilder) ConfigBuilder) ConfigBuilder
-	
+
 	// Metadata
 	WithMetadata(metadata ConfigMetadata) ConfigBuilder
 	WithTag(key, value string) ConfigBuilder
 	WithAnnotation(key, value string) ConfigBuilder
-	
+
 	// Build and validation
 	Build() (Config, error)
 	Validate() []ValidationError
@@ -406,7 +406,8 @@ func (b *FluentConfigBuilder) WithOverride(path string, value interface{}) Confi
 // This method provides compile-time type safety for configuration paths.
 //
 // Example:
-//   builder.WithPath(TypedConfigPaths.ClusterName, "my-cluster")
+//
+//	builder.WithPath(TypedConfigPaths.ClusterName, "my-cluster")
 func (b *FluentConfigBuilder) WithPath(path TypedConfigPath[string], value string) ConfigBuilder {
 	if b.config.Overrides == nil {
 		b.config.Overrides = make(map[string]any)
@@ -419,7 +420,8 @@ func (b *FluentConfigBuilder) WithPath(path TypedConfigPath[string], value strin
 // This method provides compile-time type safety for configuration paths.
 //
 // Example:
-//   builder.WithPathInt(TypedConfigPaths.MasterCount, 3)
+//
+//	builder.WithPathInt(TypedConfigPaths.MasterCount, 3)
 func (b *FluentConfigBuilder) WithPathInt(path TypedConfigPath[int], value int) ConfigBuilder {
 	if b.config.Overrides == nil {
 		b.config.Overrides = make(map[string]any)
@@ -432,7 +434,8 @@ func (b *FluentConfigBuilder) WithPathInt(path TypedConfigPath[int], value int) 
 // This method provides compile-time type safety for configuration paths.
 //
 // Example:
-//   builder.WithPathBool(TypedConfigPaths.K8sHardening, true)
+//
+//	builder.WithPathBool(TypedConfigPaths.K8sHardening, true)
 func (b *FluentConfigBuilder) WithPathBool(path TypedConfigPath[bool], value bool) ConfigBuilder {
 	if b.config.Overrides == nil {
 		b.config.Overrides = make(map[string]any)
@@ -445,7 +448,8 @@ func (b *FluentConfigBuilder) WithPathBool(path TypedConfigPath[bool], value boo
 // This method provides compile-time type safety for configuration paths.
 //
 // Example:
-//   builder.WithPathStringSlice(TypedConfigPaths.DNSNameservers, []string{"8.8.8.8", "8.8.4.4"})
+//
+//	builder.WithPathStringSlice(TypedConfigPaths.DNSNameservers, []string{"8.8.8.8", "8.8.4.4"})
 func (b *FluentConfigBuilder) WithPathStringSlice(path TypedConfigPath[[]string], value []string) ConfigBuilder {
 	if b.config.Overrides == nil {
 		b.config.Overrides = make(map[string]any)
@@ -458,11 +462,12 @@ func (b *FluentConfigBuilder) WithPathStringSlice(path TypedConfigPath[[]string]
 // This enables provider-specific configuration in a fluent, readable way.
 //
 // Example:
-//   builder.WhenProvider("openstack", func(b ConfigBuilder) ConfigBuilder {
-//       return b.WithOpenStackConfig(osConfig)
-//   }).WhenProvider("aws", func(b ConfigBuilder) ConfigBuilder {
-//       return b.WithAWSConfig(awsConfig)
-//   })
+//
+//	builder.WhenProvider("openstack", func(b ConfigBuilder) ConfigBuilder {
+//	    return b.WithOpenStackConfig(osConfig)
+//	}).WhenProvider("aws", func(b ConfigBuilder) ConfigBuilder {
+//	    return b.WithAWSConfig(awsConfig)
+//	})
 func (b *FluentConfigBuilder) WhenProvider(provider string, configureFn func(ConfigBuilder) ConfigBuilder) ConfigBuilder {
 	if b.config.OpenCenter.Infrastructure.Provider == provider {
 		return configureFn(b)
@@ -474,9 +479,10 @@ func (b *FluentConfigBuilder) WhenProvider(provider string, configureFn func(Con
 // This is useful for applying configuration to multiple providers at once.
 //
 // Example:
-//   builder.WhenProviderIn([]string{"openstack", "aws"}, func(b ConfigBuilder) ConfigBuilder {
-//       return b.WithK8sHardening(true).WithOSHardening(true)
-//   })
+//
+//	builder.WhenProviderIn([]string{"openstack", "aws"}, func(b ConfigBuilder) ConfigBuilder {
+//	    return b.WithK8sHardening(true).WithOSHardening(true)
+//	})
 func (b *FluentConfigBuilder) WhenProviderIn(providers []string, configureFn func(ConfigBuilder) ConfigBuilder) ConfigBuilder {
 	currentProvider := b.config.OpenCenter.Infrastructure.Provider
 	for _, provider := range providers {
@@ -491,9 +497,10 @@ func (b *FluentConfigBuilder) WhenProviderIn(providers []string, configureFn fun
 // This is useful for excluding specific providers from certain configurations.
 //
 // Example:
-//   builder.WhenNotProvider("kind", func(b ConfigBuilder) ConfigBuilder {
-//       return b.WithK8sHardening(true)
-//   })
+//
+//	builder.WhenNotProvider("kind", func(b ConfigBuilder) ConfigBuilder {
+//	    return b.WithK8sHardening(true)
+//	})
 func (b *FluentConfigBuilder) WhenNotProvider(provider string, configureFn func(ConfigBuilder) ConfigBuilder) ConfigBuilder {
 	if b.config.OpenCenter.Infrastructure.Provider != provider {
 		return configureFn(b)
@@ -532,7 +539,7 @@ func (b *FluentConfigBuilder) Build() (Config, error) {
 		b.config.Metadata.CreatedAt = time.Now()
 	}
 	b.config.Metadata.UpdatedAt = time.Now()
-	
+
 	// Run validation
 	validationErrors := b.Validate()
 	if len(validationErrors) > 0 {
@@ -546,13 +553,13 @@ func (b *FluentConfigBuilder) Build() (Config, error) {
 			structuredErr.Operation = "configuration_build"
 			b.errorAggregator.AddError(structuredErr)
 		}
-		
+
 		// Get formatted error summary
 		summary := b.errorAggregator.GetSummary()
-		return Config{}, fmt.Errorf("configuration validation failed with %d errors:\n%s", 
+		return Config{}, fmt.Errorf("configuration validation failed with %d errors:\n%s",
 			len(validationErrors), summary)
 	}
-	
+
 	return b.config, nil
 }
 
@@ -561,19 +568,19 @@ func (b *FluentConfigBuilder) Validate() []ValidationError {
 	// Clear previous errors
 	b.errors = []ValidationError{}
 	b.errorAggregator.ClearAll()
-	
+
 	// Run basic validation
 	b.validateRequired()
 	b.validateProvider()
 	b.validateNodeCounts()
 	b.validateNetworking()
-	
+
 	// Run custom validators
 	for _, validator := range b.validators {
 		errors := validator.Validate(b.config)
 		b.errors = append(b.errors, errors...)
 	}
-	
+
 	return b.errors
 }
 
@@ -583,7 +590,7 @@ func (b *FluentConfigBuilder) GetValidationReport() *errors.ValidationResult {
 	if len(b.errors) == 0 && !b.errorAggregator.HasErrors() {
 		b.Validate()
 	}
-	
+
 	// Convert validation errors to structured errors
 	for _, valErr := range b.errors {
 		structuredErr := &errors.StructuredError{
@@ -597,7 +604,7 @@ func (b *FluentConfigBuilder) GetValidationReport() *errors.ValidationResult {
 		}
 		b.errorAggregator.AddError(structuredErr)
 	}
-	
+
 	return b.errorAggregator.ToValidationResult()
 }
 
@@ -620,7 +627,7 @@ func (b *FluentConfigBuilder) validateRequired() {
 			},
 		})
 	}
-	
+
 	if b.config.OpenCenter.Meta.Organization == "" {
 		b.errors = append(b.errors, ValidationError{
 			Field:   "opencenter.meta.organization",
@@ -632,7 +639,7 @@ func (b *FluentConfigBuilder) validateRequired() {
 			},
 		})
 	}
-	
+
 	if b.config.OpenCenter.Infrastructure.Provider == "" {
 		b.errors = append(b.errors, ValidationError{
 			Field:   "opencenter.infrastructure.provider",
@@ -649,7 +656,7 @@ func (b *FluentConfigBuilder) validateRequired() {
 // validateProvider checks provider-specific requirements.
 func (b *FluentConfigBuilder) validateProvider() {
 	provider := b.config.OpenCenter.Infrastructure.Provider
-	
+
 	switch provider {
 	case "openstack":
 		if b.config.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL == "" {
@@ -706,7 +713,7 @@ func (b *FluentConfigBuilder) validateNodeCounts() {
 			},
 		})
 	}
-	
+
 	if b.config.OpenCenter.Cluster.Kubernetes.MasterCount%2 == 0 {
 		b.errors = append(b.errors, ValidationError{
 			Field:   "opencenter.cluster.kubernetes.master_count",
@@ -719,7 +726,7 @@ func (b *FluentConfigBuilder) validateNodeCounts() {
 			},
 		})
 	}
-	
+
 	if b.config.OpenCenter.Cluster.Kubernetes.WorkerCount < 0 {
 		b.errors = append(b.errors, ValidationError{
 			Field:   "opencenter.cluster.kubernetes.worker_count",
@@ -748,7 +755,7 @@ func (b *FluentConfigBuilder) validateNetworking() {
 			},
 		})
 	}
-	
+
 	if b.config.Networking.SubnetPods == "" {
 		b.errors = append(b.errors, ValidationError{
 			Field:   "networking.subnet_pods",
@@ -761,7 +768,7 @@ func (b *FluentConfigBuilder) validateNetworking() {
 			},
 		})
 	}
-	
+
 	if b.config.Networking.SubnetServices == "" {
 		b.errors = append(b.errors, ValidationError{
 			Field:   "networking.subnet_services",

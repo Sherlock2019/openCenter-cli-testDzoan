@@ -34,15 +34,15 @@ import (
 // The structure matches the testdata/schema.yaml format with opencenter, opentofu, cloud, and secrets sections.
 // IAC field is included for backward compatibility with existing templates.
 type Config struct {
-	SchemaVersion string                 `yaml:"schema_version,omitempty" json:"schema_version,omitempty"`
-	OpenCenter    SimplifiedOpenCenter   `yaml:"opencenter" json:"opencenter"`
-	OpenTofu      SimplifiedOpenTofu     `yaml:"opentofu" json:"opentofu"`
-	Secrets       Secrets                `yaml:"secrets" json:"secrets"`
-	Networking    Networking             `yaml:"networking,omitempty" json:"networking,omitempty"`
-	Security      Security               `yaml:"security,omitempty" json:"security,omitempty"`
-	Deployment    Deployment             `yaml:"deployment,omitempty" json:"deployment,omitempty"`
-	Overrides     map[string]any         `yaml:"overrides,omitempty" json:"overrides,omitempty"`
-	Metadata      ConfigMetadata         `yaml:"metadata,omitempty" json:"metadata,omitempty"`
+	SchemaVersion string               `yaml:"schema_version,omitempty" json:"schema_version,omitempty"`
+	OpenCenter    SimplifiedOpenCenter `yaml:"opencenter" json:"opencenter"`
+	OpenTofu      SimplifiedOpenTofu   `yaml:"opentofu" json:"opentofu"`
+	Secrets       Secrets              `yaml:"secrets" json:"secrets"`
+	Networking    Networking           `yaml:"networking,omitempty" json:"networking,omitempty"`
+	Security      Security             `yaml:"security,omitempty" json:"security,omitempty"`
+	Deployment    Deployment           `yaml:"deployment,omitempty" json:"deployment,omitempty"`
+	Overrides     map[string]any       `yaml:"overrides,omitempty" json:"overrides,omitempty"`
+	Metadata      ConfigMetadata       `yaml:"metadata,omitempty" json:"metadata,omitempty"`
 }
 
 // Cluster Stages
@@ -829,10 +829,10 @@ func ConfigPath(name string) (string, error) {
 // The name parameter can be in "cluster" or "organization/cluster" format.
 //
 // Metadata Preservation:
-// - If the configuration file contains metadata (created_at, created_by, tags, annotations),
-//   it will be preserved when loading.
-// - If metadata is missing (for backward compatibility with old configs), new metadata
-//   will be initialized with current timestamps.
+//   - If the configuration file contains metadata (created_at, created_by, tags, annotations),
+//     it will be preserved when loading.
+//   - If metadata is missing (for backward compatibility with old configs), new metadata
+//     will be initialized with current timestamps.
 //
 // Inputs:
 //   - name: The name of the cluster (can be "cluster" or "organization/cluster").

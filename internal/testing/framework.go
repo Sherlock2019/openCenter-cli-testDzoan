@@ -50,16 +50,16 @@ type TestFramework struct {
 	GitOpsDataGenerator *GitOpsDataGenerator
 
 	// Mock implementations for testing
-	MockTemplateEngine    *MockTemplateEngine
-	MockConfigBuilder     *MockConfigBuilder
-	MockConfigValidator   *MockConfigValidator
-	MockTemplateRegistry  *MockTemplateRegistry
-	MockGitOpsGenerator   *MockGitOpsGenerator
-	MockServiceRegistry   *MockServiceRegistry
-	MockMigrationManager  *MockMigrationManager
-	MockMCPServer         *MockMCPServer
-	MockAuthProvider      *MockAuthProvider
-	MockErrorAggregator   *MockErrorAggregator
+	MockTemplateEngine   *MockTemplateEngine
+	MockConfigBuilder    *MockConfigBuilder
+	MockConfigValidator  *MockConfigValidator
+	MockTemplateRegistry *MockTemplateRegistry
+	MockGitOpsGenerator  *MockGitOpsGenerator
+	MockServiceRegistry  *MockServiceRegistry
+	MockMigrationManager *MockMigrationManager
+	MockMCPServer        *MockMCPServer
+	MockAuthProvider     *MockAuthProvider
+	MockErrorAggregator  *MockErrorAggregator
 
 	// t is the testing.T instance for cleanup
 	t *testing.T

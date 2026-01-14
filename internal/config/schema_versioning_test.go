@@ -20,11 +20,11 @@ import (
 // TestDetectSchemaMigrationNeeded tests the schema migration detection functionality.
 func TestDetectSchemaMigrationNeeded(t *testing.T) {
 	tests := []struct {
-		name              string
-		config            Config
-		expectedNeedsMig  bool
-		expectedVersion   string
-		expectError       bool
+		name             string
+		config           Config
+		expectedNeedsMig bool
+		expectedVersion  string
+		expectError      bool
 	}{
 		{
 			name: "config with current schema version",
@@ -89,39 +89,39 @@ func TestDetectSchemaMigrationNeeded(t *testing.T) {
 // TestGetMigrationPath tests the migration path determination.
 func TestGetMigrationPath(t *testing.T) {
 	tests := []struct {
-		name          string
-		fromVersion   string
-		toVersion     string
-		expectedPath  []string
-		expectError   bool
+		name         string
+		fromVersion  string
+		toVersion    string
+		expectedPath []string
+		expectError  bool
 	}{
 		{
-			name:          "same version - no migration",
-			fromVersion:   SchemaVersion,
-			toVersion:     SchemaVersion,
-			expectedPath:  []string{},
-			expectError:   false,
+			name:         "same version - no migration",
+			fromVersion:  SchemaVersion,
+			toVersion:    SchemaVersion,
+			expectedPath: []string{},
+			expectError:  false,
 		},
 		{
-			name:          "empty from version to current",
-			fromVersion:   "",
-			toVersion:     SchemaVersion,
-			expectedPath:  []string{SchemaVersion},
-			expectError:   false,
+			name:         "empty from version to current",
+			fromVersion:  "",
+			toVersion:    SchemaVersion,
+			expectedPath: []string{SchemaVersion},
+			expectError:  false,
 		},
 		{
-			name:          "old version to current",
-			fromVersion:   "0.9.0",
-			toVersion:     SchemaVersion,
-			expectedPath:  []string{SchemaVersion},
-			expectError:   false,
+			name:         "old version to current",
+			fromVersion:  "0.9.0",
+			toVersion:    SchemaVersion,
+			expectedPath: []string{SchemaVersion},
+			expectError:  false,
 		},
 		{
-			name:          "migration to non-current version",
-			fromVersion:   "0.9.0",
-			toVersion:     "0.8.0",
-			expectedPath:  nil,
-			expectError:   true,
+			name:         "migration to non-current version",
+			fromVersion:  "0.9.0",
+			toVersion:    "0.8.0",
+			expectedPath: nil,
+			expectError:  true,
 		},
 	}
 

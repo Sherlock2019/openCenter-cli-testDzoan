@@ -131,6 +131,8 @@ func CopyBase(cfg config.Config, render bool) error {
 // renderTemplate reads the embedded template file at path, executes
 // it using the provided configuration, and writes the result to dst.
 // It handles special cases where template files contain non-Go template syntax.
+//
+// Deprecated: Use renderTemplateAtomic with a workspace for atomic file operations.
 func renderTemplate(path, dst string, cfg config.Config) error {
 	data, err := Files.ReadFile(path)
 	if err != nil {
@@ -166,8 +168,51 @@ func renderTemplate(path, dst string, cfg config.Config) error {
 	return nil
 }
 
+// renderTemplateAtomic reads the embedded template file at path, executes
+// it using the provided configuration, and writes the result atomically to dst.
+// It handles special cases where template files contain non-Go template syntax.
+func renderTemplateAtomic(path, dst string, cfg config.Config, workspace *GitOpsWorkspace) error {
+	data, err := Files.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	// Handle special cases for files that contain conflicting template syntax
+	content := string(data)
+	filename := filepath.Base(path)
+
+	// For Makefile.tpl, escape Helm template syntax to prevent Go template parsing conflicts
+	if filename == "Makefile.tpl" {
+		// Replace Helm template syntax with escaped version for Go template processing
+		content = strings.ReplaceAll(content, `--template="{{.Version}}"`, `--template="{{"{{"}}.Version{{"}}"}}"`)
+	}
+
+	t, err := template.New(filename).Funcs(sprig.TxtFuncMap()).Parse(content)
+	if err != nil {
+		return fmt.Errorf("failed to parse template %s: %w", path, err)
+	}
+
+	// Execute template to a buffer first
+	var buf strings.Builder
+	if err := t.Execute(&buf, cfg); err != nil {
+		return fmt.Errorf("failed to execute template %s: %w", path, err)
+	}
+
+	// Get relative path from workspace root
+	relPath, err := filepath.Rel(workspace.RootDir, dst)
+	if err != nil {
+		return fmt.Errorf("failed to get relative path: %w", err)
+	}
+
+	// Write atomically using workspace writer
+	writer := NewAtomicWriter(workspace)
+	return writer.WriteFileString(relPath, buf.String(), 0o644)
+}
+
 // copyFile copies an embedded file from src to dst without
 // interpretation. The dst file is created with default permissions.
+//
+// Deprecated: Use copyFileAtomic with a workspace for atomic file operations.
 func copyFile(src, dst string) error {
 	data, err := Files.ReadFile(src)
 	if err != nil {
@@ -178,6 +223,25 @@ func copyFile(src, dst string) error {
 		return err
 	}
 	return os.WriteFile(dst, data, 0o644)
+}
+
+// copyFileAtomic copies an embedded file from src to dst atomically within a workspace.
+// The file is written atomically to prevent partial writes.
+func copyFileAtomic(src, dst string, workspace *GitOpsWorkspace) error {
+	data, err := Files.ReadFile(src)
+	if err != nil {
+		return err
+	}
+
+	// Get relative path from workspace root
+	relPath, err := filepath.Rel(workspace.RootDir, dst)
+	if err != nil {
+		return fmt.Errorf("failed to get relative path: %w", err)
+	}
+
+	// Use atomic writer
+	writer := NewAtomicWriter(workspace)
+	return writer.WriteFile(relPath, data, 0o644)
 }
 
 // shouldSkipFile determines if a file should be skipped based on service configuration.
@@ -485,4 +549,189 @@ func isServiceDisabled(serviceCfg any) bool {
 		}
 	}
 	return false
+}
+
+// CopyBaseAtomic copies or renders embedded files from gitops-base-dir into the workspace
+// using atomic file operations to prevent partial writes.
+//
+// This is the workspace-aware version of CopyBase that ensures all file operations
+// are atomic and can be rolled back if needed.
+//
+// Files ending with .tpl are always rendered with the cluster configuration bound
+// under the dot context and the .tpl suffix stripped from the destination path.
+// When render is true, .tmpl files are rendered using the same rules. When render
+// is false, .tmpl files are copied verbatim (extension preserved) to allow manual
+// customization workflows.
+//
+// Non-template files are copied as-is. The directory structure under gitops-base-dir/
+// is preserved.
+//
+// Inputs:
+//   - cfg: The cluster configuration.
+//   - render: If true, both .tpl and .tmpl files render; if false, only .tpl
+//     files render while .tmpl files are copied as-is for manual editing.
+//   - workspace: The GitOps workspace for atomic operations.
+//
+// Outputs:
+//   - error: An error if one occurred during the copy or render operation.
+func CopyBaseAtomic(cfg config.Config, render bool, workspace *GitOpsWorkspace) error {
+	target := workspace.RootDir
+
+	// Walk embedded files
+	err := fs.WalkDir(Files, "gitops-base-dir", func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel("gitops-base-dir", path)
+		if err != nil {
+			return err
+		}
+		dst := filepath.Join(target, rel)
+		name := d.Name()
+		isTpl := strings.HasSuffix(name, ".tpl")
+		isTmpl := strings.HasSuffix(name, ".tmpl")
+		if isTpl || isTmpl {
+			shouldRender := render || isTpl
+			if shouldRender {
+				if isTpl {
+					dst = strings.TrimSuffix(dst, ".tpl")
+				} else {
+					dst = strings.TrimSuffix(dst, ".tmpl")
+				}
+				return renderTemplateAtomic(path, dst, cfg, workspace)
+			}
+			return copyFileAtomic(path, dst, workspace)
+		}
+		// Copy file as-is
+		return copyFileAtomic(path, dst, workspace)
+	})
+	return err
+}
+
+// RenderClusterAppsAtomic renders cluster-apps-base template to applications/overlays/<cluster-name>/
+// using atomic file operations to prevent partial writes.
+//
+// This is the workspace-aware version of RenderClusterApps that ensures all file operations
+// are atomic and can be rolled back if needed.
+func RenderClusterAppsAtomic(cfg config.Config, workspace *GitOpsWorkspace) error {
+	clusterName := cfg.ClusterName()
+	if clusterName == "" {
+		return fmt.Errorf("cluster name is empty")
+	}
+
+	target := filepath.Join(workspace.RootDir, "applications", "overlays", clusterName)
+
+	// Walk embedded cluster-apps-base files
+	return fs.WalkDir(Files, "templates/cluster-apps-base", func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() {
+			return nil
+		}
+
+		rel, err := filepath.Rel("templates/cluster-apps-base", path)
+		if err != nil {
+			return err
+		}
+
+		// Skip files for disabled services
+		if shouldSkipFile(rel, cfg) {
+			return nil
+		}
+
+		// Replace cluster-name and cluster_name placeholders in filename
+		relWithClusterName := strings.ReplaceAll(rel, "cluster-name", clusterName)
+		relWithClusterName = strings.ReplaceAll(relWithClusterName, "cluster_name", clusterName)
+
+		dst := filepath.Join(target, relWithClusterName)
+
+		// If template file, process and strip template extension
+		if strings.HasSuffix(d.Name(), ".tmpl") || strings.HasSuffix(d.Name(), ".tpl") {
+			if strings.HasSuffix(d.Name(), ".tmpl") {
+				dst = strings.TrimSuffix(dst, ".tmpl")
+			} else {
+				dst = strings.TrimSuffix(dst, ".tpl")
+			}
+			return renderTemplateAtomic(path, dst, cfg, workspace)
+		}
+
+		// Copy file as-is
+		return copyFileAtomic(path, dst, workspace)
+	})
+}
+
+// RenderInfrastructureClusterAtomic renders infrastructure-cluster-template to infrastructure/clusters/<cluster-name>/
+// using atomic file operations to prevent partial writes.
+//
+// This is the workspace-aware version of RenderInfrastructureCluster that ensures all file operations
+// are atomic and can be rolled back if needed.
+func RenderInfrastructureClusterAtomic(cfg config.Config, workspace *GitOpsWorkspace) error {
+	clusterName := cfg.ClusterName()
+	if clusterName == "" {
+		return fmt.Errorf("cluster name is empty")
+	}
+
+	target := filepath.Join(workspace.RootDir, "infrastructure", "clusters", clusterName)
+
+	// Determine which main.tf template to use based on provider
+	provider := cfg.OpenCenter.Infrastructure.Provider
+	if provider == "" {
+		provider = "openstack" // default
+	}
+
+	// Map provider to template filename
+	mainTfTemplate := "main.tf.tpl" // default for openstack
+	if provider == "baremetal" {
+		mainTfTemplate = "main-baremetal.tf.tpl"
+	}
+
+	// Walk embedded infrastructure-cluster-template files
+	return fs.WalkDir(Files, "templates/infrastructure-cluster-template", func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() {
+			return nil
+		}
+
+		rel, err := filepath.Rel("templates/infrastructure-cluster-template", path)
+		if err != nil {
+			return err
+		}
+
+		filename := d.Name()
+
+		// Skip main.tf templates that don't match the provider
+		if strings.HasPrefix(filename, "main") && strings.HasSuffix(filename, ".tf.tpl") {
+			if filename != mainTfTemplate {
+				// Skip this template as it's not for the current provider
+				return nil
+			}
+			// Rename to main.tf for the selected provider template
+			rel = "main.tf.tpl"
+		}
+
+		// Replace cluster-name and cluster_name placeholders in filename
+		relWithClusterName := strings.ReplaceAll(rel, "cluster-name", clusterName)
+		relWithClusterName = strings.ReplaceAll(relWithClusterName, "cluster_name", clusterName)
+
+		dst := filepath.Join(target, relWithClusterName)
+
+		// If template file, process and strip template extension
+		if strings.HasSuffix(d.Name(), ".tmpl") || strings.HasSuffix(d.Name(), ".tpl") {
+			if strings.HasSuffix(d.Name(), ".tmpl") {
+				dst = strings.TrimSuffix(dst, ".tmpl")
+			} else {
+				dst = strings.TrimSuffix(dst, ".tpl")
+			}
+			return renderTemplateAtomic(path, dst, cfg, workspace)
+		}
+
+		// Copy file as-is
+		return copyFileAtomic(path, dst, workspace)
+	})
 }

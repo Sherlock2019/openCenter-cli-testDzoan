@@ -57,10 +57,10 @@ func ExampleConfigBuilder() {
 	fmt.Printf("Cluster: %s\n", cfg.OpenCenter.Meta.Name)
 	fmt.Printf("Organization: %s\n", cfg.OpenCenter.Meta.Organization)
 	fmt.Printf("Provider: %s\n", cfg.OpenCenter.Infrastructure.Provider)
-	fmt.Printf("Masters: %d, Workers: %d\n", 
+	fmt.Printf("Masters: %d, Workers: %d\n",
 		cfg.OpenCenter.Cluster.Kubernetes.MasterCount,
 		cfg.OpenCenter.Cluster.Kubernetes.WorkerCount)
-	
+
 	// Output:
 	// Cluster: production-cluster
 	// Organization: acme-corp
@@ -89,10 +89,10 @@ func ExampleConfigBuilder_aws() {
 		return
 	}
 
-	fmt.Printf("AWS Cluster: %s in %s\n", 
+	fmt.Printf("AWS Cluster: %s in %s\n",
 		cfg.OpenCenter.Meta.Name,
 		cfg.OpenCenter.Infrastructure.Cloud.AWS.Region)
-	
+
 	// Output:
 	// AWS Cluster: aws-cluster in us-west-2
 }
@@ -120,7 +120,7 @@ func ExampleConfigBuilder_modifyExisting() {
 	fmt.Printf("Modified cluster: %s with %d workers\n",
 		cfg.OpenCenter.Meta.Name,
 		cfg.OpenCenter.Cluster.Kubernetes.WorkerCount)
-	
+
 	// Output:
 	// Modified cluster: existing-cluster with 10 workers
 }

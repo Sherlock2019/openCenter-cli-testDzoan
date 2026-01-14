@@ -174,9 +174,15 @@ func TestBuilderReturnsBuilderInstance(t *testing.T) {
 		{"WithOverride", func(b ConfigBuilder) ConfigBuilder { return b.WithOverride("test.path", "value") }},
 		{"WithTag", func(b ConfigBuilder) ConfigBuilder { return b.WithTag("key", "value") }},
 		{"WithAnnotation", func(b ConfigBuilder) ConfigBuilder { return b.WithAnnotation("key", "value") }},
-		{"WhenProvider", func(b ConfigBuilder) ConfigBuilder { return b.WhenProvider("openstack", func(b2 ConfigBuilder) ConfigBuilder { return b2 }) }},
-		{"WhenProviderIn", func(b ConfigBuilder) ConfigBuilder { return b.WhenProviderIn([]string{"openstack"}, func(b2 ConfigBuilder) ConfigBuilder { return b2 }) }},
-		{"WhenNotProvider", func(b ConfigBuilder) ConfigBuilder { return b.WhenNotProvider("kind", func(b2 ConfigBuilder) ConfigBuilder { return b2 }) }},
+		{"WhenProvider", func(b ConfigBuilder) ConfigBuilder {
+			return b.WhenProvider("openstack", func(b2 ConfigBuilder) ConfigBuilder { return b2 })
+		}},
+		{"WhenProviderIn", func(b ConfigBuilder) ConfigBuilder {
+			return b.WhenProviderIn([]string{"openstack"}, func(b2 ConfigBuilder) ConfigBuilder { return b2 })
+		}},
+		{"WhenNotProvider", func(b ConfigBuilder) ConfigBuilder {
+			return b.WhenNotProvider("kind", func(b2 ConfigBuilder) ConfigBuilder { return b2 })
+		}},
 	}
 
 	for _, tt := range tests {
@@ -458,22 +464,22 @@ func TestTypeSafePathMethods(t *testing.T) {
 func TestTypeSafePathsPreventCompileTimeErrors(t *testing.T) {
 	// This test documents the compile-time safety provided by typed paths.
 	// The following code would NOT compile, demonstrating type safety:
-	
+
 	// Example 1: Wrong type for string path
 	// builder.WithPath(TypedConfigPaths.Organization, 123)  // Compile error: cannot use 123 (type int) as type string
-	
+
 	// Example 2: Wrong type for int path
 	// builder.WithPathInt(TypedConfigPaths.MasterCount, "3")  // Compile error: cannot use "3" (type string) as type int
-	
+
 	// Example 3: Wrong method for path type
 	// builder.WithPath(TypedConfigPaths.MasterCount, "3")  // Compile error: TypedConfigPaths.MasterCount is ConfigPath[int], not ConfigPath[string]
-	
+
 	// Example 4: Wrong type for bool path
 	// builder.WithPathBool(TypedConfigPaths.K8sHardening, "true")  // Compile error: cannot use "true" (type string) as type bool
-	
+
 	// Example 5: Wrong type for slice path
 	// builder.WithPathStringSlice(TypedConfigPaths.DNSNameservers, "8.8.8.8")  // Compile error: cannot use "8.8.8.8" (type string) as type []string
-	
+
 	// This test passes because the above errors are caught at compile time,
 	// not runtime. The type system prevents these errors from ever occurring.
 	t.Log("Type-safe paths prevent compile-time errors")
@@ -486,23 +492,23 @@ func TestComparisonTypeSafeVsUntypedPaths(t *testing.T) {
 		WithPath(TypedConfigPaths.Organization, "safe-org").
 		WithPathInt(TypedConfigPaths.MasterCount, 3).
 		WithPathBool(TypedConfigPaths.K8sHardening, true)
-	
+
 	// Untyped approach - errors only caught at runtime (if at all)
 	untypedBuilder := NewConfigBuilder("test-cluster").
 		WithOverride("opencenter.meta.organization", "unsafe-org").
 		WithOverride("opencenter.cluster.kubernetes.master_count", 3).
 		WithOverride("security.k8s_hardening", true)
-	
+
 	// Both should work for valid inputs
 	if typeSafeBuilder == nil || untypedBuilder == nil {
 		t.Fatal("Builders should not be nil")
 	}
-	
+
 	// The untyped approach allows errors that would be caught at compile time with typed paths:
 	// untypedBuilder.WithOverride("opencenter.meta.organization", 123)  // No compile error, but wrong type
 	// untypedBuilder.WithOverride("opencenter.cluster.kubernetes.master_count", "3")  // No compile error, but wrong type
 	// untypedBuilder.WithOverride("typo.in.path", "value")  // No compile error, but invalid path
-	
+
 	t.Log("Type-safe paths provide compile-time validation that untyped paths cannot")
 }
 
@@ -519,23 +525,23 @@ func TestTypeSafePathMethodChaining(t *testing.T) {
 		WithPathBool(TypedConfigPaths.OSHardening, false).
 		WithDNSNameservers([]string{"8.8.8.8"}).
 		WithPathStringSlice(TypedConfigPaths.NTPServers, []string{"time.google.com"})
-	
+
 	if builder == nil {
 		t.Fatal("Builder should not be nil after mixed method chaining")
 	}
-	
+
 	// Verify that both typed and untyped methods work together
 	fluentBuilder := builder.(*FluentConfigBuilder)
-	
+
 	// Check regular method results
 	if fluentBuilder.config.OpenCenter.Meta.Organization != "test-org" {
 		t.Errorf("Expected organization 'test-org', got '%s'", fluentBuilder.config.OpenCenter.Meta.Organization)
 	}
-	
+
 	if fluentBuilder.config.OpenCenter.Infrastructure.Provider != "openstack" {
 		t.Errorf("Expected provider 'openstack', got '%s'", fluentBuilder.config.OpenCenter.Infrastructure.Provider)
 	}
-	
+
 	// Check type-safe method results in overrides
 	if val, exists := fluentBuilder.config.Overrides[TypedConfigPaths.Environment.Path()]; !exists {
 		t.Error("Environment override should exist")
@@ -1032,7 +1038,7 @@ func TestConditionalConfigurationRealWorldScenario(t *testing.T) {
 	// Test Kind configuration
 	t.Run("kind configuration", func(t *testing.T) {
 		builder := createClusterConfig("kind")
-		
+
 		// Access the internal config to check before Build (which will fail validation)
 		fluentBuilder, ok := builder.(*FluentConfigBuilder)
 		if !ok {

@@ -1182,11 +1182,11 @@ func (cv *ClusterConfigValidator) GetSuggestionEngine() *SuggestionEngine {
 func (cv *ClusterConfigValidator) enhanceSuggestions(field string, value interface{}, existingSuggestions []string) []string {
 	// Get suggestions from the engine
 	engineSuggestions := cv.suggestionEngine.GetSuggestionsForField(field, value)
-	
+
 	// Combine with existing suggestions, avoiding duplicates
 	suggestionMap := make(map[string]bool)
 	var combined []string
-	
+
 	// Add existing suggestions first
 	for _, s := range existingSuggestions {
 		if !suggestionMap[s] {
@@ -1194,7 +1194,7 @@ func (cv *ClusterConfigValidator) enhanceSuggestions(field string, value interfa
 			combined = append(combined, s)
 		}
 	}
-	
+
 	// Add engine suggestions
 	for _, s := range engineSuggestions {
 		if !suggestionMap[s] {
@@ -1202,6 +1202,6 @@ func (cv *ClusterConfigValidator) enhanceSuggestions(field string, value interfa
 			combined = append(combined, s)
 		}
 	}
-	
+
 	return combined
 }

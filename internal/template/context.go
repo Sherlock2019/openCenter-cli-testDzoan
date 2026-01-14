@@ -73,10 +73,10 @@ func NewRenderContext(data interface{}) *RenderContext {
 		Metadata:  make(map[string]interface{}),
 		Functions: make(template.FuncMap),
 		Options: RenderOptions{
-			StrictMode:             false,
-			MissingKeyBehavior:     MissingKeyInvalid,
-			ValidateBeforeRender:   true,
-			IncludeLineNumbers:     true,
+			StrictMode:           false,
+			MissingKeyBehavior:   MissingKeyInvalid,
+			ValidateBeforeRender: true,
+			IncludeLineNumbers:   true,
 		},
 	}
 }

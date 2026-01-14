@@ -35,73 +35,73 @@ func TestGetSuggestionsForField(t *testing.T) {
 	engine := NewSuggestionEngine()
 
 	tests := []struct {
-		name          string
-		field         string
-		value         interface{}
-		expectNonZero bool
+		name           string
+		field          string
+		value          interface{}
+		expectNonZero  bool
 		expectContains string
 	}{
 		{
-			name:          "cluster_name field",
-			field:         "cluster_name",
-			value:         "test-cluster",
-			expectNonZero: true,
+			name:           "cluster_name field",
+			field:          "cluster_name",
+			value:          "test-cluster",
+			expectNonZero:  true,
 			expectContains: "alphanumeric",
 		},
 		{
-			name:          "email field",
-			field:         "email",
-			value:         "invalid-email",
-			expectNonZero: true,
+			name:           "email field",
+			field:          "email",
+			value:          "invalid-email",
+			expectNonZero:  true,
 			expectContains: "valid email format",
 		},
 		{
-			name:          "domain field",
-			field:         "domain",
-			value:         "example.com",
-			expectNonZero: true,
+			name:           "domain field",
+			field:          "domain",
+			value:          "example.com",
+			expectNonZero:  true,
 			expectContains: "valid domain format",
 		},
 		{
-			name:          "kubernetes.version field",
-			field:         "kubernetes.version",
-			value:         "1.31.4",
-			expectNonZero: true,
+			name:           "kubernetes.version field",
+			field:          "kubernetes.version",
+			value:          "1.31.4",
+			expectNonZero:  true,
 			expectContains: "semantic versioning",
 		},
 		{
-			name:          "master_count field",
-			field:         "master_count",
-			value:         0,
-			expectNonZero: true,
+			name:           "master_count field",
+			field:          "master_count",
+			value:          0,
+			expectNonZero:  true,
 			expectContains: "odd numbers",
 		},
 		{
-			name:          "network_plugin field",
-			field:         "network_plugin",
-			value:         nil,
-			expectNonZero: true,
+			name:           "network_plugin field",
+			field:          "network_plugin",
+			value:          nil,
+			expectNonZero:  true,
 			expectContains: "Calico",
 		},
 		{
-			name:          "openstack.auth_url field",
-			field:         "openstack.auth_url",
-			value:         "https://keystone.example.com/v3/",
-			expectNonZero: true,
+			name:           "openstack.auth_url field",
+			field:          "openstack.auth_url",
+			value:          "https://keystone.example.com/v3/",
+			expectNonZero:  true,
 			expectContains: "Keystone",
 		},
 		{
-			name:          "unknown field with password",
-			field:         "some_password",
-			value:         "secret123",
-			expectNonZero: true,
+			name:           "unknown field with password",
+			field:          "some_password",
+			value:          "secret123",
+			expectNonZero:  true,
 			expectContains: "SOPS",
 		},
 		{
-			name:          "unknown field with url",
-			field:         "some_url",
-			value:         "http://example.com",
-			expectNonZero: true,
+			name:           "unknown field with url",
+			field:          "some_url",
+			value:          "http://example.com",
+			expectNonZero:  true,
 			expectContains: "properly formatted",
 		},
 	}
@@ -109,11 +109,11 @@ func TestGetSuggestionsForField(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			suggestions := engine.GetSuggestionsForField(tt.field, tt.value)
-			
+
 			if tt.expectNonZero && len(suggestions) == 0 {
 				t.Errorf("Expected non-zero suggestions for field %s, got none", tt.field)
 			}
-			
+
 			if tt.expectContains != "" {
 				found := false
 				for _, suggestion := range suggestions {
@@ -179,15 +179,15 @@ func TestGetSuggestionsForType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			suggestions := engine.GetSuggestionsForType(tt.errorType)
-			
+
 			if tt.expectNonZero && len(suggestions) == 0 {
 				t.Errorf("Expected non-zero suggestions for type %s, got none", tt.errorType)
 			}
-			
+
 			if !tt.expectNonZero && len(suggestions) > 0 {
 				t.Errorf("Expected zero suggestions for type %s, got %d", tt.errorType, len(suggestions))
 			}
-			
+
 			if tt.expectContains != "" {
 				found := false
 				for _, suggestion := range suggestions {
@@ -240,11 +240,11 @@ func TestGetSuggestionsForMissingField(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			suggestions := engine.GetSuggestionsForMissingField(tt.field)
-			
+
 			if len(suggestions) == 0 {
 				t.Errorf("Expected non-zero suggestions for missing field %s", tt.field)
 			}
-			
+
 			for _, expected := range tt.expectContains {
 				found := false
 				for _, suggestion := range suggestions {
@@ -306,11 +306,11 @@ func TestGetSuggestionsForInvalidValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			suggestions := engine.GetSuggestionsForInvalidValue(tt.field, tt.value, tt.expectedFormat)
-			
+
 			if len(suggestions) == 0 {
 				t.Errorf("Expected non-zero suggestions for invalid value in field %s", tt.field)
 			}
-			
+
 			for _, expected := range tt.expectContains {
 				found := false
 				for _, suggestion := range suggestions {
@@ -359,11 +359,11 @@ func TestGetSuggestionsForConflict(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			suggestions := engine.GetSuggestionsForConflict(tt.field1, tt.field2)
-			
+
 			if len(suggestions) == 0 {
 				t.Errorf("Expected non-zero suggestions for conflict between %s and %s", tt.field1, tt.field2)
 			}
-			
+
 			for _, expected := range tt.expectContains {
 				found := false
 				for _, suggestion := range suggestions {
@@ -460,11 +460,11 @@ func TestGenerateContextAwareSuggestions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			suggestions := engine.generateContextAwareSuggestions(tt.field, tt.value)
-			
+
 			if len(suggestions) == 0 {
 				t.Errorf("Expected non-zero suggestions for field %s", tt.field)
 			}
-			
+
 			found := false
 			for _, suggestion := range suggestions {
 				if strings.Contains(suggestion, tt.expectContains) {
@@ -522,14 +522,14 @@ func TestFormatSuggestions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			formatted := engine.FormatSuggestions(tt.suggestions)
-			
+
 			if tt.expectEmpty {
 				if formatted != "" {
 					t.Errorf("Expected empty string, got: %s", formatted)
 				}
 				return
 			}
-			
+
 			for _, expected := range tt.expectContains {
 				if !strings.Contains(formatted, expected) {
 					t.Errorf("Expected formatted output to contain '%s', got: %s", expected, formatted)
@@ -543,33 +543,33 @@ func TestGetRelatedFields(t *testing.T) {
 	engine := NewSuggestionEngine()
 
 	tests := []struct {
-		name          string
-		field         string
-		expectNonZero bool
+		name           string
+		field          string
+		expectNonZero  bool
 		expectContains string
 	}{
 		{
-			name:          "provider field",
-			field:         "opencenter.infrastructure.provider",
-			expectNonZero: true,
+			name:           "provider field",
+			field:          "opencenter.infrastructure.provider",
+			expectNonZero:  true,
 			expectContains: "openstack",
 		},
 		{
-			name:          "network plugin field",
-			field:         "opencenter.cluster.kubernetes.network_plugin.calico.enabled",
-			expectNonZero: true,
+			name:           "network plugin field",
+			field:          "opencenter.cluster.kubernetes.network_plugin.calico.enabled",
+			expectNonZero:  true,
 			expectContains: "cilium",
 		},
 		{
-			name:          "backend type field",
-			field:         "opentofu.backend.type",
-			expectNonZero: true,
+			name:           "backend type field",
+			field:          "opentofu.backend.type",
+			expectNonZero:  true,
 			expectContains: "s3",
 		},
 		{
-			name:          "loki storage type field",
-			field:         "opencenter.services.loki.loki_storage_type",
-			expectNonZero: true,
+			name:           "loki storage type field",
+			field:          "opencenter.services.loki.loki_storage_type",
+			expectNonZero:  true,
 			expectContains: "swift",
 		},
 		{
@@ -582,15 +582,15 @@ func TestGetRelatedFields(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			related := engine.GetRelatedFields(tt.field)
-			
+
 			if tt.expectNonZero && len(related) == 0 {
 				t.Errorf("Expected non-zero related fields for %s, got none", tt.field)
 			}
-			
+
 			if !tt.expectNonZero && len(related) > 0 {
 				t.Errorf("Expected zero related fields for %s, got %d", tt.field, len(related))
 			}
-			
+
 			if tt.expectContains != "" {
 				found := false
 				for _, field := range related {

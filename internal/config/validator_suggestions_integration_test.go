@@ -30,7 +30,7 @@ func TestValidatorSuggestionEngineIntegration(t *testing.T) {
 
 	// Test that suggestions are available for common fields
 	engine := validator.GetSuggestionEngine()
-	
+
 	tests := []struct {
 		name           string
 		field          string
@@ -211,7 +211,7 @@ func TestValidatorWithSuggestionEngine(t *testing.T) {
 	for _, err := range result.Errors {
 		if _, exists := errorFields[err.Field]; exists {
 			errorFields[err.Field] = true
-			
+
 			// Verify suggestions are helpful
 			if len(err.Suggestions) == 0 {
 				t.Errorf("Field '%s' should have suggestions", err.Field)
@@ -285,21 +285,21 @@ func TestRelatedFieldsSuggestions(t *testing.T) {
 	engine := validator.GetSuggestionEngine()
 
 	tests := []struct {
-		name           string
-		field          string
-		expectRelated  bool
+		name            string
+		field           string
+		expectRelated   bool
 		relatedContains string
 	}{
 		{
-			name:           "provider has related cloud configs",
-			field:          "opencenter.infrastructure.provider",
-			expectRelated:  true,
+			name:            "provider has related cloud configs",
+			field:           "opencenter.infrastructure.provider",
+			expectRelated:   true,
 			relatedContains: "openstack",
 		},
 		{
-			name:           "network plugin has related plugins",
-			field:          "opencenter.cluster.kubernetes.network_plugin.calico.enabled",
-			expectRelated:  true,
+			name:            "network plugin has related plugins",
+			field:           "opencenter.cluster.kubernetes.network_plugin.calico.enabled",
+			expectRelated:   true,
 			relatedContains: "cilium",
 		},
 		{

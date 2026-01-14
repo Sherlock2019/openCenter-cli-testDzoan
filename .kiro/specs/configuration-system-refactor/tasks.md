@@ -322,11 +322,11 @@ This document breaks down the configuration system refactor into discrete, imple
 5. Implement workspace tests and integration tests
 
 **Acceptance Criteria:**
-- [ ] Workspace provides isolated environment for generation
-- [ ] Checkpointing captures workspace state at any point
-- [ ] Rollback restores workspace to previous checkpoint
-- [ ] Atomic operations prevent partial file writes
-- [ ] Resource cleanup prevents workspace leaks
+- [x] Workspace provides isolated environment for generation
+- [x] Checkpointing captures workspace state at any point
+- [x] Rollback restores workspace to previous checkpoint
+- [x] Atomic operations prevent partial file writes
+- [x] Resource cleanup prevents workspace leaks
 
 **Files to Create/Modify:**
 - `internal/gitops/workspace.go` (new)
@@ -348,11 +348,11 @@ This document breaks down the configuration system refactor into discrete, imple
 5. Create comprehensive generation tests
 
 **Acceptance Criteria:**
-- [ ] Generation executes in discrete, rollback-capable stages
-- [ ] Stage failures trigger automatic rollback of previous stages
-- [ ] Dry-run mode provides accurate preview without filesystem changes
-- [ ] Generation progress is reported to users
-- [ ] Generated repository structure meets all requirements
+- [x] Generation executes in discrete, rollback-capable stages
+- [x] Stage failures trigger automatic rollback of previous stages
+- [x] Dry-run mode provides accurate preview without filesystem changes
+- [x] Generation progress is reported to users
+- [x] Generated repository structure meets all requirements
 
 **Files to Create/Modify:**
 - `internal/gitops/generator.go` (new)
@@ -375,10 +375,10 @@ This document breaks down the configuration system refactor into discrete, imple
 5. Implement validation and cleanup stages
 
 **Acceptance Criteria:**
-- [ ] Base structure stage creates correct directory layout
-- [ ] Infrastructure stage generates provider-specific templates
-- [ ] Service stage generates enabled service configurations
-- [ ] Configuration stage creates cluster-specific configs
+- [x] Base structure stage creates correct directory layout
+- [x] Infrastructure stage generates provider-specific templates
+- [x] Service stage generates enabled service configurations
+- [x] Configuration stage creates cluster-specific configs
 - [ ] Validation stage verifies repository completeness
 
 **Files to Create/Modify:**

@@ -1419,17 +1419,17 @@ func ValidateSchemaVersion(version string) bool {
 //   - error: An error if version comparison fails
 func DetectSchemaMigrationNeeded(config Config) (bool, string, error) {
 	configVersion := config.SchemaVersion
-	
+
 	// If no schema version is set, assume it's an old config that needs migration
 	if configVersion == "" {
 		return true, "", nil
 	}
-	
+
 	// If versions match, no migration needed
 	if configVersion == SchemaVersion {
 		return false, configVersion, nil
 	}
-	
+
 	// Versions differ - migration may be needed
 	// In the future, this could use semantic versioning to determine
 	// if the difference requires migration or is backward compatible
@@ -1451,18 +1451,18 @@ func GetMigrationPath(fromVersion, toVersion string) ([]string, error) {
 	if fromVersion == toVersion {
 		return []string{}, nil
 	}
-	
+
 	// If fromVersion is empty, treat as pre-versioned config
 	if fromVersion == "" {
 		fromVersion = "0.0.0"
 	}
-	
+
 	// For now, we only support direct migration to current version
 	// In the future, this could support multi-step migrations
 	if toVersion != SchemaVersion {
 		return nil, fmt.Errorf("can only migrate to current schema version %s, requested %s", SchemaVersion, toVersion)
 	}
-	
+
 	// Return single-step migration path
 	return []string{toVersion}, nil
 }

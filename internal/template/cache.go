@@ -43,9 +43,9 @@ type TemplateCache interface {
 
 // CacheEntry represents a cached template with metadata.
 type CacheEntry struct {
-	Template  *template.Template
-	CreatedAt time.Time
-	AccessedAt time.Time
+	Template    *template.Template
+	CreatedAt   time.Time
+	AccessedAt  time.Time
 	AccessCount int64
 }
 
@@ -173,11 +173,11 @@ func (c *InMemoryTemplateCache) cleanupExpired() {
 
 // CacheStats provides statistics about cache usage.
 type CacheStats struct {
-	Size         int
-	Hits         int64
-	Misses       int64
-	Evictions    int64
-	TotalAccess  int64
+	Size        int
+	Hits        int64
+	Misses      int64
+	Evictions   int64
+	TotalAccess int64
 }
 
 // GetStats returns cache statistics.

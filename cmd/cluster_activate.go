@@ -89,7 +89,7 @@ using kubectl, cloud CLI tools, and local binaries downloaded by openCenter.`,
 				return fmt.Errorf("failed to create config manager: %w", err)
 			}
 			pathResolver := config.NewPathResolver(configManager)
-			
+
 			// Parse cluster identifier to get organization and cluster name
 			organization, actualClusterName, err := config.ParseClusterIdentifier(name)
 			if err != nil {

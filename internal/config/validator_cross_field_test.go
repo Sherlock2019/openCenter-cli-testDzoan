@@ -194,9 +194,9 @@ func TestCrossFieldValidation(t *testing.T) {
 			StorageType: "swift",
 			BucketName:  "loki-chunks",
 			// Swift config
-			SwiftAuthURL:                  "https://auth.example.com/v3",
-			SwiftRegion:                   "RegionOne",
-			SwiftApplicationCredentialID:  "test-cred-id",
+			SwiftAuthURL:                 "https://auth.example.com/v3",
+			SwiftRegion:                  "RegionOne",
+			SwiftApplicationCredentialID: "test-cred-id",
 			// S3 config (should conflict)
 			S3Region:   "us-west-2",
 			S3Endpoint: "https://s3.example.com",
@@ -239,9 +239,9 @@ func TestCrossFieldValidation(t *testing.T) {
 			S3Region:   "us-west-2",
 			S3Endpoint: "https://s3.example.com",
 			// Swift config (should conflict)
-			SwiftAuthURL:                  "https://auth.example.com/v3",
-			SwiftRegion:                   "RegionOne",
-			SwiftApplicationCredentialID:  "test-cred-id",
+			SwiftAuthURL:                 "https://auth.example.com/v3",
+			SwiftRegion:                  "RegionOne",
+			SwiftApplicationCredentialID: "test-cred-id",
 		}
 		config.OpenCenter.Services["loki"] = lokiConfig
 		config.Secrets.Loki.SwiftApplicationCredentialSecret = "test-secret"
@@ -315,9 +315,9 @@ func TestCrossFieldValidation(t *testing.T) {
 			StorageType: "s3",
 			BucketName:  "loki-chunks",
 			// Only Swift config
-			SwiftAuthURL:                  "https://auth.example.com/v3",
-			SwiftRegion:                   "RegionOne",
-			SwiftApplicationCredentialID:  "test-cred-id",
+			SwiftAuthURL:                 "https://auth.example.com/v3",
+			SwiftRegion:                  "RegionOne",
+			SwiftApplicationCredentialID: "test-cred-id",
 		}
 		config.OpenCenter.Services["loki"] = lokiConfig
 		config.Secrets.Loki.SwiftApplicationCredentialSecret = "test-secret"
@@ -351,11 +351,11 @@ func TestCrossFieldValidation(t *testing.T) {
 			BaseConfig: services.BaseConfig{
 				Enabled: true,
 			},
-			StorageType:                   "swift",
-			BucketName:                    "loki-chunks",
-			SwiftAuthURL:                  "https://auth.example.com/v3",
-			SwiftRegion:                   "RegionOne",
-			SwiftApplicationCredentialID:  "test-cred-id",
+			StorageType:                  "swift",
+			BucketName:                   "loki-chunks",
+			SwiftAuthURL:                 "https://auth.example.com/v3",
+			SwiftRegion:                  "RegionOne",
+			SwiftApplicationCredentialID: "test-cred-id",
 		}
 		config.OpenCenter.Services["loki"] = lokiConfig
 		config.Secrets.Loki.SwiftApplicationCredentialSecret = "test-secret"

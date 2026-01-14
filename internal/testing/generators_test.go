@@ -392,11 +392,11 @@ func TestInfrastructureDataGenerator_GenerateNodePool(t *testing.T) {
 				hasAutoScaling = true
 				autoScaling, ok := pool["auto_scaling"].(map[string]interface{})
 				require.True(t, ok, "auto_scaling should be map[string]interface{}")
-				
+
 				minNodes, ok := autoScaling["min_nodes"].(int)
 				require.True(t, ok, "min_nodes should be int")
 				assert.Greater(t, minNodes, 0)
-				
+
 				maxNodes, ok := autoScaling["max_nodes"].(int)
 				require.True(t, ok, "max_nodes should be int")
 				assert.Greater(t, maxNodes, minNodes)
@@ -657,7 +657,7 @@ func TestConfigGenerator_GenerateComplexConfig(t *testing.T) {
 
 		assert.Equal(t, "openstack", cfg.OpenCenter.Infrastructure.Provider)
 		assert.NotEmpty(t, cfg.OpenCenter.Services)
-		
+
 		// Verify all services are enabled
 		services := []string{"cert-manager", "prometheus-stack", "loki", "velero", "keycloak", "headlamp", "weave-gitops"}
 		for _, svc := range services {
@@ -786,7 +786,7 @@ func TestScenarioGenerator_GenerateUpgradeScenario(t *testing.T) {
 
 		// Verify versions are different
 		assert.NotEqual(t, oldConfig.OpenCenter.Cluster.Kubernetes.Version, newConfig.OpenCenter.Cluster.Kubernetes.Version)
-		
+
 		// Verify cluster identity is preserved
 		assert.Equal(t, oldConfig.OpenCenter.Meta.Name, newConfig.OpenCenter.Meta.Name)
 		assert.Equal(t, oldConfig.OpenCenter.Meta.Organization, newConfig.OpenCenter.Meta.Organization)
@@ -810,7 +810,7 @@ func TestScenarioGenerator_GenerateMigrationScenario(t *testing.T) {
 		// Verify providers are different
 		assert.Equal(t, "openstack", sourceConfig.OpenCenter.Infrastructure.Provider)
 		assert.Equal(t, "aws", targetConfig.OpenCenter.Infrastructure.Provider)
-		
+
 		// Verify cluster identity is preserved
 		assert.Equal(t, sourceConfig.OpenCenter.Meta.Name, targetConfig.OpenCenter.Meta.Name)
 	})
@@ -834,7 +834,7 @@ func TestScenarioGenerator_GenerateDisasterRecoveryScenario(t *testing.T) {
 
 		// Verify different regions
 		assert.NotEqual(t, primaryConfig.OpenCenter.Meta.Region, drConfig.OpenCenter.Meta.Region)
-		
+
 		// Verify DR naming convention
 		assert.Contains(t, drConfig.OpenCenter.Meta.Name, "-dr")
 	})
@@ -844,7 +844,7 @@ func TestScenarioGenerator_GenerateEdgeCaseScenario(t *testing.T) {
 	t.Run("generates edge case scenarios", func(t *testing.T) {
 		// Generate multiple scenarios to test different edge cases
 		edgeCases := make(map[string]bool)
-		
+
 		for i := 0; i < 20; i++ {
 			gen := NewScenarioGenerator(int64(i))
 			scenario := gen.GenerateEdgeCaseScenario("openstack")

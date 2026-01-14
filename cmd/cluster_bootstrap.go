@@ -14,6 +14,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -39,6 +40,31 @@ nodes:
 - role: worker
 - role: worker
 `
+
+const (
+	bootstrapStateVersion  = 1
+	bootstrapStatusFailed  = "failed"
+	bootstrapStatusRunning = "running"
+	bootstrapStatusSkipped = "skipped"
+	bootstrapStatusSuccess = "success"
+)
+
+type bootstrapStep struct {
+	ID          string
+	Description string
+	Run         func() error
+}
+
+type bootstrapState struct {
+	Version int                           `json:"version"`
+	Steps   map[string]bootstrapStepState `json:"steps"`
+}
+
+type bootstrapStepState struct {
+	Status    string `json:"status"`
+	UpdatedAt string `json:"updated_at"`
+	Error     string `json:"error,omitempty"`
+}
 
 func newClusterBootstrapCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -70,6 +96,13 @@ func newClusterBootstrapCmd() *cobra.Command {
 			kubeconf, _ := cmd.Flags().GetString("kubeconfig")
 			logPath, _ := cmd.Flags().GetString("log")
 			runtimeFlag, _ := cmd.Flags().GetString("container-runtime")
+			restart, _ := cmd.Flags().GetBool("restart")
+			onlyStep, _ := cmd.Flags().GetString("step")
+			fromStep, _ := cmd.Flags().GetString("from-step")
+
+			if strings.TrimSpace(onlyStep) != "" && strings.TrimSpace(fromStep) != "" {
+				return fmt.Errorf("--step and --from-step cannot be used together")
+			}
 
 			clusterDir := ""
 			gitDir := strings.TrimSpace(cfg.GitOps().GitDir)
@@ -85,6 +118,16 @@ func newClusterBootstrapCmd() *cobra.Command {
 				logPath = filepath.Join(clusterDir, "logs", logFilename)
 			}
 
+			statePath := ""
+			if clusterDir != "" {
+				statePath = filepath.Join(clusterDir, "logs", "bootstrap-state.json")
+			} else {
+				clusterPath, err := config.ClusterDirectoryPath(cfg.ClusterName())
+				if err == nil && strings.TrimSpace(clusterPath) != "" {
+					statePath = filepath.Join(clusterPath, "bootstrap-state.json")
+				}
+			}
+
 			runner, err := newBootstrapRunner(cmd, cfg.ClusterName(), clusterDir, logPath, dryRun)
 			if err != nil {
 				return err
@@ -96,6 +139,7 @@ func newClusterBootstrapCmd() *cobra.Command {
 				provider = "openstack"
 			}
 
+			var steps []bootstrapStep
 			switch provider {
 			case "openstack", "aws", "gcp", "azure":
 				if clusterDir == "" {
@@ -108,23 +152,41 @@ func newClusterBootstrapCmd() *cobra.Command {
 				if kubeconf != "" {
 					env["KUBECONFIG"] = kubeconf
 				}
-				
-				// Step 1: Run make terraform
-				runner.Infof("Running make terraform in %s", clusterDir)
-				if err := runner.Run(clusterDir, env, "make", "terraform"); err != nil {
-					return fmt.Errorf("make terraform failed: %w", err)
-				}
-				
-				// Step 2: Run terraform init
-				runner.Infof("Initializing Terraform in %s", clusterDir)
-				if err := runner.Run(clusterDir, env, "terraform", "init"); err != nil {
-					return fmt.Errorf("terraform init failed: %w", err)
-				}
-				
-				// Step 3: Run terraform apply -auto-approve (this might take a long time)
-				runner.Infof("Applying Terraform configuration (this may take several minutes)...")
-				if err := runner.RunLongRunning(clusterDir, env, "terraform", "apply", "-auto-approve"); err != nil {
-					return fmt.Errorf("terraform apply failed: %w", err)
+
+				steps = []bootstrapStep{
+					{
+						ID:          "make-terraform",
+						Description: "Run make terraform",
+						Run: func() error {
+							runner.Infof("Running make terraform in %s", clusterDir)
+							if err := runner.Run(clusterDir, env, "make", "terraform"); err != nil {
+								return fmt.Errorf("make terraform failed: %w", err)
+							}
+							return nil
+						},
+					},
+					{
+						ID:          "terraform-init",
+						Description: "Initialize Terraform",
+						Run: func() error {
+							runner.Infof("Initializing Terraform in %s", clusterDir)
+							if err := runner.Run(clusterDir, env, "terraform", "init"); err != nil {
+								return fmt.Errorf("terraform init failed: %w", err)
+							}
+							return nil
+						},
+					},
+					{
+						ID:          "terraform-apply",
+						Description: "Apply Terraform configuration",
+						Run: func() error {
+							runner.Infof("Applying Terraform configuration (this may take several minutes)...")
+							if err := runner.RunLongRunning(clusterDir, env, "terraform", "apply", "-auto-approve"); err != nil {
+								return fmt.Errorf("terraform apply failed: %w", err)
+							}
+							return nil
+						},
+					},
 				}
 			case "kind":
 				runtime := resolveContainerRuntime(runtimeFlag)
@@ -138,15 +200,94 @@ func newClusterBootstrapCmd() *cobra.Command {
 					return fmt.Errorf("unsupported container runtime %q", runtime)
 				}
 
-				runner.Infof("Creating kind cluster %q using %s", cfg.ClusterName(), runtime)
-				if err := runner.RunWithInput("", env, kindClusterConfig, "kind", "create", "cluster", "--name", cfg.ClusterName(), "--config=-"); err != nil {
-					return err
-				}
-				if err := runner.Run("", env, "kind", "export", "kubeconfig", "--name", cfg.ClusterName()); err != nil {
-					return err
+				steps = []bootstrapStep{
+					{
+						ID:          "kind-create",
+						Description: "Create kind cluster",
+						Run: func() error {
+							runner.Infof("Creating kind cluster %q using %s", cfg.ClusterName(), runtime)
+							if err := runner.RunWithInput("", env, kindClusterConfig, "kind", "create", "cluster", "--name", cfg.ClusterName(), "--config=-"); err != nil {
+								return err
+							}
+							return nil
+						},
+					},
+					{
+						ID:          "kind-export-kubeconfig",
+						Description: "Export kind kubeconfig",
+						Run: func() error {
+							if err := runner.Run("", env, "kind", "export", "kubeconfig", "--name", cfg.ClusterName()); err != nil {
+								return err
+							}
+							return nil
+						},
+					},
 				}
 			default:
 				return fmt.Errorf("unsupported provider %q", cfg.OpenCenter.Infrastructure.Provider)
+			}
+
+			state, stateEnabled, err := loadBootstrapState(statePath)
+			if err != nil {
+				return err
+			}
+			if restart && stateEnabled {
+				state = newBootstrapState()
+			}
+
+			stepIndex := map[string]int{}
+			for i, step := range steps {
+				stepIndex[step.ID] = i
+			}
+
+			selectedSteps := steps
+			ignoreState := restart
+			if strings.TrimSpace(onlyStep) != "" {
+				idx, ok := stepIndex[onlyStep]
+				if !ok {
+					return fmt.Errorf("unknown step %q", onlyStep)
+				}
+				selectedSteps = []bootstrapStep{steps[idx]}
+				ignoreState = true
+			} else if strings.TrimSpace(fromStep) != "" {
+				idx, ok := stepIndex[fromStep]
+				if !ok {
+					return fmt.Errorf("unknown step %q", fromStep)
+				}
+				selectedSteps = steps[idx:]
+				ignoreState = true
+			}
+
+			for _, step := range selectedSteps {
+				if !ignoreState && stateEnabled && state.IsSuccess(step.ID) {
+					runner.Infof("Skipping step %q (already completed)", step.ID)
+					continue
+				}
+
+				runner.Infof("Step %q: %s", step.ID, step.Description)
+				if stateEnabled && !dryRun {
+					state.SetStatus(step.ID, bootstrapStatusRunning, "")
+					if err := saveBootstrapState(statePath, state); err != nil {
+						return err
+					}
+				}
+
+				if err := step.Run(); err != nil {
+					if stateEnabled && !dryRun {
+						state.SetStatus(step.ID, bootstrapStatusFailed, err.Error())
+						if saveErr := saveBootstrapState(statePath, state); saveErr != nil {
+							return saveErr
+						}
+					}
+					return err
+				}
+
+				if stateEnabled && !dryRun {
+					state.SetStatus(step.ID, bootstrapStatusSuccess, "")
+					if err := saveBootstrapState(statePath, state); err != nil {
+						return err
+					}
+				}
 			}
 
 			runner.Infof("Bootstrap complete.")
@@ -168,6 +309,9 @@ func newClusterBootstrapCmd() *cobra.Command {
 	cmd.Flags().String("kubeconfig", "./kubeconfig.yaml", "path to kubeconfig used by bootstrap actions")
 	cmd.Flags().String("log", "", "log file path (defaults to <git_dir>/infrastructure/clusters/<name>/logs/bootstrap-YYYY-MM-DD-TIMESTAMP.log)")
 	cmd.Flags().String("container-runtime", "", "container runtime for kind clusters (docker or podman)")
+	cmd.Flags().Bool("restart", false, "rerun all bootstrap steps and ignore saved state")
+	cmd.Flags().String("step", "", "run a single bootstrap step by ID")
+	cmd.Flags().String("from-step", "", "restart bootstrap from the specified step ID")
 
 	return cmd
 }
@@ -349,4 +493,73 @@ func formatCommand(env map[string]string, name string, args []string) string {
 	}
 	parts := append(prefixes, append([]string{name}, args...)...)
 	return strings.Join(parts, " ")
+}
+
+func newBootstrapState() *bootstrapState {
+	return &bootstrapState{
+		Version: bootstrapStateVersion,
+		Steps:   map[string]bootstrapStepState{},
+	}
+}
+
+func loadBootstrapState(path string) (*bootstrapState, bool, error) {
+	if strings.TrimSpace(path) == "" {
+		return newBootstrapState(), false, nil
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return newBootstrapState(), true, nil
+		}
+		return nil, true, fmt.Errorf("failed to read bootstrap state: %w", err)
+	}
+
+	var state bootstrapState
+	if err := json.Unmarshal(data, &state); err != nil {
+		return nil, true, fmt.Errorf("failed to parse bootstrap state: %w", err)
+	}
+	if state.Steps == nil {
+		state.Steps = map[string]bootstrapStepState{}
+	}
+	if state.Version == 0 {
+		state.Version = bootstrapStateVersion
+	}
+	return &state, true, nil
+}
+
+func saveBootstrapState(path string, state *bootstrapState) error {
+	if strings.TrimSpace(path) == "" {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("failed to create bootstrap state directory: %w", err)
+	}
+	data, err := json.MarshalIndent(state, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to serialize bootstrap state: %w", err)
+	}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		return fmt.Errorf("failed to write bootstrap state: %w", err)
+	}
+	return nil
+}
+
+func (s *bootstrapState) SetStatus(stepID, status, message string) {
+	if s.Steps == nil {
+		s.Steps = map[string]bootstrapStepState{}
+	}
+	s.Steps[stepID] = bootstrapStepState{
+		Status:    status,
+		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
+		Error:     message,
+	}
+}
+
+func (s *bootstrapState) IsSuccess(stepID string) bool {
+	step, ok := s.Steps[stepID]
+	if !ok {
+		return false
+	}
+	return step.Status == bootstrapStatusSuccess || step.Status == bootstrapStatusSkipped
 }

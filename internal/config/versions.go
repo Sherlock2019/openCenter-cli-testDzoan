@@ -21,10 +21,10 @@ import (
 
 // Schema version constants
 const (
-	SchemaVersion1_0_0 = "v1.0.0"
-	SchemaVersion1_1_0 = "v1.1.0"
-	SchemaVersion1_2_0 = "v1.2.0"
-	SchemaVersion2_0_0 = "v2.0.0"
+	SchemaVersion1_0_0   = "v1.0.0"
+	SchemaVersion1_1_0   = "v1.1.0"
+	SchemaVersion1_2_0   = "v1.2.0"
+	SchemaVersion2_0_0   = "v2.0.0"
 	CurrentSchemaVersion = SchemaVersion2_0_0
 )
 

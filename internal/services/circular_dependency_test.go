@@ -159,11 +159,11 @@ func TestCircularDependencyErrorMessage(t *testing.T) {
 
 	// Verify error message contains useful information
 	assert.Contains(t, err.Error(), "circular dependency detected")
-	
+
 	// The error should show the cycle path
 	errMsg := err.Error()
 	t.Logf("Error message: %s", errMsg)
-	
+
 	// Verify the cycle is shown in the error
 	assert.Contains(t, errMsg, "[")
 	assert.Contains(t, errMsg, "]")
