@@ -212,11 +212,11 @@ This document breaks down the configuration system refactor into discrete, imple
 5. Implement template registry tests and benchmarks
 
 **Acceptance Criteria:**
-- [ ] Template registry manages all template metadata correctly
-- [ ] Template dependencies are resolved in correct order
-- [ ] Provider filtering returns only compatible templates
-- [ ] Service filtering excludes disabled service templates
-- [ ] Template registration validates dependencies and conditions
+- [x] Template registry manages all template metadata correctly
+- [x] Template dependencies are resolved in correct order
+- [x] Provider filtering returns only compatible templates
+- [x] Service filtering excludes disabled service templates
+- [x] Template registration validates dependencies and conditions
 
 **Files to Create/Modify:**
 - `internal/template/registry.go` (new)
@@ -239,11 +239,11 @@ This document breaks down the configuration system refactor into discrete, imple
 5. Implement comprehensive composition tests
 
 **Acceptance Criteria:**
-- [ ] Base templates can be extended with overlays correctly
-- [ ] Overlay priority ordering is deterministic and configurable
-- [ ] Patch system supports add, remove, and replace operations
-- [ ] Composition validation prevents incompatible combinations
-- [ ] Conflict resolution provides clear error messages
+- [x] Base templates can be extended with overlays correctly
+- [x] Overlay priority ordering is deterministic and configurable
+- [x] Patch system supports add, remove, and replace operations
+- [x] Composition validation prevents incompatible combinations
+- [x] Conflict resolution provides clear error messages
 
 **Files to Create/Modify:**
 - `internal/template/composition.go` (new)
