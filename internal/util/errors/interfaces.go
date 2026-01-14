@@ -34,6 +34,8 @@ const (
 	UserError       ErrorType = "user"
 	CloudError      ErrorType = "cloud"
 	CredentialError ErrorType = "credential"
+	ServiceError    ErrorType = "service"
+	GenerationError ErrorType = "generation"
 )
 
 // ErrorHandler interface for handling and formatting errors
@@ -65,13 +67,17 @@ type ErrorAggregator interface {
 
 // StructuredError represents a structured error with additional context
 type StructuredError struct {
-	Type        ErrorType              `json:"type"`
-	Field       string                 `json:"field,omitempty"`
-	Message     string                 `json:"message"`
-	Cause       error                  `json:"-"`
-	Suggestions []string               `json:"suggestions,omitempty"`
-	Context     map[string]interface{} `json:"context,omitempty"`
-	Retryable   bool                   `json:"retryable"`
+	Type         ErrorType              `json:"type"`
+	Field        string                 `json:"field,omitempty"`
+	Message      string                 `json:"message"`
+	Cause        error                  `json:"-"`
+	Suggestions  []string               `json:"suggestions,omitempty"`
+	Context      map[string]interface{} `json:"context,omitempty"`
+	Retryable    bool                   `json:"retryable"`
+	FilePath     string                 `json:"file_path,omitempty"`
+	LineNumber   int                    `json:"line_number,omitempty"`
+	ColumnNumber int                    `json:"column_number,omitempty"`
+	Operation    string                 `json:"operation,omitempty"`
 }
 
 // Error implements the error interface

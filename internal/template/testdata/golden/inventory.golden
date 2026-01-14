@@ -1,0 +1,15 @@
+[all]
+prod-cluster-cluster
+
+[master]
+prod-cluster-master-0 ansible_host=192.168.1.10
+prod-cluster-master-1 ansible_host=192.168.1.11
+prod-cluster-master-2 ansible_host=192.168.1.12
+
+[worker]
+prod-cluster-worker-0 ansible_host=192.168.1.20
+prod-cluster-worker-1 ansible_host=192.168.1.21
+
+[k8s_cluster:children]
+master
+worker

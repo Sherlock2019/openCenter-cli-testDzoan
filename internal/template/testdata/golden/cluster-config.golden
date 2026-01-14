@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Config
+metadata:
+  name: test-cluster
+  organization: test-org
+spec:
+  provider: openstack
+  kubernetes:
+    version: 1.28.0
+  nodes:
+    masters: 3
+    workers: 5
+  networking:
+    podCIDR: 10.244.0.0/16
+    serviceCIDR: 10.96.0.0/12

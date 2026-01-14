@@ -74,6 +74,23 @@ func (h *DefaultErrorHandler) FormatError(err error) string {
 		parts = append(parts, fmt.Sprintf("[%s]", strings.ToUpper(string(structuredErr.Type))))
 	}
 
+	// Add operation if present
+	if structuredErr.Operation != "" {
+		parts = append(parts, fmt.Sprintf("Operation '%s':", structuredErr.Operation))
+	}
+
+	// Add file context if present
+	if structuredErr.FilePath != "" {
+		fileContext := structuredErr.FilePath
+		if structuredErr.LineNumber > 0 {
+			fileContext += fmt.Sprintf(":%d", structuredErr.LineNumber)
+			if structuredErr.ColumnNumber > 0 {
+				fileContext += fmt.Sprintf(":%d", structuredErr.ColumnNumber)
+			}
+		}
+		parts = append(parts, fmt.Sprintf("at %s:", fileContext))
+	}
+
 	// Add field if present
 	if structuredErr.Field != "" {
 		parts = append(parts, fmt.Sprintf("Field '%s':", structuredErr.Field))
@@ -101,35 +118,155 @@ func (h *DefaultErrorHandler) GetSuggestions(err error) []string {
 		return nil
 	}
 
-	errorType := h.determineErrorType(err)
-	suggestions := h.suggestionMap[errorType]
+	// Check if it's a structured error with existing suggestions
+	if structuredErr, ok := err.(*StructuredError); ok {
+		if len(structuredErr.Suggestions) > 0 {
+			return structuredErr.Suggestions
+		}
+	}
 
-	// Add specific suggestions based on error content
+	errorType := h.determineErrorType(err)
+	suggestions := make([]string, 0)
+	
+	// Start with type-specific suggestions
+	if typeSuggestions, ok := h.suggestionMap[errorType]; ok {
+		suggestions = append(suggestions, typeSuggestions...)
+	}
+
+	// Add context-specific suggestions based on error content
 	errorMsg := strings.ToLower(err.Error())
 
-	switch {
-	case strings.Contains(errorMsg, "permission denied"):
-		suggestions = append(suggestions, "Check file and directory permissions")
-		suggestions = append(suggestions, "Ensure you have write access to the target directory")
+	// Permission errors
+	if strings.Contains(errorMsg, "permission denied") || strings.Contains(errorMsg, "access denied") {
+		suggestions = h.addUnique(suggestions, "Run: chmod +w <file> to grant write permissions")
+		suggestions = h.addUnique(suggestions, "Check ownership with: ls -la <file>")
+		suggestions = h.addUnique(suggestions, "Ensure you're running with appropriate user privileges")
+		if strings.Contains(errorMsg, "directory") {
+			suggestions = h.addUnique(suggestions, "For directories, use: chmod +wx <directory>")
+		}
+	}
 
-	case strings.Contains(errorMsg, "no such file or directory"):
-		suggestions = append(suggestions, "Verify the file or directory path exists")
-		suggestions = append(suggestions, "Check for typos in the path")
+	// File not found errors
+	if strings.Contains(errorMsg, "no such file or directory") || strings.Contains(errorMsg, "file not found") {
+		suggestions = h.addUnique(suggestions, "Verify the path exists: ls -la <path>")
+		suggestions = h.addUnique(suggestions, "Check for typos in the file or directory name")
+		suggestions = h.addUnique(suggestions, "Ensure parent directories exist: mkdir -p <parent-dir>")
+		if strings.Contains(errorMsg, "config") {
+			suggestions = h.addUnique(suggestions, "Initialize configuration with: opencenter cluster init")
+		}
+	}
 
-	case strings.Contains(errorMsg, "invalid"):
-		suggestions = append(suggestions, "Review the input format and requirements")
-		suggestions = append(suggestions, "Check the documentation for valid values")
+	// Validation errors
+	if strings.Contains(errorMsg, "invalid") || strings.Contains(errorMsg, "validation") {
+		suggestions = h.addUnique(suggestions, "Run: opencenter cluster validate to check configuration")
+		suggestions = h.addUnique(suggestions, "View schema with: opencenter cluster schema")
+		suggestions = h.addUnique(suggestions, "Check documentation at: https://docs.opencenter.io")
+		if strings.Contains(errorMsg, "yaml") || strings.Contains(errorMsg, "syntax") {
+			suggestions = h.addUnique(suggestions, "Validate YAML syntax with: yamllint <file>")
+		}
+	}
 
-	case strings.Contains(errorMsg, "connection"):
-		suggestions = append(suggestions, "Check your network connectivity")
-		suggestions = append(suggestions, "Verify firewall settings")
+	// Connection errors
+	if strings.Contains(errorMsg, "connection refused") || strings.Contains(errorMsg, "connection failed") {
+		suggestions = h.addUnique(suggestions, "Test connectivity with: ping <host>")
+		suggestions = h.addUnique(suggestions, "Check if service is running: systemctl status <service>")
+		suggestions = h.addUnique(suggestions, "Verify firewall rules: sudo iptables -L")
+		suggestions = h.addUnique(suggestions, "Check network configuration: ip addr show")
+	}
 
-	case strings.Contains(errorMsg, "timeout"):
-		suggestions = append(suggestions, "Retry the operation")
-		suggestions = append(suggestions, "Check if the service is responsive")
+	// Timeout errors
+	if strings.Contains(errorMsg, "timeout") || strings.Contains(errorMsg, "timed out") {
+		suggestions = h.addUnique(suggestions, "Retry the operation after a brief wait")
+		suggestions = h.addUnique(suggestions, "Increase timeout value if configurable")
+		suggestions = h.addUnique(suggestions, "Check service health and response time")
+		suggestions = h.addUnique(suggestions, "Verify network latency: ping -c 5 <host>")
+	}
+
+	// SOPS/encryption errors
+	if strings.Contains(errorMsg, "sops") || strings.Contains(errorMsg, "encryption") || strings.Contains(errorMsg, "age") {
+		suggestions = h.addUnique(suggestions, "Verify SOPS installation: sops --version")
+		suggestions = h.addUnique(suggestions, "Check age key file: cat $SOPS_AGE_KEY_FILE")
+		suggestions = h.addUnique(suggestions, "Set key file path: export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt")
+		suggestions = h.addUnique(suggestions, "Generate new age key: age-keygen -o ~/.config/sops/age/keys.txt")
+	}
+
+	// Template errors
+	if strings.Contains(errorMsg, "template") {
+		suggestions = h.addUnique(suggestions, "Check template syntax for Go template errors")
+		suggestions = h.addUnique(suggestions, "Verify all template variables are defined")
+		suggestions = h.addUnique(suggestions, "Test template rendering with: opencenter cluster render")
+		suggestions = h.addUnique(suggestions, "Review template documentation for required variables")
+	}
+
+	// Cloud provider errors
+	if strings.Contains(errorMsg, "openstack") || strings.Contains(errorMsg, "aws") || strings.Contains(errorMsg, "cloud") {
+		suggestions = h.addUnique(suggestions, "Verify cloud credentials are set correctly")
+		suggestions = h.addUnique(suggestions, "Check credential environment variables")
+		suggestions = h.addUnique(suggestions, "Test API connectivity with provider CLI tools")
+		suggestions = h.addUnique(suggestions, "Run preflight checks: opencenter cluster preflight")
+	}
+
+	// Configuration errors
+	if strings.Contains(errorMsg, "config") {
+		suggestions = h.addUnique(suggestions, "Edit configuration: opencenter cluster edit")
+		suggestions = h.addUnique(suggestions, "View current config: opencenter cluster info")
+		suggestions = h.addUnique(suggestions, "Validate configuration: opencenter cluster validate")
+		suggestions = h.addUnique(suggestions, "Check configuration schema: opencenter cluster schema")
+	}
+
+	// Service errors
+	if strings.Contains(errorMsg, "service") {
+		suggestions = h.addUnique(suggestions, "List available services in documentation")
+		suggestions = h.addUnique(suggestions, "Check service dependencies are enabled")
+		suggestions = h.addUnique(suggestions, "Verify service configuration in cluster config")
+		suggestions = h.addUnique(suggestions, "Review service-specific requirements")
+	}
+
+	// GitOps generation errors
+	if strings.Contains(errorMsg, "gitops") || strings.Contains(errorMsg, "generation") {
+		suggestions = h.addUnique(suggestions, "Check workspace permissions: ls -la <workspace>")
+		suggestions = h.addUnique(suggestions, "Verify template files exist and are readable")
+		suggestions = h.addUnique(suggestions, "Ensure sufficient disk space: df -h")
+		suggestions = h.addUnique(suggestions, "Review generation logs for detailed errors")
+	}
+
+	// Disk space errors
+	if strings.Contains(errorMsg, "no space left") || strings.Contains(errorMsg, "disk full") {
+		suggestions = h.addUnique(suggestions, "Check disk space: df -h")
+		suggestions = h.addUnique(suggestions, "Clean up temporary files: rm -rf /tmp/*")
+		suggestions = h.addUnique(suggestions, "Remove old logs or unused files")
+		suggestions = h.addUnique(suggestions, "Consider expanding disk or moving to larger volume")
+	}
+
+	// Network errors
+	if strings.Contains(errorMsg, "network") || strings.Contains(errorMsg, "dns") {
+		suggestions = h.addUnique(suggestions, "Test DNS resolution: nslookup <hostname>")
+		suggestions = h.addUnique(suggestions, "Check network interfaces: ip link show")
+		suggestions = h.addUnique(suggestions, "Verify routing table: ip route show")
+		suggestions = h.addUnique(suggestions, "Test connectivity: curl -v <url>")
+	}
+
+	// If no specific suggestions were added, provide general guidance
+	if len(suggestions) == 0 {
+		suggestions = []string{
+			"Review the error message for specific details",
+			"Check system logs for additional context",
+			"Consult documentation at https://docs.opencenter.io",
+			"Run with --debug flag for verbose output",
+		}
 	}
 
 	return suggestions
+}
+
+// addUnique adds a suggestion only if it's not already in the list
+func (h *DefaultErrorHandler) addUnique(suggestions []string, newSuggestion string) []string {
+	for _, existing := range suggestions {
+		if existing == newSuggestion {
+			return suggestions
+		}
+	}
+	return append(suggestions, newSuggestion)
 }
 
 // IsRetryable determines if an error is retryable
@@ -200,78 +337,101 @@ func (h *DefaultErrorHandler) determineErrorType(err error) ErrorType {
 	case strings.Contains(errorMsg, "credential") || strings.Contains(errorMsg, "authentication") || strings.Contains(errorMsg, "unauthorized"):
 		return CredentialError
 
+	case strings.Contains(errorMsg, "service") || strings.Contains(errorMsg, "plugin"):
+		return ServiceError
+
+	case strings.Contains(errorMsg, "generation") || strings.Contains(errorMsg, "gitops") || strings.Contains(errorMsg, "workspace"):
+		return GenerationError
+
 	default:
 		return SystemError
 	}
 }
 
-// initializeSuggestions initializes the suggestion map
+// initializeSuggestions initializes the suggestion map with actionable guidance
 func (h *DefaultErrorHandler) initializeSuggestions() {
 	h.suggestionMap[ValidationError] = []string{
-		"Check the input format and requirements",
-		"Refer to the documentation for valid values",
-		"Validate required fields are provided",
+		"Run: opencenter cluster validate to check configuration",
+		"View schema with: opencenter cluster schema",
+		"Check documentation at: https://docs.opencenter.io",
 	}
 
 	h.suggestionMap[PathError] = []string{
-		"Verify the path exists and is accessible",
+		"Verify the path exists: ls -la <path>",
 		"Check for typos in the path",
-		"Ensure proper path separators are used",
+		"Ensure parent directories exist: mkdir -p <parent-dir>",
 	}
 
 	h.suggestionMap[PermissionError] = []string{
-		"Check file and directory permissions",
-		"Ensure you have the necessary access rights",
-		"Run with appropriate privileges if needed",
+		"Check file permissions: ls -la <file>",
+		"Grant write access: chmod +w <file>",
+		"Verify ownership: chown <user>:<group> <file>",
 	}
 
 	h.suggestionMap[TemplateError] = []string{
-		"Verify template syntax is correct",
-		"Check that all required variables are provided",
-		"Ensure template file exists and is readable",
+		"Check template syntax for Go template errors",
+		"Verify all template variables are defined",
+		"Test template rendering: opencenter cluster render",
 	}
 
 	h.suggestionMap[SOPSError] = []string{
-		"Verify SOPS is installed and in PATH",
-		"Check that age keys are properly configured",
-		"Ensure SOPS_AGE_KEY_FILE environment variable is set",
+		"Verify SOPS installation: sops --version",
+		"Check age key file: cat $SOPS_AGE_KEY_FILE",
+		"Set key file path: export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt",
+		"Generate new age key: age-keygen -o ~/.config/sops/age/keys.txt",
 	}
 
 	h.suggestionMap[ConfigError] = []string{
-		"Validate configuration file syntax",
-		"Check that all required configuration fields are provided",
-		"Ensure configuration file is readable",
+		"Edit configuration: opencenter cluster edit",
+		"Validate configuration: opencenter cluster validate",
+		"View current config: opencenter cluster info",
 	}
 
 	h.suggestionMap[NetworkError] = []string{
-		"Check network connectivity",
-		"Verify firewall settings",
-		"Ensure the target service is accessible",
+		"Test connectivity: ping <host>",
+		"Check DNS resolution: nslookup <hostname>",
+		"Verify firewall rules: sudo iptables -L",
+		"Test with curl: curl -v <url>",
 	}
 
 	h.suggestionMap[FileError] = []string{
-		"Check file exists and is readable",
-		"Verify file permissions",
-		"Ensure sufficient disk space",
+		"Check file exists: ls -la <file>",
+		"Verify file permissions: stat <file>",
+		"Check disk space: df -h",
 	}
 
 	h.suggestionMap[SystemError] = []string{
-		"Check system resources",
-		"Verify system dependencies are installed",
-		"Review system logs for additional details",
+		"Check system resources: top or htop",
+		"Review system logs: journalctl -xe",
+		"Verify dependencies: which <command>",
 	}
 
 	h.suggestionMap[CloudError] = []string{
-		"Verify cloud provider credentials",
-		"Check cloud provider service availability",
-		"Ensure proper network connectivity to cloud APIs",
+		"Verify cloud credentials are set correctly",
+		"Test API connectivity with provider CLI tools",
+		"Run preflight checks: opencenter cluster preflight",
+		"Check cloud provider service status",
 	}
 
 	h.suggestionMap[CredentialError] = []string{
 		"Verify credentials are correctly configured",
-		"Check credential expiration dates",
-		"Ensure proper permissions for the credentials",
+		"Check credential environment variables: env | grep <PROVIDER>",
+		"Ensure credentials haven't expired",
 		"Use SOPS to encrypt sensitive credentials",
+	}
+
+	h.suggestionMap[ServiceError] = []string{
+		"Check service configuration in cluster config",
+		"Verify service dependencies are enabled",
+		"Review service documentation for requirements",
+		"List available services in documentation",
+	}
+
+	h.suggestionMap[GenerationError] = []string{
+		"Check workspace permissions: ls -la <workspace>",
+		"Verify template files are accessible",
+		"Ensure sufficient disk space: df -h",
+		"Review generation logs with --debug flag",
 	}
 }
 
@@ -289,9 +449,10 @@ func CreateValidationError(field, message string, suggestions ...string) *Struct
 // CreatePathError creates a path-related error with suggestions
 func CreatePathError(path, message string, cause error) *StructuredError {
 	suggestions := []string{
-		"Verify the path exists: " + path,
-		"Check path permissions",
-		"Ensure parent directories exist",
+		fmt.Sprintf("Verify the path exists: ls -la %s", path),
+		"Check for typos in the path",
+		fmt.Sprintf("Ensure parent directories exist: mkdir -p %s", path),
+		"Check path permissions and ownership",
 	}
 
 	return &StructuredError{
@@ -308,9 +469,10 @@ func CreatePathError(path, message string, cause error) *StructuredError {
 // CreatePermissionError creates a permission-related error
 func CreatePermissionError(resource, operation string, cause error) *StructuredError {
 	suggestions := []string{
-		fmt.Sprintf("Check permissions for %s", resource),
-		fmt.Sprintf("Ensure you have %s access", operation),
-		"Run with appropriate privileges if needed",
+		fmt.Sprintf("Check permissions: ls -la %s", resource),
+		fmt.Sprintf("Grant %s access: chmod +w %s", operation, resource),
+		fmt.Sprintf("Verify ownership: chown <user>:<group> %s", resource),
+		"Run with appropriate privileges if needed (e.g., sudo)",
 	}
 
 	return &StructuredError{
@@ -327,10 +489,11 @@ func CreatePermissionError(resource, operation string, cause error) *StructuredE
 // CreateSOPSError creates a SOPS-related error with suggestions
 func CreateSOPSError(operation, message string, cause error) *StructuredError {
 	suggestions := []string{
-		"Verify SOPS is installed and in PATH",
-		"Check age key configuration",
-		"Ensure SOPS_AGE_KEY_FILE environment variable is set",
-		"Validate key file permissions",
+		"Verify SOPS installation: sops --version",
+		"Check age key file: cat $SOPS_AGE_KEY_FILE",
+		"Set key file path: export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt",
+		"Generate new age key: age-keygen -o ~/.config/sops/age/keys.txt",
+		"Validate key file permissions: chmod 600 $SOPS_AGE_KEY_FILE",
 	}
 
 	return &StructuredError{
@@ -347,9 +510,10 @@ func CreateSOPSError(operation, message string, cause error) *StructuredError {
 // CreateConfigError creates a configuration-related error
 func CreateConfigError(field, message string, cause error) *StructuredError {
 	suggestions := []string{
-		"Validate configuration file syntax",
-		"Check required fields are provided",
-		"Refer to configuration documentation",
+		"Edit configuration: opencenter cluster edit",
+		"Validate configuration: opencenter cluster validate",
+		"View schema: opencenter cluster schema",
+		"Check documentation at: https://docs.opencenter.io",
 	}
 
 	return &StructuredError{
@@ -383,10 +547,11 @@ func IsTimeoutError(err error) bool {
 // CreateCloudError creates a cloud provider-related error
 func CreateCloudError(provider, operation, message string, cause error) *StructuredError {
 	suggestions := []string{
-		fmt.Sprintf("Verify %s credentials are correctly configured", provider),
-		fmt.Sprintf("Check %s service availability", provider),
-		"Ensure proper network connectivity to cloud APIs",
-		"Review cloud provider documentation for requirements",
+		fmt.Sprintf("Verify %s credentials: check environment variables", provider),
+		fmt.Sprintf("Test %s API connectivity with provider CLI", provider),
+		"Run preflight checks: opencenter cluster preflight",
+		fmt.Sprintf("Check %s service status page", provider),
+		"Verify network connectivity to cloud APIs",
 	}
 
 	return &StructuredError{
@@ -403,11 +568,11 @@ func CreateCloudError(provider, operation, message string, cause error) *Structu
 // CreateCredentialError creates a credential-related error
 func CreateCredentialError(credentialType, field, message string, cause error) *StructuredError {
 	suggestions := []string{
-		fmt.Sprintf("Verify %s credentials are correctly set", credentialType),
+		fmt.Sprintf("Verify %s credentials are set: env | grep %s", credentialType, strings.ToUpper(credentialType)),
 		"Check credential expiration dates",
 		"Ensure proper permissions for the credentials",
-		"Use SOPS to encrypt sensitive credentials",
-		"Refer to cloud provider documentation for credential setup",
+		"Use SOPS to encrypt sensitive credentials: sops encrypt <file>",
+		fmt.Sprintf("Refer to %s documentation for credential setup", credentialType),
 	}
 
 	return &StructuredError{
@@ -418,5 +583,116 @@ func CreateCredentialError(credentialType, field, message string, cause error) *
 		Suggestions: suggestions,
 		Context:     map[string]interface{}{"credential_type": credentialType},
 		Retryable:   false, // Credential errors usually require manual fix
+	}
+}
+
+// CreateServiceError creates a service-related error
+func CreateServiceError(serviceName, operation, message string, cause error) *StructuredError {
+	suggestions := []string{
+		fmt.Sprintf("Check %s service configuration in cluster config", serviceName),
+		"Verify service dependencies are enabled",
+		fmt.Sprintf("Review %s service documentation for requirements", serviceName),
+		"List available services in documentation",
+		"Validate service configuration: opencenter cluster validate",
+	}
+
+	return &StructuredError{
+		Type:        ServiceError,
+		Field:       "service",
+		Message:     fmt.Sprintf("%s service %s failed: %s", serviceName, operation, message),
+		Cause:       cause,
+		Suggestions: suggestions,
+		Context:     map[string]interface{}{"service": serviceName, "operation": operation},
+		Retryable:   false,
+	}
+}
+
+// CreateTemplateError creates a template-related error with file context
+func CreateTemplateError(templatePath string, lineNumber int, message string, cause error) *StructuredError {
+	suggestions := []string{
+		"Verify template syntax is correct",
+		"Check that all required variables are provided",
+		fmt.Sprintf("Review template file: cat %s", templatePath),
+		"Test template rendering: opencenter cluster render",
+	}
+
+	return &StructuredError{
+		Type:        TemplateError,
+		Field:       "template",
+		Message:     message,
+		Cause:       cause,
+		Suggestions: suggestions,
+		FilePath:    templatePath,
+		LineNumber:  lineNumber,
+		Operation:   "template_rendering",
+		Retryable:   false,
+	}
+}
+
+// CreateTemplateErrorWithColumn creates a template error with full file context
+func CreateTemplateErrorWithColumn(templatePath string, lineNumber, columnNumber int, message string, cause error) *StructuredError {
+	suggestions := []string{
+		"Verify template syntax is correct",
+		"Check that all required variables are provided",
+		fmt.Sprintf("Review template file: cat %s", templatePath),
+		"Test template rendering: opencenter cluster render",
+	}
+
+	return &StructuredError{
+		Type:         TemplateError,
+		Field:        "template",
+		Message:      message,
+		Cause:        cause,
+		Suggestions:  suggestions,
+		FilePath:     templatePath,
+		LineNumber:   lineNumber,
+		ColumnNumber: columnNumber,
+		Operation:    "template_rendering",
+		Retryable:    false,
+	}
+}
+
+// CreateGenerationError creates a GitOps generation-related error
+func CreateGenerationError(stage, message string, cause error) *StructuredError {
+	suggestions := []string{
+		"Check GitOps workspace permissions: ls -la <workspace>",
+		"Verify template files are accessible",
+		"Ensure sufficient disk space: df -h",
+		"Review generation logs with --debug flag",
+		"Validate configuration: opencenter cluster validate",
+	}
+
+	return &StructuredError{
+		Type:        GenerationError,
+		Field:       "generation",
+		Message:     fmt.Sprintf("GitOps generation failed at stage '%s': %s", stage, message),
+		Cause:       cause,
+		Suggestions: suggestions,
+		Context:     map[string]interface{}{"stage": stage},
+		Operation:   "gitops_generation",
+		Retryable:   false,
+	}
+}
+
+// CreateGenerationErrorWithFile creates a GitOps generation error with file context
+func CreateGenerationErrorWithFile(stage, filePath string, message string, cause error) *StructuredError {
+	suggestions := []string{
+		"Check GitOps workspace permissions: ls -la <workspace>",
+		fmt.Sprintf("Verify template file exists: ls -la %s", filePath),
+		"Ensure sufficient disk space: df -h",
+		"Review generation logs with --debug flag",
+		"Validate configuration: opencenter cluster validate",
+	}
+
+	return &StructuredError{
+		Type:        GenerationError,
+		Field:       "generation",
+		Message:     fmt.Sprintf("GitOps generation failed at stage '%s': %s", stage, message),
+		Cause:       cause,
+		Suggestions: suggestions,
+		Context:     map[string]interface{}{"stage": stage},
+		FilePath:    filePath,
+		Operation:   "gitops_generation",
+		Retryable:   false,
 	}
 }

@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-service
+  namespace: production
+  labels:
+    app: web-service
+    environment: production
+    team: platform
+spec:
+  type: LOADBALANCER
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  - name: https
+    port: 443
+    targetPort: 8443
+    protocol: TCP
+  selector:
+    app: web-service

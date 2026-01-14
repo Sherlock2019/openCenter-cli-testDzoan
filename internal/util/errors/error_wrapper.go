@@ -242,3 +242,87 @@ func Annotate(err error, annotation string) error {
 
 	return fmt.Errorf("%s (%s)", err.Error(), annotation)
 }
+
+// WrapWithFileContext wraps an error with file path and line number information
+func WrapWithFileContext(err error, filePath string, lineNumber int) error {
+	if err == nil {
+		return nil
+	}
+
+	if structuredErr, ok := err.(*StructuredError); ok {
+		structuredErr.FilePath = filePath
+		structuredErr.LineNumber = lineNumber
+		return structuredErr
+	}
+
+	handler := NewDefaultErrorHandler()
+	structuredErr := handler.HandleError(err)
+	structuredErr.FilePath = filePath
+	structuredErr.LineNumber = lineNumber
+
+	return structuredErr
+}
+
+// WrapWithFileContextAndColumn wraps an error with file path, line number, and column number
+func WrapWithFileContextAndColumn(err error, filePath string, lineNumber, columnNumber int) error {
+	if err == nil {
+		return nil
+	}
+
+	if structuredErr, ok := err.(*StructuredError); ok {
+		structuredErr.FilePath = filePath
+		structuredErr.LineNumber = lineNumber
+		structuredErr.ColumnNumber = columnNumber
+		return structuredErr
+	}
+
+	handler := NewDefaultErrorHandler()
+	structuredErr := handler.HandleError(err)
+	structuredErr.FilePath = filePath
+	structuredErr.LineNumber = lineNumber
+	structuredErr.ColumnNumber = columnNumber
+
+	return structuredErr
+}
+
+// WrapWithOperation wraps an error with operation context
+func WrapWithOperation(err error, operation string) error {
+	if err == nil {
+		return nil
+	}
+
+	if structuredErr, ok := err.(*StructuredError); ok {
+		structuredErr.Operation = operation
+		return structuredErr
+	}
+
+	handler := NewDefaultErrorHandler()
+	structuredErr := handler.HandleError(err)
+	structuredErr.Operation = operation
+
+	return structuredErr
+}
+
+// WrapWithFullContext wraps an error with complete context information
+func WrapWithFullContext(err error, filePath string, lineNumber, columnNumber int, operation string) error {
+	if err == nil {
+		return nil
+	}
+
+	if structuredErr, ok := err.(*StructuredError); ok {
+		structuredErr.FilePath = filePath
+		structuredErr.LineNumber = lineNumber
+		structuredErr.ColumnNumber = columnNumber
+		structuredErr.Operation = operation
+		return structuredErr
+	}
+
+	handler := NewDefaultErrorHandler()
+	structuredErr := handler.HandleError(err)
+	structuredErr.FilePath = filePath
+	structuredErr.LineNumber = lineNumber
+	structuredErr.ColumnNumber = columnNumber
+	structuredErr.Operation = operation
+
+	return structuredErr
+}
