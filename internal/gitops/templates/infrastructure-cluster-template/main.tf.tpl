@@ -2,7 +2,7 @@ locals {
   # this will be the user's name and the DNS zone prefix
   cluster_name                            = "{{ .OpenCenter.Cluster.ClusterName }}"
   # Prefix to add to Openstack resource names
-  naming_prefix                           = "${local.cluster_name}-"
+  naming_prefix                           = "$${local.cluster_name}-"
   openstack_auth_url                      = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL | default "https://keystone.api.sjc3.rackspacecloud.com/v3/" }}"
   openstack_insecure                      = {{ .OpenCenter.Infrastructure.Cloud.OpenStack.Insecure | default false }}
   openstack_region                        = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.Region | default "SJC3" }}"
@@ -25,7 +25,7 @@ locals {
   subnet_nodes_oct                       = join(".", slice(split(".", split("/", local.subnet_nodes)[0]), 0, 3))
   #Leave some IPs free for the VRRP IP and the MetalLB Range
   allocation_pool_start                   = "{{ .Networking.AllocationPoolStart | default "$${local.subnet_nodes_oct}.50" }}"
-  allocation_pool_end                     = "{{ .Networking.AllocationPoolEnd | default "10.2.131.254" }}"
+  allocation_pool_end                     = "{{ .Networking.AllocationPoolEnd | default "$${local.subnet_nodes_oct}.254" }}"
   # vrrp_ip Must be an IP from subnet_nodes and will be used as the internal Kubernetes API VIP.
   vrrp_ip                                 = "{{ .Networking.VRRPIP | default "$${local.subnet_nodes_oct}.10" }}"
   #CIDR that will be used by kubernetes pods. Not an openstack network.

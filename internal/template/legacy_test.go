@@ -153,7 +153,7 @@ func TestEnvUseNewTemplateEngineConstant(t *testing.T) {
 func TestFeatureFlagDefault(t *testing.T) {
 	// Ensure env var is not set
 	os.Unsetenv(config.EnvUseNewTemplateEngine)
-	
+
 	// Clear cache to ensure fresh evaluation
 	config.GetFeatureFlags().ClearCache()
 
@@ -174,10 +174,10 @@ func TestFeatureFlagCaseInsensitive(t *testing.T) {
 	for _, value := range testCases {
 		t.Run(value, func(t *testing.T) {
 			t.Setenv(config.EnvUseNewTemplateEngine, value)
-			
+
 			// Clear cache to ensure fresh evaluation
 			config.GetFeatureFlags().ClearCache()
-			
+
 			assert.True(t, UseNewTemplateEngine(),
 				"Value %q should enable new template engine (case-insensitive)", value)
 		})
@@ -204,10 +204,10 @@ func TestFeatureFlagWhitespaceHandling(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run("whitespace_"+tc.value, func(t *testing.T) {
 			t.Setenv(config.EnvUseNewTemplateEngine, tc.value)
-			
+
 			// Clear cache to ensure fresh evaluation
 			config.GetFeatureFlags().ClearCache()
-			
+
 			assert.Equal(t, tc.expected, UseNewTemplateEngine(),
 				"Value %q should return %v after trimming whitespace", tc.value, tc.expected)
 		})

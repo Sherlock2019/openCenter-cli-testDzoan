@@ -48,7 +48,7 @@ func TestMigrationPathValidation(t *testing.T) {
 		for _, doc := range docs {
 			_, err := os.Stat(doc)
 			require.NoError(t, err, "Migration documentation file should exist: %s", doc)
-			
+
 			// Verify file is not empty
 			info, err := os.Stat(doc)
 			require.NoError(t, err)
@@ -565,7 +565,7 @@ func TestMigrationPathAcceptanceCriteria(t *testing.T) {
 
 	t.Run("migration_path_documented_and_tested", func(t *testing.T) {
 		// Acceptance: Migration path is documented and tested
-		
+
 		// Verify documentation exists
 		docs := []string{
 			"../../docs/migration/template-engine.md",

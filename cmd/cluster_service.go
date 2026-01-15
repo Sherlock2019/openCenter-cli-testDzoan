@@ -167,14 +167,14 @@ Examples:
 				}
 
 				fmt.Fprintf(cmd.OutOrStdout(), "Rendering service '%s'...\n", serviceName)
-				
+
 				// Use the unified service rendering interface
 				// This automatically handles the selection between legacy and pipeline systems
 				ctx := cmd.Context()
 				if ctx == nil {
 					ctx = context.Background()
 				}
-				
+
 				if err := gitops.RenderService(ctx, cfg, serviceName, isManaged); err != nil {
 					return fmt.Errorf("failed to render service: %w", err)
 				}

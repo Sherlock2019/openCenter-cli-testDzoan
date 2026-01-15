@@ -647,11 +647,11 @@ func (c *CLIIntegration) setField(obj interface{}, path string, value string) er
 
 			// Not the last part - need to navigate into the map value
 			mapValueType := v.Type().Elem()
-			
+
 			// Get existing value or create new one
 			existingValue := v.MapIndex(reflect.ValueOf(part))
 			var nextValue reflect.Value
-			
+
 			if existingValue.IsValid() {
 				// Value exists, use it
 				nextValue = existingValue
@@ -671,12 +671,12 @@ func (c *CLIIntegration) setField(obj interface{}, path string, value string) er
 					return fmt.Errorf("cannot navigate into map value of type %s for key '%s'", mapValueType.Kind(), part)
 				}
 			}
-			
+
 			// For interface{} values, we need to handle them specially
 			if nextValue.Kind() == reflect.Interface && !nextValue.IsNil() {
 				nextValue = nextValue.Elem()
 			}
-			
+
 			// Handle pointers - dereference them
 			if nextValue.Kind() == reflect.Ptr {
 				if nextValue.IsNil() {
@@ -686,29 +686,29 @@ func (c *CLIIntegration) setField(obj interface{}, path string, value string) er
 				// Now work with the dereferenced value but keep the pointer for later
 				ptrValue := nextValue
 				nextValue = nextValue.Elem()
-				
+
 				// If the dereferenced value is a struct or map, we can navigate into it
 				if nextValue.Kind() == reflect.Struct || nextValue.Kind() == reflect.Map {
 					// Recursively set the remaining path
 					remainingPath := strings.Join(parts[i+1:], ".")
-					
+
 					if err := c.setField(ptrValue.Interface(), remainingPath, value); err != nil {
 						return err
 					}
-					
+
 					// Store the modified pointer back in the map
 					v.SetMapIndex(reflect.ValueOf(part), ptrValue)
 					return nil
 				}
-				
+
 				return fmt.Errorf("cannot navigate through pointer to %s for key '%s'", nextValue.Kind(), part)
 			}
-			
+
 			// If the next value is a struct or map, we can navigate into it
 			if nextValue.Kind() == reflect.Struct || nextValue.Kind() == reflect.Map {
 				// Recursively set the remaining path
 				remainingPath := strings.Join(parts[i+1:], ".")
-				
+
 				// Create a pointer to the value so we can modify it
 				var ptrValue reflect.Value
 				if nextValue.CanAddr() {
@@ -718,16 +718,16 @@ func (c *CLIIntegration) setField(obj interface{}, path string, value string) er
 					ptrValue = reflect.New(nextValue.Type())
 					ptrValue.Elem().Set(nextValue)
 				}
-				
+
 				if err := c.setField(ptrValue.Interface(), remainingPath, value); err != nil {
 					return err
 				}
-				
+
 				// Store the modified value back in the map
 				v.SetMapIndex(reflect.ValueOf(part), ptrValue.Elem())
 				return nil
 			}
-			
+
 			return fmt.Errorf("cannot navigate through map value of type %s for key '%s'", nextValue.Kind(), part)
 		}
 
@@ -763,7 +763,7 @@ func (c *CLIIntegration) setField(obj interface{}, path string, value string) er
 // findField finds a field by yaml tag or name, including embedded fields
 func (c *CLIIntegration) findField(v reflect.Value, name string) reflect.Value {
 	t := v.Type()
-	
+
 	// First pass: check direct fields
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
@@ -778,7 +778,7 @@ func (c *CLIIntegration) findField(v reflect.Value, name string) reflect.Value {
 			return v.Field(i)
 		}
 	}
-	
+
 	// Second pass: check embedded/anonymous fields
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
@@ -800,7 +800,7 @@ func (c *CLIIntegration) findField(v reflect.Value, name string) reflect.Value {
 			}
 		}
 	}
-	
+
 	return reflect.Value{}
 }
 

@@ -340,7 +340,7 @@ func TestParseBoolEnv(t *testing.T) {
 // Helper function to clear all feature flag environment variables
 func clearFeatureFlagEnvVars(t *testing.T) {
 	t.Helper()
-	
+
 	// Unset all feature flag environment variables
 	envVars := []string{
 		EnvUseNewTemplateEngine,
@@ -379,7 +379,7 @@ func TestFeatureFlags_MigrationScenarios(t *testing.T) {
 		clearFeatureFlagEnvVars(t)
 		// Enable only template engine for testing
 		t.Setenv(EnvUseNewTemplateEngine, "true")
-		
+
 		ff := GetFeatureFlags()
 		ff.ClearCache()
 
@@ -393,7 +393,7 @@ func TestFeatureFlags_MigrationScenarios(t *testing.T) {
 	t.Run("phase3_all_new", func(t *testing.T) {
 		clearFeatureFlagEnvVars(t)
 		t.Setenv(EnvEnableAllNewFeatures, "true")
-		
+
 		ff := GetFeatureFlags()
 		ff.ClearCache()
 
@@ -409,7 +409,7 @@ func TestFeatureFlags_MigrationScenarios(t *testing.T) {
 		// Enable all new features but disable one that has issues
 		t.Setenv(EnvEnableAllNewFeatures, "true")
 		t.Setenv(EnvUsePipelineGenerator, "false")
-		
+
 		ff := GetFeatureFlags()
 		ff.ClearCache()
 

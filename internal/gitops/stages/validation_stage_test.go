@@ -49,8 +49,8 @@ func TestValidationStage_Execute_ValidStructure(t *testing.T) {
 
 	// Create required files including kustomization files
 	files := map[string]string{
-		".gitignore": "*.tmp\n",
-		"README.md":  "# Test Repository\n",
+		".gitignore":                        "*.tmp\n",
+		"README.md":                         "# Test Repository\n",
 		"infrastructure/kustomization.yaml": "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
 		"infrastructure/clusters/test-cluster/kustomization.yaml": "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
 		"applications/kustomization.yaml":                         "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
@@ -175,8 +175,8 @@ func TestValidationStage_Execute_MissingClusterDirectories(t *testing.T) {
 
 	// Create required files including kustomization files (but not cluster-specific ones)
 	files := map[string]string{
-		".gitignore": "*.tmp\n",
-		"README.md":  "# Test Repository\n",
+		".gitignore":                        "*.tmp\n",
+		"README.md":                         "# Test Repository\n",
 		"infrastructure/kustomization.yaml": "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
 		"applications/kustomization.yaml":   "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
 	}
@@ -203,9 +203,9 @@ func TestValidationStage_Execute_MissingClusterDirectories(t *testing.T) {
 	err := stage.Execute(context.Background(), workspace)
 	assert.Error(t, err, "Validation should fail for missing cluster directories")
 	// The error could be about missing kustomization files or cluster directories
-	assert.True(t, 
+	assert.True(t,
 		strings.Contains(err.Error(), "cluster structure validation failed") ||
-		strings.Contains(err.Error(), "kustomization files validation failed"),
+			strings.Contains(err.Error(), "kustomization files validation failed"),
 		"Error should mention cluster structure or kustomization files")
 }
 
@@ -232,8 +232,8 @@ func TestValidationStage_Execute_MissingSOPSConfig(t *testing.T) {
 
 	// Create required files including kustomization files but NOT SOPS config
 	files := map[string]string{
-		".gitignore": "*.tmp\n",
-		"README.md":  "# Test Repository\n",
+		".gitignore":                        "*.tmp\n",
+		"README.md":                         "# Test Repository\n",
 		"infrastructure/kustomization.yaml": "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
 		"infrastructure/clusters/test-cluster/kustomization.yaml": "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
 		"applications/kustomization.yaml":                         "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
@@ -288,9 +288,9 @@ func TestValidationStage_Execute_WithSOPSConfig(t *testing.T) {
 
 	// Create required files including SOPS config and kustomization files
 	files := map[string]string{
-		".gitignore": "*.tmp\n",
-		"README.md":  "# Test Repository\n",
-		".sops.yaml": "creation_rules:\n  - age: test-key\n",
+		".gitignore":                        "*.tmp\n",
+		"README.md":                         "# Test Repository\n",
+		".sops.yaml":                        "creation_rules:\n  - age: test-key\n",
 		"infrastructure/kustomization.yaml": "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
 		"infrastructure/clusters/test-cluster/kustomization.yaml": "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
 		"applications/kustomization.yaml":                         "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
@@ -394,8 +394,8 @@ func TestValidationStage_Execute_WithKustomizationFiles(t *testing.T) {
 
 	// Create required files including kustomization files
 	files := map[string]string{
-		".gitignore": "*.tmp\n",
-		"README.md":  "# Test Repository\n",
+		".gitignore":                        "*.tmp\n",
+		"README.md":                         "# Test Repository\n",
 		"infrastructure/kustomization.yaml": "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
 		"infrastructure/clusters/test-cluster/kustomization.yaml": "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
 		"applications/kustomization.yaml":                         "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
@@ -449,8 +449,8 @@ func TestValidationStage_Execute_FluxSystemValidation(t *testing.T) {
 
 	// Create required files including Flux system kustomization
 	files := map[string]string{
-		".gitignore": "*.tmp\n",
-		"README.md":  "# Test Repository\n",
+		".gitignore":                        "*.tmp\n",
+		"README.md":                         "# Test Repository\n",
 		"infrastructure/kustomization.yaml": "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
 		"infrastructure/clusters/test-cluster/kustomization.yaml": "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
 		"applications/kustomization.yaml":                         "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
@@ -505,8 +505,8 @@ func TestValidationStage_Execute_FluxSystemMissingKustomization(t *testing.T) {
 
 	// Create required files but NOT Flux system kustomization
 	files := map[string]string{
-		".gitignore": "*.tmp\n",
-		"README.md":  "# Test Repository\n",
+		".gitignore":                        "*.tmp\n",
+		"README.md":                         "# Test Repository\n",
 		"infrastructure/kustomization.yaml": "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
 		"infrastructure/clusters/test-cluster/kustomization.yaml": "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",
 		"applications/kustomization.yaml":                         "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\n",

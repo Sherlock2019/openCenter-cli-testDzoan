@@ -159,12 +159,12 @@ func (ff *FeatureFlags) ClearCache() {
 // This is useful for debugging and displaying feature flag status to users.
 func (ff *FeatureFlags) GetStatus() map[string]bool {
 	return map[string]bool{
-		"new_template_engine":  ff.UseNewTemplateEngine(),
-		"pipeline_generator":   ff.UsePipelineGenerator(),
-		"new_config_builder":   ff.UseNewConfigBuilder(),
-		"service_registry":     ff.UseServiceRegistry(),
-		"all_new_features":     ff.allNewFeaturesEnabled,
-		"debug_enabled":        ff.debugEnabled,
+		"new_template_engine": ff.UseNewTemplateEngine(),
+		"pipeline_generator":  ff.UsePipelineGenerator(),
+		"new_config_builder":  ff.UseNewConfigBuilder(),
+		"service_registry":    ff.UseServiceRegistry(),
+		"all_new_features":    ff.allNewFeaturesEnabled,
+		"debug_enabled":       ff.debugEnabled,
 	}
 }
 

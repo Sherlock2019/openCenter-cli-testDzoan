@@ -57,8 +57,8 @@ func TestAllEmbeddedTemplatesRegistered(t *testing.T) {
 	provisionTemplates := 0
 	for _, tmpl := range templates {
 		// Provision templates are in the "templates" directory and are infrastructure type
-		if tmpl.Type == TemplateTypeInfrastructure && 
-		   (tmpl.Name == "main.tf" || tmpl.Name == "variables.tf" || tmpl.Name == "inventory") {
+		if tmpl.Type == TemplateTypeInfrastructure &&
+			(tmpl.Name == "main.tf" || tmpl.Name == "variables.tf" || tmpl.Name == "inventory") {
 			provisionTemplates++
 		}
 	}
@@ -191,7 +191,7 @@ func TestGlobalRegistryEnabledServicesFiltering(t *testing.T) {
 	t.Logf("Templates with services %v enabled: %d", enabledServices, len(filteredTemplates))
 
 	// Filtered templates should include universal templates plus service-specific ones
-	assert.GreaterOrEqual(t, len(filteredTemplates), len(noServicesTemplates), 
+	assert.GreaterOrEqual(t, len(filteredTemplates), len(noServicesTemplates),
 		"enabling services should not reduce template count")
 
 	// Verify that all returned templates either have no services or have at least one enabled service
@@ -209,8 +209,8 @@ func TestGlobalRegistryEnabledServicesFiltering(t *testing.T) {
 					break
 				}
 			}
-			assert.True(t, hasEnabledService, 
-				"template %s with services %v should have at least one enabled service", 
+			assert.True(t, hasEnabledService,
+				"template %s with services %v should have at least one enabled service",
 				tmpl.Name, tmpl.Services)
 		}
 	}

@@ -50,10 +50,10 @@ func TestMigrationPreservesAllFunctionality(t *testing.T) {
 			validateOutput: func(t *testing.T, outputDir string, cfg config.Config) {
 				// Verify base structure
 				validateBaseStructure(t, outputDir)
-				
+
 				// Verify infrastructure templates
 				validateInfrastructureTemplates(t, outputDir, cfg)
-				
+
 				// Verify cluster apps
 				validateClusterApps(t, outputDir, cfg)
 			},
@@ -78,7 +78,7 @@ func TestMigrationPreservesAllFunctionality(t *testing.T) {
 				cfg := config.NewDefault("disabled-services-test")
 				cfg.OpenCenter.Cluster.ClusterName = "disabled-services-test"
 				cfg.OpenCenter.Infrastructure.Provider = "openstack"
-				
+
 				// Disable some services
 				cfg.OpenCenter.ManagedService = make(config.ServiceMap)
 				cfg.OpenCenter.ManagedService["alert-proxy"] = &services.AlertProxyConfig{
@@ -87,14 +87,14 @@ func TestMigrationPreservesAllFunctionality(t *testing.T) {
 				cfg.OpenCenter.ManagedService["cert-manager"] = &services.CertManagerConfig{
 					BaseConfig: services.BaseConfig{Enabled: false},
 				}
-				
+
 				return cfg
 			},
 			validateOutput: func(t *testing.T, outputDir string, cfg config.Config) {
 				validateBaseStructure(t, outputDir)
 				validateInfrastructureTemplates(t, outputDir, cfg)
 				validateClusterApps(t, outputDir, cfg)
-				
+
 				// Verify disabled services are not rendered
 				validateDisabledServicesNotRendered(t, outputDir, cfg)
 			},
@@ -116,35 +116,35 @@ func TestMigrationPreservesAllFunctionality(t *testing.T) {
 				validateBaseStructure(t, outputDir)
 				validateInfrastructureTemplates(t, outputDir, cfg)
 				validateClusterApps(t, outputDir, cfg)
-				
+
 				// Verify custom values are rendered correctly
 				validateCustomConfigValues(t, outputDir, cfg)
 			},
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create temporary directory for test
 			tempDir := t.TempDir()
-			
+
 			// Setup configuration
 			cfg := tc.setupConfig()
 			cfg.OpenCenter.GitOps.GitDir = tempDir
-			
+
 			// Generate using the unified interface
 			ctx := context.Background()
 			err := GenerateGitOpsRepository(ctx, cfg)
-			
+
 			// Skip bare metal test due to known template compatibility issues
 			if err != nil && cfg.OpenCenter.Infrastructure.Provider == "baremetal" {
 				t.Skipf("Skipping bare metal test due to template compatibility issues: %v", err)
 			}
-			
+
 			if err != nil {
 				t.Fatalf("GenerateGitOpsRepository failed: %v", err)
 			}
-			
+
 			// Validate output
 			tc.validateOutput(t, tempDir, cfg)
 		})
@@ -154,19 +154,19 @@ func TestMigrationPreservesAllFunctionality(t *testing.T) {
 // validateBaseStructure verifies that the base GitOps directory structure is created correctly
 func validateBaseStructure(t *testing.T, outputDir string) {
 	t.Helper()
-	
+
 	// Check for .gitignore
 	gitignorePath := filepath.Join(outputDir, ".gitignore")
 	if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
 		t.Errorf("Expected .gitignore to exist at %s", gitignorePath)
 	}
-	
+
 	// Check for applications directory
 	appsPath := filepath.Join(outputDir, "applications")
 	if _, err := os.Stat(appsPath); os.IsNotExist(err) {
 		t.Errorf("Expected applications directory to exist at %s", appsPath)
 	}
-	
+
 	// Check for infrastructure directory
 	infraPath := filepath.Join(outputDir, "infrastructure")
 	if _, err := os.Stat(infraPath); os.IsNotExist(err) {
@@ -177,16 +177,16 @@ func validateBaseStructure(t *testing.T, outputDir string) {
 // validateInfrastructureTemplates verifies that infrastructure templates are rendered correctly
 func validateInfrastructureTemplates(t *testing.T, outputDir string, cfg config.Config) {
 	t.Helper()
-	
+
 	clusterName := cfg.OpenCenter.Meta.Name
 	infraClusterPath := filepath.Join(outputDir, "infrastructure", "clusters", clusterName)
-	
+
 	// Check that cluster-specific infrastructure directory exists
 	if _, err := os.Stat(infraClusterPath); os.IsNotExist(err) {
 		t.Errorf("Expected infrastructure cluster directory to exist at %s", infraClusterPath)
 		return
 	}
-	
+
 	// Check for provider-specific files based on provider type
 	provider := cfg.OpenCenter.Infrastructure.Provider
 	switch provider {
@@ -209,16 +209,16 @@ func validateInfrastructureTemplates(t *testing.T, outputDir string, cfg config.
 // validateClusterApps verifies that cluster application overlays are rendered correctly
 func validateClusterApps(t *testing.T, outputDir string, cfg config.Config) {
 	t.Helper()
-	
+
 	clusterName := cfg.OpenCenter.Meta.Name
 	clusterAppsPath := filepath.Join(outputDir, "applications", "overlays", clusterName)
-	
+
 	// Check that cluster-specific apps directory exists
 	if _, err := os.Stat(clusterAppsPath); os.IsNotExist(err) {
 		t.Errorf("Expected cluster apps directory to exist at %s", clusterAppsPath)
 		return
 	}
-	
+
 	// Check for kustomization.yaml
 	kustomizationPath := filepath.Join(clusterAppsPath, "kustomization.yaml")
 	if _, err := os.Stat(kustomizationPath); os.IsNotExist(err) {
@@ -229,19 +229,19 @@ func validateClusterApps(t *testing.T, outputDir string, cfg config.Config) {
 // validateDisabledServicesNotRendered verifies that disabled services are not included in the output
 func validateDisabledServicesNotRendered(t *testing.T, outputDir string, cfg config.Config) {
 	t.Helper()
-	
+
 	clusterName := cfg.OpenCenter.Meta.Name
 	clusterAppsPath := filepath.Join(outputDir, "applications", "overlays", clusterName)
-	
+
 	// Read kustomization.yaml
 	kustomizationPath := filepath.Join(clusterAppsPath, "kustomization.yaml")
 	content, err := os.ReadFile(kustomizationPath)
 	if err != nil {
 		t.Fatalf("Failed to read kustomization.yaml: %v", err)
 	}
-	
+
 	kustomizationContent := string(content)
-	
+
 	// Check that disabled services are not referenced
 	for serviceName, serviceConfig := range cfg.OpenCenter.ManagedService {
 		if baseConfig, ok := serviceConfig.(interface{ GetBaseConfig() services.BaseConfig }); ok {
@@ -258,10 +258,10 @@ func validateDisabledServicesNotRendered(t *testing.T, outputDir string, cfg con
 // validateCustomConfigValues verifies that custom configuration values are rendered correctly
 func validateCustomConfigValues(t *testing.T, outputDir string, cfg config.Config) {
 	t.Helper()
-	
+
 	clusterName := cfg.OpenCenter.Meta.Name
 	infraClusterPath := filepath.Join(outputDir, "infrastructure", "clusters", clusterName)
-	
+
 	// Check terraform.tfvars for custom values
 	tfvarsPath := filepath.Join(infraClusterPath, "terraform.tfvars")
 	if _, err := os.Stat(tfvarsPath); err == nil {
@@ -269,9 +269,9 @@ func validateCustomConfigValues(t *testing.T, outputDir string, cfg config.Confi
 		if err != nil {
 			t.Fatalf("Failed to read terraform.tfvars: %v", err)
 		}
-		
+
 		tfvarsContent := string(content)
-		
+
 		// Verify custom values are present
 		if cfg.OpenCenter.Cluster.Kubernetes.Version != "" {
 			if !containsValue(tfvarsContent, cfg.OpenCenter.Cluster.Kubernetes.Version) {
@@ -296,19 +296,19 @@ func containsValue(content, value string) bool {
 // TestMigrationWithLegacyWrapper validates that the deprecated wrapper still works
 func TestMigrationWithLegacyWrapper(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	cfg := config.NewDefault("wrapper-test")
 	cfg.OpenCenter.Cluster.ClusterName = "wrapper-test"
 	cfg.OpenCenter.GitOps.GitDir = tempDir
-	
+
 	// Use the deprecated wrapper
 	wrapper := NewLegacyGenerationWrapper(cfg)
-	
+
 	// Generate using wrapper
 	if err := wrapper.Generate(); err != nil {
 		t.Fatalf("LegacyGenerationWrapper.Generate failed: %v", err)
 	}
-	
+
 	// Verify output
 	validateBaseStructure(t, tempDir)
 	validateInfrastructureTemplates(t, tempDir, cfg)
@@ -318,24 +318,24 @@ func TestMigrationWithLegacyWrapper(t *testing.T) {
 // TestMigrationWithIndividualLegacyMethods validates that individual legacy methods still work
 func TestMigrationWithIndividualLegacyMethods(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	cfg := config.NewDefault("individual-test")
 	cfg.OpenCenter.Cluster.ClusterName = "individual-test"
 	cfg.OpenCenter.GitOps.GitDir = tempDir
-	
+
 	// Call legacy methods individually
 	if err := CopyBase(cfg, true); err != nil {
 		t.Fatalf("CopyBase failed: %v", err)
 	}
-	
+
 	if err := RenderClusterApps(cfg); err != nil {
 		t.Fatalf("RenderClusterApps failed: %v", err)
 	}
-	
+
 	if err := RenderInfrastructureCluster(cfg); err != nil {
 		t.Fatalf("RenderInfrastructureCluster failed: %v", err)
 	}
-	
+
 	// Verify output
 	validateBaseStructure(t, tempDir)
 	validateInfrastructureTemplates(t, tempDir, cfg)
@@ -347,20 +347,20 @@ func TestMigrationOutputIdentity(t *testing.T) {
 	// Create two temporary directories
 	legacyDir := t.TempDir()
 	newDir := t.TempDir()
-	
+
 	// Create identical configurations
 	legacyCfg := config.NewDefault("identity-test")
 	legacyCfg.OpenCenter.Cluster.ClusterName = "identity-test"
 	legacyCfg.OpenCenter.GitOps.GitDir = legacyDir
 	legacyCfg.OpenCenter.Infrastructure.Provider = "openstack"
 	legacyCfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://auth.example.com/v3"
-	
+
 	newCfg := config.NewDefault("identity-test")
 	newCfg.OpenCenter.Cluster.ClusterName = "identity-test"
 	newCfg.OpenCenter.GitOps.GitDir = newDir
 	newCfg.OpenCenter.Infrastructure.Provider = "openstack"
 	newCfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://auth.example.com/v3"
-	
+
 	// Generate using legacy methods
 	if err := CopyBase(legacyCfg, true); err != nil {
 		t.Fatalf("Legacy CopyBase failed: %v", err)
@@ -371,19 +371,19 @@ func TestMigrationOutputIdentity(t *testing.T) {
 	if err := RenderInfrastructureCluster(legacyCfg); err != nil {
 		t.Fatalf("Legacy RenderInfrastructureCluster failed: %v", err)
 	}
-	
+
 	// Generate using new unified interface
 	ctx := context.Background()
 	if err := GenerateGitOpsRepository(ctx, newCfg); err != nil {
 		t.Fatalf("New GenerateGitOpsRepository failed: %v", err)
 	}
-	
+
 	// TODO: Re-enable once compareDirectoriesNormalized is implemented
 	// Compare outputs
 	// if err := compareDirectoriesNormalized(t, legacyDir, newDir, legacyDir, newDir); err != nil {
 	// 	t.Fatalf("Output comparison failed: %v", err)
 	// }
-	
+
 	t.Skip("Skipping output comparison until compareDirectoriesNormalized is implemented")
 }
 
@@ -415,14 +415,14 @@ func TestMigrationPreservesErrorHandling(t *testing.T) {
 			expectError: false,
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := tc.setupConfig()
 			ctx := context.Background()
-			
+
 			err := GenerateGitOpsRepository(ctx, cfg)
-			
+
 			if tc.expectError && err == nil {
 				t.Error("Expected error but got none")
 			}

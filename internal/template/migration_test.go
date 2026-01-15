@@ -513,10 +513,10 @@ data:
 	// Phase 1: Deploy with new engine enabled
 	t.Run("phase1_new_engine", func(t *testing.T) {
 		t.Setenv(config.EnvUseNewTemplateEngine, "true")
-		
+
 		// Clear cache to ensure fresh evaluation
 		config.GetFeatureFlags().ClearCache()
-		
+
 		assert.True(t, UseNewTemplateEngine(), "Feature flag should be enabled")
 
 		outputPath := filepath.Join(tmpDir, "phase1.yaml")
@@ -532,10 +532,10 @@ data:
 	// Phase 2: Rollback to legacy system (disable feature flag)
 	t.Run("phase2_rollback_to_legacy", func(t *testing.T) {
 		t.Setenv(config.EnvUseNewTemplateEngine, "false")
-		
+
 		// Clear cache to ensure fresh evaluation
 		config.GetFeatureFlags().ClearCache()
-		
+
 		assert.False(t, UseNewTemplateEngine(), "Feature flag should be disabled")
 
 		outputPath := filepath.Join(tmpDir, "phase2.yaml")
@@ -598,10 +598,10 @@ func TestFeatureFlagDocumentation(t *testing.T) {
 	t.Run("example_basic_usage", func(t *testing.T) {
 		// Example 1: Check if new engine is enabled
 		t.Setenv(config.EnvUseNewTemplateEngine, "true")
-		
+
 		// Clear cache to ensure fresh evaluation
 		config.GetFeatureFlags().ClearCache()
-		
+
 		if UseNewTemplateEngine() {
 			t.Log("✓ New template engine is enabled")
 		} else {

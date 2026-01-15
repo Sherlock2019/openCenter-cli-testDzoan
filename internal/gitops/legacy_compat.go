@@ -56,7 +56,7 @@ func GenerateGitOpsRepository(ctx context.Context, cfg config.Config) error {
 		// TODO: Implement when PipelineGenerator is available (Task 4.2)
 		// generator := NewPipelineGenerator()
 		// return generator.Generate(ctx, cfg)
-		
+
 		// For now, fall back to legacy system even when flag is set
 		// This will be updated once the pipeline system is implemented
 		return generateGitOpsRepositoryLegacy(cfg)
@@ -120,7 +120,7 @@ func GenerateGitOpsRepositoryWithOptions(ctx context.Context, cfg config.Config,
 		//     return nil
 		// }
 		// return generator.Generate(ctx, cfg)
-		
+
 		// For now, fall back to legacy system
 		return generateGitOpsRepositoryLegacy(cfg)
 	}
