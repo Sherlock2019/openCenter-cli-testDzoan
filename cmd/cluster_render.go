@@ -14,6 +14,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/rackerlabs/openCenter-cli/internal/config"
@@ -81,22 +82,20 @@ Unlike 'cluster setup', this command:
 }
 
 // renderClusterTemplates renders all cluster templates using the GitOps package.
-// This is a simplified version that delegates to the proper internal packages.
+// This uses the unified generation interface which automatically selects between
+// the legacy system and the new pipeline-based system based on feature flags.
 func renderClusterTemplates(cfg config.Config, organization string, cmd *cobra.Command) error {
 	fmt.Fprintf(cmd.OutOrStdout(), "Rendering templates to: %s\n", cfg.GitOps().GitDir)
 
-	// Render GitOps base structure (always force render for render command)
-	if err := gitops.CopyBase(cfg, true); err != nil {
-		return fmt.Errorf("failed to render base templates: %w", err)
+	// Use the unified GitOps generation interface
+	// This automatically handles the selection between legacy and pipeline systems
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
 	}
 
-	// Render cluster-specific templates
-	if err := gitops.RenderClusterApps(cfg); err != nil {
-		return fmt.Errorf("failed to render cluster apps templates: %w", err)
-	}
-
-	if err := gitops.RenderInfrastructureCluster(cfg); err != nil {
-		return fmt.Errorf("failed to render infrastructure cluster templates: %w", err)
+	if err := gitops.GenerateGitOpsRepository(ctx, cfg); err != nil {
+		return fmt.Errorf("failed to generate GitOps repository: %w", err)
 	}
 
 	// Provision OpenTofu (renders main.tf and provider.tf)
