@@ -24,6 +24,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/openCenter-cli/internal/credentials"
 	"github.com/spf13/cobra"
 )
 
@@ -548,6 +549,26 @@ KUBECONFIG, ANSIBLE_INVENTORY, virtual environment, and PATH variables.`,
 				return err
 			}
 
+			// Deactivate any existing cluster environment first
+			// This ensures old environment variables are cleared before switching
+			var deactivateOutput strings.Builder
+
+			// Unset AWS credentials
+			awsVars := credentials.GetAWSEnvVars()
+			for _, envVar := range awsVars {
+				deactivateOutput.WriteString(fmt.Sprintf("unset %s\n", envVar))
+			}
+
+			// Unset OpenStack credentials
+			osVars := credentials.GetOpenStackEnvVars()
+			for _, envVar := range osVars {
+				deactivateOutput.WriteString(fmt.Sprintf("unset %s\n", envVar))
+			}
+
+			// Unset cluster-specific environment variables
+			deactivateOutput.WriteString("unset BIN\n")
+			deactivateOutput.WriteString("unset KUBECONFIG\n")
+
 			// Set active cluster
 			if err := config.SetActive(name); err != nil {
 				return fmt.Errorf("failed to set active cluster: %w", err)
@@ -563,6 +584,10 @@ KUBECONFIG, ANSIBLE_INVENTORY, virtual environment, and PATH variables.`,
 				// Show full enhanced output
 				fmt.Fprintf(cmd.OutOrStdout(), "Active cluster set to %s\n\n", name)
 				displayClusterSelectOutput(output, cmd)
+
+				// Inform user to activate the environment
+				fmt.Fprintf(cmd.OutOrStdout(), "\nTo activate the cluster environment, run:\n")
+				fmt.Fprintf(cmd.OutOrStdout(), "  eval $(openCenter cluster activate)\n")
 			}
 
 			return nil

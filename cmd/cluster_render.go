@@ -16,6 +16,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/rackerlabs/openCenter-cli/internal/config"
 	"github.com/rackerlabs/openCenter-cli/internal/gitops"
@@ -85,7 +86,23 @@ Unlike 'cluster setup', this command:
 // This uses the unified generation interface which automatically selects between
 // the legacy system and the new pipeline-based system based on feature flags.
 func renderClusterTemplates(cfg config.Config, organization string, cmd *cobra.Command) error {
-	fmt.Fprintf(cmd.OutOrStdout(), "Rendering templates to: %s\n", cfg.GitOps().GitDir)
+	// Parse cluster identifier to get organization and cluster name
+	clusterName := cfg.OpenCenter.Cluster.ClusterName
+	org := cfg.OpenCenter.Meta.Organization
+	if org == "" {
+		org = organization
+	}
+
+	// Get the infrastructure cluster path
+	gitOpsDir := cfg.GitOps().GitDir
+	infrastructurePath := filepath.Join(gitOpsDir, "infrastructure", "clusters", clusterName)
+
+	// Display informative output
+	fmt.Fprintf(cmd.OutOrStdout(), "Rendering templates for cluster: %s\n", clusterName)
+	if org != "" {
+		fmt.Fprintf(cmd.OutOrStdout(), "Organization: %s\n", org)
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "Rendering templates to: %s\n", infrastructurePath)
 
 	// Use the unified GitOps generation interface
 	// This automatically handles the selection between legacy and pipeline systems
