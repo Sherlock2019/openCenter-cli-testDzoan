@@ -10,7 +10,7 @@ spec:
       sectionName: headlamp-https
       namespace: rackspace-system
   hostnames:
-    - "headlamp.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud"
+    - {{ .OpenCenter.Services.headlamp.Hostname | default (printf "headlamp.%s" .OpenCenter.Cluster.ClusterFQDN) | quote }}
   rules:
     - backendRefs:
         - name: headlamp

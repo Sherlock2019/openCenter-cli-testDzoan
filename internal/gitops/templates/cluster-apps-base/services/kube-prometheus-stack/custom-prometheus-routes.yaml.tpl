@@ -6,7 +6,7 @@ metadata:
   namespace: observability
 spec:
   hostnames:
-    - "prometheus.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud"
+    - {{ (index .OpenCenter.Services "kube-prometheus-stack").Hostname | default (printf "prometheus.%s" .OpenCenter.Cluster.ClusterFQDN) | quote }}
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway

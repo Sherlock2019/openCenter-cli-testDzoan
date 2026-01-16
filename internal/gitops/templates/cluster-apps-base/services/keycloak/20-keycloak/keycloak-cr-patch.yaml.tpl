@@ -35,7 +35,7 @@ spec:
   http:
     httpEnabled: true
   hostname:
-    hostname: https://auth.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud
+    hostname: https://{{ .OpenCenter.Services.keycloak.Hostname | default (printf "auth.%s" .OpenCenter.Cluster.ClusterFQDN) }}
     strict: false
     backchannelDynamic: false
   proxy:
@@ -44,7 +44,7 @@ spec:
     - name: proxy
       value: "edge"
     - name: hostname-url
-      value: "https://auth.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud"
+      value: "https://{{ .OpenCenter.Services.keycloak.Hostname | default (printf "auth.%s" .OpenCenter.Cluster.ClusterFQDN) }}"
     - name: metrics-enabled # Enable Prometheus metrics
       value: "true"
     - name: spi-connections-http-client-default-connection-timeout-millis # HTTP client timeout

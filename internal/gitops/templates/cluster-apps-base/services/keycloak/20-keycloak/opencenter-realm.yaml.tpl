@@ -14,7 +14,7 @@ spec:
     bruteForceProtected: true
     passwordPolicy: length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1)
     attributes:
-      frontendUrl: https://auth.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud
+      frontendUrl: https://{{ .OpenCenter.Services.keycloak.Hostname | default (printf "auth.%s" .OpenCenter.Cluster.ClusterFQDN) }}
     clients:
       - clientId: opencenter
         name: openCenter Cluster

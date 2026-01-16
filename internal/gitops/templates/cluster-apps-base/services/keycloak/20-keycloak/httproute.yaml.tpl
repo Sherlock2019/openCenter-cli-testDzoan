@@ -10,7 +10,7 @@ spec:
       sectionName: keycloak-https
       namespace: rackspace-system
   hostnames:
-    - "auth.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud"
+    - {{ .OpenCenter.Services.keycloak.Hostname | default (printf "auth.%s" .OpenCenter.Cluster.ClusterFQDN) | quote }}
   rules:
     - backendRefs:
         - name: keycloak-service
@@ -31,7 +31,7 @@ spec:
       namespace: rackspace-system
       sectionName: keycloak-http
   hostnames:
-    - "auth.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud"
+    - {{ .OpenCenter.Services.keycloak.Hostname | default (printf "auth.%s" .OpenCenter.Cluster.ClusterFQDN) | quote }}
   rules:
     - filters:
         - type: RequestRedirect

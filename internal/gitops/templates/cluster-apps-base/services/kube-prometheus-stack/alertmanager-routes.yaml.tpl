@@ -11,11 +11,11 @@ spec:
     name: alertmanager-gateway-route
   oidc:
     provider:
-      issuer: "https://auth.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud/realms/opencenter"
+      issuer: "https://{{ .OpenCenter.Services.keycloak.Hostname | default (printf "auth.%s" .OpenCenter.Cluster.ClusterFQDN) }}/realms/opencenter"
     clientID: "opencenter"  
     clientSecret:
       name: "gateway-oidc-secret" 
-    redirectURL: "https://alertmanager.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud/oauth2/callback"
+    redirectURL: "{{ (index .OpenCenter.Services "kube-prometheus-stack").Hostname | default (printf "alertmanager.%s" .OpenCenter.Cluster.ClusterFQDN) }}/oauth2/callback"
     scopes:
       - openid
       - profile

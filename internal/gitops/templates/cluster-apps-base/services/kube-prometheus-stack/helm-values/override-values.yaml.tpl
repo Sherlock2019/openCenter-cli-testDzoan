@@ -2,7 +2,7 @@
 alertmanager:
   enabled: true
   alertmanagerSpec:
-    externalUrl: https://alertmanager.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud
+    externalUrl: https://{{ (index .OpenCenter.Services "kube-prometheus-stack").Hostname | default (printf "alertmanager.%s" .OpenCenter.Cluster.ClusterFQDN) }}
     storage:
       volumeClaimTemplate:
         spec:
@@ -51,7 +51,7 @@ alertmanager:
 prometheus:
   enabled: true
   prometheusSpec:
-    externalUrl: https://prometheus.{{ .OpenCenter.Cluster.ClusterName }}.{{ .OpenCenter.Meta.Region }}.k8s.opencenter.cloud
+    externalUrl: https://{{ (index .OpenCenter.Services "kube-prometheus-stack").Hostname | default (printf "prometheus.%s" .OpenCenter.Cluster.ClusterFQDN) }}
     externalLabels:
       cluster: k8s-dev
       region: {{ .OpenCenter.Meta.Region }}
