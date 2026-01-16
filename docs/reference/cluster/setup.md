@@ -60,6 +60,46 @@ openCenter cluster setup my-cluster --force
 openCenter cluster setup production/prod-cluster
 ```
 
+### Using Feature Flags
+
+Feature flags enable new refactored systems while maintaining backward compatibility:
+
+```bash
+# Use new template engine with caching and better error messages
+export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true
+openCenter cluster setup my-cluster
+
+# Use pipeline-based generation with rollback support
+export OPENCENTER_USE_PIPELINE_GENERATOR=true
+openCenter cluster setup my-cluster
+
+# Use type-safe configuration builder
+export OPENCENTER_USE_NEW_CONFIG_BUILDER=true
+openCenter cluster setup my-cluster
+
+# Enable all new features at once
+export OPENCENTER_ENABLE_ALL_NEW_FEATURES=true
+openCenter cluster setup my-cluster
+
+# Enable for a single command without persisting
+OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true openCenter cluster setup my-cluster
+
+# Enable debug logging to see feature flag evaluation
+export OPENCENTER_FEATURE_FLAG_DEBUG=true
+openCenter cluster setup my-cluster
+
+# Check which features are currently enabled
+openCenter config features
+```
+
+**Feature Flag Benefits:**
+- **New Template Engine**: Improved performance through caching, better error messages with line numbers
+- **Pipeline Generator**: Staged generation with automatic rollback on failure, progress reporting
+- **Config Builder**: Type-safe configuration construction, better validation error reporting
+- **All Features**: Convenient way to enable all refactored systems at once
+
+See `openCenter config features --help` for more information about feature flags.
+
 ## Output
 
 ```

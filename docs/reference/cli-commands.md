@@ -219,6 +219,25 @@ openCenter cluster setup my-cluster --render
 openCenter cluster setup my-cluster --force
 ```
 
+**Using Feature Flags:**
+
+```bash
+# Use new template engine for better performance
+export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true
+openCenter cluster setup my-cluster
+
+# Use pipeline-based generation with rollback support
+export OPENCENTER_USE_PIPELINE_GENERATOR=true
+openCenter cluster setup my-cluster
+
+# Enable all new features
+export OPENCENTER_ENABLE_ALL_NEW_FEATURES=true
+openCenter cluster setup my-cluster
+
+# Enable for a single command
+OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true openCenter cluster setup my-cluster
+```
+
 **Actions:**
 - Creates GitOps directory structure
 - Copies/renders base templates
@@ -285,6 +304,19 @@ openCenter cluster render
 
 # Render for specific cluster
 openCenter cluster render my-cluster
+```
+
+**Using Feature Flags:**
+
+```bash
+# Use new template engine with caching
+export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true
+openCenter cluster render my-cluster
+
+# Compare legacy vs new template engine output
+openCenter cluster render my-cluster > /tmp/legacy.txt
+OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true openCenter cluster render my-cluster > /tmp/new.txt
+diff /tmp/legacy.txt /tmp/new.txt
 ```
 
 ### cluster schema
@@ -614,6 +646,62 @@ openCenter sops secrets-decrypt --dry-run
 
 ## Config Commands
 
+### config features
+
+Display feature flag status and manage gradual migration to refactored systems.
+
+```bash
+openCenter config features [flags]
+```
+
+**Flags:**
+- `--output, -o string`: Output format: json, table, or env (default: "table")
+
+**Examples:**
+
+```bash
+# Display feature status (default table format)
+openCenter config features
+
+# Display as JSON for scripting
+openCenter config features --output json
+
+# Generate environment variable exports
+openCenter config features --output env
+
+# Save to file for sourcing
+openCenter config features --output env > feature-flags.sh
+source feature-flags.sh
+```
+
+**Available Feature Flags:**
+- `OPENCENTER_USE_NEW_TEMPLATE_ENGINE`: Enhanced template engine with caching
+- `OPENCENTER_USE_PIPELINE_GENERATOR`: Pipeline-based GitOps generation
+- `OPENCENTER_USE_NEW_CONFIG_BUILDER`: Type-safe configuration builder
+- `OPENCENTER_USE_SERVICE_REGISTRY`: Plugin-based service registry
+- `OPENCENTER_ENABLE_ALL_NEW_FEATURES`: Enable all new features at once
+- `OPENCENTER_FEATURE_FLAG_DEBUG`: Enable debug logging for feature flags
+
+**Setting Feature Flags:**
+
+```bash
+# Enable a specific feature
+export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true
+
+# Enable all new features
+export OPENCENTER_ENABLE_ALL_NEW_FEATURES=true
+
+# Enable for a single command
+OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true openCenter cluster setup my-cluster
+
+# Enable debug logging
+export OPENCENTER_FEATURE_FLAG_DEBUG=true
+```
+
+**Valid Values:** `true`, `1`, `yes`, `on` (case-insensitive) to enable; `false`, `0`, `no`, `off`, or unset to disable
+
+See [config features documentation](config/features.md) for detailed information.
+
 ### config ide
 
 Generate IDE configuration files for enhanced development experience.
@@ -744,11 +832,52 @@ openCenter plugins remove my-plugin
 
 ## Environment Variables
 
+### General Configuration
 - `OPENCENTER_CONFIG_DIR`: Override default config directory
 - `OPENCENTER_DEBUG`: Enable debug logging and artifacts
 - `OPENCENTER_PLUGINS_DIR`: Directory for external plugins
 - `KIND_EXPERIMENTAL_PROVIDER`: Set to "podman" for Podman support
 - `CONTAINER_RUNTIME`: Set to "podman" if using Podman instead of Docker
+
+### Feature Flags
+
+Feature flags enable gradual migration to refactored systems while maintaining backward compatibility.
+
+#### Individual Feature Flags
+- `OPENCENTER_USE_NEW_TEMPLATE_ENGINE`: Enable enhanced template engine with caching and better error messages
+- `OPENCENTER_USE_PIPELINE_GENERATOR`: Enable pipeline-based GitOps generation with rollback support
+- `OPENCENTER_USE_NEW_CONFIG_BUILDER`: Enable type-safe fluent configuration builder
+- `OPENCENTER_USE_SERVICE_REGISTRY`: Enable plugin-based service registry with dependency resolution
+
+#### Global Feature Flags
+- `OPENCENTER_ENABLE_ALL_NEW_FEATURES`: Enable all new features at once (overrides individual flags)
+- `OPENCENTER_FEATURE_FLAG_DEBUG`: Enable debug logging for feature flag evaluation
+
+#### Valid Values
+- **Enable**: `true`, `1`, `yes`, `on` (case-insensitive)
+- **Disable**: `false`, `0`, `no`, `off`, or unset
+
+#### Examples
+
+```bash
+# Enable specific feature
+export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true
+
+# Enable all new features
+export OPENCENTER_ENABLE_ALL_NEW_FEATURES=true
+
+# Enable for single command
+OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true openCenter cluster setup my-cluster
+
+# Check feature status
+openCenter config features
+
+# Enable debug logging
+export OPENCENTER_FEATURE_FLAG_DEBUG=true
+openCenter config features
+```
+
+See `openCenter config features --help` for more information.
 
 ## Exit Codes
 

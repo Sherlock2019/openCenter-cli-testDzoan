@@ -46,6 +46,41 @@ openCenter cluster render my-cluster
 cat ~/config/openCenter/clusters/myorg/gitops/infrastructure/clusters/my-cluster/kustomization.yaml
 ```
 
+### Using Feature Flags
+
+Feature flags enable new refactored systems for improved performance and functionality:
+
+```bash
+# Use new template engine with caching and better error messages
+export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true
+openCenter cluster render my-cluster
+
+# Compare legacy vs new template engine output
+openCenter cluster render my-cluster > /tmp/legacy-output.txt
+OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true openCenter cluster render my-cluster > /tmp/new-output.txt
+diff /tmp/legacy-output.txt /tmp/new-output.txt
+
+# Enable all new features
+export OPENCENTER_ENABLE_ALL_NEW_FEATURES=true
+openCenter cluster render my-cluster
+
+# Enable debug logging to see feature flag evaluation
+export OPENCENTER_FEATURE_FLAG_DEBUG=true
+openCenter cluster render my-cluster
+
+# Check which features are currently enabled
+openCenter config features
+```
+
+**Feature Flag Benefits:**
+- **New Template Engine**: 
+  - Improved performance through template caching
+  - Better error messages with line numbers and context
+  - Template validation before rendering
+  - Reduced memory usage for large configurations
+
+See `openCenter config features --help` for more information about feature flags.
+
 ## Output
 
 ```
