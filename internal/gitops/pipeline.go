@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/openCenter-cli/internal/util/metrics"
 )
 
 // PipelineGenerator implements GitOpsGenerator using a staged pipeline approach.
@@ -96,21 +97,34 @@ func NewPipelineGeneratorWithOptions(workspaceManager WorkspaceManager, stages [
 // Stages are executed in order, with automatic rollback on failure.
 func (pg *PipelineGenerator) Generate(ctx context.Context, cfg config.Config) error {
 	startTime := time.Now()
+	var generationErr error
+	clusterName := cfg.OpenCenter.Meta.Name
+	filesGenerated := 0
+
+	// Record metrics at the end
+	defer func() {
+		duration := time.Since(startTime)
+		// Count files in workspace if generation succeeded
+		if generationErr == nil && pg.workspace != nil {
+			filesGenerated = pg.workspace.GetFileCount()
+		}
+		// Record metric using global collector
+		metrics.RecordGitOpsGeneration(clusterName, duration, filesGenerated, generationErr == nil, generationErr)
+	}()
 
 	// Validate options
 	if err := pg.options.Validate(); err != nil {
-		return fmt.Errorf("invalid generation options: %w", err)
+		generationErr = fmt.Errorf("invalid generation options: %w", err)
+		return generationErr
 	}
 
 	// Create workspace
 	workspace, err := pg.workspaceManager.CreateWorkspace(ctx, cfg)
 	if err != nil {
-		return fmt.Errorf("failed to create workspace: %w", err)
+		generationErr = fmt.Errorf("failed to create workspace: %w", err)
+		return generationErr
 	}
 	pg.workspace = workspace
-
-	// Track whether generation succeeded
-	var generationErr error
 
 	// Ensure workspace cleanup on error if configured
 	defer func() {

@@ -279,6 +279,25 @@ func (w *GitOpsWorkspace) UpdateModifiedTime() {
 	w.lastModified = time.Now()
 }
 
+// GetFileCount returns the number of files in the workspace.
+// It recursively counts all files in the workspace root directory.
+func (w *GitOpsWorkspace) GetFileCount() int {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+
+	count := 0
+	filepath.Walk(w.RootDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // Skip errors
+		}
+		if !info.IsDir() {
+			count++
+		}
+		return nil
+	})
+	return count
+}
+
 // runCleanupLoop runs a periodic cleanup of stale workspaces.
 // This prevents workspace leaks from abandoned or crashed operations.
 func (m *DefaultWorkspaceManager) runCleanupLoop() {

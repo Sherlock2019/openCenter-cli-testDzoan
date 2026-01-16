@@ -2,7 +2,7 @@ locals {
   # this will be the user's name and the DNS zone prefix
   cluster_name                            = "{{ .OpenCenter.Cluster.ClusterName }}"
   # Prefix to add to Openstack resource names
-  naming_prefix                           = "$${local.cluster_name}-"
+  naming_prefix                           = "${local.cluster_name}-"
   openstack_auth_url                      = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL | default "https://keystone.api.sjc3.rackspacecloud.com/v3/" }}"
   openstack_insecure                      = {{ .OpenCenter.Infrastructure.Cloud.OpenStack.Insecure | default false }}
   openstack_region                        = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.Region | default "SJC3" }}"

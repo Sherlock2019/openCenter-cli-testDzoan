@@ -19,6 +19,7 @@ import (
 
 	"github.com/rackerlabs/openCenter-cli/internal/config/services"
 	"github.com/rackerlabs/openCenter-cli/internal/util/errors"
+	"github.com/rackerlabs/openCenter-cli/internal/util/metrics"
 )
 
 // ConfigBuilder provides a fluent interface for constructing cluster configurations.
@@ -534,6 +535,16 @@ func (b *FluentConfigBuilder) WithAnnotation(key, value string) ConfigBuilder {
 
 // Build constructs the final configuration and validates it.
 func (b *FluentConfigBuilder) Build() (Config, error) {
+	// Start metrics timer
+	startTime := time.Now()
+	var buildErr error
+	clusterName := b.config.OpenCenter.Meta.Name
+	defer func() {
+		duration := time.Since(startTime)
+		// Record metric using global collector
+		metrics.RecordConfigBuild(clusterName, duration, buildErr == nil, buildErr)
+	}()
+
 	// Update metadata timestamps
 	if b.config.Metadata.CreatedAt.IsZero() {
 		b.config.Metadata.CreatedAt = time.Now()
@@ -556,8 +567,9 @@ func (b *FluentConfigBuilder) Build() (Config, error) {
 
 		// Get formatted error summary
 		summary := b.errorAggregator.GetSummary()
-		return Config{}, fmt.Errorf("configuration validation failed with %d errors:\n%s",
+		buildErr = fmt.Errorf("configuration validation failed with %d errors:\n%s",
 			len(validationErrors), summary)
+		return Config{}, buildErr
 	}
 
 	return b.config, nil

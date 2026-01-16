@@ -30,9 +30,11 @@ import (
 	"strings"
 	"sync"
 	"text/template"
+	"time"
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/rackerlabs/openCenter-cli/internal/util/errors"
+	"github.com/rackerlabs/openCenter-cli/internal/util/metrics"
 )
 
 // TemplateEngine provides a unified interface for template rendering operations.
@@ -118,23 +120,35 @@ func NewGoTemplateEngine() *GoTemplateEngine {
 // It validates the template, checks the cache, and executes the template.
 // Returns the rendered output as bytes or an error if rendering fails.
 func (e *GoTemplateEngine) Render(ctx context.Context, templatePath string, data interface{}) ([]byte, error) {
+	// Start metrics timer
+	startTime := time.Now()
+	var renderErr error
+	defer func() {
+		duration := time.Since(startTime)
+		// Record metric using global collector
+		metrics.RecordTemplateRender(templatePath, duration, renderErr == nil, renderErr)
+	}()
+
 	// Check context cancellation
 	select {
 	case <-ctx.Done():
-		return nil, fmt.Errorf("template rendering cancelled: %w", ctx.Err())
+		renderErr = fmt.Errorf("template rendering cancelled: %w", ctx.Err())
+		return nil, renderErr
 	default:
 	}
 
 	// Get or parse template
 	tmpl, err := e.getTemplate(templatePath)
 	if err != nil {
-		return nil, wrapTemplateError(err, templatePath)
+		renderErr = wrapTemplateError(err, templatePath)
+		return nil, renderErr
 	}
 
 	// Execute template to buffer
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, data); err != nil {
-		return nil, wrapTemplateError(err, templatePath)
+		renderErr = wrapTemplateError(err, templatePath)
+		return nil, renderErr
 	}
 
 	return buf.Bytes(), nil

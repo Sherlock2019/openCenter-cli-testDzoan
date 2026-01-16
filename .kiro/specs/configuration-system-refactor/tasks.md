@@ -443,13 +443,13 @@ The MCP server is a new capability (not a refactor of existing functionality) th
   - Track feature flag evaluation
   - _Requirements: 8.6_
 
-- [ ] Add metrics for system performance
+- [x] Add metrics for system performance
   - Template rendering times
   - Configuration building times
   - GitOps generation times
   - _Requirements: 9.6_
 
-- [ ] Create troubleshooting guide
+- [x] Create troubleshooting guide
   - Common issues and solutions
   - Debug mode usage
   - Log analysis tips
