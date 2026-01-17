@@ -70,8 +70,8 @@ func TestConfigGenerator_GenerateConfig(t *testing.T) {
 	t.Run("generates valid security config", func(t *testing.T) {
 		cfg := gen.GenerateConfig("openstack")
 
-		assert.True(t, cfg.Security.K8sHardening)
-		assert.True(t, cfg.Security.OSHardening)
+		assert.True(t, cfg.OpenCenter.Cluster.Kubernetes.Security.K8sHardening)
+		assert.True(t, cfg.OpenCenter.Cluster.Networking.Security.OSHardening)
 	})
 }
 
@@ -918,8 +918,8 @@ func TestScenarioGenerator_GenerateComplianceScenario(t *testing.T) {
 		assert.True(t, scenario["encryption_at_rest"].(bool))
 
 		cfg := scenario["config"].(config.Config)
-		assert.True(t, cfg.Security.K8sHardening)
-		assert.True(t, cfg.Security.OSHardening)
+		assert.True(t, cfg.OpenCenter.Cluster.Kubernetes.Security.K8sHardening)
+		assert.True(t, cfg.OpenCenter.Cluster.Networking.Security.OSHardening)
 		assert.True(t, cfg.OpenCenter.Cluster.Kubernetes.KubeletRotateServerCerts)
 	})
 }

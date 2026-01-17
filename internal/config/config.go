@@ -38,7 +38,6 @@ type Config struct {
 	OpenTofu      SimplifiedOpenTofu   `yaml:"opentofu" json:"opentofu"`
 	Secrets       Secrets              `yaml:"secrets" json:"secrets"`
 	Networking    Networking           `yaml:"networking,omitempty" json:"networking,omitempty"`
-	Security      Security             `yaml:"security,omitempty" json:"security,omitempty"`
 	Deployment    Deployment           `yaml:"deployment,omitempty" json:"deployment,omitempty"`
 	Overrides     map[string]any       `yaml:"overrides,omitempty" json:"overrides,omitempty"`
 	Metadata      ConfigMetadata       `yaml:"metadata,omitempty" json:"metadata,omitempty"`
@@ -219,10 +218,13 @@ func defaultConfig(name string) Config {
 					SubnetPods:               "10.42.0.0/16",
 					SubnetServices:           "10.43.0.0/16",
 					LoadbalancerProvider:     "ovn",
-					DNSZoneName:              fmt.Sprintf("%s.%s.k8s.opencenter.cloud", name, region),
 					MasterCount:              3,
 					WorkerCount:              2,
 					WorkerCountWindows:       0,
+					Security: KubernetesSecurityConfig{
+						K8sHardening:          true,
+						PodSecurityExemptions: []string{"trivy-temp", "tigera-operator", "kube-system"},
+					},
 					NetworkPlugin: NetworkPlugin{
 						Calico: CalicoConfig{
 							Enabled:                   true,
@@ -407,12 +409,6 @@ func defaultConfig(name string) Config {
 					Region: "",
 				},
 			},
-		},
-		Security: Security{
-			CACertificates:        "",
-			K8sHardening:          true,
-			OSHardening:           true,
-			PodSecurityExemptions: []string{"trivy-temp"},
 		},
 		Deployment: Deployment{
 			AutoDeploy: true,

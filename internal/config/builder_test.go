@@ -113,11 +113,11 @@ func TestFluentAPIMethodChaining(t *testing.T) {
 		t.Errorf("Expected admin email 'admin@example.com', got '%s'", config.OpenCenter.Cluster.AdminEmail)
 	}
 
-	if !config.Security.K8sHardening {
+	if !config.OpenCenter.Cluster.Kubernetes.Security.K8sHardening {
 		t.Error("Expected K8s hardening to be enabled")
 	}
 
-	if !config.Security.OSHardening {
+	if !config.OpenCenter.Cluster.Networking.Security.OSHardening {
 		t.Error("Expected OS hardening to be enabled")
 	}
 
@@ -633,10 +633,10 @@ func TestConditionalConfigurationWhenProvider(t *testing.T) {
 
 			// Verify hardening configuration
 			if tt.expectHardening {
-				if !fluentBuilder.config.Security.K8sHardening {
+				if !fluentBuilder.config.OpenCenter.Cluster.Kubernetes.Security.K8sHardening {
 					t.Error("Expected K8s hardening to be enabled")
 				}
-				if !fluentBuilder.config.Security.OSHardening {
+				if !fluentBuilder.config.OpenCenter.Cluster.Networking.Security.OSHardening {
 					t.Error("Expected OS hardening to be enabled")
 				}
 			}
@@ -698,17 +698,17 @@ func TestConditionalConfigurationWhenProviderIn(t *testing.T) {
 
 			// Verify hardening configuration
 			if tt.expectHardening {
-				if !fluentBuilder.config.Security.K8sHardening {
+				if !fluentBuilder.config.OpenCenter.Cluster.Kubernetes.Security.K8sHardening {
 					t.Error("Expected K8s hardening to be enabled")
 				}
-				if !fluentBuilder.config.Security.OSHardening {
+				if !fluentBuilder.config.OpenCenter.Cluster.Networking.Security.OSHardening {
 					t.Error("Expected OS hardening to be enabled")
 				}
 			} else {
-				if fluentBuilder.config.Security.K8sHardening {
+				if fluentBuilder.config.OpenCenter.Cluster.Kubernetes.Security.K8sHardening {
 					t.Error("Expected K8s hardening to be disabled")
 				}
-				if fluentBuilder.config.Security.OSHardening {
+				if fluentBuilder.config.OpenCenter.Cluster.Networking.Security.OSHardening {
 					t.Error("Expected OS hardening to be disabled")
 				}
 			}
@@ -768,17 +768,17 @@ func TestConditionalConfigurationWhenNotProvider(t *testing.T) {
 
 			// Verify hardening configuration
 			if tt.expectHardening {
-				if !fluentBuilder.config.Security.K8sHardening {
+				if !fluentBuilder.config.OpenCenter.Cluster.Kubernetes.Security.K8sHardening {
 					t.Error("Expected K8s hardening to be enabled")
 				}
-				if !fluentBuilder.config.Security.OSHardening {
+				if !fluentBuilder.config.OpenCenter.Cluster.Networking.Security.OSHardening {
 					t.Error("Expected OS hardening to be enabled")
 				}
 			} else {
-				if fluentBuilder.config.Security.K8sHardening {
+				if fluentBuilder.config.OpenCenter.Cluster.Kubernetes.Security.K8sHardening {
 					t.Error("Expected K8s hardening to be disabled")
 				}
-				if fluentBuilder.config.Security.OSHardening {
+				if fluentBuilder.config.OpenCenter.Cluster.Networking.Security.OSHardening {
 					t.Error("Expected OS hardening to be disabled")
 				}
 			}
@@ -837,11 +837,11 @@ func TestConditionalConfigurationChaining(t *testing.T) {
 		t.Error("Expected OpenStack auth URL to be set")
 	}
 
-	if !config.Security.K8sHardening {
+	if !config.OpenCenter.Cluster.Kubernetes.Security.K8sHardening {
 		t.Error("Expected K8s hardening to be enabled")
 	}
 
-	if !config.Security.OSHardening {
+	if !config.OpenCenter.Cluster.Networking.Security.OSHardening {
 		t.Error("Expected OS hardening to be enabled")
 	}
 
@@ -882,7 +882,7 @@ func TestConditionalConfigurationNestedCallbacks(t *testing.T) {
 		t.Error("Expected OpenStack auth URL to be set from outer conditional")
 	}
 
-	if !fluentBuilder.config.Security.K8sHardening {
+	if !fluentBuilder.config.OpenCenter.Cluster.Kubernetes.Security.K8sHardening {
 		t.Error("Expected K8s hardening to be enabled from nested conditional")
 	}
 }
@@ -1001,7 +1001,7 @@ func TestConditionalConfigurationRealWorldScenario(t *testing.T) {
 			t.Errorf("Expected 5 masters, got %d", config.OpenCenter.Cluster.Kubernetes.MasterCount)
 		}
 
-		if !config.Security.K8sHardening || !config.Security.OSHardening {
+		if !config.OpenCenter.Cluster.Kubernetes.Security.K8sHardening || !config.OpenCenter.Cluster.Networking.Security.OSHardening {
 			t.Error("Expected hardening to be enabled for production")
 		}
 
@@ -1030,7 +1030,7 @@ func TestConditionalConfigurationRealWorldScenario(t *testing.T) {
 			t.Errorf("Expected 3 masters, got %d", config.OpenCenter.Cluster.Kubernetes.MasterCount)
 		}
 
-		if !config.Security.K8sHardening || !config.Security.OSHardening {
+		if !config.OpenCenter.Cluster.Kubernetes.Security.K8sHardening || !config.OpenCenter.Cluster.Networking.Security.OSHardening {
 			t.Error("Expected hardening to be enabled for production")
 		}
 	})
@@ -1053,7 +1053,7 @@ func TestConditionalConfigurationRealWorldScenario(t *testing.T) {
 			t.Errorf("Expected 1 master, got %d", fluentBuilder.config.OpenCenter.Cluster.Kubernetes.MasterCount)
 		}
 
-		if fluentBuilder.config.Security.K8sHardening || fluentBuilder.config.Security.OSHardening {
+		if fluentBuilder.config.OpenCenter.Cluster.Kubernetes.Security.K8sHardening || fluentBuilder.config.OpenCenter.Cluster.Networking.Security.OSHardening {
 			t.Error("Expected hardening to be disabled for development")
 		}
 

@@ -103,6 +103,10 @@ func TestConfig(t *testing.T) {
 		}
 		// Provide minimal required fields
 		cfg.OpenCenter.GitOps.GitDir = "testdata/gitops"
+		// Provide required secrets for enabled services
+		cfg.Secrets.Global.AWS.Infrastructure.AccessKey = "test-access-key"
+		cfg.Secrets.Global.AWS.Infrastructure.SecretAccessKey = "test-secret-key"
+		cfg.Secrets.Keycloak.AdminPassword = "test-password"
 		errs = Validate(cfg)
 		if len(errs) != 0 {
 			t.Errorf("unexpected validation errors: %v", errs)
@@ -128,6 +132,9 @@ func TestConfig(t *testing.T) {
 		// Provide credentials, expect no error from this rule (other rules already satisfied)
 		cfg.OpenCenter.Cluster.AWSAccessKey = "AKIA..."
 		cfg.OpenCenter.Cluster.AWSSecretAccessKey = "secret"
+		cfg.Secrets.Global.AWS.Infrastructure.AccessKey = "test-access-key"
+		cfg.Secrets.Global.AWS.Infrastructure.SecretAccessKey = "test-secret-key"
+		cfg.Secrets.Keycloak.AdminPassword = "test-password"
 		errs = Validate(cfg)
 		if len(errs) != 0 {
 			t.Errorf("unexpected validation errors with credentials set: %v", errs)

@@ -75,7 +75,7 @@ type ConfigBuilder interface {
 	WithDefaultStorageClass(class string) ConfigBuilder
 
 	// Security configuration
-	WithSecurityConfig(config Security) ConfigBuilder
+	WithSecurityConfig(config KubernetesSecurityConfig) ConfigBuilder
 	WithK8sHardening(enabled bool) ConfigBuilder
 	WithOSHardening(enabled bool) ConfigBuilder
 
@@ -358,21 +358,21 @@ func (b *FluentConfigBuilder) WithDefaultStorageClass(class string) ConfigBuilde
 	return b
 }
 
-// WithSecurityConfig sets the complete security configuration.
-func (b *FluentConfigBuilder) WithSecurityConfig(config Security) ConfigBuilder {
-	b.config.Security = config
+// WithSecurityConfig sets the Kubernetes security configuration.
+func (b *FluentConfigBuilder) WithSecurityConfig(config KubernetesSecurityConfig) ConfigBuilder {
+	b.config.OpenCenter.Cluster.Kubernetes.Security = config
 	return b
 }
 
 // WithK8sHardening enables or disables Kubernetes hardening.
 func (b *FluentConfigBuilder) WithK8sHardening(enabled bool) ConfigBuilder {
-	b.config.Security.K8sHardening = enabled
+	b.config.OpenCenter.Cluster.Kubernetes.Security.K8sHardening = enabled
 	return b
 }
 
-// WithOSHardening enables or disables OS hardening.
+// WithOSHardening enables or disables OS hardening at the cluster networking level.
 func (b *FluentConfigBuilder) WithOSHardening(enabled bool) ConfigBuilder {
-	b.config.Security.OSHardening = enabled
+	b.config.OpenCenter.Cluster.Networking.Security.OSHardening = enabled
 	return b
 }
 

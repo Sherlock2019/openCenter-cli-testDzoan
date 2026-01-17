@@ -39,7 +39,6 @@ func (g *ConfigGenerator) GenerateConfig(provider string) config.Config {
 		OpenCenter: g.generateOpenCenter(provider),
 		OpenTofu:   g.generateOpenTofu(provider),
 		Secrets:    g.generateSecrets(),
-		Security:   g.generateSecurity(),
 		Deployment: g.generateDeployment(),
 		Overrides:  make(map[string]any),
 	}
@@ -94,10 +93,6 @@ func (g *ConfigGenerator) GenerateMinimalConfig(provider string) config.Config {
 				Public:  "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC test@host",
 				Cypher:  "rsa",
 			},
-		},
-		Security: config.Security{
-			K8sHardening: true,
-			OSHardening:  true,
 		},
 		Deployment: config.Deployment{
 			AutoDeploy: false,
@@ -1180,8 +1175,8 @@ func (g *ScenarioGenerator) GenerateComplianceScenario(provider string, framewor
 	securityConfig := securityGen.GenerateSecurityConfig()
 
 	// Ensure compliance-required settings
-	cfg.Security.K8sHardening = true
-	cfg.Security.OSHardening = true
+	cfg.OpenCenter.Cluster.Kubernetes.Security.K8sHardening = true
+	cfg.OpenCenter.Cluster.Networking.Security.OSHardening = true
 	cfg.OpenCenter.Cluster.Kubernetes.KubeletRotateServerCerts = true
 
 	return map[string]interface{}{

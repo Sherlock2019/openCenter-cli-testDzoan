@@ -92,9 +92,11 @@ func TestExtractOpenStack(t *testing.T) {
 						ApplicationCredentialSecret: "test-app-cred-secret",
 						Domain:                      "Default",
 						TenantName:                  "test-tenant",
-						FloatingNetworkId:           "net-12345",
-						SubnetId:                    "subnet-67890",
 						Insecure:                    true,
+						Networking: config.OpenStackNetworkingConfig{
+							FloatingNetworkId: "net-12345",
+							SubnetId:          "subnet-67890",
+						},
 					},
 				},
 			},

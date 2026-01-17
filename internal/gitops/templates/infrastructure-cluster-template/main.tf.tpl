@@ -15,8 +15,8 @@ locals {
   openstack_project_domain_name           = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.ProjectDomainName | default "rackspace_cloud_domain" }}"
   openstack_user_domain_name              = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.UserDomainName | default "rackspace_cloud_domain" }}"
   openstack_tenant_name                   = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.TenantName | default "f2823901-4194-40c7-9dc4-d56d2105e81a" }}"
-  floatingip_pool                         = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.FloatingIPPool | default "PUBLICNET" }}"
-  router_external_network_id              = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.RouterExternalNetworkID | default "723f8fa2-dbf7-4cec-8d5f-017e62c12f79" }}"
+  floatingip_pool                         = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.Networking.FloatingIPPool | default "PUBLICNET" }}"
+  router_external_network_id              = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.Networking.RouterExternalNetworkID | default "723f8fa2-dbf7-4cec-8d5f-017e62c12f79" }}"
   # VLAN settings
   vlan_id                                 = "{{ .OpenCenter.Cluster.Kubernetes.Networking.VLAN.ID | default "" }}"
   mtu                                     = "{{ .OpenCenter.Cluster.Kubernetes.Networking.VLAN.MTU | default "" }}"
@@ -51,7 +51,7 @@ locals {
   image_id_windows                        = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.ImageIDWindows | default "a2083759-f341-445b-b717-dafb5e31fa6b" }}"
 {{- end }}
   k8s_api_port                            = {{ .OpenCenter.Cluster.Kubernetes.APIPort | default 443 }}
-  k8s_api_port_acl                        = {{ if .OpenCenter.Cluster.K8sAPIPortACL }}[{{ range $i, $acl := .OpenCenter.Cluster.K8sAPIPortACL }}{{if $i}}, {{end}}"{{ $acl }}"{{ end }}]{{ else }}["0.0.0.0/0"]{{ end }}
+  k8s_api_port_acl                        = {{ if .OpenCenter.Cluster.Networking.K8sAPIPortACL }}[{{ range $i, $acl := .OpenCenter.Cluster.Networking.K8sAPIPortACL }}{{if $i}}, {{end}}"{{ $acl }}"{{ end }}]{{ else }}["0.0.0.0/0"]{{ end }}
   worker_count                            = {{ .OpenCenter.Cluster.Kubernetes.WorkerCount | default 4 }}
   worker_count_windows                    = {{ .OpenCenter.Cluster.Kubernetes.WorkerCountWindows | default 0 }}
   # Enter 1 or 3 masters.
@@ -125,7 +125,7 @@ locals {
 
   # ===================================
   #ca_certificates add CA certificates to server's trusts. Good for trusting internal private Certificate Authorities.
-  ca_certificates                         = "{{ .Security.CACertificates | default "" }}"
+  ca_certificates                         = "{{ .OpenCenter.Cluster.Networking.Security.CACertificates | default "" }}"
   openstack_ca                            = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.CA | default "" }}"
 
   # ====================================
@@ -137,10 +137,10 @@ locals {
   #kub-vip settings
   kube_vip_enabled                        = {{ .OpenCenter.Cluster.Kubernetes.KubeVIPEnabled | default true }}
   #Hardening
-  k8s_hardening_enabled                   = {{ .Security.K8sHardening | default true }}
-  kube_pod_security_exemptions_namespaces = {{ if .Security.PodSecurityExemptions }}[{{ range $i, $ns := .Security.PodSecurityExemptions }}{{if $i}}, {{end}}"{{ $ns }}"{{ end }}]{{ else }}["trivy-temp"]{{ end }}
+  k8s_hardening_enabled                   = {{ .OpenCenter.Cluster.Kubernetes.Security.K8sHardening | default true }}
+  kube_pod_security_exemptions_namespaces = {{ if .OpenCenter.Cluster.Kubernetes.Security.PodSecurityExemptions }}[{{ range $i, $ns := .OpenCenter.Cluster.Kubernetes.Security.PodSecurityExemptions }}{{if $i}}, {{end}}"{{ $ns }}"{{ end }}]{{ else }}["trivy-temp"]{{ end }}
   kubelet_rotate_server_certificates      = {{ .OpenCenter.Cluster.Kubernetes.KubeletRotateServerCerts }}
-  os_hardening_enabled                    = {{ .Security.OSHardening | default true }}
+  os_hardening_enabled                    = {{ .OpenCenter.Cluster.Networking.Security.OSHardening | default true }}
 
   {{- if .OpenCenter.Cluster.Kubernetes.OIDC.Enabled }}
   #OIDC Settings
@@ -276,7 +276,7 @@ module "openstack-nova" {
   image_id                      = local.image_id
   image_id_windows              = local.image_id_windows
   router_external_network_id    = local.router_external_network_id
-  network_id                    = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.NetworkID | default "" }}"
+  network_id                    = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.Networking.NetworkID | default "" }}"
   vlan_id                       = local.vlan_id
   vrrp_enabled                  = local.vrrp_enabled
   vrrp_ip                       = local.vrrp_ip
