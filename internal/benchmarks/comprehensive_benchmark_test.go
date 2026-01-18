@@ -33,35 +33,6 @@ import (
 	testingpkg "github.com/rackerlabs/openCenter-cli/internal/testing"
 )
 
-// BenchmarkTemplateRendering_Legacy benchmarks the legacy template rendering implementation.
-// This provides a baseline for comparing the new template engine performance.
-//
-// Validates: Requirement 9.1 (caching), 9.3 (parallel processing)
-func BenchmarkTemplateRendering_Legacy(b *testing.B) {
-	tmpDir := b.TempDir()
-
-	// Create test templates
-	templates := createTestTemplates(b, tmpDir)
-	testData := createTestData()
-
-	for name, templatePath := range templates {
-		b.Run(name, func(b *testing.B) {
-			data := testData[name]
-
-			b.ResetTimer()
-			b.ReportAllocs()
-
-			for i := 0; i < b.N; i++ {
-				// Legacy rendering (direct text/template usage)
-				_, err := template.RenderTemplateString(name, readTemplateFile(b, templatePath), data)
-				if err != nil {
-					b.Fatalf("legacy render failed: %v", err)
-				}
-			}
-		})
-	}
-}
-
 // BenchmarkTemplateRendering_New benchmarks the new template engine implementation.
 // This demonstrates performance improvements from caching and optimizations.
 //
