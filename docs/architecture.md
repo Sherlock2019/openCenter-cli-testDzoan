@@ -1,10 +1,12 @@
 # openCenter Architecture
 
+> **Note:** This document contains historical references to feature flags and legacy systems that have been removed. These sections are preserved for historical context but no longer apply to the current system. For current architecture information, focus on the "Modular Architecture Components" section and ignore references to feature flags or legacy compatibility layers.
+
 ## Overview
 
 openCenter is designed as a modular, extensible CLI tool that transforms declarative YAML configurations into fully-functional GitOps repositories. The architecture emphasizes separation of concerns, testability, and extensibility through clean abstractions and well-defined interfaces.
 
-**Architecture Status:** The system is undergoing a comprehensive refactor to introduce modular components with feature flags for gradual adoption. The new architecture is production-ready and available via feature flags.
+**Architecture Status:** The system has completed its refactor to a modular architecture. All legacy code and feature flags have been removed. The system now uses the refactored implementation exclusively.
 
 ## High-Level Architecture
 
