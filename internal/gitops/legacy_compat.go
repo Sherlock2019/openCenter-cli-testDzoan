@@ -20,9 +20,10 @@ import (
 )
 
 // usePipelineGenerator checks if the new pipeline-based generation system should be used.
-// This delegates to the centralized feature flag system.
+// Note: Feature flags have been removed. This now always returns false (use legacy).
+// This file will be removed in Task 2.4.
 func usePipelineGenerator() bool {
-	return config.UsePipelineGenerator()
+	return false
 }
 
 // GenerateGitOpsRepository is a compatibility wrapper that provides a unified interface

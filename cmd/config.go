@@ -47,7 +47,6 @@ Configuration values can be accessed and modified using dot notation (e.g., logg
 	cmd.AddCommand(newConfigResetCmd())
 	cmd.AddCommand(newConfigPathCmd())
 	cmd.AddCommand(newConfigIDECmd())
-	cmd.AddCommand(newConfigFeaturesCmd())
 
 	return cmd
 }
