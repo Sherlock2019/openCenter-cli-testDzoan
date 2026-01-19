@@ -1,85 +1,112 @@
-# IDE Integration Guide
+# IDE Integration
 
-This guide explains how to set up IDE integration for openCenter cluster configuration files with autocomplete, validation, and documentation support.
+**doc_type: how-to**
 
-## Overview
+This guide shows you how to set up IDE integration for openCenter cluster configuration files with autocomplete, validation, and inline documentation.
 
-openCenter provides comprehensive IDE integration through JSON Schema and YAML language server support. This enables:
+## Who This Is For
 
-- **Autocomplete**: Intelligent code completion for configuration keys and values
-- **Validation**: Real-time validation against the cluster configuration schema
-- **Documentation**: Inline documentation and hover information for all configuration options
-- **Error Detection**: Immediate feedback on configuration errors and typos
+Developers and operators who edit openCenter cluster configuration files and want IDE support for faster, error-free configuration.
 
-## Supported IDEs
+## What You Get
 
-### Visual Studio Code
+- **Autocomplete**: Intelligent suggestions for configuration keys and values
+- **Validation**: Real-time error detection against the JSON schema
+- **Documentation**: Hover tooltips with field descriptions and constraints
+- **Error Detection**: Immediate feedback on typos and invalid values
 
-VS Code has the best support for openCenter configuration files through the YAML extension.
+## Quick Setup
 
-#### Setup
+Run the IDE integration command:
 
-1. Install the [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) by Red Hat:
+```bash
+openCenter config ide
+```
+
+This generates the JSON schema and configures VS Code automatically. For other IDEs, see the sections below.
+
+## Visual Studio Code
+
+VS Code has the best support through the YAML extension.
+
+### Setup Steps
+
+1. Install the YAML extension:
    ```bash
    code --install-extension redhat.vscode-yaml
    ```
 
-2. The workspace settings in `.vscode/settings.json` are pre-configured to:
-   - Associate the cluster schema with configuration files
-   - Enable YAML validation and completion
-   - Configure formatting options
-   - Support SOPS encrypted values
+2. Run the setup command:
+   ```bash
+   openCenter config ide --ide=vscode
+   ```
 
-3. Generate the latest schema:
+3. Restart VS Code
+
+4. Open any `*-config.yaml` file and start typing
+
+### Features
+
+- **Autocomplete**: Press `Ctrl+Space` (or `Cmd+Space` on macOS)
+- **Validation**: Errors appear as you type
+- **Hover Docs**: Hover over any key for descriptions
+- **Format**: Press `Shift+Alt+F` to format YAML
+
+### Manual Configuration
+
+If the automatic setup doesn't work, add this to `.vscode/settings.json`:
+
+```json
+{
+  "yaml.schemas": {
+    "./schema/cluster.schema.json": [
+      "**/clusters/**/*.yaml",
+      "**/clusters/**/*-config.yaml",
+      "**/.opencenter.yaml"
+    ]
+  },
+  "yaml.validate": true,
+  "yaml.completion": true,
+  "yaml.format.enable": true
+}
+```
+
+## JetBrains IDEs
+
+IntelliJ IDEA, PyCharm, WebStorm, and other JetBrains IDEs have built-in JSON Schema support.
+
+### Setup Steps
+
+1. Generate the schema:
    ```bash
    openCenter cluster schema --out schema/cluster.schema.json
    ```
 
-4. Open any cluster configuration file (e.g., `*-config.yaml`) and enjoy autocomplete!
+2. Open **Settings/Preferences** → **Languages & Frameworks** → **Schemas and DTDs** → **JSON Schema Mappings**
 
-#### Features
-
-- **Autocomplete**: Press `Ctrl+Space` to see available configuration options
-- **Validation**: Errors and warnings appear in real-time as you type
-- **Hover Documentation**: Hover over any key to see its description and constraints
-- **Go to Definition**: Jump to schema definitions with `F12`
-- **Format Document**: Format YAML with `Shift+Alt+F`
-
-### JetBrains IDEs (IntelliJ IDEA, PyCharm, WebStorm, etc.)
-
-JetBrains IDEs have built-in JSON Schema support.
-
-#### Setup
-
-1. Open Settings/Preferences → Languages & Frameworks → Schemas and DTDs → JSON Schema Mappings
-
-2. Add a new mapping:
+3. Click **+** to add a new mapping:
    - **Name**: openCenter Cluster Configuration
-   - **Schema file or URL**: `schema/cluster.schema.json` (relative to project root)
+   - **Schema file or URL**: `schema/cluster.schema.json`
    - **Schema version**: JSON Schema version 7
 
-3. Add file patterns:
+4. Add file patterns (click **+** in the bottom section):
    - `**/clusters/**/*.yaml`
    - `**/clusters/**/*-config.yaml`
    - `**/.opencenter.yaml`
 
-4. Generate the latest schema:
-   ```bash
-   openCenter cluster schema --out schema/cluster.schema.json
-   ```
+5. Click **Apply** and restart your IDE
 
-#### Features
+### Features
 
-- **Autocomplete**: Press `Ctrl+Space` for code completion
-- **Validation**: Real-time validation with error highlighting
-- **Quick Documentation**: Press `Ctrl+Q` to view documentation
-- **Reformat Code**: Press `Ctrl+Alt+L` to format YAML
+- **Autocomplete**: Press `Ctrl+Space`
+- **Quick Documentation**: Press `Ctrl+Q` (Windows/Linux) or `F1` (macOS)
+- **Reformat**: Press `Ctrl+Alt+L` (Windows/Linux) or `Cmd+Option+L` (macOS)
 
-### Vim/Neovim
+## Vim/Neovim
 
-Vim and Neovim can use the YAML language server for schema support.
+Use the YAML language server with coc.nvim or nvim-lspconfig.
 
-#### Setup with coc.nvim
+### Option 1: coc.nvim
 
 1. Install [coc.nvim](https://github.com/neoclide/coc.nvim)
 
@@ -88,7 +115,7 @@ Vim and Neovim can use the YAML language server for schema support.
    :CocInstall coc-yaml
    ```
 
-3. Configure coc-settings.json:
+3. Add to `coc-settings.json` (`:CocConfig`):
    ```json
    {
      "yaml.schemas": {
@@ -103,12 +130,12 @@ Vim and Neovim can use the YAML language server for schema support.
    }
    ```
 
-4. Generate the latest schema:
+4. Generate the schema:
    ```bash
    openCenter cluster schema --out schema/cluster.schema.json
    ```
 
-#### Setup with nvim-lspconfig
+### Option 2: nvim-lspconfig
 
 1. Install [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig)
 
@@ -117,7 +144,7 @@ Vim and Neovim can use the YAML language server for schema support.
    npm install -g yaml-language-server
    ```
 
-3. Configure in your `init.lua`:
+3. Add to `init.lua`:
    ```lua
    require'lspconfig'.yamlls.setup{
      settings = {
@@ -136,11 +163,16 @@ Vim and Neovim can use the YAML language server for schema support.
    }
    ```
 
-### Emacs
+4. Generate the schema:
+   ```bash
+   openCenter cluster schema --out schema/cluster.schema.json
+   ```
 
-Emacs can use the YAML language server through lsp-mode.
+## Emacs
 
-#### Setup
+Use lsp-mode with yaml-language-server.
+
+### Setup Steps
 
 1. Install [lsp-mode](https://github.com/emacs-lsp/lsp-mode)
 
@@ -149,63 +181,104 @@ Emacs can use the YAML language server through lsp-mode.
    npm install -g yaml-language-server
    ```
 
-3. Configure in your init.el:
+3. Add to `init.el`:
    ```elisp
    (use-package lsp-mode
      :hook (yaml-mode . lsp)
      :config
      (setq lsp-yaml-schemas
            '(:cluster "./schema/cluster.schema.json")))
-   ```
-
-4. Add file associations:
-   ```elisp
+   
    (add-to-list 'auto-mode-alist '("\\*-config\\.yaml\\'" . yaml-mode))
    (add-to-list 'auto-mode-alist '("\\.opencenter\\.yaml\\'" . yaml-mode))
    ```
 
-## Schema Generation
+4. Generate the schema:
+   ```bash
+   openCenter cluster schema --out schema/cluster.schema.json
+   ```
 
-The JSON schema is generated from the Go struct definitions and includes:
+5. Restart Emacs
 
-- **Type validation**: Ensures correct data types for all fields
-- **Pattern validation**: Validates formats like CIDR blocks, UUIDs, and hostnames
-- **Range validation**: Enforces minimum/maximum values for numeric fields
-- **Enum validation**: Restricts values to predefined options
-- **Required fields**: Identifies mandatory configuration options
-- **Descriptions**: Provides inline documentation for all fields
+## Schema Management
+
+The JSON schema is generated from Go struct definitions and includes type validation, pattern matching, and inline documentation.
 
 ### Generating the Schema
 
-Generate the latest schema with:
+Generate or update the schema:
 
 ```bash
 # Generate to default location
 openCenter cluster schema --out schema/cluster.schema.json
 
-# Generate with pretty formatting (default)
+# Pretty-print (default)
 openCenter cluster schema --out schema/cluster.schema.json --pretty
 
-# View schema version
+# Check schema version
 openCenter cluster schema --version
 ```
 
-### Schema Versioning
+The schema includes:
+- Type validation for all fields
+- Pattern validation for CIDR blocks, UUIDs, hostnames
+- Range validation for numeric fields
+- Enum validation for predefined options
+- Required field markers
+- Field descriptions and constraints
 
-The schema includes version information for backward compatibility tracking:
+### When to Regenerate
+
+Regenerate the schema after:
+- Updating openCenter to a new version
+- Adding custom service types
+- Modifying configuration structs
+- Changing validation rules
+
+Commit the updated schema to version control so your team uses the same validation rules.
+
+## Using the openCenter Config IDE Command
+
+The `openCenter config ide` command automates IDE setup.
+
+### Basic Usage
 
 ```bash
-openCenter cluster schema --version
-# Output: Schema version: 1.0.0
+# Auto-detect IDE and configure
+openCenter config ide
+
+# Target specific IDE
+openCenter config ide --ide=vscode
+openCenter config ide --ide=jetbrains
+openCenter config ide --ide=vim
+openCenter config ide --ide=emacs
+
+# Generate schema only
+openCenter config ide --schema-only
+
+# Show setup instructions
+openCenter config ide --show-instructions
+openCenter config ide --show-instructions --ide=vim
 ```
+
+### What It Does
+
+1. Generates the latest JSON schema
+2. Creates IDE-specific configuration files (VS Code only)
+3. Sets up schema associations
+4. Configures YAML validation and formatting
+
+For VS Code, it creates or updates `.vscode/settings.json` with:
+- Schema associations for cluster config files
+- YAML validation and completion settings
+- SOPS custom tags support
+- Format-on-save configuration
 
 ## YAML Linting
 
-The project includes a `.yamllint` configuration file for consistent YAML formatting.
+The project includes `.yamllint` for consistent formatting.
 
-### Using yamllint
-
-Install yamllint:
+### Install yamllint
 
 ```bash
 # macOS
@@ -214,113 +287,166 @@ brew install yamllint
 # Linux
 pip install yamllint
 
-# Verify installation
+# Verify
 yamllint --version
 ```
 
-Lint your configuration files:
+### Lint Your Configs
 
 ```bash
 # Lint a specific file
 yamllint ~/.config/openCenter/clusters/myorg/my-cluster/.my-cluster-config.yaml
 
-# Lint all cluster configurations
+# Lint all cluster configs
 yamllint ~/.config/openCenter/clusters/
 
-# Auto-fix issues (if supported by your editor)
-yamllint --format auto ~/.config/openCenter/clusters/
+# Check from project root
+yamllint testdata/
 ```
+
+The `.yamllint` configuration enforces:
+- 2-space indentation
+- Line length limits
+- Consistent key ordering
+- Proper quoting rules
 
 ## Troubleshooting
 
 ### Schema Not Loading
 
-**Problem**: IDE doesn't show autocomplete or validation
+**Symptom**: No autocomplete or validation in your IDE
 
 **Solutions**:
-1. Verify the schema file exists: `ls -la schema/cluster.schema.json`
-2. Regenerate the schema: `openCenter cluster schema --out schema/cluster.schema.json`
+1. Check the schema file exists:
+   ```bash
+   ls -la schema/cluster.schema.json
+   ```
+
+2. Regenerate the schema:
+   ```bash
+   openCenter cluster schema --out schema/cluster.schema.json
+   ```
+
 3. Restart your IDE or reload the window
-4. Check IDE logs for schema loading errors
 
-### Validation Errors
+4. Check IDE logs for schema loading errors:
+   - VS Code: View → Output → YAML Support
+   - JetBrains: Help → Show Log in Finder/Explorer
 
-**Problem**: IDE shows validation errors for valid configuration
+### Validation Errors on Valid Config
+
+**Symptom**: IDE shows errors for configuration that passes `openCenter cluster validate`
 
 **Solutions**:
-1. Ensure you're using the latest schema version
-2. Check if the file matches the schema file patterns
-3. Verify the schema version matches your openCenter version
-4. Review the error message for specific validation failures
+1. Ensure schema version matches openCenter version:
+   ```bash
+   openCenter cluster schema --version
+   openCenter version
+   ```
+
+2. Regenerate schema after updating openCenter:
+   ```bash
+   openCenter cluster schema --out schema/cluster.schema.json
+   ```
+
+3. Check file path matches schema patterns (must contain `clusters/` or end with `-config.yaml`)
 
 ### Autocomplete Not Working
 
-**Problem**: No autocomplete suggestions appear
+**Symptom**: No suggestions when typing
 
 **Solutions**:
-1. Verify the YAML language server is installed and running
-2. Check that the file extension is `.yaml` or `.yml`
-3. Ensure the file path matches the schema file patterns
-4. Try triggering autocomplete manually (Ctrl+Space in most IDEs)
+1. Verify YAML language server is running:
+   - VS Code: Check Output → YAML Support
+   - Vim: Run `:CocInfo` or check LSP status
+
+2. Confirm file extension is `.yaml` or `.yml`
+
+3. Trigger autocomplete manually:
+   - VS Code: `Ctrl+Space` (Windows/Linux) or `Cmd+Space` (macOS)
+   - JetBrains: `Ctrl+Space`
+   - Vim: `Ctrl+X Ctrl+O` or let coc.nvim auto-trigger
+
+4. Check that the file path matches schema patterns
 
 ### Performance Issues
 
-**Problem**: IDE becomes slow when editing large configuration files
+**Symptom**: IDE becomes slow when editing large configs
 
 **Solutions**:
-1. Disable validation for large files temporarily
+1. Disable validation temporarily for large files
 2. Split large configurations into multiple files
-3. Increase IDE memory allocation
-4. Use a more lightweight editor for quick edits
+3. Increase IDE memory:
+   - VS Code: Add `"files.maxMemoryForLargeFilesMB": 4096` to settings
+   - JetBrains: Help → Edit Custom VM Options → increase `-Xmx`
+
+### SOPS Encrypted Values
+
+**Symptom**: Validation errors on encrypted values
+
+**Solution**: The schema supports SOPS encrypted values. Ensure your IDE recognizes custom YAML tags:
+
+VS Code (`.vscode/settings.json`):
+```json
+{
+  "yaml.customTags": [
+    "!vault",
+    "!encrypted/pkcs1-oaep"
+  ]
+}
+```
 
 ## Best Practices
 
 ### Configuration Organization
 
-1. **Use organization-based structure**: Store configurations in `~/.config/openCenter/clusters/<org>/<cluster>/`
-2. **Version control**: Keep configurations in Git for history and collaboration
-3. **Encrypt secrets**: Use SOPS for sensitive values
-4. **Validate before commit**: Run `openCenter cluster validate` before committing changes
+1. Store configs in `~/.config/openCenter/clusters/<org>/<cluster>/`
+2. Use version control for all configuration files
+3. Encrypt secrets with SOPS before committing
+4. Run `openCenter cluster validate` before committing changes
 
-### Schema Updates
+### Schema Maintenance
 
-1. **Regenerate after updates**: Run schema generation after updating openCenter
-2. **Commit schema changes**: Include schema updates in version control
-3. **Document breaking changes**: Note schema version changes in commit messages
-4. **Test configurations**: Validate existing configurations after schema updates
+1. Regenerate schema after updating openCenter
+2. Commit schema changes with configuration changes
+3. Document breaking schema changes in commit messages
+4. Test existing configs after schema updates
 
 ### IDE Configuration
 
-1. **Enable format on save**: Automatically format YAML files on save
-2. **Configure auto-indent**: Use 2-space indentation for YAML
-3. **Enable validation**: Keep real-time validation enabled
-4. **Use snippets**: Create custom snippets for common configuration patterns
+1. Enable format-on-save for YAML files
+2. Use 2-space indentation (matches openCenter defaults)
+3. Keep real-time validation enabled
+4. Create snippets for common configuration patterns
 
-## Additional Resources
+### Example VS Code Snippet
+
+Add to `.vscode/opencenter.code-snippets`:
+
+```json
+{
+  "OpenCenter Service": {
+    "prefix": "oc-service",
+    "body": [
+      "${1:service-name}:",
+      "  enabled: ${2:true}",
+      "  namespace: ${3:$1}",
+      "  $0"
+    ],
+    "description": "Add an openCenter service"
+  }
+}
+```
+
+## Related Documentation
+
+- [Configuration Reference](../reference/configuration.md) - Complete configuration field reference
+- [CLI Commands](../reference/cli-commands.md) - All openCenter commands
+- [Adding Services](adding-services.md) - How to enable and configure services
+
+## External Resources
 
 - [JSON Schema Documentation](https://json-schema.org/)
 - [YAML Language Server](https://github.com/redhat-developer/yaml-language-server)
 - [VS Code YAML Extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)
-- [openCenter Documentation](https://docs.opencenter.cloud)
-- [openCenter GitHub Repository](https://github.com/rackerlabs/openCenter-cli)
-
-## Support
-
-For issues or questions about IDE integration:
-
-1. Check the [troubleshooting section](#troubleshooting) above
-2. Review the [openCenter documentation](https://docs.opencenter.cloud)
-3. Open an issue on [GitHub](https://github.com/rackerlabs/openCenter-cli/issues)
-4. Join the community discussions
-
-## Contributing
-
-To improve IDE integration:
-
-1. Enhance the JSON schema with additional validation rules
-2. Add support for more IDEs and editors
-3. Create IDE-specific plugins or extensions
-4. Improve documentation and examples
-5. Report bugs and suggest features
-
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution guidelines.
+- [openCenter GitHub](https://github.com/rackerlabs/openCenter-cli)

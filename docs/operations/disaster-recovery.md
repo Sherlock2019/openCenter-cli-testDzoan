@@ -1,5 +1,7 @@
 # Disaster Recovery Guide
 
+**doc_type: how-to**
+
 This guide provides procedures for backing up and recovering openCenter cluster configurations in disaster scenarios.
 
 ## Overview

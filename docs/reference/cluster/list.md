@@ -1,102 +1,156 @@
-# `openCenter cluster list` - List Configured Clusters
+# cluster list
+
+**doc_type:** reference
+
+List all configured clusters across all organizations.
 
 ## Synopsis
+
 ```bash
-openCenter cluster list [OPTIONS]
+openCenter cluster list [flags]
 ```
+
+## Aliases
+
+- `ls`
 
 ## Description
 
-List all configured clusters from the configuration directory. Clusters are displayed in `organization/cluster` format when they belong to an organization, or just the cluster name for legacy clusters.
+The `cluster list` command retrieves and displays the names of all configured clusters from the configuration directory. It supports both organization-based and legacy directory structures.
 
-This command retrieves cluster names from all organization directories under `~/.config/openCenter/clusters/` and displays them in a simple, parseable format.
+The active cluster is indicated with an asterisk (`*`) prefix.
 
-## Options
+## Flags
 
-### `--json`
-- **Description**: Output cluster names as a JSON array for machine-readable consumption
-- **Type**: Boolean
-- **Default**: `false`
-
-### `-h, --help`
-- **Description**: Display help information for this subcommand
+- `--json` - Output cluster names as JSON array
 
 ## Examples
 
-### Basic usage
+```bash
+# List all clusters
+openCenter cluster list
+
+# List clusters using alias
+openCenter cluster ls
+
+# Output as JSON for scripting
+openCenter cluster list --json
+```
+
+## Output Format
+
+### Default (Plain Text)
+
+```
+* my-cluster
+  prod-cluster
+  staging-cluster
+  test-cluster
+```
+
+The asterisk (`*`) indicates the currently active cluster.
+
+### JSON Format
+
+```json
+[
+  "my-cluster",
+  "prod-cluster",
+  "staging-cluster",
+  "test-cluster"
+]
+```
+
+## Directory Structure Support
+
+The command discovers clusters from multiple directory structures:
+
+### Organization-Based Structure
+```
+~/.config/openCenter/clusters/<organization>/
+└── .<cluster>-config.yaml
+```
+
+### Legacy Structure
+```
+~/.config/openCenter/clusters/<cluster>/
+└── .<cluster>-config.yaml
+```
+
+### Flat Structure
+```
+~/.config/openCenter/
+└── .<cluster>-config.yaml
+```
+
+## Active Cluster Indicator
+
+The active cluster is marked with an asterisk (`*`) in plain text output:
+
+```
+* my-cluster      ← Active cluster
+  other-cluster
+```
+
+To set the active cluster:
+```bash
+openCenter cluster select my-cluster
+```
+
+## Sorting
+
+Cluster names are sorted alphabetically for consistent output.
+
+## Use Cases
+
+### Quick Cluster Discovery
 ```bash
 openCenter cluster list
 ```
-Output:
-```
-production/prod-cluster
-production/staging-cluster
-development/dev-cluster
-my-cluster
+
+### Scripting Integration
+```bash
+# Get all cluster names as JSON array
+CLUSTERS=$(openCenter cluster list --json)
+
+# Iterate over clusters
+for cluster in $(openCenter cluster list --json | jq -r '.[]'); do
+  echo "Processing $cluster"
+  openCenter cluster validate "$cluster"
+done
 ```
 
-### JSON output
+### Check Active Cluster
 ```bash
-openCenter cluster list --json
-```
-Output:
-```json
-["production/prod-cluster","production/staging-cluster","development/dev-cluster","my-cluster"]
+# Find active cluster
+ACTIVE=$(openCenter cluster list | grep '^\*' | sed 's/^\* //')
+echo "Active cluster: $ACTIVE"
 ```
 
-### Using alias
+### Count Clusters
 ```bash
-openCenter cluster ls
-```
-The `ls` alias provides the same functionality as `list`.
-
-### Filtering with grep
-```bash
-openCenter cluster list | grep production
-```
-Filter clusters to show only those in the production organization.
-
-### Count clusters
-```bash
+# Count total clusters
 openCenter cluster list | wc -l
-```
-Count the total number of configured clusters.
 
-## Output
-
-### Plain Text Format (Default)
-One cluster name per line, in `organization/cluster` format:
-```
-org1/cluster1
-org1/cluster2
-org2/cluster3
-standalone-cluster
+# Count using JSON
+openCenter cluster list --json | jq 'length'
 ```
 
-### JSON Format (--json)
-Array of cluster names as JSON:
-```json
-["org1/cluster1", "org1/cluster2", "org2/cluster3", "standalone-cluster"]
+## Error Handling
+
+**No clusters found:**
+```
+# No output (empty list)
 ```
 
-## Exit Codes
-
-- `0` - Success
-- `1` - Error listing clusters
-
-## Notes
-
-- Clusters are listed in the format `organization/cluster` for organization-based clusters
-- Legacy clusters (without organization) are listed with just the cluster name
-- The output is sorted alphabetically
-- Empty output indicates no clusters are configured
-- Use `--json` flag for scripting and automation
-- The command reads from `~/.config/openCenter/clusters/` by default
-- Override config directory with `OPENCENTER_CONFIG_DIR` environment variable
+**Configuration directory not found:**
+```
+Error: failed to list clusters: configuration directory not found
+```
 
 ## See Also
 
-- `openCenter cluster select` - Select the active cluster
-- `openCenter cluster current` - Show current active cluster
-- `openCenter cluster info` - Show detailed cluster information
-- `openCenter cluster init` - Initialize a new cluster
+- [cluster select](../cli-commands.md#cluster-select) - Set active cluster
+- [cluster current](../cli-commands.md#cluster-current) - Display active cluster
+- [cluster info](info.md) - Display cluster information
+- [cluster init](init.md) - Initialize new cluster

@@ -34,8 +34,8 @@ func (pa *PipelineAdapter) Validate(ctx context.Context, config *Config) *Config
 	// TODO: Implement full validation pipeline
 	return &ConfigValidationResult{
 		Valid:    true,
-		Errors:   []ConfigValidationError{},
-		Warnings: []ConfigValidationError{},
+		Errors:   []*ConfigValidationError{},
+		Warnings: []*ConfigValidationError{},
 	}
 }
 
@@ -45,8 +45,8 @@ func (pa *PipelineAdapter) ValidateStructure(ctx context.Context, config *Config
 	// TODO: Implement structural validation
 	return &ConfigValidationResult{
 		Valid:    true,
-		Errors:   []ConfigValidationError{},
-		Warnings: []ConfigValidationError{},
+		Errors:   []*ConfigValidationError{},
+		Warnings: []*ConfigValidationError{},
 	}
 }
 
@@ -56,7 +56,29 @@ func (pa *PipelineAdapter) ValidateSemantics(ctx context.Context, config *Config
 	// TODO: Implement semantic validation
 	return &ConfigValidationResult{
 		Valid:    true,
-		Errors:   []ConfigValidationError{},
-		Warnings: []ConfigValidationError{},
+		Errors:   []*ConfigValidationError{},
+		Warnings: []*ConfigValidationError{},
+	}
+}
+
+// ValidateNetworking validates network plugin configuration.
+// This is a stub implementation that returns a valid result.
+func (pa *PipelineAdapter) ValidateNetworking(ctx context.Context, config *Config) *ConfigValidationResult {
+	// TODO: Implement networking validation
+	return &ConfigValidationResult{
+		Valid:    true,
+		Errors:   []*ConfigValidationError{},
+		Warnings: []*ConfigValidationError{},
+	}
+}
+
+// ValidateCloudProvider validates cloud provider specific configuration.
+// This is a stub implementation that returns a valid result.
+func (pa *PipelineAdapter) ValidateCloudProvider(ctx context.Context, config *Config) *ConfigValidationResult {
+	// TODO: Implement cloud provider validation
+	return &ConfigValidationResult{
+		Valid:    true,
+		Errors:   []*ConfigValidationError{},
+		Warnings: []*ConfigValidationError{},
 	}
 }

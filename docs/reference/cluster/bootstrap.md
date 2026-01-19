@@ -1,282 +1,177 @@
-# `openCenter cluster bootstrap` - Run Provider-Specific Bootstrap Actions
+# cluster bootstrap
+
+**doc_type:** reference
+
+Run provider-specific bootstrap actions to deploy cluster infrastructure.
 
 ## Synopsis
+
 ```bash
-openCenter cluster bootstrap [name] [OPTIONS]
+openCenter cluster bootstrap [name] [flags]
 ```
 
 ## Description
 
-Run provider-specific bootstrap actions to create and configure the cluster infrastructure. This command executes the necessary steps to bring up a cluster based on the configured infrastructure provider (OpenStack, AWS, GCP, Azure, Kind, etc.).
+The `cluster bootstrap` command executes provider-specific deployment actions to provision cluster infrastructure. It runs Terraform/OpenTofu for cloud providers or creates Kind clusters for local development.
 
-The bootstrap process varies by provider but typically includes infrastructure provisioning, cluster creation, and initial configuration.
+Bootstrap operations are stateful and resumable. The command tracks completed steps and can restart from a specific step if interrupted.
 
 ## Arguments
 
-### `[name]`
-- **Required/Optional**: Optional
-- **Description**: Name of the cluster (format: `cluster` or `organization/cluster`). If not provided, uses the currently active cluster
-- **Example**: `my-cluster` or `production/my-cluster`
+- `name` - Cluster name (optional if active cluster is set)
 
-## Options
+## Flags
 
-### `--dry-run`
-- **Description**: Show planned actions without executing them
-- **Type**: Boolean
-- **Default**: `false`
+- `--dry-run` - Show planned actions without executing
+- `--kubeconfig string` - Path to kubeconfig (default: "./kubeconfig.yaml")
+- `--log string` - Log file path (default: `<git_dir>/infrastructure/clusters/<name>/logs/bootstrap-YYYY-MM-DD-TIMESTAMP.log`)
+- `--container-runtime string` - Container runtime for Kind clusters (docker or podman)
+- `--restart` - Rerun all bootstrap steps and ignore saved state
+- `--step string` - Run a single bootstrap step by ID
+- `--from-step string` - Restart bootstrap from the specified step ID
 
-### `--kubeconfig <path>`
-- **Description**: Path to kubeconfig file used by bootstrap actions
-- **Type**: String
-- **Default**: `./kubeconfig.yaml`
+## Examples
 
-### `--log <path>`
-- **Description**: Log file path (defaults to `<git_dir>/infrastructure/clusters/<name>/bootstrap.log`)
-- **Type**: String
-- **Default**: Auto-generated based on cluster directory
+```bash
+# Bootstrap active cluster
+openCenter cluster bootstrap
 
-### `--container-runtime <runtime>`
-- **Description**: Container runtime for Kind clusters (docker or podman)
-- **Type**: String
-- **Default**: Determined by `CONTAINER_RUNTIME` or `KIND_EXPERIMENTAL_PROVIDER` environment variables, falls back to `docker`
-- **Valid Values**: `docker`, `podman`
+# Bootstrap specific cluster
+openCenter cluster bootstrap my-cluster
 
-### `-h, --help`
-- **Description**: Display help information for this subcommand
+# Bootstrap with specific kubeconfig
+openCenter cluster bootstrap my-cluster --kubeconfig=/path/to/kubeconfig
+
+# Bootstrap Kind cluster with Podman
+openCenter cluster bootstrap kind-cluster --container-runtime=podman
+
+# Dry-run mode
+openCenter cluster bootstrap my-cluster --dry-run
+
+# Restart from a specific step
+openCenter cluster bootstrap my-cluster --from-step=terraform-apply
+
+# Run only a specific step
+openCenter cluster bootstrap my-cluster --step=terraform-init
+
+# Restart all steps (ignore saved state)
+openCenter cluster bootstrap my-cluster --restart
+```
 
 ## Provider-Specific Behavior
 
 ### OpenStack, AWS, GCP, Azure
 
-For cloud providers, the bootstrap command runs `make` in the cluster's infrastructure directory:
+Bootstrap steps:
+1. `make-terraform` - Run make terraform in cluster directory
+2. `terraform-init` - Initialize Terraform
+3. `terraform-apply` - Apply Terraform configuration
 
-**Requirements**:
-- GitOps repository must be set up (`cluster setup`)
-- Infrastructure directory must exist
-- Makefile must be present in infrastructure directory
+Requirements:
+- GitOps directory must be configured (`gitops.git_dir`)
+- Cluster infrastructure directory must exist
+- Cloud provider credentials must be configured
 
-**Actions**:
-- Executes `make` in `<git_dir>/infrastructure/clusters/<cluster>/`
-- Provisions infrastructure using OpenTofu/Terraform
-- Configures networking and security groups
-- Creates cluster resources
+### Kind (Local Development)
 
-### Kind
+Bootstrap steps:
+1. `kind-create` - Create Kind cluster with custom configuration
+2. `kind-export-kubeconfig` - Export kubeconfig for cluster access
 
-For Kind (Kubernetes in Docker) clusters:
+Configuration:
+- Disables default CNI for custom network plugin installation
+- Pod subnet: `10.244.0.0/16`
+- Service subnet: `10.96.0.0/12`
+- Creates 1 control-plane node and 3 worker nodes
 
-**Requirements**:
-- Docker or Podman must be installed and running
-- Kind CLI must be available
+Container runtime resolution (in order):
+1. `--container-runtime` flag
+2. `CONTAINER_RUNTIME` environment variable
+3. `KIND_EXPERIMENTAL_PROVIDER` environment variable
+4. Default: `docker`
 
-**Actions**:
-- Creates Kind cluster with specified configuration
-- Disables default CNI for custom networking
-- Exports kubeconfig for cluster access
-- Configures multi-node cluster (1 control-plane + 3 workers)
+## State Management
 
-**Configuration**:
-```yaml
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-networking:
-  disableDefaultCNI: true
-  podSubnet: "10.244.0.0/16"
-  serviceSubnet: "10.96.0.0/12"
-nodes:
-- role: control-plane
-- role: worker
-- role: worker
-- role: worker
+Bootstrap state is saved to: `<git_dir>/infrastructure/clusters/<name>/logs/bootstrap-state.json`
+
+State tracking enables:
+- Resuming interrupted bootstrap operations
+- Skipping already-completed steps
+- Restarting from a specific step
+- Running individual steps for debugging
+
+State file format:
+```json
+{
+  "version": 1,
+  "steps": {
+    "step-id": {
+      "status": "success|failed|running|skipped",
+      "updated_at": "2026-01-18T14:30:00Z",
+      "error": "error message if failed"
+    }
+  }
+}
 ```
 
-## Examples
+## Logging
 
-### Bootstrap active cluster
-```bash
-openCenter cluster bootstrap
-```
+Bootstrap operations are logged to timestamped files:
+- Default location: `<git_dir>/infrastructure/clusters/<name>/logs/bootstrap-YYYY-MM-DD-TIMESTAMP.log`
+- Override with `--log` flag
+- Includes command output, timestamps, and progress indicators
+- Credentials are automatically masked in logs
 
-### Bootstrap specific cluster
-```bash
-openCenter cluster bootstrap my-cluster
-```
-
-### Dry run to see planned actions
-```bash
-openCenter cluster bootstrap my-cluster --dry-run
-```
-
-### Bootstrap with custom kubeconfig path
-```bash
-openCenter cluster bootstrap my-cluster --kubeconfig /path/to/kubeconfig
-```
-
-### Bootstrap Kind cluster with Podman
-```bash
-openCenter cluster bootstrap kind-cluster --container-runtime podman
-```
-
-### Bootstrap with custom log file
-```bash
-openCenter cluster bootstrap my-cluster --log /tmp/bootstrap.log
-```
-
-### Bootstrap Kind cluster using environment variable
-```bash
-CONTAINER_RUNTIME=podman openCenter cluster bootstrap kind-cluster
-```
-
-## Output
-
-### OpenStack/Cloud Provider
-
-```
-Running make in /home/user/.config/openCenter/clusters/production/gitops/infrastructure/clusters/prod-cluster
-$ make
-terraform init
-terraform plan
-terraform apply -auto-approve
-Bootstrap complete.
-Log written to /home/user/.config/openCenter/clusters/production/gitops/infrastructure/clusters/prod-cluster/bootstrap.log
-```
-
-### Kind Provider
-
-```
-Creating kind cluster "my-cluster" using docker
-$ KIND_EXPERIMENTAL_PROVIDER=docker kind create cluster --name my-cluster --config=-
-Creating cluster "my-cluster" ...
- ✓ Ensuring node image (kindest/node:v1.31.0) 🖼
- ✓ Preparing nodes 📦 📦 📦 📦
- ✓ Writing configuration 📜
- ✓ Starting control-plane 🕹️
- ✓ Installing StorageClass 💾
- ✓ Joining worker nodes 🚜
-Set kubectl context to "kind-my-cluster"
-$ kind export kubeconfig --name my-cluster
-Bootstrap complete.
-Log written to /home/user/.config/openCenter/clusters/dev/gitops/infrastructure/clusters/my-cluster/bootstrap.log
-```
-
-### Dry Run
-
-```
-$ make
-$ kind create cluster --name my-cluster --config=-
-$ kind export kubeconfig --name my-cluster
-Bootstrap complete.
-```
-
-## Bootstrap Log
-
-The bootstrap log contains:
-
-- Timestamp and cluster information
-- All executed commands with environment variables
-- Command output (stdout and stderr)
-- Error messages and exit codes
-
-Example log header:
+Log format:
 ```
 # openCenter bootstrap log
-# time: 2025-11-17T10:30:00Z
-# cluster: prod-cluster
-# dir: /home/user/.config/openCenter/clusters/production/gitops/infrastructure/clusters/prod-cluster
+# time: 2026-01-18T14:30:00Z
+# cluster: my-cluster
+# dir: /path/to/gitops/infrastructure/clusters/my-cluster
+
+$ terraform init
+...
 ```
 
-## Environment Variables
+## Long-Running Operations
 
-### CONTAINER_RUNTIME
-Specifies the container runtime for Kind clusters:
-```bash
-export CONTAINER_RUNTIME=podman
-openCenter cluster bootstrap kind-cluster
+For long-running commands (e.g., `terraform apply`):
+- Progress updates every 30 seconds
+- Elapsed time tracking
+- Completion time reporting
+- Output streaming to console and log file
+
+## Locking
+
+Bootstrap operations acquire an exclusive lock on the cluster to prevent concurrent modifications. Lock duration: 1 hour.
+
+If another operation is in progress:
 ```
-
-### KIND_EXPERIMENTAL_PROVIDER
-Alternative way to specify Kind provider:
-```bash
-export KIND_EXPERIMENTAL_PROVIDER=podman
-openCenter cluster bootstrap kind-cluster
-```
-
-### KUBECONFIG
-Kubeconfig path for cluster access:
-```bash
-export KUBECONFIG=/path/to/kubeconfig
-openCenter cluster bootstrap my-cluster
+Error: failed to acquire lock for cluster "my-cluster": lock already held
+Another operation may be in progress. Wait for it to complete or use 'openCenter cluster info my-cluster' to check lock status
 ```
 
 ## Exit Codes
 
-- `0` - Bootstrap successful
-- `1` - Bootstrap failed or error occurred
+- `0` - Bootstrap completed successfully
+- `1` - Bootstrap failed (check logs for details)
+- `2` - Lock acquisition failed (another operation in progress)
 
-## Notes
+## Status Updates
 
-- Bootstrap must be run after `cluster setup`
-- The command requires the GitOps repository to be initialized
-- For cloud providers, ensure credentials are configured
-- Kind clusters require Docker or Podman to be running
-- Bootstrap logs are written to the infrastructure directory
-- Use `--dry-run` to preview actions without execution
-- The command waits for all operations to complete
-- Failed bootstrap can be retried after fixing issues
-- Kubeconfig is automatically exported for Kind clusters
-- For cloud providers, check the Makefile for specific actions
+On successful completion, cluster status is updated to:
+- Stage: `bootstrap`
+- Status: `success`
 
-## Troubleshooting
+## Environment Variables
 
-### GitOps directory not found
-**Error**: `gitops.git_dir must be configured for provider "openstack"`
-
-**Solution**: Run setup first:
-```bash
-openCenter cluster setup my-cluster
-openCenter cluster bootstrap my-cluster
-```
-
-### Cluster infrastructure directory not found
-**Error**: `cluster infrastructure directory not found in GitOps repository`
-
-**Solution**: Ensure setup was successful:
-```bash
-openCenter cluster setup my-cluster --render
-openCenter cluster bootstrap my-cluster
-```
-
-### Docker/Podman not running
-**Error**: `Cannot connect to the Docker daemon`
-
-**Solution**: Start Docker or Podman:
-```bash
-# Docker
-sudo systemctl start docker
-
-# Podman
-podman machine start
-```
-
-### Kind cluster already exists
-**Error**: `ERROR: failed to create cluster: node(s) already exist for a cluster with the name "my-cluster"`
-
-**Solution**: Delete existing cluster:
-```bash
-kind delete cluster --name my-cluster
-openCenter cluster bootstrap my-cluster
-```
-
-### Make command failed
-**Error**: `command failed: make: *** [target] Error 1`
-
-**Solution**: Check the bootstrap log for details:
-```bash
-cat <git_dir>/infrastructure/clusters/<cluster>/bootstrap.log
-```
+- `CONTAINER_RUNTIME` - Container runtime for Kind clusters (docker or podman)
+- `KIND_EXPERIMENTAL_PROVIDER` - Alternative to CONTAINER_RUNTIME for Kind
+- `KUBECONFIG` - Default kubeconfig path (overridden by `--kubeconfig` flag)
 
 ## See Also
 
-- `openCenter cluster setup` - Setup GitOps repository before bootstrap
-- `openCenter cluster preflight` - Run preflight checks before bootstrap
-- `openCenter cluster validate` - Validate configuration before bootstrap
+- [cluster setup](setup.md) - Setup GitOps directory structure
+- [cluster preflight](preflight.md) - Run preflight checks
+- [cluster destroy](destroy.md) - Destroy cluster infrastructure
+- [cluster status](status.md) - Show cluster status

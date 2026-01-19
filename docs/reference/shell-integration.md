@@ -1,45 +1,72 @@
-# openCenter Shell Integration
+---
+title: Shell Integration Reference
+doc_type: reference
+category: reference
+weight: 40
+---
 
-This directory contains shell integration scripts to display the current active cluster in your shell prompt and provide convenient aliases.
+# Shell Integration Reference
 
-## Quick Setup
+Shell integration provides functions, aliases, and prompt customization for displaying the active cluster in your shell. Integration scripts are located in `hack/shell-integration/`.
+
+## Installation
+
+Shell integration files must be manually sourced or copied to your shell configuration directory.
+
+**Files**:
+- `hack/shell-integration/shell-integration.sh` - Bash/Zsh integration
+- `hack/shell-integration/shell-integration.fish` - Fish shell integration
+- `hack/shell-integration/starship-opencenter.toml` - Starship prompt configuration
+
+## Setup by Shell
+
+### Bash
+
+Add to `~/.bashrc`:
 
 ```bash
-# Install shell integration
-mise run install-shell-integration
+source /path/to/openCenter-cli/hack/shell-integration/shell-integration.sh
 
-# Follow the instructions for your shell
+# Optional: Add to prompt
+PS1="\$(opencenter_prompt)$PS1"
 ```
 
-## Manual Setup
+### Zsh
 
-### Bash/Zsh
-
-Add to your `~/.bashrc` or `~/.zshrc`:
+Add to `~/.zshrc`:
 
 ```bash
-source ~/.config/openCenter/shell/shell-integration.sh
+source /path/to/openCenter-cli/hack/shell-integration/shell-integration.sh
 
-# Add to prompt (optional)
-PS1="\$(opencenter_prompt)$PS1"        # Bash
-PROMPT="\$(opencenter_prompt)$PROMPT"  # Zsh
+# Optional: Add to prompt
+PROMPT="\$(opencenter_prompt)$PROMPT"
 ```
 
 ### Fish
 
-The installer automatically sets up Fish integration. For manual setup:
+Copy to Fish config directory:
 
 ```fish
-# Copy to Fish config directory
-cp ~/.config/openCenter/shell/shell-integration.fish ~/.config/fish/conf.d/opencenter.fish
+cp /path/to/openCenter-cli/hack/shell-integration/shell-integration.fish \
+   ~/.config/fish/conf.d/opencenter.fish
+```
 
-# Add to prompt function (in ~/.config/fish/functions/fish_prompt.fish)
+Add to prompt function in `~/.config/fish/functions/fish_prompt.fish`:
+
+```fish
 echo -n (opencenter_prompt)
 ```
 
 ### Starship
 
-Add to your `~/.config/starship.toml`:
+Append to `~/.config/starship.toml`:
+
+```bash
+cat /path/to/openCenter-cli/hack/shell-integration/starship-opencenter.toml \
+    >> ~/.config/starship.toml
+```
+
+Or manually add:
 
 ```toml
 [custom.opencenter]
@@ -48,69 +75,107 @@ when = "test -f ~/.config/openCenter/.active"
 format = "[$symbol$output]($style) "
 symbol = "🚀 "
 style = "bold blue"
+description = "Show active openCenter cluster"
 ```
 
-## Available Functions
+## Functions
 
-### Shell Functions
+### opencenter_active
 
-- `opencenter_active` - Get active cluster name
-- `opencenter_prompt` - Get formatted prompt string `[cluster]`
-- `opencenter_active_short` - Get short cluster name (without organization)
-- `opencenter_update_env` - Update `$OPENCENTER_ACTIVE_CLUSTER` environment variable
+Returns the active cluster name from `~/.config/openCenter/.active`.
 
-### Aliases
+**Output**: Cluster identifier (e.g., `myorg/mycluster` or `mycluster`)
 
-- `oc-active` - Same as `opencenter_active`
-- `oc-status` - Run `openCenter cluster status`
-- `oc-select` - Run `openCenter cluster select`
-- `oc-list` - Run `openCenter cluster list`
-
-### Environment Variables
-
-- `$OPENCENTER_ACTIVE_CLUSTER` - Automatically updated with current active cluster
-
-## CLI Commands
-
-For cluster management:
-
+**Example**:
 ```bash
-# Get active cluster
-openCenter cluster current                        # Get active cluster
-
-# Mise tasks
-mise run active-fast        # Fast active cluster lookup (internal)
-mise run active-prompt      # Fast prompt format (internal)
-mise run active-short       # Fast short name (internal)
+$ opencenter_active
+myorg/production-cluster
 ```
 
-## Performance Comparison
+### opencenter_prompt
 
-| Method | Speed | Use Case |
-|--------|-------|----------|
-| `cluster current` | ~50ms | Interactive use |
-| `cluster status` | ~100ms | Detailed information |
-| Shell functions | ~1ms | Shell prompts (uses cached .active file) |
+Returns formatted prompt string with brackets.
 
-## Example Prompt Configurations
+**Output**: `[cluster]` or empty string if no active cluster
+
+**Example**:
+```bash
+$ opencenter_prompt
+[myorg/production-cluster]
+```
+
+### opencenter_active_short
+
+Returns short cluster name without organization prefix.
+
+**Output**: Cluster name only (e.g., `mycluster`)
+
+**Example**:
+```bash
+$ opencenter_active_short
+production-cluster
+```
+
+### opencenter_update_env
+
+Updates `$OPENCENTER_ACTIVE_CLUSTER` environment variable. Called automatically by shell hooks.
+
+**Behavior**: Reads from cache file, updates environment variable
+
+## Aliases
+
+| Alias | Command | Description |
+|-------|---------|-------------|
+| `oc-active` | `opencenter_active` | Get active cluster |
+| `oc-status` | `openCenter cluster status` | Show cluster status |
+| `oc-select` | `openCenter cluster select` | Select active cluster |
+| `oc-list` | `openCenter cluster list` | List all clusters |
+
+## Environment Variables
+
+### OPENCENTER_ACTIVE_CLUSTER
+
+Set automatically by `opencenter_update_env`. Contains the current active cluster identifier.
+
+**Type**: Read-only (managed by shell integration)
+
+**Example**:
+```bash
+$ echo $OPENCENTER_ACTIVE_CLUSTER
+myorg/production-cluster
+```
+
+## Caching Behavior
+
+Shell integration uses file-based caching for performance.
+
+**Cache file**: `~/.cache/openCenter/active_cluster`
+
+**Update trigger**: When `~/.config/openCenter/.active` is newer than cache
+
+**Performance**: Sub-millisecond reads after initial cache
+
+**Cache invalidation**: Automatic when active cluster changes
+
+## Prompt Examples
 
 ### Bash
 
 ```bash
-# Simple
+# Basic
 PS1="\$(opencenter_prompt)$PS1"
 
-# With colors
+# With color
 PS1="\[\033[36m\]\$(opencenter_prompt)\[\033[0m\]$PS1"
 ```
 
 ### Zsh
 
 ```zsh
-# Simple
+# Basic
 PROMPT="\$(opencenter_prompt)$PROMPT"
 
-# With colors
+# With color
 PROMPT="%F{cyan}\$(opencenter_prompt)%f$PROMPT"
 ```
 
@@ -118,18 +183,14 @@ PROMPT="%F{cyan}\$(opencenter_prompt)%f$PROMPT"
 
 ```fish
 function fish_prompt
-    # Your existing prompt
     echo -n (opencenter_prompt)
-    # Rest of your prompt...
+    # Existing prompt code
 end
 ```
 
-### Oh My Zsh Theme
-
-Add to your custom theme or modify existing one:
+### Oh My Zsh
 
 ```zsh
-# Add this to your theme file
 opencenter_prompt_info() {
     local cluster=$(opencenter_active 2>/dev/null)
     if [[ -n "$cluster" ]]; then
@@ -137,60 +198,52 @@ opencenter_prompt_info() {
     fi
 }
 
-# Use in your PROMPT
 PROMPT='$(opencenter_prompt_info)'$PROMPT
 ```
 
-## Caching
-
-The shell integration uses intelligent caching:
-
-- Cache file: `~/.cache/openCenter/active_cluster`
-- Updates only when `~/.config/openCenter/.active` changes
-- Automatic cache invalidation
-- No performance impact on repeated calls
-
 ## Troubleshooting
 
-### Prompt Not Showing
+### Prompt not showing
 
-1. Check if active cluster is set:
-   ```bash
-   openCenter cluster current
-   ```
-
-2. Test the function directly:
-   ```bash
-   opencenter_prompt
-   ```
-
-3. Verify integration is loaded:
-   ```bash
-   type opencenter_active
-   ```
-
-### Performance Issues
-
-Use the shell functions for shell prompts (they use cached .active file):
-
+Check active cluster:
 ```bash
-# Use this (fast)
-PS1="\$(opencenter_prompt)$PS1"
+openCenter cluster current
 ```
 
-### Fish Shell Issues
+Test function:
+```bash
+opencenter_prompt
+```
 
-Ensure the integration file is in the right location:
+Verify integration loaded:
+```bash
+type opencenter_active
+```
 
+### Function not found
+
+Source the integration script:
+```bash
+source /path/to/hack/shell-integration/shell-integration.sh
+```
+
+For Fish:
 ```bash
 ls ~/.config/fish/conf.d/opencenter.fish
 ```
 
-## Advanced Usage
+### Stale cluster name
 
-### Conditional Prompt
+Clear cache:
+```bash
+rm ~/.cache/openCenter/active_cluster
+```
 
-Only show cluster in specific directories:
+## Advanced Patterns
+
+### Conditional display
+
+Show cluster only in specific directories:
 
 ```bash
 opencenter_conditional_prompt() {
@@ -202,9 +255,9 @@ opencenter_conditional_prompt() {
 PS1="\$(opencenter_conditional_prompt)$PS1"
 ```
 
-### Multiple Cluster Indicators
+### Combined indicators
 
-Show both active cluster and kubectl context:
+Show both openCenter cluster and kubectl context:
 
 ```bash
 k8s_prompt() {
@@ -222,13 +275,23 @@ k8s_prompt() {
 PS1="\$(k8s_prompt)$PS1"
 ```
 
-## Files
+## Shell Completion
 
-- `shell-integration.sh` - Bash/Zsh integration
-- `shell-integration.fish` - Fish shell integration  
-- `starship-opencenter.toml` - Starship configuration
-- `README.md` - This documentation
+Enable command completion:
 
-## Installation
+```bash
+# Bash
+openCenter completion bash > /etc/bash_completion.d/openCenter
 
-- `../install-shell-integration.sh` - Installation script (run with `mise run install-shell-integration`)
+# Zsh
+openCenter completion zsh > "${fpath[1]}/_openCenter"
+
+# Fish
+openCenter completion fish > ~/.config/fish/completions/openCenter.fish
+```
+
+## Related Documentation
+
+- [CLI Commands Reference](./cli-commands.md)
+- [Environment Variables](./environment-variables.md)
+- [Cluster Commands](./cluster/README.md)

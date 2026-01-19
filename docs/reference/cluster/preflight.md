@@ -1,221 +1,214 @@
-# `openCenter cluster preflight` - Run Preflight Checks
+# cluster preflight
+
+**doc_type:** reference
+
+Run preflight checks for required tools and provider requirements.
 
 ## Synopsis
+
 ```bash
 openCenter cluster preflight [name]
 ```
 
 ## Description
 
-Run preflight checks for required tools and provider-specific requirements. This command verifies that all necessary tools are installed and accessible, and performs provider-specific validation checks before cluster deployment.
-
-If no cluster name is provided, runs preflight checks for the currently active cluster.
+The `cluster preflight` command validates that all required tools are installed and accessible, and performs provider-specific connectivity and configuration checks before cluster deployment.
 
 ## Arguments
 
-### `[name]`
-- **Required/Optional**: Optional
-- **Description**: Name of the cluster (format: `cluster` or `organization/cluster`). If not provided, uses the currently active cluster
-- **Example**: `my-cluster` or `production/my-cluster`
-
-## Options
-
-### `-h, --help`
-- **Description**: Display help information for this subcommand
-
-## Preflight Checks
-
-### Common Tool Checks
-
-The command checks for the following required tools:
-
-- **git** - Version control for GitOps repository
-- **kubectl** - Kubernetes command-line tool
-- **talosctl** - Talos Linux CLI (for Talos-based clusters)
-
-### Provider-Specific Checks
-
-#### OpenStack Provider
-- OpenStack CLI tools availability
-- Authentication endpoint accessibility
-- Cloud credentials validation
-- Network connectivity to OpenStack API
-
-#### AWS Provider
-- AWS CLI availability
-- AWS credentials configuration
-- Region accessibility
-- IAM permissions validation
-
-#### GCP Provider
-- gcloud CLI availability
-- GCP credentials configuration
-- Project and region validation
-- API enablement checks
-
-#### Azure Provider
-- Azure CLI availability
-- Azure credentials configuration
-- Subscription and resource group validation
-- Service principal permissions
-
-#### Kind Provider
-- Docker or Podman availability
-- Container runtime accessibility
-- Kind CLI availability
-- Local network configuration
+- `name` - Cluster name (optional if active cluster is set)
 
 ## Examples
 
-### Run preflight for active cluster
 ```bash
+# Run preflight checks for active cluster
 openCenter cluster preflight
-```
-Runs preflight checks for the currently active cluster.
 
-### Run preflight for specific cluster
-```bash
+# Run for specific cluster
 openCenter cluster preflight my-cluster
 ```
-Runs preflight checks for the specified cluster.
 
-### Run preflight for OpenStack cluster
-```bash
-openCenter cluster preflight production/openstack-cluster
-```
-Runs OpenStack-specific preflight checks.
+## Checks Performed
 
-### Run preflight for Kind cluster
-```bash
-openCenter cluster preflight dev/kind-cluster
-```
-Runs Kind-specific preflight checks.
+### Tool Availability
 
-## Output
+The command checks for the presence of required tools:
 
-### Successful Preflight
+- `git` - Version control for GitOps repository
+- `kubectl` - Kubernetes command-line tool
+- `talosctl` - Talos Linux control tool
 
+**Output:**
 ```
 git: OK
 kubectl: OK
 talosctl: OK
-OpenStack: Checking auth endpoint https://openstack.example.com:5000/v3
-OpenStack: Authentication successful
-OpenStack: Network connectivity OK
-Preflight complete.
 ```
 
-### Failed Preflight
-
+**Missing Tool:**
 ```
 git: OK
 kubectl: MISSING
-talosctl: MISSING
-OpenStack: Checking auth endpoint https://openstack.example.com:5000/v3
-OpenStack: ERROR - Connection timeout
+talosctl: OK
+```
+
+### Provider-Specific Checks
+
+#### OpenStack
+
+For OpenStack clusters, the command performs:
+
+1. **Authentication URL Validation**
+   - Verifies auth_url is configured
+   - Tests connectivity to Keystone endpoint
+   - Validates authentication endpoint accessibility
+
+2. **API Connectivity**
+   - Tests connection to OpenStack APIs
+   - Verifies network reachability
+   - Checks SSL certificate validity
+
+**Output:**
+```
+OpenStack auth_url: https://keystone.example.com:5000/v3
+OpenStack connectivity: OK
+OpenStack API version: v3
+```
+
+**Connectivity Issues:**
+```
+OpenStack auth_url: https://keystone.example.com:5000/v3
+OpenStack connectivity: FAILED - connection timeout
+```
+
+#### AWS
+
+For AWS clusters (when implemented):
+- AWS CLI availability
+- Credential validation
+- Region accessibility
+- API connectivity
+
+#### Kind
+
+For Kind clusters:
+- Docker or Podman availability
+- Container runtime accessibility
+- Network configuration
+
+## Status Updates
+
+On successful completion, cluster status is updated to:
+- Stage: `preflight`
+- Status: `success`
+
+If status update fails, a warning is displayed but the command does not fail:
+```
+Warning: failed to update cluster status: <error>
+```
+
+## Output
+
+Successful preflight check:
+```
+git: OK
+kubectl: OK
+talosctl: OK
+OpenStack auth_url: https://keystone.example.com:5000/v3
+OpenStack connectivity: OK
 Preflight complete.
 ```
 
-## Tool Requirements
-
-### Required Tools
-
-| Tool | Purpose | Installation |
-|------|---------|--------------|
-| git | GitOps repository management | `apt install git` or `brew install git` |
-| kubectl | Kubernetes cluster management | [Install kubectl](https://kubernetes.io/docs/tasks/tools/) |
-| talosctl | Talos Linux management | [Install talosctl](https://www.talos.dev/latest/introduction/getting-started/) |
-
-### Provider-Specific Tools
-
-#### OpenStack
-- `openstack` CLI
-- `python-openstackclient`
-
-#### AWS
-- `aws` CLI
-- AWS credentials configured
-
-#### GCP
-- `gcloud` CLI
-- GCP credentials configured
-
-#### Azure
-- `az` CLI
-- Azure credentials configured
-
-#### Kind
-- `kind` CLI
-- `docker` or `podman`
-
 ## Exit Codes
 
-- `0` - Preflight checks completed (may include warnings)
-- `1` - Error running preflight checks
+- `0` - All checks passed
+- `1` - One or more checks failed
+- `2` - Configuration error
 
-## Notes
+## Common Issues
 
-- Preflight checks do not fail on missing tools, they report status
-- Provider-specific checks are performed based on the infrastructure provider
-- The command checks tool availability in the system PATH
-- OpenStack checks validate authentication endpoint accessibility
-- Kind checks verify container runtime availability
-- Missing tools are reported as "MISSING" in the output
-- The command does not install missing tools automatically
-- Run preflight checks before `cluster setup` and `cluster bootstrap`
-- Preflight checks help identify issues early in the deployment process
+### Missing Tools
 
-## Troubleshooting
+**Problem:**
+```
+kubectl: MISSING
+```
 
-### kubectl not found
-**Output**: `kubectl: MISSING`
-
-**Solution**: Install kubectl:
+**Solution:**
+Install the missing tool:
 ```bash
-# macOS
-brew install kubectl
-
-# Linux
+# Install kubectl
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 chmod +x kubectl
 sudo mv kubectl /usr/local/bin/
 ```
 
-### talosctl not found
-**Output**: `talosctl: MISSING`
+### OpenStack Connectivity Failed
 
-**Solution**: Install talosctl:
-```bash
-curl -sL https://talos.dev/install | sh
+**Problem:**
+```
+OpenStack connectivity: FAILED - connection timeout
 ```
 
-### OpenStack authentication failed
-**Output**: `OpenStack: ERROR - Authentication failed`
+**Solutions:**
+1. Verify auth_url is correct in configuration
+2. Check network connectivity to OpenStack endpoint
+3. Verify firewall rules allow access
+4. Check SSL certificate validity
 
-**Solution**: Check OpenStack credentials:
-```bash
-# Verify credentials are set
-env | grep OS_
+### Invalid Configuration
 
-# Test authentication
-openstack token issue
+**Problem:**
+```
+Error: failed to load cluster configuration: cluster "my-cluster" not found
 ```
 
-### Container runtime not available
-**Output**: `docker: MISSING`
-
-**Solution**: Install Docker or Podman:
+**Solution:**
 ```bash
-# Docker
-curl -fsSL https://get.docker.com | sh
+# Verify cluster exists
+openCenter cluster list
 
-# Podman
-brew install podman  # macOS
-apt install podman   # Linux
+# Initialize cluster if needed
+openCenter cluster init my-cluster
+```
+
+## Use Cases
+
+### Pre-Deployment Validation
+
+Run preflight checks before deploying a cluster:
+```bash
+openCenter cluster preflight my-cluster
+```
+
+### CI/CD Integration
+
+Include preflight checks in deployment pipelines:
+```bash
+#!/bin/bash
+set -e
+
+# Run preflight checks
+openCenter cluster preflight my-cluster
+
+# If successful, proceed with deployment
+openCenter cluster bootstrap my-cluster
+```
+
+### Troubleshooting
+
+Diagnose environment issues:
+```bash
+# Check tool availability
+openCenter cluster preflight my-cluster
+
+# Verify specific tool
+which kubectl
+kubectl version --client
 ```
 
 ## See Also
 
-- `openCenter cluster validate` - Validate cluster configuration
-- `openCenter cluster setup` - Setup GitOps repository
-- `openCenter cluster bootstrap` - Bootstrap cluster
+- [cluster validate](../cli-commands.md#cluster-validate) - Validate cluster configuration
+- [cluster bootstrap](bootstrap.md) - Bootstrap cluster infrastructure
+- [cluster setup](setup.md) - Setup GitOps directory structure

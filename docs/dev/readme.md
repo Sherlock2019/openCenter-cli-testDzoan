@@ -1,413 +1,351 @@
-# `openCenter` - Developer Documentation
+---
+doc_type: how-to
+---
 
-## Overview
+# Developer Guide
 
-The openCenter CLI is built using the Cobra command framework and follows a modular architecture with clear separation between command handling, business logic, and infrastructure concerns.
+This guide covers setting up your development environment, building openCenter, running tests, and common development workflows.
 
-## Architecture
+## Who this is for
 
-### Command Structure
+Developers contributing to openCenter or extending it with custom providers and plugins.
 
-```
-cmd/
-├── root.go              # Root command and global configuration
-├── cluster.go           # Cluster command group
-├── cluster_*.go         # Cluster subcommands
-├── config.go            # Config command group
-├── config_*.go          # Config subcommands
-├── sops.go              # SOPS command group
-├── plugins.go           # Plugins command group
-└── version.go           # Version command
-```
+## Prerequisites
 
-### Core Components
+- **Mise**: Tool version manager ([installation guide](https://mise.jdx.dev/getting-started.html))
+- **Git**: Version control
+- **Go**: Managed automatically by Mise
 
-#### Command Layer (`cmd/`)
-- Cobra command definitions
-- Flag parsing and validation
-- User interaction and output formatting
-- Command orchestration
+## Initial Setup
 
-#### Business Logic (`internal/`)
-- `config/` - Configuration management
-- `gitops/` - GitOps repository operations
-- `sops/` - SOPS encryption management
-- `cloud/` - Cloud provider integrations
-- `plugins/` - Plugin system
-- `util/` - Shared utilities
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/rackerlabs/openCenter-cli.git
+   cd openCenter-cli
+   ```
 
-## Root Command Implementation
+2. **Install development tools**:
+   ```bash
+   mise install
+   ```
+   
+   This installs Go, kubectl, kind, helm, and other tools defined in `.mise.toml`.
 
-### File Location
-`cmd/root.go`
+3. **Build the CLI**:
+   ```bash
+   mise run build
+   ```
+   
+   The binary is created at `bin/openCenter` with version metadata from git.
 
-### Key Components
+4. **Verify the build**:
+   ```bash
+   ./bin/openCenter version
+   ```
 
-#### Global Flags Structure
+## Development Workflow
 
-```go
-type GlobalFlags struct {
-    Config   string   // --config: alternative cluster configuration file path
-    DryRun   bool     // --dry-run: enable dry-run mode
-    LogLevel string   // --log-level: set log level explicitly
-    Set      []string // --set: override configuration values
-    Verbose  bool     // --verbose: enable verbose logging
-}
-```
+### Building
 
-
-#### Configuration Manager
-
-The global configuration manager is initialized in `PersistentPreRunE`:
-
-```go
-func initializeGlobalConfig(cmd *cobra.Command) error {
-    // 1. Handle legacy config-dir flag
-    // 2. Parse global flags
-    // 3. Initialize configuration manager
-    // 4. Apply global flag overrides
-    // 5. Log configuration details
-}
-```
-
-#### Command Registration
-
-Commands are registered in the `Execute` function:
-
-```go
-func Execute(version string) error {
-    rootCmd.Version = version
-    addGlobalFlags(rootCmd)
-    
-    // Register subcommands
-    rootCmd.AddCommand(newClusterCmd())
-    rootCmd.AddCommand(newConfigCmd())
-    rootCmd.AddCommand(newSOPSCmd())
-    rootCmd.AddCommand(newPluginsCmd())
-    rootCmd.AddCommand(newVersionCmd())
-    
-    // Discover and attach external plugins
-    plugins.LoadExternalPlugins(rootCmd)
-    
-    return rootCmd.Execute()
-}
-```
-
-## Global Flag Processing
-
-### Flag Parsing
-
-Global flags are parsed before command execution:
-
-```go
-func parseGlobalFlags(cmd *cobra.Command) (*GlobalFlags, error) {
-    config, _ := cmd.Flags().GetString("config")
-    dryRun, _ := cmd.Flags().GetBool("dry-run")
-    logLevel, _ := cmd.Flags().GetString("log-level")
-    set, _ := cmd.Flags().GetStringArray("set")
-    verbose, _ := cmd.Flags().GetBool("verbose")
-    
-    // Verbose overrides log level
-    if verbose {
-        logLevel = "debug"
-    }
-    
-    return &GlobalFlags{...}, nil
-}
-```
-
-### Configuration Overrides
-
-The `--set` flag allows runtime configuration overrides:
-
-```go
-func applySetFlagOverrides(cliConfig *config.CLIConfig, setFlags []string) error {
-    for _, setFlag := range setFlags {
-        parts := strings.SplitN(setFlag, "=", 2)
-        key := parts[0]
-        value := parts[1]
-        
-        // Parse value (detect type)
-        parsedValue := convertValue(value)
-        
-        // Apply using dot notation
-        if err := tempManager.SetValue(key, parsedValue); err != nil {
-            return err
-        }
-    }
-}
-```
-
-## Command Groups
-
-### Cluster Commands
-
-Comprehensive cluster lifecycle management:
-- Initialization and configuration
-- Validation and preflight checks
-- GitOps repository setup
-- Bootstrap and deployment
-- Migration and updates
-
-See [cluster/readme.md](cluster/readme.md) for details.
-
-### Config Commands
-
-CLI configuration management:
-- View current configuration
-- Set/get configuration values
-- Reset to defaults
-- Show configuration path
-- IDE integration setup
-
-### SOPS Commands
-
-Secrets management with SOPS:
-- Age key generation and rotation
-- Key backup and validation
-- Secrets encryption/decryption
-- Batch operations
-
-### Plugins Commands
-
-Plugin system management:
-- List discovered plugins
-- Plugin discovery from multiple sources
-- Dynamic command registration
-
-### Version Command
-
-Build and version information:
-- Semantic version
-- Git commit and branch
-- Build date and platform
-- Short and full formats
-
-## Configuration Management
-
-### Configuration File
-
-Location: `~/.config/openCenter/config.yaml`
-
-Structure:
-```yaml
-logging:
-  level: warn
-  format: text
-  output: stderr
-paths:
-  configDir: ~/.config/openCenter
-  clustersDir: ~/.config/openCenter/clusters
-behavior:
-  autoConfirm: false
-  dryRun: false
-  verbose: false
-defaults:
-  provider: openstack
-  region: {{ .OpenCenter.Cluster.ClusterRegion }}
-  environment: dev
-```
-
-### Configuration Manager
-
-The `ConfigManager` handles:
-- Loading configuration from file
-- Merging with defaults
-- Environment variable expansion
-- Runtime overrides
-- Saving configuration
-
-## Plugin System
-
-### Plugin Discovery
-
-Plugins are discovered in order:
-1. `OPENCENTER_PLUGINS_DIR` environment variable
-2. `<config-dir>/plugins` directory
-3. System `PATH`
-
-### Plugin Naming
-
-Plugin binaries must follow the naming convention:
-```
-openCenter-<plugin-name>
-```
-
-Example: `openCenter-aws-helper`
-
-### Plugin Registration
-
-Plugins are dynamically registered as subcommands:
-
-```go
-func LoadExternalPlugins(rootCmd *cobra.Command) {
-    discovered := Discover()
-    for name, path := range discovered {
-        use := strings.TrimPrefix(name, BinaryPrefix)
-        cmd := createPluginCommand(use, path)
-        rootCmd.AddCommand(cmd)
-    }
-}
-```
-
-## Error Handling
-
-### Error Patterns
-
-```go
-// Return error from command
-return fmt.Errorf("failed to load cluster: %w", err)
-
-// Helper for formatted errors
-func failf(format string, a ...interface{}) error {
-    return fmt.Errorf(format, a...)
-}
-```
-
-### Exit Codes
-
-- `0` - Success
-- `1` - Error occurred
-
-## Logging
-
-### Log Levels
-
-- `debug` - Detailed debugging information
-- `info` - Informational messages
-- `warn` - Warning messages (default)
-- `error` - Error messages
-
-### Log Formats
-
-- `text` - Human-readable text (default)
-- `json` - JSON format for parsing
-- `yaml` - YAML format
-
-### Debug Mode
-
-Enable with environment variable:
+Build the binary with version information:
 ```bash
-export OPENCENTER_DEBUG=1
-```
-
-## Testing
-
-### Unit Tests
-
-Test individual functions and components:
-
-```go
-func TestGlobalFlagParsing(t *testing.T) {
-    // Test flag parsing
-}
-
-func TestConfigurationOverrides(t *testing.T) {
-    // Test --set flag overrides
-}
-```
-
-### Integration Tests
-
-Test complete command workflows:
-
-```bash
-# Test cluster lifecycle
-mise run godog -- features/cluster_lifecycle.feature
-
-# Test configuration management
-mise run godog -- features/config_management.feature
-```
-
-### BDD Tests
-
-Behavior-driven tests using Godog:
-
-```gherkin
-Feature: Global Configuration
-  Scenario: Override configuration with --set flag
-    When I run "openCenter --set logging.level=debug cluster list"
-    Then the log level should be "debug"
-```
-
-## Development Guidelines
-
-### Adding New Commands
-
-1. Create command file in `cmd/`
-2. Implement command following Cobra patterns
-3. Register in appropriate command group
-4. Add tests
-5. Update documentation
-
-### Adding Global Flags
-
-1. Add to `GlobalFlags` struct
-2. Register in `addGlobalFlags()`
-3. Parse in `parseGlobalFlags()`
-4. Apply in `applyGlobalFlagOverrides()`
-5. Document in reference docs
-
-### Modifying Configuration Schema
-
-1. Update `CLIConfig` struct in `internal/config/`
-2. Update default values
-3. Update validation
-4. Update documentation
-5. Test migration from old config
-
-## Build System
-
-### Using Mise
-
-All build operations use Mise:
-
-```bash
-# Build
 mise run build
+```
 
-# Test
+Build for specific platforms:
+```bash
+mise run build-linux        # Linux AMD64
+mise run build-all          # All platforms
+```
+
+The build injects version metadata via ldflags:
+- `version`: Git tag or "0.0.1"
+- `gitCommit`: Current commit hash
+- `gitBranch`: Current branch name
+- `buildDate`: ISO 8601 timestamp
+
+### Testing
+
+Run unit tests:
+```bash
 mise run test
+```
 
-# Run BDD tests
-mise run godog
+Run BDD tests:
+```bash
+mise run godog              # All non-@wip scenarios
+mise run godog-wip          # Only @wip scenarios
+```
 
-# Format code
+Run specific test suites:
+```bash
+mise run test-security      # Security component tests
+mise run test-integration   # Operational readiness tests
+```
+
+Run tests for specific priorities:
+```bash
+mise run test-priority1     # Config loader tests
+mise run test-priority2     # GitOps idempotency tests
+```
+
+### Code Quality
+
+Format code:
+```bash
 mise run fmt
 ```
 
-### Build Variables
-
-Set at compile time via ldflags:
-
-```go
-var (
-    version   = "dev"
-    gitCommit = "unknown"
-    gitBranch = "unknown"
-    gitTag    = ""
-    buildDate = "unknown"
-)
+Run linter:
+```bash
+mise run lint
 ```
+
+Tidy dependencies:
+```bash
+mise run tidy
+```
+
+### Schema Changes
+
+When modifying configuration schema:
+```bash
+mise run schema-verify
+```
+
+This comprehensive task:
+1. Builds the project
+2. Generates JSON schema
+3. Tests cluster init with new schema
+4. Runs validation
+5. Executes unit and BDD tests
+6. Compares with reference schema
+
+### Local Testing Environment
+
+Start local Gitea for testing:
+```bash
+mise run gitea-up           # Setup and configure
+mise run gitea-cleanup      # Cleanup
+```
+
+Create Kind cluster for testing:
+```bash
+mise run kind-cluster-no-cni
+```
+
+### Credentials Management
+
+Export credentials for active cluster:
+```bash
+mise run export-aws-creds       # AWS credentials
+mise run export-os-creds        # OpenStack credentials
+mise run export-all-creds       # All credentials
+```
+
+Setup development environment:
+```bash
+mise run dev-env-setup          # Export all credentials
+mise run dev-env-clean          # Clear credentials
+```
+
+## Project Structure
+
+See [architecture.md](./architecture.md) for detailed codebase organization.
+
+Quick overview:
+- `cmd/`: CLI commands (Cobra)
+- `internal/`: Core implementation
+- `tests/`: BDD test scenarios
+- `testdata/`: Test fixtures
+- `schema/`: Generated JSON schemas
+- `docs/`: Documentation
+
+## Common Tasks
+
+### Adding a New Command
+
+1. Create `cmd/<command>_<subcommand>.go`
+2. Implement `new<Command><Subcommand>Cmd()` returning `*cobra.Command`
+3. Register in parent command's `AddCommand()`
+4. Add tests in `tests/features/`
+5. Update documentation
+
+### Adding a New Provider
+
+1. Create `internal/cloud/<provider>/`
+2. Implement `preflight.go` with provider checks
+3. Add provider configuration in `internal/config/types_infrastructure.go`
+4. Update schema in `internal/config/schema.go`
+5. Add validation in `internal/config/<provider>_validator.go`
+6. Add tests
+
+### Adding a New Mise Task
+
+When adding functionality that requires commands:
+
+1. **Always create a mise task** in `.mise.toml`
+2. Use descriptive kebab-case names
+3. Document the task purpose with a comment
+4. Chain related tasks using dependencies
+
+Example:
+```toml
+[tasks]
+# Run integration tests with local cluster
+test-integration = [
+  "mise run kind-cluster-no-cni",
+  "go test ./tests/integration/... -v"
+]
+```
+
+Never suggest raw commands - always wrap in mise tasks for consistency.
+
+## Architecture Overview
+
+openCenter follows a layered architecture:
+
+**Command Layer** (`cmd/`): Cobra commands, flag parsing, user interaction
+
+**Business Logic** (`internal/`):
+- `config/`: Configuration management and validation
+- `gitops/`: GitOps repository scaffolding
+- `sops/`: Secrets encryption with SOPS/Age
+- `cloud/`: Provider-specific integrations
+- `provision/`: Infrastructure provisioning (Terraform/Ansible/Pulumi)
+- `template/`: Template engine with sandboxing
+- `security/`: Input validation, credential masking, audit logging
+- `resilience/`: Retry logic, circuit breakers, locking
+- `operations/`: Drift detection, backup management
+
+**Testing** (`internal/testing/`): Test framework, generators, mocks
+
+For detailed architecture, see [architecture.md](./architecture.md).
+
+## Testing Strategy
+
+openCenter uses multiple testing approaches:
+
+**Unit Tests**: Standard Go tests in `internal/` packages
+- Test individual functions and components
+- Run with `mise run test`
+- Files: `*_test.go`
+
+**Property-Based Tests**: Generative testing with gopter
+- Test properties that should hold for all inputs
+- Files: `*_property_test.go`
+- Example: `internal/config/migration_property_test.go`
+
+**BDD Tests**: Behavior-driven tests with Godog
+- Gherkin scenarios in `tests/features/`
+- Run with `mise run godog`
+- Use `@wip` tag during development
+
+**Integration Tests**: Full workflow validation
+- Files: `*_integration_test.go`
+- Test complete command flows
+
+See [testing/README.md](./testing/README.md) for detailed testing guide.
+
+## Configuration Management
+
+Configuration files use organization-based structure:
+
+```
+~/.config/openCenter/clusters/
+└── <organization>/
+    ├── .<cluster>-config.yaml
+    ├── infrastructure/
+    │   └── clusters/<cluster>/
+    ├── applications/
+    │   └── overlays/<cluster>/
+    └── secrets/
+        ├── age/keys/
+        └── ssh/
+```
+
+The `ConfigManager` handles:
+- Loading from YAML
+- Schema validation
+- Environment variable expansion
+- Runtime overrides via `--set` flag
+- Migration between schema versions
+
+## Error Handling
+
+Use error wrapping for context:
+```go
+if err != nil {
+    return fmt.Errorf("failed to load cluster: %w", err)
+}
+```
+
+Exit codes:
+- `0`: Success
+- `1`: Error occurred
+
+## Logging
+
+Log levels: `debug`, `info`, `warn` (default), `error`
+
+Set via:
+- `--log-level` flag
+- `--verbose` flag (sets debug)
+- `OPENCENTER_DEBUG=1` environment variable
+
+Log formats: `text` (default), `json`, `yaml`
 
 ## Performance Considerations
 
-- Configuration is loaded once at startup
-- Plugin discovery is cached
-- File operations are minimized
+- Configuration loaded once at startup
+- Plugin discovery cached
+- Template rendering cached when enabled
 - Lazy loading where possible
+- File operations minimized
 
 ## Security Considerations
 
 - Configuration files: 0600 permissions
-- Secrets never logged
+- Secrets never logged (credential masking)
 - SOPS integration for encryption
 - Input validation on all user input
 - Path traversal prevention
+- Template sandboxing prevents code execution
+
+## Debugging
+
+Enable debug mode:
+```bash
+export OPENCENTER_DEBUG=1
+./bin/openCenter cluster validate my-cluster
+```
+
+Debug artifacts created in debug mode:
+- Detailed logs
+- Intermediate files
+- Validation reports
+
+## Contributing
+
+See [contributing.md](./contributing.md) for:
+- Code style guidelines
+- Commit message conventions
+- Pull request process
+- Review checklist
+
+## Release Process
+
+See [release-process.md](./release-process.md) for:
+- Versioning strategy
+- Release checklist
+- Build and distribution
+- Changelog generation
 
 ## See Also
 
-- [Cluster Commands](cluster/readme.md)
-- [Configuration Schema](../reference/configuration.md)
-- [Plugin Development](../how-to/plugin-development.md)
-- [Testing Guide](../how-to/testing.md)
+- [Architecture Documentation](./architecture.md) - Detailed codebase architecture
+- [Testing Guide](./testing/README.md) - Comprehensive testing documentation
+- [Contributing Guidelines](./contributing.md) - How to contribute
+- [Release Process](./release-process.md) - Release procedures
+- [Configuration Reference](../reference/configuration.md) - Configuration schema
+- [Plugin Development](../how-to/plugin-development.md) - Creating plugins

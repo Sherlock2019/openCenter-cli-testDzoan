@@ -1,164 +1,235 @@
-# `openCenter cluster info` - Show Configuration for a Cluster
+# cluster info
+
+**doc_type:** reference
+
+Display detailed information about a cluster.
 
 ## Synopsis
+
 ```bash
-openCenter cluster info [name] [OPTIONS]
+openCenter cluster info [name] [flags]
 ```
 
 ## Description
 
-Display configuration information for a cluster, including metadata, cluster name, and configuration file path. The command can output in human-readable YAML format or machine-readable JSON format.
-
-If no cluster name is provided, displays information for the currently active cluster.
+The `cluster info` command displays comprehensive information about a cluster, including metadata, configuration paths, GitOps settings, and lock status.
 
 ## Arguments
 
-### `[name]`
-- **Required/Optional**: Optional
-- **Description**: Name of the cluster (format: `cluster` or `organization/cluster`). If not provided, uses the currently active cluster
-- **Example**: `my-cluster` or `production/my-cluster`
+- `name` - Cluster name (optional if active cluster is set)
 
-## Options
+## Flags
 
-### `--validate`
-- **Description**: Validate cluster configuration invariants and display validation results
-- **Type**: Boolean
-- **Default**: `false`
-
-### `--json`
-- **Description**: Output information in JSON format instead of YAML
-- **Type**: Boolean
-- **Default**: `false`
-
-### `-h, --help`
-- **Description**: Display help information for this subcommand
+- `--validate` - Validate cluster configuration invariants
+- `--json` - Output JSON instead of YAML
+- `--export-only` - Only output export commands for shell evaluation
+- `--shell string` - Override shell detection (bash, zsh, fish, powershell)
 
 ## Examples
 
-### Basic usage
 ```bash
-openCenter cluster info my-cluster
-```
-Displays cluster information in human-readable format.
-
-### Show info for active cluster
-```bash
+# Show info for active cluster
 openCenter cluster info
-```
-Displays information for the currently active cluster.
 
-### JSON output
-```bash
-openCenter cluster info my-cluster --json
-```
-Outputs cluster information as JSON for machine processing.
+# Show info for specific cluster
+openCenter cluster info my-cluster
 
-### Validate configuration
-```bash
+# Validate configuration
 openCenter cluster info my-cluster --validate
+
+# Output as JSON
+openCenter cluster info my-cluster --json
+
+# Export only environment variables
+openCenter cluster info my-cluster --export-only
+
+# Export for specific shell
+openCenter cluster info my-cluster --export-only --shell=fish
 ```
-Validates the cluster configuration and displays validation results.
 
-### Organization-based cluster
-```bash
-openCenter cluster info production/prod-cluster
-```
-Shows information for a cluster in a specific organization.
+## Output Format
 
-### Pipe to jq for processing
-```bash
-openCenter cluster info my-cluster --json | jq '.metadata.env'
-```
-Extracts specific fields using jq.
-
-## Output
-
-### Human-Readable Format (Default)
+### Default (YAML)
 
 ```
-Cluster: my-cluster
+Active cluster: my-cluster
 Config Path: /home/user/.config/openCenter/clusters/myorg/.my-cluster-config.yaml
 
+git_dir: /home/user/gitops/myorg
+git_url: git@github.com:myorg/gitops.git
+
 Metadata:
-name: my-cluster
-cluster_name: my-k8s-cluster
-env: dev
-region: local
-status: planned
-organization: myorg
+  name: my-cluster
+  cluster_name: my-cluster
+  organization: myorg
+  provider: openstack
+  env: prod
+  region: us-east-1
+  status: deployed
+
+Lock Status:
+  status: available
 ```
 
-### JSON Format (--json)
+### JSON Format
 
 ```json
 {
   "config_path": "/home/user/.config/openCenter/clusters/myorg/.my-cluster-config.yaml",
+  "cluster_name": "my-cluster",
+  "organization": "myorg",
+  "provider": "openstack",
   "metadata": {
     "name": "my-cluster",
-    "cluster_name": "my-k8s-cluster",
-    "env": "dev",
-    "region": "local",
-    "status": "planned",
+    "env": "prod",
+    "region": "us-east-1",
+    "status": "deployed",
     "organization": "myorg"
-  }
+  },
+  "git_dir": "/home/user/gitops/myorg",
+  "git_url": "git@github.com:myorg/gitops.git"
 }
 ```
 
-### Validation Output (--validate)
+### Export-Only Format
 
-Success:
+```bash
+export OPENCENTER_CLUSTER="my-cluster"
+export OPENCENTER_ORGANIZATION="myorg"
+export OPENCENTER_PROVIDER="openstack"
+export OPENCENTER_ENV="prod"
+export OPENCENTER_REGION="us-east-1"
+export KUBECONFIG="/home/user/gitops/myorg/kubeconfig.yaml"
+```
+
+## Information Displayed
+
+### Cluster Identification
+- Cluster name
+- Organization
+- Configuration file path
+
+### GitOps Configuration
+- `git_dir` - GitOps repository directory
+- `git_url` - GitOps repository URL
+
+### Metadata
+- `name` - Cluster display name
+- `cluster_name` - Cluster identifier
+- `organization` - Organization name
+- `provider` - Infrastructure provider (openstack, aws, kind, etc.)
+- `env` - Environment (dev, staging, prod)
+- `region` - Cloud region
+- `status` - Cluster status (initialized, validated, deployed, etc.)
+
+### Lock Status
+- `status` - Lock availability (available or locked)
+- `message` - Lock status message if locked
+
+## Active Cluster Indicator
+
+The command shows "Active cluster:" prefix when:
+- The cluster is the currently active cluster, OR
+- The current working directory is the cluster's GitOps directory
+
+## Validation Mode
+
+With `--validate` flag, the command validates configuration and reports errors:
+
+```bash
+openCenter cluster info my-cluster --validate
+```
+
+**Success:**
 ```
 Validation successful.
 ```
 
-Failure:
+**Failure:**
 ```
-validation error: kubernetes version must be specified
-validation error: infrastructure provider must be one of: openstack, baremetal, kind, vmware
+Error: opencenter.cluster.kubernetes.version: required field missing
+Error: opencenter.infrastructure.provider: must be one of: openstack, aws, kind
 validation failed
 ```
 
-## Metadata Fields
+## Export-Only Mode
 
-The command displays the following metadata fields:
+The `--export-only` flag outputs only environment variable export commands, suitable for shell evaluation:
 
-### name
-The cluster identifier used in openCenter commands.
+```bash
+eval $(openCenter cluster info my-cluster --export-only)
+```
 
-### cluster_name
-The actual Kubernetes cluster name used in cluster resources.
+This sets environment variables for:
+- Cluster identification
+- Organization
+- Provider
+- Environment
+- Region
+- Kubeconfig path
 
-### env
-Environment designation (e.g., dev, staging, prod).
+## Shell-Specific Export
 
-### region
-Geographic or logical region for the cluster.
+Use `--shell` to generate shell-specific export syntax:
 
-### status
-Current cluster status (e.g., planned, deployed, destroyed).
+**Bash/Zsh:**
+```bash
+export VAR="value"
+```
 
-### organization
-Organization that owns the cluster.
+**Fish:**
+```fish
+set -x VAR "value"
+```
 
-## Exit Codes
+**PowerShell:**
+```powershell
+$env:VAR = "value"
+```
 
-- `0` - Success
-- `1` - Error loading cluster configuration or validation failure
+## Lock Status
 
-## Notes
+The command checks if the cluster is locked by another operation:
 
-- If no cluster name is provided, uses the currently active cluster
-- The `--validate` flag performs comprehensive validation checks
-- JSON output is useful for scripting and automation
-- Configuration path shows the actual location of the cluster config file
-- Metadata includes both `name` (openCenter identifier) and `cluster_name` (Kubernetes name)
-- Organization information is included in the metadata
-- The command reads from `~/.config/openCenter/clusters/` by default
-- Override config directory with `OPENCENTER_CONFIG_DIR` environment variable
+**Available:**
+```
+Lock Status:
+  status: available
+```
+
+**Locked:**
+```
+Lock Status:
+  status: locked
+  message: Another operation is in progress on this cluster
+```
+
+## Use Cases
+
+### Quick Status Check
+```bash
+openCenter cluster info
+```
+
+### Configuration Validation
+```bash
+openCenter cluster info my-cluster --validate
+```
+
+### Environment Setup
+```bash
+eval $(openCenter cluster info my-cluster --export-only)
+```
+
+### Scripting Integration
+```bash
+CLUSTER_INFO=$(openCenter cluster info my-cluster --json)
+PROVIDER=$(echo "$CLUSTER_INFO" | jq -r '.provider')
+```
 
 ## See Also
 
-- `openCenter cluster validate` - Comprehensive cluster validation
-- `openCenter cluster edit` - Edit cluster configuration
-- `openCenter cluster current` - Show current active cluster
-- `openCenter cluster list` - List all clusters
+- [cluster status](status.md) - Show active cluster status
+- [cluster validate](../cli-commands.md#cluster-validate) - Validate cluster configuration
+- [cluster select](../cli-commands.md#cluster-select) - Set active cluster
+- [cluster list](list.md) - List all configured clusters

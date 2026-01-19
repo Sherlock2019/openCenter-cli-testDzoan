@@ -1,198 +1,144 @@
-# `openCenter cluster destroy` - Destroy a Cluster
+# cluster destroy
+
+**doc_type:** reference
+
+Destroy cluster infrastructure and clean up resources.
 
 ## Synopsis
+
 ```bash
-openCenter cluster destroy <name>
+openCenter cluster destroy <name> [flags]
 ```
 
 ## Description
 
-Destroy a cluster by removing its GitOps directory and configuration file. This command permanently deletes the cluster's infrastructure templates, configuration, and GitOps repository.
+The `cluster destroy` command permanently removes cluster infrastructure, configuration files, and related resources. It deletes the cluster directory structure, GitOps repository, configuration file, and clears the active cluster marker if the destroyed cluster was active.
 
-**WARNING**: This operation is destructive and cannot be undone. The actual cloud infrastructure is not destroyed - only the local configuration and GitOps repository are removed.
+**Warning:** This operation is irreversible. All cluster data, configuration, and infrastructure will be permanently deleted.
 
 ## Arguments
 
-### `<name>`
-- **Required/Optional**: Required
-- **Description**: Name of the cluster to destroy (format: `cluster` or `organization/cluster`)
-- **Example**: `my-cluster` or `production/my-cluster`
+- `name` - Cluster name (required)
 
-## Options
+## Flags
 
-### `-h, --help`
-- **Description**: Display help information for this subcommand
+- `--force` - Skip confirmation prompt
 
 ## Examples
 
-### Destroy a cluster
 ```bash
+# Destroy cluster (with confirmation)
 openCenter cluster destroy my-cluster
+
+# Force destroy without confirmation
+openCenter cluster destroy my-cluster --force
 ```
 
-### Destroy cluster in organization
-```bash
-openCenter cluster destroy production/prod-cluster
+## Confirmation Prompt
+
+Unless `--force` is used, the command displays a warning:
+
+```
+WARNING: This will permanently destroy cluster "my-cluster" in organization "myorg".
+```
+
+In non-interactive mode (tests), confirmation is skipped.
+
+## Deletion Process
+
+The destroy operation removes resources in this order:
+
+1. **Update cluster status** - Sets status to "destroyed" (skipped for flat configs)
+2. **Remove GitOps directory** - Deletes `gitops.git_dir` if configured
+3. **Remove cluster directories** - Deletes cluster-specific directories based on structure type
+4. **Remove configuration file** - Deletes the cluster configuration YAML file
+5. **Clear active marker** - Removes active cluster marker if this cluster was active
+
+## Directory Structure Handling
+
+### Organization-Based Structure
+
+For clusters in organization-based structure:
+
+Removes:
+- Cluster directory: `clusters/<org>/infrastructure/clusters/<cluster>/`
+- Applications directory: `clusters/<org>/applications/overlays/<cluster>/`
+- Configuration file: `clusters/<org>/.<cluster>-config.yaml`
+
+### Legacy Structure
+
+For clusters in legacy structure:
+
+Removes:
+- Cluster directory: `clusters/<cluster>/`
+- Configuration file: `clusters/<cluster>/.<cluster>-config.yaml`
+
+### Flat Configuration
+
+For flat configuration files (not in clusters directory):
+
+Removes:
+- Configuration file only (no cluster directory)
+
+## Locking
+
+Destroy operations acquire an exclusive lock on the cluster to prevent concurrent modifications. Lock duration: 1 hour.
+
+If another operation is in progress:
+```
+Error: failed to acquire lock for cluster "my-cluster": lock already held
+Another operation may be in progress. Wait for it to complete or use 'openCenter cluster info my-cluster' to check lock status
 ```
 
 ## Output
 
-```
-Cluster "my-cluster" destroyed.
-```
+Successful destroy operation displays:
 
-## What Gets Destroyed
-
-The command removes the following:
-
-### GitOps Directory
 ```
-<organization>/gitops/
-├── applications/overlays/<cluster>/     # Removed
-└── infrastructure/clusters/<cluster>/   # Removed
+Removed GitOps directory: /path/to/gitops
+Removed cluster directory: /path/to/clusters/org/infrastructure/clusters/my-cluster
+Removed applications directory: /path/to/clusters/org/applications/overlays/my-cluster
+Removed config file: /path/to/clusters/org/.my-cluster-config.yaml
+Cleared active cluster marker
+Cluster "my-cluster" destroyed successfully.
 ```
 
-### Configuration File
+## Active Cluster Handling
+
+If the destroyed cluster was the active cluster:
+- Active cluster marker is cleared
+- User must select a new active cluster with `cluster select`
+
+## Error Handling
+
+Common errors:
+
+**Cluster not found:**
 ```
-<organization>/.<cluster>-config.yaml    # Removed
-```
-
-### What Is NOT Destroyed
-
-The following are preserved:
-
-- **SOPS Keys**: Encryption keys in `secrets/age/keys/`
-- **SSH Keys**: SSH key pairs in `secrets/ssh/`
-- **Organization Directory**: The organization directory structure
-- **Other Clusters**: Other clusters in the same organization
-- **Cloud Infrastructure**: Actual cloud resources (VMs, networks, etc.)
-
-## Important Notes
-
-### Cloud Infrastructure
-
-The `destroy` command does NOT destroy actual cloud infrastructure. To destroy cloud resources:
-
-1. **For OpenStack/Cloud Providers**:
-```bash
-cd <git_dir>/infrastructure/clusters/<cluster>
-make destroy
-# or
-terraform destroy
+Error: failed to load cluster configuration: cluster "my-cluster" not found
 ```
 
-2. **For Kind Clusters**:
-```bash
-kind delete cluster --name <cluster>
+**Lock acquisition failed:**
+```
+Error: failed to acquire lock for cluster "my-cluster": lock already held
 ```
 
-### Data Loss Warning
-
-This operation permanently deletes:
-- Cluster configuration
-- GitOps repository content for the cluster
-- Infrastructure templates
-- Application manifests
-
-**There is no undo operation.**
-
-### Backup Before Destroy
-
-Consider backing up important data:
-
-```bash
-# Backup configuration
-cp ~/.config/openCenter/clusters/org/.cluster-config.yaml /backup/
-
-# Backup GitOps repository
-tar -czf /backup/gitops-cluster.tar.gz ~/.config/openCenter/clusters/org/gitops/
-
-# Then destroy
-openCenter cluster destroy my-cluster
+**Directory removal failed:**
 ```
-
-## Workflow
-
-Typical workflow for destroying a cluster:
-
-```bash
-# 1. Destroy cloud infrastructure first
-cd ~/.config/openCenter/clusters/org/gitops/infrastructure/clusters/my-cluster
-make destroy
-
-# 2. Verify infrastructure is destroyed
-# Check cloud provider console
-
-# 3. Destroy local configuration
-openCenter cluster destroy my-cluster
-
-# 4. Clean up SOPS keys if needed (optional)
-rm ~/.config/openCenter/clusters/org/secrets/age/keys/my-cluster.*
-```
-
-## Exit Codes
-
-- `0` - Cluster destroyed successfully
-- `1` - Error destroying cluster (e.g., cluster not found)
-
-## Troubleshooting
-
-### Cluster not found
-**Error**: `failed to load cluster my-cluster: configuration file not found`
-
-**Solution**: Check available clusters:
-```bash
-openCenter cluster list
-```
-
-### GitOps directory not found
-**Error**: `failed to remove gitops directory: no such file or directory`
-
-**Solution**: The GitOps directory may have been manually deleted. The command will still remove the configuration file.
-
-### Permission denied
-**Error**: `failed to remove config file: permission denied`
-
-**Solution**: Check file permissions:
-```bash
-ls -la ~/.config/openCenter/clusters/org/.my-cluster-config.yaml
+Error: failed to remove cluster directory: permission denied
 ```
 
 ## Recovery
 
-If you accidentally destroyed a cluster:
-
-### From Backup
-```bash
-# Restore configuration
-cp /backup/.cluster-config.yaml ~/.config/openCenter/clusters/org/
-
-# Restore GitOps repository
-tar -xzf /backup/gitops-cluster.tar.gz -C ~/
-```
-
-### From Git Remote
-If GitOps repository was pushed to a remote:
-```bash
-# Clone from remote
-git clone <remote-url> ~/.config/openCenter/clusters/org/gitops
-
-# Recreate configuration
-openCenter cluster init my-cluster --force
-```
-
-### Reinitialize
-If no backup exists:
-```bash
-# Reinitialize cluster
-openCenter cluster init my-cluster
-
-# Reconfigure as needed
-openCenter cluster update my-cluster --opencenter.meta.env=prod
-```
+If destroy fails partway through:
+- Partial cleanup may have occurred
+- Check output to see which resources were removed
+- Manually remove remaining resources if necessary
+- Lock will be automatically released after timeout
 
 ## See Also
 
-- `openCenter cluster init` - Initialize a new cluster
-- `openCenter cluster list` - List all clusters
-- `openCenter cluster migrate` - Migrate cluster configurations
+- [cluster init](init.md) - Initialize new cluster configuration
+- [cluster backup](backup.md) - Create cluster backups before destruction
+- [cluster list](list.md) - List all configured clusters
+- [cluster info](info.md) - Display cluster information

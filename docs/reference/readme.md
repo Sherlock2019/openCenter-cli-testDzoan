@@ -1,305 +1,206 @@
-# `openCenter` - Kubernetes Cluster Configuration and GitOps Management
-
-## Synopsis
-```bash
-openCenter [command] [OPTIONS]
-```
-
-## Description
-
-openCenter is a command-line tool for managing Kubernetes cluster configurations and GitOps repositories. It provides a declarative approach to cluster lifecycle management with built-in validation, secrets management, and multi-provider support.
-
-The tool streamlines the process of creating, validating, and deploying Kubernetes clusters by turning a single YAML configuration file into a complete, ready-to-use GitOps repository with proper secrets management and infrastructure templates.
-
-## Key Features
-
-- **Declarative YAML-based cluster configuration** - Define your entire cluster in a single configuration file
-- **Automatic GitOps repository scaffolding** - Generate complete GitOps structures with templates
-- **SOPS integration for secrets management** - Built-in encryption for sensitive data
-- **Multi-cloud provider support** - OpenStack, AWS, VMware, Kind, and more
-- **Comprehensive validation and preflight checks** - Catch errors before deployment
-- **Organization-based multi-tenancy support** - Manage multiple clusters across organizations
-
-## Commands
-
-### Cluster Management
-- [`cluster`](cluster/readme.md) - Manage cluster configurations throughout their lifecycle
-  - `init` - Initialize new cluster configuration
-  - `list` - List all configured clusters
-  - `select` - Select active cluster
-  - `validate` - Validate cluster configuration
-  - `setup` - Setup GitOps repository
-  - `bootstrap` - Bootstrap cluster infrastructure
-  - And more...
-
-### Configuration Management
-- [`config`](config.md) - Manage CLI configuration settings
-  - `view` - Display current configuration
-  - `set` - Set configuration values
-  - `get` - Get configuration values
-  - `reset` - Reset to defaults
-  - `path` - Show configuration file location
-  - `ide` - Setup IDE integration
+# Reference Documentation
+
+**doc_type: reference**
+
+Complete technical specifications for openCenter. Look up commands, configuration options, APIs, and error codes.
+
+## Who This Is For
+
+Reference documentation is for users who need to look up specific technical details. Use this when you know what you're looking for and need exact specifications.
+
+## Core Reference
+
+### [CLI Commands](cli-commands.md)
+Complete command reference with all flags, options, and examples.
+
+**Includes:**
+- Global flags
+- Cluster commands
+- SOPS commands
+- Config commands
+- Plugin commands
+- Exit codes
+
+### [Configuration Schema](configuration.md)
+Every configuration option with types, defaults, and validation rules.
+
+**Includes:**
+- Complete YAML schema
+- Field descriptions
+- Default values
+- Validation rules
+- Examples
+
+### [Error Codes](error-codes.md)
+All error codes with descriptions and solutions.
+
+**Includes:**
+- Error code reference
+- Error categories
+- Diagnostic steps
+- Resolution procedures
+
+## Command Reference
+
+### [Cluster Commands](cluster/README.md)
+Detailed reference for cluster lifecycle management.
+
+**Commands:**
+- [init](cluster/init.md) - Initialize cluster configuration
+- [validate](cluster/validate.md) - Validate configuration
+- [setup](cluster/setup.md) - Setup GitOps repository
+- [bootstrap](cluster/bootstrap.md) - Bootstrap infrastructure
+- [list](cluster/list.md) - List clusters
+- [select](cluster/select.md) - Select active cluster
+- [current](cluster/current.md) - Show current cluster
+- [info](cluster/info.md) - Display cluster information
+- [edit](cluster/edit.md) - Edit configuration
+- [render](cluster/render.md) - Render templates
+- [schema](cluster/schema.md) - Generate JSON schema
+- [update](cluster/update.md) - Update configuration
+- [migrate](cluster/migrate.md) - Migrate schema version
+- [preflight](cluster/preflight.md) - Run preflight checks
+- [destroy](cluster/destroy.md) - Destroy cluster
+
+## API and Integration
+
+### [API Reference](api.md)
+Go package documentation for programmatic use.
+
+**Includes:**
+- Package interfaces
+- Type definitions
+- Function signatures
+- Usage examples
+
+### [Environment Variables](environment-variables.md)
+All environment variables that affect openCenter behavior.
+
+**Includes:**
+- Variable names
+- Descriptions
+- Default values
+- Examples
+
+### [Shell Integration](shell-integration.md)
+Shell completion and integration features.
+
+**Includes:**
+- Bash completion
+- Zsh completion
+- Fish completion
+- PowerShell completion
+
+## Data Formats
+
+### [Secrets Reference](secrets.md)
+SOPS encryption format and key management.
+
+**Includes:**
+- Age key format
+- SOPS configuration
+- Encryption patterns
+- Key rotation
 
-### Secrets Management
-- [`sops`](sops.md) - SOPS key management and automation
-  - `generate-key` - Generate new Age key pairs
-  - `rotate-key` - Rotate keys and re-encrypt secrets
-  - `backup-key` - Backup Age keys
-  - `validate` - Validate SOPS configuration
-  - `secrets-encrypt` - Encrypt secrets
-  - `secrets-decrypt` - Decrypt secrets
+### [Templates Reference](templates.md)
+Template system and available templates.
 
-### Plugin System
-- [`plugins`](plugins.md) - Manage openCenter plugins
-  - `list` - List discovered plugins
+**Includes:**
+- Template syntax
+- Available variables
+- Custom templates
+- Template functions
 
-### Utility Commands
-- [`version`](version.md) - Display version and build information
+### [File Formats](file-formats.md)
+File format specifications for openCenter files.
 
-## Global Options
+**Includes:**
+- Configuration files
+- GitOps structure
+- Manifest formats
+- Schema files
 
-### `--config <path>`
-- **Description**: Alternative cluster configuration file path
-- **Type**: String
-- **Example**: `--config /path/to/cluster-config.yaml`
+## Additional Reference
 
-### `--config-dir <path>`
-- **Description**: Configuration directory (defaults to `~/.config/openCenter` on Linux/macOS)
-- **Type**: String
-- **Example**: `--config-dir ~/my-opencenter-config`
+### [Glossary](glossary.md)
+Definitions of terms used throughout openCenter documentation.
 
-### `--dry-run`
-- **Description**: Enable dry-run mode to print planned actions without executing them
-- **Type**: Boolean
-- **Default**: `false`
+**Includes:**
+- Technical terms
+- Acronyms
+- Concepts
+- Related terms
 
-### `--log-level <level>`
-- **Description**: Set log level explicitly
-- **Type**: String
-- **Valid Values**: `debug`, `info`, `warn`, `error`
-- **Default**: `warn`
+## Reference by Category
 
-### `--set <key>=<value>`
-- **Description**: Override configuration values using dot notation
-- **Type**: String (repeatable)
-- **Example**: `--set logging.level=debug --set behavior.autoConfirm=true`
+### Configuration
+- [Configuration Schema](configuration.md)
+- [Environment Variables](environment-variables.md)
+- [File Formats](file-formats.md)
 
-### `--verbose`
-- **Description**: Enable verbose logging (sets log level to debug)
-- **Type**: Boolean
-- **Default**: `false`
+### Commands
+- [CLI Commands](cli-commands.md)
+- [Cluster Commands](cluster/README.md)
 
-### `-h, --help`
-- **Description**: Display help information
+### Security
+- [Secrets Reference](secrets.md)
+- [Error Codes](error-codes.md)
 
-## Examples
+### Integration
+- [API Reference](api.md)
+- [Shell Integration](shell-integration.md)
+- [Templates Reference](templates.md)
 
-### Basic Cluster Workflow
+### General
+- [Glossary](glossary.md)
 
-```bash
-# Initialize a new cluster configuration
-openCenter cluster init my-cluster
+## Using Reference Documentation
 
-# Validate the configuration
-openCenter cluster validate my-cluster
+### Finding Information
 
-# Setup GitOps repository
-openCenter cluster setup my-cluster
+**By Command:**
+1. Go to [CLI Commands](cli-commands.md)
+2. Find command in table of contents
+3. Read syntax and examples
 
-# Bootstrap the cluster
-openCenter cluster bootstrap my-cluster
-```
+**By Configuration:**
+1. Go to [Configuration Schema](configuration.md)
+2. Search for field name
+3. Check type and validation rules
 
-### Organization-Based Workflow
+**By Error:**
+1. Go to [Error Codes](error-codes.md)
+2. Look up error code
+3. Follow resolution steps
 
-```bash
-# Initialize cluster in organization
-openCenter cluster init prod-cluster --org production
+**By Concept:**
+1. Go to [Glossary](glossary.md)
+2. Find term definition
+3. Follow links to detailed docs
 
-# List all clusters
-openCenter cluster list
+### Reading Reference Docs
 
-# Select active cluster
-openCenter cluster select production/prod-cluster
+Reference documentation is organized for quick lookup:
+- **Overview**: One-paragraph summary
+- **Syntax**: Command or configuration syntax
+- **Parameters**: All options with types
+- **Examples**: Practical usage examples
+- **Notes**: Important details
+- **See Also**: Related references
 
-# Show current cluster
-openCenter cluster current
-```
+## Related Documentation
 
-### Configuration Management
+- **[Tutorials](../tutorials/README.md)** - Learn by doing
+- **[How-To Guides](../how-to/README.md)** - Solve specific problems
+- **[Explanation](../explanation/README.md)** - Understand concepts
 
-```bash
-# View current CLI configuration
-openCenter config view
+## Contributing
 
-# Set log level
-openCenter config set logging.level debug
+Found an error in the reference docs? See our [Contributing Guide](../../contributing.md) to submit corrections.
 
-# Get configuration value
-openCenter config get paths.clustersDir
+## Version Compatibility
 
-# Reset to defaults
-openCenter config reset
-```
-
-### SOPS Key Management
-
-```bash
-# Generate new Age key pair
-openCenter sops generate-key
-
-# Validate SOPS configuration
-openCenter sops validate
-
-# Encrypt secrets
-openCenter sops secrets-encrypt
-
-# Rotate keys
-openCenter sops rotate-key --search-path ./gitops
-```
-
-### Using Global Flags
-
-```bash
-# Run with verbose logging
-openCenter --verbose cluster validate my-cluster
-
-# Dry run mode
-openCenter --dry-run cluster bootstrap my-cluster
-
-# Override configuration
-openCenter --set logging.level=debug cluster init test-cluster
-
-# Use custom config directory
-openCenter --config-dir ~/custom-config cluster list
-```
-
-### Plugin Management
-
-```bash
-# List available plugins
-openCenter plugins list
-
-# Use a plugin command (example)
-openCenter my-plugin <args>
-```
-
-### Version Information
-
-```bash
-# Show full version information
-openCenter version
-
-# Show short version only
-openCenter version --short
-```
-
-## Configuration
-
-### Configuration File Location
-
-The CLI configuration is stored at:
-- Linux/macOS: `~/.config/openCenter/config.yaml`
-- Override with: `OPENCENTER_CONFIG_DIR` environment variable
-
-### Cluster Configuration Location
-
-Cluster configurations are stored in an organization-based structure:
-```
-~/.config/openCenter/clusters/
-└── <organization>/
-    ├── .sops.yaml
-    ├── .<cluster>-config.yaml
-    ├── secrets/
-    └── gitops/
-```
-
-## Environment Variables
-
-### `OPENCENTER_CONFIG_DIR`
-Override the default configuration directory.
-```bash
-export OPENCENTER_CONFIG_DIR=~/my-opencenter-config
-```
-
-### `OPENCENTER_DEBUG`
-Enable debug logging and artifacts.
-```bash
-export OPENCENTER_DEBUG=1
-```
-
-### `OPENCENTER_PLUGINS_DIR`
-Directory for external plugins.
-```bash
-export OPENCENTER_PLUGINS_DIR=~/opencenter-plugins
-```
-
-### `EDITOR` or `VISUAL`
-Preferred editor for `cluster edit` command.
-```bash
-export EDITOR=vim
-```
-
-### `SOPS_AGE_KEY_FILE`
-Path to SOPS Age key file.
-```bash
-export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt
-```
-
-## Exit Codes
-
-- `0` - Success
-- `1` - Error occurred
-
-## Configuration Sections
-
-### Logging
-- `logging.level` - Log level (debug, info, warn, error)
-- `logging.format` - Log format (text, json, yaml)
-- `logging.output` - Log output (stdout, stderr, or file path)
-
-### Paths
-- `paths.configDir` - Configuration directory
-- `paths.clustersDir` - Clusters directory
-
-### Behavior
-- `behavior.autoConfirm` - Auto-confirm prompts
-- `behavior.dryRun` - Enable dry-run mode by default
-- `behavior.verbose` - Enable verbose logging by default
-
-### Defaults
-- `defaults.provider` - Default infrastructure provider
-- `defaults.region` - Default region
-- `defaults.environment` - Default environment
-
-## Plugin System
-
-openCenter supports external plugins that extend functionality. Plugins are discovered in:
-
-1. `OPENCENTER_PLUGINS_DIR` environment variable
-2. `<config-dir>/plugins` directory
-3. System `PATH`
-
-Plugin binaries must be named `openCenter-<plugin-name>` and be executable.
-
-## Documentation
-
-- **Tutorials**: Step-by-step learning guides
-- **How-To Guides**: Problem-solving guides for specific tasks
-- **Reference**: Technical reference material (this document)
-- **Explanation**: Conceptual explanations and architecture
-
-## Support
-
-- **Documentation**: https://docs.opencenter.cloud
-- **Issues**: https://github.com/rackerlabs/openCenter-cli/issues
-- **Discussions**: https://github.com/rackerlabs/openCenter-cli/discussions
-
-## See Also
-
-- [Cluster Management](cluster/readme.md) - Complete cluster lifecycle management
-- [Configuration Reference](configuration.md) - Detailed configuration options
-- [GitOps Integration](../explanation/gitops.md) - GitOps workflow details
-- [SOPS Integration](../explanation/sops.md) - Secrets management
-- [Provider Support](../explanation/providers.md) - Supported cloud providers
+This reference documentation is for openCenter v1.0.0. For other versions:
+- Check the version tag in GitHub
+- Review the changelog for differences
+- Use `openCenter version` to check your installed version

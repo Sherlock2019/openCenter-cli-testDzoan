@@ -1,97 +1,201 @@
-# `openCenter cluster schema` - Export Cluster JSON Schema
+# cluster schema
+
+**doc_type:** reference
+
+Export cluster JSON schema with validation rules.
 
 ## Synopsis
+
 ```bash
-openCenter cluster schema [OPTIONS]
+openCenter cluster schema [flags]
 ```
 
 ## Description
 
-Export the JSON schema for openCenter cluster configuration. The schema includes comprehensive validation rules, constraints, and documentation for all configuration sections. It can be used for IDE integration, validation, and documentation purposes.
+The `cluster schema` command exports the JSON schema for openCenter cluster configuration. The schema includes comprehensive validation rules, constraints, and documentation for all configuration sections.
 
-The schema is automatically generated from Go struct definitions and includes all configuration options, data types, validation rules, and descriptions.
+**Note:** This command is hidden from help output as it is primarily intended for internal use and IDE integration.
 
-## Options
+## Flags
 
-### `--out <path>`
-- **Description**: Output file path (if not specified, prints to stdout)
-- **Type**: String
-- **Default**: stdout
-
-### `--pretty`
-- **Description**: Pretty print JSON schema with indentation
-- **Type**: Boolean
-- **Default**: `true`
-
-### `--version`
-- **Description**: Show schema version and exit
-- **Type**: Boolean
-- **Default**: `false`
-
-### `-h, --help`
-- **Description**: Display help information for this subcommand
+- `--out string` - Output file path (default: stdout)
+- `--pretty` - Pretty-print JSON output (default: true)
+- `--version` - Show schema version
 
 ## Examples
 
-### Print schema to stdout
 ```bash
+# Print schema to stdout
 openCenter cluster schema
+
+# Print schema with pretty formatting
+openCenter cluster schema --pretty
+
+# Save schema to file
+openCenter cluster schema --out schema/cluster.schema.json
+
+# Save schema without pretty formatting
+openCenter cluster schema --out schema/cluster.schema.json --pretty=false
+
+# Show schema version
+openCenter cluster schema --version
 ```
 
-### Save schema to file with pretty formatting
+## Schema Format
+
+The schema follows JSON Schema Draft 2020-12 format and includes:
+
+- **Type definitions** - Data types for all fields
+- **Validation rules** - Required fields, patterns, constraints
+- **Default values** - Sensible defaults for optional fields
+- **Descriptions** - Documentation for each field
+- **Examples** - Sample values for complex fields
+- **Constraints** - Min/max values, enum options, format validation
+
+## Schema Structure
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rackerlabs/openCenter-cli/schema/cluster.schema.json",
+  "title": "openCenter Cluster Configuration",
+  "description": "Complete schema for openCenter cluster configuration",
+  "type": "object",
+  "properties": {
+    "opencenter": {
+      "type": "object",
+      "properties": {
+        "meta": { ... },
+        "cluster": { ... },
+        "infrastructure": { ... },
+        "gitops": { ... },
+        "services": { ... }
+      }
+    },
+    "secrets": { ... }
+  },
+  "required": ["opencenter"]
+}
+```
+
+## Use Cases
+
+### IDE Integration
+
+Configure IDE for schema validation and autocomplete:
+
+**VS Code (.vscode/settings.json):**
+```json
+{
+  "yaml.schemas": {
+    "schema/cluster.schema.json": [
+      "**/*-config.yaml",
+      "**/cluster-*.yaml"
+    ]
+  }
+}
+```
+
+**JetBrains IDEs (.idea/jsonSchemas.xml):**
+```xml
+<project version="4">
+  <component name="JsonSchemaMappingsProjectConfiguration">
+    <state>
+      <map>
+        <entry key="openCenter Cluster">
+          <value>
+            <SchemaInfo>
+              <option name="name" value="openCenter Cluster" />
+              <option name="relativePathToSchema" value="schema/cluster.schema.json" />
+              <option name="patterns">
+                <list>
+                  <Item>
+                    <option name="pattern" value="*-config.yaml" />
+                  </Item>
+                </list>
+              </option>
+            </SchemaInfo>
+          </value>
+        </entry>
+      </map>
+    </state>
+  </component>
+</project>
+```
+
+### Documentation Generation
+
+Generate documentation from schema:
 ```bash
-openCenter cluster schema --out schema/cluster.schema.json --pretty
+# Export schema
+openCenter cluster schema --out schema/cluster.schema.json
+
+# Generate markdown documentation
+npx @adobe/jsonschema2md -d schema -o docs/schema
 ```
 
-### Save schema without formatting
+### Validation Tools
+
+Use schema for external validation:
 ```bash
-openCenter cluster schema --out cluster.schema.json --pretty=false
+# Export schema
+openCenter cluster schema --out schema/cluster.schema.json
+
+# Validate configuration with ajv-cli
+ajv validate -s schema/cluster.schema.json -d my-cluster-config.yaml
 ```
 
-### Show schema version
+### CI/CD Integration
+
+Validate configurations in CI/CD pipelines:
+```bash
+#!/bin/bash
+set -e
+
+# Generate schema
+openCenter cluster schema --out /tmp/cluster.schema.json
+
+# Validate all cluster configs
+for config in clusters/**/*-config.yaml; do
+  echo "Validating $config"
+  ajv validate -s /tmp/cluster.schema.json -d "$config"
+done
+```
+
+## Schema Version
+
+Check the current schema version:
 ```bash
 openCenter cluster schema --version
 ```
+
 Output:
 ```
 Schema version: 1.0.0
 ```
 
-### Pipe to jq for processing
-```bash
-openCenter cluster schema | jq '.properties.opencenter'
-```
-
-### Save to project schema directory
-```bash
-openCenter cluster schema --out schema/cluster.schema.json
-```
-
 ## Output
 
-### Pretty Formatted (Default)
+### Pretty-Printed (Default)
 
 ```json
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rackerlabs/openCenter-cli/schema/cluster.schema.json",
   "title": "openCenter Cluster Configuration",
-  "description": "Complete configuration schema for openCenter clusters",
+  "type": "object",
   "properties": {
     "opencenter": {
       "type": "object",
+      "required": ["meta", "cluster", "infrastructure"],
       "properties": {
         "meta": {
           "type": "object",
+          "description": "Cluster metadata",
           "properties": {
             "name": {
               "type": "string",
-              "description": "Cluster name"
-            },
-            "env": {
-              "type": "string",
-              "enum": ["dev", "staging", "prod"],
-              "description": "Environment designation"
+              "description": "Cluster display name"
             }
           }
         }
@@ -101,163 +205,14 @@ openCenter cluster schema --out schema/cluster.schema.json
 }
 ```
 
-### Compact Format (--pretty=false)
+### Compact (--pretty=false)
 
 ```json
-{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","title":"openCenter Cluster Configuration",...}
+{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://github.com/rackerlabs/openCenter-cli/schema/cluster.schema.json","title":"openCenter Cluster Configuration","type":"object","properties":{"opencenter":{"type":"object","required":["meta","cluster","infrastructure"],"properties":{"meta":{"type":"object","description":"Cluster metadata","properties":{"name":{"type":"string","description":"Cluster display name"}}}}}}}
 ```
-
-## Schema Structure
-
-The exported schema includes:
-
-### Metadata
-- Schema version
-- Title and description
-- JSON Schema draft version
-
-### Configuration Sections
-- `opencenter` - Core openCenter configuration
-- `iac` - Infrastructure as Code configuration
-- `secrets` - Secrets management configuration
-
-### Validation Rules
-- Required fields
-- Data types
-- Enum values
-- Pattern matching
-- Min/max constraints
-- Custom validation rules
-
-### Documentation
-- Field descriptions
-- Examples
-- Default values
-- Deprecation notices
-
-## IDE Integration
-
-### VS Code
-
-1. Save schema to file:
-```bash
-openCenter cluster schema --out schema/cluster.schema.json
-```
-
-2. Configure in `.vscode/settings.json`:
-```json
-{
-  "yaml.schemas": {
-    "./schema/cluster.schema.json": "*.opencenter.yaml"
-  }
-}
-```
-
-### JetBrains IDEs (IntelliJ, PyCharm, etc.)
-
-1. Save schema to file
-2. Go to Settings → Languages & Frameworks → Schemas and DTDs → JSON Schema Mappings
-3. Add new mapping:
-   - Name: openCenter Cluster
-   - Schema file: `schema/cluster.schema.json`
-   - File pattern: `*.opencenter.yaml`
-
-### Vim/Neovim with coc.nvim
-
-Add to `coc-settings.json`:
-```json
-{
-  "yaml.schemas": {
-    "./schema/cluster.schema.json": "*.opencenter.yaml"
-  }
-}
-```
-
-## Schema Validation
-
-Use the schema to validate configuration files:
-
-### With ajv-cli
-```bash
-npm install -g ajv-cli
-openCenter cluster schema --out schema.json
-ajv validate -s schema.json -d cluster-config.yaml
-```
-
-### With Python jsonschema
-```python
-import json
-import yaml
-from jsonschema import validate
-
-# Load schema
-with open('schema.json') as f:
-    schema = json.load(f)
-
-# Load config
-with open('cluster-config.yaml') as f:
-    config = yaml.safe_load(f)
-
-# Validate
-validate(instance=config, schema=schema)
-```
-
-## Schema Versioning
-
-The schema follows semantic versioning:
-
-- **Major version**: Breaking changes to schema structure
-- **Minor version**: New fields or non-breaking changes
-- **Patch version**: Documentation updates or bug fixes
-
-Check schema version:
-```bash
-openCenter cluster schema --version
-```
-
-## Use Cases
-
-### Documentation Generation
-```bash
-# Generate schema
-openCenter cluster schema --out docs/schema.json
-
-# Generate documentation from schema
-npx @adobe/jsonschema2md -d docs/schema.json -o docs/reference/
-```
-
-### CI/CD Validation
-```bash
-# In CI pipeline
-openCenter cluster schema --out /tmp/schema.json
-ajv validate -s /tmp/schema.json -d config/*.yaml
-```
-
-### IDE Autocomplete
-Save schema to project and configure IDE for autocomplete and validation.
-
-### Configuration Testing
-```bash
-# Validate test configurations
-openCenter cluster schema --out schema.json
-for config in testdata/config/*.yaml; do
-  ajv validate -s schema.json -d "$config"
-done
-```
-
-## Notes
-
-- Schema is generated from Go struct definitions
-- The schema includes all configuration options and validation rules
-- Use `--pretty` for human-readable output
-- Schema can be used for IDE integration and validation
-- The schema follows JSON Schema Draft 07 specification
-- Schema version is independent of openCenter version
-- Generated schema includes comprehensive documentation
-- Use the schema for configuration validation in CI/CD pipelines
 
 ## See Also
 
-- `openCenter cluster validate` - Validate cluster configuration
-- `openCenter cluster init` - Initialize cluster with schema defaults
-- [JSON Schema Documentation](https://json-schema.org/)
+- [cluster validate](../cli-commands.md#cluster-validate) - Validate cluster configuration
+- [cluster init](init.md) - Initialize cluster with schema defaults
+- [config ide](../cli-commands.md#config-ide) - Generate IDE configuration files

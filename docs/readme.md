@@ -1,155 +1,166 @@
-# openCenter Documentation Index
+# openCenter Documentation
 
-Welcome to the openCenter documentation. This index will help you find the information you need.
+**doc_type: reference**
 
-## Quick Start
+Welcome to openCenter documentation. This guide helps you find what you need quickly.
 
-- **[Getting Started](getting-started.md)** - Your first cluster in 10 minutes
-- **[Overview](explanation/overview.md)** - What is openCenter and what can it do?
-- **[Current Status](explanation/current-status.md)** - Implementation status and roadmap
-- **[Architecture](explanation/architecture.md)** - Technical architecture and design
+## What is openCenter?
+
+openCenter transforms a single YAML configuration into a production-ready Kubernetes cluster with GitOps workflows, secrets management, and multi-cloud support.
+
+## Quick Navigation
+
+**New to openCenter?** Start with [Getting Started](tutorials/getting-started.md) for a 15-minute walkthrough.
+
+**Need to solve a problem?** Check [How-To Guides](how-to/README.md) for task-focused instructions.
+
+**Looking up details?** Browse [Reference](reference/README.md) for complete technical specifications.
+
+**Want to understand concepts?** Read [Explanations](explanation/README.md) for architecture and design decisions.
 
 ## Documentation Structure
 
-openCenter documentation follows the [Diátaxis](https://diataxis.fr/) framework, organizing content into four categories:
+This documentation follows the [Diátaxis framework](https://diataxis.fr/), organizing content by purpose:
 
-### 📚 Tutorials
+### 📚 [Tutorials](tutorials/README.md)
+*Learning by doing*
 
-**Learning-oriented:** Step-by-step guides to help you learn openCenter.
+Step-by-step guides that build confidence through hands-on practice:
+- [Getting Started](tutorials/getting-started.md) - Deploy your first cluster in 15 minutes
+- [OpenStack Deployment](tutorials/openstack-deployment.md) - Production OpenStack cluster
+- [Local Development with Kind](tutorials/kind-local-dev.md) - Test locally before deploying
+- [Multi-Cluster Management](tutorials/multi-cluster.md) - Manage multiple clusters
 
-- [Getting Started](getting-started.md) - Your first cluster in 10 minutes
-- [OpenStack Quickstart](tutorials/quickstart-openstack.md) - Deploy on OpenStack
-- [AWS Quickstart](tutorials/quickstart-aws.md) - Deploy on AWS
-- [Kind Quickstart](tutorials/quickstart-kind.md) - Local development with Kind
+### 🔧 [How-To Guides](how-to/README.md)
+*Solving specific problems*
 
-**When to use:** You're new to openCenter and want to learn by doing.
+Practical instructions for common tasks:
+- [Troubleshooting](how-to/troubleshooting.md) - Diagnose and fix issues
+- [Managing Secrets](how-to/secrets-management.md) - SOPS encryption workflows
+- [Adding Services](how-to/adding-services.md) - Extend cluster capabilities
+- [Upgrading Clusters](how-to/upgrading-clusters.md) - Safe upgrade procedures
+- [Backup and Recovery](how-to/backup-recovery.md) - Protect your clusters
 
-### 🔧 How-To Guides
+### 📖 [Reference](reference/README.md)
+*Looking up facts*
 
-**Task-oriented:** Practical guides for accomplishing specific goals.
+Complete technical specifications:
+- [CLI Commands](reference/cli-commands.md) - All commands and flags
+- [Configuration Schema](reference/configuration.md) - Every configuration option
+- [API Reference](reference/api.md) - Go package documentation
+- [Error Codes](reference/error-codes.md) - Error messages and solutions
 
-- [Troubleshooting](how-to/troubleshooting.md) - Common issues and solutions
-- [Adding Services](how-to/adding-services.md) - Add services to your cluster
-- [Managing Secrets](how-to/secrets.md) - SOPS and secrets management
-- [IDE Integration](how-to/ide-integration.md) - Setup your development environment
+### 💡 [Explanation](explanation/README.md)
+*Understanding concepts*
 
-**When to use:** You know what you want to do and need instructions.
+Architecture, design decisions, and background:
+- [Architecture Overview](explanation/architecture.md) - System design and components
+- [GitOps Workflow](explanation/gitops-workflow.md) - How GitOps integration works
+- [Security Model](explanation/security-model.md) - Security architecture
+- [Provider Comparison](explanation/provider-comparison.md) - Choosing the right provider
 
-### 📖 Reference
+## By User Role
 
-**Information-oriented:** Technical specifications and detailed information.
+### Cluster Operators
+You deploy and maintain Kubernetes clusters.
 
-- [CLI Commands](reference/cli-commands.md) - Complete CLI reference
-- [Configuration](reference/configuration.md) - Configuration file reference
-- [Cluster Commands](reference/cluster/readme.md) - Cluster lifecycle commands
-- [Shell Integration](reference/shell-integration.md) - Shell completion and integration
+1. [Getting Started](tutorials/getting-started.md)
+2. [CLI Commands Reference](reference/cli-commands.md)
+3. [Troubleshooting Guide](how-to/troubleshooting.md)
+4. [Backup and Recovery](how-to/backup-recovery.md)
 
-**When to use:** You need to look up specific details or specifications.
+### Platform Engineers
+You design and standardize cluster configurations.
 
-### 💡 Explanation
+1. [Architecture Overview](explanation/architecture.md)
+2. [Configuration Schema](reference/configuration.md)
+3. [Adding Services](how-to/adding-services.md)
+4. [Multi-Cluster Management](tutorials/multi-cluster.md)
 
-**Understanding-oriented:** Conceptual explanations and background information.
+### Security Engineers
+You manage secrets and enforce security policies.
 
-- [Overview](explanation/overview.md) - High-level overview of openCenter
-- [Architecture](explanation/architecture.md) - Technical architecture and design
-- [Current Status](explanation/current-status.md) - Implementation status and roadmap
+1. [Security Model](explanation/security-model.md)
+2. [Managing Secrets](how-to/secrets-management.md)
+3. [Audit and Compliance](how-to/audit-compliance.md)
+4. [Secrets Reference](reference/secrets.md)
 
-**When to use:** You want to understand concepts and design decisions.
+### Developers
+You extend openCenter or integrate it into workflows.
 
-## By Topic
+1. [Developer Guide](dev/README.md)
+2. [API Reference](reference/api.md)
+3. [Plugin Development](how-to/plugin-development.md)
+4. [Contributing Guide](../contributing.md)
 
-### Getting Started
-1. [Getting Started](getting-started.md) - Your first cluster in 10 minutes
-2. [Overview](explanation/overview.md) - Understand what openCenter is
-3. [CLI Commands](reference/cli-commands.md) - Learn available commands
-4. [Configuration](reference/configuration.md) - Understand configuration structure
-
-### Configuration Management
-- [Configuration Reference](reference/configuration.md) - Complete configuration guide
-- [Cluster Configuration](cluster-config.md) - Cluster config details
-
-### Secrets Management
-- [Managing Secrets](how-to/secrets.md) - SOPS integration guide
-- [CLI Commands - SOPS](reference/cli-commands.md#sops-commands) - SOPS command reference
-
-### Provider Support
-- [OpenStack Quickstart](tutorials/quickstart-openstack.md) - Deploy on OpenStack
-- [AWS Quickstart](tutorials/quickstart-aws.md) - Deploy on AWS
-- [Kind Quickstart](tutorials/quickstart-kind.md) - Local development
-- [Configuration - Providers](reference/configuration.md#opencenterinfrastructure) - Provider configuration
-
-### Development
-- [Architecture](explanation/architecture.md) - Technical architecture
-- [Current Status](explanation/current-status.md) - Development status
-- [Developer Guide](dev/readme.md) - CLI architecture and implementation
-- [Contributing](contributing.md) - Contribution guidelines
-
-### Internal Documentation
-- [Internal Packages](dev/internal/README.md) - Implementation details for internal packages
-- [Completed Tasks](dev/completed-tasks/README.md) - Historical task completion records
-- [Testing Documentation](dev/testing/README.md) - Testing infrastructure and practices
-
-## By Role
-
-### For Cluster Operators
-1. [Getting Started](getting-started.md)
-2. [Troubleshooting](how-to/troubleshooting.md)
-3. [Managing Secrets](how-to/secrets.md)
-4. [CLI Commands](reference/cli-commands.md)
-
-### For Platform Engineers
-1. [Overview](explanation/overview.md)
-2. [Architecture](explanation/architecture.md)
-3. [Configuration Reference](reference/configuration.md)
-4. [Adding Services](how-to/adding-services.md)
-
-### For Developers
-1. [Architecture](explanation/architecture.md)
-2. [Current Status](explanation/current-status.md)
-3. [Developer Guide](dev/readme.md)
-4. [Internal Packages](dev/internal/README.md)
-5. [Testing Documentation](dev/testing/README.md)
-6. [Contributing](contributing.md)
-
-### For Decision Makers
-1. [Overview](explanation/overview.md)
-2. [Current Status](explanation/current-status.md)
-3. [Architecture](explanation/architecture.md)
-
-## Common Tasks
+## By Task
 
 ### Initial Setup
-- [Install openCenter](tutorials/quickstart.md#prerequisites)
-- [Initialize a Cluster](reference/cli-commands.md#cluster-init)
-- [Validate Configuration](reference/cli-commands.md#cluster-validate)
-- [Setup GitOps](reference/cli-commands.md#cluster-setup)
+- [Install openCenter](tutorials/getting-started.md#installation)
+- [Initialize first cluster](tutorials/getting-started.md#initialize-cluster)
+- [Configure cloud provider](how-to/provider-setup.md)
+- [Generate SOPS keys](how-to/secrets-management.md#generating-keys)
 
 ### Daily Operations
-- [List Clusters](reference/cli-commands.md#cluster-list)
-- [Select Active Cluster](reference/cli-commands.md#cluster-select)
-- [Update Configuration](reference/cli-commands.md#cluster-update)
-- [Validate Changes](reference/cli-commands.md#cluster-validate)
+- [List clusters](reference/cli-commands.md#cluster-list)
+- [Validate configuration](reference/cli-commands.md#cluster-validate)
+- [Deploy changes](how-to/deploying-changes.md)
+- [Monitor cluster status](how-to/monitoring.md)
 
-### Secrets Management
-- [Generate SOPS Keys](reference/cli-commands.md#sops-generate-key)
-- [Encrypt Secrets](reference/cli-commands.md#sops-secrets-encrypt)
-- [Rotate Keys](reference/cli-commands.md#sops-rotate-key)
-- [Backup Keys](reference/cli-commands.md#sops-backup-key)
+### Troubleshooting
+- [Common errors](how-to/troubleshooting.md#common-errors)
+- [Debug mode](how-to/troubleshooting.md#debug-mode)
+- [Log analysis](how-to/troubleshooting.md#log-analysis)
+- [Getting help](how-to/troubleshooting.md#getting-help)
 
-### Cluster Lifecycle
-- [Initialize Cluster](reference/cli-commands.md#cluster-init)
-- [Setup Infrastructure](reference/cli-commands.md#cluster-setup)
-- [Bootstrap Cluster](reference/cli-commands.md#cluster-bootstrap)
-- [Destroy Cluster](reference/cli-commands.md#cluster-destroy)
+### Advanced Topics
+- [Custom templates](how-to/custom-templates.md)
+- [Plugin development](how-to/plugin-development.md)
+- [CI/CD integration](how-to/cicd-integration.md)
+- [Disaster recovery](operations/disaster-recovery.md)
 
-## Troubleshooting
+## Provider-Specific Documentation
 
-### Common Issues
-- [Troubleshooting Guide](how-to/troubleshooting.md) - Complete troubleshooting reference
-- Check [Current Status](explanation/current-status.md#known-issues) for known issues
-- Review [CLI Commands](reference/cli-commands.md) for correct usage
-- Enable verbose logging with `--verbose` flag
-- Generate debug config with `--generate-debug-config`
+### [OpenStack](providers/openstack/README.md)
+- [Setup Guide](providers/openstack/setup.md)
+- [Network Configuration](providers/openstack/networking.md)
+- [Troubleshooting](providers/openstack/troubleshooting.md)
+
+### [AWS](providers/aws/README.md)
+- [Setup Guide](providers/aws/setup.md)
+- [IAM Configuration](providers/aws/iam.md)
+- [VPC Design](providers/aws/vpc.md)
+
+### [Kind](providers/kind/README.md)
+- [Local Development](providers/kind/local-dev.md)
+- [Testing Workflows](providers/kind/testing.md)
+
+### [Talos Linux](providers/talos/README.md)
+- [Architecture](providers/talos/architecture.md)
+- [Implementation](providers/talos/implementation.md)
+
+## Operations Documentation
+
+### [Disaster Recovery](operations/disaster-recovery.md)
+Backup strategies, recovery procedures, and business continuity planning.
+
+### [Monitoring and Observability](operations/monitoring.md)
+Metrics, logging, alerting, and performance tuning.
+
+### [Security Operations](operations/security.md)
+Security hardening, vulnerability management, and incident response.
+
+### [Capacity Planning](operations/capacity-planning.md)
+Resource sizing, scaling strategies, and cost optimization.
+
+## Development Documentation
+
+Internal documentation for contributors and maintainers:
+
+- [Developer Guide](dev/README.md) - Architecture and development workflow
+- [Testing Guide](dev/testing/README.md) - Test infrastructure and practices
+- [Internal Packages](dev/internal/README.md) - Package documentation
+- [Release Process](dev/release-process.md) - How releases are created
 
 ## Additional Resources
 
@@ -158,44 +169,31 @@ openCenter documentation follows the [Diátaxis](https://diataxis.fr/) framework
 - [FluxCD Documentation](https://fluxcd.io/docs/)
 - [SOPS Documentation](https://github.com/mozilla/sops)
 - [Age Encryption](https://age-encryption.org/)
-- [OpenTofu Documentation](https://opentofu.org/docs/)
 
 ### Community
-- GitHub Repository: https://github.com/rackerlabs/openCenter-cli
-- Issue Tracker: https://github.com/rackerlabs/openCenter-cli/issues
-- Discussions: https://github.com/rackerlabs/openCenter-cli/discussions (Coming Soon)
+- [GitHub Repository](https://github.com/rackerlabs/openCenter-cli)
+- [Issue Tracker](https://github.com/rackerlabs/openCenter-cli/issues)
+- [Discussions](https://github.com/rackerlabs/openCenter-cli/discussions)
+
+### Support
+- [Troubleshooting Guide](how-to/troubleshooting.md)
+- [FAQ](explanation/faq.md)
+- [Known Issues](explanation/known-issues.md)
 
 ## Contributing to Documentation
 
-We welcome documentation contributions! See our [Contributing Guide](contributing.md) for details.
-
-### Documentation Standards
-- Follow the Diátaxis framework
-- Use clear, concise language
-- Include code examples
-- Test all commands and examples
-- Keep documentation up-to-date with code changes
-
-### Documentation Structure
-```
-docs/
-├── readme.md             # This file
-├── getting-started.md    # Main entry point for new users
-├── tutorials/            # Learning-oriented guides
-├── how-to/              # Task-oriented guides
-├── reference/           # Information-oriented docs
-├── explanation/         # Understanding-oriented docs
-├── dev/                 # Developer documentation
-├── operations/          # Operational guides
-└── providers/           # Provider-specific docs
-```
+We welcome documentation improvements. See [Contributing Guide](../contributing.md) for:
+- Documentation standards
+- Diátaxis framework guidelines
+- Review process
+- Style guide
 
 ## Version Information
 
 - **Documentation Version:** 1.0.0
-- **openCenter Version:** 0.0.1
-- **Last Updated:** November 7, 2025
+- **openCenter Version:** 1.0.0
+- **Last Updated:** January 19, 2026
 
 ## License
 
-This documentation is licensed under the Apache 2.0 License. See [LICENSE](../LICENSE) for details.
+Documentation licensed under Apache 2.0. See [LICENSE](../LICENSE).

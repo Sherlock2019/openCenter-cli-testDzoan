@@ -1,176 +1,157 @@
-# `openCenter cluster edit` - Edit a Cluster Configuration
+# cluster edit
+
+**doc_type:** reference
+
+Edit cluster configuration in your preferred editor.
 
 ## Synopsis
+
 ```bash
 openCenter cluster edit [name]
 ```
 
 ## Description
 
-Open a cluster configuration file in your preferred text editor. The editor is determined by checking the `EDITOR` or `VISUAL` environment variables, falling back to `vi` if neither is set.
+The `cluster edit` command opens the cluster configuration file in your preferred text editor. If no cluster name is provided, it edits the currently selected cluster.
 
-If no cluster name is provided, the currently selected cluster is edited.
+The editor is determined by checking environment variables in this order:
+1. `EDITOR`
+2. `VISUAL`
+3. Falls back to `vi` if neither is set
 
 ## Arguments
 
-### `[name]`
-- **Required/Optional**: Optional
-- **Description**: Name of the cluster to edit (format: `cluster` or `organization/cluster`). If not provided, edits the currently selected cluster
-- **Example**: `my-cluster` or `production/my-cluster`
-
-## Options
-
-### `-h, --help`
-- **Description**: Display help information for this subcommand
+- `name` - Cluster name (optional if active cluster is set)
 
 ## Examples
 
-### Edit currently selected cluster
 ```bash
+# Edit the currently selected cluster
 openCenter cluster edit
-```
-Opens the active cluster configuration in your default editor.
 
-### Edit specific cluster
-```bash
+# Edit a specific cluster
 openCenter cluster edit my-cluster
-```
-Opens the specified cluster configuration.
 
-### Edit cluster in organization
-```bash
-openCenter cluster edit production/prod-cluster
+# Edit a cluster in a specific organization
+openCenter cluster edit myorg/my-cluster
 ```
-Opens a cluster configuration within a specific organization.
-
-### Use specific editor
-```bash
-EDITOR=nano openCenter cluster edit my-cluster
-```
-Opens the configuration in nano editor.
-
-### Use VS Code
-```bash
-EDITOR="code --wait" openCenter cluster edit my-cluster
-```
-Opens the configuration in VS Code and waits for the file to be closed.
 
 ## Editor Selection
 
-The command determines which editor to use in the following order:
+The command uses the following precedence for editor selection:
 
-1. `EDITOR` environment variable
-2. `VISUAL` environment variable
-3. `vi` (default fallback)
+1. **EDITOR environment variable**
+   ```bash
+   export EDITOR=nano
+   openCenter cluster edit my-cluster
+   ```
 
-### Setting Your Preferred Editor
+2. **VISUAL environment variable**
+   ```bash
+   export VISUAL=emacs
+   openCenter cluster edit my-cluster
+   ```
 
-```bash
-# In your shell profile (~/.bashrc, ~/.zshrc, etc.)
-export EDITOR=vim
-export VISUAL=code
-```
+3. **Default fallback: vi**
+   ```bash
+   # If neither EDITOR nor VISUAL is set
+   openCenter cluster edit my-cluster  # Opens in vi
+   ```
 
-### Common Editors
+## Security Validation
 
-```bash
-# Vim
-export EDITOR=vim
-
-# Emacs
-export EDITOR=emacs
-
-# Nano
-export EDITOR=nano
-
-# VS Code (wait for file to close)
-export EDITOR="code --wait"
-
-# Sublime Text
-export EDITOR="subl --wait"
-
-# Atom
-export EDITOR="atom --wait"
-```
+The command performs security validation on:
+- Cluster name (alphanumeric, hyphens, underscores, forward slashes)
+- Configuration file path (prevents path traversal)
+- Editor command (prevents command injection)
 
 ## Output
 
 ```
-Opening /home/user/.config/openCenter/clusters/myorg/.my-cluster-config.yaml in vim...
+Opening /path/to/clusters/org/.my-cluster-config.yaml in nano...
 Configuration file saved.
 ```
 
-## Configuration File Location
+## Error Handling
 
-The configuration file is located at:
+**No cluster name and no active cluster:**
 ```
-~/.config/openCenter/clusters/<organization>/.<cluster>-config.yaml
-```
-
-For example:
-```
-~/.config/openCenter/clusters/production/.prod-cluster-config.yaml
+Error: no cluster selected. Use 'openCenter cluster select' to select a cluster or provide a cluster name
 ```
 
-## Notes
+**Invalid cluster name:**
+```
+Error: invalid cluster name 'my-cluster!@#': cluster name must contain only alphanumeric characters, hyphens, underscores, and forward slashes
+```
 
-- The command opens the actual configuration file for direct editing
-- Changes are saved when you exit the editor
-- No validation is performed automatically after editing
-- Use `openCenter cluster validate` after editing to check for errors
-- The configuration file is in YAML format
-- File permissions are preserved (typically 0600 for security)
-- If no cluster is selected and no name is provided, an error is returned
-- The command waits for the editor to close before returning
-- For GUI editors, use the `--wait` flag to ensure proper behavior
+**Configuration file not found:**
+```
+Error: cluster configuration file 'my-cluster' not found. Use 'openCenter cluster list' to see available clusters
+```
 
-## Workflow
+**Invalid EDITOR environment variable:**
+```
+Error: invalid EDITOR environment variable: editor command contains invalid characters
+```
 
-Typical workflow for editing a cluster configuration:
+**Failed to open editor:**
+```
+Error: failed to open editor: exec: "invalid-editor": executable file not found in $PATH
+```
 
+## Common Editors
+
+### nano
 ```bash
-# 1. Edit the configuration
-openCenter cluster edit my-cluster
-
-# 2. Validate the changes
-openCenter cluster validate my-cluster
-
-# 3. If validation passes, update GitOps repository
-openCenter cluster setup my-cluster --render
-```
-
-## Troubleshooting
-
-### No cluster selected
-**Error**: `no cluster selected. Use 'openCenter cluster select' to select a cluster or provide a cluster name`
-
-**Solution**: Either select a cluster or provide a name:
-```bash
-openCenter cluster select my-cluster
-openCenter cluster edit
-# or
+export EDITOR=nano
 openCenter cluster edit my-cluster
 ```
 
-### Cluster not found
-**Error**: `cluster configuration file 'my-cluster' not found`
-
-**Solution**: Check available clusters:
-```bash
-openCenter cluster list
-```
-
-### Editor not found
-**Error**: `failed to open editor: exec: "myeditor": executable file not found in $PATH`
-
-**Solution**: Set a valid editor:
+### vim
 ```bash
 export EDITOR=vim
 openCenter cluster edit my-cluster
 ```
 
+### emacs
+```bash
+export EDITOR=emacs
+openCenter cluster edit my-cluster
+```
+
+### VS Code
+```bash
+export EDITOR="code --wait"
+openCenter cluster edit my-cluster
+```
+
+### Sublime Text
+```bash
+export EDITOR="subl --wait"
+openCenter cluster edit my-cluster
+```
+
+## Configuration File Location
+
+Configuration files are stored in organization-based structure:
+- Organization-based: `~/.config/openCenter/clusters/<org>/.<cluster>-config.yaml`
+- Legacy: `~/.config/openCenter/clusters/<cluster>/.<cluster>-config.yaml`
+- Flat: `~/.config/openCenter/.<cluster>-config.yaml`
+
+## Post-Edit Validation
+
+After editing, validate the configuration:
+
+```bash
+# Edit configuration
+openCenter cluster edit my-cluster
+
+# Validate changes
+openCenter cluster validate my-cluster
+```
+
 ## See Also
 
-- `openCenter cluster validate` - Validate cluster configuration
-- `openCenter cluster info` - Show cluster information
-- `openCenter cluster update` - Update specific configuration fields
+- [cluster validate](../cli-commands.md#cluster-validate) - Validate cluster configuration
+- [cluster info](info.md) - Display cluster information
+- [cluster update](../cli-commands.md#cluster-update) - Update configuration programmatically

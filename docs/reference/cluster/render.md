@@ -1,243 +1,197 @@
-# `openCenter cluster render` - Render Templates
+# cluster render
+
+**doc_type:** reference
+
+Render cluster templates into the GitOps directory structure.
 
 ## Synopsis
+
 ```bash
 openCenter cluster render [name]
 ```
 
 ## Description
 
-Render templates into the GitOps directory without initializing git. This command processes all `.tmpl` files in the GitOps structure, replacing template variables with actual configuration values, but does not perform any git operations.
+The `cluster render` command renders cluster templates into the GitOps directory structure. It always renders templates without any initialization checks, making it ideal for iterative development and testing configuration changes.
 
-This is useful for inspecting template output, testing configurations, or when git initialization is handled separately.
+Unlike `cluster setup`, this command:
+- Always renders templates (no skip logic)
+- Does not perform Git operations
+- Does not check if directory already exists
+- Overwrites existing files
+- Perfect for development and testing
 
 ## Arguments
 
-### `[name]`
-- **Required/Optional**: Optional
-- **Description**: Name of the cluster (format: `cluster` or `organization/cluster`). If not provided, uses the currently active cluster
-- **Example**: `my-cluster` or `production/my-cluster`
-
-## Options
-
-### `-h, --help`
-- **Description**: Display help information for this subcommand
+- `name` - Cluster name (optional if active cluster is set)
 
 ## Examples
 
-### Render templates for active cluster
 ```bash
+# Render templates for active cluster
 openCenter cluster render
-```
 
-### Render templates for specific cluster
-```bash
+# Render for specific cluster
 openCenter cluster render my-cluster
-```
-
-### Render for organization cluster
-```bash
-openCenter cluster render production/prod-cluster
-```
-
-### Inspect rendered output
-```bash
-openCenter cluster render my-cluster
-cat ~/config/openCenter/clusters/myorg/gitops/infrastructure/clusters/my-cluster/kustomization.yaml
-```
-
-### Using Feature Flags
-
-Feature flags enable new refactored systems for improved performance and functionality:
-
-```bash
-# Use new template engine with caching and better error messages
-export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true
-openCenter cluster render my-cluster
-
-# Compare legacy vs new template engine output
-openCenter cluster render my-cluster > /tmp/legacy-output.txt
-OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true openCenter cluster render my-cluster > /tmp/new-output.txt
-diff /tmp/legacy-output.txt /tmp/new-output.txt
-
-# Enable all new features
-export OPENCENTER_ENABLE_ALL_NEW_FEATURES=true
-openCenter cluster render my-cluster
-
-# Enable debug logging to see feature flag evaluation
-export OPENCENTER_FEATURE_FLAG_DEBUG=true
-openCenter cluster render my-cluster
-
-# Check which features are currently enabled
-openCenter config features
-```
-
-**Feature Flag Benefits:**
-- **New Template Engine**: 
-  - Improved performance through template caching
-  - Better error messages with line numbers and context
-  - Template validation before rendering
-  - Reduced memory usage for large configurations
-
-See `openCenter config features --help` for more information about feature flags.
-
-## Output
-
-```
-Render complete.
 ```
 
 ## Rendering Process
 
-The command performs the following operations:
+The command performs these operations:
 
-1. **Copy Base Templates** - Copies GitOps base structure with rendering enabled
-2. **Render Cluster Apps** - Processes application overlay templates
-3. **Render Infrastructure** - Processes infrastructure cluster templates
-4. **Provision OpenTofu** - Generates provider.tf for infrastructure
+1. **Copy Base GitOps Structure**
+   - Copies base templates from embedded resources
+   - Creates directory structure
+   - Installs base manifests
 
-## Template Processing
+2. **Render Cluster-Specific Applications**
+   - Renders application overlays for the cluster
+   - Applies cluster-specific customizations
+   - Generates Kustomization files
 
-### Template Variables
+3. **Render Infrastructure Templates**
+   - Renders infrastructure cluster manifests
+   - Generates provider-specific configurations
+   - Creates namespace and RBAC resources
 
-Templates have access to the full cluster configuration:
+4. **Provision OpenTofu**
+   - Renders `main.tf` with cluster configuration
+   - Generates `provider.tf` for cloud provider
+   - Creates Terraform variable files
 
-```yaml
-# Example template: kustomization.yaml.tmpl
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-metadata:
-  name: {{ .ClusterName }}
-  namespace: {{ .Namespace }}
-resources:
-  - namespace.yaml
-  {{- if .EnableMonitoring }}
-  - monitoring.yaml
-  {{- end }}
+## Output Structure
+
+Templates are rendered to:
+```
+<git_dir>/
+├── infrastructure/
+│   └── clusters/<cluster>/
+│       ├── main.tf                    # Terraform main configuration
+│       ├── provider.tf                # Provider configuration
+│       ├── variables.tf               # Variable definitions
+│       ├── kustomization.yaml         # Kustomization manifest
+│       └── ...                        # Other infrastructure files
+└── applications/
+    └── overlays/<cluster>/
+        ├── kustomization.yaml         # Application kustomization
+        └── ...                        # Application manifests
 ```
 
-### Template Functions
+## Organization Support
 
-Templates can use Sprig template functions:
+The command handles organization-based directory structures automatically:
 
-- String manipulation: `upper`, `lower`, `trim`, `replace`
-- Lists: `join`, `split`, `append`
-- Conditionals: `if`, `else`, `with`
-- Loops: `range`
-- And many more from [Sprig](http://masterminds.github.io/sprig/)
-
-## Rendered Files
-
-The command renders the following template types:
-
-### Application Overlays
 ```
-applications/overlays/<cluster>/
-├── kustomization.yaml
-├── namespace.yaml
-├── flux-system.yaml
-└── ...
+<git_dir>/<organization>/
+├── infrastructure/
+│   └── clusters/<cluster>/
+└── applications/
+    └── overlays/<cluster>/
 ```
 
-### Infrastructure Cluster
-```
-infrastructure/clusters/<cluster>/
-├── kustomization.yaml
-├── Makefile
-├── provider.tf
-├── main.tf
-└── ...
-```
+## Output
 
-## Differences from Setup
-
-| Feature | render | setup |
-|---------|--------|-------|
-| Template rendering | ✓ | ✓ |
-| Git initialization | ✗ | ✓ |
-| SOPS configuration | ✗ | ✓ |
-| Git commit | ✗ | ✓ |
-| .opencenter marker | ✗ | ✓ |
+```
+Rendering templates for cluster: my-cluster
+Organization: myorg
+Rendering templates to: /path/to/gitops/myorg/infrastructure/clusters/my-cluster
+Render complete.
+```
 
 ## Use Cases
 
-### Testing Configuration Changes
-```bash
-# Make configuration changes
-openCenter cluster update my-cluster --opencenter.meta.env=staging
+### Iterative Development
 
-# Render to see the effect
+Test configuration changes without full setup:
+```bash
+# Edit configuration
+openCenter cluster edit my-cluster
+
+# Render templates to see changes
 openCenter cluster render my-cluster
 
-# Inspect rendered files
-diff -r gitops/infrastructure/clusters/my-cluster/ backup/
+# Review rendered files
+ls -la ~/gitops/myorg/infrastructure/clusters/my-cluster/
 ```
 
-### Debugging Templates
+### Template Debugging
+
+Debug template rendering issues:
 ```bash
 # Render templates
 openCenter cluster render my-cluster
 
-# Check for rendering errors
-grep -r "{{" gitops/infrastructure/clusters/my-cluster/
+# Check for errors in rendered files
+cat ~/gitops/myorg/infrastructure/clusters/my-cluster/main.tf
 ```
 
-### Dry Run Before Setup
+### Configuration Testing
+
+Test different configurations quickly:
 ```bash
-# Render first to verify output
+# Update configuration
+openCenter cluster update my-cluster --opencenter.cluster.kubernetes.version=1.31.4
+
+# Re-render templates
 openCenter cluster render my-cluster
 
-# Review rendered files
-ls -la gitops/infrastructure/clusters/my-cluster/
-
-# Then setup with git
-openCenter cluster setup my-cluster
+# Verify changes
+grep "kubernetes_version" ~/gitops/myorg/infrastructure/clusters/my-cluster/main.tf
 ```
 
-## Notes
+### CI/CD Integration
 
-- The command does not initialize or modify git repository
-- Rendered files are written to the GitOps directory
-- Existing files are overwritten
-- Template errors are reported during rendering
-- The command validates configuration before rendering
-- Use `cluster setup` for complete GitOps initialization
-- Rendering is idempotent - can be run multiple times
-- Template variables come from cluster configuration
-- Sprig template functions are available in all templates
-
-## Troubleshooting
-
-### Template rendering errors
-**Error**: `failed to render cluster apps templates: template: parse error`
-
-**Solution**: Check template syntax in the affected file:
+Generate templates in CI/CD pipelines:
 ```bash
-# Find template files
-find gitops/ -name "*.tmpl"
+#!/bin/bash
+set -e
 
-# Validate YAML syntax
-yamllint gitops/infrastructure/clusters/my-cluster/
+# Render templates
+openCenter cluster render my-cluster
+
+# Validate rendered Terraform
+cd ~/gitops/myorg/infrastructure/clusters/my-cluster
+terraform validate
+
+# Validate Kubernetes manifests
+kubectl apply --dry-run=client -k ~/gitops/myorg/applications/overlays/my-cluster/
 ```
 
-### Missing template variables
-**Error**: `template: undefined variable ".SomeField"`
+## Comparison with cluster setup
 
-**Solution**: Ensure the configuration field exists:
-```bash
-openCenter cluster info my-cluster --json | jq '.metadata'
+| Feature | render | setup |
+|---------|--------|-------|
+| Renders templates | ✓ | ✓ |
+| Git initialization | ✗ | ✓ |
+| Checks existing directory | ✗ | ✓ |
+| Skip logic | ✗ | ✓ |
+| Overwrites files | ✓ | Conditional |
+| Use case | Development/testing | Initial setup |
+
+## Error Handling
+
+**Cluster not found:**
+```
+Error: failed to load cluster configuration: cluster "my-cluster" not found
 ```
 
-### OpenTofu provisioning failed
-**Error**: `failed to provision opentofu`
+**GitOps directory not configured:**
+```
+Error: git_dir is not configured. Run 'openCenter cluster setup' first or set git_dir in the configuration
+```
 
-**Solution**: Check provider configuration:
-```bash
-openCenter cluster validate my-cluster
+**Template rendering failed:**
+```
+Error: failed to render cluster templates: template execution error
+```
+
+**OpenTofu provisioning failed:**
+```
+Error: failed to provision opentofu: invalid configuration
 ```
 
 ## See Also
 
-- `openCenter cluster setup` - Setup GitOps with git initialization
-- `openCenter cluster validate` - Validate configuration before rendering
-- `openCenter cluster update` - Update configuration values
+- [cluster setup](setup.md) - Setup GitOps directory structure with Git initialization
+- [cluster validate](../cli-commands.md#cluster-validate) - Validate cluster configuration
+- [cluster bootstrap](bootstrap.md) - Bootstrap cluster infrastructure
