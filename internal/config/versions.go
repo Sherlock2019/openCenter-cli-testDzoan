@@ -25,7 +25,7 @@ const (
 	SchemaVersion1_1_0   = "v1.1.0"
 	SchemaVersion1_2_0   = "v1.2.0"
 	SchemaVersion2_0_0   = "v2.0.0"
-	CurrentSchemaVersion = SchemaVersion2_0_0
+	CurrentSchemaVersion = SchemaVersion1_0_0
 )
 
 // migrateV1_0_to_V1_1 migrates configuration from v1.0.0 to v1.1.0.
