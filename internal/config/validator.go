@@ -73,3 +73,31 @@ func (cv *ClusterConfigValidator) IsAutoRepairEnabled() bool {
 func (cv *ClusterConfigValidator) GetSuggestionEngine() *SuggestionEngine {
 	return cv.suggestionEngine
 }
+
+// enhanceSuggestions enhances existing suggestions with context-aware recommendations.
+func (cv *ClusterConfigValidator) enhanceSuggestions(field string, value interface{}, existingSuggestions []string) []string {
+	// Get field-specific suggestions from the engine
+	fieldSuggestions := cv.suggestionEngine.GetSuggestionsForField(field, value)
+	
+	// Combine existing and new suggestions, avoiding duplicates
+	suggestionSet := make(map[string]bool)
+	enhanced := make([]string, 0, len(existingSuggestions)+len(fieldSuggestions))
+	
+	// Add existing suggestions first
+	for _, s := range existingSuggestions {
+		if !suggestionSet[s] {
+			suggestionSet[s] = true
+			enhanced = append(enhanced, s)
+		}
+	}
+	
+	// Add field-specific suggestions
+	for _, s := range fieldSuggestions {
+		if !suggestionSet[s] {
+			suggestionSet[s] = true
+			enhanced = append(enhanced, s)
+		}
+	}
+	
+	return enhanced
+}

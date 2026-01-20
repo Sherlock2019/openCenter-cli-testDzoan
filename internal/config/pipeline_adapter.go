@@ -17,68 +17,40 @@ import (
 	"context"
 )
 
-// PipelineAdapter is a temporary stub for the validation pipeline adapter.
-// TODO: Implement the full validation pipeline architecture as described in docs/dev/validation-pipeline.md
+// PipelineAdapter adapts the validation pipeline to the ConfigValidatorInterface.
+// It delegates to EnhancedConfigValidator for the actual validation logic.
 type PipelineAdapter struct {
-	// Placeholder for future implementation
+	validator *EnhancedConfigValidator
 }
 
 // NewPipelineAdapter creates a new pipeline adapter.
 func NewPipelineAdapter() *PipelineAdapter {
-	return &PipelineAdapter{}
+	return &PipelineAdapter{
+		validator: NewEnhancedConfigValidator(false),
+	}
 }
 
-// Validate performs validation using the pipeline.
-// This is a stub implementation that returns a valid result.
+// Validate performs comprehensive validation using the pipeline.
 func (pa *PipelineAdapter) Validate(ctx context.Context, config *Config) *ConfigValidationResult {
-	// TODO: Implement full validation pipeline
-	return &ConfigValidationResult{
-		Valid:    true,
-		Errors:   []*ConfigValidationError{},
-		Warnings: []*ConfigValidationError{},
-	}
+	return pa.validator.Validate(ctx, config)
 }
 
 // ValidateStructure validates the basic structure.
-// This is a stub implementation that returns a valid result.
 func (pa *PipelineAdapter) ValidateStructure(ctx context.Context, config *Config) *ConfigValidationResult {
-	// TODO: Implement structural validation
-	return &ConfigValidationResult{
-		Valid:    true,
-		Errors:   []*ConfigValidationError{},
-		Warnings: []*ConfigValidationError{},
-	}
+	return pa.validator.ValidateStructure(ctx, config)
 }
 
 // ValidateSemantics validates semantic correctness.
-// This is a stub implementation that returns a valid result.
 func (pa *PipelineAdapter) ValidateSemantics(ctx context.Context, config *Config) *ConfigValidationResult {
-	// TODO: Implement semantic validation
-	return &ConfigValidationResult{
-		Valid:    true,
-		Errors:   []*ConfigValidationError{},
-		Warnings: []*ConfigValidationError{},
-	}
+	return pa.validator.ValidateSemantics(ctx, config)
 }
 
 // ValidateNetworking validates network plugin configuration.
-// This is a stub implementation that returns a valid result.
 func (pa *PipelineAdapter) ValidateNetworking(ctx context.Context, config *Config) *ConfigValidationResult {
-	// TODO: Implement networking validation
-	return &ConfigValidationResult{
-		Valid:    true,
-		Errors:   []*ConfigValidationError{},
-		Warnings: []*ConfigValidationError{},
-	}
+	return pa.validator.ValidateNetworking(ctx, config)
 }
 
 // ValidateCloudProvider validates cloud provider specific configuration.
-// This is a stub implementation that returns a valid result.
 func (pa *PipelineAdapter) ValidateCloudProvider(ctx context.Context, config *Config) *ConfigValidationResult {
-	// TODO: Implement cloud provider validation
-	return &ConfigValidationResult{
-		Valid:    true,
-		Errors:   []*ConfigValidationError{},
-		Warnings: []*ConfigValidationError{},
-	}
+	return pa.validator.ValidateCloudProvider(ctx, config)
 }
