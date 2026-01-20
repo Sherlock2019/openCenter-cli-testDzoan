@@ -1,0 +1,459 @@
+# Full openCenter Cluster Configuration Example
+# This file demonstrates all available configuration options
+# Schema version: 1.0.0
+
+schema_version: "1.0.0"
+
+# ============================================================================
+# OpenCenter Configuration
+# ============================================================================
+opencenter:
+  # --------------------------------------------------------------------------
+  # Cluster Metadata
+  # --------------------------------------------------------------------------
+  meta:
+    name: production-cluster
+    env: prod
+    region: dfw3
+    organization: myorg
+    status: ""
+    stage: ""
+    locked: false
+    lock_reason: ""
+
+  # --------------------------------------------------------------------------
+  # Secrets Backend Configuration
+  # --------------------------------------------------------------------------
+  secrets:
+    backend: barbican  # Options: barbican, vault
+    barbican:
+      auth_url: "https://keystone.api.dfw3.rackspacecloud.com/v3/"
+      region: "DFW3"
+      application_credential_id: ""
+      application_credential_secret: ""
+      domain: "rackspace_cloud_domain"
+      project_domain_name: "rackspace_cloud_domain"
+      user_domain_name: "rackspace_cloud_domain"
+
+  # --------------------------------------------------------------------------
+  # Infrastructure Configuration
+  # --------------------------------------------------------------------------
+  infrastructure:
+    provider: openstack  # Options: openstack, aws, talos, kubespray
+    ssh_user: ubuntu
+    os_version: "24"
+    server_group_affinity: []
+    
+    node_naming:
+      worker: "worker"
+      master: "master"
+      worker_windows: "worker-windows"
+    
+    cloud:
+      # OpenStack Configuration
+      openstack:
+        auth_url: "https://keystone.api.dfw3.rackspacecloud.com/v3/"
+        insecure: false
+        region: "DFW3"
+        application_credential_id: ""
+        application_credential_secret: ""
+        domain: "rackspace_cloud_domain"
+        tenant_name: ""
+        availability_zone: "az1"
+        project_domain_name: "rackspace_cloud_domain"
+        user_domain_name: "rackspace_cloud_domain"
+        ca: ""
+        image_id: "463c53b0-88d1-4b7d-b06a-2d1affec8323"
+        image_id_windows: ""
+        
+        networking:
+          floating_ip_pool: "PUBLICNET"
+          floating_network_id: ""
+          network_id: ""
+          router_external_network_id: "27f1ceeb-50d5-4c72-a9eb-f90502f32ffb"
+          subnet_id: ""
+          
+          designate:
+            dns_zone_name: ""
+          
+          vlan:
+            enabled: false
+            vlan_id: 0
+            physical_network: ""
+        
+        modules:
+          openstack_nova:
+            source: ""
+      
+      # AWS Configuration (alternative to OpenStack)
+      aws:
+        profile: ""
+        region: "us-east-1"
+        vpc_id: ""
+        private_subnets: []
+        public_subnets: []
+
+  # --------------------------------------------------------------------------
+  # Cluster Configuration
+  # --------------------------------------------------------------------------
+  cluster:
+    cluster_name: production-cluster
+    base_domain: "k8s.example.com"
+    cluster_fqdn: "production-cluster.k8s.example.com"
+    admin_email: "admin@example.com"
+    aws_access_key: ""
+    aws_secret_access_key: ""
+    ssh_authorized_keys:
+      - ""
+    
+    kubernetes:
+      version: "1.34.3"
+      master_count: 3
+      worker_count: 3
+      flavor_bastion: "gp.5.2.2"
+      flavor_master: "gp.5.4.8"
+      flavor_worker: "gp.5.4.16"
+      subnet_pods: "10.42.0.0/16"
+      subnet_services: "10.43.0.0/16"
+      kubespray_version: "v2.29.1"
+      
+      network_plugin:
+        calico:
+          enabled: true
+          cni_iface: "enp3s0"
+          encapsulation_type: "VXLAN"
+          nat_outgoing: true
+    
+    networking:
+      k8s_api_port_acl: []
+      ntp_servers:
+        - "time.dfw3.rackspace.com"
+        - "time2.dfw3.rackspace.com"
+      dns_nameservers:
+        - "8.8.8.8"
+        - "8.8.4.4"
+      security:
+        enable_pod_security_policy: false
+        enable_network_policy: true
+
+  # --------------------------------------------------------------------------
+  # GitOps Configuration
+  # --------------------------------------------------------------------------
+  gitops:
+    enabled: true
+    provider: flux  # Options: flux, argocd
+    branch: main
+    repository_url: ""
+    path: "clusters"
+    sync_interval: "5m"
+    prune: true
+    auto_create_namespace: true
+
+  # --------------------------------------------------------------------------
+  # Storage Configuration
+  # --------------------------------------------------------------------------
+  storage:
+    enabled: true
+    default_storage_class: "cinder-csi"
+    storage_classes:
+      - name: "cinder-csi"
+        provisioner: "cinder.csi.openstack.org"
+        parameters:
+          type: "ssd"
+        reclaim_policy: "Delete"
+        volume_binding_mode: "WaitForFirstConsumer"
+
+  # --------------------------------------------------------------------------
+  # Talos Configuration (optional, for Talos provider)
+  # --------------------------------------------------------------------------
+  talos:
+    enabled: false
+    version: "v1.5.0"
+    image_url: ""
+    image_signature: ""
+    
+    machine_config:
+      apparmor_enabled: true
+      seccomp_enabled: true
+      disk_encryption: true
+      kubeprism_enabled: true
+      system_extensions: []
+      log_destination: ""
+    
+    network_config:
+      management_subnet: "10.0.1.0/24"
+      control_subnet: "10.0.2.0/24"
+      data_subnet: "10.0.3.0/24"
+      wireguard_port: 51820
+      talos_api_port: 50000
+      allowed_cidrs: []
+    
+    security_config:
+      vtpm_enabled: true
+      barbican_key_id: ""
+      image_verification: true
+      mfa_required: true
+      audit_log_enabled: true
+    
+    pulumi_config:
+      stack_name: ""
+      swift_container: ""
+      swift_prefix: ""
+      secrets_passphrase: ""
+
+  # --------------------------------------------------------------------------
+  # Managed Services (Rackspace-managed)
+  # --------------------------------------------------------------------------
+  managed-service:
+    alert-proxy:
+      enabled: false
+      namespace: "monitoring"
+      hostname: "alerts.k8s.example.com"
+  # Self-Managed Services
+  # --------------------------------------------------------------------------
+  services:
+    # Certificate Management
+    cert-manager:
+      enabled: true
+      namespace: "cert-manager"
+      letsencrypt_server: "https://acme-v02.api.letsencrypt.org/directory"
+      email: "admin@example.com"
+    
+    # Logging
+    loki:
+      enabled: false
+      namespace: "logging"
+      hostname: "loki.k8s.example.com"
+      loki_storage_type: "swift"
+      loki_bucket_name: ""
+      loki_volume_size: 50
+      loki_storage_class: "cinder-csi"
+    
+    # Identity and Access Management
+    
+    # Distributed Tracing
+    tempo:
+      enabled: false
+      namespace: "tracing"
+      storage_type: "s3"  # Options: s3, swift
+      bucket_name: "production-cluster-tempo"
+      volume_size: 10
+      storage_class: "cinder-csi"
+      # S3 storage configuration
+      s3_endpoint: ""
+      s3_region: "us-east-1"
+      s3_force_path_style: false
+      s3_insecure: false
+      # Swift storage configuration
+      swift_auth_url: ""
+      swift_region: ""
+      swift_auth_version: 3
+      swift_application_credential_id: ""
+      swift_container_name: ""
+      swift_user_domain_name: ""
+      swift_domain_name: ""
+    keycloak:
+      enabled: false
+      namespace: "auth"
+      hostname: "keycloak.k8s.example.com"
+      keycloak_realm: "kubernetes"
+      keycloak_frontend_url: "https://keycloak.k8s.example.com"
+      keycloak_client_id: "kubernetes"
+    
+    # Kubernetes Dashboard
+    headlamp:
+      enabled: false
+      namespace: "kube-system"
+      hostname: "dashboard.k8s.example.com"
+      headlamp_oidc_issuer_url: ""
+      headlamp_oidc_client_id: ""
+    
+    # GitOps UI
+    weave_gitops:
+      enabled: false
+      namespace: "flux-system"
+      hostname: "gitops.k8s.example.com"
+    
+    # Backup and Disaster Recovery
+    velero:
+      enabled: false
+      namespace: "velero"
+      velero_backup_bucket: ""
+      velero_region: ""
+    
+    # Monitoring Stack
+    prometheus-stack:
+      enabled: false
+      namespace: "monitoring"
+      hostname: "prometheus.k8s.example.com"
+      grafana_volume_size: 10
+      grafana_storage_class: "cinder-csi"
+      prometheus_volume_size: 50
+      prometheus_storage_class: "cinder-csi"
+      alertmanager_volume_size: 10
+      alertmanager_storage_class: "cinder-csi"
+      webhook_url: ""
+    
+    # Network Plugin
+    calico:
+      enabled: true
+      namespace: "kube-system"
+      calico_kube_api_server: ""
+    
+    # vSphere CSI Driver (for vSphere environments)
+    vsphere-csi:
+      enabled: false
+      namespace: "kube-system"
+      image_repository: ""
+      image_tag: ""
+
+# ============================================================================
+# Networking Configuration
+# ============================================================================
+networking:
+  subnet_nodes: "10.2.128.0/22"
+  vlan:
+    enabled: false
+    vlan_id: 0
+    physical_network: ""
+
+# ============================================================================
+# OpenTofu/Terraform Configuration
+# ============================================================================
+opentofu:
+  enabled: true
+  
+  backend:
+    type: local  # Options: local, s3, swift
+    
+    # Local backend
+    local:
+      path: "./terraform.tfstate"
+    
+    # S3 backend
+    s3:
+      bucket: ""
+      key: "terraform.tfstate"
+      region: "us-east-1"
+      endpoint: ""
+      skip_credentials_validation: false
+      skip_metadata_api_check: false
+      force_path_style: false
+    
+    # Swift backend
+    swift:
+      container: ""
+      state_name: "terraform.tfstate"
+      auth_url: ""
+      region: ""
+      application_credential_id: ""
+      application_credential_secret: ""
+
+# ============================================================================
+# Secrets Management
+# ============================================================================
+secrets:
+  sops:
+    enabled: true
+    age_key_file: ""
+    key_groups:
+      - age:
+          - ""
+  
+  ssh:
+  
+  # Global secrets organized by scope
+  global:
+    aws:
+      # Infrastructure-level AWS credentials (for OpenTofu S3 backend, AWS provider)
+      infrastructure:
+        access_key: ""
+        secret_access_key: ""
+        region: "us-east-1"
+      # Application-level AWS credentials (for services like cert-manager, loki, tempo)
+      application:
+        access_key: ""
+        secret_access_key: ""
+        region: "us-east-1"
+  
+  # Service-specific secrets
+  cert_manager:
+    aws_access_key: ""
+    aws_secret_access_key: ""
+  
+  loki:
+    # Swift credentials (legacy)
+    swift_password: ""
+    swift_application_credential_secret: ""
+    # S3 credentials
+    s3_access_key_id: ""
+    s3_secret_access_key: ""
+  
+  tempo:
+    access_key: ""
+    secret_key: ""
+  
+  keycloak:
+    client_secret: ""
+    admin_password: ""
+  
+  headlamp:
+    oidc_client_secret: ""
+  
+  weave_gitops:
+    password: ""
+    password_hash: ""
+  
+  grafana:
+    admin_password: ""
+  
+  alert_proxy:
+    core_device_id: ""
+    account_service_token: ""
+    core_account_number: ""
+  
+  vsphere_csi:
+    vcenter_host: ""
+    username: ""
+    password: ""
+    datacenters: ""
+    insecure_flag: "false"
+    port: "443"
+    enabled: true
+    key_path: ""
+    public_key_path: ""
+
+# ============================================================================
+# Deployment Configuration
+# ============================================================================
+deployment:
+  auto_approve: false
+  parallel: true
+  max_parallel: 10
+  timeout: "30m"
+  retry_attempts: 3
+  retry_delay: "10s"
+
+# ============================================================================
+# Metadata
+# ============================================================================
+metadata:
+  created_by: "openCenter CLI"
+  created_at: ""
+  updated_at: ""
+  tags:
+    environment: prod
+    region: dfw3
+    organization: myorg
+    cost_center: ""
+    project: ""
+  
+  annotations:
+    description: "Production Kubernetes cluster"
+    owner: "platform-team@example.com"
+    compliance: "soc2,hipaa"
+
+# ============================================================================
+# Overrides (for advanced customization)
+# ============================================================================
+overrides: {}
