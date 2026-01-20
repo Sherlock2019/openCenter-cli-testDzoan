@@ -89,7 +89,10 @@ Configuration must have opencenter.gitops.git_dir set.`,
 			}
 
 			ctx := context.Background()
-			lock, err := lockMgr.Acquire(ctx, name, 1*time.Hour)
+			lock, err := lockMgr.AcquireWithMetadata(ctx, name, 1*time.Hour, map[string]string{
+				"operation": "setup",
+				"command":   "cluster setup",
+			})
 			if err != nil {
 				return formatErrorWithInfo(err, "E6003")
 			}

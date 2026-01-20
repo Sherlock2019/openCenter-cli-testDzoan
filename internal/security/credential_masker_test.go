@@ -101,9 +101,9 @@ func TestDefaultCredentialMasker_MaskString_Passwords(t *testing.T) {
 	masker := NewDefaultCredentialMasker()
 
 	tests := []struct {
-		name          string
-		input         string
-		shouldContain string
+		name             string
+		input            string
+		shouldContain    string
 		shouldNotContain string
 	}{
 		{
@@ -155,9 +155,9 @@ func TestDefaultCredentialMasker_MaskString_Tokens(t *testing.T) {
 	masker := NewDefaultCredentialMasker()
 
 	tests := []struct {
-		name          string
-		input         string
-		shouldContain string
+		name             string
+		input            string
+		shouldContain    string
 		shouldNotContain string
 	}{
 		{
@@ -374,9 +374,9 @@ func TestDefaultCredentialMasker_OpenStackCredentials(t *testing.T) {
 	masker := NewDefaultCredentialMasker()
 
 	tests := []struct {
-		name          string
-		input         string
-		shouldContain string
+		name             string
+		input            string
+		shouldContain    string
 		shouldNotContain string
 	}{
 		{
@@ -410,9 +410,9 @@ func TestDefaultCredentialMasker_GenericAPIKeys(t *testing.T) {
 	masker := NewDefaultCredentialMasker()
 
 	tests := []struct {
-		name          string
-		input         string
-		shouldContain string
+		name             string
+		input            string
+		shouldContain    string
 		shouldNotContain string
 	}{
 		{

@@ -21,16 +21,16 @@ func TestNewCircuitBreaker(t *testing.T) {
 		{
 			name: "custom config",
 			config: CircuitBreakerConfig{
-				FailureThreshold:  3,
-				SuccessThreshold:  1,
-				Timeout:           30 * time.Second,
-				HalfOpenRequests:  2,
+				FailureThreshold: 3,
+				SuccessThreshold: 1,
+				Timeout:          30 * time.Second,
+				HalfOpenRequests: 2,
 			},
 			want: CircuitBreakerConfig{
-				FailureThreshold:  3,
-				SuccessThreshold:  1,
-				Timeout:           30 * time.Second,
-				HalfOpenRequests:  2,
+				FailureThreshold: 3,
+				SuccessThreshold: 1,
+				Timeout:          30 * time.Second,
+				HalfOpenRequests: 2,
 			},
 		},
 	}
@@ -56,7 +56,7 @@ func TestNewCircuitBreaker(t *testing.T) {
 
 func TestCircuitBreaker_InitialState(t *testing.T) {
 	cb := NewCircuitBreaker(DefaultCircuitBreakerConfig)
-	
+
 	if state := cb.GetState(); state != StateClosed {
 		t.Errorf("Initial state = %v, want %v", state, StateClosed)
 	}
@@ -64,10 +64,10 @@ func TestCircuitBreaker_InitialState(t *testing.T) {
 
 func TestCircuitBreaker_ClosedToOpen(t *testing.T) {
 	config := CircuitBreakerConfig{
-		FailureThreshold:  3,
-		SuccessThreshold:  2,
-		Timeout:           1 * time.Second,
-		HalfOpenRequests:  1,
+		FailureThreshold: 3,
+		SuccessThreshold: 2,
+		Timeout:          1 * time.Second,
+		HalfOpenRequests: 1,
 	}
 	cb := NewCircuitBreaker(config)
 	ctx := context.Background()
@@ -110,10 +110,10 @@ func TestCircuitBreaker_ClosedToOpen(t *testing.T) {
 
 func TestCircuitBreaker_OpenToHalfOpen(t *testing.T) {
 	config := CircuitBreakerConfig{
-		FailureThreshold:  2,
-		SuccessThreshold:  2,
-		Timeout:           100 * time.Millisecond,
-		HalfOpenRequests:  1,
+		FailureThreshold: 2,
+		SuccessThreshold: 2,
+		Timeout:          100 * time.Millisecond,
+		HalfOpenRequests: 1,
 	}
 	cb := NewCircuitBreaker(config)
 	ctx := context.Background()
@@ -151,10 +151,10 @@ func TestCircuitBreaker_OpenToHalfOpen(t *testing.T) {
 
 func TestCircuitBreaker_HalfOpenToClosed(t *testing.T) {
 	config := CircuitBreakerConfig{
-		FailureThreshold:  2,
-		SuccessThreshold:  2,
-		Timeout:           100 * time.Millisecond,
-		HalfOpenRequests:  1,
+		FailureThreshold: 2,
+		SuccessThreshold: 2,
+		Timeout:          100 * time.Millisecond,
+		HalfOpenRequests: 1,
 	}
 	cb := NewCircuitBreaker(config)
 	ctx := context.Background()
@@ -189,10 +189,10 @@ func TestCircuitBreaker_HalfOpenToClosed(t *testing.T) {
 
 func TestCircuitBreaker_HalfOpenToOpen(t *testing.T) {
 	config := CircuitBreakerConfig{
-		FailureThreshold:  2,
-		SuccessThreshold:  2,
-		Timeout:           100 * time.Millisecond,
-		HalfOpenRequests:  1,
+		FailureThreshold: 2,
+		SuccessThreshold: 2,
+		Timeout:          100 * time.Millisecond,
+		HalfOpenRequests: 1,
 	}
 	cb := NewCircuitBreaker(config)
 	ctx := context.Background()
@@ -222,10 +222,10 @@ func TestCircuitBreaker_HalfOpenToOpen(t *testing.T) {
 
 func TestCircuitBreaker_Reset(t *testing.T) {
 	config := CircuitBreakerConfig{
-		FailureThreshold:  2,
-		SuccessThreshold:  2,
-		Timeout:           1 * time.Second,
-		HalfOpenRequests:  1,
+		FailureThreshold: 2,
+		SuccessThreshold: 2,
+		Timeout:          1 * time.Second,
+		HalfOpenRequests: 1,
 	}
 	cb := NewCircuitBreaker(config)
 	ctx := context.Background()
@@ -262,10 +262,10 @@ func TestCircuitBreaker_Reset(t *testing.T) {
 
 func TestCircuitBreaker_SuccessResetsFailureCount(t *testing.T) {
 	config := CircuitBreakerConfig{
-		FailureThreshold:  3,
-		SuccessThreshold:  2,
-		Timeout:           1 * time.Second,
-		HalfOpenRequests:  1,
+		FailureThreshold: 3,
+		SuccessThreshold: 2,
+		Timeout:          1 * time.Second,
+		HalfOpenRequests: 1,
 	}
 	cb := NewCircuitBreaker(config).(*circuitBreaker)
 	ctx := context.Background()
@@ -301,10 +301,10 @@ func TestCircuitBreaker_SuccessResetsFailureCount(t *testing.T) {
 
 func TestCircuitBreaker_HalfOpenMaxRequests(t *testing.T) {
 	config := CircuitBreakerConfig{
-		FailureThreshold:  2,
-		SuccessThreshold:  3, // Need 3 successes to close, so we stay in half-open
-		Timeout:           100 * time.Millisecond,
-		HalfOpenRequests:  1,
+		FailureThreshold: 2,
+		SuccessThreshold: 3, // Need 3 successes to close, so we stay in half-open
+		Timeout:          100 * time.Millisecond,
+		HalfOpenRequests: 1,
 	}
 	cb := NewCircuitBreaker(config)
 	ctx := context.Background()

@@ -55,7 +55,6 @@ func TestFormatError(t *testing.T) {
 	}
 }
 
-
 // TestFormatErrorWithCode tests the formatErrorWithCode helper function
 // Requirements: 15.1, 15.2, 15.4
 func TestFormatErrorWithCode(t *testing.T) {

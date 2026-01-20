@@ -97,7 +97,10 @@ func newClusterBootstrapCmd() *cobra.Command {
 			}
 
 			ctx := context.Background()
-			lock, err := lockMgr.Acquire(ctx, name, 1*time.Hour)
+			lock, err := lockMgr.AcquireWithMetadata(ctx, name, 1*time.Hour, map[string]string{
+				"operation": "bootstrap",
+				"command":   "cluster bootstrap",
+			})
 			if err != nil {
 				return fmt.Errorf("failed to acquire lock for cluster %q: %w\nAnother operation may be in progress. Wait for it to complete or use 'openCenter cluster info %s' to check lock status", name, err, name)
 			}

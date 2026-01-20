@@ -412,14 +412,14 @@ func TestProperty_DriftDetectionCompleteness(t *testing.T) {
 // Mock implementations for testing
 
 type mockCloudProvider struct {
-	queriedTypes map[string]bool
-	shouldError  bool
-	errorType    string
-	drifts       []ResourceDrift
-	instances    []Instance
-	networks     []Network
+	queriedTypes   map[string]bool
+	shouldError    bool
+	errorType      string
+	drifts         []ResourceDrift
+	instances      []Instance
+	networks       []Network
 	securityGroups []SecurityGroup
-	loadBalancers []LoadBalancer
+	loadBalancers  []LoadBalancer
 }
 
 func (m *mockCloudProvider) GetInstances(ctx context.Context, cluster string) ([]Instance, error) {

@@ -114,10 +114,10 @@ func TestProperty_StructuredLoggingFields(t *testing.T) {
 				message = "Processing with Age key: " + credential
 			case 2:
 				credential = "mysecretpassword123"
-				message = "Processing with password="+credential
+				message = "Processing with password=" + credential
 			case 3:
 				credential = strings.Repeat("A", 32)
-				message = "Processing with api_key="+credential
+				message = "Processing with api_key=" + credential
 			}
 
 			// Log the message
@@ -131,7 +131,7 @@ func TestProperty_StructuredLoggingFields(t *testing.T) {
 
 			// Verify credential is masked in message
 			// For AWS keys and Age keys, check they don't appear in full
-			if credType % 4 == 0 || credType % 4 == 1 {
+			if credType%4 == 0 || credType%4 == 1 {
 				if strings.Contains(entry.Message, credential) {
 					return false
 				}
@@ -193,7 +193,7 @@ func TestProperty_StructuredLoggingFields(t *testing.T) {
 			}
 
 			// For AWS keys and Age keys, check they don't appear in full
-			if credType % 4 == 0 || credType % 4 == 1 {
+			if credType%4 == 0 || credType%4 == 1 {
 				if strings.Contains(fieldStr, credential) {
 					return false
 				}

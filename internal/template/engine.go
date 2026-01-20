@@ -94,10 +94,10 @@ type GoTemplateEngine struct {
 	cache        map[string]*template.Template
 	cacheEnabled bool
 	mu           sync.RWMutex
-	fsys         fs.FS              // Optional embedded filesystem
-	rootTemplate *template.Template // Root template for named template collections
+	fsys         fs.FS                   // Optional embedded filesystem
+	rootTemplate *template.Template      // Root template for named template collections
 	sandbox      *DefaultTemplateSandbox // Optional sandbox for secure rendering
-	sandboxed    bool               // Whether sandboxing is enabled
+	sandboxed    bool                    // Whether sandboxing is enabled
 }
 
 // NewGoTemplateEngine creates a new Go template engine with default settings.

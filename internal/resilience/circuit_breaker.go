@@ -42,18 +42,18 @@ type CircuitBreaker interface {
 
 // CircuitBreakerConfig configures circuit breaker behavior
 type CircuitBreakerConfig struct {
-	FailureThreshold  int           // Open after N consecutive failures (default: 5)
-	SuccessThreshold  int           // Close after N consecutive successes in half-open (default: 2)
-	Timeout           time.Duration // Duration to stay open before half-open (default: 60s)
-	HalfOpenRequests  int           // Max concurrent requests in half-open state (default: 1)
+	FailureThreshold int           // Open after N consecutive failures (default: 5)
+	SuccessThreshold int           // Close after N consecutive successes in half-open (default: 2)
+	Timeout          time.Duration // Duration to stay open before half-open (default: 60s)
+	HalfOpenRequests int           // Max concurrent requests in half-open state (default: 1)
 }
 
 // DefaultCircuitBreakerConfig provides sensible defaults
 var DefaultCircuitBreakerConfig = CircuitBreakerConfig{
-	FailureThreshold:  5,
-	SuccessThreshold:  2,
-	Timeout:           60 * time.Second,
-	HalfOpenRequests:  1,
+	FailureThreshold: 5,
+	SuccessThreshold: 2,
+	Timeout:          60 * time.Second,
+	HalfOpenRequests: 1,
 }
 
 // CircuitBreakerState tracks the internal state of the circuit breaker

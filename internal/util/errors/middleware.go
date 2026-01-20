@@ -58,13 +58,13 @@ func (m *ErrorMiddleware) Handle(ctx context.Context, operation string, fn func(
 		if r := recover(); r != nil {
 			stack := string(debug.Stack())
 			maskedStack := m.masker.MaskString(stack)
-			
+
 			m.logger.Error("Command panic recovered",
 				"operation", operation,
 				"panic", r,
 				"stack", maskedStack,
 			)
-			
+
 			// Create a structured error for the panic
 			err := &StructuredError{
 				Type:      SystemError,
@@ -75,21 +75,21 @@ func (m *ErrorMiddleware) Handle(ctx context.Context, operation string, fn func(
 				},
 				Retryable: false,
 			}
-			
+
 			// Add correlation ID if available
 			if correlationID := ctx.Value("correlation_id"); correlationID != nil {
 				err.Context["correlation_id"] = correlationID
 			}
 		}
 	}()
-	
+
 	// Execute the function
 	err := fn()
 	if err != nil {
 		// Handle the error
 		return m.HandleError(ctx, operation, err)
 	}
-	
+
 	return nil
 }
 
@@ -99,15 +99,15 @@ func (m *ErrorMiddleware) HandleError(ctx context.Context, operation string, err
 	if err == nil {
 		return nil
 	}
-	
+
 	// Convert to structured error if needed
 	structuredErr := m.handler.HandleError(err)
-	
+
 	// Add operation context
 	if structuredErr.Operation == "" {
 		structuredErr.Operation = operation
 	}
-	
+
 	// Add correlation ID from context if available
 	if structuredErr.Context == nil {
 		structuredErr.Context = make(map[string]interface{})
@@ -115,13 +115,13 @@ func (m *ErrorMiddleware) HandleError(ctx context.Context, operation string, err
 	if correlationID := ctx.Value("correlation_id"); correlationID != nil {
 		structuredErr.Context["correlation_id"] = correlationID
 	}
-	
+
 	// Mask credentials in the error
 	structuredErr.Message = m.masker.MaskString(structuredErr.Message)
-	
+
 	// Log the error
 	m.logError(ctx, structuredErr)
-	
+
 	return structuredErr
 }
 
@@ -132,28 +132,28 @@ func (m *ErrorMiddleware) logError(ctx context.Context, err *StructuredError) {
 		"operation", err.Operation,
 		"retryable", err.Retryable,
 	}
-	
+
 	if err.Field != "" {
 		fields = append(fields, "field", err.Field)
 	}
-	
+
 	if err.FilePath != "" {
 		fields = append(fields, "file", err.FilePath)
 		if err.LineNumber > 0 {
 			fields = append(fields, "line", err.LineNumber)
 		}
 	}
-	
+
 	// Add correlation ID if available
 	if correlationID := ctx.Value("correlation_id"); correlationID != nil {
 		fields = append(fields, "correlation_id", correlationID)
 	}
-	
+
 	// Add context fields
 	for key, value := range err.Context {
 		fields = append(fields, key, value)
 	}
-	
+
 	// Log at appropriate level based on error type
 	switch err.Type {
 	case ValidationError, UserError:
@@ -193,13 +193,13 @@ func (m *ErrorMiddleware) RecoverPanic(ctx context.Context, operation string) er
 	if r := recover(); r != nil {
 		stack := string(debug.Stack())
 		maskedStack := m.masker.MaskString(stack)
-		
+
 		m.logger.Error("Panic recovered",
 			"operation", operation,
 			"panic", r,
 			"stack", maskedStack,
 		)
-		
+
 		return &StructuredError{
 			Type:      SystemError,
 			Message:   fmt.Sprintf("panic recovered: %v", r),
@@ -219,7 +219,7 @@ func (m *ErrorMiddleware) HandleValidationErrors(ctx context.Context, operation 
 	if len(errs) == 0 {
 		return nil
 	}
-	
+
 	// Mask all error messages
 	for _, err := range errs {
 		err.Message = m.masker.MaskString(err.Message)
@@ -227,19 +227,19 @@ func (m *ErrorMiddleware) HandleValidationErrors(ctx context.Context, operation 
 			err.Operation = operation
 		}
 	}
-	
+
 	// Log validation errors
 	m.logger.Warn("Validation errors",
 		"operation", operation,
 		"error_count", len(errs),
 	)
-	
+
 	// Return as error collection
 	var errors []error
 	for _, err := range errs {
 		errors = append(errors, err)
 	}
-	
+
 	return &ErrorCollection{Errors: errors}
 }
 

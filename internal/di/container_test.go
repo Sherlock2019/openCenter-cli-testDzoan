@@ -292,7 +292,7 @@ func TestShutdown(t *testing.T) {
 	if err != nil {
 		t.Errorf("Resolve() should work after Shutdown(): %v", err)
 	}
-	
+
 	// Since it's a singleton, it should be the same instance as before
 	// (the constructor returns the same pointer)
 	newShutdownable, ok := instance.(*ShutdownableComponent)

@@ -272,7 +272,6 @@ func TestProperty_SOPSUnavailableError(t *testing.T) {
 	properties.TestingRun(t, gopter.ConsoleReporter(false))
 }
 
-
 // Feature: stub-implementation-completion, Property 39: Missing Key Error with Instructions
 // **Validates: Requirements 9.2**
 func TestProperty_MissingKeyErrorWithInstructions(t *testing.T) {

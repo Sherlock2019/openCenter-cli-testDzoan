@@ -248,17 +248,17 @@ func (s *DefaultTemplateSandbox) render(tmpl string, data interface{}) (string, 
 // This is useful for documentation and error messages.
 func DangerousFunctions() []string {
 	return []string{
-		"env",        // Access environment variables
-		"expandenv",  // Expand environment variables in strings
-		"readFile",   // Read files from filesystem
-		"writeFile",  // Write files to filesystem
-		"exec",       // Execute shell commands
+		"env",           // Access environment variables
+		"expandenv",     // Expand environment variables in strings
+		"readFile",      // Read files from filesystem
+		"writeFile",     // Write files to filesystem
+		"exec",          // Execute shell commands
 		"getHostByName", // Network access
-		"base",       // File path manipulation (potential path traversal)
-		"dir",        // File path manipulation (potential path traversal)
-		"clean",      // File path manipulation (potential path traversal)
-		"ext",        // File path manipulation (potential path traversal)
-		"isAbs",      // File path manipulation (potential path traversal)
+		"base",          // File path manipulation (potential path traversal)
+		"dir",           // File path manipulation (potential path traversal)
+		"clean",         // File path manipulation (potential path traversal)
+		"ext",           // File path manipulation (potential path traversal)
+		"isAbs",         // File path manipulation (potential path traversal)
 	}
 }
 

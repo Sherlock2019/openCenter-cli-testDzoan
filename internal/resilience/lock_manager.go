@@ -13,8 +13,10 @@ import (
 // LockManager manages distributed locks to prevent concurrent operations
 type LockManager interface {
 	Acquire(ctx context.Context, resource string, ttl time.Duration) (Lock, error)
+	AcquireWithMetadata(ctx context.Context, resource string, ttl time.Duration, metadata map[string]string) (Lock, error)
 	Release(lock Lock) error
 	ForceBreak(resource string) error
+	GetLockInfo(resource string) (*LockState, error)
 }
 
 // Lock represents an acquired lock
@@ -61,9 +63,10 @@ type lockManager struct {
 
 // lockBackend is an internal interface for different lock implementations
 type lockBackend interface {
-	acquire(ctx context.Context, resource string, owner string, ttl time.Duration) (Lock, error)
+	acquire(ctx context.Context, resource string, owner string, ttl time.Duration, metadata map[string]string) (Lock, error)
 	release(lock Lock) error
 	forceBreak(resource string) error
+	getLockInfo(resource string) (*LockState, error)
 }
 
 // NewLockManager creates a new lock manager with the given configuration
@@ -112,6 +115,11 @@ func NewLockManager(config LockConfig) (LockManager, error) {
 
 // Acquire attempts to acquire a lock on the given resource
 func (lm *lockManager) Acquire(ctx context.Context, resource string, ttl time.Duration) (Lock, error) {
+	return lm.AcquireWithMetadata(ctx, resource, ttl, nil)
+}
+
+// AcquireWithMetadata attempts to acquire a lock with additional metadata
+func (lm *lockManager) AcquireWithMetadata(ctx context.Context, resource string, ttl time.Duration, metadata map[string]string) (Lock, error) {
 	if ttl == 0 {
 		ttl = lm.config.DefaultTTL
 	}
@@ -136,7 +144,7 @@ func (lm *lockManager) Acquire(ctx context.Context, resource string, ttl time.Du
 			return nil, fmt.Errorf("failed to acquire lock on %s within %v: %w",
 				resource, lm.config.AcquireTimeout, acquireCtx.Err())
 		case <-ticker.C:
-			lock, err := lm.backend.acquire(acquireCtx, resource, owner, ttl)
+			lock, err := lm.backend.acquire(acquireCtx, resource, owner, ttl, metadata)
 			if err == nil {
 				return lock, nil
 			}
@@ -156,6 +164,11 @@ func (lm *lockManager) Release(lock Lock) error {
 // ForceBreak forcefully breaks a lock (use with caution)
 func (lm *lockManager) ForceBreak(resource string) error {
 	return lm.backend.forceBreak(resource)
+}
+
+// GetLockInfo retrieves information about a lock without acquiring it
+func (lm *lockManager) GetLockInfo(resource string) (*LockState, error) {
+	return lm.backend.getLockInfo(resource)
 }
 
 // generateOwnerID creates a unique identifier for this lock holder
@@ -204,7 +217,7 @@ func newFileLockBackend(lockDir string) (*fileLockBackend, error) {
 }
 
 // acquire attempts to acquire a file-based lock
-func (fb *fileLockBackend) acquire(ctx context.Context, resource string, owner string, ttl time.Duration) (Lock, error) {
+func (fb *fileLockBackend) acquire(ctx context.Context, resource string, owner string, ttl time.Duration, metadata map[string]string) (Lock, error) {
 	fb.mu.Lock()
 	defer fb.mu.Unlock()
 
@@ -245,10 +258,17 @@ func (fb *fileLockBackend) acquire(ctx context.Context, resource string, owner s
 	// Write lock metadata to file
 	now := time.Now()
 	expiresAt := now.Add(ttl)
-	metadata := fmt.Sprintf("owner=%s\nacquired=%s\nexpires=%s\nttl=%s\n",
+	metadataStr := fmt.Sprintf("owner=%s\nacquired=%s\nexpires=%s\nttl=%s\n",
 		owner, now.Format(time.RFC3339), expiresAt.Format(time.RFC3339), ttl)
 
-	if _, err := file.WriteAt([]byte(metadata), 0); err != nil {
+	// Add custom metadata
+	if metadata != nil {
+		for key, value := range metadata {
+			metadataStr += fmt.Sprintf("%s=%s\n", key, value)
+		}
+	}
+
+	if _, err := file.WriteAt([]byte(metadataStr), 0); err != nil {
 		syscall.Flock(int(file.Fd()), syscall.LOCK_UN)
 		file.Close()
 		return nil, fmt.Errorf("failed to write lock metadata: %w", err)
@@ -321,6 +341,77 @@ func (fb *fileLockBackend) forceBreak(resource string) error {
 	}
 
 	return nil
+}
+
+// getLockInfo retrieves information about a lock by reading the lock file
+func (fb *fileLockBackend) getLockInfo(resource string) (*LockState, error) {
+	lockPath := filepath.Join(fb.lockDir, resource+".lock")
+
+	// Check if lock file exists
+	if _, err := os.Stat(lockPath); os.IsNotExist(err) {
+		return nil, nil // No lock exists
+	}
+
+	// Read lock file content
+	content, err := os.ReadFile(lockPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read lock file: %w", err)
+	}
+
+	// Parse lock metadata (format: key=value\n)
+	state := &LockState{
+		Resource: resource,
+		Metadata: make(map[string]string),
+	}
+
+	lines := string(content)
+	for i := 0; i < len(lines); {
+		// Find the next newline
+		endIdx := i
+		for endIdx < len(lines) && lines[endIdx] != '\n' {
+			endIdx++
+		}
+
+		line := lines[i:endIdx]
+		if line != "" {
+			// Split on '='
+			eqIdx := -1
+			for j := 0; j < len(line); j++ {
+				if line[j] == '=' {
+					eqIdx = j
+					break
+				}
+			}
+
+			if eqIdx > 0 {
+				key := line[:eqIdx]
+				value := line[eqIdx+1:]
+
+				switch key {
+				case "owner":
+					state.Owner = value
+				case "acquired":
+					if t, err := time.Parse(time.RFC3339, value); err == nil {
+						state.AcquiredAt = t
+					}
+				case "expires":
+					if t, err := time.Parse(time.RFC3339, value); err == nil {
+						state.ExpiresAt = t
+					}
+				case "ttl":
+					if d, err := time.ParseDuration(value); err == nil {
+						state.TTL = d
+					}
+				default:
+					state.Metadata[key] = value
+				}
+			}
+		}
+
+		i = endIdx + 1
+	}
+
+	return state, nil
 }
 
 // Lock interface implementation for fileLock

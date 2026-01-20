@@ -59,8 +59,8 @@ type ErrorFormatter interface {
 // DefaultErrorFormatter implements ErrorFormatter interface
 // Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7, 15.8
 type DefaultErrorFormatter struct {
-	errorHandler *errors.DefaultErrorHandler
-	masker       security.CredentialMasker
+	errorHandler  *errors.DefaultErrorHandler
+	masker        security.CredentialMasker
 	errorRegistry map[string]ErrorInfo
 }
 
@@ -68,8 +68,8 @@ type DefaultErrorFormatter struct {
 // Requirements: 15.1, 15.2, 15.3
 func NewDefaultErrorFormatter() *DefaultErrorFormatter {
 	formatter := &DefaultErrorFormatter{
-		errorHandler: errors.NewDefaultErrorHandler(),
-		masker:       security.NewDefaultCredentialMasker(),
+		errorHandler:  errors.NewDefaultErrorHandler(),
+		masker:        security.NewDefaultCredentialMasker(),
 		errorRegistry: make(map[string]ErrorInfo),
 	}
 	formatter.initializeErrorRegistry()

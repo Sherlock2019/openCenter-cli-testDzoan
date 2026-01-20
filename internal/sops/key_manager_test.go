@@ -29,41 +29,41 @@ import (
 func TestMultiKeySOPSConfiguration(t *testing.T) {
 	// Create temporary directory
 	tempDir := t.TempDir()
-	
+
 	// Create key manager
 	manager := NewEnhancedKeyManager(tempDir, slog.Default())
 	manager.SetKeyringEnabled(false) // Use file storage for predictable testing
-	
+
 	clusterName := "test-cluster"
-	
+
 	// Generate primary key
 	primaryKey, err := manager.GenerateKey(clusterName)
 	if err != nil {
 		t.Fatalf("Failed to generate primary key: %v", err)
 	}
-	
+
 	// Generate additional keys
 	additionalKey1, err := manager.GenerateAdditionalKey(clusterName, 1)
 	if err != nil {
 		t.Fatalf("Failed to generate additional key 1: %v", err)
 	}
-	
+
 	additionalKey2, err := manager.GenerateAdditionalKey(clusterName, 2)
 	if err != nil {
 		t.Fatalf("Failed to generate additional key 2: %v", err)
 	}
-	
+
 	// List all cluster keys
 	keys, err := manager.ListClusterKeys(clusterName)
 	if err != nil {
 		t.Fatalf("Failed to list cluster keys: %v", err)
 	}
-	
+
 	// Verify we have 3 keys
 	if len(keys) != 3 {
 		t.Errorf("Expected 3 keys, got %d", len(keys))
 	}
-	
+
 	// Verify keys match
 	if keys[0].PrivateKey != primaryKey.PrivateKey {
 		t.Error("Primary key mismatch")
@@ -74,13 +74,13 @@ func TestMultiKeySOPSConfiguration(t *testing.T) {
 	if keys[2].PrivateKey != additionalKey2.PrivateKey {
 		t.Error("Additional key 2 mismatch")
 	}
-	
+
 	// Generate SOPS config
 	sopsConfig, err := manager.GenerateSOPSConfig(clusterName)
 	if err != nil {
 		t.Fatalf("Failed to generate SOPS config: %v", err)
 	}
-	
+
 	// Verify SOPS config contains all public keys
 	if !strings.Contains(sopsConfig, primaryKey.PublicKey) {
 		t.Error("SOPS config missing primary key")
@@ -91,7 +91,7 @@ func TestMultiKeySOPSConfiguration(t *testing.T) {
 	if !strings.Contains(sopsConfig, additionalKey2.PublicKey) {
 		t.Error("SOPS config missing additional key 2")
 	}
-	
+
 	// Verify SOPS config has correct format
 	if !strings.Contains(sopsConfig, "creation_rules:") {
 		t.Error("SOPS config missing creation_rules")
@@ -102,7 +102,7 @@ func TestMultiKeySOPSConfiguration(t *testing.T) {
 	if !strings.Contains(sopsConfig, "encrypted_regex:") {
 		t.Error("SOPS config missing encrypted_regex")
 	}
-	
+
 	// Clean up
 	manager.DeleteKey(clusterName)
 	manager.DeleteKey(clusterName + "-key-1")
@@ -112,41 +112,41 @@ func TestMultiKeySOPSConfiguration(t *testing.T) {
 func TestMultiKeySOPSConfigurationWithSingleKey(t *testing.T) {
 	// Create temporary directory
 	tempDir := t.TempDir()
-	
+
 	// Create key manager
 	manager := NewEnhancedKeyManager(tempDir, slog.Default())
 	manager.SetKeyringEnabled(false)
-	
+
 	clusterName := "single-key-cluster"
-	
+
 	// Generate only primary key
 	primaryKey, err := manager.GenerateKey(clusterName)
 	if err != nil {
 		t.Fatalf("Failed to generate primary key: %v", err)
 	}
-	
+
 	// List cluster keys
 	keys, err := manager.ListClusterKeys(clusterName)
 	if err != nil {
 		t.Fatalf("Failed to list cluster keys: %v", err)
 	}
-	
+
 	// Verify we have 1 key
 	if len(keys) != 1 {
 		t.Errorf("Expected 1 key, got %d", len(keys))
 	}
-	
+
 	// Generate SOPS config
 	sopsConfig, err := manager.GenerateSOPSConfig(clusterName)
 	if err != nil {
 		t.Fatalf("Failed to generate SOPS config: %v", err)
 	}
-	
+
 	// Verify SOPS config contains the public key
 	if !strings.Contains(sopsConfig, primaryKey.PublicKey) {
 		t.Error("SOPS config missing primary key")
 	}
-	
+
 	// Clean up
 	manager.DeleteKey(clusterName)
 }
@@ -154,41 +154,41 @@ func TestMultiKeySOPSConfigurationWithSingleKey(t *testing.T) {
 func TestKeyRotation(t *testing.T) {
 	// Create temporary directory
 	tempDir := t.TempDir()
-	
+
 	// Create key manager
 	manager := NewEnhancedKeyManager(tempDir, slog.Default())
 	manager.SetKeyringEnabled(false)
-	
+
 	clusterName := "rotation-test-cluster"
-	
+
 	// Generate initial keys
 	originalPrimaryKey, err := manager.GenerateKey(clusterName)
 	if err != nil {
 		t.Fatalf("Failed to generate primary key: %v", err)
 	}
-	
+
 	originalAdditionalKey, err := manager.GenerateAdditionalKey(clusterName, 1)
 	if err != nil {
 		t.Fatalf("Failed to generate additional key: %v", err)
 	}
-	
+
 	// Rotate keys
 	err = manager.RotateClusterKeys(clusterName)
 	if err != nil {
 		t.Fatalf("Failed to rotate keys: %v", err)
 	}
-	
+
 	// Retrieve new keys
 	newKeys, err := manager.ListClusterKeys(clusterName)
 	if err != nil {
 		t.Fatalf("Failed to list keys after rotation: %v", err)
 	}
-	
+
 	// Verify we still have 2 keys
 	if len(newKeys) != 2 {
 		t.Errorf("Expected 2 keys after rotation, got %d", len(newKeys))
 	}
-	
+
 	// Verify keys are different from original
 	if newKeys[0].PrivateKey == originalPrimaryKey.PrivateKey {
 		t.Error("Primary key was not rotated")
@@ -196,7 +196,7 @@ func TestKeyRotation(t *testing.T) {
 	if newKeys[1].PrivateKey == originalAdditionalKey.PrivateKey {
 		t.Error("Additional key was not rotated")
 	}
-	
+
 	// Clean up
 	manager.DeleteKey(clusterName)
 	manager.DeleteKey(clusterName + "-key-1")
@@ -205,13 +205,13 @@ func TestKeyRotation(t *testing.T) {
 func TestListClusterKeysNoKeys(t *testing.T) {
 	// Create temporary directory
 	tempDir := t.TempDir()
-	
+
 	// Create key manager
 	manager := NewEnhancedKeyManager(tempDir, slog.Default())
 	manager.SetKeyringEnabled(false)
-	
+
 	clusterName := "nonexistent-cluster"
-	
+
 	// Try to list keys for non-existent cluster
 	_, err := manager.ListClusterKeys(clusterName)
 	if err == nil {
@@ -222,35 +222,35 @@ func TestListClusterKeysNoKeys(t *testing.T) {
 func TestGenerateAdditionalKeyIndependence(t *testing.T) {
 	// Create temporary directory
 	tempDir := t.TempDir()
-	
+
 	// Create key manager
 	manager := NewEnhancedKeyManager(tempDir, slog.Default())
 	manager.SetKeyringEnabled(false)
-	
+
 	clusterName := "independence-test"
-	
+
 	// Generate primary key
 	primaryKey, err := manager.GenerateKey(clusterName)
 	if err != nil {
 		t.Fatalf("Failed to generate primary key: %v", err)
 	}
-	
+
 	// Generate additional keys with different indices
 	key1, err := manager.GenerateAdditionalKey(clusterName, 1)
 	if err != nil {
 		t.Fatalf("Failed to generate key 1: %v", err)
 	}
-	
+
 	key2, err := manager.GenerateAdditionalKey(clusterName, 2)
 	if err != nil {
 		t.Fatalf("Failed to generate key 2: %v", err)
 	}
-	
+
 	key5, err := manager.GenerateAdditionalKey(clusterName, 5)
 	if err != nil {
 		t.Fatalf("Failed to generate key 5: %v", err)
 	}
-	
+
 	// Verify all keys are different
 	keys := []*crypto.AgeKeyPair{primaryKey, key1, key2, key5}
 	for i := 0; i < len(keys); i++ {
@@ -263,7 +263,7 @@ func TestGenerateAdditionalKeyIndependence(t *testing.T) {
 			}
 		}
 	}
-	
+
 	// Clean up
 	manager.DeleteKey(clusterName)
 	manager.DeleteKey(clusterName + "-key-1")

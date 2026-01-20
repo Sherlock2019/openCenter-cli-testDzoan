@@ -31,8 +31,8 @@ type MockLogger struct {
 }
 
 type LogCall struct {
-	Message        string
-	KeysAndValues  []interface{}
+	Message       string
+	KeysAndValues []interface{}
 }
 
 func (m *MockLogger) Error(msg string, keysAndValues ...interface{}) {
@@ -296,9 +296,9 @@ func TestErrorMiddleware_IsRetryable(t *testing.T) {
 	middleware := NewErrorMiddleware(logger)
 
 	tests := []struct {
-		name    string
-		err     error
-		want    bool
+		name string
+		err  error
+		want bool
 	}{
 		{
 			name: "network timeout",

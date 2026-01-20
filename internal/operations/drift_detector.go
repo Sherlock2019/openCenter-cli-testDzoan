@@ -51,10 +51,10 @@ func (s Severity) String() string {
 type DriftDetector interface {
 	// DetectDrift compares desired configuration with actual infrastructure state
 	DetectDrift(ctx context.Context, cluster string) (*DriftReport, error)
-	
+
 	// ReconcileDrift corrects detected drift
 	ReconcileDrift(ctx context.Context, cluster string, dryRun bool) error
-	
+
 	// SchedulePeriodicCheck schedules periodic drift detection
 	SchedulePeriodicCheck(interval time.Duration, callback func(*DriftReport))
 }
@@ -95,13 +95,13 @@ type DriftSummary struct {
 type CloudProvider interface {
 	// GetInstances retrieves all instances for the cluster
 	GetInstances(ctx context.Context, cluster string) ([]Instance, error)
-	
+
 	// GetNetworks retrieves all networks for the cluster
 	GetNetworks(ctx context.Context, cluster string) ([]Network, error)
-	
+
 	// GetSecurityGroups retrieves all security groups for the cluster
 	GetSecurityGroups(ctx context.Context, cluster string) ([]SecurityGroup, error)
-	
+
 	// GetLoadBalancers retrieves all load balancers for the cluster
 	GetLoadBalancers(ctx context.Context, cluster string) ([]LoadBalancer, error)
 }
@@ -126,9 +126,9 @@ type Network struct {
 
 // SecurityGroup represents a security group
 type SecurityGroup struct {
-	ID    string          `json:"id"`
-	Name  string          `json:"name"`
-	Rules []SecurityRule  `json:"rules"`
+	ID    string         `json:"id"`
+	Name  string         `json:"name"`
+	Rules []SecurityRule `json:"rules"`
 }
 
 // SecurityRule represents a security group rule

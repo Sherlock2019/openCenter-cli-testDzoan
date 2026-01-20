@@ -42,7 +42,10 @@ func newClusterDestroyCmd() *cobra.Command {
 			}
 
 			ctx := context.Background()
-			lock, err := lockMgr.Acquire(ctx, name, 1*time.Hour)
+			lock, err := lockMgr.AcquireWithMetadata(ctx, name, 1*time.Hour, map[string]string{
+				"operation": "destroy",
+				"command":   "cluster destroy",
+			})
 			if err != nil {
 				return fmt.Errorf("failed to acquire lock for cluster %q: %w\nAnother operation may be in progress. Wait for it to complete or use 'openCenter cluster info %s' to check lock status", name, err, name)
 			}
@@ -117,10 +120,10 @@ func newClusterDestroyCmd() *cobra.Command {
 					return fmt.Errorf("failed to create config manager: %w", err)
 				}
 				pathResolver := config.NewPathResolver(configMgr)
-				
+
 				// Check if this is a legacy cluster
 				isLegacy, _ := pathResolver.IsLegacyCluster(clusterName)
-				
+
 				if !isLegacy && organization != "" {
 					// Organization-based structure
 					clusterPaths := pathResolver.ResolveClusterPaths(clusterName, organization)

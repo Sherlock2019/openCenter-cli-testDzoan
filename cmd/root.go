@@ -136,7 +136,7 @@ func ExecuteWithContext(ctx context.Context, version string) error {
 	rootCmd.AddCommand(NewVersionCmd())
 	// Discover and attach external plugins as subcommands
 	plugins.LoadExternalPlugins(rootCmd)
-	
+
 	// Execute with context
 	return rootCmd.ExecuteContext(ctx)
 }
@@ -393,12 +393,12 @@ func formatMultipleErrors(errs []error, verbose bool) error {
 	if len(errs) == 0 {
 		return nil
 	}
-	
+
 	maxErrors := 5
 	if verbose {
 		maxErrors = len(errs)
 	}
-	
+
 	var msg strings.Builder
 	for i, err := range errs {
 		if i >= maxErrors {
@@ -410,7 +410,7 @@ func formatMultipleErrors(errs []error, verbose bool) error {
 		}
 		msg.WriteString(fmt.Sprintf("%d. %v", i+1, err))
 	}
-	
+
 	return fmt.Errorf("%s", msg.String())
 }
 
@@ -423,7 +423,7 @@ func formatErrorWithInfo(err error, code string) error {
 	if err == nil {
 		return nil
 	}
-	
+
 	// Provide basic error info for known codes
 	switch code {
 	case "E1001":

@@ -463,7 +463,7 @@ func TestProperty_LockAcquisitionAndRelease(t *testing.T) {
 			maxConcurrentHolders := 0
 			var mu sync.Mutex
 			var wg sync.WaitGroup
-			
+
 			// Use a channel to synchronize goroutine starts
 			startChan := make(chan struct{})
 
@@ -472,10 +472,10 @@ func TestProperty_LockAcquisitionAndRelease(t *testing.T) {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					
+
 					// Wait for start signal to ensure all goroutines try simultaneously
 					<-startChan
-					
+
 					lock, err := lm.Acquire(ctx, resource, 500*time.Millisecond)
 					if err == nil {
 						// Track concurrent holders
@@ -485,10 +485,10 @@ func TestProperty_LockAcquisitionAndRelease(t *testing.T) {
 							maxConcurrentHolders = concurrentHolders
 						}
 						mu.Unlock()
-						
+
 						// Hold lock for a bit
 						time.Sleep(100 * time.Millisecond)
-						
+
 						// Release and decrement
 						mu.Lock()
 						concurrentHolders--
@@ -500,7 +500,7 @@ func TestProperty_LockAcquisitionAndRelease(t *testing.T) {
 
 			// Signal all goroutines to start simultaneously
 			close(startChan)
-			
+
 			wg.Wait()
 
 			// At most one goroutine should have held the lock at any given time

@@ -14,7 +14,6 @@
 package cmd
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -154,22 +153,80 @@ func newClusterInfoCmd() *cobra.Command {
 			}
 			fmt.Fprint(cmd.OutOrStdout(), string(data))
 
-			// Check lock status
+			// Check lock status with detailed information
 			lockMgr, err := resilience.NewLockManager(resilience.DefaultLockConfig)
 			if err == nil {
-				// Try to acquire lock with very short timeout to check if it's held
-				ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-				defer cancel()
-
-				lock, err := lockMgr.Acquire(ctx, name, 1*time.Second)
+				lockInfo, err := lockMgr.GetLockInfo(name)
 				if err != nil {
-					// Lock is held by another process
+					fmt.Fprintf(cmd.ErrOrStderr(), "\nWarning: Failed to read lock info: %v\n", err)
+				} else if lockInfo != nil {
+					// Lock exists - show detailed information
 					fmt.Fprintln(cmd.OutOrStdout(), "\nLock Status:")
 					fmt.Fprintln(cmd.OutOrStdout(), "  status: locked")
-					fmt.Fprintln(cmd.OutOrStdout(), "  message: Another operation is in progress on this cluster")
+
+					// Show operation if available
+					if operation, ok := lockInfo.Metadata["operation"]; ok {
+						fmt.Fprintf(cmd.OutOrStdout(), "  operation: %s\n", operation)
+					}
+					if command, ok := lockInfo.Metadata["command"]; ok {
+						fmt.Fprintf(cmd.OutOrStdout(), "  command: %s\n", command)
+					}
+
+					// Parse owner to extract hostname and PID
+					owner := lockInfo.Owner
+					hostname := owner
+					pid := ""
+					if colonIdx := -1; colonIdx < len(owner) {
+						for i := 0; i < len(owner); i++ {
+							if owner[i] == ':' {
+								colonIdx = i
+								break
+							}
+						}
+						if colonIdx > 0 {
+							hostname = owner[:colonIdx]
+							pid = owner[colonIdx+1:]
+						}
+					}
+
+					fmt.Fprintf(cmd.OutOrStdout(), "  owner: %s\n", owner)
+					if hostname != owner {
+						fmt.Fprintf(cmd.OutOrStdout(), "  hostname: %s\n", hostname)
+						fmt.Fprintf(cmd.OutOrStdout(), "  pid: %s\n", pid)
+					}
+
+					// Show timestamps
+					if !lockInfo.AcquiredAt.IsZero() {
+						fmt.Fprintf(cmd.OutOrStdout(), "  acquired_at: %s\n", lockInfo.AcquiredAt.Format(time.RFC3339))
+						fmt.Fprintf(cmd.OutOrStdout(), "  acquired_ago: %s\n", time.Since(lockInfo.AcquiredAt).Round(time.Second))
+					}
+
+					if !lockInfo.ExpiresAt.IsZero() {
+						fmt.Fprintf(cmd.OutOrStdout(), "  expires_at: %s\n", lockInfo.ExpiresAt.Format(time.RFC3339))
+						if time.Now().Before(lockInfo.ExpiresAt) {
+							fmt.Fprintf(cmd.OutOrStdout(), "  expires_in: %s\n", time.Until(lockInfo.ExpiresAt).Round(time.Second))
+						} else {
+							fmt.Fprintln(cmd.OutOrStdout(), "  expires_in: expired (stale lock)")
+						}
+					}
+
+					if lockInfo.TTL > 0 {
+						fmt.Fprintf(cmd.OutOrStdout(), "  ttl: %s\n", lockInfo.TTL)
+					}
+
+					// Add helpful message
+					if operation, ok := lockInfo.Metadata["operation"]; ok {
+						fmt.Fprintf(cmd.OutOrStdout(), "  message: %s operation is in progress on this cluster\n", operation)
+					} else {
+						fmt.Fprintln(cmd.OutOrStdout(), "  message: Another operation is in progress on this cluster")
+					}
+
+					// Check if process is still running (on Unix-like systems)
+					if pid != "" {
+						fmt.Fprintf(cmd.OutOrStdout(), "  hint: Check if process %s is still running, or remove stale lock file\n", pid)
+					}
 				} else {
-					// Lock is available
-					lockMgr.Release(lock)
+					// No lock exists
 					fmt.Fprintln(cmd.OutOrStdout(), "\nLock Status:")
 					fmt.Fprintln(cmd.OutOrStdout(), "  status: available")
 				}

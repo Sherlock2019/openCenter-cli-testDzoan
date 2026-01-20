@@ -30,10 +30,10 @@ func TestProperty_CircuitBreakerStateTransitions(t *testing.T) {
 			}
 
 			config := CircuitBreakerConfig{
-				FailureThreshold:  failureThreshold,
-				SuccessThreshold:  2,
-				Timeout:           100 * time.Millisecond,
-				HalfOpenRequests:  1,
+				FailureThreshold: failureThreshold,
+				SuccessThreshold: 2,
+				Timeout:          100 * time.Millisecond,
+				HalfOpenRequests: 1,
 			}
 
 			cb := NewCircuitBreaker(config)
@@ -64,10 +64,10 @@ func TestProperty_CircuitBreakerStateTransitions(t *testing.T) {
 			}
 
 			config := CircuitBreakerConfig{
-				FailureThreshold:  failureThreshold,
-				SuccessThreshold:  2,
-				Timeout:           100 * time.Millisecond,
-				HalfOpenRequests:  1,
+				FailureThreshold: failureThreshold,
+				SuccessThreshold: 2,
+				Timeout:          100 * time.Millisecond,
+				HalfOpenRequests: 1,
 			}
 
 			cb := NewCircuitBreaker(config)
@@ -96,10 +96,10 @@ func TestProperty_CircuitBreakerStateTransitions(t *testing.T) {
 			}
 
 			config := CircuitBreakerConfig{
-				FailureThreshold:  2,
-				SuccessThreshold:  2,
-				Timeout:           time.Duration(timeoutMs) * time.Millisecond,
-				HalfOpenRequests:  1,
+				FailureThreshold: 2,
+				SuccessThreshold: 2,
+				Timeout:          time.Duration(timeoutMs) * time.Millisecond,
+				HalfOpenRequests: 1,
 			}
 
 			cb := NewCircuitBreaker(config)
@@ -140,10 +140,10 @@ func TestProperty_CircuitBreakerStateTransitions(t *testing.T) {
 			}
 
 			config := CircuitBreakerConfig{
-				FailureThreshold:  2,
-				SuccessThreshold:  successThreshold,
-				Timeout:           50 * time.Millisecond,
-				HalfOpenRequests:  1,
+				FailureThreshold: 2,
+				SuccessThreshold: successThreshold,
+				Timeout:          50 * time.Millisecond,
+				HalfOpenRequests: 1,
 			}
 
 			cb := NewCircuitBreaker(config)
@@ -181,10 +181,10 @@ func TestProperty_CircuitBreakerStateTransitions(t *testing.T) {
 			}
 
 			config := CircuitBreakerConfig{
-				FailureThreshold:  2,
-				SuccessThreshold:  5, // High threshold so we stay in half-open
-				Timeout:           50 * time.Millisecond,
-				HalfOpenRequests:  1,
+				FailureThreshold: 2,
+				SuccessThreshold: 5, // High threshold so we stay in half-open
+				Timeout:          50 * time.Millisecond,
+				HalfOpenRequests: 1,
 			}
 
 			cb := NewCircuitBreaker(config)
@@ -227,10 +227,10 @@ func TestProperty_CircuitBreakerStateTransitions(t *testing.T) {
 			}
 
 			config := CircuitBreakerConfig{
-				FailureThreshold:  5,
-				SuccessThreshold:  2,
-				Timeout:           100 * time.Millisecond,
-				HalfOpenRequests:  1,
+				FailureThreshold: 5,
+				SuccessThreshold: 2,
+				Timeout:          100 * time.Millisecond,
+				HalfOpenRequests: 1,
 			}
 
 			cb := NewCircuitBreaker(config).(*circuitBreaker)
@@ -267,10 +267,10 @@ func TestProperty_CircuitBreakerStateTransitions(t *testing.T) {
 			}
 
 			config := CircuitBreakerConfig{
-				FailureThreshold:  3,
-				SuccessThreshold:  2,
-				Timeout:           100 * time.Millisecond,
-				HalfOpenRequests:  1,
+				FailureThreshold: 3,
+				SuccessThreshold: 2,
+				Timeout:          100 * time.Millisecond,
+				HalfOpenRequests: 1,
 			}
 
 			cb := NewCircuitBreaker(config)
@@ -301,10 +301,10 @@ func TestProperty_CircuitBreakerStateTransitions(t *testing.T) {
 			}
 
 			config := CircuitBreakerConfig{
-				FailureThreshold:  failureThreshold,
-				SuccessThreshold:  2,
-				Timeout:           1 * time.Second, // Long timeout
-				HalfOpenRequests:  1,
+				FailureThreshold: failureThreshold,
+				SuccessThreshold: 2,
+				Timeout:          1 * time.Second, // Long timeout
+				HalfOpenRequests: 1,
 			}
 
 			cb := NewCircuitBreaker(config)
@@ -339,10 +339,10 @@ func TestProperty_CircuitBreakerStateTransitions(t *testing.T) {
 			}
 
 			config := CircuitBreakerConfig{
-				FailureThreshold:  2,
-				SuccessThreshold:  5, // High threshold to stay in half-open
-				Timeout:           50 * time.Millisecond,
-				HalfOpenRequests:  maxRequests,
+				FailureThreshold: 2,
+				SuccessThreshold: 5, // High threshold to stay in half-open
+				Timeout:          50 * time.Millisecond,
+				HalfOpenRequests: maxRequests,
 			}
 
 			cb := NewCircuitBreaker(config)
@@ -407,10 +407,10 @@ func TestProperty_CircuitBreakerStateTransitions(t *testing.T) {
 			}
 
 			config := CircuitBreakerConfig{
-				FailureThreshold:  failureThreshold,
-				SuccessThreshold:  2,
-				Timeout:           1 * time.Second,
-				HalfOpenRequests:  1,
+				FailureThreshold: failureThreshold,
+				SuccessThreshold: 2,
+				Timeout:          1 * time.Second,
+				HalfOpenRequests: 1,
 			}
 
 			cb := NewCircuitBreaker(config)
@@ -453,10 +453,10 @@ func TestProperty_CircuitBreakerStateTransitions(t *testing.T) {
 			}
 
 			config := CircuitBreakerConfig{
-				FailureThreshold:  2,
-				SuccessThreshold:  2,
-				Timeout:           time.Duration(timeoutMs) * time.Millisecond,
-				HalfOpenRequests:  1,
+				FailureThreshold: 2,
+				SuccessThreshold: 2,
+				Timeout:          time.Duration(timeoutMs) * time.Millisecond,
+				HalfOpenRequests: 1,
 			}
 
 			cb := NewCircuitBreaker(config)
