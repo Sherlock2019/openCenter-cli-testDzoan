@@ -834,8 +834,9 @@ Troubleshooting:
 				configMap["secrets"] = secretsConfig
 			}
 
-			// Convert the map to YAML for final output
-			finalYAML, err := yaml.Marshal(configMap)
+			// Marshal the struct directly to ensure all fields (including empty secrets) are rendered
+			// This is important so users can see and modify all available service configurations
+			finalYAML, err := yaml.Marshal(cfg)
 			if err != nil {
 				return fmt.Errorf("failed to marshal final config: %w", err)
 			}
