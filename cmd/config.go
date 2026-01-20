@@ -15,6 +15,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/rackerlabs/openCenter-cli/internal/config"
@@ -46,6 +47,7 @@ Configuration values can be accessed and modified using dot notation (e.g., logg
 	cmd.AddCommand(newConfigGetCmd())
 	cmd.AddCommand(newConfigResetCmd())
 	cmd.AddCommand(newConfigPathCmd())
+	cmd.AddCommand(newConfigEditCmd())
 	cmd.AddCommand(newConfigIDECmd())
 
 	return cmd
@@ -58,31 +60,27 @@ func newConfigViewCmd() *cobra.Command {
 		Short: "Display the current CLI configuration",
 		Long: `Display the current CLI configuration in YAML format.
 
-This shows the complete configuration including logging, paths, behavior, and defaults.
-Values are displayed after merging with defaults and expanding environment variables.`,
+This shows the configuration file content exactly as it would appear in an editor.
+Use 'openCenter config edit' to modify the configuration.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Use global config manager if available, otherwise create a new one
-			var cm *config.ConfigManager
-			var err error
-
-			if globalCM := GetConfigManager(); globalCM != nil {
-				cm = globalCM
-			} else {
-				cm, err = config.NewConfigManager("")
-				if err != nil {
-					return fmt.Errorf("failed to load configuration: %w", err)
-				}
-			}
-
-			// Get current configuration
-			cfg := cm.GetConfig()
-
-			// Marshal to YAML for display
-			data, err := yaml.Marshal(cfg)
+			// Get the configuration file path
+			cm, err := config.NewConfigManager("")
 			if err != nil {
-				return fmt.Errorf("failed to format configuration: %w", err)
+				return fmt.Errorf("failed to load configuration: %w", err)
 			}
 
+			configPath := cm.GetConfigPath()
+
+			// Read the raw file content
+			data, err := os.ReadFile(configPath)
+			if err != nil {
+				if os.IsNotExist(err) {
+					return fmt.Errorf("configuration file not found at %s. Run 'openCenter config edit' to create it", configPath)
+				}
+				return fmt.Errorf("failed to read configuration file: %w", err)
+			}
+
+			// Print the raw content
 			fmt.Print(string(data))
 			return nil
 		},
