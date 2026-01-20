@@ -389,6 +389,19 @@ func defaultConfig(name string) Config {
 				"postgres-operator": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
 				"rbac-manager":      &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
 				"sources":           &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+				"tempo": &services.TempoConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled: false, // Disabled by default - requires storage credentials
+					},
+					StorageType:      "s3",
+					BucketName:       fmt.Sprintf("%s-tempo", name),
+					VolumeSize:       10,
+					StorageClass:     "csi-cinder-sc-delete",
+					S3Endpoint:       "",
+					S3Region:         "us-east-1",
+					S3ForcePathStyle: false,
+					S3Insecure:       false,
+				},
 				"velero": &services.VeleroConfig{
 					BaseConfig: services.BaseConfig{
 						Enabled: false, // Disabled by default - may require cloud credentials
