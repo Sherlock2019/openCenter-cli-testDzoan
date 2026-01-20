@@ -64,6 +64,30 @@ const (
 	StatusFailed  = "failed"
 )
 
+// getDefaultSSHKeys returns SSH keys from CLI defaults or an empty string array as fallback.
+func getDefaultSSHKeys(cliDefaults *DefaultsConfig) []string {
+	if cliDefaults != nil && len(cliDefaults.SSHAuthorizedKeys) > 0 {
+		return cliDefaults.SSHAuthorizedKeys
+	}
+	return []string{""}
+}
+
+// getDefaultProvider returns provider from CLI defaults or "openstack" as fallback.
+func getDefaultProvider(cliDefaults *DefaultsConfig) string {
+	if cliDefaults != nil && cliDefaults.Provider != "" {
+		return cliDefaults.Provider
+	}
+	return "openstack"
+}
+
+// getDefaultEnvironment returns environment from CLI defaults or empty string as fallback.
+func getDefaultEnvironment(cliDefaults *DefaultsConfig) string {
+	if cliDefaults != nil && cliDefaults.Environment != "" {
+		return cliDefaults.Environment
+	}
+	return ""
+}
+
 // Kubernetes groups settings for the Kubernetes cluster.
 // It nests further objects for counts, images, flavors, and networking.
 // Default values are applied at load time.
@@ -85,6 +109,19 @@ func defaultConfig(name string) Config {
 	awsAccessKey := ""
 	awsSecretKey := ""
 
+	// Load CLI defaults if available
+	var cliDefaults *DefaultsConfig
+	if cm, err := NewConfigManager(""); err == nil {
+		if cliConfig := cm.GetConfig(); cliConfig != nil {
+			cliDefaults = &cliConfig.Defaults
+		}
+	}
+
+	// Apply CLI defaults for region if available
+	if cliDefaults != nil && cliDefaults.Region != "" {
+		region = cliDefaults.Region
+	}
+
 	if isTestMode {
 		authURL = "https://identity.example.com/v3"
 		region = "RegionOne"
@@ -102,7 +139,7 @@ func defaultConfig(name string) Config {
 		OpenCenter: SimplifiedOpenCenter{
 			Meta: ClusterMeta{
 				Name:         name,
-				Env:          "",
+				Env:          getDefaultEnvironment(cliDefaults),
 				Region:       region,
 				Status:       "",
 				Organization: "opencenter",
@@ -119,7 +156,7 @@ func defaultConfig(name string) Config {
 				},
 			},
 			Infrastructure: Infrastructure{
-				Provider:            "openstack",
+				Provider:            getDefaultProvider(cliDefaults),
 				SSHUser:             "ubuntu",
 				OSVersion:           "24",
 				ServerGroupAffinity: []string{"anti-affinity"},
@@ -172,7 +209,7 @@ func defaultConfig(name string) Config {
 				ClusterName:        name,
 				AWSAccessKey:       "",
 				AWSSecretAccessKey: "",
-				SSHAuthorizedKeys:  []string{""},
+				SSHAuthorizedKeys:  getDefaultSSHKeys(cliDefaults),
 				BaseDomain:         "k8s.opencenter.cloud",
 				ClusterFQDN:        fmt.Sprintf("%s.%s.k8s.opencenter.cloud", name, region),
 				AdminEmail:         "",
@@ -856,6 +893,9 @@ func Load(name string) (Config, error) {
 	// Apply organization-based defaults if not explicitly set
 	applyOrganizationDefaults(&cfg)
 
+	// Apply CLI defaults if available
+	applyCLIDefaults(&cfg)
+
 	// Initialize metadata if it's missing (for backward compatibility with old configs)
 	if cfg.Metadata.CreatedAt.IsZero() {
 		cfg.Metadata = NewConfigMetadata()
@@ -882,6 +922,51 @@ func applyOrganizationDefaults(cfg *Config) {
 	// Ensure bucket name is always lowercase
 	if cfg.OpenTofu.Backend.S3.Bucket != "" {
 		cfg.OpenTofu.Backend.S3.Bucket = strings.ToLower(cfg.OpenTofu.Backend.S3.Bucket)
+	}
+}
+
+// applyCLIDefaults applies CLI configuration defaults to the cluster configuration.
+// This allows users to set default values in their CLI config that will be applied
+// to cluster configurations when they are loaded.
+func applyCLIDefaults(cfg *Config) {
+	// Try to load CLI config manager
+	cm, err := NewConfigManager("")
+	if err != nil {
+		// If CLI config can't be loaded, skip applying defaults
+		return
+	}
+
+	cliConfig := cm.GetConfig()
+	if cliConfig == nil {
+		return
+	}
+
+	// Apply provider default if not set in cluster config
+	if cfg.OpenCenter.Infrastructure.Provider == "" && cliConfig.Defaults.Provider != "" {
+		cfg.OpenCenter.Infrastructure.Provider = cliConfig.Defaults.Provider
+	}
+
+	// Apply region default if not set in cluster config
+	if cfg.OpenCenter.Meta.Region == "" && cliConfig.Defaults.Region != "" {
+		cfg.OpenCenter.Meta.Region = cliConfig.Defaults.Region
+	}
+
+	// Apply environment default if not set in cluster config
+	if cfg.OpenCenter.Meta.Env == "" && cliConfig.Defaults.Environment != "" {
+		cfg.OpenCenter.Meta.Env = cliConfig.Defaults.Environment
+	}
+
+	// Apply SSH authorized keys default if not set in cluster config
+	// Check if SSH keys are empty or contain only empty strings
+	hasValidKeys := false
+	for _, key := range cfg.OpenCenter.Cluster.SSHAuthorizedKeys {
+		if key != "" {
+			hasValidKeys = true
+			break
+		}
+	}
+	if !hasValidKeys && len(cliConfig.Defaults.SSHAuthorizedKeys) > 0 {
+		cfg.OpenCenter.Cluster.SSHAuthorizedKeys = cliConfig.Defaults.SSHAuthorizedKeys
 	}
 }
 

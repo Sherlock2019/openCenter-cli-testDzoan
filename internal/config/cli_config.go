@@ -64,9 +64,10 @@ type BehaviorConfig struct {
 
 // DefaultsConfig contains default values for cluster operations.
 type DefaultsConfig struct {
-	Provider    string `yaml:"provider"`
-	Region      string `yaml:"region"`
-	Environment string `yaml:"environment"`
+	Provider          string   `yaml:"provider"`
+	Region            string   `yaml:"region"`
+	Environment       string   `yaml:"environment"`
+	SSHAuthorizedKeys []string `yaml:"ssh_authorized_keys,omitempty"`
 }
 
 // ConfigManager handles CLI configuration loading, validation, and merging.
@@ -376,6 +377,9 @@ func (cm *ConfigManager) mergeWithDefaults(config *CLIConfig) *CLIConfig {
 	}
 	if config.Defaults.Environment != "" {
 		merged.Defaults.Environment = config.Defaults.Environment
+	}
+	if len(config.Defaults.SSHAuthorizedKeys) > 0 {
+		merged.Defaults.SSHAuthorizedKeys = config.Defaults.SSHAuthorizedKeys
 	}
 
 	return &merged
@@ -901,6 +905,37 @@ func (cm *ConfigManager) setDefaultsValue(defaults *DefaultsConfig, parts []stri
 				Message: "environment must be a string",
 			}
 		}
+	case "ssh_authorized_keys":
+		// Handle both string (single key) and []string (multiple keys)
+		switch v := value.(type) {
+		case string:
+			defaults.SSHAuthorizedKeys = []string{v}
+		case []string:
+			defaults.SSHAuthorizedKeys = v
+		case []interface{}:
+			// Convert []interface{} to []string
+			keys := make([]string, len(v))
+			for i, item := range v {
+				if str, ok := item.(string); ok {
+					keys[i] = str
+				} else {
+					return &ConfigError{
+						Type:    "validation",
+						Field:   "defaults.ssh_authorized_keys",
+						Value:   value,
+						Message: "ssh_authorized_keys must be a string or array of strings",
+					}
+				}
+			}
+			defaults.SSHAuthorizedKeys = keys
+		default:
+			return &ConfigError{
+				Type:    "validation",
+				Field:   "defaults.ssh_authorized_keys",
+				Value:   value,
+				Message: "ssh_authorized_keys must be a string or array of strings",
+			}
+		}
 	default:
 		return &ConfigError{
 			Type:    "validation",
@@ -1020,6 +1055,8 @@ func (cm *ConfigManager) getDefaultsValue(defaults *DefaultsConfig, parts []stri
 		return defaults.Region, nil
 	case "environment":
 		return defaults.Environment, nil
+	case "ssh_authorized_keys":
+		return defaults.SSHAuthorizedKeys, nil
 	default:
 		return nil, &ConfigError{
 			Type:    "validation",
