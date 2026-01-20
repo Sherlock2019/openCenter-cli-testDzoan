@@ -31,6 +31,15 @@ Every configuration option with types, defaults, and validation rules.
 - Validation rules
 - Examples
 
+### [Configuration Precedence](configuration-precedence.md)
+How configuration values are resolved from multiple sources.
+
+**Includes:**
+- Precedence order
+- CLI defaults behavior
+- Override examples
+- Best practices
+
 ### [Error Codes](error-codes.md)
 All error codes with descriptions and solutions.
 
@@ -135,6 +144,7 @@ Definitions of terms used throughout openCenter documentation.
 
 ### Configuration
 - [Configuration Schema](configuration.md)
+- [Configuration Precedence](configuration-precedence.md)
 - [Environment Variables](environment-variables.md)
 - [File Formats](file-formats.md)
 
