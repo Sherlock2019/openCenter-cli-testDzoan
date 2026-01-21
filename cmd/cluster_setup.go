@@ -67,19 +67,10 @@ Configuration must have opencenter.gitops.git_dir set.`,
   openCenter cluster setup my-cluster --force`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Resolve cluster name
-			var name string
-			if len(args) > 0 {
-				name = args[0]
-			} else {
-				var err error
-				name, err = config.GetActive()
-				if err != nil {
-					return err
-				}
-				if name == "" {
-					return fmt.Errorf("no active cluster; specify name or run 'openCenter cluster select' first")
-				}
+			// Resolve cluster name from args or active cluster
+			name, err := resolveClusterName(args, true)
+			if err != nil {
+				return err
 			}
 
 			// Acquire lock for setup operation

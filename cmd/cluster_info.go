@@ -31,24 +31,19 @@ func newClusterInfoCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "info [name]",
 		Short: "Show configuration for a cluster",
-		Args:  cobra.MaximumNArgs(1),
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var name string
+			// Resolve cluster name from args or active cluster
+			name, err := resolveClusterName(args, false)
+			if err != nil {
+				return err
+			}
+
 			var isActiveCluster bool
-			if len(args) > 0 {
-				name = args[0]
-				isActiveCluster = false
-			} else {
-				var err error
-				name, err = config.GetActive()
-				if err != nil {
-					return err
-				}
-				if name == "" {
-					return fmt.Errorf("no active cluster; specify name")
-				}
+			if len(args) == 0 {
 				isActiveCluster = true
 			}
+
 			cfg, err := config.Load(name)
 			if err != nil {
 				return err

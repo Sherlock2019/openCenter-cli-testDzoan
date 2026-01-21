@@ -19,7 +19,6 @@ import (
 	"path/filepath"
 
 	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/security"
 	"github.com/spf13/cobra"
 )
 
@@ -76,31 +75,10 @@ Troubleshooting:
   openCenter cluster validate my-cluster --generate-debug-config --output-dir=/tmp`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Initialize security validator (Requirements: 1.1, 1.5, 1.6)
-			validator := security.NewDefaultInputValidator()
-
-			var name string
-			if len(args) > 0 {
-				name = args[0]
-
-				// Validate cluster name (Requirements: 1.1, 1.5, 1.6)
-				if err := validator.ValidateClusterName(name); err != nil {
-					return formatErrorWithInfo(err, "E1003")
-				}
-			} else {
-				var err error
-				name, err = config.GetActive()
-				if err != nil {
-					return err
-				}
-				if name == "" {
-					return fmt.Errorf("no active cluster; specify name")
-				}
-
-				// Validate active cluster name (Requirements: 1.1, 1.5, 1.6)
-				if err := validator.ValidateClusterName(name); err != nil {
-					return formatErrorWithInfo(err, "E1003")
-				}
+			// Resolve cluster name from args or active cluster
+			name, err := resolveClusterName(args, true)
+			if err != nil {
+				return err
 			}
 			cfg, err := config.Load(name)
 			if err != nil {

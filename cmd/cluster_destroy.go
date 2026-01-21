@@ -31,9 +31,30 @@ func newClusterDestroyCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "destroy [name]",
 		Short: "Destroy a cluster",
-		Args:  cobra.ExactArgs(1),
+		Long: `Destroy a cluster and remove its configuration.
+
+This command removes the cluster configuration and optionally its GitOps directory.
+The cluster name can be specified as 'cluster' or 'organization/cluster'.
+
+If no cluster name is provided, the active cluster will be destroyed.`,
+		Example: `  # Destroy a specific cluster
+  openCenter cluster destroy my-cluster
+
+  # Destroy cluster in specific organization
+  openCenter cluster destroy myorg/my-cluster
+
+  # Destroy without confirmation
+  openCenter cluster destroy my-cluster --force
+
+  # Destroy active cluster
+  openCenter cluster destroy`,
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			name := args[0]
+			// Resolve cluster name from args or active cluster
+			name, err := resolveClusterName(args, true)
+			if err != nil {
+				return err
+			}
 
 			// Acquire lock for destroy operation
 			lockMgr, err := resilience.NewLockManager(resilience.DefaultLockConfig)

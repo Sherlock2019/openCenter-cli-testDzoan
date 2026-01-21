@@ -2,6 +2,40 @@
 
 openCenter provides shell integration for session-scoped cluster selection, allowing multiple terminal sessions to work with different clusters independently.
 
+## Quick Start
+
+**1. Install shell integration:**
+```bash
+# Add to ~/.zshrc (or ~/.bashrc for bash)
+eval "$(opencenter shell-init)"
+```
+
+**2. Enable prompt display (optional but recommended):**
+```zsh
+# For zsh - add to ~/.zshrc after the shell-init line
+setopt PROMPT_SUBST
+PROMPT='%F{cyan}$(opencenter_current_cluster_short)%f ${PROMPT}'
+```
+
+```bash
+# For bash - add to ~/.bashrc after the shell-init line
+PS1="\[\033[36m\]\$(opencenter_current_cluster_short)\[\033[0m\] $PS1"
+```
+
+**3. Reload your shell:**
+```bash
+source ~/.zshrc  # or source ~/.bashrc
+```
+
+**4. Use it:**
+```bash
+# Switch cluster in current terminal only
+opencenter cluster use my-cluster
+
+# Your prompt now shows the cluster name:
+# my-cluster ~ $
+```
+
 ## Overview
 
 By default, `opencenter cluster select` sets a persistent cluster selection that affects all terminal sessions. With shell integration enabled, you can use `opencenter cluster use` to switch clusters only in the current terminal session.
@@ -15,6 +49,13 @@ By default, `opencenter cluster select` sets a persistent cluster selection that
 
 ## Installation
 
+The shell integration has two parts:
+
+1. **Core integration** (required): Enables session-scoped cluster switching
+2. **Prompt display** (optional): Shows active cluster in your prompt
+
+Both must be configured separately in your shell RC file.
+
 ### Quick Install
 
 ```bash
@@ -25,7 +66,9 @@ opencenter config ide --shell-integration
 This will:
 1. Detect your shell (bash, zsh, or fish)
 2. Add the integration line to your shell RC file
-3. Provide instructions for activation
+3. Provide instructions for enabling prompt display (optional)
+
+**Note:** This only installs the core integration. To show the cluster in your prompt, follow the [Prompt Integration](#prompt-integration) section below.
 
 ### Manual Install
 
@@ -97,20 +140,19 @@ opencenter cluster validate
 
 ## Prompt Integration
 
-You can add the active cluster to your shell prompt for visual feedback.
+The shell integration provides helper functions to display the active cluster in your prompt, but you need to enable this manually.
 
 ### Bash
 
-Add to your `~/.bashrc` after the shell integration line:
+The integration script provides helper functions. Add one of these to your `~/.bashrc` **after** the `eval "$(opencenter shell-init)"` line:
 
+**Option 1: Simple prefix**
 ```bash
-# Option 1: Simple prefix
 PS1="\[\033[36m\]\$(opencenter_current_cluster_short)\[\033[0m\] $PS1"
+```
 
-# Option 2: Bracketed format
-PS1="\[\033[36m\][\$(opencenter_current_cluster_short)]\[\033[0m\] $PS1"
-
-# Option 3: Only show if cluster is set
+**Option 2: Bracketed format (only when cluster is set)**
+```bash
 opencenter_prompt() {
     local cluster=$(opencenter_current_cluster_short)
     if [[ -n "$cluster" ]]; then
@@ -120,28 +162,68 @@ opencenter_prompt() {
 PS1="\$(opencenter_prompt)$PS1"
 ```
 
+**Complete example for ~/.bashrc:**
+```bash
+# openCenter shell integration
+eval "$(opencenter shell-init)"
+
+# Add cluster to prompt
+PS1="\[\033[36m\]\$(opencenter_current_cluster_short)\[\033[0m\] $PS1"
+```
+
+After adding this, reload your shell:
+```bash
+source ~/.bashrc
+```
+
 ### Zsh
 
-Add to your `~/.zshrc` after the shell integration line:
+The integration script includes helper functions but leaves prompt customization to you. Add one of these to your `~/.zshrc` **after** the `eval "$(opencenter shell-init)"` line:
 
+**Option 1: Left prompt with simple prefix**
 ```zsh
-# Enable prompt substitution
+# Enable prompt substitution (required for dynamic prompts)
 setopt PROMPT_SUBST
 
-# Option 1: Left prompt
-PROMPT='%F{cyan}$(opencenter_current_cluster_short)%f $PROMPT'
+# Add cluster name before existing prompt
+PROMPT='%F{cyan}$(opencenter_current_cluster_short)%f ${PROMPT}'
+```
 
-# Option 2: Right prompt
-RPROMPT='%F{cyan}[$(opencenter_current_cluster_short)]%f'
+**Option 2: Left prompt with brackets (only when cluster is set)**
+```zsh
+setopt PROMPT_SUBST
 
-# Option 3: Only show if cluster is set
 opencenter_prompt() {
     local cluster=$(opencenter_current_cluster_short)
     if [[ -n "$cluster" ]]; then
         echo "%F{cyan}[$cluster]%f "
     fi
 }
-PROMPT='$(opencenter_prompt)$PROMPT'
+PROMPT='$(opencenter_prompt)'"$PROMPT"
+```
+
+**Option 3: Right prompt**
+```zsh
+setopt PROMPT_SUBST
+
+RPROMPT='%F{cyan}$(opencenter_current_cluster_short)%f'
+```
+
+**Complete example for ~/.zshrc:**
+```zsh
+# openCenter shell integration
+eval "$(opencenter shell-init)"
+
+# Enable prompt substitution
+setopt PROMPT_SUBST
+
+# Add cluster to prompt (choose one)
+PROMPT='%F{cyan}$(opencenter_current_cluster_short)%f ${PROMPT}'
+```
+
+After adding this, reload your shell:
+```bash
+source ~/.zshrc
 ```
 
 ### Fish
@@ -198,6 +280,79 @@ The shell integration provides these helper functions:
 - `opencenter_current_cluster_short()`: Get the short cluster name (without organization prefix)
 
 ## Troubleshooting
+
+### Prompt not showing cluster name
+
+**Symptom:** The `opencenter cluster use` command works, but your prompt doesn't show the cluster name.
+
+**Cause:** Prompt display is not enabled by default. The shell integration only provides helper functions.
+
+**Solution for zsh:**
+
+1. Verify shell integration is loaded:
+```bash
+type opencenter_current_cluster_short
+```
+
+Expected output: `opencenter_current_cluster_short is a shell function`
+
+If you get "not found", add this to `~/.zshrc`:
+```zsh
+eval "$(opencenter shell-init)"
+```
+
+2. Add prompt customization to `~/.zshrc` **after** the shell-init line:
+```zsh
+setopt PROMPT_SUBST
+PROMPT='%F{cyan}$(opencenter_current_cluster_short)%f ${PROMPT}'
+```
+
+3. Reload your shell:
+```bash
+source ~/.zshrc
+```
+
+4. Test it:
+```bash
+# Switch to a cluster
+opencenter cluster use test-cluster
+
+# Manually check the function
+opencenter_current_cluster_short
+# Should output: test-cluster
+
+# Your prompt should now show: test-cluster
+```
+
+**Solution for bash:**
+
+Add to `~/.bashrc` after the shell-init line:
+```bash
+PS1="\[\033[36m\]\$(opencenter_current_cluster_short)\[\033[0m\] $PS1"
+```
+
+Then reload:
+```bash
+source ~/.bashrc
+```
+
+### Function returns empty string
+
+**Symptom:** `opencenter_current_cluster_short` returns nothing.
+
+**Cause:** No cluster is currently selected.
+
+**Solution:**
+```bash
+# Check current cluster
+opencenter cluster current
+
+# If no cluster is active, use one
+opencenter cluster use my-cluster
+
+# Now the function should return the cluster name
+opencenter_current_cluster_short
+```
 
 ### Shell integration not detected
 

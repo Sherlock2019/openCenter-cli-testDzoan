@@ -51,19 +51,10 @@ Examples:
   openCenter cluster lock myorg/my-cluster --reason "Critical infrastructure"`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Determine cluster name
-			var clusterName string
-			if len(args) > 0 {
-				clusterName = args[0]
-			} else {
-				active, err := config.GetActive()
-				if err != nil {
-					return fmt.Errorf("failed to get active cluster: %w", err)
-				}
-				if active == "" {
-					return fmt.Errorf("no cluster selected. Use 'openCenter cluster select' to select a cluster or provide a cluster name")
-				}
-				clusterName = active
+			// Resolve cluster name from args or active cluster
+			clusterName, err := resolveClusterName(args, true)
+			if err != nil {
+				return err
 			}
 
 			// Require a reason for locking
@@ -142,19 +133,10 @@ Examples:
   openCenter cluster unlock myorg/my-cluster --reason "Approved by ops team"`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Determine cluster name
-			var clusterName string
-			if len(args) > 0 {
-				clusterName = args[0]
-			} else {
-				active, err := config.GetActive()
-				if err != nil {
-					return fmt.Errorf("failed to get active cluster: %w", err)
-				}
-				if active == "" {
-					return fmt.Errorf("no cluster selected. Use 'openCenter cluster select' to select a cluster or provide a cluster name")
-				}
-				clusterName = active
+			// Resolve cluster name from args or active cluster
+			clusterName, err := resolveClusterName(args, true)
+			if err != nil {
+				return err
 			}
 
 			// Require a reason for unlocking

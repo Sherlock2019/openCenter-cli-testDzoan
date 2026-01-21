@@ -14,6 +14,11 @@
 package cmd
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/openCenter-cli/internal/security"
 	"github.com/spf13/cobra"
 )
 
@@ -90,4 +95,108 @@ Configuration files are stored in organization-based directories:
 	cmd.AddCommand(newClusterLockCmd())
 	cmd.AddCommand(newClusterUnlockCmd())
 	return cmd
+}
+
+// resolveClusterName resolves the cluster name from command arguments or active cluster.
+// It supports both "cluster" and "organization/cluster" formats.
+//
+// Parameters:
+//   - args: Command arguments (first arg should be cluster name if provided)
+//   - requireActive: If true and no args provided, returns error if no active cluster
+//
+// Returns:
+//   - clusterName: The resolved cluster name (may include organization prefix)
+//   - error: An error if resolution fails
+func resolveClusterName(args []string, requireActive bool) (string, error) {
+	validator := security.NewDefaultInputValidator()
+
+	// If cluster name provided as argument
+	if len(args) > 0 {
+		clusterName := strings.TrimSpace(args[0])
+		if clusterName == "" {
+			return "", fmt.Errorf("cluster name cannot be empty")
+		}
+
+		// Validate the cluster identifier (handles both "cluster" and "org/cluster" formats)
+		parts := strings.Split(clusterName, "/")
+		if len(parts) > 2 {
+			return "", fmt.Errorf("invalid cluster identifier format: use 'cluster' or 'organization/cluster'")
+		}
+
+		// Validate each part
+		for _, part := range parts {
+			if err := validator.ValidateClusterName(part); err != nil {
+				return "", fmt.Errorf("invalid cluster identifier: %w", err)
+			}
+		}
+
+		return clusterName, nil
+	}
+
+	// No argument provided, try to use active cluster
+	activeName, err := config.GetActive()
+	if err != nil {
+		return "", fmt.Errorf("failed to get active cluster: %w", err)
+	}
+
+	if activeName == "" {
+		if requireActive {
+			return "", fmt.Errorf("no active cluster set. Use 'openCenter cluster select <cluster>' or provide cluster name as argument")
+		}
+		return "", nil
+	}
+
+	return activeName, nil
+}
+
+// resolveClusterNameFromFlag resolves the cluster name from a flag value or active cluster.
+// This is used by commands that use --cluster flag instead of positional arguments.
+//
+// Parameters:
+//   - flagValue: The value from the --cluster flag (empty string if not provided)
+//   - requireActive: If true and no flag provided, returns error if no active cluster
+//
+// Returns:
+//   - clusterName: The resolved cluster name (may include organization prefix)
+//   - error: An error if resolution fails
+func resolveClusterNameFromFlag(flagValue string, requireActive bool) (string, error) {
+	validator := security.NewDefaultInputValidator()
+
+	// If cluster flag provided
+	if flagValue != "" {
+		clusterName := strings.TrimSpace(flagValue)
+		if clusterName == "" {
+			return "", fmt.Errorf("cluster name cannot be empty")
+		}
+
+		// Validate the cluster identifier (handles both "cluster" and "org/cluster" formats)
+		parts := strings.Split(clusterName, "/")
+		if len(parts) > 2 {
+			return "", fmt.Errorf("invalid cluster identifier format: use 'cluster' or 'organization/cluster'")
+		}
+
+		// Validate each part
+		for _, part := range parts {
+			if err := validator.ValidateClusterName(part); err != nil {
+				return "", fmt.Errorf("invalid cluster identifier: %w", err)
+			}
+		}
+
+		return clusterName, nil
+	}
+
+	// No flag provided, try to use active cluster
+	activeName, err := config.GetActive()
+	if err != nil {
+		return "", fmt.Errorf("failed to get active cluster: %w", err)
+	}
+
+	if activeName == "" {
+		if requireActive {
+			return "", fmt.Errorf("no active cluster set. Use 'openCenter cluster select <cluster>' or provide --cluster flag")
+		}
+		return "", nil
+	}
+
+	return activeName, nil
 }

@@ -73,21 +73,12 @@ func newClusterBootstrapCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bootstrap [name]",
 		Short: "Run provider-specific bootstrap actions for a cluster",
-		Args:  cobra.MaximumNArgs(1),
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Resolve cluster name from args or active selection.
-			var name string
-			var err error
-			if len(args) > 0 {
-				name = args[0]
-			} else {
-				name, err = config.GetActive()
-				if err != nil {
-					return err
-				}
-			}
-			if strings.TrimSpace(name) == "" {
-				return fmt.Errorf("no active cluster; specify name or use 'select' to set it")
+			// Resolve cluster name from args or active cluster
+			name, err := resolveClusterName(args, true)
+			if err != nil {
+				return err
 			}
 
 			// Acquire lock for bootstrap operation
@@ -170,6 +161,10 @@ func newClusterBootstrapCmd() *cobra.Command {
 				env := map[string]string{}
 				if kubeconf != "" {
 					env["KUBECONFIG"] = kubeconf
+				}
+				// Preserve PATH from current environment so tools like terraform can be found
+				if path := os.Getenv("PATH"); path != "" {
+					env["PATH"] = path
 				}
 
 				steps = []bootstrapStep{

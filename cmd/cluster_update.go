@@ -155,20 +155,10 @@ func newClusterUpdateCmd() *cobra.Command {
 				return showUpdateHelp(cmd)
 			}
 
-			var name string
-			if len(args) > 0 {
-				name = args[0]
-			}
-			// Resolve name from active if not provided
-			if name == "" {
-				active, err := config.GetActive()
-				if err != nil {
-					return err
-				}
-				if active == "" {
-					return failf("no active cluster; specify a name or select a cluster")
-				}
-				name = active
+			// Resolve cluster name from args or active cluster
+			name, err := resolveClusterName(args, true)
+			if err != nil {
+				return err
 			}
 
 			cfg, err := config.Load(name)

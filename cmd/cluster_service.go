@@ -77,20 +77,13 @@ Examples:
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			serviceName := args[0]
-			// Determine cluster name
-			var clusterName string
-			if cluster != "" {
-				clusterName = cluster
-			} else {
-				active, err := config.GetActive()
-				if err != nil {
-					return fmt.Errorf("failed to get active cluster: %w", err)
-				}
-				if active == "" {
-					return fmt.Errorf("no cluster selected. Use --cluster flag or 'openCenter cluster select' to select a cluster")
-				}
-				clusterName = active
+			
+			// Resolve cluster name from flag or active cluster
+			clusterName, err := resolveClusterNameFromFlag(cluster, true)
+			if err != nil {
+				return err
 			}
+
 			// Load configuration
 			cfg, err := config.Load(clusterName)
 			if err != nil {
@@ -205,20 +198,13 @@ Examples:
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			serviceName := args[0]
-			// Determine cluster name
-			var clusterName string
-			if cluster != "" {
-				clusterName = cluster
-			} else {
-				active, err := config.GetActive()
-				if err != nil {
-					return fmt.Errorf("failed to get active cluster: %w", err)
-				}
-				if active == "" {
-					return fmt.Errorf("no cluster selected. Use --cluster flag or 'openCenter cluster select' to select a cluster")
-				}
-				clusterName = active
+			
+			// Resolve cluster name from flag or active cluster
+			clusterName, err := resolveClusterNameFromFlag(cluster, true)
+			if err != nil {
+				return err
 			}
+
 			// Load configuration
 			cfg, err := config.Load(clusterName)
 			if err != nil {
@@ -405,19 +391,10 @@ Examples:
   # Show status for a specific cluster
   openCenter cluster service status --cluster my-cluster`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Determine cluster name
-			var clusterName string
-			if cluster != "" {
-				clusterName = cluster
-			} else {
-				active, err := config.GetActive()
-				if err != nil {
-					return fmt.Errorf("failed to get active cluster: %w", err)
-				}
-				if active == "" {
-					return fmt.Errorf("no cluster selected. Use --cluster flag or 'openCenter cluster select' to select a cluster")
-				}
-				clusterName = active
+			// Resolve cluster name from flag or active cluster
+			clusterName, err := resolveClusterNameFromFlag(cluster, true)
+			if err != nil {
+				return err
 			}
 
 			// Load configuration

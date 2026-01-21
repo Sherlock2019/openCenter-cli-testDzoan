@@ -48,19 +48,10 @@ Unlike 'cluster setup', this command:
 - Ideal for development and testing`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Resolve cluster name
-			var name string
-			if len(args) > 0 {
-				name = args[0]
-			} else {
-				var err error
-				name, err = config.GetActive()
-				if err != nil {
-					return err
-				}
-				if name == "" {
-					return fmt.Errorf("no active cluster; specify name")
-				}
+			// Resolve cluster name from args or active cluster
+			name, err := resolveClusterName(args, true)
+			if err != nil {
+				return err
 			}
 
 			// Load configuration
