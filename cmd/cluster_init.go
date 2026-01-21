@@ -220,7 +220,7 @@ Configuration Override:
     --opencenter.infrastructure.provider=aws
 
 Troubleshooting:
-  • If cluster already exists, use --force to overwrite
+  • If cluster already exists, use --force to overwrite config file (preserves keys)
   • Use --strict to enable validation during initialization
   • Check ~/.config/openCenter/clusters/ for created files`,
 		Example: `  # Initialize with defaults (uses "opencenter" as organization)
@@ -254,10 +254,10 @@ Troubleshooting:
   # Regenerate keys even if they already exist
   openCenter cluster init my-cluster --regenerate-keys
 
-  # Force overwrite existing configuration
+  # Overwrite existing config file (preserves existing keys)
   openCenter cluster init my-cluster --force
 
-  # Force overwrite active cluster configuration
+  # Overwrite active cluster config file (preserves existing keys)
   openCenter cluster init --force
 
   # Initialize with strict validation
@@ -623,10 +623,15 @@ Troubleshooting:
 					return fmt.Errorf("cluster configuration directory '%s' already exists in organization '%s', use --force to overwrite", name, organization)
 				}
 
-				// Force flag is set or cluster is destroyed, perform cleanup and overwrite
-				if err := cleanupClusterDirectory(clusterPaths.ClusterDir); err != nil {
-					return fmt.Errorf("failed to cleanup existing cluster directory '%s': %w", clusterPaths.ClusterDir, err)
+				// If cluster is destroyed, perform full cleanup and overwrite
+				if isDestroyed {
+					if err := cleanupClusterDirectory(clusterPaths.ClusterDir); err != nil {
+						return fmt.Errorf("failed to cleanup existing cluster directory '%s': %w", clusterPaths.ClusterDir, err)
+					}
 				}
+				// If --force is set (but cluster is not destroyed), only overwrite the config file
+				// Keys and other files will be preserved or created only if they don't exist
+				// This allows updating configuration without destroying existing keys
 			}
 
 			// Validate organization name for directory creation
@@ -863,7 +868,7 @@ Troubleshooting:
 	cmd.Flags().String("org", "", "organization name (defaults to cluster name if not specified)")
 	cmd.Flags().String("type", "openstack", "cluster type: openstack, baremetal, kind, vmware (defaults to openstack)")
 	cmd.Flags().Bool("strict", false, "fail if required values are missing")
-	cmd.Flags().Bool("force", false, "overwrite existing file")
+	cmd.Flags().Bool("force", false, "overwrite existing config file (preserves keys and other files)")
 	cmd.Flags().Bool("no-keygen", false, "do not auto-generate SOPS age keys and SSH key pairs")
 	cmd.Flags().Bool("no-sops-keygen", false, "do not auto-generate SOPS age keys (alias for no-keygen)")
 	cmd.Flags().Bool("regenerate-keys", false, "regenerate SOPS age keys and SSH key pairs even if they already exist")
