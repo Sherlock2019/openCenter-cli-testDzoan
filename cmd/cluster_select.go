@@ -450,6 +450,10 @@ func displayClusterSelectOutput(output ClusterSelectOutput, cmd *cobra.Command) 
 // directly and displays the enhanced information. If no argument is given, it launches
 // an interactive terminal UI where the user can select from a list of available clusters.
 //
+// By default, cluster selection is session-scoped (current terminal only) when shell
+// integration is enabled. Use --persistent to set a global cluster selection that
+// affects all terminals.
+//
 // The enhanced output includes:
 // - Cluster metadata (name, environment, region, status, organization)
 // - GitOps repository information and paths
@@ -457,6 +461,7 @@ func displayClusterSelectOutput(output ClusterSelectOutput, cmd *cobra.Command) 
 // - Environment setup commands for deployed clusters
 //
 // The --clear flag can be used to deactivate the current cluster without selecting a new one.
+// The --clear-persistent flag removes the persistent cluster selection.
 // The --activate flag can be used to automatically activate the cluster environment.
 //
 // Returns:
@@ -465,25 +470,42 @@ func newClusterSelectCmd() *cobra.Command {
 	var showExportOnly bool
 	var shellOverride string
 	var clearActive bool
+	var clearPersistent bool
+	var persistentSelection bool
 	var activateEnv bool
 
 	cmd := &cobra.Command{
 		Use:   "select [name]",
-		Short: "Select the active cluster and display environment information",
+		Short: "Select the active cluster for the current session",
 		Long: `Select the active cluster and display comprehensive information including:
 - Cluster metadata (name, environment, region, status, organization)
 - GitOps repository paths and structure
 - Cluster-specific paths (SOPS keys, configuration files)
 - Environment setup commands for shell configuration
 
+By default, cluster selection is session-scoped (current terminal only) when shell
+integration is enabled via: eval "$(opencenter shell-init)"
+
+Use --persistent to set a global cluster selection that affects all terminals.
+
 If no cluster name is provided, an interactive selection menu is displayed.
 For deployed clusters, environment setup commands are generated to configure
 KUBECONFIG, ANSIBLE_INVENTORY, virtual environment, and PATH variables.
 
-Use --clear to deactivate the current cluster without selecting a new one.
+Use --clear to deactivate the current session cluster.
+Use --clear-persistent to remove the persistent cluster selection.
 Use --activate to automatically activate the cluster environment (sets environment variables).`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Handle --clear-persistent flag to remove persistent cluster selection
+			if clearPersistent {
+				if err := config.SetActive(""); err != nil {
+					return fmt.Errorf("failed to clear persistent cluster: %w", err)
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "Persistent cluster selection cleared\n")
+				return nil
+			}
+
 			// Handle --clear flag to deactivate current cluster
 			if clearActive {
 				// Unset AWS credentials
@@ -593,9 +615,35 @@ Use --activate to automatically activate the cluster environment (sets environme
 				return err
 			}
 
-			// Set active cluster
-			if err := config.SetActive(name); err != nil {
-				return fmt.Errorf("failed to set active cluster: %w", err)
+			// Handle session-scoped vs persistent selection
+			if persistentSelection {
+				// Set persistent cluster (affects all terminals)
+				if err := config.SetActive(name); err != nil {
+					return fmt.Errorf("failed to set active cluster: %w", err)
+				}
+			} else {
+				// Session-scoped selection (default)
+				sessionFile := os.Getenv("OPENCENTER_SESSION_FILE")
+				if sessionFile == "" {
+					// No shell integration - inform user and fall back to persistent
+					fmt.Fprintf(os.Stderr, "⚠️  Shell integration not detected. Setting persistent cluster selection.\n")
+					fmt.Fprintf(os.Stderr, "💡 To enable session-scoped selection, run: eval \"$(opencenter shell-init)\"\n")
+					fmt.Fprintf(os.Stderr, "💡 Or use --persistent flag to suppress this warning.\n\n")
+
+					if err := config.SetActive(name); err != nil {
+						return fmt.Errorf("failed to set active cluster: %w", err)
+					}
+				} else {
+					// Shell integration active - use session file
+					if err := os.WriteFile(sessionFile, []byte(name), 0600); err != nil {
+						return fmt.Errorf("failed to update session: %w", err)
+					}
+
+					// Output for shell to evaluate (export command)
+					if !showExportOnly && !activateEnv {
+						fmt.Fprintf(cmd.OutOrStdout(), "export OPENCENTER_CLUSTER=%s\n", name)
+					}
+				}
 			}
 
 			// Handle --activate flag to automatically activate environment
@@ -709,7 +757,13 @@ Use --activate to automatically activate the cluster environment (sets environme
 				}
 			} else {
 				// Show full enhanced output
-				fmt.Fprintf(cmd.OutOrStdout(), "Active cluster set to %s\n\n", name)
+				scope := "session"
+				if persistentSelection {
+					scope = "persistent"
+				} else if os.Getenv("OPENCENTER_SESSION_FILE") == "" {
+					scope = "persistent (no shell integration)"
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "Active cluster set to %s (%s)\n\n", name, scope)
 				displayClusterSelectOutput(output, cmd)
 
 				// Inform user about activation
@@ -728,7 +782,13 @@ Use --activate to automatically activate the cluster environment (sets environme
 	cmd.Flags().StringVar(&shellOverride, "shell", "", "Override shell detection (bash, zsh, fish, powershell)")
 
 	// Add flag to clear active cluster (deactivate)
-	cmd.Flags().BoolVar(&clearActive, "clear", false, "Clear the active cluster (deactivate)")
+	cmd.Flags().BoolVar(&clearActive, "clear", false, "Clear the active cluster (deactivate session)")
+
+	// Add flag to clear persistent cluster selection
+	cmd.Flags().BoolVar(&clearPersistent, "clear-persistent", false, "Clear the persistent cluster selection")
+
+	// Add flag for persistent selection (affects all terminals)
+	cmd.Flags().BoolVar(&persistentSelection, "persistent", false, "Set persistent cluster selection (affects all terminals)")
 
 	// Add flag to activate cluster environment
 	cmd.Flags().BoolVar(&activateEnv, "activate", false, "Activate cluster environment (set credentials and paths)")

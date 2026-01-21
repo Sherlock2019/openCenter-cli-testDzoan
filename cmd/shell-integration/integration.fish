@@ -42,9 +42,9 @@ function opencenter_current_cluster_short
     end
 end
 
-# Wrapper for 'opencenter cluster use' that evaluates the output
+# Wrapper for 'opencenter cluster select' that evaluates the output
 function opencenter
-    if test "$argv[1]" = "cluster"; and test "$argv[2]" = "use"
+    if test "$argv[1]" = "cluster"; and test "$argv[2]" = "select"; and test -n "$OPENCENTER_SESSION_FILE"
         # Capture the output
         set -l output (command opencenter $argv 2>&1)
         set -l exit_code $status

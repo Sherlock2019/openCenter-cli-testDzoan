@@ -36,9 +36,9 @@ opencenter_current_cluster_short() {
     fi
 }
 
-# Wrapper for 'opencenter cluster use' that evaluates the output
+# Wrapper for 'opencenter cluster select' that evaluates the output
 opencenter() {
-    if [[ "$1" == "cluster" && "$2" == "use" ]]; then
+    if [[ "$1" == "cluster" && "$2" == "select" && -n "$OPENCENTER_SESSION_FILE" ]]; then
         # Capture the output and evaluate it to set environment variable
         local output
         output=$(command opencenter "$@" 2>&1)

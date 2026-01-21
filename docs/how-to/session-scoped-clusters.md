@@ -12,7 +12,7 @@ When working with multiple clusters, the default `opencenter cluster select` com
 
 ## Solution
 
-Enable shell integration to use session-scoped cluster selection with `opencenter cluster use`.
+Enable shell integration to use session-scoped cluster selection with `opencenter cluster select`.
 
 ## Quick Start
 
@@ -32,11 +32,11 @@ source ~/.bashrc  # or ~/.zshrc for zsh
 
 ```bash
 # Terminal 1
-opencenter cluster use prod-cluster
+opencenter cluster select prod-cluster
 opencenter cluster status
 
 # Terminal 2 (independent)
-opencenter cluster use dev-cluster
+opencenter cluster select dev-cluster
 opencenter cluster validate
 ```
 
@@ -46,14 +46,14 @@ opencenter cluster validate
 
 **Engineer 1** (working on production):
 ```bash
-opencenter cluster use prod-cluster
+opencenter cluster select prod-cluster
 opencenter cluster status
 opencenter cluster drift
 ```
 
 **Engineer 2** (working on staging):
 ```bash
-opencenter cluster use staging-cluster
+opencenter cluster select staging-cluster
 opencenter cluster validate
 opencenter cluster bootstrap
 ```
@@ -66,15 +66,15 @@ Monitor multiple clusters simultaneously:
 
 ```bash
 # Terminal 1: Monitor production
-opencenter cluster use prod-cluster
+opencenter cluster select prod-cluster
 watch opencenter cluster status
 
 # Terminal 2: Monitor staging
-opencenter cluster use staging-cluster
+opencenter cluster select staging-cluster
 watch opencenter cluster status
 
 # Terminal 3: Work on development
-opencenter cluster use dev-cluster
+opencenter cluster select dev-cluster
 opencenter cluster update
 ```
 
@@ -84,12 +84,12 @@ Test changes on one cluster while keeping another as reference:
 
 ```bash
 # Terminal 1: Test cluster
-opencenter cluster use test-cluster
+opencenter cluster select test-cluster
 opencenter cluster validate
 opencenter cluster bootstrap
 
 # Terminal 2: Reference cluster
-opencenter cluster use prod-cluster
+opencenter cluster select prod-cluster
 opencenter cluster info  # Compare configuration
 ```
 
@@ -97,7 +97,7 @@ opencenter cluster info  # Compare configuration
 
 ### Temporary Environment Variable Override
 
-You can temporarily override the cluster selection without using `opencenter cluster use`:
+You can temporarily override the cluster selection without using `opencenter cluster select`:
 
 ```bash
 # One-off command on different cluster
@@ -120,12 +120,12 @@ unset OPENCENTER_CLUSTER
 eval "$(opencenter shell-init)"
 
 # Work with cluster 1
-opencenter cluster use cluster1
+opencenter cluster select cluster1
 echo "Validating cluster1..."
 opencenter cluster validate
 
 # Work with cluster 2
-opencenter cluster use cluster2
+opencenter cluster select cluster2
 echo "Validating cluster2..."
 opencenter cluster validate
 ```
@@ -144,8 +144,8 @@ echo "Working on: $CLUSTER"
 
 ## Best Practices
 
-1. **Use `cluster use` for temporary work**: When you need to switch clusters temporarily in a specific terminal
-2. **Use `cluster select` for default cluster**: Set your most-used cluster as the persistent default
+1. **Use session-scoped selection for temporary work**: When you need to switch clusters temporarily in a specific terminal
+2. **Use `--persistent` for default cluster**: Set your most-used cluster as the persistent default with `cluster select --persistent`
 3. **Add prompt integration**: Always know which cluster you're working on
 4. **Document your workflow**: Add comments in scripts that use session-scoped selection
 
@@ -153,7 +153,7 @@ echo "Working on: $CLUSTER"
 
 ### Commands still use wrong cluster
 
-Make sure you're using `opencenter cluster use` (not `select`) and that shell integration is active:
+Make sure you're using `opencenter cluster select` and that shell integration is active:
 
 ```bash
 # Check if shell integration is active

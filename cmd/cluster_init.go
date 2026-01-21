@@ -333,7 +333,7 @@ Troubleshooting:
 					return fmt.Errorf("failed to get active cluster: %w", err)
 				}
 				if activeName == "" {
-					return fmt.Errorf("no cluster name provided and no active cluster set; specify a cluster name, use --config with a config file, or use 'openCenter cluster use <name>' to set an active cluster")
+					return fmt.Errorf("no cluster name provided and no active cluster set; specify a cluster name, use --config with a config file, or use 'openCenter cluster select <name>' to set an active cluster")
 				}
 				name = activeName
 			}

@@ -56,14 +56,23 @@ Configuration files are stored in organization-based directories:
   # List all clusters
   openCenter cluster list
 
-  # Select active cluster
+  # Select active cluster (session-scoped)
   openCenter cluster select my-cluster
 
+  # Select cluster persistently (all terminals)
+  openCenter cluster select my-cluster --persistent
+
+  # Export cluster environment
+  eval "$(openCenter cluster env)"
+
   # Select and activate cluster environment
-  eval $(openCenter cluster select my-cluster --activate --export-only)
+  eval "$(openCenter cluster select my-cluster --activate --export-only)"
 
   # Deactivate cluster environment
-  eval $(openCenter cluster select --clear --export-only)
+  eval "$(openCenter cluster select --clear --export-only)"
+
+  # Clear persistent cluster selection
+  openCenter cluster select --clear-persistent
 
   # Show current cluster
   openCenter cluster current`,
@@ -75,7 +84,7 @@ Configuration files are stored in organization-based directories:
 	cmd.AddCommand(newClusterListCmd())
 	cmd.AddCommand(newClusterSelectCmd())
 	cmd.AddCommand(newClusterCurrentCmd())
-	cmd.AddCommand(newClusterUseCmd())
+	cmd.AddCommand(newClusterEnvCmd())
 	cmd.AddCommand(newClusterStatusCmd())
 	cmd.AddCommand(newClusterInfoCmd())
 	cmd.AddCommand(newClusterInitCmd())

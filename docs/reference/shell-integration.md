@@ -30,7 +30,7 @@ source ~/.zshrc  # or source ~/.bashrc
 **4. Use it:**
 ```bash
 # Switch cluster in current terminal only
-opencenter cluster use my-cluster
+opencenter cluster select my-cluster
 
 # Your prompt now shows the cluster name:
 # my-cluster ~ $
@@ -38,7 +38,7 @@ opencenter cluster use my-cluster
 
 ## Overview
 
-By default, `opencenter cluster select` sets a persistent cluster selection that affects all terminal sessions. With shell integration enabled, you can use `opencenter cluster use` to switch clusters only in the current terminal session.
+With shell integration enabled, `opencenter cluster select` switches clusters only in the current terminal session. Use `--persistent` to set a cluster selection that affects all terminals.
 
 ## Features
 
@@ -100,10 +100,19 @@ source ~/.bashrc  # or ~/.zshrc
 
 ```bash
 # Switch to a cluster in the current session
-opencenter cluster use prod-cluster
+opencenter cluster select prod-cluster
 
 # Switch to a cluster with organization
-opencenter cluster use myorg/prod-cluster
+opencenter cluster select myorg/prod-cluster
+
+# Set persistent cluster (affects all terminals)
+opencenter cluster select prod-cluster --persistent
+
+# Export environment variables for current cluster
+eval "$(opencenter cluster env)"
+
+# Export environment for specific cluster
+eval "$(opencenter cluster env prod-cluster)"
 
 # Show current cluster and its source
 opencenter cluster current
@@ -112,6 +121,9 @@ opencenter cluster current
 # Show only cluster name (for scripting)
 opencenter cluster current --quiet
 # Output: prod-cluster
+
+# Clear persistent cluster selection
+opencenter cluster select --clear-persistent
 ```
 
 ### Cluster Selection Precedence
@@ -126,12 +138,12 @@ The active cluster is determined by this precedence order:
 
 ```bash
 # Terminal 1: Work on production cluster
-opencenter cluster use prod-cluster
+opencenter cluster select prod-cluster
 opencenter cluster status
 # All commands operate on prod-cluster
 
 # Terminal 2: Work on development cluster (independent)
-opencenter cluster use dev-cluster
+opencenter cluster select dev-cluster
 opencenter cluster validate
 # All commands operate on dev-cluster
 
@@ -268,7 +280,24 @@ disabled = false
 
 ## Environment Variables
 
-- **OPENCENTER_CLUSTER**: Current cluster name (set by `opencenter cluster use`)
+Use `opencenter cluster env` to export environment variables for a cluster:
+
+```bash
+# Export current cluster environment
+eval "$(opencenter cluster env)"
+
+# Export specific cluster environment
+eval "$(opencenter cluster env my-cluster)"
+```
+
+This sets:
+- **OPENCENTER_CLUSTER**: Current cluster name
+- **KUBECONFIG**: Path to kubeconfig file
+- **ANSIBLE_INVENTORY**: Path to Ansible inventory
+- **PATH**: Includes cluster-specific binaries
+- Cloud provider credentials (AWS, OpenStack)
+
+Additional environment variables managed by shell integration:
 - **OPENCENTER_SESSION_ID**: Unique session identifier
 - **OPENCENTER_SESSION_FILE**: Path to session file storing cluster selection
 
@@ -283,7 +312,7 @@ The shell integration provides these helper functions:
 
 ### Prompt not showing cluster name
 
-**Symptom:** The `opencenter cluster use` command works, but your prompt doesn't show the cluster name.
+**Symptom:** The `opencenter cluster select` command works, but your prompt doesn't show the cluster name.
 
 **Cause:** Prompt display is not enabled by default. The shell integration only provides helper functions.
 
@@ -315,7 +344,7 @@ source ~/.zshrc
 4. Test it:
 ```bash
 # Switch to a cluster
-opencenter cluster use test-cluster
+opencenter cluster select test-cluster
 
 # Manually check the function
 opencenter_current_cluster_short
@@ -347,8 +376,8 @@ source ~/.bashrc
 # Check current cluster
 opencenter cluster current
 
-# If no cluster is active, use one
-opencenter cluster use my-cluster
+# If no cluster is active, select one
+opencenter cluster select my-cluster
 
 # Now the function should return the cluster name
 opencenter_current_cluster_short
@@ -370,18 +399,12 @@ Make sure you've:
 
 Session files are automatically cleaned up when the shell exits. If you find stale session files in `~/.config/openCenter/.session-*`, you can safely delete them.
 
-### Cluster not switching
+## Cluster Selection Modes
 
-Make sure you're using `opencenter cluster use` (not `opencenter cluster select`) for session-scoped selection.
-
-## Comparison with Persistent Selection
-
-| Feature | `cluster select` | `cluster use` (with shell integration) |
-|---------|------------------|----------------------------------------|
-| Scope | Global (all terminals) | Session (current terminal only) |
-| Persistence | Survives shell restart | Lost on shell exit |
-| Use case | Default cluster for all work | Temporary cluster switching |
-| Requires setup | No | Yes (shell integration) |
+| Mode | Command | Scope | Persistence |
+|------|---------|-------|-------------|
+| Session (default) | `cluster select <name>` | Current terminal only | Lost on shell exit |
+| Persistent | `cluster select <name> --persistent` | All terminals | Survives shell restart |
 
 ## See Also
 

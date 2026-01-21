@@ -69,5 +69,5 @@ echo
 echo "To test manually:"
 echo "1. eval \"\$(./bin/openCenter shell-init)\""
 echo "2. type opencenter_current_cluster_short"
-echo "3. ./bin/openCenter cluster use test-cluster"
+echo "3. ./bin/openCenter cluster select test-cluster"
 echo "4. opencenter_current_cluster_short"
