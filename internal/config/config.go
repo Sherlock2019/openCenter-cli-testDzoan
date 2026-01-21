@@ -431,7 +431,7 @@ func defaultConfig(name string) Config {
 			Backend: SimplifiedTofuBackend{
 				Type: "local",
 				Local: SimplifiedTofuLocal{
-					Path: fmt.Sprintf("./testdata/test-git-repo-%s/terraform.tfstate", name),
+					Path: fmt.Sprintf(".opentofu-local-%s/terraform.tfstate", name),
 				},
 				S3: SimplifiedTofuS3{
 					Bucket: "",
