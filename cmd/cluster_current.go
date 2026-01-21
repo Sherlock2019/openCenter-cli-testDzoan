@@ -15,6 +15,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/rackerlabs/openCenter-cli/internal/config"
@@ -25,6 +26,19 @@ func newClusterCurrentCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "current",
 		Short: "Show the current active cluster",
+		Long: `Show the current active cluster with its selection source.
+
+The cluster selection follows this precedence:
+  1. OPENCENTER_CLUSTER environment variable (session-scoped)
+  2. Session file (if shell integration is active)
+  3. Persistent selection from marker file
+
+Use --quiet to output only the cluster name without source information.`,
+		Example: `  # Show current cluster with source
+  opencenter cluster current
+
+  # Show only cluster name (for scripting)
+  opencenter cluster current --quiet`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name, err := config.GetActive()
 			if err != nil {
@@ -34,11 +48,22 @@ func newClusterCurrentCmd() *cobra.Command {
 				// Nothing to show
 				return nil
 			}
+
 			q, _ := cmd.Flags().GetBool("quiet")
 			if q {
 				fmt.Fprint(cmd.OutOrStdout(), strings.TrimSpace(name))
 			} else {
-				fmt.Fprintf(cmd.OutOrStdout(), "%s\n", strings.TrimSpace(name))
+				// Determine source of cluster selection
+				source := "persistent"
+				if os.Getenv("OPENCENTER_CLUSTER") != "" {
+					source = "environment"
+				} else if sessionFile := os.Getenv("OPENCENTER_SESSION_FILE"); sessionFile != "" {
+					if _, err := os.Stat(sessionFile); err == nil {
+						source = "session"
+					}
+				}
+
+				fmt.Fprintf(cmd.OutOrStdout(), "%s (%s)\n", strings.TrimSpace(name), source)
 			}
 			return nil
 		},

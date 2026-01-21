@@ -134,6 +134,7 @@ func ExecuteWithContext(ctx context.Context, version string) error {
 	rootCmd.AddCommand(NewSecretsCmd())
 	rootCmd.AddCommand(NewPluginsCmd())
 	rootCmd.AddCommand(NewVersionCmd())
+	rootCmd.AddCommand(newShellInitCmd())
 	// Discover and attach external plugins as subcommands
 	plugins.LoadExternalPlugins(rootCmd)
 

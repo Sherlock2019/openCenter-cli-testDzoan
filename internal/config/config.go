@@ -1533,13 +1533,28 @@ func SetActive(name string) error {
 	return os.WriteFile(path, []byte(name), 0o600)
 }
 
-// GetActive reads the active cluster name from the marker file.
-// If the file does not exist or is empty, it returns an empty string.
+// GetActive reads the active cluster name with precedence:
+// 1. OPENCENTER_CLUSTER environment variable (session-scoped)
+// 2. Session file (if shell integration is active)
+// 3. Persistent selection from marker file
 //
 // Outputs:
 //   - string: The active cluster name.
 //   - error: An error if the file cannot be read.
 func GetActive() (string, error) {
+	// Priority 1: Check environment variable (highest priority)
+	if cluster := os.Getenv("OPENCENTER_CLUSTER"); cluster != "" {
+		return strings.TrimSpace(cluster), nil
+	}
+
+	// Priority 2: Check session file (shell integration)
+	if sessionFile := os.Getenv("OPENCENTER_SESSION_FILE"); sessionFile != "" {
+		if data, err := os.ReadFile(sessionFile); err == nil && len(data) > 0 {
+			return strings.TrimSpace(string(data)), nil
+		}
+	}
+
+	// Priority 3: Fall back to persistent selection
 	path, err := activeClusterPath()
 	if err != nil {
 		return "", err

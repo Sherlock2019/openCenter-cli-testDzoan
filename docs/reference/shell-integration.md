@@ -1,297 +1,235 @@
----
-title: Shell Integration Reference
-doc_type: reference
-category: reference
-weight: 40
----
+# Shell Integration
 
-# Shell Integration Reference
+openCenter provides shell integration for session-scoped cluster selection, allowing multiple terminal sessions to work with different clusters independently.
 
-Shell integration provides functions, aliases, and prompt customization for displaying the active cluster in your shell. Integration scripts are located in `hack/shell-integration/`.
+## Overview
+
+By default, `opencenter cluster select` sets a persistent cluster selection that affects all terminal sessions. With shell integration enabled, you can use `opencenter cluster use` to switch clusters only in the current terminal session.
+
+## Features
+
+- **Session Isolation**: Each terminal has its own active cluster context
+- **Visual Feedback**: Optional prompt integration shows the active cluster
+- **Automatic Cleanup**: Session files are cleaned up when the shell exits
+- **Backward Compatible**: Falls back to persistent selection if shell integration is not active
 
 ## Installation
 
-Shell integration files must be manually sourced or copied to your shell configuration directory.
+### Quick Install
 
-**Files**:
-- `hack/shell-integration/shell-integration.sh` - Bash/Zsh integration
-- `hack/shell-integration/shell-integration.fish` - Fish shell integration
-- `hack/shell-integration/starship-opencenter.toml` - Starship prompt configuration
+```bash
+# Install shell integration automatically
+opencenter config ide --shell-integration
+```
 
-## Setup by Shell
+This will:
+1. Detect your shell (bash, zsh, or fish)
+2. Add the integration line to your shell RC file
+3. Provide instructions for activation
+
+### Manual Install
+
+Add this line to your shell configuration file:
+
+**Bash** (`~/.bashrc`):
+```bash
+eval "$(opencenter shell-init)"
+```
+
+**Zsh** (`~/.zshrc`):
+```bash
+eval "$(opencenter shell-init)"
+```
+
+**Fish** (`~/.config/fish/config.fish`):
+```fish
+opencenter shell-init --shell fish | source
+```
+
+Then reload your shell:
+```bash
+source ~/.bashrc  # or ~/.zshrc
+```
+
+## Usage
+
+### Basic Commands
+
+```bash
+# Switch to a cluster in the current session
+opencenter cluster use prod-cluster
+
+# Switch to a cluster with organization
+opencenter cluster use myorg/prod-cluster
+
+# Show current cluster and its source
+opencenter cluster current
+# Output: prod-cluster (session)
+
+# Show only cluster name (for scripting)
+opencenter cluster current --quiet
+# Output: prod-cluster
+```
+
+### Cluster Selection Precedence
+
+The active cluster is determined by this precedence order:
+
+1. **OPENCENTER_CLUSTER** environment variable (highest priority)
+2. **Session file** (if shell integration is active)
+3. **Persistent selection** (fallback)
+
+### Example Workflow
+
+```bash
+# Terminal 1: Work on production cluster
+opencenter cluster use prod-cluster
+opencenter cluster status
+# All commands operate on prod-cluster
+
+# Terminal 2: Work on development cluster (independent)
+opencenter cluster use dev-cluster
+opencenter cluster validate
+# All commands operate on dev-cluster
+
+# Both terminals maintain their own cluster context
+```
+
+## Prompt Integration
+
+You can add the active cluster to your shell prompt for visual feedback.
 
 ### Bash
 
-Add to `~/.bashrc`:
+Add to your `~/.bashrc` after the shell integration line:
 
 ```bash
-source /path/to/openCenter-cli/hack/shell-integration/shell-integration.sh
+# Option 1: Simple prefix
+PS1="\[\033[36m\]\$(opencenter_current_cluster_short)\[\033[0m\] $PS1"
 
-# Optional: Add to prompt
+# Option 2: Bracketed format
+PS1="\[\033[36m\][\$(opencenter_current_cluster_short)]\[\033[0m\] $PS1"
+
+# Option 3: Only show if cluster is set
+opencenter_prompt() {
+    local cluster=$(opencenter_current_cluster_short)
+    if [[ -n "$cluster" ]]; then
+        echo -e "\033[36m[$cluster]\033[0m "
+    fi
+}
 PS1="\$(opencenter_prompt)$PS1"
 ```
 
 ### Zsh
 
-Add to `~/.zshrc`:
-
-```bash
-source /path/to/openCenter-cli/hack/shell-integration/shell-integration.sh
-
-# Optional: Add to prompt
-PROMPT="\$(opencenter_prompt)$PROMPT"
-```
-
-### Fish
-
-Copy to Fish config directory:
-
-```fish
-cp /path/to/openCenter-cli/hack/shell-integration/shell-integration.fish \
-   ~/.config/fish/conf.d/opencenter.fish
-```
-
-Add to prompt function in `~/.config/fish/functions/fish_prompt.fish`:
-
-```fish
-echo -n (opencenter_prompt)
-```
-
-### Starship
-
-Append to `~/.config/starship.toml`:
-
-```bash
-cat /path/to/openCenter-cli/hack/shell-integration/starship-opencenter.toml \
-    >> ~/.config/starship.toml
-```
-
-Or manually add:
-
-```toml
-[custom.opencenter]
-command = "cat ~/.config/openCenter/.active 2>/dev/null || echo ''"
-when = "test -f ~/.config/openCenter/.active"
-format = "[$symbol$output]($style) "
-symbol = "🚀 "
-style = "bold blue"
-description = "Show active openCenter cluster"
-```
-
-## Functions
-
-### opencenter_active
-
-Returns the active cluster name from `~/.config/openCenter/.active`.
-
-**Output**: Cluster identifier (e.g., `myorg/mycluster` or `mycluster`)
-
-**Example**:
-```bash
-$ opencenter_active
-myorg/production-cluster
-```
-
-### opencenter_prompt
-
-Returns formatted prompt string with brackets.
-
-**Output**: `[cluster]` or empty string if no active cluster
-
-**Example**:
-```bash
-$ opencenter_prompt
-[myorg/production-cluster]
-```
-
-### opencenter_active_short
-
-Returns short cluster name without organization prefix.
-
-**Output**: Cluster name only (e.g., `mycluster`)
-
-**Example**:
-```bash
-$ opencenter_active_short
-production-cluster
-```
-
-### opencenter_update_env
-
-Updates `$OPENCENTER_ACTIVE_CLUSTER` environment variable. Called automatically by shell hooks.
-
-**Behavior**: Reads from cache file, updates environment variable
-
-## Aliases
-
-| Alias | Command | Description |
-|-------|---------|-------------|
-| `oc-active` | `opencenter_active` | Get active cluster |
-| `oc-status` | `openCenter cluster status` | Show cluster status |
-| `oc-select` | `openCenter cluster select` | Select active cluster |
-| `oc-list` | `openCenter cluster list` | List all clusters |
-
-## Environment Variables
-
-### OPENCENTER_ACTIVE_CLUSTER
-
-Set automatically by `opencenter_update_env`. Contains the current active cluster identifier.
-
-**Type**: Read-only (managed by shell integration)
-
-**Example**:
-```bash
-$ echo $OPENCENTER_ACTIVE_CLUSTER
-myorg/production-cluster
-```
-
-## Caching Behavior
-
-Shell integration uses file-based caching for performance.
-
-**Cache file**: `~/.cache/openCenter/active_cluster`
-
-**Update trigger**: When `~/.config/openCenter/.active` is newer than cache
-
-**Performance**: Sub-millisecond reads after initial cache
-
-**Cache invalidation**: Automatic when active cluster changes
-
-## Prompt Examples
-
-### Bash
-
-```bash
-# Basic
-PS1="\$(opencenter_prompt)$PS1"
-
-# With color
-PS1="\[\033[36m\]\$(opencenter_prompt)\[\033[0m\]$PS1"
-```
-
-### Zsh
+Add to your `~/.zshrc` after the shell integration line:
 
 ```zsh
-# Basic
-PROMPT="\$(opencenter_prompt)$PROMPT"
+# Enable prompt substitution
+setopt PROMPT_SUBST
 
-# With color
-PROMPT="%F{cyan}\$(opencenter_prompt)%f$PROMPT"
+# Option 1: Left prompt
+PROMPT='%F{cyan}$(opencenter_current_cluster_short)%f $PROMPT'
+
+# Option 2: Right prompt
+RPROMPT='%F{cyan}[$(opencenter_current_cluster_short)]%f'
+
+# Option 3: Only show if cluster is set
+opencenter_prompt() {
+    local cluster=$(opencenter_current_cluster_short)
+    if [[ -n "$cluster" ]]; then
+        echo "%F{cyan}[$cluster]%f "
+    fi
+}
+PROMPT='$(opencenter_prompt)$PROMPT'
 ```
 
 ### Fish
 
+Add to your `~/.config/fish/config.fish`:
+
 ```fish
+# Option 1: Left prompt
 function fish_prompt
-    echo -n (opencenter_prompt)
-    # Existing prompt code
+    set -l cluster (opencenter_current_cluster_short)
+    if test -n "$cluster"
+        set_color cyan
+        echo -n "[$cluster] "
+        set_color normal
+    end
+    # Add your existing prompt here
+    echo -n "> "
+end
+
+# Option 2: Right prompt
+function fish_right_prompt
+    set -l cluster (opencenter_current_cluster_short)
+    if test -n "$cluster"
+        set_color cyan
+        echo -n "[$cluster]"
+        set_color normal
+    end
 end
 ```
 
-### Oh My Zsh
+### Starship Integration
 
-```zsh
-opencenter_prompt_info() {
-    local cluster=$(opencenter_active 2>/dev/null)
-    if [[ -n "$cluster" ]]; then
-        echo "%{$fg[cyan]%}[$cluster]%{$reset_color%} "
-    fi
-}
+If you use [Starship](https://starship.rs/), add this to your `~/.config/starship.toml`:
 
-PROMPT='$(opencenter_prompt_info)'$PROMPT
+```toml
+[env_var.OPENCENTER_CLUSTER]
+variable = "OPENCENTER_CLUSTER"
+format = "[$env_value]($style) "
+style = "cyan bold"
+disabled = false
 ```
+
+## Environment Variables
+
+- **OPENCENTER_CLUSTER**: Current cluster name (set by `opencenter cluster use`)
+- **OPENCENTER_SESSION_ID**: Unique session identifier
+- **OPENCENTER_SESSION_FILE**: Path to session file storing cluster selection
+
+## Helper Functions
+
+The shell integration provides these helper functions:
+
+- `opencenter_current_cluster()`: Get the current cluster name (full path with organization)
+- `opencenter_current_cluster_short()`: Get the short cluster name (without organization prefix)
 
 ## Troubleshooting
 
-### Prompt not showing
+### Shell integration not detected
 
-Check active cluster:
-```bash
-openCenter cluster current
+If you see this warning:
+```
+⚠️  Shell integration not detected. Setting persistent cluster selection.
+💡 To enable session-scoped selection, run: eval "$(opencenter shell-init)"
 ```
 
-Test function:
-```bash
-opencenter_prompt
-```
+Make sure you've:
+1. Added the integration line to your shell RC file
+2. Reloaded your shell or started a new terminal session
 
-Verify integration loaded:
-```bash
-type opencenter_active
-```
+### Session file not cleaned up
 
-### Function not found
+Session files are automatically cleaned up when the shell exits. If you find stale session files in `~/.config/openCenter/.session-*`, you can safely delete them.
 
-Source the integration script:
-```bash
-source /path/to/hack/shell-integration/shell-integration.sh
-```
+### Cluster not switching
 
-For Fish:
-```bash
-ls ~/.config/fish/conf.d/opencenter.fish
-```
+Make sure you're using `opencenter cluster use` (not `opencenter cluster select`) for session-scoped selection.
 
-### Stale cluster name
+## Comparison with Persistent Selection
 
-Clear cache:
-```bash
-rm ~/.cache/openCenter/active_cluster
-```
+| Feature | `cluster select` | `cluster use` (with shell integration) |
+|---------|------------------|----------------------------------------|
+| Scope | Global (all terminals) | Session (current terminal only) |
+| Persistence | Survives shell restart | Lost on shell exit |
+| Use case | Default cluster for all work | Temporary cluster switching |
+| Requires setup | No | Yes (shell integration) |
 
-## Advanced Patterns
+## See Also
 
-### Conditional display
-
-Show cluster only in specific directories:
-
-```bash
-opencenter_conditional_prompt() {
-    if [[ "$PWD" == *"/k8s/"* ]] || [[ "$PWD" == *"/clusters/"* ]]; then
-        opencenter_prompt
-    fi
-}
-
-PS1="\$(opencenter_conditional_prompt)$PS1"
-```
-
-### Combined indicators
-
-Show both openCenter cluster and kubectl context:
-
-```bash
-k8s_prompt() {
-    local oc_cluster=$(opencenter_active 2>/dev/null)
-    local k8s_context=$(kubectl config current-context 2>/dev/null)
-    
-    if [[ -n "$oc_cluster" ]]; then
-        echo -n "[oc:$oc_cluster]"
-    fi
-    if [[ -n "$k8s_context" ]]; then
-        echo -n "[k8s:$k8s_context]"
-    fi
-}
-
-PS1="\$(k8s_prompt)$PS1"
-```
-
-## Shell Completion
-
-Enable command completion:
-
-```bash
-# Bash
-openCenter completion bash > /etc/bash_completion.d/openCenter
-
-# Zsh
-openCenter completion zsh > "${fpath[1]}/_openCenter"
-
-# Fish
-openCenter completion fish > ~/.config/fish/completions/openCenter.fish
-```
-
-## Related Documentation
-
-- [CLI Commands Reference](./cli-commands.md)
-- [Environment Variables](./environment-variables.md)
-- [Cluster Commands](./cluster/README.md)
+- [CLI Commands Reference](cli-commands.md)
+- [Configuration](configuration.md)
+- [IDE Integration](../how-to/ide-integration.md)

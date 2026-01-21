@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/rackerlabs/openCenter-cli/internal/config"
 	"github.com/spf13/cobra"
@@ -62,9 +63,14 @@ After running this command, restart your IDE to activate the integration.`,
 			ide, _ := cmd.Flags().GetString("ide")
 			schemaOnly, _ := cmd.Flags().GetBool("schema-only")
 			showInstructions, _ := cmd.Flags().GetBool("show-instructions")
+			shellIntegration, _ := cmd.Flags().GetBool("shell-integration")
 
 			if showInstructions {
 				return showIDEInstructions(cmd, ide)
+			}
+
+			if shellIntegration {
+				return installShellIntegration(cmd)
 			}
 
 			return setupIDEIntegration(cmd, ide, schemaOnly)
@@ -74,6 +80,7 @@ After running this command, restart your IDE to activate the integration.`,
 	cmd.Flags().String("ide", "auto", "Target IDE (auto, vscode, jetbrains, vim, emacs)")
 	cmd.Flags().Bool("schema-only", false, "Only generate JSON schema without IDE configuration")
 	cmd.Flags().Bool("show-instructions", false, "Show setup instructions for the specified IDE")
+	cmd.Flags().Bool("shell-integration", false, "Install shell integration for session-scoped cluster selection")
 
 	return cmd
 }
@@ -384,4 +391,98 @@ For more information, see: docs/ide-integration.md
 	}
 
 	return nil
+}
+
+// installShellIntegration installs shell integration for session-scoped cluster selection
+func installShellIntegration(cmd *cobra.Command) error {
+	fmt.Println("🐚 Installing shell integration for session-scoped cluster selection...")
+
+	// Detect shell
+	shell := detectShellType()
+	fmt.Printf("🔍 Detected shell: %s\n", shell)
+
+	// Get RC file path
+	rcFile, err := getShellRCFile(shell)
+	if err != nil {
+		return fmt.Errorf("failed to determine shell RC file: %w", err)
+	}
+
+	integrationLine := `eval "$(opencenter shell-init)"`
+
+	// Check if already installed
+	content, err := os.ReadFile(rcFile)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to read %s: %w", rcFile, err)
+	}
+
+	if strings.Contains(string(content), integrationLine) {
+		fmt.Printf("✅ Shell integration already installed in %s\n", rcFile)
+		return nil
+	}
+
+	// Append to RC file
+	f, err := os.OpenFile(rcFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open %s: %w", rcFile, err)
+	}
+	defer f.Close()
+
+	integrationBlock := fmt.Sprintf("\n# openCenter shell integration\n%s\n", integrationLine)
+	if _, err := f.WriteString(integrationBlock); err != nil {
+		return fmt.Errorf("failed to write to %s: %w", rcFile, err)
+	}
+
+	fmt.Printf("✅ Shell integration installed to %s\n", rcFile)
+	fmt.Printf("🔄 Run 'source %s' or restart your shell to activate\n", rcFile)
+	fmt.Println("\n📖 Usage:")
+	fmt.Println("  opencenter cluster use <cluster>  # Switch cluster in current session")
+	fmt.Println("  opencenter cluster current        # Show current cluster and source")
+	fmt.Println("\n💡 Tip: Uncomment prompt integration in the shell script to show cluster in your prompt")
+
+	return nil
+}
+
+// detectShellType detects the user's shell
+func detectShellType() string {
+	shell := os.Getenv("SHELL")
+	baseName := filepath.Base(shell)
+
+	switch baseName {
+	case "zsh":
+		return "zsh"
+	case "fish":
+		return "fish"
+	case "bash", "sh":
+		return "bash"
+	default:
+		return "bash" // Default to bash
+	}
+}
+
+// getShellRCFile returns the RC file path for the given shell
+func getShellRCFile(shell string) (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	switch shell {
+	case "bash":
+		// Check for .bashrc first, then .bash_profile
+		bashrc := filepath.Join(home, ".bashrc")
+		if _, err := os.Stat(bashrc); err == nil {
+			return bashrc, nil
+		}
+		return filepath.Join(home, ".bash_profile"), nil
+	case "zsh":
+		return filepath.Join(home, ".zshrc"), nil
+	case "fish":
+		configDir := filepath.Join(home, ".config", "fish")
+		if err := os.MkdirAll(configDir, 0755); err != nil {
+			return "", fmt.Errorf("failed to create fish config directory: %w", err)
+		}
+		return filepath.Join(configDir, "config.fish"), nil
+	default:
+		return "", fmt.Errorf("unsupported shell: %s", shell)
+	}
 }
