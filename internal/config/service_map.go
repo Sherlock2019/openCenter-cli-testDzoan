@@ -16,14 +16,19 @@ import (
 type ServiceMap map[string]any
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
+// It merges services from YAML with existing services in the map, preserving
+// services that aren't defined in the YAML (for default service population).
 func (sm *ServiceMap) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.MappingNode {
 		return fmt.Errorf("expected map for Services, got %v", node.Kind)
 	}
 
-	*sm = make(ServiceMap)
+	// Initialize map if nil, but don't replace existing services
+	if *sm == nil {
+		*sm = make(ServiceMap)
+	}
 
-	// Iterate over keys and values
+	// Iterate over keys and values from YAML
 	for i := 0; i < len(node.Content); i += 2 {
 		keyNode := node.Content[i]
 		valNode := node.Content[i+1]
@@ -50,9 +55,8 @@ func (sm *ServiceMap) UnmarshalYAML(node *yaml.Node) error {
 			return fmt.Errorf("failed to decode config for service %s: %w", serviceName, err)
 		}
 
-		// Store in map (dereference pointer if needed, or keep as pointer?)
-		// Keeping as pointer is better for consistency if we want to modify it later
-		// But map value is any.
+		// Store in map, overwriting any existing service with the same name
+		// This allows YAML to override defaults while preserving services not in YAML
 		(*sm)[serviceName] = configPtr
 	}
 
