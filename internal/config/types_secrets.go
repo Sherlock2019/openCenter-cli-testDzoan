@@ -121,4 +121,5 @@ type VSphereCsiSecrets struct {
 	Datacenters  string `yaml:"datacenters" json:"datacenters" jsonschema:"secret=true,description=Comma-separated list of datacenters"`
 	InsecureFlag string `yaml:"insecure_flag" json:"insecure_flag" jsonschema:"secret=true,description=Skip SSL certificate verification (true/false)"`
 	Port         string `yaml:"port" json:"port" jsonschema:"secret=true,description=vCenter port (default: 443)"`
+	Datastoreurl string `yaml:"datastoreurl" json:"datastoreurl" jsonschema:"secret=true,description=Datastore URL for vSphere CSI storage class"`
 }

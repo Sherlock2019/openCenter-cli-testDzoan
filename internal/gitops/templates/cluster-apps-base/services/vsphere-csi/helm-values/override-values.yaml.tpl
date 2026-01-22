@@ -14,7 +14,7 @@ global:
       default: true
       reclaimPolicy: Delete
       volumebindingmode: "Immediate"
-      datastoreurl: "ds:///vmfs/volumes/68fb9894-62bee6ce-01e5-b483512037fe/"
+      datastoreurl: {{ (index .OpenCenter.Services "vsphere-csi").DataStoreURL }}
 vsphere-cpi:
   enabled: true
   global:
