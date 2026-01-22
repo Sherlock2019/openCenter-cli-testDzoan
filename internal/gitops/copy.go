@@ -264,7 +264,7 @@ func shouldSkipFile(relPath string, cfg config.Config) bool {
 
 				// Check if this service is disabled
 				if service, exists := cfg.OpenCenter.Services[extractedServiceName]; exists {
-					if isServiceDisabled(service) {
+					if IsServiceDisabled(service) {
 						return true
 					}
 				}
@@ -272,7 +272,7 @@ func shouldSkipFile(relPath string, cfg config.Config) bool {
 		} else {
 			// Regular service directory check
 			if service, exists := cfg.OpenCenter.Services[serviceName]; exists {
-				if isServiceDisabled(service) {
+				if IsServiceDisabled(service) {
 					return true
 				}
 			}
@@ -294,7 +294,7 @@ func shouldSkipFile(relPath string, cfg config.Config) bool {
 
 				// Check if this managed service is disabled
 				if service, exists := cfg.OpenCenter.ManagedService[extractedServiceName]; exists {
-					if isServiceDisabled(service) {
+					if IsServiceDisabled(service) {
 						return true
 					}
 				}
@@ -302,7 +302,7 @@ func shouldSkipFile(relPath string, cfg config.Config) bool {
 		} else {
 			// Regular managed service directory check
 			if service, exists := cfg.OpenCenter.ManagedService[serviceName]; exists {
-				if isServiceDisabled(service) {
+				if IsServiceDisabled(service) {
 					return true
 				}
 			}
@@ -524,9 +524,9 @@ func RenderSingleService(cfg config.Config, serviceName string, isManaged bool) 
 	})
 }
 
-// isServiceDisabled checks if a service configuration has Enabled set to false.
+// IsServiceDisabled checks if a service configuration has Enabled set to false.
 // It uses reflection to access the Enabled field since the service config is an interface{}.
-func isServiceDisabled(serviceCfg any) bool {
+func IsServiceDisabled(serviceCfg any) bool {
 	val := reflect.ValueOf(serviceCfg)
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()

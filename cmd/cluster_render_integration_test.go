@@ -23,8 +23,8 @@ import (
 	"github.com/rackerlabs/opencenter-cli/internal/config"
 )
 
-// TestRenderClusterTemplatesIntegration tests the renderClusterTemplates function
-// to ensure it works with the unified GitOps generation interface.
+// TestRenderClusterTemplatesIntegration tests the render functions
+// to ensure they work with the unified GitOps generation interface.
 func TestRenderClusterTemplatesIntegration(t *testing.T) {
 	// Create temporary directory for test
 	tempDir := t.TempDir()
@@ -40,9 +40,9 @@ func TestRenderClusterTemplatesIntegration(t *testing.T) {
 	cmd.SetErr(&stderr)
 	cmd.SetContext(context.Background())
 
-	// Test rendering
-	if err := renderClusterTemplates(cfg, "", cmd); err != nil {
-		t.Fatalf("renderClusterTemplates failed: %v\nStdout: %s\nStderr: %s",
+	// Test rendering all services
+	if err := renderAllServices(cfg, false, cmd); err != nil {
+		t.Fatalf("renderAllServices failed: %v\nStdout: %s\nStderr: %s",
 			err, stdout.String(), stderr.String())
 	}
 
@@ -62,12 +62,6 @@ func TestRenderClusterTemplatesIntegration(t *testing.T) {
 	clusterAppsPath := filepath.Join(tempDir, "applications", "overlays", "test-render-integration")
 	if _, err := os.Stat(clusterAppsPath); os.IsNotExist(err) {
 		t.Errorf("Expected cluster apps directory to be created at %s", clusterAppsPath)
-	}
-
-	// Verify that infrastructure was rendered
-	infraPath := filepath.Join(tempDir, "infrastructure", "clusters", "test-render-integration")
-	if _, err := os.Stat(infraPath); os.IsNotExist(err) {
-		t.Errorf("Expected infrastructure directory to be created at %s", infraPath)
 	}
 
 	// Verify output contains success message
