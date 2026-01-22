@@ -117,8 +117,8 @@ func defaultConfig(name string) Config {
 		}
 	}
 
-	// Apply CLI defaults for region if available
-	if cliDefaults != nil && cliDefaults.Region != "" {
+	// Apply CLI defaults for region if available (skip template strings)
+	if cliDefaults != nil && cliDefaults.Region != "" && !strings.Contains(cliDefaults.Region, "{{") {
 		region = cliDefaults.Region
 	}
 
@@ -206,6 +206,11 @@ func defaultConfig(name string) Config {
 								Provider: "physnet1",
 							},
 						},
+						Modules: OpenStackModulesConfig{
+							OpenstackNova: OpenstackNovaModuleConfig{
+								Source: "github.com/rackerlabs/openCenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main",
+							},
+						},
 					},
 				},
 			},
@@ -224,6 +229,25 @@ func defaultConfig(name string) Config {
 					Security: ClusterSecurityConfig{
 						CACertificates: "",
 						OSHardening:    true,
+					},
+					// Network topology defaults
+					SubnetNodes:         "10.2.128.0/22",
+					AllocationPoolStart: "",
+					AllocationPoolEnd:   "",
+					// VRRP defaults
+					VRRPIP:      "",
+					VRRPEnabled: true,
+					// Load balancer defaults
+					UseOctavia:           false,
+					LoadbalancerProvider: "ovn",
+					// DNS defaults
+					UseDesignate: false,
+					DNSZoneName:  "",
+					// VLAN defaults
+					VLAN: VLAN{
+						ID:       "",
+						MTU:      0,
+						Provider: "physnet1",
 					},
 				},
 				Kubernetes: KubernetesConfig{
@@ -254,15 +278,35 @@ func defaultConfig(name string) Config {
 							AutodetectCIDR:            "",
 							EncapsulationType:         "VXLAN",
 							NATOutgoing:               true,
+							Modules: CalicoModulesConfig{
+								Calico: CalicoModuleConfig{
+									Source: "github.com/rackerlabs/openCenter-gitops-base.git//iac/cni/calico?ref=main",
+								},
+							},
 						},
 						Cilium: CiliumConfig{
 							Enabled:              false,
 							OperatorEnabled:      true,
 							KubeProxyReplacement: true,
+							Modules: CiliumModulesConfig{
+								Cilium: CiliumModuleConfig{
+									Source: "github.com/rackerlabs/openCenter-gitops-base.git//iac/cni/cilium?ref=main",
+								},
+							},
 						},
 						KubeOVN: KubeOVNConfig{
 							Enabled:           false,
 							CiliumIntegration: true,
+							Modules: KubeOVNModulesConfig{
+								KubeOVN: KubeOVNModuleConfig{
+									Source: "github.com/rackerlabs/openCenter-gitops-base.git//iac/cni/kube-ovn?ref=main",
+								},
+							},
+						},
+					},
+					Modules: KubernetesModulesConfig{
+						KubesprayCluster: KubesprayClusterModuleConfig{
+							Source: "github.com/rackerlabs/openCenter-gitops-base.git//iac/provider/kubespray?ref=main",
 						},
 					},
 					OIDC: OIDCConfig{
@@ -958,18 +1002,18 @@ func applyCLIDefaults(cfg *Config) {
 		return
 	}
 
-	// Apply provider default if not set in cluster config
-	if cfg.OpenCenter.Infrastructure.Provider == "" && cliConfig.Defaults.Provider != "" {
+	// Apply provider default if not set in cluster config (skip template strings)
+	if cfg.OpenCenter.Infrastructure.Provider == "" && cliConfig.Defaults.Provider != "" && !strings.Contains(cliConfig.Defaults.Provider, "{{") {
 		cfg.OpenCenter.Infrastructure.Provider = cliConfig.Defaults.Provider
 	}
 
-	// Apply region default if not set in cluster config
-	if cfg.OpenCenter.Meta.Region == "" && cliConfig.Defaults.Region != "" {
+	// Apply region default if not set in cluster config (skip template strings)
+	if cfg.OpenCenter.Meta.Region == "" && cliConfig.Defaults.Region != "" && !strings.Contains(cliConfig.Defaults.Region, "{{") {
 		cfg.OpenCenter.Meta.Region = cliConfig.Defaults.Region
 	}
 
-	// Apply environment default if not set in cluster config
-	if cfg.OpenCenter.Meta.Env == "" && cliConfig.Defaults.Environment != "" {
+	// Apply environment default if not set in cluster config (skip template strings)
+	if cfg.OpenCenter.Meta.Env == "" && cliConfig.Defaults.Environment != "" && !strings.Contains(cliConfig.Defaults.Environment, "{{") {
 		cfg.OpenCenter.Meta.Env = cliConfig.Defaults.Environment
 	}
 

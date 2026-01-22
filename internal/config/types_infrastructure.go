@@ -5,6 +5,7 @@ type Infrastructure struct {
 	Provider            string         `yaml:"provider" json:"provider"`
 	Cloud               CloudConfig    `yaml:"cloud" json:"cloud"`
 	SSHUser             string         `yaml:"ssh_user" json:"ssh_user"`
+	SSHKeyPath          string         `yaml:"ssh_key_path,omitempty" json:"ssh_key_path,omitempty" jsonschema:"description=Path to SSH private key for cluster access"`
 	OSVersion           string         `yaml:"os_version" json:"os_version"`
 	ServerGroupAffinity []string       `yaml:"server_group_affinity" json:"server_group_affinity"`
 	NodeNaming          NodeNaming     `yaml:"node_naming" json:"node_naming"`

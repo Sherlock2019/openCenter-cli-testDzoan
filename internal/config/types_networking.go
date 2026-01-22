@@ -17,10 +17,3 @@ type Networking struct {
 	NTPServers           []string `yaml:"ntp_servers" json:"ntp_servers"`
 	VLAN                 VLAN     `yaml:"vlan" json:"vlan"`
 }
-
-// VLAN describes VLAN settings for the cluster.
-type VLAN struct {
-	ID       string `yaml:"id" json:"id"`
-	MTU      int    `yaml:"mtu" json:"mtu"`
-	Provider string `yaml:"provider" json:"provider"`
-}
