@@ -63,11 +63,7 @@ Unlike 'cluster setup', this command:
 		Args: cobra.MaximumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve cluster name from args or active cluster
-			name := ""
-			if len(args) > 0 {
-				name = args[0]
-			}
-			name, err := resolveClusterName([]string{name}, true)
+			name, err := resolveClusterName(args, true)
 			if err != nil {
 				return err
 			}

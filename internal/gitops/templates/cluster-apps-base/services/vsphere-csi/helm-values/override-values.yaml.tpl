@@ -3,12 +3,12 @@ global:
   config:
     existingSecret: "vsphere-csi"
     global:
-      cluster-id: "k8s-dev"
+      cluster-id: "{{ .OpenCenter.Meta.Name }}"
     csidriver:
       enabled: true
     storageclass:
       enabled: true
-      name: "san-fc-hlu2-gold-delete"
+      name: "{{ .OpenCenter.Storage.DefaultStorageClass }}"
       storagepolicyname: ""
       expansion: true # https://vsphere-csi-driver.sigs.k8s.io/features/volume_expansion.html
       default: true
@@ -31,9 +31,9 @@ controller:
   replicaCount: 3
   snapshotter:
     image:
-      registry: registry.k8s.io
+      registry: {{ (index .OpenCenter.Services "vsphere-csi").ImageRepository | default "registry.k8s.io" }}
       repository: sig-storage/csi-snapshotter
-      tag: v8.2.0
+      tag: {{ (index .OpenCenter.Services "vsphere-csi").ImageTag | default "v8.2.0" }}
       pullPolicy: IfNotPresent
     args:
       - "--v=4"
