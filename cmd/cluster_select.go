@@ -226,9 +226,10 @@ func generateClusterSelectOutput(clusterName string, shellOverride string) (Clus
 		}
 	}
 
-	// Generate export commands if cluster is deployed
+	// Generate export commands if cluster is deployed or successful
 	var exportCommands []string
-	if strings.ToLower(metadata.Status) == "deployed" {
+	status := strings.ToLower(metadata.Status)
+	if status == "deployed" || status == "success" {
 		exportCommands = generateExportCommands(paths, shell)
 	}
 
