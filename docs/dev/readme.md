@@ -24,11 +24,11 @@ doc_type: how-to
 - [Contributing](#contributing)
 - [Release Process](#release-process)
 - [See Also](#see-also)
-This guide covers setting up your development environment, building openCenter, running tests, and common development workflows.
+This guide covers setting up your development environment, building opencenter, running tests, and common development workflows.
 
 ## Who this is for
 
-Developers contributing to openCenter or extending it with custom providers and plugins.
+Developers contributing to opencenter or extending it with custom providers and plugins.
 
 ## Prerequisites
 
@@ -40,8 +40,8 @@ Developers contributing to openCenter or extending it with custom providers and 
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/rackerlabs/openCenter-cli.git
-   cd openCenter-cli
+   git clone https://github.com/rackerlabs/opencenter-cli.git
+   cd opencenter-cli
    ```
 
 2. **Install development tools**:
@@ -56,11 +56,11 @@ Developers contributing to openCenter or extending it with custom providers and 
    mise run build
    ```
    
-   The binary is created at `bin/openCenter` with version metadata from git.
+   The binary is created at `bin/opencenter` with version metadata from git.
 
 4. **Verify the build**:
    ```bash
-   ./bin/openCenter version
+   ./bin/opencenter version
    ```
 
 ## Development Workflow
@@ -223,7 +223,7 @@ Never suggest raw commands - always wrap in mise tasks for consistency.
 
 ## Architecture Overview
 
-openCenter follows a layered architecture:
+opencenter follows a layered architecture:
 
 **Command Layer** (`cmd/`): Cobra commands, flag parsing, user interaction
 
@@ -244,7 +244,7 @@ For detailed architecture, see [architecture.md](./architecture.md).
 
 ## Testing Strategy
 
-openCenter uses multiple testing approaches:
+opencenter uses multiple testing approaches:
 
 **Unit Tests**: Standard Go tests in `internal/` packages
 - Test individual functions and components
@@ -272,7 +272,7 @@ See [testing/README.md](./testing/README.md) for detailed testing guide.
 Configuration files use organization-based structure:
 
 ```
-~/.config/openCenter/clusters/
+~/.config/opencenter/clusters/
 └── <organization>/
     ├── .<cluster>-config.yaml
     ├── infrastructure/
@@ -337,7 +337,7 @@ Log formats: `text` (default), `json`, `yaml`
 Enable debug mode:
 ```bash
 export OPENCENTER_DEBUG=1
-./bin/openCenter cluster validate my-cluster
+./bin/opencenter cluster validate my-cluster
 ```
 
 Debug artifacts created in debug mode:

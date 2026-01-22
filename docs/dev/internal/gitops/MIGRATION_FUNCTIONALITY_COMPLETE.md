@@ -93,7 +93,7 @@ $ go test ./internal/gitops -v -run "TestMigration"
 === RUN   TestMigrationPreservesContextHandling
 --- PASS: TestMigrationPreservesContextHandling (0.04s)
 PASS
-ok      github.com/rackerlabs/openCenter-cli/internal/gitops    4.216s
+ok      github.com/rackerlabs/opencenter-cli/internal/gitops    4.216s
 ```
 
 ### 3. All GitOps Tests Pass
@@ -101,7 +101,7 @@ ok      github.com/rackerlabs/openCenter-cli/internal/gitops    4.216s
 ```bash
 $ go test ./internal/gitops -v
 PASS
-ok      github.com/rackerlabs/openCenter-cli/internal/gitops    2.807s
+ok      github.com/rackerlabs/opencenter-cli/internal/gitops    2.807s
 ```
 
 All 50+ tests in the gitops package pass, including:
@@ -199,7 +199,7 @@ go test ./internal/gitops -v
 go test ./...
 
 # Build project
-go build -o bin/openCenter
+go build -o bin/opencenter
 ```
 
 All commands should complete successfully with no failures.

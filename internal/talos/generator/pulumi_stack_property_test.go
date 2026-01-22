@@ -7,7 +7,7 @@ import (
 	"github.com/leanovate/gopter"
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"gopkg.in/yaml.v3"
 )
 

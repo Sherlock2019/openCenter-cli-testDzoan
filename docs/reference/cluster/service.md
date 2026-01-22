@@ -20,7 +20,7 @@ Manage cluster services and their configurations.
 ## Synopsis
 
 ```bash
-openCenter cluster service <subcommand> [flags]
+opencenter cluster service <subcommand> [flags]
 ```
 
 ## Description
@@ -34,7 +34,7 @@ The `cluster service` command manages services in a cluster's configuration. Ser
 Enable a service in the cluster configuration.
 
 ```bash
-openCenter cluster service enable <service-name> [flags]
+opencenter cluster service enable <service-name> [flags]
 ```
 
 **Flags:**
@@ -49,19 +49,19 @@ openCenter cluster service enable <service-name> [flags]
 
 ```bash
 # Enable cert-manager with required email parameter
-openCenter cluster service enable cert-manager --param="email=admin@example.com"
+opencenter cluster service enable cert-manager --param="email=admin@example.com"
 
 # Enable managed service with secret
-openCenter cluster service enable my-managed-service --managed --secret="api_key=secret123"
+opencenter cluster service enable my-managed-service --managed --secret="api_key=secret123"
 
 # Force re-enable (re-render) an already enabled service
-openCenter cluster service enable prometheus --force
+opencenter cluster service enable prometheus --force
 
 # Enable and immediately render templates
-openCenter cluster service enable loki --render
+opencenter cluster service enable loki --render
 
 # Enable with multiple parameters
-openCenter cluster service enable loki \
+opencenter cluster service enable loki \
   --param="loki_bucket_name=my-bucket" \
   --param="loki_storage_type=s3" \
   --secret="s3_access_key_id=AKIA..." \
@@ -73,7 +73,7 @@ openCenter cluster service enable loki \
 Disable a service in the cluster configuration.
 
 ```bash
-openCenter cluster service disable <service-name> [flags]
+opencenter cluster service disable <service-name> [flags]
 ```
 
 **Flags:**
@@ -84,10 +84,10 @@ openCenter cluster service disable <service-name> [flags]
 
 ```bash
 # Disable cert-manager service
-openCenter cluster service disable cert-manager
+opencenter cluster service disable cert-manager
 
 # Disable managed service
-openCenter cluster service disable my-managed-service --managed
+opencenter cluster service disable my-managed-service --managed
 ```
 
 ### status
@@ -95,7 +95,7 @@ openCenter cluster service disable my-managed-service --managed
 Display status of all services in the cluster.
 
 ```bash
-openCenter cluster service status [flags]
+opencenter cluster service status [flags]
 ```
 
 **Flags:**
@@ -105,10 +105,10 @@ openCenter cluster service status [flags]
 
 ```bash
 # Show status of all services in active cluster
-openCenter cluster service status
+opencenter cluster service status
 
 # Show status for specific cluster
-openCenter cluster service status --cluster my-cluster
+opencenter cluster service status --cluster my-cluster
 ```
 
 **Output Format:**
@@ -128,7 +128,7 @@ alert-proxy (managed)          enabled         success
 Display available configuration options for a service.
 
 ```bash
-openCenter cluster service options <service-name> [flags]
+opencenter cluster service options <service-name> [flags]
 ```
 
 **Flags:**
@@ -138,13 +138,13 @@ openCenter cluster service options <service-name> [flags]
 
 ```bash
 # Show options for cert-manager
-openCenter cluster service options cert-manager
+opencenter cluster service options cert-manager
 
 # Show options for loki
-openCenter cluster service options loki
+opencenter cluster service options loki
 
 # Show options for managed service
-openCenter cluster service options alert-proxy --managed
+opencenter cluster service options alert-proxy --managed
 ```
 
 **Output:**
@@ -169,8 +169,8 @@ Service-Specific Secrets:
   aws_secret_access_key (string) - AWS secret access key for Route53 DNS validation
 
 Usage Examples:
-  openCenter cluster service enable cert-manager --param="email=value"
-  openCenter cluster service enable cert-manager --secret="aws_access_key=secret-value"
+  opencenter cluster service enable cert-manager --param="email=value"
+  opencenter cluster service enable cert-manager --secret="aws_access_key=secret-value"
 ```
 
 ## Service Types
@@ -294,13 +294,13 @@ Example: --param="email=your-email@example.com"
 When `--render` flag is used, service templates are immediately rendered to the GitOps directory:
 
 ```bash
-openCenter cluster service enable loki --render
+opencenter cluster service enable loki --render
 ```
 
 This is equivalent to:
 ```bash
-openCenter cluster service enable loki
-openCenter cluster render my-cluster
+opencenter cluster service enable loki
+opencenter cluster render my-cluster
 ```
 
 ## Use Cases
@@ -309,11 +309,11 @@ openCenter cluster render my-cluster
 
 ```bash
 # Enable cert-manager with email
-openCenter cluster service enable cert-manager \
+opencenter cluster service enable cert-manager \
   --param="email=admin@example.com"
 
 # Enable loki with S3 storage
-openCenter cluster service enable loki \
+opencenter cluster service enable loki \
   --param="loki_storage_type=s3" \
   --param="loki_bucket_name=my-loki-bucket" \
   --param="loki_s3_region=us-east-1" \
@@ -325,27 +325,27 @@ openCenter cluster service enable loki \
 
 ```bash
 # View all service statuses
-openCenter cluster service status
+opencenter cluster service status
 
 # Check specific cluster
-openCenter cluster service status --cluster prod-cluster
+opencenter cluster service status --cluster prod-cluster
 ```
 
 ### Discover Service Options
 
 ```bash
 # See what parameters a service accepts
-openCenter cluster service options loki
+opencenter cluster service options loki
 
 # See managed service options
-openCenter cluster service options alert-proxy --managed
+opencenter cluster service options alert-proxy --managed
 ```
 
 ### Update Service Configuration
 
 ```bash
 # Force re-enable to update configuration
-openCenter cluster service enable loki \
+opencenter cluster service enable loki \
   --param="loki_volume_size=200" \
   --force \
   --render

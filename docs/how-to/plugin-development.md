@@ -17,7 +17,7 @@
 - [Next Steps](#next-steps)
 **doc_type**: how-to  
 **priority**: 3  
-**audience**: Developers extending openCenter functionality  
+**audience**: Developers extending opencenter functionality  
 **related_docs**:
 - [Plugin System Reference](../reference/plugin-system.md)
 - [Service Configuration](./service-configuration.md)
@@ -25,35 +25,35 @@
 
 ## Overview
 
-This guide shows you how to develop custom plugins for openCenter. You'll learn how to create external command plugins, service plugins, and integrate them into the CLI workflow.
+This guide shows you how to develop custom plugins for opencenter. You'll learn how to create external command plugins, service plugins, and integrate them into the CLI workflow.
 
 ## Prerequisites
 
 - Go 1.25.2 or later installed
-- openCenter CLI installed
+- opencenter CLI installed
 - Basic understanding of Go programming
 - Familiarity with Cobra CLI framework
 
 ## Understanding Plugin Types
 
-openCenter supports two types of plugins:
+opencenter supports two types of plugins:
 
 1. **External Command Plugins**: Standalone executables that extend CLI commands
 2. **Service Plugins**: Go packages that define custom services with lifecycle management
 
 ## Task 1: Create an External Command Plugin
 
-External plugins are executables prefixed with `openCenter-` that are automatically discovered and loaded.
+External plugins are executables prefixed with `opencenter-` that are automatically discovered and loaded.
 
 ### Step 1: Set Up Plugin Project
 
 ```bash
 # Create plugin directory
-mkdir -p ~/projects/openCenter-hello
-cd ~/projects/openCenter-hello
+mkdir -p ~/projects/opencenter-hello
+cd ~/projects/opencenter-hello
 
 # Initialize Go module
-go mod init github.com/yourusername/openCenter-hello
+go mod init github.com/yourusername/opencenter-hello
 
 # Create main.go
 touch main.go
@@ -85,7 +85,7 @@ func main() {
 			if name == "" {
 				name = "World"
 			}
-			fmt.Printf("Hello, %s! This is a custom openCenter plugin.\n", name)
+			fmt.Printf("Hello, %s! This is a custom opencenter plugin.\n", name)
 			return nil
 		},
 	}
@@ -103,27 +103,27 @@ func main() {
 
 ```bash
 # Build the plugin
-go build -o openCenter-hello
+go build -o opencenter-hello
 
 # Make it executable
-chmod +x openCenter-hello
+chmod +x opencenter-hello
 
 # Install to plugins directory
-mkdir -p ~/.config/openCenter/plugins
-cp openCenter-hello ~/.config/openCenter/plugins/
+mkdir -p ~/.config/opencenter/plugins
+cp opencenter-hello ~/.config/opencenter/plugins/
 
 # Or install to PATH
-sudo cp openCenter-hello /usr/local/bin/
+sudo cp opencenter-hello /usr/local/bin/
 ```
 
 ### Step 4: Test Plugin
 
 ```bash
 # Plugin is automatically discovered
-openCenter hello
+opencenter hello
 
 # Use plugin flags
-openCenter hello --name "Platform Engineer"
+opencenter hello --name "Platform Engineer"
 ```
 
 ### Step 5: Add Subcommands
@@ -187,16 +187,16 @@ func main() {
 Rebuild and test:
 
 ```bash
-go build -o openCenter-hello
-cp openCenter-hello ~/.config/openCenter/plugins/
+go build -o opencenter-hello
+cp opencenter-hello ~/.config/opencenter/plugins/
 
-openCenter hello greet Alice
-openCenter hello goodbye Bob
+opencenter hello greet Alice
+opencenter hello goodbye Bob
 ```
 
 ## Task 2: Create a Service Plugin
 
-Service plugins integrate with openCenter's service management system.
+Service plugins integrate with opencenter's service management system.
 
 ### Step 1: Understand Service Plugin Interface
 
@@ -215,7 +215,7 @@ type ServicePlugin interface {
 ### Step 2: Create Plugin Package
 
 ```bash
-# In openCenter-cli repository
+# In opencenter-cli repository
 mkdir -p internal/services/plugins/myservice
 cd internal/services/plugins/myservice
 touch myservice.go
@@ -231,8 +231,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config/services"
-	svc "github.com/rackerlabs/openCenter-cli/internal/services"
+	"github.com/rackerlabs/opencenter-cli/internal/config/services"
+	svc "github.com/rackerlabs/opencenter-cli/internal/services"
 )
 
 // MyServicePlugin implements the ServicePlugin interface
@@ -354,8 +354,8 @@ Add your plugin to the registry:
 package plugins
 
 import (
-	svc "github.com/rackerlabs/openCenter-cli/internal/services"
-	"github.com/rackerlabs/openCenter-cli/internal/services/plugins/myservice"
+	svc "github.com/rackerlabs/opencenter-cli/internal/services"
+	"github.com/rackerlabs/opencenter-cli/internal/services/plugins/myservice"
 )
 
 // RegisterDefaultServices registers all built-in service plugins
@@ -435,10 +435,10 @@ opencenter:
 EOF
 
 # Validate configuration
-./bin/openCenter config validate --config test-myservice.yaml
+./bin/opencenter config validate --config test-myservice.yaml
 
 # Generate GitOps repo
-./bin/openCenter cluster setup test-cluster --config test-myservice.yaml --render
+./bin/opencenter cluster setup test-cluster --config test-myservice.yaml --render
 ```
 
 ## Task 3: Add Plugin Lifecycle Hooks
@@ -550,7 +550,7 @@ if err := registry.RegisterService(svc.ServiceDefinition{
 For external service plugins, create a manifest file:
 
 ```yaml
-# ~/.config/openCenter/plugins/myservice.yaml
+# ~/.config/opencenter/plugins/myservice.yaml
 name: myservice
 version: 1.0.0
 type: custom
@@ -620,20 +620,20 @@ metadata:
 export OPENCENTER_DEBUG=true
 
 # Run command with verbose output
-openCenter hello --name Test
+opencenter hello --name Test
 ```
 
 ### Step 2: Test Plugin Discovery
 
 ```bash
 # List discovered plugins
-openCenter --help | grep -A 100 "Available Commands"
+opencenter --help | grep -A 100 "Available Commands"
 
 # Check plugin location
-which openCenter-hello
+which opencenter-hello
 
 # Verify plugin is executable
-ls -la ~/.config/openCenter/plugins/openCenter-hello
+ls -la ~/.config/opencenter/plugins/opencenter-hello
 ```
 
 ### Step 3: Test Service Plugin
@@ -654,9 +654,9 @@ mise run godog
 
 ```bash
 # Test full workflow
-./bin/openCenter cluster init test-plugin
-./bin/openCenter cluster setup test-plugin --render
-./bin/openCenter cluster validate test-plugin
+./bin/opencenter cluster init test-plugin
+./bin/opencenter cluster setup test-plugin --render
+./bin/opencenter cluster validate test-plugin
 ```
 
 ## Task 6: Package and Distribute Plugin
@@ -665,10 +665,10 @@ mise run godog
 
 ```bash
 # Build for multiple platforms
-GOOS=linux GOARCH=amd64 go build -o openCenter-hello-linux-amd64
-GOOS=darwin GOARCH=amd64 go build -o openCenter-hello-darwin-amd64
-GOOS=darwin GOARCH=arm64 go build -o openCenter-hello-darwin-arm64
-GOOS=windows GOARCH=amd64 go build -o openCenter-hello-windows-amd64.exe
+GOOS=linux GOARCH=amd64 go build -o opencenter-hello-linux-amd64
+GOOS=darwin GOARCH=amd64 go build -o opencenter-hello-darwin-amd64
+GOOS=darwin GOARCH=arm64 go build -o opencenter-hello-darwin-arm64
+GOOS=windows GOARCH=amd64 go build -o opencenter-hello-windows-amd64.exe
 ```
 
 ### Step 2: Create Installation Script
@@ -679,9 +679,9 @@ GOOS=windows GOARCH=amd64 go build -o openCenter-hello-windows-amd64.exe
 
 set -e
 
-PLUGIN_NAME="openCenter-hello"
+PLUGIN_NAME="opencenter-hello"
 VERSION="1.0.0"
-INSTALL_DIR="${HOME}/.config/openCenter/plugins"
+INSTALL_DIR="${HOME}/.config/opencenter/plugins"
 
 # Detect OS and architecture
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
@@ -707,43 +707,43 @@ curl -L "https://github.com/yourusername/${PLUGIN_NAME}/releases/download/v${VER
 chmod +x "${INSTALL_DIR}/${PLUGIN_NAME}"
 
 echo "✓ ${PLUGIN_NAME} installed successfully!"
-echo "Run 'openCenter hello' to test the plugin."
+echo "Run 'opencenter hello' to test the plugin."
 ```
 
 ### Step 3: Create README
 
 ```markdown
-# openCenter Hello Plugin
+# opencenter Hello Plugin
 
-A simple greeting plugin for openCenter CLI.
+A simple greeting plugin for opencenter CLI.
 
 ## Installation
 
 ### Quick Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/yourusername/openCenter-hello/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/yourusername/opencenter-hello/main/install.sh | bash
 ```
 
 ### Manual Install
 
-1. Download the binary for your platform from [releases](https://github.com/yourusername/openCenter-hello/releases)
-2. Rename to `openCenter-hello`
-3. Make executable: `chmod +x openCenter-hello`
-4. Move to plugins directory: `mv openCenter-hello ~/.config/openCenter/plugins/`
+1. Download the binary for your platform from [releases](https://github.com/yourusername/opencenter-hello/releases)
+2. Rename to `opencenter-hello`
+3. Make executable: `chmod +x opencenter-hello`
+4. Move to plugins directory: `mv opencenter-hello ~/.config/opencenter/plugins/`
 
 ## Usage
 
 ```bash
 # Basic greeting
-openCenter hello
+opencenter hello
 
 # Greet specific person
-openCenter hello --name "Alice"
+opencenter hello --name "Alice"
 
 # Use subcommands
-openCenter hello greet Bob
-openCenter hello goodbye Charlie
+opencenter hello greet Bob
+opencenter hello goodbye Charlie
 ```
 
 ## Development
@@ -757,7 +757,7 @@ Apache License 2.0
 
 ## Best Practices
 
-1. **Follow Naming Convention**: Prefix external plugins with `openCenter-`
+1. **Follow Naming Convention**: Prefix external plugins with `opencenter-`
 2. **Use Cobra Framework**: Maintain consistency with main CLI
 3. **Implement Error Handling**: Return meaningful errors with context
 4. **Add Help Text**: Provide clear usage documentation
@@ -772,12 +772,12 @@ Apache License 2.0
 
 ### Plugin Not Discovered
 
-**Problem**: Plugin doesn't appear in `openCenter --help`
+**Problem**: Plugin doesn't appear in `opencenter --help`
 
 **Solutions**:
-- Verify plugin name starts with `openCenter-`
-- Check plugin is executable: `chmod +x openCenter-myplugin`
-- Ensure plugin is in PATH or `~/.config/openCenter/plugins/`
+- Verify plugin name starts with `opencenter-`
+- Check plugin is executable: `chmod +x opencenter-myplugin`
+- Ensure plugin is in PATH or `~/.config/opencenter/plugins/`
 - Set `OPENCENTER_PLUGINS_DIR` environment variable if using custom location
 
 ### Plugin Execution Fails
@@ -785,7 +785,7 @@ Apache License 2.0
 **Problem**: `Error: plugin exited with code 1`
 
 **Solutions**:
-- Test plugin directly: `./openCenter-myplugin --help`
+- Test plugin directly: `./opencenter-myplugin --help`
 - Check plugin logs and error messages
 - Verify plugin dependencies are installed
 - Enable debug mode: `export OPENCENTER_DEBUG=true`

@@ -22,7 +22,7 @@ Render cluster templates into the GitOps directory structure.
 ## Synopsis
 
 ```bash
-openCenter cluster render [name]
+opencenter cluster render [name]
 ```
 
 ## Description
@@ -44,10 +44,10 @@ Unlike `cluster setup`, this command:
 
 ```bash
 # Render templates for active cluster
-openCenter cluster render
+opencenter cluster render
 
 # Render for specific cluster
-openCenter cluster render my-cluster
+opencenter cluster render my-cluster
 ```
 
 ## Rendering Process
@@ -120,10 +120,10 @@ Render complete.
 Test configuration changes without full setup:
 ```bash
 # Edit configuration
-openCenter cluster edit my-cluster
+opencenter cluster edit my-cluster
 
 # Render templates to see changes
-openCenter cluster render my-cluster
+opencenter cluster render my-cluster
 
 # Review rendered files
 ls -la ~/gitops/myorg/infrastructure/clusters/my-cluster/
@@ -134,7 +134,7 @@ ls -la ~/gitops/myorg/infrastructure/clusters/my-cluster/
 Debug template rendering issues:
 ```bash
 # Render templates
-openCenter cluster render my-cluster
+opencenter cluster render my-cluster
 
 # Check for errors in rendered files
 cat ~/gitops/myorg/infrastructure/clusters/my-cluster/main.tf
@@ -145,10 +145,10 @@ cat ~/gitops/myorg/infrastructure/clusters/my-cluster/main.tf
 Test different configurations quickly:
 ```bash
 # Update configuration
-openCenter cluster update my-cluster --opencenter.cluster.kubernetes.version=1.31.4
+opencenter cluster update my-cluster --opencenter.cluster.kubernetes.version=1.31.4
 
 # Re-render templates
-openCenter cluster render my-cluster
+opencenter cluster render my-cluster
 
 # Verify changes
 grep "kubernetes_version" ~/gitops/myorg/infrastructure/clusters/my-cluster/main.tf
@@ -162,7 +162,7 @@ Generate templates in CI/CD pipelines:
 set -e
 
 # Render templates
-openCenter cluster render my-cluster
+opencenter cluster render my-cluster
 
 # Validate rendered Terraform
 cd ~/gitops/myorg/infrastructure/clusters/my-cluster
@@ -192,7 +192,7 @@ Error: failed to load cluster configuration: cluster "my-cluster" not found
 
 **GitOps directory not configured:**
 ```
-Error: git_dir is not configured. Run 'openCenter cluster setup' first or set git_dir in the configuration
+Error: git_dir is not configured. Run 'opencenter cluster setup' first or set git_dir in the configuration
 ```
 
 **Template rendering failed:**

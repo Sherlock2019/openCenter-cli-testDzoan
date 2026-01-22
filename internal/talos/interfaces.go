@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 )
 
 // Validator performs pre-flight validation checks on OpenStack environments.

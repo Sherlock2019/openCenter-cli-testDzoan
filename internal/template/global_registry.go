@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/rackerlabs/openCenter-cli/internal/gitops"
-	"github.com/rackerlabs/openCenter-cli/internal/provision"
+	"github.com/rackerlabs/opencenter-cli/internal/gitops"
+	"github.com/rackerlabs/opencenter-cli/internal/provision"
 )
 
 var (

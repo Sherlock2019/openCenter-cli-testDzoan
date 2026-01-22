@@ -17,7 +17,7 @@ weight: 30
 - [Environment Variables](#environment-variables)
 - [Exit Codes](#exit-codes)
 - [Related Documentation](#related-documentation)
-Complete reference for all `openCenter cluster` subcommands organized by lifecycle phase.
+Complete reference for all `opencenter cluster` subcommands organized by lifecycle phase.
 
 ## Overview
 
@@ -33,7 +33,7 @@ Commands for creating and configuring new clusters.
 
 Initialize a new cluster configuration with default values.
 
-**Usage**: `openCenter cluster init [name] [flags]`
+**Usage**: `opencenter cluster init [name] [flags]`
 
 **Key Features**:
 - Schema-based default generation
@@ -51,7 +51,7 @@ Initialize a new cluster configuration with default values.
 
 Edit cluster configuration in your preferred editor.
 
-**Usage**: `openCenter cluster edit [name]`
+**Usage**: `opencenter cluster edit [name]`
 
 **Behavior**:
 - Opens configuration file in `$EDITOR` or `$VISUAL`
@@ -66,7 +66,7 @@ Commands for verifying configuration correctness.
 
 Validate cluster configuration against schema and business rules.
 
-**Usage**: `openCenter cluster validate [name] [flags]`
+**Usage**: `opencenter cluster validate [name] [flags]`
 
 **Validation Checks**:
 - JSON schema validation
@@ -83,7 +83,7 @@ Validate cluster configuration against schema and business rules.
 
 Run preflight checks for tools and provider requirements.
 
-**Usage**: `openCenter cluster preflight [name]`
+**Usage**: `opencenter cluster preflight [name]`
 
 **Checks**:
 - Required tools (git, kubectl, talosctl)
@@ -99,7 +99,7 @@ Commands for generating GitOps repository structure.
 
 Set up GitOps repository structure for a cluster.
 
-**Usage**: `openCenter cluster setup [name] [flags]`
+**Usage**: `opencenter cluster setup [name] [flags]`
 
 **Operations**:
 - Renders base GitOps structure
@@ -114,7 +114,7 @@ Set up GitOps repository structure for a cluster.
 
 Render templates into GitOps directory (always overwrites).
 
-**Usage**: `openCenter cluster render [name]`
+**Usage**: `opencenter cluster render [name]`
 
 **Behavior**:
 - Always renders templates (no skip logic)
@@ -130,7 +130,7 @@ Commands for provisioning and bootstrapping clusters.
 
 Run provider-specific bootstrap actions for a cluster.
 
-**Usage**: `openCenter cluster bootstrap [name] [flags]`
+**Usage**: `opencenter cluster bootstrap [name] [flags]`
 
 **Provider Support**:
 - **OpenStack/AWS/GCP/Azure**: Terraform workflow (init, apply)
@@ -157,7 +157,7 @@ Commands for ongoing cluster operations.
 
 List all configured clusters.
 
-**Usage**: `openCenter cluster list [flags]`
+**Usage**: `opencenter cluster list [flags]`
 
 **Aliases**: `ls`
 
@@ -170,7 +170,7 @@ List all configured clusters.
 
 Select and activate a cluster for operations.
 
-**Usage**: `openCenter cluster select [name] [flags]`
+**Usage**: `opencenter cluster select [name] [flags]`
 
 **Modes**:
 - **Interactive**: Select from list
@@ -193,7 +193,7 @@ Select and activate a cluster for operations.
 
 Show the current active cluster.
 
-**Usage**: `openCenter cluster current [flags]`
+**Usage**: `opencenter cluster current [flags]`
 
 **Flags**:
 - `--quiet` / `-q` - Output just the cluster name
@@ -202,7 +202,7 @@ Show the current active cluster.
 
 Show active cluster status and metadata.
 
-**Usage**: `openCenter cluster status [flags]`
+**Usage**: `opencenter cluster status [flags]`
 
 **Information Displayed**:
 - Active cluster name
@@ -220,7 +220,7 @@ Show active cluster status and metadata.
 
 Show detailed configuration for a cluster.
 
-**Usage**: `openCenter cluster info [name] [flags]`
+**Usage**: `opencenter cluster info [name] [flags]`
 
 **Output Formats**:
 - Human-readable YAML (default)
@@ -243,7 +243,7 @@ Show detailed configuration for a cluster.
 
 Update fields in existing cluster configuration.
 
-**Usage**: `openCenter cluster update [name] [flags]`
+**Usage**: `opencenter cluster update [name] [flags]`
 
 **Behavior**:
 - Uses dot notation for field paths
@@ -253,10 +253,10 @@ Update fields in existing cluster configuration.
 **Examples**:
 ```bash
 # Update IAC fields
-openCenter cluster update --iac.main.master_count=5
+opencenter cluster update --iac.main.master_count=5
 
 # Update with validation
-openCenter cluster update my-cluster --iac.main.worker_count=3 --strict
+opencenter cluster update my-cluster --iac.main.worker_count=3 --strict
 ```
 
 **Flags**:
@@ -270,7 +270,7 @@ Commands for managing cluster services.
 
 Manage cluster services (enable, disable, configure).
 
-**Usage**: `openCenter cluster service <subcommand>`
+**Usage**: `opencenter cluster service <subcommand>`
 
 **Subcommands**:
 - `list` - List available services
@@ -286,7 +286,7 @@ Commands for managing cluster credentials.
 
 Manage cluster credentials and secrets.
 
-**Usage**: `openCenter cluster credentials <subcommand>`
+**Usage**: `opencenter cluster credentials <subcommand>`
 
 **Subcommands**:
 - `export` - Export credentials to environment
@@ -300,7 +300,7 @@ Commands for advanced cluster operations.
 
 Detect configuration drift between declared and actual state.
 
-**Usage**: `openCenter cluster drift [name]`
+**Usage**: `opencenter cluster drift [name]`
 
 **Checks**:
 - GitOps repository changes
@@ -311,7 +311,7 @@ Detect configuration drift between declared and actual state.
 
 Backup cluster configuration and state.
 
-**Usage**: `openCenter cluster backup [name]`
+**Usage**: `opencenter cluster backup [name]`
 
 **Backup Contents**:
 - Cluster configuration file
@@ -323,7 +323,7 @@ Backup cluster configuration and state.
 
 Destroy a cluster and remove all associated resources.
 
-**Usage**: `openCenter cluster destroy <name> [flags]`
+**Usage**: `opencenter cluster destroy <name> [flags]`
 
 **Operations**:
 - Removes GitOps directory
@@ -340,7 +340,7 @@ Destroy a cluster and remove all associated resources.
 
 Export cluster JSON schema with validation rules.
 
-**Usage**: `openCenter cluster schema [flags]`
+**Usage**: `opencenter cluster schema [flags]`
 
 **Flags**:
 - `--out` - Output file path (default stdout)
@@ -355,52 +355,52 @@ Export cluster JSON schema with validation rules.
 
 ```bash
 # 1. Initialize cluster
-openCenter cluster init my-cluster --org myorg
+opencenter cluster init my-cluster --org myorg
 
 # 2. Validate configuration
-openCenter cluster validate my-cluster
+opencenter cluster validate my-cluster
 
 # 3. Run preflight checks
-openCenter cluster preflight my-cluster
+opencenter cluster preflight my-cluster
 
 # 4. Set up GitOps repository
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 
 # 5. Bootstrap cluster
-openCenter cluster bootstrap my-cluster
+opencenter cluster bootstrap my-cluster
 
 # 6. Activate cluster environment
-eval $(openCenter cluster select my-cluster --activate --export-only)
+eval $(opencenter cluster select my-cluster --activate --export-only)
 ```
 
 ### Development Workflow
 
 ```bash
 # Initialize with Kind
-openCenter cluster init dev-cluster --type kind
+opencenter cluster init dev-cluster --type kind
 
 # Iterate on configuration
-openCenter cluster edit dev-cluster
-openCenter cluster render dev-cluster  # Fast template rendering
+opencenter cluster edit dev-cluster
+opencenter cluster render dev-cluster  # Fast template rendering
 
 # Bootstrap local cluster
-openCenter cluster bootstrap dev-cluster --container-runtime=podman
+opencenter cluster bootstrap dev-cluster --container-runtime=podman
 ```
 
 ### Multi-Organization Management
 
 ```bash
 # List all clusters
-openCenter cluster list
+opencenter cluster list
 
 # Select cluster in specific organization
-openCenter cluster select myorg/production-cluster --activate
+opencenter cluster select myorg/production-cluster --activate
 
 # Check current cluster
-openCenter cluster current
+opencenter cluster current
 
 # Show detailed status
-openCenter cluster status --paths
+opencenter cluster status --paths
 ```
 
 ## Global Flags

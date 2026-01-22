@@ -18,7 +18,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rackerlabs/openCenter-cli/internal/util/security"
+	"github.com/rackerlabs/opencenter-cli/internal/util/security"
 )
 
 // SecureTemplateProcessor handles secure template variable processing

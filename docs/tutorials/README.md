@@ -12,21 +12,21 @@
 - [Contributing](#contributing)
 **doc_type: tutorial**
 
-Learn openCenter through hands-on, step-by-step guides. Each tutorial builds confidence by walking you through a complete workflow with a clear outcome.
+Learn opencenter through hands-on, step-by-step guides. Each tutorial builds confidence by walking you through a complete workflow with a clear outcome.
 
 ## Who These Are For
 
-Tutorials are for anyone learning openCenter. You don't need prior experience—just follow along and you'll have a working cluster by the end.
+Tutorials are for anyone learning opencenter. You don't need prior experience—just follow along and you'll have a working cluster by the end.
 
 ## Available Tutorials
 
 ### Getting Started (15 minutes)
 **[Getting Started](getting-started.md)** - Deploy your first Kubernetes cluster
 
-Your first openCenter experience. Initialize a cluster configuration, validate it, and understand the basic workflow. Perfect for evaluating openCenter.
+Your first opencenter experience. Initialize a cluster configuration, validate it, and understand the basic workflow. Perfect for evaluating opencenter.
 
 **You'll learn:**
-- Install openCenter
+- Install opencenter
 - Initialize a cluster configuration
 - Validate configuration
 - Understand the GitOps structure
@@ -57,7 +57,7 @@ Set up a local development environment using Kind. Test configurations and workf
 ### Multi-Cluster Management (30 minutes)
 **[Multi-Cluster Management](multi-cluster.md)** - Manage multiple clusters
 
-Learn to manage multiple Kubernetes clusters across different environments and providers using openCenter's organization structure.
+Learn to manage multiple Kubernetes clusters across different environments and providers using opencenter's organization structure.
 
 **You'll learn:**
 - Organize clusters by environment
@@ -79,7 +79,7 @@ Deploy a production Kubernetes cluster on AWS with proper IAM configuration, VPC
 ### GitOps Workflow (30 minutes)
 **[GitOps Workflow](gitops-workflow.md)** - Master the GitOps workflow
 
-Understand how openCenter generates GitOps repositories and how to work with FluxCD for continuous delivery.
+Understand how opencenter generates GitOps repositories and how to work with FluxCD for continuous delivery.
 
 **You'll learn:**
 - GitOps repository structure
@@ -113,8 +113,8 @@ Specific prerequisites are listed in each tutorial.
 If you get stuck:
 1. Check the [Troubleshooting Guide](../how-to/troubleshooting.md)
 2. Review the [FAQ](../explanation/faq.md)
-3. Search [GitHub Issues](https://github.com/rackerlabs/openCenter-cli/issues)
-4. Ask in [Discussions](https://github.com/rackerlabs/openCenter-cli/discussions)
+3. Search [GitHub Issues](https://github.com/rackerlabs/opencenter-cli/issues)
+4. Ask in [Discussions](https://github.com/rackerlabs/opencenter-cli/discussions)
 
 ## After Tutorials
 

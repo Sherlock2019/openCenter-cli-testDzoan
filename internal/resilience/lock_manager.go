@@ -39,7 +39,7 @@ type LockConfig struct {
 // DefaultLockConfig provides sensible defaults
 var DefaultLockConfig = LockConfig{
 	Backend:        "file",
-	LockDir:        "", // Will be set to ~/.config/openCenter/locks
+	LockDir:        "", // Will be set to ~/.config/opencenter/locks
 	DefaultTTL:     1 * time.Hour,
 	AcquireTimeout: 30 * time.Second,
 }
@@ -88,7 +88,7 @@ func NewLockManager(config LockConfig) (LockManager, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user home directory: %w", err)
 		}
-		config.LockDir = filepath.Join(homeDir, ".config", "openCenter", "locks")
+		config.LockDir = filepath.Join(homeDir, ".config", "opencenter", "locks")
 	}
 
 	// Create the backend

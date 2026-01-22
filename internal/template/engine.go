@@ -33,8 +33,8 @@ import (
 	"time"
 
 	"github.com/Masterminds/sprig/v3"
-	"github.com/rackerlabs/openCenter-cli/internal/util/errors"
-	"github.com/rackerlabs/openCenter-cli/internal/util/metrics"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/metrics"
 )
 
 // TemplateEngine provides a unified interface for template rendering operations.

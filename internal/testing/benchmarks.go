@@ -21,8 +21,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/template"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/template"
 )
 
 // BenchmarkFramework provides utilities for performance testing and regression detection.

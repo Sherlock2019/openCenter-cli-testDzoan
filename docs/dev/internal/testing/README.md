@@ -10,7 +10,7 @@
 - [Examples](#examples)
 - [Performance](#performance)
 - [Contributing](#contributing)
-This package provides a consistent testing environment for openCenter tests, including test data generators, mock implementations, and test utilities.
+This package provides a consistent testing environment for opencenter tests, including test data generators, mock implementations, and test utilities.
 
 ## Overview
 

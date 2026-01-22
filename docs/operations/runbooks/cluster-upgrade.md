@@ -17,7 +17,7 @@
 - [Post-Upgrade Tasks](#post-upgrade-tasks)
 **doc_type: how-to**
 
-Step-by-step procedures for upgrading Kubernetes clusters managed by openCenter, including pre-upgrade validation, upgrade execution, and rollback procedures.
+Step-by-step procedures for upgrading Kubernetes clusters managed by opencenter, including pre-upgrade validation, upgrade execution, and rollback procedures.
 
 ## Who This Is For
 
@@ -25,7 +25,7 @@ Operations teams and SREs responsible for maintaining cluster versions and perfo
 
 ## Prerequisites
 
-- Running openCenter cluster
+- Running opencenter cluster
 - Access to cluster configuration file
 - `kubectl` access with cluster-admin permissions
 - Backup of cluster state (see [Disaster Recovery](../disaster-recovery.md))
@@ -34,7 +34,7 @@ Operations teams and SREs responsible for maintaining cluster versions and perfo
 
 ## Upgrade Overview
 
-openCenter clusters use Kubespray for Kubernetes deployment, which supports in-place upgrades of control plane and worker nodes.
+opencenter clusters use Kubespray for Kubernetes deployment, which supports in-place upgrades of control plane and worker nodes.
 
 **Upgrade Path**:
 1. Pre-upgrade validation and backup
@@ -112,7 +112,7 @@ Create comprehensive backup before upgrade:
 
 ```bash
 # Backup cluster configuration
-openCenter cluster backup create my-cluster --encrypt
+opencenter cluster backup create my-cluster --encrypt
 
 # Backup etcd (if not using automated backups)
 kubectl exec -n kube-system etcd-<control-plane-node> -- etcdctl \
@@ -190,7 +190,7 @@ Update Kubernetes version in cluster configuration:
 
 ```bash
 # Edit cluster configuration
-sops ~/.config/openCenter/clusters/myorg/.my-cluster-config.yaml
+sops ~/.config/opencenter/clusters/myorg/.my-cluster-config.yaml
 
 # Update Kubernetes version
 # Change:
@@ -200,10 +200,10 @@ sops ~/.config/openCenter/clusters/myorg/.my-cluster-config.yaml
 #     version: "1.31.4"
 
 # Validate configuration
-openCenter cluster validate my-cluster
+opencenter cluster validate my-cluster
 
 # Commit changes
-cd ~/.config/openCenter/clusters/myorg/my-cluster
+cd ~/.config/opencenter/clusters/myorg/my-cluster
 git add .
 git commit -m "upgrade: Kubernetes 1.30.5 → 1.31.4"
 git push
@@ -215,10 +215,10 @@ Generate updated Ansible inventory:
 
 ```bash
 # Regenerate cluster manifests
-openCenter cluster setup my-cluster --force
+opencenter cluster setup my-cluster --force
 
 # Review changes
-cd ~/.config/openCenter/clusters/myorg/my-cluster
+cd ~/.config/opencenter/clusters/myorg/my-cluster
 git diff
 
 # Verify Kubespray version compatibility
@@ -241,7 +241,7 @@ kubectl drain <control-plane-node-1> \
   --timeout=300s
 
 # Run Kubespray upgrade for first control plane node
-cd ~/.config/openCenter/clusters/myorg/my-cluster/infrastructure/clusters/my-cluster
+cd ~/.config/opencenter/clusters/myorg/my-cluster/infrastructure/clusters/my-cluster
 ansible-playbook -i inventory/hosts.yaml \
   --limit=<control-plane-node-1> \
   upgrade-cluster.yml
@@ -474,17 +474,17 @@ If upgrade fails validation, rollback to previous version:
 
 ```bash
 # Restore cluster configuration
-openCenter cluster backup restore my-cluster-<timestamp>
+opencenter cluster backup restore my-cluster-<timestamp>
 
 # Revert Kubernetes version in configuration
-sops ~/.config/openCenter/clusters/myorg/.my-cluster-config.yaml
+sops ~/.config/opencenter/clusters/myorg/.my-cluster-config.yaml
 # Change version back to previous version
 
 # Regenerate manifests
-openCenter cluster setup my-cluster --force
+opencenter cluster setup my-cluster --force
 
 # Run Kubespray rollback
-cd ~/.config/openCenter/clusters/myorg/my-cluster/infrastructure/clusters/my-cluster
+cd ~/.config/opencenter/clusters/myorg/my-cluster/infrastructure/clusters/my-cluster
 ansible-playbook -i inventory/hosts.yaml rollback-cluster.yml
 
 # Verify rollback

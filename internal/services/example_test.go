@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rackerlabs/openCenter-cli/internal/services"
+	"github.com/rackerlabs/opencenter-cli/internal/services"
 )
 
 // Example demonstrates the basic usage of the service plugin system

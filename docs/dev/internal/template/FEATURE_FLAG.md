@@ -61,7 +61,7 @@ unset OPENCENTER_USE_NEW_TEMPLATE_ENGINE
 ### Programmatic Check
 
 ```go
-import "github.com/rackerlabs/openCenter-cli/internal/template"
+import "github.com/rackerlabs/opencenter-cli/internal/template"
 
 if template.UseNewTemplateEngine() {
     // New engine is enabled
@@ -191,8 +191,8 @@ export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true
 opencenter cluster init test-org test-cluster openstack
 
 # Compare outputs
-diff -r ~/.config/openCenter/clusters/test-org/test-cluster-legacy \
-        ~/.config/openCenter/clusters/test-org/test-cluster-new
+diff -r ~/.config/opencenter/clusters/test-org/test-cluster-legacy \
+        ~/.config/opencenter/clusters/test-org/test-cluster-new
 ```
 
 ## Monitoring

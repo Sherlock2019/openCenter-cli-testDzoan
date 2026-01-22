@@ -18,11 +18,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/template"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/template"
 )
 
-// TestFramework provides a consistent testing environment for openCenter tests.
+// TestFramework provides a consistent testing environment for opencenter tests.
 // It manages temporary directories, mock implementations, and test data generators.
 type TestFramework struct {
 	// TempDir is the root temporary directory for test artifacts

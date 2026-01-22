@@ -7,8 +7,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config/registry"
-	"github.com/rackerlabs/openCenter-cli/internal/config/services"
+	"github.com/rackerlabs/opencenter-cli/internal/config/registry"
+	"github.com/rackerlabs/opencenter-cli/internal/config/services"
 )
 
 // ServiceMap handles polymorphic unmarshalling of service configurations.

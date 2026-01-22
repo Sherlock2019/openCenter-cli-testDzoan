@@ -11,38 +11,38 @@
 - [Document Status](#document-status)
 **doc_type: explanation**
 
-This section helps you understand how openCenter works and why it's designed the way it is. These documents explain concepts, architecture, and design decisions rather than teaching specific tasks.
+This section helps you understand how opencenter works and why it's designed the way it is. These documents explain concepts, architecture, and design decisions rather than teaching specific tasks.
 
 ## Purpose
 
-Explanation documentation builds mental models. It covers the reasoning behind openCenter's architecture, the trade-offs in its design, and the concepts that tie everything together. Read these when you want to understand the "why" behind the system.
+Explanation documentation builds mental models. It covers the reasoning behind opencenter's architecture, the trade-offs in its design, and the concepts that tie everything together. Read these when you want to understand the "why" behind the system.
 
 ## What You'll Find Here
 
 ### Architecture and Design
 
 **[Architecture Overview](architecture.md)**  
-How openCenter components fit together. Covers the CLI layer, configuration system, provider adapters, GitOps scaffolding, and secrets management. Read this first if you want a complete picture of the system.
+How opencenter components fit together. Covers the CLI layer, configuration system, provider adapters, GitOps scaffolding, and secrets management. Read this first if you want a complete picture of the system.
 
 **[Configuration System](configuration-system.md)**  
-Why openCenter uses a single YAML file as the source of truth. Explains schema validation, path resolution, defaults, and migration between versions.
+Why opencenter uses a single YAML file as the source of truth. Explains schema validation, path resolution, defaults, and migration between versions.
 
 **[Template Engine](template-engine.md)**  
-How openCenter generates GitOps repositories from templates. Covers the Go template system, Sprig functions, embedded resources, and rendering pipeline.
+How opencenter generates GitOps repositories from templates. Covers the Go template system, Sprig functions, embedded resources, and rendering pipeline.
 
 **[Validation Pipeline](validation-pipeline.md)**  
 The multi-layered validation approach: JSON schema, business rules, provider-specific checks, and connectivity tests. Explains why each layer exists and what it catches.
 
 **[Plugin System](plugin-system.md)**  
-How plugins extend openCenter with custom commands and providers. Covers the plugin interface, discovery mechanism, and isolation model.
+How plugins extend opencenter with custom commands and providers. Covers the plugin interface, discovery mechanism, and isolation model.
 
 ### Workflows and Concepts
 
 **[GitOps Workflow](gitops-workflow.md)**  
-What GitOps means in openCenter's context. Explains repository structure, FluxCD/ArgoCD integration, and how configuration changes flow through Git.
+What GitOps means in opencenter's context. Explains repository structure, FluxCD/ArgoCD integration, and how configuration changes flow through Git.
 
 **[Security Model](security-model.md)**  
-How openCenter handles secrets, credentials, and sensitive data. Covers SOPS encryption, Age keys, SSH key generation, and the principle of least privilege.
+How opencenter handles secrets, credentials, and sensitive data. Covers SOPS encryption, Age keys, SSH key generation, and the principle of least privilege.
 
 **[Provider Comparison](provider-comparison.md)**  
 When to use OpenStack, AWS, Kind, Talos, or Kubespray. Compares provisioning approaches, maturity levels, and operational characteristics.
@@ -50,20 +50,20 @@ When to use OpenStack, AWS, Kind, Talos, or Kubespray. Compares provisioning app
 ### Reference and Planning
 
 **[FAQ](faq.md)**  
-Common questions about openCenter's design, capabilities, and limitations. Organized by topic: configuration, providers, secrets, GitOps, and troubleshooting.
+Common questions about opencenter's design, capabilities, and limitations. Organized by topic: configuration, providers, secrets, GitOps, and troubleshooting.
 
 **[Known Issues](known-issues.md)**  
 Current limitations and workarounds. Includes provider-specific constraints, planned improvements, and migration paths.
 
 **[Design Decisions](design-decisions.md)**  
-Architecture Decision Records (ADRs) documenting key choices. Explains why openCenter uses Cobra, embeds templates, requires organization directories, and other structural decisions.
+Architecture Decision Records (ADRs) documenting key choices. Explains why opencenter uses Cobra, embeds templates, requires organization directories, and other structural decisions.
 
 **[Roadmap](roadmap.md)**  
 Planned features and improvements. Covers upcoming providers, configuration enhancements, and operational tooling.
 
 ## How to Use This Section
 
-### If You're New to openCenter
+### If You're New to opencenter
 
 Start with [Architecture Overview](architecture.md) to understand the big picture, then read [GitOps Workflow](gitops-workflow.md) and [Security Model](security-model.md) to grasp the core concepts.
 
@@ -82,7 +82,7 @@ Check [Security Model](security-model.md) for compliance considerations, [Known 
 ## Related Documentation
 
 ### Learn by Doing
-See [Tutorials](../tutorials/README.md) for hands-on walkthroughs that build confidence with openCenter.
+See [Tutorials](../tutorials/README.md) for hands-on walkthroughs that build confidence with opencenter.
 
 ### Solve Specific Problems
 See [How-To Guides](../how-to/README.md) for task-focused instructions on common operations.
@@ -100,7 +100,7 @@ See [Operations](../operations/README.md) for disaster recovery, monitoring, and
 
 Explanation documents should:
 - Focus on concepts and reasoning, not step-by-step instructions
-- Explain trade-offs and alternatives, not just what openCenter does
+- Explain trade-offs and alternatives, not just what opencenter does
 - Address common misconceptions and clarify confusing aspects
 - Link to related tutorials, how-tos, and reference docs
 - Avoid prescriptive language ("you should", "you must")
@@ -129,4 +129,4 @@ See the [Contributing Guide](../dev/contributing.md) for documentation standards
 ---
 
 **Last Updated**: January 19, 2026  
-**openCenter Version**: 1.0.0
+**opencenter Version**: 1.0.0

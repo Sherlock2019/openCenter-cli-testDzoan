@@ -43,7 +43,7 @@ type SyslogShipper struct {
 // network can be "tcp", "udp", or "" for local syslog
 // address is the syslog server address (e.g., "localhost:514")
 func NewSyslogShipper(network, address string) (*SyslogShipper, error) {
-	writer, err := syslog.Dial(network, address, syslog.LOG_INFO|syslog.LOG_USER, "openCenter")
+	writer, err := syslog.Dial(network, address, syslog.LOG_INFO|syslog.LOG_USER, "opencenter")
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to syslog: %w", err)
 	}
@@ -118,7 +118,7 @@ func (l *LokiShipper) Ship(entry LogEntry) error {
 	// Convert log entry to Loki format
 	labels := map[string]string{
 		"level": entry.Level,
-		"app":   "openCenter",
+		"app":   "opencenter",
 	}
 
 	// Add correlation ID as label if present

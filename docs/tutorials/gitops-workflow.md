@@ -1,4 +1,4 @@
-# GitOps Workflow with openCenter
+# GitOps Workflow with opencenter
 
 
 ## Table of Contents
@@ -21,12 +21,12 @@
 - [Related Documentation](#related-documentation)
 **doc_type: tutorial**
 
-Learn GitOps principles by managing a Kubernetes cluster through Git. You'll make configuration changes, deploy applications, and understand how openCenter implements GitOps workflows in 45 minutes.
+Learn GitOps principles by managing a Kubernetes cluster through Git. You'll make configuration changes, deploy applications, and understand how opencenter implements GitOps workflows in 45 minutes.
 
 ## What You'll Learn
 
 By the end of this tutorial, you'll understand:
-- GitOps principles and how openCenter implements them
+- GitOps principles and how opencenter implements them
 - How to make configuration changes through Git
 - Application deployment via GitOps
 - How to manage secrets securely in Git
@@ -36,7 +36,7 @@ By the end of this tutorial, you'll understand:
 ## Prerequisites
 
 Before starting, you need:
-- **openCenter installed** (see [Getting Started](getting-started.md))
+- **opencenter installed** (see [Getting Started](getting-started.md))
 - **A running cluster** (use [Kind Local Development](kind-local-dev.md) for practice)
 - **Git** installed and configured
 - **kubectl** installed
@@ -48,11 +48,11 @@ Before starting, you need:
 Check you have a working cluster:
 
 ```bash
-# Build openCenter
+# Build opencenter
 mise run build
 
 # Check active cluster
-./bin/openCenter cluster status
+./bin/opencenter cluster status
 
 # Verify kubectl access
 kubectl get nodes
@@ -61,21 +61,21 @@ kubectl get nodes
 If you don't have a cluster, create one with Kind:
 
 ```bash
-./bin/openCenter cluster init gitops-demo --type kind
-./bin/openCenter cluster setup gitops-demo
-./bin/openCenter cluster bootstrap gitops-demo
+./bin/opencenter cluster init gitops-demo --type kind
+./bin/opencenter cluster setup gitops-demo
+./bin/opencenter cluster bootstrap gitops-demo
 ```
 
 
 ## Step 1: Understand the GitOps Repository Structure
 
-openCenter generates a GitOps repository with a specific structure. Let's explore it.
+opencenter generates a GitOps repository with a specific structure. Let's explore it.
 
 ### Navigate to Your GitOps Repository
 
 ```bash
 # Get the GitOps directory path
-GITOPS_DIR=$(./bin/openCenter cluster status --paths | grep "GitOps directory" | awk '{print $3}')
+GITOPS_DIR=$(./bin/opencenter cluster status --paths | grep "GitOps directory" | awk '{print $3}')
 cd $GITOPS_DIR
 ```
 
@@ -131,10 +131,10 @@ Let's change the Kubernetes version through Git.
 
 ```bash
 # Get cluster name
-CLUSTER_NAME=$(./bin/openCenter cluster status --quiet)
+CLUSTER_NAME=$(./bin/opencenter cluster status --quiet)
 
 # View current Kubernetes version
-./bin/openCenter cluster validate $CLUSTER_NAME | grep "kubernetes.version"
+./bin/opencenter cluster validate $CLUSTER_NAME | grep "kubernetes.version"
 ```
 
 ### Update Configuration File
@@ -143,7 +143,7 @@ Edit the cluster configuration:
 
 ```bash
 # Get config file path
-CONFIG_FILE=~/.config/openCenter/clusters/opencenter/.${CLUSTER_NAME}-config.yaml
+CONFIG_FILE=~/.config/opencenter/clusters/opencenter/.${CLUSTER_NAME}-config.yaml
 
 # Edit the file
 vim $CONFIG_FILE
@@ -161,7 +161,7 @@ opencenter:
 ### Validate the Change
 
 ```bash
-./bin/openCenter cluster validate $CLUSTER_NAME
+./bin/opencenter cluster validate $CLUSTER_NAME
 ```
 
 You should see:
@@ -173,7 +173,7 @@ Validation successful.
 ### Regenerate GitOps Manifests
 
 ```bash
-./bin/openCenter cluster setup $CLUSTER_NAME --force
+./bin/opencenter cluster setup $CLUSTER_NAME --force
 ```
 
 This regenerates all manifests with the new configuration.
@@ -334,7 +334,7 @@ EOF
 Get your SOPS Age key path:
 
 ```bash
-SOPS_KEY=$(./bin/openCenter cluster status --paths | grep "SOPS key" | awk '{print $3}')
+SOPS_KEY=$(./bin/opencenter cluster status --paths | grep "SOPS key" | awk '{print $3}')
 echo $SOPS_KEY
 ```
 
@@ -413,14 +413,14 @@ kubectl get secret hello-world-secret -o jsonpath='{.data.database-password}' | 
 
 ## Step 5: Enable a Service Through Configuration
 
-Let's enable cert-manager through the openCenter configuration.
+Let's enable cert-manager through the opencenter configuration.
 
 ### Update Cluster Configuration
 
 Edit your cluster configuration:
 
 ```bash
-CONFIG_FILE=~/.config/openCenter/clusters/opencenter/.${CLUSTER_NAME}-config.yaml
+CONFIG_FILE=~/.config/opencenter/clusters/opencenter/.${CLUSTER_NAME}-config.yaml
 vim $CONFIG_FILE
 ```
 
@@ -437,8 +437,8 @@ opencenter:
 ### Validate and Regenerate
 
 ```bash
-./bin/openCenter cluster validate $CLUSTER_NAME
-./bin/openCenter cluster setup $CLUSTER_NAME --force
+./bin/opencenter cluster validate $CLUSTER_NAME
+./bin/opencenter cluster setup $CLUSTER_NAME --force
 ```
 
 ### Review Generated Manifests
@@ -555,7 +555,7 @@ Let's set up a staging environment to demonstrate multi-environment GitOps.
 ### Create Staging Cluster Configuration
 
 ```bash
-./bin/openCenter cluster init gitops-staging \
+./bin/opencenter cluster init gitops-staging \
   --opencenter.meta.env=staging \
   --opencenter.meta.region=local \
   --type kind
@@ -564,15 +564,15 @@ Let's set up a staging environment to demonstrate multi-environment GitOps.
 ### Setup Staging Cluster
 
 ```bash
-./bin/openCenter cluster setup gitops-staging
-./bin/openCenter cluster bootstrap gitops-staging
+./bin/opencenter cluster setup gitops-staging
+./bin/opencenter cluster bootstrap gitops-staging
 ```
 
 ### Explore Multi-Cluster Structure
 
 ```bash
 # Get staging GitOps directory
-STAGING_GITOPS=$(./bin/openCenter cluster status gitops-staging --paths | grep "GitOps directory" | awk '{print $3}')
+STAGING_GITOPS=$(./bin/opencenter cluster status gitops-staging --paths | grep "GitOps directory" | awk '{print $3}')
 
 # Compare structures
 tree -L 3 $GITOPS_DIR
@@ -721,7 +721,7 @@ Within 5 minutes, Flux will detect the change and apply it automatically.
 
 You now understand:
 
-1. **GitOps Repository Structure**: How openCenter organizes manifests
+1. **GitOps Repository Structure**: How opencenter organizes manifests
 2. **Configuration Changes**: Making changes through the configuration file
 3. **Application Deployment**: Deploying apps via Git
 4. **Secrets Management**: Using SOPS to encrypt secrets safely
@@ -939,7 +939,7 @@ git rebase --continue
 echo $SOPS_AGE_KEY_FILE
 
 # Set the correct key
-export SOPS_AGE_KEY_FILE=~/.config/openCenter/clusters/opencenter/secrets/age/keys/$CLUSTER_NAME-key.txt
+export SOPS_AGE_KEY_FILE=~/.config/opencenter/clusters/opencenter/secrets/age/keys/$CLUSTER_NAME-key.txt
 
 # Test decryption
 sops -d secret.yaml
@@ -1063,7 +1063,7 @@ Document your GitOps setup:
 
 ## Related Documentation
 
-- [Getting Started](getting-started.md) - Basic openCenter concepts
+- [Getting Started](getting-started.md) - Basic opencenter concepts
 - [OpenStack Deployment](openstack-deployment.md) - Deploy on OpenStack
 - [AWS Deployment](aws-deployment.md) - Deploy on AWS
 - [GitOps Workflow Explanation](../explanation/gitops-workflow.md) - Deep dive into GitOps concepts

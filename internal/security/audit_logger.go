@@ -678,7 +678,7 @@ func GetDefaultAuditLogPath() string {
 		return "/tmp/opencenter-audit.log"
 	}
 
-	return filepath.Join(homeDir, ".config", "openCenter", "audit", "audit.log")
+	return filepath.Join(homeDir, ".config", "opencenter", "audit", "audit.log")
 }
 
 // NewDefaultAuditLogger creates an audit logger with default settings

@@ -1518,7 +1518,7 @@ func (cv *ConfigValidator) validateDirectoryPath(path string) error {
 	}
 
 	// Check if directory is writable
-	testFile := filepath.Join(path, ".openCenter_write_test")
+	testFile := filepath.Join(path, ".opencenter_write_test")
 	if file, err := os.Create(testFile); err != nil {
 		return fmt.Errorf("directory is not writable: %w", err)
 	} else {
@@ -1561,7 +1561,7 @@ func (cv *ConfigValidator) checkDiskSpace(path string) error {
 	}
 
 	// For now, just check if we can write a small test file
-	testFile := filepath.Join(path, ".openCenter_space_test")
+	testFile := filepath.Join(path, ".opencenter_space_test")
 	if file, err := os.Create(testFile); err != nil {
 		return fmt.Errorf("insufficient disk space or permissions: %w", err)
 	} else {

@@ -25,9 +25,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/resilience"
-	"github.com/rackerlabs/openCenter-cli/internal/security"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/resilience"
+	"github.com/rackerlabs/opencenter-cli/internal/security"
 	"github.com/spf13/cobra"
 )
 
@@ -93,7 +93,7 @@ func newClusterBootstrapCmd() *cobra.Command {
 				"command":   "cluster bootstrap",
 			})
 			if err != nil {
-				return fmt.Errorf("failed to acquire lock for cluster %q: %w\nAnother operation may be in progress. Wait for it to complete or use 'openCenter cluster info %s' to check lock status", name, err, name)
+				return fmt.Errorf("failed to acquire lock for cluster %q: %w\nAnother operation may be in progress. Wait for it to complete or use 'opencenter cluster info %s' to check lock status", name, err, name)
 			}
 			defer lockMgr.Release(lock)
 
@@ -361,7 +361,7 @@ func newBootstrapRunner(cmd *cobra.Command, clusterName, clusterDir, logPath str
 		if err != nil {
 			return nil, fmt.Errorf("failed to open log file: %w", err)
 		}
-		header := fmt.Sprintf(`# openCenter bootstrap log
+		header := fmt.Sprintf(`# opencenter bootstrap log
 # time: %s
 # cluster: %s
 # dir: %s

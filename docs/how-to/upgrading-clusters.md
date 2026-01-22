@@ -130,12 +130,12 @@ Edit your cluster configuration file to change the Kubernetes version.
 Find your cluster configuration:
 
 ```bash
-openCenter cluster list
+opencenter cluster list
 ```
 
 The configuration file is typically at:
 ```
-~/.config/openCenter/clusters/<organization>/.cluster-name-config.yaml
+~/.config/opencenter/clusters/<organization>/.cluster-name-config.yaml
 ```
 
 ### Edit Kubernetes Version
@@ -174,7 +174,7 @@ opencenter:
 Run validation before regenerating the repository:
 
 ```bash
-openCenter cluster validate cluster-name
+opencenter cluster validate cluster-name
 ```
 
 Fix any validation errors before proceeding. Common issues:
@@ -190,7 +190,7 @@ Generate updated manifests from the new configuration.
 ### Render Command
 
 ```bash
-openCenter cluster render cluster-name
+opencenter cluster render cluster-name
 ```
 
 This updates the GitOps repository with new manifests reflecting the version change. The command:

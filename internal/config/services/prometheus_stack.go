@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/rackerlabs/openCenter-cli/internal/config/registry"
+	"github.com/rackerlabs/opencenter-cli/internal/config/registry"
 )
 
 // PrometheusStackConfig extends BaseConfig with Prometheus stack configuration

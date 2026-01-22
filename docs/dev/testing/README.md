@@ -22,15 +22,15 @@ doc_type: how-to
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
 - [See Also](#see-also)
-This guide covers testing strategies, frameworks, and best practices for openCenter.
+This guide covers testing strategies, frameworks, and best practices for opencenter.
 
 ## Who this is for
 
-Developers writing tests for openCenter, whether unit tests, BDD tests, property-based tests, or integration tests.
+Developers writing tests for opencenter, whether unit tests, BDD tests, property-based tests, or integration tests.
 
 ## Testing Philosophy
 
-openCenter uses multiple testing strategies to ensure reliability:
+opencenter uses multiple testing strategies to ensure reliability:
 
 1. **Unit Tests**: Test individual functions and components in isolation
 2. **Property-Based Tests**: Test properties that should hold for all inputs
@@ -44,7 +44,7 @@ Each testing strategy serves a different purpose and catches different types of 
 ### Directory Structure
 
 ```
-openCenter-cli/
+opencenter-cli/
 ├── internal/
 │   ├── config/
 │   │   ├── config.go
@@ -223,7 +223,7 @@ func TestReverseProperty(t *testing.T) {
 
 ### Writing Property-Based Tests
 
-openCenter uses [gopter](https://github.com/leanovate/gopter) for property-based testing:
+opencenter uses [gopter](https://github.com/leanovate/gopter) for property-based testing:
 
 ```go
 func TestConfigMigrationProperty(t *testing.T) {
@@ -252,7 +252,7 @@ func TestConfigMigrationProperty(t *testing.T) {
 
 ### Test Data Generators
 
-openCenter provides test data generators in `internal/testing/generators.go`:
+opencenter provides test data generators in `internal/testing/generators.go`:
 
 ```go
 // Generate random valid configuration
@@ -302,15 +302,15 @@ Feature: Cluster Initialization
   so that I can start defining my cluster layout.
 
   Scenario: Initialize cluster with default settings
-    When I run "openCenter cluster init test-cluster"
+    When I run "opencenter cluster init test-cluster"
     Then a cluster configuration "test-cluster" should exist
     And the cluster configuration "test-cluster" should have "opencenter.cluster.cluster_name" set to "test-cluster"
 
   Scenario: Initialize cluster with custom organization
-    When I run "openCenter cluster init my-cluster --opencenter.meta.organization=my-org"
+    When I run "opencenter cluster init my-cluster --opencenter.meta.organization=my-org"
     Then a cluster configuration "my-cluster" should exist
     And the cluster configuration "my-cluster" should have "opencenter.meta.organization" set to "my-org"
-    And a directory "~/.config/openCenter/clusters/my-org" should exist
+    And a directory "~/.config/opencenter/clusters/my-org" should exist
 ```
 
 ### Step Definitions
@@ -420,7 +420,7 @@ func TestGitOpsGenerationIntegration(t *testing.T) {
 
 ### Test Framework
 
-openCenter provides a test framework in `internal/testing/framework.go`:
+opencenter provides a test framework in `internal/testing/framework.go`:
 
 ```go
 // Create test framework
@@ -512,7 +512,7 @@ func TestSchemaGeneration(t *testing.T) {
 
 ### Mock Implementations
 
-openCenter provides mock implementations in `internal/testing/mocks.go`:
+opencenter provides mock implementations in `internal/testing/mocks.go`:
 
 ```go
 // Use mock template engine

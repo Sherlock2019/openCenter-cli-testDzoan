@@ -17,7 +17,7 @@
 - [Node Replacement Checklist](#node-replacement-checklist)
 **doc_type: how-to**
 
-Step-by-step procedures for replacing failed or degraded nodes in openCenter-managed Kubernetes clusters, including both control plane and worker nodes.
+Step-by-step procedures for replacing failed or degraded nodes in opencenter-managed Kubernetes clusters, including both control plane and worker nodes.
 
 ## Who This Is For
 
@@ -25,7 +25,7 @@ Operations teams and SREs responsible for cluster maintenance and node lifecycle
 
 ## Prerequisites
 
-- Running openCenter cluster
+- Running opencenter cluster
 - Access to cluster configuration and cloud provider credentials
 - `kubectl` access with cluster-admin permissions
 - SSH access to cluster nodes
@@ -226,11 +226,11 @@ Create new worker node:
 
 ```bash
 # Regenerate cluster manifests
-openCenter cluster setup my-cluster --force
+opencenter cluster setup my-cluster --force
 
 # Apply infrastructure changes
-cd ~/.config/openCenter/clusters/myorg/my-cluster
-openCenter cluster apply my-cluster
+cd ~/.config/opencenter/clusters/myorg/my-cluster
+opencenter cluster apply my-cluster
 
 # Monitor node provisioning
 # OpenStack:
@@ -409,10 +409,10 @@ opencenter:
       master_count: 3  # Keep same count
 
 # Regenerate manifests
-openCenter cluster setup my-cluster --force
+opencenter cluster setup my-cluster --force
 
 # Apply infrastructure changes
-openCenter cluster apply my-cluster
+opencenter cluster apply my-cluster
 
 # Monitor provisioning
 # OpenStack:
@@ -552,7 +552,7 @@ sudo cat /var/lib/kubelet/config.yaml
 sudo cat /etc/kubernetes/bootstrap-kubelet.conf
 
 # Re-run Kubespray join playbook
-cd ~/.config/openCenter/clusters/myorg/my-cluster/infrastructure/clusters/my-cluster
+cd ~/.config/opencenter/clusters/myorg/my-cluster/infrastructure/clusters/my-cluster
 ansible-playbook -i inventory/hosts.yaml \
   --limit=<new-node-name> \
   cluster.yml
@@ -595,7 +595,7 @@ kubectl exec -n kube-system etcd-<healthy-control-plane> -- etcdctl \
   member remove <member-id>
 
 # Re-run Kubespray to rejoin
-cd ~/.config/openCenter/clusters/myorg/my-cluster/infrastructure/clusters/my-cluster
+cd ~/.config/opencenter/clusters/myorg/my-cluster/infrastructure/clusters/my-cluster
 ansible-playbook -i inventory/hosts.yaml \
   --limit=<new-control-plane> \
   cluster.yml

@@ -18,8 +18,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/ui"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/ui"
 )
 
 func TestSetupContainer(t *testing.T) {

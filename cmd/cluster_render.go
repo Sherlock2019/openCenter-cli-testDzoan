@@ -17,9 +17,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/gitops"
-	"github.com/rackerlabs/openCenter-cli/internal/tofu"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/gitops"
+	"github.com/rackerlabs/opencenter-cli/internal/tofu"
 	"github.com/spf13/cobra"
 )
 

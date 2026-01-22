@@ -1,10 +1,10 @@
 # Template Package
 
-The `internal/template` package provides a comprehensive template rendering system for the openCenter CLI, supporting both legacy compatibility and a new enhanced template engine with advanced features.
+The `internal/template` package provides a comprehensive template rendering system for the opencenter CLI, supporting both legacy compatibility and a new enhanced template engine with advanced features.
 
 ## Overview
 
-This package manages all template rendering operations in openCenter, including:
+This package manages all template rendering operations in opencenter, including:
 - GitOps repository generation
 - Kubernetes manifest templating
 - Configuration file generation
@@ -59,7 +59,7 @@ See [FEATURE_FLAG.md](./FEATURE_FLAG.md) for detailed documentation.
 ### Basic Template Rendering
 
 ```go
-import "github.com/rackerlabs/openCenter-cli/internal/template"
+import "github.com/rackerlabs/opencenter-cli/internal/template"
 
 // Using legacy compatibility layer (respects feature flag)
 err := template.RenderTemplateToFile(fsys, "template.yaml", outputPath, data)

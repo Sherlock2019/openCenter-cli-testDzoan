@@ -18,8 +18,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/security"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/security"
 	"github.com/spf13/cobra"
 )
 
@@ -46,13 +46,13 @@ falling back to 'vi' if neither is set.
 
 Examples:
   # Edit the currently selected cluster
-  openCenter cluster edit
+  opencenter cluster edit
 
   # Edit a specific cluster
-  openCenter cluster edit my-cluster
+  opencenter cluster edit my-cluster
 
   # Edit a cluster in a specific organization
-  openCenter cluster edit myorg/my-cluster`,
+  opencenter cluster edit myorg/my-cluster`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Initialize security components
@@ -83,7 +83,7 @@ Examples:
 					return fmt.Errorf("failed to get active cluster: %w", err)
 				}
 				if active == "" {
-					return fmt.Errorf("no cluster selected. Use 'openCenter cluster select' to select a cluster or provide a cluster name")
+					return fmt.Errorf("no cluster selected. Use 'opencenter cluster select' to select a cluster or provide a cluster name")
 				}
 				clusterName = active
 
@@ -103,7 +103,7 @@ Examples:
 
 			// Check if the configuration file exists
 			if _, err := os.Stat(configPath); os.IsNotExist(err) {
-				return fmt.Errorf("cluster configuration file '%s' not found. Use 'openCenter cluster list' to see available clusters", clusterName)
+				return fmt.Errorf("cluster configuration file '%s' not found. Use 'opencenter cluster list' to see available clusters", clusterName)
 			}
 
 			// Determine the editor to use

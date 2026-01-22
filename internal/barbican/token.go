@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	serviceName = "openCenter-cli"
+	serviceName = "opencenter-cli"
 )
 
 func getUser() string {
@@ -39,7 +39,7 @@ func getTokenCachePath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".config", "openCenter", "barbican", "token"), nil
+	return filepath.Join(home, ".config", "opencenter", "barbican", "token"), nil
 }
 
 func StoreToken(token string) error {

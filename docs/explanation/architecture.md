@@ -17,11 +17,11 @@
 
 ## Overview
 
-openCenter transforms a single declarative YAML configuration into a production-ready GitOps repository. This document explains the architectural decisions, design patterns, and trade-offs that shape how openCenter works.
+opencenter transforms a single declarative YAML configuration into a production-ready GitOps repository. This document explains the architectural decisions, design patterns, and trade-offs that shape how opencenter works.
 
 ## The Core Concept
 
-At its heart, openCenter solves a fundamental problem: **how do you make Kubernetes cluster deployment both simple and production-ready?** The answer lies in a carefully orchestrated transformation pipeline that takes human-friendly configuration and generates battle-tested infrastructure code.
+At its heart, opencenter solves a fundamental problem: **how do you make Kubernetes cluster deployment both simple and production-ready?** The answer lies in a carefully orchestrated transformation pipeline that takes human-friendly configuration and generates battle-tested infrastructure code.
 
 ```
 User YAML → Validation → Template Rendering → GitOps Repository → Infrastructure
@@ -33,7 +33,7 @@ This isn't just a code generator—it's an opinionated framework that embeds yea
 
 ### The Decision
 
-openCenter uses a single configuration file as the source of truth for an entire cluster. This might seem limiting compared to systems that allow multiple configuration files or dynamic composition, but it's a deliberate choice.
+opencenter uses a single configuration file as the source of truth for an entire cluster. This might seem limiting compared to systems that allow multiple configuration files or dynamic composition, but it's a deliberate choice.
 
 ### The Rationale
 
@@ -45,11 +45,11 @@ openCenter uses a single configuration file as the source of truth for an entire
 
 ### The Trade-off
 
-You lose some flexibility. You can't easily compose configurations from multiple sources or share common settings across clusters through file inclusion. But you gain predictability and operational simplicity—a trade-off openCenter makes deliberately in favor of production reliability.
+You lose some flexibility. You can't easily compose configurations from multiple sources or share common settings across clusters through file inclusion. But you gain predictability and operational simplicity—a trade-off opencenter makes deliberately in favor of production reliability.
 
 ## Architecture Layers
 
-openCenter is structured in distinct layers, each with clear responsibilities and boundaries.
+opencenter is structured in distinct layers, each with clear responsibilities and boundaries.
 
 ### Layer 1: CLI Interface (cmd/)
 
@@ -92,7 +92,7 @@ openCenter is structured in distinct layers, each with clear responsibilities an
 │  ┌──────────────────────────────────────┐       │
 │  │      PathResolver                     │       │
 │  │  Organization-based directory layout  │       │
-│  │  ~/.config/openCenter/clusters/       │       │
+│  │  ~/.config/opencenter/clusters/       │       │
 │  │    └── <org>/                         │       │
 │  │        ├── infrastructure/             │       │
 │  │        ├── applications/               │       │
@@ -300,7 +300,7 @@ Let's trace a cluster creation through the system:
 ### Step 1: User Creates Configuration
 
 ```bash
-openCenter cluster init my-cluster
+opencenter cluster init my-cluster
 ```
 
 The CLI generates a default configuration with sensible values. The user edits this YAML file to specify their requirements.
@@ -308,7 +308,7 @@ The CLI generates a default configuration with sensible values. The user edits t
 ### Step 2: Validation Pipeline
 
 ```bash
-openCenter cluster validate my-cluster
+opencenter cluster validate my-cluster
 ```
 
 The configuration flows through the validation pipeline:
@@ -324,7 +324,7 @@ If validation fails, the user gets structured errors with suggestions. If it pas
 ### Step 3: GitOps Repository Generation
 
 ```bash
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 ```
 
 The GitOps generator:
@@ -341,7 +341,7 @@ The result is a complete GitOps repository ready for `git push`.
 ### Step 4: Infrastructure Provisioning
 
 ```bash
-openCenter cluster bootstrap my-cluster
+opencenter cluster bootstrap my-cluster
 ```
 
 The bootstrap process:
@@ -381,7 +381,7 @@ Each step is idempotent—you can re-run bootstrap safely if it fails partway th
 **Decision**: Clusters are organized by organization in the filesystem.
 
 ```
-~/.config/openCenter/clusters/
+~/.config/opencenter/clusters/
 ├── acme-corp/
 │   ├── prod-cluster/
 │   ├── staging-cluster/
@@ -442,15 +442,15 @@ Each step is idempotent—you can re-run bootstrap safely if it fails partway th
 
 ### Flexibility vs. Simplicity
 
-**Trade-off**: openCenter is opinionated. It makes decisions for you (directory structure, validation rules, template organization).
+**Trade-off**: opencenter is opinionated. It makes decisions for you (directory structure, validation rules, template organization).
 
 **Why**: Flexibility creates complexity. Every decision point is a place for errors. By making good default decisions, we reduce cognitive load and operational risk.
 
-**Limitation**: If you need something very different from openCenter's opinions, you might need to fork or use a different tool.
+**Limitation**: If you need something very different from opencenter's opinions, you might need to fork or use a different tool.
 
 ### Validation Strictness vs. Ease of Use
 
-**Trade-off**: openCenter validates aggressively. Some configurations that "might work" are rejected.
+**Trade-off**: opencenter validates aggressively. Some configurations that "might work" are rejected.
 
 **Why**: Production systems need reliability. It's better to reject a questionable configuration than to deploy something that fails at 2 AM.
 
@@ -541,8 +541,8 @@ Here's how the major components work together:
 
 ## Conclusion
 
-openCenter's architecture reflects a core philosophy: **production reliability through opinionated simplicity**. Every design decision—from embedded templates to atomic operations to staged validation—prioritizes operational safety over flexibility.
+opencenter's architecture reflects a core philosophy: **production reliability through opinionated simplicity**. Every design decision—from embedded templates to atomic operations to staged validation—prioritizes operational safety over flexibility.
 
-This isn't the right architecture for every use case. If you need maximum flexibility or want to support every possible configuration, you'll find openCenter constraining. But if you want a tool that makes good decisions for you and prevents entire classes of operational errors, this architecture delivers.
+This isn't the right architecture for every use case. If you need maximum flexibility or want to support every possible configuration, you'll find opencenter constraining. But if you want a tool that makes good decisions for you and prevents entire classes of operational errors, this architecture delivers.
 
 The key insight is that **constraints enable reliability**. By limiting what you can do, we ensure that what you do works. And in production systems, that's what matters most.

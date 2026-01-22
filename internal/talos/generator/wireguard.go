@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/rackerlabs/openCenter-cli/internal/talos"
+	"github.com/rackerlabs/opencenter-cli/internal/talos"
 	"golang.org/x/crypto/curve25519"
 )
 

@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rackerlabs/openCenter-cli/internal/util/files"
+	"github.com/rackerlabs/opencenter-cli/internal/util/files"
 )
 
 // DefaultKeyManager implements KeyManager interface

@@ -41,7 +41,7 @@ By the end of this tutorial, you'll have:
 Before starting, you need:
 - **AWS account** with administrative access
 - **AWS CLI** installed and configured (`aws configure`)
-- **openCenter installed** (see [Getting Started](getting-started.md))
+- **opencenter installed** (see [Getting Started](getting-started.md))
 - **Terraform or OpenTofu** installed (v1.6+)
 - **Git** installed and configured
 - **60 minutes** of time
@@ -139,7 +139,7 @@ Record the **AMI ID** (e.g., `ami-0abcdef1234567890`).
 Create your cluster configuration with AWS-specific settings:
 
 ```bash
-openCenter cluster init prod-aws-k8s \
+opencenter cluster init prod-aws-k8s \
   --opencenter.meta.env=production \
   --opencenter.meta.region=us-east-1 \
   --opencenter.infrastructure.provider=aws \
@@ -156,15 +156,15 @@ Replace these values with your AWS details:
 You'll see output like:
 
 ```
-Generated ed25519 SSH key pair at ~/.config/openCenter/clusters/opencenter/secrets/ssh/prod-aws-k8s-production-us-east-1
-Created cluster configuration in organization 'opencenter' at '~/.config/openCenter/clusters/opencenter/infrastructure/clusters/prod-aws-k8s'
+Generated ed25519 SSH key pair at ~/.config/opencenter/clusters/opencenter/secrets/ssh/prod-aws-k8s-production-us-east-1
+Created cluster configuration in organization 'opencenter' at '~/.config/opencenter/clusters/opencenter/infrastructure/clusters/prod-aws-k8s'
 GitOps repository root: /home/user/gitops/prod-aws-k8s
-SOPS key location: ~/.config/openCenter/clusters/opencenter/secrets/age/keys/prod-aws-k8s-key.txt
+SOPS key location: ~/.config/opencenter/clusters/opencenter/secrets/age/keys/prod-aws-k8s-key.txt
 ```
 
 The configuration file is at:
 ```
-~/.config/openCenter/clusters/opencenter/.prod-aws-k8s-config.yaml
+~/.config/opencenter/clusters/opencenter/.prod-aws-k8s-config.yaml
 ```
 
 ## Step 3: Configure AWS Credentials
@@ -173,7 +173,7 @@ Edit your cluster configuration to add AWS credentials:
 
 ```bash
 # Open the configuration file
-vim ~/.config/openCenter/clusters/opencenter/.prod-aws-k8s-config.yaml
+vim ~/.config/opencenter/clusters/opencenter/.prod-aws-k8s-config.yaml
 ```
 
 Add your AWS credentials:
@@ -264,13 +264,13 @@ Configure SOPS to encrypt secrets in your GitOps repository:
 
 ```yaml
 secrets:
-  sops_age_key_file: "/home/user/.config/openCenter/clusters/opencenter/secrets/age/keys/prod-aws-k8s-key.txt"
+  sops_age_key_file: "/home/user/.config/opencenter/clusters/opencenter/secrets/age/keys/prod-aws-k8s-key.txt"
 ```
 
 Verify the key exists:
 
 ```bash
-cat ~/.config/openCenter/clusters/opencenter/secrets/age/keys/prod-aws-k8s-key.txt
+cat ~/.config/opencenter/clusters/opencenter/secrets/age/keys/prod-aws-k8s-key.txt
 ```
 
 You should see an Age key starting with `AGE-SECRET-KEY-`.
@@ -284,7 +284,7 @@ Before committing to Git, encrypt the configuration file:
 mise install sops
 
 # Encrypt the configuration file
-sops -e -i ~/.config/openCenter/clusters/opencenter/.prod-aws-k8s-config.yaml
+sops -e -i ~/.config/opencenter/clusters/opencenter/.prod-aws-k8s-config.yaml
 ```
 
 The file will now contain encrypted values for sensitive fields like AWS credentials.
@@ -349,7 +349,7 @@ Check that your configuration is valid before deployment:
 
 ```bash
 mise run build
-./bin/openCenter cluster validate prod-aws-k8s
+./bin/opencenter cluster validate prod-aws-k8s
 ```
 
 You should see:
@@ -381,7 +381,7 @@ If validation fails, read the error messages carefully. They indicate which fiel
 Create the GitOps repository structure with all manifests:
 
 ```bash
-./bin/openCenter cluster setup prod-aws-k8s
+./bin/opencenter cluster setup prod-aws-k8s
 ```
 
 This command:
@@ -444,7 +444,7 @@ git push -u origin main
 Deploy the cluster infrastructure to AWS:
 
 ```bash
-./bin/openCenter cluster bootstrap prod-aws-k8s
+./bin/opencenter cluster bootstrap prod-aws-k8s
 ```
 
 This command runs these steps automatically:
@@ -524,13 +524,13 @@ If bootstrap fails partway through, fix the issue and resume:
 
 ```bash
 # Resume from where it failed
-./bin/openCenter cluster bootstrap prod-aws-k8s
+./bin/opencenter cluster bootstrap prod-aws-k8s
 
 # Or restart from a specific step
-./bin/openCenter cluster bootstrap prod-aws-k8s --from-step terraform-apply
+./bin/opencenter cluster bootstrap prod-aws-k8s --from-step terraform-apply
 
 # Or restart completely
-./bin/openCenter cluster bootstrap prod-aws-k8s --restart
+./bin/opencenter cluster bootstrap prod-aws-k8s --restart
 ```
 
 Bootstrap state is saved in:
@@ -741,7 +741,7 @@ aws ec2 describe-instances \
   --output text
 
 # SSH to master
-ssh -i ~/.config/openCenter/clusters/opencenter/secrets/ssh/prod-aws-k8s-production-us-east-1 ubuntu@54.123.45.67
+ssh -i ~/.config/opencenter/clusters/opencenter/secrets/ssh/prod-aws-k8s-production-us-east-1 ubuntu@54.123.45.67
 ```
 
 ### SSH to Worker Nodes
@@ -756,7 +756,7 @@ ssh 10.0.2.20  # Worker node private IP
 Or use SSH proxy jump:
 
 ```bash
-ssh -i ~/.config/openCenter/clusters/opencenter/secrets/ssh/prod-aws-k8s-production-us-east-1 \
+ssh -i ~/.config/opencenter/clusters/opencenter/secrets/ssh/prod-aws-k8s-production-us-east-1 \
   -J ubuntu@54.123.45.67 \
   ubuntu@10.0.2.20
 ```
@@ -860,7 +860,7 @@ opencenter:
 Then regenerate and apply:
 
 ```bash
-./bin/openCenter cluster setup prod-aws-k8s --force
+./bin/opencenter cluster setup prod-aws-k8s --force
 cd /home/user/gitops/prod-aws-k8s
 git add .
 git commit -m "Enable monitoring and logging services"
@@ -881,8 +881,8 @@ opencenter:
 Apply changes:
 
 ```bash
-./bin/openCenter cluster validate prod-aws-k8s
-./bin/openCenter cluster setup prod-aws-k8s --force
+./bin/opencenter cluster validate prod-aws-k8s
+./bin/opencenter cluster setup prod-aws-k8s --force
 cd /home/user/gitops/prod-aws-k8s/infrastructure/clusters/prod-aws-k8s
 terraform apply
 ```
@@ -913,8 +913,8 @@ See [Backup and Recovery](../how-to/backup-recovery.md) for details.
 Deploy additional clusters:
 
 ```bash
-./bin/openCenter cluster init prod-aws-k8s-west --opencenter.meta.region=us-west-2
-./bin/openCenter cluster init staging-aws-k8s --opencenter.meta.env=staging
+./bin/opencenter cluster init prod-aws-k8s-west --opencenter.meta.region=us-west-2
+./bin/opencenter cluster init staging-aws-k8s --opencenter.meta.env=staging
 ```
 
 See [Multi-Cluster Management](multi-cluster.md) for managing multiple clusters.
@@ -1100,9 +1100,9 @@ opencenter:
 
 ## Related Documentation
 
-- [Getting Started](getting-started.md) - Basic openCenter concepts
+- [Getting Started](getting-started.md) - Basic opencenter concepts
 - [OpenStack Deployment](openstack-deployment.md) - Deploy on OpenStack
-- [GitOps Workflow](gitops-workflow.md) - Understanding GitOps with openCenter
+- [GitOps Workflow](gitops-workflow.md) - Understanding GitOps with opencenter
 - [Configuration Reference](../reference/configuration.md) - Complete configuration options
 - [Troubleshooting Guide](../how-to/troubleshooting.md) - Common issues and solutions
 - [Backup and Recovery](../how-to/backup-recovery.md) - Backup strategies

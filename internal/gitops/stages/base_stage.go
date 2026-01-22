@@ -17,8 +17,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/gitops"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/gitops"
 )
 
 // BaseStage provides common functionality for generation stages.

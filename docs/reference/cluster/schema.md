@@ -20,12 +20,12 @@ Export cluster JSON schema with validation rules.
 ## Synopsis
 
 ```bash
-openCenter cluster schema [flags]
+opencenter cluster schema [flags]
 ```
 
 ## Description
 
-The `cluster schema` command exports the JSON schema for openCenter cluster configuration. The schema includes comprehensive validation rules, constraints, and documentation for all configuration sections.
+The `cluster schema` command exports the JSON schema for opencenter cluster configuration. The schema includes comprehensive validation rules, constraints, and documentation for all configuration sections.
 
 **Note:** This command is hidden from help output as it is primarily intended for internal use and IDE integration.
 
@@ -39,19 +39,19 @@ The `cluster schema` command exports the JSON schema for openCenter cluster conf
 
 ```bash
 # Print schema to stdout
-openCenter cluster schema
+opencenter cluster schema
 
 # Print schema with pretty formatting
-openCenter cluster schema --pretty
+opencenter cluster schema --pretty
 
 # Save schema to file
-openCenter cluster schema --out schema/cluster.schema.json
+opencenter cluster schema --out schema/cluster.schema.json
 
 # Save schema without pretty formatting
-openCenter cluster schema --out schema/cluster.schema.json --pretty=false
+opencenter cluster schema --out schema/cluster.schema.json --pretty=false
 
 # Show schema version
-openCenter cluster schema --version
+opencenter cluster schema --version
 ```
 
 ## Schema Format
@@ -70,9 +70,9 @@ The schema follows JSON Schema Draft 2020-12 format and includes:
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/rackerlabs/openCenter-cli/schema/cluster.schema.json",
-  "title": "openCenter Cluster Configuration",
-  "description": "Complete schema for openCenter cluster configuration",
+  "$id": "https://github.com/rackerlabs/opencenter-cli/schema/cluster.schema.json",
+  "title": "opencenter Cluster Configuration",
+  "description": "Complete schema for opencenter cluster configuration",
   "type": "object",
   "properties": {
     "opencenter": {
@@ -115,10 +115,10 @@ Configure IDE for schema validation and autocomplete:
   <component name="JsonSchemaMappingsProjectConfiguration">
     <state>
       <map>
-        <entry key="openCenter Cluster">
+        <entry key="opencenter Cluster">
           <value>
             <SchemaInfo>
-              <option name="name" value="openCenter Cluster" />
+              <option name="name" value="opencenter Cluster" />
               <option name="relativePathToSchema" value="schema/cluster.schema.json" />
               <option name="patterns">
                 <list>
@@ -141,7 +141,7 @@ Configure IDE for schema validation and autocomplete:
 Generate documentation from schema:
 ```bash
 # Export schema
-openCenter cluster schema --out schema/cluster.schema.json
+opencenter cluster schema --out schema/cluster.schema.json
 
 # Generate markdown documentation
 npx @adobe/jsonschema2md -d schema -o docs/schema
@@ -152,7 +152,7 @@ npx @adobe/jsonschema2md -d schema -o docs/schema
 Use schema for external validation:
 ```bash
 # Export schema
-openCenter cluster schema --out schema/cluster.schema.json
+opencenter cluster schema --out schema/cluster.schema.json
 
 # Validate configuration with ajv-cli
 ajv validate -s schema/cluster.schema.json -d my-cluster-config.yaml
@@ -166,7 +166,7 @@ Validate configurations in CI/CD pipelines:
 set -e
 
 # Generate schema
-openCenter cluster schema --out /tmp/cluster.schema.json
+opencenter cluster schema --out /tmp/cluster.schema.json
 
 # Validate all cluster configs
 for config in clusters/**/*-config.yaml; do
@@ -179,7 +179,7 @@ done
 
 Check the current schema version:
 ```bash
-openCenter cluster schema --version
+opencenter cluster schema --version
 ```
 
 Output:
@@ -194,8 +194,8 @@ Schema version: 1.0.0
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/rackerlabs/openCenter-cli/schema/cluster.schema.json",
-  "title": "openCenter Cluster Configuration",
+  "$id": "https://github.com/rackerlabs/opencenter-cli/schema/cluster.schema.json",
+  "title": "opencenter Cluster Configuration",
   "type": "object",
   "properties": {
     "opencenter": {
@@ -221,7 +221,7 @@ Schema version: 1.0.0
 ### Compact (--pretty=false)
 
 ```json
-{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://github.com/rackerlabs/openCenter-cli/schema/cluster.schema.json","title":"openCenter Cluster Configuration","type":"object","properties":{"opencenter":{"type":"object","required":["meta","cluster","infrastructure"],"properties":{"meta":{"type":"object","description":"Cluster metadata","properties":{"name":{"type":"string","description":"Cluster display name"}}}}}}}
+{"$schema":"https://json-schema.org/draft/2020-12/schema","$id":"https://github.com/rackerlabs/opencenter-cli/schema/cluster.schema.json","title":"opencenter Cluster Configuration","type":"object","properties":{"opencenter":{"type":"object","required":["meta","cluster","infrastructure"],"properties":{"meta":{"type":"object","description":"Cluster metadata","properties":{"name":{"type":"string","description":"Cluster display name"}}}}}}}
 ```
 
 ## See Also

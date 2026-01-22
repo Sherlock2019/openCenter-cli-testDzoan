@@ -20,7 +20,7 @@
 
 ## Summary
 
-The Go template engine now fully supports ALL features used in the existing openCenter codebase. This includes compatibility with the provision package templates (inventory.tmpl, ansible.cfg.tmpl) and all Sprig functions.
+The Go template engine now fully supports ALL features used in the existing opencenter codebase. This includes compatibility with the provision package templates (inventory.tmpl, ansible.cfg.tmpl) and all Sprig functions.
 
 ## Implemented Features
 
@@ -187,7 +187,7 @@ Implemented and tested custom functions from provision package:
 All tests pass:
 ```bash
 $ go test ./internal/template/...
-ok      github.com/rackerlabs/openCenter-cli/internal/template  0.532s
+ok      github.com/rackerlabs/opencenter-cli/internal/template  0.532s
 ```
 
 Total test count: 96 tests
@@ -229,7 +229,7 @@ The new template engine is fully backward compatible with existing code:
 
 ## Conclusion
 
-The Go template engine now supports **ALL** features used in the existing openCenter codebase. This includes:
+The Go template engine now supports **ALL** features used in the existing opencenter codebase. This includes:
 
 - ✅ All Sprig functions
 - ✅ Named template execution

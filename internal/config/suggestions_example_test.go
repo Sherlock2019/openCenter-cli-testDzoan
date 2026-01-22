@@ -17,7 +17,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 )
 
 // ExampleSuggestionEngine demonstrates how to use the suggestion engine.

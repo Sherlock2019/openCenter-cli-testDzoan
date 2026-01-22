@@ -19,11 +19,11 @@
 - [References](#references)
 **doc_type**: reference
 
-This document provides comprehensive guidance on error handling in openCenter CLI, including error classification, structured error usage, error codes, and common patterns.
+This document provides comprehensive guidance on error handling in opencenter CLI, including error classification, structured error usage, error codes, and common patterns.
 
 ## Overview
 
-openCenter uses a structured error handling system that provides:
+opencenter uses a structured error handling system that provides:
 - **Type classification**: Errors are categorized by type (validation, network, security, etc.)
 - **Error codes**: Unique codes (E1001-E6999) for documentation and troubleshooting
 - **Credential masking**: Automatic masking of sensitive information in error messages
@@ -32,7 +32,7 @@ openCenter uses a structured error handling system that provides:
 
 ## Error Types
 
-All errors in openCenter are classified into one of the following types:
+All errors in opencenter are classified into one of the following types:
 
 | Type | Description | Retryable | Example |
 |------|-------------|-----------|---------|
@@ -93,7 +93,7 @@ Error codes follow the pattern `E<category><number>`:
 ### Basic Structured Error
 
 ```go
-import "github.com/rackerlabs/openCenter-cli/internal/util/errors"
+import "github.com/rackerlabs/opencenter-cli/internal/util/errors"
 
 err := &errors.StructuredError{
     Type:    errors.ValidationError,
@@ -109,8 +109,8 @@ err := &errors.StructuredError{
     Type:    errors.ConfigError,
     Message: "configuration file not found",
     Suggestions: []string{
-        "Initialize configuration: openCenter cluster init",
-        "Check file path: ls -la ~/.config/openCenter/",
+        "Initialize configuration: opencenter cluster init",
+        "Check file path: ls -la ~/.config/opencenter/",
     },
 }
 ```
@@ -152,7 +152,7 @@ The `internal/util/errors` package provides helper functions for common error sc
 err := errors.CreateValidationError(
     "cluster_name",
     "cluster name must start with a letter",
-    "Use a valid name: openCenter cluster init my-cluster",
+    "Use a valid name: opencenter cluster init my-cluster",
 )
 ```
 
@@ -252,7 +252,7 @@ Use error middleware in commands for consistent error handling:
 ```go
 import (
     "context"
-    "github.com/rackerlabs/openCenter-cli/internal/util/errors"
+    "github.com/rackerlabs/opencenter-cli/internal/util/errors"
 )
 
 func runCommand(ctx context.Context) error {
@@ -294,7 +294,7 @@ func newClusterInitCmd(middleware *errors.ErrorMiddleware) *cobra.Command {
 Use the error formatter for user-friendly output:
 
 ```go
-import "github.com/rackerlabs/openCenter-cli/internal/ui"
+import "github.com/rackerlabs/opencenter-cli/internal/ui"
 
 formatter := ui.NewDefaultErrorFormatter()
 

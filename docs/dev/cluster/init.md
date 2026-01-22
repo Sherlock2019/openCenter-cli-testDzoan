@@ -1,4 +1,4 @@
-# `openCenter cluster init` - Developer Documentation
+# `opencenter cluster init` - Developer Documentation
 
 
 ## Table of Contents
@@ -19,7 +19,7 @@
 ## Synopsis
 
 ```bash
-openCenter cluster init [name] [OPTIONS]
+opencenter cluster init [name] [OPTIONS]
 ```
 
 ## Description
@@ -294,7 +294,7 @@ func TestSetField(t *testing.T) {
 ```gherkin
 Feature: Cluster Initialization
   Scenario: Initialize cluster with defaults
-    When I run "openCenter cluster init test-cluster"
+    When I run "opencenter cluster init test-cluster"
     Then the cluster configuration should exist
     And the organization directory should be created
     And SOPS keys should be generated

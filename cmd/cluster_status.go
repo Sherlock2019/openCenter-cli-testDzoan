@@ -20,7 +20,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 )
 
 // newClusterStatusCmd creates the "cluster status" command.
@@ -40,15 +40,15 @@ This command displays:
 - Key file paths (with --paths flag)
 
 If no cluster is active, it will show available clusters and suggest
-using 'openCenter cluster select' to set one.`,
+using 'opencenter cluster select' to set one.`,
 		Example: `  # Show active cluster status
-  openCenter cluster status
+  opencenter cluster status
 
   # Show active cluster with file paths
-  openCenter cluster status --paths
+  opencenter cluster status --paths
 
   # Quiet output (just the cluster name)
-  openCenter cluster status --quiet`,
+  opencenter cluster status --quiet`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			activeCluster, err := config.GetActive()
 			if err != nil {
@@ -70,9 +70,9 @@ using 'openCenter cluster select' to set one.`,
 					for _, cluster := range clusters {
 						fmt.Fprintf(cmd.OutOrStdout(), "  - %s\n", cluster)
 					}
-					fmt.Fprintf(cmd.OutOrStdout(), "\nUse 'openCenter cluster select <name>' to set an active cluster\n")
+					fmt.Fprintf(cmd.OutOrStdout(), "\nUse 'opencenter cluster select <name>' to set an active cluster\n")
 				} else {
-					fmt.Fprintf(cmd.OutOrStdout(), "No clusters found. Use 'openCenter cluster init <name>' to create one.\n")
+					fmt.Fprintf(cmd.OutOrStdout(), "No clusters found. Use 'opencenter cluster init <name>' to create one.\n")
 				}
 				return nil
 			}
@@ -153,14 +153,14 @@ using 'openCenter cluster select' to set one.`,
 			fmt.Fprintf(cmd.OutOrStdout(), "\nNext Steps:\n")
 			switch status {
 			case "initialized", "":
-				fmt.Fprintf(cmd.OutOrStdout(), "  - Run 'openCenter cluster validate %s' to validate configuration\n", activeCluster)
-				fmt.Fprintf(cmd.OutOrStdout(), "  - Run 'openCenter cluster setup %s' to generate GitOps repository\n", activeCluster)
+				fmt.Fprintf(cmd.OutOrStdout(), "  - Run 'opencenter cluster validate %s' to validate configuration\n", activeCluster)
+				fmt.Fprintf(cmd.OutOrStdout(), "  - Run 'opencenter cluster setup %s' to generate GitOps repository\n", activeCluster)
 			case "validated":
-				fmt.Fprintf(cmd.OutOrStdout(), "  - Run 'openCenter cluster setup %s' to generate GitOps repository\n", activeCluster)
+				fmt.Fprintf(cmd.OutOrStdout(), "  - Run 'opencenter cluster setup %s' to generate GitOps repository\n", activeCluster)
 			case "setup", "ready":
-				fmt.Fprintf(cmd.OutOrStdout(), "  - Run 'openCenter cluster bootstrap %s' to deploy the cluster\n", activeCluster)
+				fmt.Fprintf(cmd.OutOrStdout(), "  - Run 'opencenter cluster bootstrap %s' to deploy the cluster\n", activeCluster)
 			case "deployed":
-				fmt.Fprintf(cmd.OutOrStdout(), "  - Run 'eval $(openCenter cluster activate)' to configure your environment\n")
+				fmt.Fprintf(cmd.OutOrStdout(), "  - Run 'eval $(opencenter cluster activate)' to configure your environment\n")
 				fmt.Fprintf(cmd.OutOrStdout(), "  - Use 'kubectl' to interact with the cluster\n")
 			default:
 				fmt.Fprintf(cmd.OutOrStdout(), "  - Check cluster documentation for next steps\n")

@@ -15,7 +15,7 @@
 - [External Resources](#external-resources)
 **doc_type: how-to**
 
-Configure cloud provider credentials, networking, and permissions for openCenter cluster deployments.
+Configure cloud provider credentials, networking, and permissions for opencenter cluster deployments.
 
 ## Task Summary
 
@@ -23,7 +23,7 @@ Set up authentication and infrastructure prerequisites for your chosen cloud pro
 
 ## Prerequisites
 
-- openCenter CLI installed (`mise run build`)
+- opencenter CLI installed (`mise run build`)
 - Cloud provider account with appropriate permissions
 - Network access to provider API endpoints
 - For OpenStack: OpenStack CLI tools (`python3-openstackclient`)
@@ -41,7 +41,7 @@ Application credentials are the recommended authentication method. They provide 
 
 ```bash
 openstack application credential create \
-  --description "openCenter cluster management" \
+  --description "opencenter cluster management" \
   --role member \
   opencenter-app-cred
 ```
@@ -53,7 +53,7 @@ Save the output. You'll need the `id` and `secret` values.
 1. Navigate to Identity → Application Credentials
 2. Click "Create Application Credential"
 3. Name: `opencenter-app-cred`
-4. Description: `openCenter cluster management`
+4. Description: `opencenter cluster management`
 5. Roles: Select `member` (or appropriate role for your project)
 6. Click "Create Application Credential"
 7. Download the credentials file or copy the ID and secret
@@ -88,11 +88,11 @@ export OS_APPLICATION_CREDENTIAL_ID="<your-app-cred-id>"
 export OS_APPLICATION_CREDENTIAL_SECRET="<your-app-cred-secret>"
 ```
 
-Or use the openCenter credentials helper:
+Or use the opencenter credentials helper:
 
 ```bash
-openCenter cluster credentials export --provider openstack --format env
-eval $(openCenter cluster credentials export --provider openstack --format env)
+opencenter cluster credentials export --provider openstack --format env
+eval $(opencenter cluster credentials export --provider openstack --format env)
 ```
 
 **Alternative: clouds.yaml file**
@@ -157,7 +157,7 @@ infrastructure:
           dns_zone_name: cluster.example.com
 ```
 
-**If creating a new network**, omit `network_id` and `subnet_id`. openCenter will create them.
+**If creating a new network**, omit `network_id` and `subnet_id`. opencenter will create them.
 
 **Expected outcome:** Your cluster can reach the internet and expose services via floating IPs.
 
@@ -216,7 +216,7 @@ openstack floating ip list
 Run preflight checks:
 
 ```bash
-openCenter cluster validate <cluster-name>
+opencenter cluster validate <cluster-name>
 ```
 
 The validator checks:
@@ -256,7 +256,7 @@ openstack application credential delete opencenter-app-cred
 
 ```bash
 chmod 600 ~/.config/openstack/clouds.yaml
-chmod 600 ~/.config/openCenter/clusters/<org>/<cluster>/.<cluster>-config.yaml
+chmod 600 ~/.config/opencenter/clusters/<org>/<cluster>/.<cluster>-config.yaml
 ```
 
 ### Common OpenStack Issues
@@ -394,7 +394,7 @@ aws ec2 describe-subnets --filters "Name=vpc-id,Values=<vpc-id>"
 
 **Option 2: Create new VPC**
 
-Omit `vpc_id` and subnet lists. openCenter will create a new VPC with public and private subnets across multiple availability zones.
+Omit `vpc_id` and subnet lists. opencenter will create a new VPC with public and private subnets across multiple availability zones.
 
 ### 4. Verify AWS Permissions
 
@@ -415,7 +415,7 @@ aws ec2 describe-vpcs
 ### 5. AWS Security Best Practices
 
 **Use IAM roles instead of access keys when possible:**
-- Attach roles to EC2 instances running openCenter
+- Attach roles to EC2 instances running opencenter
 - Use AWS STS for temporary credentials
 - Avoid long-lived access keys
 
@@ -573,7 +573,7 @@ docker info | grep -E 'CPUs|Total Memory'
 ### 4. Validate Kind Configuration
 
 ```bash
-openCenter cluster validate dev-cluster
+opencenter cluster validate dev-cluster
 ```
 
 Checks:
@@ -658,7 +658,7 @@ Or change port mappings in Kind configuration.
 
 ## Talos Setup
 
-Talos Linux is an immutable, minimal OS designed for Kubernetes. openCenter uses Pulumi for Talos provisioning.
+Talos Linux is an immutable, minimal OS designed for Kubernetes. opencenter uses Pulumi for Talos provisioning.
 
 ### 1. Install Pulumi
 
@@ -793,7 +793,7 @@ openstack server list  # For OpenStack
 aws ec2 describe-instances  # For AWS
 
 # Validate configuration
-openCenter cluster validate <cluster-name>
+opencenter cluster validate <cluster-name>
 ```
 
 **Expected outcome:** All tools are available and infrastructure provider is accessible.
@@ -907,11 +907,11 @@ Use alternative key storage (Barbican, external KMS).
 All providers use SOPS with Age encryption:
 
 ```bash
-# Generate Age key (done automatically by openCenter)
-openCenter cluster init <cluster-name>
+# Generate Age key (done automatically by opencenter)
+opencenter cluster init <cluster-name>
 
 # Key stored at:
-# ~/.config/openCenter/clusters/<org>/<cluster>/secrets/age/<cluster>-key.txt
+# ~/.config/opencenter/clusters/<org>/<cluster>/secrets/age/<cluster>-key.txt
 ```
 
 Secrets are encrypted in Git and decrypted during deployment.
@@ -935,7 +935,7 @@ Provider-specific manifests are in `infrastructure/clusters/<cluster>/`.
 Cluster configurations are stored in organization-based directories:
 
 ```
-~/.config/openCenter/clusters/<organization>/<cluster>/.<cluster>-config.yaml
+~/.config/opencenter/clusters/<organization>/<cluster>/.<cluster>-config.yaml
 ```
 
 Set organization in cluster configuration:
@@ -951,7 +951,7 @@ metadata:
 Run validation before deployment:
 
 ```bash
-openCenter cluster validate <cluster-name>
+opencenter cluster validate <cluster-name>
 ```
 
 Validation checks:
@@ -969,22 +969,22 @@ After configuring your provider:
 
 1. **Initialize cluster configuration:**
    ```bash
-   openCenter cluster init <cluster-name> --provider <provider>
+   opencenter cluster init <cluster-name> --provider <provider>
    ```
 
 2. **Validate configuration:**
    ```bash
-   openCenter cluster validate <cluster-name>
+   opencenter cluster validate <cluster-name>
    ```
 
 3. **Generate GitOps repository:**
    ```bash
-   openCenter cluster setup <cluster-name>
+   opencenter cluster setup <cluster-name>
    ```
 
 4. **Deploy cluster:**
    ```bash
-   openCenter cluster bootstrap <cluster-name>
+   opencenter cluster bootstrap <cluster-name>
    ```
 
 ## Related Documentation

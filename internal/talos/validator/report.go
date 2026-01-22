@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rackerlabs/openCenter-cli/internal/talos"
+	"github.com/rackerlabs/opencenter-cli/internal/talos"
 )
 
 // FormatReportJSON generates a machine-readable JSON report.

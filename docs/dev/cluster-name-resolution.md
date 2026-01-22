@@ -16,7 +16,7 @@
 - [Related Files](#related-files)
 ## Overview
 
-All `openCenter cluster` subcommands now consistently support two methods for specifying the target cluster:
+All `opencenter cluster` subcommands now consistently support two methods for specifying the target cluster:
 
 1. **Explicit cluster name** as a positional argument or flag (supports `organization/cluster` format)
 2. **Active cluster** fallback when no explicit name is provided
@@ -119,36 +119,36 @@ The following commands have been updated to use the new helpers:
 
 ```bash
 # Simple cluster name (uses default "opencenter" organization)
-openCenter cluster validate my-cluster
-openCenter cluster bootstrap my-cluster
+opencenter cluster validate my-cluster
+opencenter cluster bootstrap my-cluster
 
 # Organization-scoped cluster name
-openCenter cluster validate myorg/my-cluster
-openCenter cluster bootstrap myorg/my-cluster
+opencenter cluster validate myorg/my-cluster
+opencenter cluster bootstrap myorg/my-cluster
 ```
 
 ### Using Active Cluster
 
 ```bash
 # Set active cluster
-openCenter cluster select my-cluster
+opencenter cluster select my-cluster
 
 # Commands use active cluster when no name provided
-openCenter cluster validate
-openCenter cluster bootstrap
-openCenter cluster info
+opencenter cluster validate
+opencenter cluster bootstrap
+opencenter cluster info
 ```
 
 ### Using --cluster Flag
 
 ```bash
 # Service commands use --cluster flag
-openCenter cluster service enable loki --cluster my-cluster
-openCenter cluster service status --cluster myorg/my-cluster
+opencenter cluster service enable loki --cluster my-cluster
+opencenter cluster service status --cluster myorg/my-cluster
 
 # Or use active cluster
-openCenter cluster select my-cluster
-openCenter cluster service enable loki
+opencenter cluster select my-cluster
+opencenter cluster service enable loki
 ```
 
 ## Error Messages
@@ -157,7 +157,7 @@ Consistent error messages across all commands:
 
 - **No cluster specified and no active cluster:**
   ```
-  no active cluster set. Use 'openCenter cluster select <cluster>' or provide cluster name as argument
+  no active cluster set. Use 'opencenter cluster select <cluster>' or provide cluster name as argument
   ```
 
 - **Invalid format:**
@@ -187,18 +187,18 @@ Test both resolution methods for each command:
 mise run build
 
 # Test with explicit name
-./bin/openCenter cluster validate test-cluster
+./bin/opencenter cluster validate test-cluster
 
 # Test with organization prefix
-./bin/openCenter cluster validate myorg/test-cluster
+./bin/opencenter cluster validate myorg/test-cluster
 
 # Test with active cluster
-./bin/openCenter cluster select test-cluster
-./bin/openCenter cluster validate
+./bin/opencenter cluster select test-cluster
+./bin/opencenter cluster validate
 
 # Test error cases
-./bin/openCenter cluster validate  # Should error if no active cluster
-./bin/openCenter cluster validate invalid//format  # Should error on invalid format
+./bin/opencenter cluster validate  # Should error if no active cluster
+./bin/opencenter cluster validate invalid//format  # Should error on invalid format
 ```
 
 ## Migration Notes

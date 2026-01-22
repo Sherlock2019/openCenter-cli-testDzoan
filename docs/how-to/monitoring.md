@@ -19,7 +19,7 @@
 - [Next steps](#next-steps)
 **doc_type:** how-to
 
-This guide shows you how to configure the kube-prometheus-stack monitoring service in openCenter clusters.
+This guide shows you how to configure the kube-prometheus-stack monitoring service in opencenter clusters.
 
 ## What you'll set up
 
@@ -31,7 +31,7 @@ The kube-prometheus-stack provides:
 
 ## Prerequisites
 
-- Cluster initialized with `openCenter cluster init`
+- Cluster initialized with `opencenter cluster init`
 - Grafana admin password (required secret)
 - Persistent storage available (Cinder CSI or equivalent)
 
@@ -42,7 +42,7 @@ The kube-prometheus-stack provides:
 Edit your cluster configuration:
 
 ```bash
-vim ~/.config/openCenter/clusters/<organization>/.<cluster>-config.yaml
+vim ~/.config/opencenter/clusters/<organization>/.<cluster>-config.yaml
 ```
 
 Enable kube-prometheus-stack:
@@ -82,13 +82,13 @@ Run the deployment workflow:
 
 ```bash
 # Validate configuration
-openCenter cluster validate my-cluster
+opencenter cluster validate my-cluster
 
 # Regenerate GitOps repository
-openCenter cluster setup my-cluster --force
+opencenter cluster setup my-cluster --force
 
 # Commit and push
-cd ~/.config/openCenter/clusters/myorg/gitops
+cd ~/.config/opencenter/clusters/myorg/gitops
 git add .
 git commit -m "Enable kube-prometheus-stack monitoring"
 git push origin main
@@ -184,7 +184,7 @@ Control how long metrics are stored by customizing Helm values.
 Create an override file in your GitOps repository:
 
 ```bash
-vim ~/.config/openCenter/clusters/myorg/gitops/applications/overlays/my-cluster/services/kube-prometheus-stack/values.yaml
+vim ~/.config/opencenter/clusters/myorg/gitops/applications/overlays/my-cluster/services/kube-prometheus-stack/values.yaml
 ```
 
 Add retention settings:
@@ -247,7 +247,7 @@ Configure Alertmanager to send notifications.
 Create an Alertmanager config override:
 
 ```bash
-vim ~/.config/openCenter/clusters/myorg/gitops/applications/overlays/my-cluster/services/kube-prometheus-stack/alertmanager-config.yaml
+vim ~/.config/opencenter/clusters/myorg/gitops/applications/overlays/my-cluster/services/kube-prometheus-stack/alertmanager-config.yaml
 ```
 
 Example Slack integration:

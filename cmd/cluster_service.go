@@ -17,10 +17,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/config/registry"
-	"github.com/rackerlabs/openCenter-cli/internal/config/services"
-	"github.com/rackerlabs/openCenter-cli/internal/gitops"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config/registry"
+	"github.com/rackerlabs/opencenter-cli/internal/config/services"
+	"github.com/rackerlabs/opencenter-cli/internal/gitops"
 	"github.com/spf13/cobra"
 )
 
@@ -64,16 +64,16 @@ as flags. If they are missing, the command will return an error with an example.
 
 Examples:
   # Enable the 'cert-manager' service with a required email parameter
-  openCenter cluster service enable cert-manager --param="email=admin@example.com"
+  opencenter cluster service enable cert-manager --param="email=admin@example.com"
 
   # Enable a managed service with a secret
-  openCenter cluster service enable my-managed-service --managed --secret="api_key=some_secret_value"
+  opencenter cluster service enable my-managed-service --managed --secret="api_key=some_secret_value"
 
   # Force re-enable (re-render) an already enabled service
-  openCenter cluster service enable prometheus --force
+  opencenter cluster service enable prometheus --force
 
   # Enable a service and immediately render its templates
-  openCenter cluster service enable loki --render`,
+  opencenter cluster service enable loki --render`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			serviceName := args[0]
@@ -155,7 +155,7 @@ Examples:
 			if render {
 				// Validate git_dir is set before rendering
 				if cfg.OpenCenter.GitOps.GitDir == "" {
-					return fmt.Errorf("git_dir is not configured. Run 'openCenter cluster setup' first or set git_dir in the configuration")
+					return fmt.Errorf("git_dir is not configured. Run 'opencenter cluster setup' first or set git_dir in the configuration")
 				}
 
 				fmt.Fprintf(cmd.OutOrStdout(), "Rendering service '%s'...\n", serviceName)
@@ -191,10 +191,10 @@ func newClusterServiceDisableCmd() *cobra.Command {
 
 Examples:
   # Disable the 'cert-manager' service
-  openCenter cluster service disable cert-manager
+  opencenter cluster service disable cert-manager
 
   # Disable a managed service
-  openCenter cluster service disable my-managed-service --managed`,
+  opencenter cluster service disable my-managed-service --managed`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			serviceName := args[0]
@@ -386,10 +386,10 @@ in a three-column format showing service name, enabled/disabled state, and deplo
 
 Examples:
   # Show status of all services in the active cluster
-  openCenter cluster service status
+  opencenter cluster service status
 
   # Show status for a specific cluster
-  openCenter cluster service status --cluster my-cluster`,
+  opencenter cluster service status --cluster my-cluster`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve cluster name from flag or active cluster
 			clusterName, err := resolveClusterNameFromFlag(cluster, true)
@@ -450,13 +450,13 @@ It shows the field names, types, descriptions, and whether they are required.
 
 Examples:
   # Show options for cert-manager
-  openCenter cluster service options cert-manager
+  opencenter cluster service options cert-manager
 
   # Show options for loki
-  openCenter cluster service options loki
+  opencenter cluster service options loki
 
   # Show options for a managed service
-  openCenter cluster service options alert-proxy --managed`,
+  opencenter cluster service options alert-proxy --managed`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			serviceName := args[0]
@@ -511,11 +511,11 @@ Examples:
 			fmt.Fprintln(cmd.OutOrStdout(), "\nUsage Examples:")
 			if len(options) > 0 {
 				exampleParam := options[0].Name
-				fmt.Fprintf(cmd.OutOrStdout(), "  openCenter cluster service enable %s --param=\"%s=value\"\n", serviceName, exampleParam)
+				fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster service enable %s --param=\"%s=value\"\n", serviceName, exampleParam)
 			}
 			if len(secrets) > 0 {
 				exampleSecret := secrets[0].Name
-				fmt.Fprintf(cmd.OutOrStdout(), "  openCenter cluster service enable %s --secret=\"%s=secret-value\"\n", serviceName, exampleSecret)
+				fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster service enable %s --secret=\"%s=secret-value\"\n", serviceName, exampleSecret)
 			}
 
 			return nil

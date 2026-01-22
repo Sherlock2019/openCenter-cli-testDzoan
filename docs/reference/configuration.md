@@ -10,11 +10,11 @@
 - [Configuration Validation](#configuration-validation)
 - [Configuration Examples](#configuration-examples)
 - [See Also](#see-also)
-Complete reference for openCenter cluster configuration.
+Complete reference for opencenter cluster configuration.
 
 ## Configuration File Structure
 
-openCenter uses a single YAML file to define the entire cluster configuration. The file follows a hierarchical structure with four main sections:
+opencenter uses a single YAML file to define the entire cluster configuration. The file follows a hierarchical structure with four main sections:
 
 ```yaml
 opencenter:     # Main cluster configuration
@@ -404,7 +404,7 @@ The `overrides` section allows arbitrary key-value pairs for custom extensions a
 ### Organization-Based Structure (Recommended)
 
 ```
-~/.config/openCenter/
+~/.config/opencenter/
 └── clusters/
     └── <organization>/
         └── infrastructure/
@@ -421,7 +421,7 @@ The `overrides` section allows arbitrary key-value pairs for custom extensions a
 ### Legacy Structure (Backward Compatibility)
 
 ```
-~/.config/openCenter/
+~/.config/opencenter/
 ├── clusters/
 │   └── <cluster-name>/
 │       └── .<cluster-name>-config.yaml
@@ -437,7 +437,7 @@ Configuration behavior can be modified using environment variables:
 
 ## Configuration Validation
 
-openCenter performs comprehensive validation:
+opencenter performs comprehensive validation:
 
 1. **Schema Validation**: Configuration must conform to JSON schema
 2. **Required Fields**: All required fields must be present
@@ -564,7 +564,7 @@ opentofu:
       encrypt: true
 
 secrets:
-  sops_age_key_file: ~/.config/openCenter/clusters/production/infrastructure/clusters/prod-cluster/secrets/age/keys/prod-cluster-key.txt
+  sops_age_key_file: ~/.config/opencenter/clusters/production/infrastructure/clusters/prod-cluster/secrets/age/keys/prod-cluster-key.txt
 ```
 
 ## See Also

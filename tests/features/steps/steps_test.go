@@ -77,7 +77,7 @@ func TestFeatures(t *testing.T) {
 	}
 
 	suite := godog.TestSuite{
-		Name: "openCenter",
+		Name: "opencenter",
 		ScenarioInitializer: func(s *godog.ScenarioContext) {
 			s.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
 				// Create a per-scenario workspace under repo-level testdata

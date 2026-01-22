@@ -25,7 +25,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rackerlabs/openCenter-cli/internal/security"
+	"github.com/rackerlabs/opencenter-cli/internal/security"
 )
 
 // DefaultAuditLogger implements AuditLogger interface
@@ -107,7 +107,7 @@ func (l *DefaultAuditLogger) LogSecurityEvent(ctx context.Context, event Securit
 
 	// Set default source if not provided
 	if event.Source == "" {
-		event.Source = "openCenter"
+		event.Source = "opencenter"
 	}
 
 	return l.writeEvent(event)
@@ -447,7 +447,7 @@ func GetDefaultAuditLogPath() string {
 		return "/tmp/opencenter-audit.log"
 	}
 
-	return filepath.Join(homeDir, ".config", "openCenter", "audit", "audit.log")
+	return filepath.Join(homeDir, ".config", "opencenter", "audit", "audit.log")
 }
 
 // NewDefaultAuditLoggerWithDefaults creates an audit logger with default settings

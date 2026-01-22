@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rackerlabs/openCenter-cli/internal/talos"
+	"github.com/rackerlabs/opencenter-cli/internal/talos"
 )
 
 // GenerateGitOpsStructure creates directory layout, kustomization files,

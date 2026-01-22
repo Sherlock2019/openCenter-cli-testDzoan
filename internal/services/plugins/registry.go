@@ -3,7 +3,7 @@ package plugins
 import (
 	"fmt"
 
-	svc "github.com/rackerlabs/openCenter-cli/internal/services"
+	svc "github.com/rackerlabs/opencenter-cli/internal/services"
 )
 
 // RegisterBuiltInServices registers all built-in service plugins with the registry
@@ -64,7 +64,7 @@ func RegisterBuiltInServices(registry svc.ServiceRegistry) error {
 			Plugin:       s.plugin,
 			Lifecycle:    svc.ServiceLifecycle{},
 			Metadata: svc.ServiceMetadata{
-				Author: "openCenter",
+				Author: "opencenter",
 				Tags:   []string{"built-in"},
 			},
 		}

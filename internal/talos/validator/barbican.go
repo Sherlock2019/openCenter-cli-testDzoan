@@ -3,7 +3,7 @@ package validator
 import (
 	"context"
 
-	"github.com/rackerlabs/openCenter-cli/internal/talos"
+	"github.com/rackerlabs/opencenter-cli/internal/talos"
 )
 
 // ValidateBarbicanImpl tests secret creation and retrieval capabilities.

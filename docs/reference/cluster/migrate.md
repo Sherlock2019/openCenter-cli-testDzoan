@@ -1,4 +1,4 @@
-# `openCenter cluster migrate` - Migrate Cluster Configurations
+# `opencenter cluster migrate` - Migrate Cluster Configurations
 
 
 ## Table of Contents
@@ -19,7 +19,7 @@
 - [See Also](#see-also)
 ## Synopsis
 ```bash
-openCenter cluster migrate [cluster-name] [OPTIONS]
+opencenter cluster migrate [cluster-name] [OPTIONS]
 ```
 
 ## Description
@@ -83,7 +83,7 @@ The migration performs the following steps:
 
 ### Dry run to see what would be migrated
 ```bash
-openCenter cluster migrate --dry-run
+opencenter cluster migrate --dry-run
 ```
 Output:
 ```
@@ -95,27 +95,27 @@ DRY RUN: Would migrate the following clusters to organization 'opencenter':
 
 ### Migrate specific cluster
 ```bash
-openCenter cluster migrate my-cluster
+opencenter cluster migrate my-cluster
 ```
 
 ### Migrate to specific organization
 ```bash
-openCenter cluster migrate my-cluster --organization production
+opencenter cluster migrate my-cluster --organization production
 ```
 
 ### Migrate all legacy clusters
 ```bash
-openCenter cluster migrate --force
+opencenter cluster migrate --force
 ```
 
 ### Migrate without backup
 ```bash
-openCenter cluster migrate my-cluster --backup=false
+opencenter cluster migrate my-cluster --backup=false
 ```
 
 ### Rollback migration
 ```bash
-openCenter cluster migrate --rollback /path/to/backup.tar.gz my-cluster
+opencenter cluster migrate --rollback /path/to/backup.tar.gz my-cluster
 ```
 
 ## Output
@@ -125,7 +125,7 @@ openCenter cluster migrate --rollback /path/to/backup.tar.gz my-cluster
 ```
 Migrating cluster 'my-cluster' to organization 'production'...
   Creating backup...
-  Backup created at: /home/user/.config/openCenter/backups/my-cluster-20251117-103000.tar.gz
+  Backup created at: /home/user/.config/opencenter/backups/my-cluster-20251117-103000.tar.gz
   Migrating files and directories...
   Validating migration...
   Successfully migrated cluster 'my-cluster'
@@ -135,9 +135,9 @@ Migration Summary:
     - my-cluster
 
 Backups created:
-  /home/user/.config/openCenter/backups/my-cluster-20251117-103000.tar.gz
+  /home/user/.config/opencenter/backups/my-cluster-20251117-103000.tar.gz
 
-To rollback a cluster, use: openCenter cluster migrate --rollback <backup-path> <cluster-name>
+To rollback a cluster, use: opencenter cluster migrate --rollback <backup-path> <cluster-name>
 ```
 
 ### Migration with Failures
@@ -145,7 +145,7 @@ To rollback a cluster, use: openCenter cluster migrate --rollback <backup-path> 
 ```
 Migrating cluster 'cluster1' to organization 'opencenter'...
   Creating backup...
-  Backup created at: /home/user/.config/openCenter/backups/cluster1-20251117-103000.tar.gz
+  Backup created at: /home/user/.config/opencenter/backups/cluster1-20251117-103000.tar.gz
   Migrating files and directories...
   Migration failed for cluster 'cluster1': directory already exists
   Attempting rollback...
@@ -157,7 +157,7 @@ Migration Summary:
     - cluster1
 
 Backups created:
-  /home/user/.config/openCenter/backups/cluster1-20251117-103000.tar.gz
+  /home/user/.config/opencenter/backups/cluster1-20251117-103000.tar.gz
 ```
 
 ## Directory Structure Changes
@@ -165,7 +165,7 @@ Backups created:
 ### Before Migration (Legacy)
 
 ```
-~/.config/openCenter/
+~/.config/opencenter/
 ├── clusters/
 │   ├── my-cluster/
 │   │   ├── config.yaml
@@ -177,7 +177,7 @@ Backups created:
 ### After Migration (Organization-Based)
 
 ```
-~/.config/openCenter/
+~/.config/opencenter/
 ├── clusters/
 │   ├── production/
 │   │   ├── .my-cluster-config.yaml
@@ -197,7 +197,7 @@ Backups created:
 
 Backups are stored in:
 ```
-~/.config/openCenter/backups/<cluster>-<timestamp>.tar.gz
+~/.config/opencenter/backups/<cluster>-<timestamp>.tar.gz
 ```
 
 ### Backup Contents
@@ -211,10 +211,10 @@ Backups are stored in:
 
 ```bash
 # List available backups
-ls ~/.config/openCenter/backups/
+ls ~/.config/opencenter/backups/
 
 # Rollback specific cluster
-openCenter cluster migrate --rollback ~/.config/openCenter/backups/my-cluster-20251117-103000.tar.gz my-cluster
+opencenter cluster migrate --rollback ~/.config/opencenter/backups/my-cluster-20251117-103000.tar.gz my-cluster
 ```
 
 ## Validation
@@ -257,7 +257,7 @@ The migration validates:
 
 **Solution**: Choose a different organization or remove the existing cluster:
 ```bash
-openCenter cluster migrate my-cluster --organization other-org
+opencenter cluster migrate my-cluster --organization other-org
 ```
 
 ### Backup creation failed
@@ -265,8 +265,8 @@ openCenter cluster migrate my-cluster --organization other-org
 
 **Solution**: Check disk space and permissions:
 ```bash
-df -h ~/.config/openCenter/
-ls -la ~/.config/openCenter/backups/
+df -h ~/.config/opencenter/
+ls -la ~/.config/opencenter/backups/
 ```
 
 ### Rollback failed
@@ -274,11 +274,11 @@ ls -la ~/.config/openCenter/backups/
 
 **Solution**: Verify backup path:
 ```bash
-ls -la ~/.config/openCenter/backups/
+ls -la ~/.config/opencenter/backups/
 ```
 
 ## See Also
 
-- `openCenter cluster list` - List all clusters
-- `openCenter cluster init` - Initialize new cluster with organization
-- `openCenter cluster validate` - Validate migrated configuration
+- `opencenter cluster list` - List all clusters
+- `opencenter cluster init` - Initialize new cluster with organization
+- `opencenter cluster validate` - Validate migrated configuration

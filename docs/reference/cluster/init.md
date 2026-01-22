@@ -23,7 +23,7 @@ Initialize a new cluster configuration with default values.
 ## Synopsis
 
 ```bash
-openCenter cluster init [name] [flags]
+opencenter cluster init [name] [flags]
 ```
 
 ## Description
@@ -32,7 +32,7 @@ The `cluster init` command creates a new cluster configuration file with sensibl
 
 The configuration is created in an organization-based directory structure by default:
 ```
-~/.config/openCenter/clusters/<organization>/<cluster>/
+~/.config/opencenter/clusters/<organization>/<cluster>/
 ```
 
 SOPS Age encryption keys and SSH key pairs are automatically generated unless `--no-keygen` is specified.
@@ -74,90 +74,90 @@ SOPS Age encryption keys and SSH key pairs are automatically generated unless `-
 
 ```bash
 # Initialize with defaults (uses "opencenter" as organization)
-openCenter cluster init my-cluster
+opencenter cluster init my-cluster
 
 # Initialize with organization using --org flag
-openCenter cluster init my-cluster --org myorg
+opencenter cluster init my-cluster --org myorg
 
 # Initialize with organization using dot notation
-openCenter cluster init my-cluster --opencenter.meta.organization=myorg
+opencenter cluster init my-cluster --opencenter.meta.organization=myorg
 ```
 
 ### From Configuration File
 
 ```bash
 # Initialize from existing config file (cluster name extracted from config)
-openCenter cluster init --config my-cluster-config.yaml
+opencenter cluster init --config my-cluster-config.yaml
 
 # Initialize from config file with explicit name (overrides config file name)
-openCenter cluster init my-cluster --config template-config.yaml
+opencenter cluster init my-cluster --config template-config.yaml
 ```
 
 ### Cluster Types
 
 ```bash
 # Initialize bare metal cluster
-openCenter cluster init my-cluster --org myorg --type baremetal
+opencenter cluster init my-cluster --org myorg --type baremetal
 
 # Initialize OpenStack cluster (default)
-openCenter cluster init my-cluster --type openstack
+opencenter cluster init my-cluster --type openstack
 
 # Initialize AWS cluster
-openCenter cluster init my-cluster --type aws
+opencenter cluster init my-cluster --type aws
 
 # Initialize Kind cluster (local development)
-openCenter cluster init my-cluster --type kind
+opencenter cluster init my-cluster --type kind
 ```
 
 ### Custom Configuration
 
 ```bash
 # Initialize with custom values
-openCenter cluster init my-cluster \
+opencenter cluster init my-cluster \
   --org production \
   --opencenter.meta.env=prod \
   --opencenter.cluster.kubernetes.version=1.31.4 \
   --opencenter.infrastructure.provider=aws
 
 # Initialize with full schema (all fields with examples)
-openCenter cluster init my-cluster --full-schema
+opencenter cluster init my-cluster --full-schema
 ```
 
 ### Key Management
 
 ```bash
 # Initialize without key generation (SOPS and SSH)
-openCenter cluster init my-cluster --no-keygen
+opencenter cluster init my-cluster --no-keygen
 
 # Regenerate keys even if they already exist
-openCenter cluster init my-cluster --regenerate-keys
+opencenter cluster init my-cluster --regenerate-keys
 
 # Skip only SOPS key generation
-openCenter cluster init my-cluster --no-sops-keygen
+opencenter cluster init my-cluster --no-sops-keygen
 ```
 
 ### Force Overwrite
 
 ```bash
 # Force overwrite existing configuration
-openCenter cluster init my-cluster --force
+opencenter cluster init my-cluster --force
 
 # Force overwrite active cluster configuration
-openCenter cluster init --force
+opencenter cluster init --force
 ```
 
 ### Strict Validation
 
 ```bash
 # Initialize with strict validation
-openCenter cluster init my-cluster --strict
+opencenter cluster init my-cluster --strict
 ```
 
 ### Additional Server Pools
 
 ```bash
 # Add additional worker pools
-openCenter cluster init my-cluster \
+opencenter cluster init my-cluster \
   --server-pool="name=pool1,worker_count=3,flavor_worker=m1.large,node_worker=worker-pool1" \
   --server-pool="name=pool2,worker_count=5,flavor_worker=m1.xlarge,node_worker=worker-pool2"
 ```
@@ -167,7 +167,7 @@ openCenter cluster init my-cluster \
 ### Organization-Based (Default)
 
 ```
-~/.config/openCenter/clusters/<organization>/
+~/.config/opencenter/clusters/<organization>/
 ├── .<cluster>-config.yaml          # Cluster configuration
 ├── infrastructure/
 │   └── clusters/<cluster>/         # Cluster-specific infrastructure

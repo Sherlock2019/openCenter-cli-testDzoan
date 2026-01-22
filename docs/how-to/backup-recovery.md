@@ -28,7 +28,7 @@ This guide shows you how to:
 
 ## Prerequisites
 
-- openCenter CLI installed and configured
+- opencenter CLI installed and configured
 - At least one cluster initialized
 - Write access to backup storage location
 - For encrypted backups: a secure passphrase
@@ -40,7 +40,7 @@ This guide shows you how to:
 Back up your cluster configuration and related files:
 
 ```bash
-openCenter cluster backup create my-cluster
+opencenter cluster backup create my-cluster
 ```
 
 This creates a compressed archive containing:
@@ -50,7 +50,7 @@ This creates a compressed archive containing:
 - GitOps repository state
 - Terraform state files
 
-The backup is saved to `~/.config/openCenter/backups/` with a timestamped filename like `my-cluster-20260118-143000.tar.gz`.
+The backup is saved to `~/.config/opencenter/backups/` with a timestamped filename like `my-cluster-20260118-143000.tar.gz`.
 
 **Expected output:**
 ```
@@ -58,7 +58,7 @@ Creating backup for cluster my-cluster...
 ✓ Backup created: my-cluster-20260118-143000
   Size: 45632 bytes
   Checksum: a3f5b8c9d2e1f4a7b6c5d8e9f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0
-  Location: /Users/you/.config/openCenter/backups/my-cluster-20260118-143000.tar.gz
+  Location: /Users/you/.config/opencenter/backups/my-cluster-20260118-143000.tar.gz
 
 Backup created successfully!
 Retention until: 2026-02-17T14:30:00Z
@@ -69,14 +69,14 @@ Retention until: 2026-02-17T14:30:00Z
 For sensitive environments, encrypt backups with a passphrase:
 
 ```bash
-openCenter cluster backup create my-cluster --encrypt
+opencenter cluster backup create my-cluster --encrypt
 ```
 
 You'll be prompted for a passphrase. The backup is encrypted with AES-256-GCM using Argon2 key derivation.
 
 **Alternative:** Provide the passphrase directly (less secure):
 ```bash
-openCenter cluster backup create my-cluster --passphrase="your-secure-passphrase"
+opencenter cluster backup create my-cluster --passphrase="your-secure-passphrase"
 ```
 
 **Warning:** Encrypted backups cannot be restored without the correct passphrase. Store passphrases securely in a password manager or secrets vault.
@@ -86,7 +86,7 @@ openCenter cluster backup create my-cluster --passphrase="your-secure-passphrase
 Back up SOPS Age keys separately for additional protection:
 
 ```bash
-openCenter sops backup-key
+opencenter sops backup-key
 ```
 
 This creates a timestamped backup in `~/.config/sops/age/backups/` and includes:
@@ -105,7 +105,7 @@ This creates a timestamped backup in `~/.config/sops/age/backups/` and includes:
 
 **Custom backup location:**
 ```bash
-openCenter sops backup-key --backup-dir=/secure/backup/location
+opencenter sops backup-key --backup-dir=/secure/backup/location
 ```
 
 ### GitOps Repository Backup
@@ -113,7 +113,7 @@ openCenter sops backup-key --backup-dir=/secure/backup/location
 Your GitOps repository contains the complete cluster state. Back it up using git:
 
 ```bash
-cd ~/.config/openCenter/clusters/myorg
+cd ~/.config/opencenter/clusters/myorg
 git bundle create ~/backups/gitops-$(date +%Y%m%d).bundle --all
 ```
 
@@ -130,7 +130,7 @@ For running clusters, back up etcd to preserve Kubernetes state:
 
 ```bash
 # SSH to a control plane node
-ssh -i ~/.config/openCenter/clusters/myorg/secrets/ssh/my-cluster-dev-sjc3 ubuntu@control-plane-1
+ssh -i ~/.config/opencenter/clusters/myorg/secrets/ssh/my-cluster-dev-sjc3 ubuntu@control-plane-1
 
 # Create etcd snapshot
 sudo ETCDCTL_API=3 etcdctl snapshot save /tmp/etcd-snapshot.db \
@@ -141,7 +141,7 @@ sudo ETCDCTL_API=3 etcdctl snapshot save /tmp/etcd-snapshot.db \
 
 # Copy snapshot to local machine
 exit
-scp -i ~/.config/openCenter/clusters/myorg/secrets/ssh/my-cluster-dev-sjc3 \
+scp -i ~/.config/opencenter/clusters/myorg/secrets/ssh/my-cluster-dev-sjc3 \
   ubuntu@control-plane-1:/tmp/etcd-snapshot.db \
   ~/backups/etcd-snapshot-$(date +%Y%m%d).db
 ```
@@ -167,13 +167,13 @@ aws ec2 create-snapshot --volume-id vol-1234567890abcdef0 --description "Backup 
 Restore a cluster configuration from backup:
 
 ```bash
-openCenter cluster backup restore my-cluster-20260118-143000
+opencenter cluster backup restore my-cluster-20260118-143000
 ```
 
 For encrypted backups, provide the passphrase:
 
 ```bash
-openCenter cluster backup restore my-cluster-20260118-143000 --passphrase="your-secure-passphrase"
+opencenter cluster backup restore my-cluster-20260118-143000 --passphrase="your-secure-passphrase"
 ```
 
 **Expected output:**
@@ -182,9 +182,9 @@ Restoring backup my-cluster-20260118-143000...
 ✓ Backup restored successfully!
 
 Restored files are in the 'restored' directory:
-  Config: ~/.config/openCenter/clusters/restored/.restored-config.yaml
-  Age key: ~/.config/openCenter/secrets/age/restored-key.txt
-  SSH keys: ~/.config/openCenter/secrets/ssh/restored-keys
+  Config: ~/.config/opencenter/clusters/restored/.restored-config.yaml
+  Age key: ~/.config/opencenter/secrets/age/restored-key.txt
+  SSH keys: ~/.config/opencenter/secrets/ssh/restored-keys
 
 Please review and move files to appropriate locations.
 ```
@@ -193,19 +193,19 @@ Please review and move files to appropriate locations.
 
 ```bash
 # Review the restored configuration
-cat ~/.config/openCenter/clusters/restored/.restored-config.yaml
+cat ~/.config/opencenter/clusters/restored/.restored-config.yaml
 
 # Move to active location (replace 'myorg' with your organization)
-mv ~/.config/openCenter/clusters/restored/.restored-config.yaml \
-   ~/.config/openCenter/clusters/myorg/.my-cluster-config.yaml
+mv ~/.config/opencenter/clusters/restored/.restored-config.yaml \
+   ~/.config/opencenter/clusters/myorg/.my-cluster-config.yaml
 
 # Restore Age key
-mv ~/.config/openCenter/secrets/age/restored-key.txt \
-   ~/.config/openCenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
+mv ~/.config/opencenter/secrets/age/restored-key.txt \
+   ~/.config/opencenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
 
 # Restore SSH keys
-mv ~/.config/openCenter/secrets/ssh/restored-keys \
-   ~/.config/openCenter/clusters/myorg/secrets/ssh/my-cluster-dev-sjc3
+mv ~/.config/opencenter/secrets/ssh/restored-keys \
+   ~/.config/opencenter/clusters/myorg/secrets/ssh/my-cluster-dev-sjc3
 ```
 
 ### GitOps Repository Restore
@@ -214,8 +214,8 @@ Restore a GitOps repository from a git bundle:
 
 ```bash
 # Create new directory
-mkdir -p ~/.config/openCenter/clusters/myorg-restored
-cd ~/.config/openCenter/clusters/myorg-restored
+mkdir -p ~/.config/opencenter/clusters/myorg-restored
+cd ~/.config/opencenter/clusters/myorg-restored
 
 # Clone from bundle
 git clone ~/backups/gitops-20260118.bundle .
@@ -232,13 +232,13 @@ If you lose your SOPS Age key, restore from backup:
 ```bash
 # Copy key from backup
 cp ~/.config/sops/age/backups/keys-backup-20260118-143000.txt \
-   ~/.config/openCenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
+   ~/.config/opencenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
 
 # Set correct permissions
-chmod 600 ~/.config/openCenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
+chmod 600 ~/.config/opencenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
 
 # Verify key works
-openCenter sops validate --key-file ~/.config/openCenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
+opencenter sops validate --key-file ~/.config/opencenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
 ```
 
 ### etcd Restore
@@ -247,12 +247,12 @@ Restore Kubernetes state from an etcd snapshot:
 
 ```bash
 # Copy snapshot to control plane node
-scp -i ~/.config/openCenter/clusters/myorg/secrets/ssh/my-cluster-dev-sjc3 \
+scp -i ~/.config/opencenter/clusters/myorg/secrets/ssh/my-cluster-dev-sjc3 \
   ~/backups/etcd-snapshot-20260118.db \
   ubuntu@control-plane-1:/tmp/
 
 # SSH to control plane
-ssh -i ~/.config/openCenter/clusters/myorg/secrets/ssh/my-cluster-dev-sjc3 ubuntu@control-plane-1
+ssh -i ~/.config/opencenter/clusters/myorg/secrets/ssh/my-cluster-dev-sjc3 ubuntu@control-plane-1
 
 # Stop kube-apiserver
 sudo systemctl stop kube-apiserver
@@ -310,13 +310,13 @@ Schedule periodic backups using cron:
 crontab -e
 
 # Add daily backup at 2 AM
-0 2 * * * /usr/local/bin/openCenter cluster backup create my-cluster --encrypt --passphrase="$(cat ~/.backup-passphrase)" >> /var/log/opencenter-backup.log 2>&1
+0 2 * * * /usr/local/bin/opencenter cluster backup create my-cluster --encrypt --passphrase="$(cat ~/.backup-passphrase)" >> /var/log/opencenter-backup.log 2>&1
 ```
 
 **Note:** The `schedule` command is planned for a future release:
 ```bash
 # Future feature
-openCenter cluster backup schedule my-cluster --interval=24h --retention=30d
+opencenter cluster backup schedule my-cluster --interval=24h --retention=30d
 ```
 
 ### Retention Policies
@@ -327,7 +327,7 @@ Implement a retention policy to manage backup storage:
 #!/bin/bash
 # cleanup-old-backups.sh
 
-BACKUP_DIR="$HOME/.config/openCenter/backups"
+BACKUP_DIR="$HOME/.config/opencenter/backups"
 RETENTION_DAYS=30
 
 # Delete backups older than retention period
@@ -349,16 +349,16 @@ Verify backup integrity regularly:
 
 ```bash
 # List all backups
-openCenter cluster backup list my-cluster
+opencenter cluster backup list my-cluster
 
 # Verify checksum
-sha256sum ~/.config/openCenter/backups/my-cluster-20260118-143000.tar.gz
-cat ~/.config/openCenter/backups/my-cluster-20260118-143000.tar.gz.sha256
+sha256sum ~/.config/opencenter/backups/my-cluster-20260118-143000.tar.gz
+cat ~/.config/opencenter/backups/my-cluster-20260118-143000.tar.gz.sha256
 
 # Test restore to temporary location
-openCenter cluster backup restore my-cluster-20260118-143000
+opencenter cluster backup restore my-cluster-20260118-143000
 # Verify restored files
-ls -la ~/.config/openCenter/clusters/restored/
+ls -la ~/.config/opencenter/clusters/restored/
 ```
 
 ### Off-Site Backup Storage
@@ -368,7 +368,7 @@ Store backups in a separate location for disaster recovery:
 **Cloud storage (S3):**
 ```bash
 # Upload to S3
-aws s3 cp ~/.config/openCenter/backups/my-cluster-20260118-143000.tar.gz.enc \
+aws s3 cp ~/.config/opencenter/backups/my-cluster-20260118-143000.tar.gz.enc \
   s3://my-backup-bucket/opencenter/my-cluster/
 
 # Download from S3
@@ -380,7 +380,7 @@ aws s3 cp s3://my-backup-bucket/opencenter/my-cluster/my-cluster-20260118-143000
 ```bash
 # Sync to remote server
 rsync -avz --delete \
-  ~/.config/openCenter/backups/ \
+  ~/.config/opencenter/backups/ \
   backup-server:/backups/opencenter/
 
 # Restore from remote server
@@ -397,27 +397,27 @@ If you lose all cluster infrastructure:
 
 1. **Restore configuration:**
    ```bash
-   openCenter cluster backup restore my-cluster-20260118-143000
-   mv ~/.config/openCenter/clusters/restored/.restored-config.yaml \
-      ~/.config/openCenter/clusters/myorg/.my-cluster-config.yaml
+   opencenter cluster backup restore my-cluster-20260118-143000
+   mv ~/.config/opencenter/clusters/restored/.restored-config.yaml \
+      ~/.config/opencenter/clusters/myorg/.my-cluster-config.yaml
    ```
 
 2. **Restore secrets:**
    ```bash
-   mv ~/.config/openCenter/secrets/age/restored-key.txt \
-      ~/.config/openCenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
-   mv ~/.config/openCenter/secrets/ssh/restored-keys \
-      ~/.config/openCenter/clusters/myorg/secrets/ssh/my-cluster-dev-sjc3
+   mv ~/.config/opencenter/secrets/age/restored-key.txt \
+      ~/.config/opencenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
+   mv ~/.config/opencenter/secrets/ssh/restored-keys \
+      ~/.config/opencenter/clusters/myorg/secrets/ssh/my-cluster-dev-sjc3
    ```
 
 3. **Validate configuration:**
    ```bash
-   openCenter cluster validate my-cluster
+   opencenter cluster validate my-cluster
    ```
 
 4. **Provision new infrastructure:**
    ```bash
-   openCenter cluster bootstrap my-cluster
+   opencenter cluster bootstrap my-cluster
    ```
 
 5. **Restore application data from volume snapshots** (see Volume Restore above)
@@ -429,11 +429,11 @@ If you lose only configuration files but infrastructure is intact:
 1. **Restore configuration from backup**
 2. **Validate against running cluster:**
    ```bash
-   openCenter cluster validate my-cluster
+   opencenter cluster validate my-cluster
    ```
 3. **Update GitOps repository if needed:**
    ```bash
-   openCenter cluster setup my-cluster --force
+   opencenter cluster setup my-cluster --force
    ```
 
 ### Configuration Corruption
@@ -442,24 +442,24 @@ If your configuration file becomes corrupted:
 
 1. **List available backups:**
    ```bash
-   openCenter cluster backup list my-cluster
+   opencenter cluster backup list my-cluster
    ```
 
 2. **Restore most recent backup:**
    ```bash
-   openCenter cluster backup restore my-cluster-20260118-143000
+   opencenter cluster backup restore my-cluster-20260118-143000
    ```
 
 3. **Compare with corrupted file:**
    ```bash
-   diff ~/.config/openCenter/clusters/myorg/.my-cluster-config.yaml \
-        ~/.config/openCenter/clusters/restored/.restored-config.yaml
+   diff ~/.config/opencenter/clusters/myorg/.my-cluster-config.yaml \
+        ~/.config/opencenter/clusters/restored/.restored-config.yaml
    ```
 
 4. **Replace corrupted file:**
    ```bash
-   cp ~/.config/openCenter/clusters/restored/.restored-config.yaml \
-      ~/.config/openCenter/clusters/myorg/.my-cluster-config.yaml
+   cp ~/.config/opencenter/clusters/restored/.restored-config.yaml \
+      ~/.config/opencenter/clusters/myorg/.my-cluster-config.yaml
    ```
 
 ### Lost SOPS Key
@@ -474,29 +474,29 @@ If you lose your SOPS Age key:
 2. **Restore from most recent backup:**
    ```bash
    cp ~/.config/sops/age/backups/keys-backup-20260118-143000.txt \
-      ~/.config/openCenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
-   chmod 600 ~/.config/openCenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
+      ~/.config/opencenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
+   chmod 600 ~/.config/opencenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
    ```
 
 3. **Validate key:**
    ```bash
-   openCenter sops validate
+   opencenter sops validate
    ```
 
 4. **Test decryption:**
    ```bash
-   export SOPS_AGE_KEY_FILE=~/.config/openCenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
-   sops -d ~/.config/openCenter/clusters/myorg/infrastructure/clusters/my-cluster/secrets/example-secret.yaml
+   export SOPS_AGE_KEY_FILE=~/.config/opencenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
+   sops -d ~/.config/opencenter/clusters/myorg/infrastructure/clusters/my-cluster/secrets/example-secret.yaml
    ```
 
 **If no backup exists:** You must rotate keys and re-encrypt all secrets:
 
 ```bash
 # Generate new key
-openCenter sops generate-key --update-sops-config
+opencenter sops generate-key --update-sops-config
 
 # Re-encrypt all secrets (requires access to plaintext values)
-openCenter sops rotate-key --search-path ~/.config/openCenter/clusters/myorg
+opencenter sops rotate-key --search-path ~/.config/opencenter/clusters/myorg
 ```
 
 ## Backup Management
@@ -506,20 +506,20 @@ openCenter sops rotate-key --search-path ~/.config/openCenter/clusters/myorg
 View all backups for a cluster:
 
 ```bash
-openCenter cluster backup list my-cluster
+opencenter cluster backup list my-cluster
 ```
 
 **Expected output:**
 ```
 BACKUP ID                        CLUSTER      CREATED              SIZE   LOCATION
-my-cluster-20260118-143000      my-cluster   2026-01-18 14:30:00  45632  /Users/you/.config/openCenter/backups/my-cluster-20260118-143000.tar.gz
-my-cluster-20260117-143000      my-cluster   2026-01-17 14:30:00  45128  /Users/you/.config/openCenter/backups/my-cluster-20260117-143000.tar.gz
-my-cluster-20260116-143000      my-cluster   2026-01-16 14:30:00  44892  /Users/you/.config/openCenter/backups/my-cluster-20260116-143000.tar.gz
+my-cluster-20260118-143000      my-cluster   2026-01-18 14:30:00  45632  /Users/you/.config/opencenter/backups/my-cluster-20260118-143000.tar.gz
+my-cluster-20260117-143000      my-cluster   2026-01-17 14:30:00  45128  /Users/you/.config/opencenter/backups/my-cluster-20260117-143000.tar.gz
+my-cluster-20260116-143000      my-cluster   2026-01-16 14:30:00  44892  /Users/you/.config/opencenter/backups/my-cluster-20260116-143000.tar.gz
 ```
 
 List all backups:
 ```bash
-openCenter cluster backup list
+opencenter cluster backup list
 ```
 
 ### Delete Backups
@@ -527,7 +527,7 @@ openCenter cluster backup list
 Remove old or unnecessary backups:
 
 ```bash
-openCenter cluster backup delete my-cluster-20260116-143000
+opencenter cluster backup delete my-cluster-20260116-143000
 ```
 
 You'll be prompted for confirmation:
@@ -538,7 +538,7 @@ Are you sure you want to delete backup my-cluster-20260116-143000? (yes/no): yes
 
 Skip confirmation with `--force`:
 ```bash
-openCenter cluster backup delete my-cluster-20260116-143000 --force
+opencenter cluster backup delete my-cluster-20260116-143000 --force
 ```
 
 ## Troubleshooting
@@ -556,18 +556,18 @@ openCenter cluster backup delete my-cluster-20260116-143000 --force
 
 Check disk space:
 ```bash
-df -h ~/.config/openCenter/backups
+df -h ~/.config/opencenter/backups
 ```
 
 Check permissions:
 ```bash
-ls -la ~/.config/openCenter/
-chmod 755 ~/.config/openCenter/backups
+ls -la ~/.config/opencenter/
+chmod 755 ~/.config/opencenter/backups
 ```
 
 Verify configuration exists:
 ```bash
-ls -la ~/.config/openCenter/clusters/myorg/.my-cluster-config.yaml
+ls -la ~/.config/opencenter/clusters/myorg/.my-cluster-config.yaml
 ```
 
 ### Restore Fails with "Backup Not Found"
@@ -578,8 +578,8 @@ ls -la ~/.config/openCenter/clusters/myorg/.my-cluster-config.yaml
 
 List available backups:
 ```bash
-openCenter cluster backup list
-ls -la ~/.config/openCenter/backups/
+opencenter cluster backup list
+ls -la ~/.config/opencenter/backups/
 ```
 
 Use exact backup ID from the list.
@@ -597,8 +597,8 @@ Use exact backup ID from the list.
 
 Verify passphrase is correct. Check backup file integrity:
 ```bash
-sha256sum ~/.config/openCenter/backups/my-cluster-20260118-143000.tar.gz.enc
-cat ~/.config/openCenter/backups/my-cluster-20260118-143000.tar.gz.enc.sha256
+sha256sum ~/.config/opencenter/backups/my-cluster-20260118-143000.tar.gz.enc
+cat ~/.config/opencenter/backups/my-cluster-20260118-143000.tar.gz.enc.sha256
 ```
 
 If checksums don't match, the file is corrupted. Use an earlier backup.
@@ -613,8 +613,8 @@ If checksums don't match, the file is corrupted. Use an earlier backup.
 
 The backup file is not trustworthy. Use a different backup:
 ```bash
-openCenter cluster backup list my-cluster
-openCenter cluster backup restore my-cluster-20260117-143000
+opencenter cluster backup list my-cluster
+opencenter cluster backup restore my-cluster-20260117-143000
 ```
 
 ### SOPS Key Restore Doesn't Work
@@ -625,19 +625,19 @@ openCenter cluster backup restore my-cluster-20260117-143000
 
 Verify key format:
 ```bash
-cat ~/.config/openCenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
+cat ~/.config/opencenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
 # Should start with: AGE-SECRET-KEY-
 ```
 
 Check file permissions:
 ```bash
-ls -la ~/.config/openCenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
+ls -la ~/.config/opencenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
 # Should be: -rw------- (600)
 ```
 
 Validate key:
 ```bash
-openCenter sops validate --key-file ~/.config/openCenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
+opencenter sops validate --key-file ~/.config/opencenter/clusters/myorg/secrets/age/keys/my-cluster-key.txt
 ```
 
 ### etcd Restore Breaks Cluster

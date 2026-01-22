@@ -38,7 +38,7 @@ import "github.com/sirupsen/logrus"
 
 With:
 ```go
-import "github.com/rackerlabs/openCenter-cli/internal/observability"
+import "github.com/rackerlabs/opencenter-cli/internal/observability"
 ```
 
 ### Step 2: Update Logger Initialization

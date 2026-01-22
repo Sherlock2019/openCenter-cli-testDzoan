@@ -20,8 +20,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/resilience"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/resilience"
 	"github.com/spf13/cobra"
 )
 
@@ -38,16 +38,16 @@ The cluster name can be specified as 'cluster' or 'organization/cluster'.
 
 If no cluster name is provided, the active cluster will be destroyed.`,
 		Example: `  # Destroy a specific cluster
-  openCenter cluster destroy my-cluster
+  opencenter cluster destroy my-cluster
 
   # Destroy cluster in specific organization
-  openCenter cluster destroy myorg/my-cluster
+  opencenter cluster destroy myorg/my-cluster
 
   # Destroy without confirmation
-  openCenter cluster destroy my-cluster --force
+  opencenter cluster destroy my-cluster --force
 
   # Destroy active cluster
-  openCenter cluster destroy`,
+  opencenter cluster destroy`,
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve cluster name from args or active cluster
@@ -68,7 +68,7 @@ If no cluster name is provided, the active cluster will be destroyed.`,
 				"command":   "cluster destroy",
 			})
 			if err != nil {
-				return fmt.Errorf("failed to acquire lock for cluster %q: %w\nAnother operation may be in progress. Wait for it to complete or use 'openCenter cluster info %s' to check lock status", name, err, name)
+				return fmt.Errorf("failed to acquire lock for cluster %q: %w\nAnother operation may be in progress. Wait for it to complete or use 'opencenter cluster info %s' to check lock status", name, err, name)
 			}
 			defer lockMgr.Release(lock)
 

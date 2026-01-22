@@ -1,4 +1,4 @@
-# `openCenter cluster setup` - Setup GitOps Directory
+# `opencenter cluster setup` - Setup GitOps Directory
 
 
 ## Table of Contents
@@ -17,7 +17,7 @@
 - [See Also](#see-also)
 ## Synopsis
 ```bash
-openCenter cluster setup [name] [OPTIONS]
+opencenter cluster setup [name] [OPTIONS]
 ```
 
 ## Description
@@ -52,27 +52,27 @@ The setup process creates an organization-based GitOps repository structure that
 
 ### Setup GitOps for active cluster
 ```bash
-openCenter cluster setup
+opencenter cluster setup
 ```
 
 ### Setup specific cluster
 ```bash
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 ```
 
 ### Setup with template rendering
 ```bash
-openCenter cluster setup my-cluster --render
+opencenter cluster setup my-cluster --render
 ```
 
 ### Force reinitialize
 ```bash
-openCenter cluster setup my-cluster --force
+opencenter cluster setup my-cluster --force
 ```
 
 ### Setup cluster in organization
 ```bash
-openCenter cluster setup production/prod-cluster
+opencenter cluster setup production/prod-cluster
 ```
 
 ### Using Feature Flags
@@ -82,29 +82,29 @@ Feature flags enable new refactored systems while maintaining backward compatibi
 ```bash
 # Use new template engine with caching and better error messages
 export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 
 # Use pipeline-based generation with rollback support
 export OPENCENTER_USE_PIPELINE_GENERATOR=true
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 
 # Use type-safe configuration builder
 export OPENCENTER_USE_NEW_CONFIG_BUILDER=true
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 
 # Enable all new features at once
 export OPENCENTER_ENABLE_ALL_NEW_FEATURES=true
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 
 # Enable for a single command without persisting
-OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true openCenter cluster setup my-cluster
+OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true opencenter cluster setup my-cluster
 
 # Enable debug logging to see feature flag evaluation
 export OPENCENTER_FEATURE_FLAG_DEBUG=true
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 
 # Check which features are currently enabled
-openCenter config features
+opencenter config features
 ```
 
 **Feature Flag Benefits:**
@@ -113,7 +113,7 @@ openCenter config features
 - **Config Builder**: Type-safe configuration construction, better validation error reporting
 - **All Features**: Convenient way to enable all refactored systems at once
 
-See `openCenter config features --help` for more information about feature flags.
+See `opencenter config features --help` for more information about feature flags.
 
 ## Output
 
@@ -201,6 +201,6 @@ creation_rules:
 
 ## See Also
 
-- `openCenter cluster render` - Render templates without git initialization
-- `openCenter cluster bootstrap` - Bootstrap cluster after setup
-- `openCenter cluster validate` - Validate configuration before setup
+- `opencenter cluster render` - Render templates without git initialization
+- `opencenter cluster bootstrap` - Bootstrap cluster after setup
+- `opencenter cluster validate` - Validate configuration before setup

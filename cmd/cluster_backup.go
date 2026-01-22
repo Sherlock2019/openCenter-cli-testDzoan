@@ -21,7 +21,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/rackerlabs/openCenter-cli/internal/operations"
+	"github.com/rackerlabs/opencenter-cli/internal/operations"
 	"github.com/spf13/cobra"
 )
 
@@ -42,19 +42,19 @@ Backups include:
 Backups are compressed, encrypted with AES-256-GCM, and include SHA-256 checksums
 for integrity verification.`,
 		Example: `  # Create a backup
-  openCenter cluster backup create my-cluster
+  opencenter cluster backup create my-cluster
 
   # Create an encrypted backup
-  openCenter cluster backup create my-cluster --passphrase
+  opencenter cluster backup create my-cluster --passphrase
 
   # List backups for a cluster
-  openCenter cluster backup list my-cluster
+  opencenter cluster backup list my-cluster
 
   # Restore from backup
-  openCenter cluster backup restore my-cluster-20260118-143000
+  opencenter cluster backup restore my-cluster-20260118-143000
 
   # Schedule periodic backups
-  openCenter cluster backup schedule my-cluster --interval=24h`,
+  opencenter cluster backup schedule my-cluster --interval=24h`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},
@@ -89,13 +89,13 @@ The backup includes:
 
 Backups are compressed with gzip and can be encrypted with a passphrase.`,
 		Example: `  # Create a backup
-  openCenter cluster backup create my-cluster
+  opencenter cluster backup create my-cluster
 
   # Create an encrypted backup (will prompt for passphrase)
-  openCenter cluster backup create my-cluster --encrypt
+  opencenter cluster backup create my-cluster --encrypt
 
   # Create an encrypted backup with passphrase
-  openCenter cluster backup create my-cluster --passphrase="secret123"`,
+  opencenter cluster backup create my-cluster --passphrase="secret123"`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clusterName := args[0]
@@ -106,7 +106,7 @@ Backups are compressed with gzip and can be encrypted with a passphrase.`,
 				return fmt.Errorf("failed to get home directory: %w", err)
 			}
 
-			configDir := filepath.Join(homeDir, ".config", "openCenter")
+			configDir := filepath.Join(homeDir, ".config", "opencenter")
 			backupDir := filepath.Join(configDir, "backups")
 
 			// Create backup manager
@@ -174,10 +174,10 @@ The backup ID is the filename without extension (e.g., my-cluster-20260118-14300
 Restored files are placed in a "restored" directory to avoid overwriting existing
 configurations. You can then manually move them to the appropriate locations.`,
 		Example: `  # Restore from backup
-  openCenter cluster backup restore my-cluster-20260118-143000
+  opencenter cluster backup restore my-cluster-20260118-143000
 
   # Restore from encrypted backup
-  openCenter cluster backup restore my-cluster-20260118-143000 --passphrase="secret123"`,
+  opencenter cluster backup restore my-cluster-20260118-143000 --passphrase="secret123"`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			backupID := args[0]
@@ -188,7 +188,7 @@ configurations. You can then manually move them to the appropriate locations.`,
 				return fmt.Errorf("failed to get home directory: %w", err)
 			}
 
-			configDir := filepath.Join(homeDir, ".config", "openCenter")
+			configDir := filepath.Join(homeDir, ".config", "opencenter")
 			backupDir := filepath.Join(configDir, "backups")
 
 			// Create backup manager
@@ -234,10 +234,10 @@ func newClusterBackupListCmd() *cobra.Command {
 
 Displays backup ID, creation time, size, and storage location.`,
 		Example: `  # List all backups
-  openCenter cluster backup list
+  opencenter cluster backup list
 
   # List backups for a specific cluster
-  openCenter cluster backup list my-cluster`,
+  opencenter cluster backup list my-cluster`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var clusterName string
@@ -251,7 +251,7 @@ Displays backup ID, creation time, size, and storage location.`,
 				return fmt.Errorf("failed to get home directory: %w", err)
 			}
 
-			configDir := filepath.Join(homeDir, ".config", "openCenter")
+			configDir := filepath.Join(homeDir, ".config", "opencenter")
 			backupDir := filepath.Join(configDir, "backups")
 
 			// Create backup manager
@@ -310,10 +310,10 @@ func newClusterBackupDeleteCmd() *cobra.Command {
 
 This operation is irreversible. Use with caution.`,
 		Example: `  # Delete a backup
-  openCenter cluster backup delete my-cluster-20260118-143000
+  opencenter cluster backup delete my-cluster-20260118-143000
 
   # Delete without confirmation
-  openCenter cluster backup delete my-cluster-20260118-143000 --force`,
+  opencenter cluster backup delete my-cluster-20260118-143000 --force`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			backupID := args[0]
@@ -335,7 +335,7 @@ This operation is irreversible. Use with caution.`,
 				return fmt.Errorf("failed to get home directory: %w", err)
 			}
 
-			configDir := filepath.Join(homeDir, ".config", "openCenter")
+			configDir := filepath.Join(homeDir, ".config", "opencenter")
 			backupDir := filepath.Join(configDir, "backups")
 
 			// Create backup manager
@@ -373,10 +373,10 @@ func newClusterBackupScheduleCmd() *cobra.Command {
 This feature is not yet implemented. It will support cron-style scheduling
 and automatic backup retention policies.`,
 		Example: `  # Schedule daily backups
-  openCenter cluster backup schedule my-cluster --interval=24h
+  opencenter cluster backup schedule my-cluster --interval=24h
 
   # Schedule with retention policy
-  openCenter cluster backup schedule my-cluster --interval=24h --retention=30d`,
+  opencenter cluster backup schedule my-cluster --interval=24h --retention=30d`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clusterName := args[0]

@@ -20,7 +20,7 @@
 - [Next Steps](#next-steps)
 **doc_type: how-to**
 
-Plan and forecast resource requirements for openCenter-managed Kubernetes clusters. This guide covers resource analysis, growth forecasting, scaling strategies, and cost optimization.
+Plan and forecast resource requirements for opencenter-managed Kubernetes clusters. This guide covers resource analysis, growth forecasting, scaling strategies, and cost optimization.
 
 ## Who This Is For
 
@@ -28,7 +28,7 @@ Platform engineers, SREs, and operations teams responsible for cluster capacity 
 
 ## Prerequisites
 
-- Running openCenter cluster with monitoring enabled
+- Running opencenter cluster with monitoring enabled
 - Access to Prometheus metrics
 - Understanding of Kubernetes resource management
 - Historical usage data (recommended: 30+ days)

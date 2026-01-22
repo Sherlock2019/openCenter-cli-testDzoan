@@ -18,6 +18,6 @@ This package is responsible for parsing and managing the embedded templates used
 
 # When to use
 
-This package is used internally by other packages in openCenter, such as the `ansible` and `terraform` packages, to execute provisioning templates. It is not intended for direct use by end-users.
+This package is used internally by other packages in opencenter, such as the `ansible` and `terraform` packages, to execute provisioning templates. It is not intended for direct use by end-users.
 */
 package provision

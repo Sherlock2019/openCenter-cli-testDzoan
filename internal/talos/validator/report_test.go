@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rackerlabs/openCenter-cli/internal/talos"
+	"github.com/rackerlabs/opencenter-cli/internal/talos"
 )
 
 func TestFormatReportJSON(t *testing.T) {

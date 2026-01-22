@@ -1,4 +1,4 @@
-module github.com/rackerlabs/openCenter-cli
+module github.com/rackerlabs/opencenter-cli
 
 go 1.25.2
 

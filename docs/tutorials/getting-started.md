@@ -1,11 +1,11 @@
-# Getting Started with openCenter
+# Getting Started with opencenter
 
 
 ## Table of Contents
 
 - [What You'll Build](#what-youll-build)
 - [Prerequisites](#prerequisites)
-- [Step 1: Install openCenter](#step-1-install-opencenter)
+- [Step 1: Install opencenter](#step-1-install-opencenter)
 - [Step 2: Initialize Your First Cluster](#step-2-initialize-your-first-cluster)
 - [Step 3: Explore the Configuration File](#step-3-explore-the-configuration-file)
 - [Step 4: Understand the Directory Structure](#step-4-understand-the-directory-structure)
@@ -19,7 +19,7 @@
 - [Troubleshooting](#troubleshooting)
 **doc_type: tutorial**
 
-Deploy your first Kubernetes cluster configuration in 15 minutes. You'll initialize a cluster, validate it, and understand the basic openCenter workflow.
+Deploy your first Kubernetes cluster configuration in 15 minutes. You'll initialize a cluster, validate it, and understand the basic opencenter workflow.
 
 ## What You'll Build
 
@@ -27,7 +27,7 @@ By the end of this tutorial, you'll have:
 - A validated cluster configuration file
 - SOPS encryption keys for secrets management
 - SSH key pairs for cluster access
-- An understanding of openCenter's organization-based directory structure
+- An understanding of opencenter's organization-based directory structure
 
 You won't deploy actual infrastructure yet—this tutorial focuses on configuration and validation. For deployment, see the [OpenStack Deployment](openstack-deployment.md) or [Kind Local Development](kind-local-dev.md) tutorials.
 
@@ -41,13 +41,13 @@ Before starting, you need:
 
 No cloud provider account is required for this tutorial.
 
-## Step 1: Install openCenter
+## Step 1: Install opencenter
 
 Clone the repository and build the binary:
 
 ```bash
-git clone https://github.com/rackerlabs/openCenter-cli.git
-cd openCenter-cli
+git clone https://github.com/rackerlabs/opencenter-cli.git
+cd opencenter-cli
 mise install
 mise run build
 ```
@@ -55,26 +55,26 @@ mise run build
 You should see output like:
 
 ```
-Built openCenter 0.0.1 (a1b2c3d)
+Built opencenter 0.0.1 (a1b2c3d)
 ```
 
-The binary is now at `bin/openCenter`. Add it to your PATH or use the full path in commands.
+The binary is now at `bin/opencenter`. Add it to your PATH or use the full path in commands.
 
 ## Step 2: Initialize Your First Cluster
 
 Create a cluster configuration named `my-first-cluster`:
 
 ```bash
-./bin/openCenter cluster init my-first-cluster
+./bin/opencenter cluster init my-first-cluster
 ```
 
 You'll see output showing what was created:
 
 ```
-Generated ed25519 SSH key pair at ~/.config/openCenter/clusters/opencenter/secrets/ssh/my-first-cluster-dev-sjc3
-Created cluster configuration in organization 'opencenter' at '~/.config/openCenter/clusters/opencenter/infrastructure/clusters/my-first-cluster'
-GitOps repository root: ~/.config/openCenter/clusters/opencenter
-SOPS key location: ~/.config/openCenter/clusters/opencenter/secrets/age/keys/my-first-cluster-key.txt
+Generated ed25519 SSH key pair at ~/.config/opencenter/clusters/opencenter/secrets/ssh/my-first-cluster-dev-sjc3
+Created cluster configuration in organization 'opencenter' at '~/.config/opencenter/clusters/opencenter/infrastructure/clusters/my-first-cluster'
+GitOps repository root: ~/.config/opencenter/clusters/opencenter
+SOPS key location: ~/.config/opencenter/clusters/opencenter/secrets/age/keys/my-first-cluster-key.txt
 ```
 
 This command:
@@ -88,13 +88,13 @@ This command:
 The configuration file is at:
 
 ```
-~/.config/openCenter/clusters/opencenter/.my-first-cluster-config.yaml
+~/.config/opencenter/clusters/opencenter/.my-first-cluster-config.yaml
 ```
 
 Open it in your editor:
 
 ```bash
-cat ~/.config/openCenter/clusters/opencenter/.my-first-cluster-config.yaml
+cat ~/.config/opencenter/clusters/opencenter/.my-first-cluster-config.yaml
 ```
 
 You'll see a YAML structure with these main sections:
@@ -110,10 +110,10 @@ The defaults create a 3-master, 2-worker OpenStack cluster with Calico networkin
 
 ## Step 4: Understand the Directory Structure
 
-openCenter uses an organization-based structure:
+opencenter uses an organization-based structure:
 
 ```
-~/.config/openCenter/clusters/
+~/.config/opencenter/clusters/
 └── opencenter/                          # Organization name
     ├── .my-first-cluster-config.yaml    # Cluster configuration
     ├── infrastructure/
@@ -141,7 +141,7 @@ This structure supports:
 Check that your configuration is valid:
 
 ```bash
-./bin/openCenter cluster validate my-first-cluster
+./bin/opencenter cluster validate my-first-cluster
 ```
 
 You should see:
@@ -167,7 +167,7 @@ The validator checks:
 Try changing the Kubernetes version using the command line:
 
 ```bash
-./bin/openCenter cluster init my-first-cluster \
+./bin/opencenter cluster init my-first-cluster \
   --force \
   --opencenter.cluster.kubernetes.version=1.31.4
 ```
@@ -177,25 +177,25 @@ The `--force` flag overwrites the existing configuration. The dot notation lets 
 Validate again:
 
 ```bash
-./bin/openCenter cluster validate my-first-cluster
+./bin/opencenter cluster validate my-first-cluster
 ```
 
 ## Step 7: Check What Files Were Created
 
-List the files openCenter created:
+List the files opencenter created:
 
 ```bash
 # Configuration file
-ls -la ~/.config/openCenter/clusters/opencenter/.my-first-cluster-config.yaml
+ls -la ~/.config/opencenter/clusters/opencenter/.my-first-cluster-config.yaml
 
 # SOPS encryption key
-ls -la ~/.config/openCenter/clusters/opencenter/secrets/age/keys/my-first-cluster-key.txt
+ls -la ~/.config/opencenter/clusters/opencenter/secrets/age/keys/my-first-cluster-key.txt
 
 # SSH keys
-ls -la ~/.config/openCenter/clusters/opencenter/secrets/ssh/my-first-cluster-dev-sjc3*
+ls -la ~/.config/opencenter/clusters/opencenter/secrets/ssh/my-first-cluster-dev-sjc3*
 
 # GitOps repository
-ls -la ~/.config/openCenter/clusters/opencenter/.git
+ls -la ~/.config/opencenter/clusters/opencenter/.git
 ```
 
 All files exist and have appropriate permissions:
@@ -210,24 +210,24 @@ Run these checks to confirm everything worked:
 
 1. **Configuration exists and is valid:**
    ```bash
-   ./bin/openCenter cluster validate my-first-cluster
+   ./bin/opencenter cluster validate my-first-cluster
    ```
 
 2. **SOPS key is readable:**
    ```bash
-   cat ~/.config/openCenter/clusters/opencenter/secrets/age/keys/my-first-cluster-key.txt
+   cat ~/.config/opencenter/clusters/opencenter/secrets/age/keys/my-first-cluster-key.txt
    ```
    You should see an Age key starting with `AGE-SECRET-KEY-`.
 
 3. **SSH keys are properly formatted:**
    ```bash
-   ssh-keygen -l -f ~/.config/openCenter/clusters/opencenter/secrets/ssh/my-first-cluster-dev-sjc3.pub
+   ssh-keygen -l -f ~/.config/opencenter/clusters/opencenter/secrets/ssh/my-first-cluster-dev-sjc3.pub
    ```
    You should see key fingerprint information.
 
 4. **Git repository initialized:**
    ```bash
-   git -C ~/.config/openCenter/clusters/opencenter status
+   git -C ~/.config/opencenter/clusters/opencenter status
    ```
    You should see git status output.
 
@@ -235,7 +235,7 @@ Run these checks to confirm everything worked:
 
 You now understand:
 
-1. **Configuration-first workflow**: openCenter starts with a declarative YAML file
+1. **Configuration-first workflow**: opencenter starts with a declarative YAML file
 2. **Organization structure**: Clusters are organized by organization for multi-cluster management
 3. **Automatic key generation**: SOPS and SSH keys are created automatically
 4. **Validation**: Configuration is validated before deployment
@@ -256,7 +256,7 @@ Now that you have a valid configuration, you can:
 
 Yes. Use the `--org` flag:
 ```bash
-./bin/openCenter cluster init my-cluster --org production
+./bin/opencenter cluster init my-cluster --org production
 ```
 
 **Q: Where are my credentials stored?**
@@ -268,14 +268,14 @@ Credentials go in the `secrets` section of your configuration file. Use SOPS to 
 Yes. Set the `OPENCENTER_CONFIG_DIR` environment variable:
 ```bash
 export OPENCENTER_CONFIG_DIR=/custom/path
-./bin/openCenter cluster init my-cluster
+./bin/opencenter cluster init my-cluster
 ```
 
 **Q: What if I want to start from an existing config file?**
 
 Use the `--config` flag:
 ```bash
-./bin/openCenter cluster init --config my-template.yaml
+./bin/opencenter cluster init --config my-template.yaml
 ```
 
 The cluster name is extracted from the config file automatically.
@@ -286,7 +286,7 @@ The cluster name is extracted from the config file automatically.
 
 Use `--force` to overwrite:
 ```bash
-./bin/openCenter cluster init my-cluster --force
+./bin/opencenter cluster init my-cluster --force
 ```
 
 **"invalid cluster name"**

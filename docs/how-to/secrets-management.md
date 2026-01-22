@@ -10,7 +10,7 @@
 - [SOPS configuration](#sops-configuration)
 - [Encrypting secrets](#encrypting-secrets)
 - [Decrypting secrets](#decrypting-secrets)
-- [Integration with openCenter](#integration-with-opencenter)
+- [Integration with opencenter](#integration-with-opencenter)
 - [Common workflows](#common-workflows)
 - [Troubleshooting](#troubleshooting)
 - [Security best practices](#security-best-practices)
@@ -20,7 +20,7 @@
 - [External resources](#external-resources)
 **doc_type:** how-to
 
-This guide shows you how to manage secrets in openCenter using SOPS (Secrets OPerationS) with Age encryption.
+This guide shows you how to manage secrets in opencenter using SOPS (Secrets OPerationS) with Age encryption.
 
 ## What SOPS provides
 
@@ -34,7 +34,7 @@ SOPS encrypts sensitive data in YAML files while keeping the structure readable.
 
 - SOPS installed (`brew install sops` or download from GitHub)
 - Age encryption tool installed (`brew install age`)
-- openCenter CLI installed and configured
+- opencenter CLI installed and configured
 
 ## Quick start
 
@@ -42,10 +42,10 @@ Generate an Age key and encrypt a secret:
 
 ```bash
 # Generate Age key
-openCenter sops generate-key
+opencenter sops generate-key
 
 # Encrypt a secret file
-openCenter sops secrets-encrypt --search-path ./secrets
+opencenter sops secrets-encrypt --search-path ./secrets
 ```
 
 The key is stored at `~/.config/sops/age/keys.txt` by default.
@@ -57,7 +57,7 @@ The key is stored at `~/.config/sops/age/keys.txt` by default.
 Create a new encryption key pair:
 
 ```bash
-openCenter sops generate-key
+opencenter sops generate-key
 ```
 
 
@@ -69,13 +69,13 @@ This creates:
 Specify a custom location:
 
 ```bash
-openCenter sops generate-key --key-file ~/.config/myproject/age-key.txt
+opencenter sops generate-key --key-file ~/.config/myproject/age-key.txt
 ```
 
 Skip SOPS config update:
 
 ```bash
-openCenter sops generate-key --update-sops-config=false
+opencenter sops generate-key --update-sops-config=false
 ```
 
 ### View your public key
@@ -97,7 +97,7 @@ age-keygen -y ~/.config/sops/age/keys.txt
 Create a timestamped backup:
 
 ```bash
-openCenter sops backup-key
+opencenter sops backup-key
 ```
 
 Backups are stored in `~/.config/sops/age/backups/` by default.
@@ -105,7 +105,7 @@ Backups are stored in `~/.config/sops/age/backups/` by default.
 Specify a custom backup location:
 
 ```bash
-openCenter sops backup-key --backup-dir ~/secure-backups
+opencenter sops backup-key --backup-dir ~/secure-backups
 ```
 
 Store backups securely:
@@ -119,7 +119,7 @@ Store backups securely:
 Replace an existing key and re-encrypt all secrets:
 
 ```bash
-openCenter sops rotate-key --search-path ./gitops
+opencenter sops rotate-key --search-path ./gitops
 ```
 
 
@@ -137,7 +137,7 @@ If rotation fails, the old key is restored automatically.
 Check that your Age key and SOPS configuration are correct:
 
 ```bash
-openCenter sops validate
+opencenter sops validate
 ```
 
 This verifies:
@@ -149,7 +149,7 @@ This verifies:
 Specify a custom key file:
 
 ```bash
-openCenter sops validate --key-file ~/.config/myproject/age-key.txt
+opencenter sops validate --key-file ~/.config/myproject/age-key.txt
 ```
 
 ## SOPS configuration
@@ -203,7 +203,7 @@ After generating a new key, update your SOPS configuration:
 
 ```bash
 # Automatic update during key generation
-openCenter sops generate-key --update-sops-config
+opencenter sops generate-key --update-sops-config
 
 # Manual update
 vim .sops.yaml
@@ -219,7 +219,7 @@ Replace the old public key with the new one.
 Find files that should be encrypted:
 
 ```bash
-openCenter sops secrets-list --search-path ./gitops
+opencenter sops secrets-list --search-path ./gitops
 ```
 
 This shows:
@@ -231,7 +231,7 @@ This shows:
 Encrypt files and create backups:
 
 ```bash
-openCenter sops secrets-encrypt --search-path ./gitops
+opencenter sops secrets-encrypt --search-path ./gitops
 ```
 
 This:
@@ -247,7 +247,7 @@ Backups are saved as `<filename>.backup-<timestamp>`.
 Skip backup creation for faster operation:
 
 ```bash
-openCenter sops secrets-encrypt-fast --search-path ./gitops
+opencenter sops secrets-encrypt-fast --search-path ./gitops
 ```
 
 Use this when:
@@ -276,7 +276,7 @@ sops --encrypt --age age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Preview what would be encrypted:
 
 ```bash
-openCenter sops secrets-encrypt --search-path ./gitops --dry-run
+opencenter sops secrets-encrypt --search-path ./gitops --dry-run
 ```
 
 ## Decrypting secrets
@@ -286,7 +286,7 @@ openCenter sops secrets-encrypt --search-path ./gitops --dry-run
 Decrypt files and create backups of encrypted versions:
 
 ```bash
-openCenter sops secrets-decrypt --search-path ./gitops
+opencenter sops secrets-decrypt --search-path ./gitops
 ```
 
 This:
@@ -300,7 +300,7 @@ This:
 Skip backup creation:
 
 ```bash
-openCenter sops secrets-decrypt-fast --search-path ./gitops
+opencenter sops secrets-decrypt-fast --search-path ./gitops
 ```
 
 ### Decrypt specific files
@@ -344,31 +344,31 @@ export EDITOR=vim
 sops secrets/credentials.yaml
 ```
 
-## Integration with openCenter
+## Integration with opencenter
 
 ### Cluster initialization
 
-openCenter generates Age keys automatically during cluster init:
+opencenter generates Age keys automatically during cluster init:
 
 ```bash
-openCenter cluster init my-cluster
+opencenter cluster init my-cluster
 ```
 
 Keys are stored in the cluster's secrets directory:
 ```
-~/.config/openCenter/clusters/<organization>/secrets/age/<cluster>-key.txt
+~/.config/opencenter/clusters/<organization>/secrets/age/<cluster>-key.txt
 ```
 
 Skip automatic key generation:
 
 ```bash
-openCenter cluster init my-cluster --no-keygen
+opencenter cluster init my-cluster --no-keygen
 ```
 
 Regenerate keys for an existing cluster:
 
 ```bash
-openCenter cluster init my-cluster --regenerate-keys --force
+opencenter cluster init my-cluster --regenerate-keys --force
 ```
 
 
@@ -377,9 +377,9 @@ openCenter cluster init my-cluster --regenerate-keys --force
 After running `cluster setup`, encrypt sensitive files:
 
 ```bash
-openCenter cluster setup my-cluster
-cd ~/.config/openCenter/clusters/myorg/gitops
-openCenter sops secrets-encrypt --search-path .
+opencenter cluster setup my-cluster
+cd ~/.config/opencenter/clusters/myorg/gitops
+opencenter sops secrets-encrypt --search-path .
 ```
 
 Files automatically encrypted:
@@ -473,7 +473,7 @@ creation_rules:
 3. Re-encrypt all files:
 
 ```bash
-openCenter sops rotate-key --search-path .
+opencenter sops rotate-key --search-path .
 ```
 
 Now both keys can decrypt the files.
@@ -485,7 +485,7 @@ Now both keys can decrypt the files.
 2. Rotate to a new key:
 
 ```bash
-openCenter sops rotate-key --search-path .
+opencenter sops rotate-key --search-path .
 ```
 
 
@@ -496,7 +496,7 @@ openCenter sops rotate-key --search-path .
 1. Identify plaintext secret files:
 
 ```bash
-openCenter sops secrets-list --search-path .
+opencenter sops secrets-list --search-path .
 ```
 
 2. Back up plaintext files:
@@ -508,13 +508,13 @@ tar czf secrets-backup-$(date +%Y%m%d).tar.gz secrets/
 3. Encrypt all secrets:
 
 ```bash
-openCenter sops secrets-encrypt --search-path .
+opencenter sops secrets-encrypt --search-path .
 ```
 
 4. Verify encryption:
 
 ```bash
-openCenter sops secrets-list --search-path .
+opencenter sops secrets-list --search-path .
 ```
 
 5. Remove plaintext backups from version control:
@@ -543,7 +543,7 @@ sops --decrypt secrets/credentials.yaml
 Or specify it in the command:
 
 ```bash
-openCenter sops secrets-decrypt --key-file ~/.config/sops/age/keys.txt
+opencenter sops secrets-decrypt --key-file ~/.config/sops/age/keys.txt
 ```
 
 ### "MAC mismatch" error
@@ -701,7 +701,7 @@ Encrypt secrets in CI pipelines:
   run: |
     echo "$SOPS_AGE_KEY" > /tmp/age-key.txt
     export SOPS_AGE_KEY_FILE=/tmp/age-key.txt
-    openCenter sops secrets-encrypt --search-path ./gitops
+    opencenter sops secrets-encrypt --search-path ./gitops
     rm /tmp/age-key.txt
 ```
 
@@ -726,16 +726,16 @@ rm /tmp/age-key.txt
 
 ```bash
 # Generate new Age key
-openCenter sops generate-key [--key-file PATH] [--update-sops-config]
+opencenter sops generate-key [--key-file PATH] [--update-sops-config]
 
 # Rotate Age keys
-openCenter sops rotate-key [--key-file PATH] [--search-path PATH]
+opencenter sops rotate-key [--key-file PATH] [--search-path PATH]
 
 # Back up Age keys
-openCenter sops backup-key [--key-file PATH] [--backup-dir PATH]
+opencenter sops backup-key [--key-file PATH] [--backup-dir PATH]
 
 # Validate Age key setup
-openCenter sops validate [--key-file PATH] [--config-file PATH]
+opencenter sops validate [--key-file PATH] [--config-file PATH]
 ```
 
 
@@ -743,22 +743,22 @@ openCenter sops validate [--key-file PATH] [--config-file PATH]
 
 ```bash
 # List secrets status
-openCenter sops secrets-list [--search-path PATH] [--key-file PATH]
+opencenter sops secrets-list [--search-path PATH] [--key-file PATH]
 
 # Encrypt secrets with backups
-openCenter sops secrets-encrypt [--search-path PATH] [--backups]
+opencenter sops secrets-encrypt [--search-path PATH] [--backups]
 
 # Encrypt secrets without backups (fast)
-openCenter sops secrets-encrypt-fast [--search-path PATH]
+opencenter sops secrets-encrypt-fast [--search-path PATH]
 
 # Decrypt secrets with backups
-openCenter sops secrets-decrypt [--search-path PATH] [--backups]
+opencenter sops secrets-decrypt [--search-path PATH] [--backups]
 
 # Decrypt secrets without backups (fast)
-openCenter sops secrets-decrypt-fast [--search-path PATH]
+opencenter sops secrets-decrypt-fast [--search-path PATH]
 
 # Show status (alias for secrets-list)
-openCenter sops secrets-status [--search-path PATH]
+opencenter sops secrets-status [--search-path PATH]
 ```
 
 ### Common flags

@@ -29,9 +29,9 @@
 - [See Also](#see-also)
 **Document Type:** Reference  
 **Audience:** All users  
-**Purpose:** Comprehensive terminology reference for openCenter-cli
+**Purpose:** Comprehensive terminology reference for opencenter-cli
 
-This glossary defines all terms, concepts, and acronyms used throughout the openCenter-cli project. Terms are organized alphabetically with cross-references where applicable.
+This glossary defines all terms, concepts, and acronyms used throughout the opencenter-cli project. Terms are organized alphabetically with cross-references where applicable.
 
 ---
 
@@ -43,7 +43,7 @@ A modern encryption tool and format used by SOPS for encrypting secrets. Age key
 **Related:** [SOPS](#sops), [Encryption](#encryption)
 
 ### Ansible
-Configuration management tool used by the Kubespray provider for deploying Kubernetes clusters. openCenter-cli generates Ansible inventory and playbooks for cluster provisioning.
+Configuration management tool used by the Kubespray provider for deploying Kubernetes clusters. opencenter-cli generates Ansible inventory and playbooks for cluster provisioning.
 
 **Related:** [Kubespray](#kubespray), [Provisioning](#provisioning)
 
@@ -62,7 +62,7 @@ GitOps continuous delivery tool for Kubernetes. Alternative to FluxCD for managi
 ## B
 
 ### Barbican
-OpenStack Key Manager service for storing and managing secrets, encryption keys, and certificates. Used by openCenter-cli for secure secret storage in OpenStack environments.
+OpenStack Key Manager service for storing and managing secrets, encryption keys, and certificates. Used by opencenter-cli for secure secret storage in OpenStack environments.
 
 **Related:** [OpenStack](#openstack), [Secrets Management](#secrets-management)
 
@@ -77,7 +77,7 @@ Jump server that provides secure access to cluster nodes. Acts as an intermediar
 **Related:** [SSH](#ssh), [Security](#security)
 
 ### BDD (Behavior-Driven Development)
-Testing methodology using Gherkin scenarios. openCenter-cli uses Godog for BDD tests in the `tests/features/` directory.
+Testing methodology using Gherkin scenarios. opencenter-cli uses Godog for BDD tests in the `tests/features/` directory.
 
 **Related:** [Testing](#testing), [Gherkin](#gherkin)
 
@@ -87,7 +87,7 @@ OpenStack feature that boots instances from Cinder block storage volumes instead
 **Related:** [Cinder](#cinder), [Storage](#storage)
 
 ### Bootstrap
-Process of initializing a Kubernetes cluster with GitOps tooling (FluxCD) and connecting it to the GitOps repository. Executed via `openCenter cluster bootstrap`.
+Process of initializing a Kubernetes cluster with GitOps tooling (FluxCD) and connecting it to the GitOps repository. Executed via `opencenter cluster bootstrap`.
 
 **Related:** [GitOps](#gitops), [FluxCD](#fluxcd)
 
@@ -96,12 +96,12 @@ Process of initializing a Kubernetes cluster with GitOps tooling (FluxCD) and co
 ## C
 
 ### Calico
-Container Network Interface (CNI) plugin providing network policy and security for Kubernetes. One of three CNI options supported by openCenter-cli.
+Container Network Interface (CNI) plugin providing network policy and security for Kubernetes. One of three CNI options supported by opencenter-cli.
 
 **Related:** [CNI](#cni), [Cilium](#cilium), [Kube-OVN](#kube-ovn)
 
 ### CCM (Cloud Controller Manager)
-Kubernetes component that integrates with cloud provider APIs for load balancers, storage, and networking. openCenter-cli deploys provider-specific CCMs.
+Kubernetes component that integrates with cloud provider APIs for load balancers, storage, and networking. opencenter-cli deploys provider-specific CCMs.
 
 **Related:** [OpenStack CCM](#openstack-ccm), [Cloud Provider](#cloud-provider)
 
@@ -126,12 +126,12 @@ OpenStack Block Storage service providing persistent volumes for instances. Used
 **Related:** [OpenStack](#openstack), [BFV](#bfv-boot-from-volume)
 
 ### CLI Config
-User-level configuration file (`~/.config/openCenter/config.yaml`) controlling CLI behavior, logging, and default settings. Separate from cluster configurations.
+User-level configuration file (`~/.config/opencenter/config.yaml`) controlling CLI behavior, logging, and default settings. Separate from cluster configurations.
 
 **Related:** [Configuration](#configuration), [Config Manager](#config-manager)
 
 ### Cluster
-A Kubernetes cluster managed by openCenter-cli. Each cluster has a unique name and configuration file stored in an organization-based directory structure.
+A Kubernetes cluster managed by opencenter-cli. Each cluster has a unique name and configuration file stored in an organization-based directory structure.
 
 **Related:** [Organization](#organization), [Configuration](#configuration)
 
@@ -141,12 +141,12 @@ YAML file (`.{cluster}-config.yaml`) defining all aspects of a Kubernetes cluste
 **Related:** [YAML](#yaml), [Schema](#schema)
 
 ### CNI (Container Network Interface)
-Plugin specification for configuring network interfaces in containers. openCenter-cli supports Calico, Cilium, and Kube-OVN.
+Plugin specification for configuring network interfaces in containers. opencenter-cli supports Calico, Cilium, and Kube-OVN.
 
 **Related:** [Calico](#calico), [Cilium](#cilium), [Kube-OVN](#kube-ovn)
 
 ### Cobra
-Go library for building CLI applications. Provides command structure, flag parsing, and help generation for openCenter-cli.
+Go library for building CLI applications. Provides command structure, flag parsing, and help generation for opencenter-cli.
 
 **Related:** [CLI](#cli), [Commands](#commands)
 
@@ -166,7 +166,7 @@ Kubernetes master nodes running the API server, scheduler, controller manager, a
 **Related:** [Master Node](#master-node), [etcd](#etcd)
 
 ### CSI (Container Storage Interface)
-Plugin specification for storage providers in Kubernetes. openCenter-cli deploys OpenStack Cinder CSI and optionally vSphere CSI.
+Plugin specification for storage providers in Kubernetes. opencenter-cli deploys OpenStack Cinder CSI and optionally vSphere CSI.
 
 **Related:** [Cinder](#cinder), [Storage](#storage)
 
@@ -185,7 +185,7 @@ OpenStack DNS service for managing DNS zones and records. Used for automated DNS
 **Related:** [OpenStack](#openstack), [DNS](#dns)
 
 ### Drift Detection
-Process of comparing actual cluster state against the declared configuration to identify unmanaged changes. Executed via `openCenter cluster drift`.
+Process of comparing actual cluster state against the declared configuration to identify unmanaged changes. Executed via `opencenter cluster drift`.
 
 **Related:** [GitOps](#gitops), [Validation](#validation)
 
@@ -204,7 +204,7 @@ Linux kernel technology enabling programmable packet processing. Used by Cilium 
 **Related:** [Cilium](#cilium), [CNI](#cni)
 
 ### Encryption
-Process of securing sensitive data using cryptographic algorithms. openCenter-cli uses SOPS with Age encryption for secrets.
+Process of securing sensitive data using cryptographic algorithms. opencenter-cli uses SOPS with Age encryption for secrets.
 
 **Related:** [SOPS](#sops), [Age](#age), [Secrets](#secrets)
 
@@ -262,12 +262,12 @@ Template repository containing standard Kubernetes manifests and FluxCD configur
 **Related:** [GitOps](#gitops), [Template](#template)
 
 ### GitOps Repository
-Git repository containing cluster-specific manifests, configurations, and secrets. Generated by `openCenter cluster setup`.
+Git repository containing cluster-specific manifests, configurations, and secrets. Generated by `opencenter cluster setup`.
 
 **Related:** [GitOps](#gitops), [Repository](#repository)
 
 ### Godog
-Go implementation of Cucumber for BDD testing. Used for integration tests in openCenter-cli.
+Go implementation of Cucumber for BDD testing. Used for integration tests in opencenter-cli.
 
 **Related:** [BDD](#bdd-behavior-driven-development), [Testing](#testing)
 
@@ -310,7 +310,7 @@ Configuration section defining cloud provider, networking, and compute resources
 **Related:** [Provider](#provider), [Cloud](#cloud)
 
 ### Ingress
-Kubernetes resource for exposing HTTP/HTTPS services externally. Managed via Gateway API in openCenter-cli.
+Kubernetes resource for exposing HTTP/HTTPS services externally. Managed via Gateway API in opencenter-cli.
 
 **Related:** [Gateway API](#gateway-api), [Load Balancer](#load-balancer)
 
@@ -324,7 +324,7 @@ Virtual machine in cloud infrastructure. Corresponds to Kubernetes nodes (master
 ## J
 
 ### JSON Schema
-Formal specification of configuration structure and validation rules. Generated via `openCenter cluster schema`.
+Formal specification of configuration structure and validation rules. Generated via `opencenter cluster schema`.
 
 **Related:** [Schema](#schema), [Validation](#validation)
 
@@ -363,12 +363,12 @@ Virtual IP solution for Kubernetes control plane high availability. Provides flo
 **Related:** [High Availability](#high-availability), [Control Plane](#control-plane)
 
 ### Kubespray
-Ansible-based Kubernetes deployment tool. Used by openCenter-cli for cluster provisioning.
+Ansible-based Kubernetes deployment tool. Used by opencenter-cli for cluster provisioning.
 
 **Related:** [Ansible](#ansible), [Provisioning](#provisioning)
 
 ### Kubernetes
-Open-source container orchestration platform. The primary workload managed by openCenter-cli.
+Open-source container orchestration platform. The primary workload managed by opencenter-cli.
 
 **Related:** [Cluster](#cluster), [Container](#container)
 
@@ -426,7 +426,7 @@ Process of updating configuration from one schema version to another. Handled au
 **Related:** [Schema](#schema), [Versioning](#versioning)
 
 ### Mise
-Tool version management and task automation system. Replaces Make for build tasks in openCenter-cli.
+Tool version management and task automation system. Replaces Make for build tasks in opencenter-cli.
 
 **Related:** [Build System](#build-system), [Tasks](#tasks)
 
@@ -484,7 +484,7 @@ Framework for managing Kubernetes operators. Handles installation, updates, and 
 **Related:** [Operator](#operator), [Kubernetes](#kubernetes)
 
 ### OpenStack
-Open-source cloud computing platform. Primary infrastructure provider supported by openCenter-cli.
+Open-source cloud computing platform. Primary infrastructure provider supported by opencenter-cli.
 
 **Related:** [Provider](#provider), [Cloud](#cloud)
 
@@ -538,7 +538,7 @@ Kubernetes storage resource that persists beyond pod lifecycle. Backed by cloud 
 **Related:** [Storage](#storage), [CSI](#csi-container-storage-interface)
 
 ### Plugin
-External command extending openCenter-cli functionality. Discovered automatically in `~/.config/openCenter/plugins/`.
+External command extending opencenter-cli functionality. Discovered automatically in `~/.config/opencenter/plugins/`.
 
 **Related:** [CLI](#cli), [Extension](#extension)
 
@@ -548,7 +548,7 @@ Smallest deployable unit in Kubernetes containing one or more containers.
 **Related:** [Kubernetes](#kubernetes), [Container](#container)
 
 ### Pod Security
-Kubernetes security standards enforcing security best practices for pods. Managed by Kyverno in openCenter-cli.
+Kubernetes security standards enforcing security best practices for pods. Managed by Kyverno in opencenter-cli.
 
 **Related:** [Security](#security), [Kyverno](#kyverno)
 
@@ -558,7 +558,7 @@ Rule or constraint enforced by Kubernetes admission controllers. Implemented via
 **Related:** [Kyverno](#kyverno), [Security](#security)
 
 ### Preflight
-Pre-deployment validation checking cloud provider connectivity, quotas, and resource availability. Executed via `openCenter cluster preflight`.
+Pre-deployment validation checking cloud provider connectivity, quotas, and resource availability. Executed via `opencenter cluster preflight`.
 
 **Related:** [Validation](#validation), [Provider](#provider)
 
@@ -671,7 +671,7 @@ Configuration structure mapping service names to their configurations. Used for 
 **Related:** [Service](#service), [Configuration](#configuration)
 
 ### Setup
-Process of generating GitOps repository structure and manifests. Executed via `openCenter cluster setup`.
+Process of generating GitOps repository structure and manifests. Executed via `opencenter cluster setup`.
 
 **Related:** [GitOps](#gitops), [Bootstrap](#bootstrap)
 
@@ -808,7 +808,7 @@ Kubernetes node running application workloads. Separate from control plane nodes
 **Related:** [Node](#node), [Cluster](#cluster)
 
 ### Workspace
-Local directory containing GitOps repository and generated files. Typically `~/.config/openCenter/clusters/<org>/<cluster>/`.
+Local directory containing GitOps repository and generated files. Typically `~/.config/opencenter/clusters/<org>/<cluster>/`.
 
 **Related:** [GitOps](#gitops), [Organization](#organization)
 
@@ -817,7 +817,7 @@ Local directory containing GitOps repository and generated files. Typically `~/.
 ## Y
 
 ### YAML (YAML Ain't Markup Language)
-Human-readable data serialization format. Used for all configuration files in openCenter-cli.
+Human-readable data serialization format. Used for all configuration files in opencenter-cli.
 
 **Related:** [Configuration](#configuration), [Serialization](#serialization)
 

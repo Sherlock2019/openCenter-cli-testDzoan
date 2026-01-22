@@ -212,7 +212,7 @@ func TestValidatePath(t *testing.T) {
 		},
 		{
 			name:      "valid absolute path",
-			input:     "/home/user/.config/openCenter/cluster.yaml",
+			input:     "/home/user/.config/opencenter/cluster.yaml",
 			wantError: false,
 		},
 		{
@@ -658,7 +658,7 @@ func BenchmarkValidateClusterName(b *testing.B) {
 func BenchmarkValidatePath(b *testing.B) {
 	validator := NewDefaultInputValidator()
 	for i := 0; i < b.N; i++ {
-		_ = validator.ValidatePath("/home/user/.config/openCenter/cluster.yaml")
+		_ = validator.ValidatePath("/home/user/.config/opencenter/cluster.yaml")
 	}
 }
 

@@ -17,7 +17,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 )
 
 // GitOpsGenerator defines the interface for GitOps repository generation.

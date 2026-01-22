@@ -21,7 +21,7 @@ Run preflight checks for required tools and provider requirements.
 ## Synopsis
 
 ```bash
-openCenter cluster preflight [name]
+opencenter cluster preflight [name]
 ```
 
 ## Description
@@ -36,10 +36,10 @@ The `cluster preflight` command validates that all required tools are installed 
 
 ```bash
 # Run preflight checks for active cluster
-openCenter cluster preflight
+opencenter cluster preflight
 
 # Run for specific cluster
-openCenter cluster preflight my-cluster
+opencenter cluster preflight my-cluster
 ```
 
 ## Checks Performed
@@ -180,10 +180,10 @@ Error: failed to load cluster configuration: cluster "my-cluster" not found
 **Solution:**
 ```bash
 # Verify cluster exists
-openCenter cluster list
+opencenter cluster list
 
 # Initialize cluster if needed
-openCenter cluster init my-cluster
+opencenter cluster init my-cluster
 ```
 
 ## Use Cases
@@ -192,7 +192,7 @@ openCenter cluster init my-cluster
 
 Run preflight checks before deploying a cluster:
 ```bash
-openCenter cluster preflight my-cluster
+opencenter cluster preflight my-cluster
 ```
 
 ### CI/CD Integration
@@ -203,10 +203,10 @@ Include preflight checks in deployment pipelines:
 set -e
 
 # Run preflight checks
-openCenter cluster preflight my-cluster
+opencenter cluster preflight my-cluster
 
 # If successful, proceed with deployment
-openCenter cluster bootstrap my-cluster
+opencenter cluster bootstrap my-cluster
 ```
 
 ### Troubleshooting
@@ -214,7 +214,7 @@ openCenter cluster bootstrap my-cluster
 Diagnose environment issues:
 ```bash
 # Check tool availability
-openCenter cluster preflight my-cluster
+opencenter cluster preflight my-cluster
 
 # Verify specific tool
 which kubectl

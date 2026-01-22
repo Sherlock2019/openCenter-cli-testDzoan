@@ -20,17 +20,17 @@ last_updated: 2025-01-XX
 - [Best Practices](#best-practices)
 - [Related Documentation](#related-documentation)
 - [Additional Resources](#additional-resources)
-This guide explains OpenStack networking concepts and configuration options in openCenter, helping you understand how to design and configure network topology for your Kubernetes clusters.
+This guide explains OpenStack networking concepts and configuration options in opencenter, helping you understand how to design and configure network topology for your Kubernetes clusters.
 
 ## Overview
 
-OpenStack networking (Neutron) provides flexible network infrastructure for Kubernetes clusters. openCenter supports multiple networking patterns including floating IPs, load balancers, VLAN configurations, and DNS integration through Designate.
+OpenStack networking (Neutron) provides flexible network infrastructure for Kubernetes clusters. opencenter supports multiple networking patterns including floating IPs, load balancers, VLAN configurations, and DNS integration through Designate.
 
 ## Network Architecture Components
 
 ### 1. Network Topology
 
-OpenStack clusters deployed with openCenter use a multi-tier network architecture:
+OpenStack clusters deployed with opencenter use a multi-tier network architecture:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -102,10 +102,10 @@ opencenter:
 
 **Network creation behavior:**
 
-- If `network_id` is **not specified**: openCenter creates a new network for the cluster
-- If `network_id` **is specified**: openCenter uses the existing network
-- If `subnet_id` is **not specified**: openCenter creates a new subnet within the network
-- If `subnet_id` **is specified**: openCenter uses the existing subnet
+- If `network_id` is **not specified**: opencenter creates a new network for the cluster
+- If `network_id` **is specified**: opencenter uses the existing network
+- If `subnet_id` is **not specified**: opencenter creates a new subnet within the network
+- If `subnet_id` **is specified**: opencenter uses the existing subnet
 
 ### 4. VLAN Configuration
 
@@ -137,7 +137,7 @@ opencenter:
 
 ### 5. Load Balancer Configuration
 
-openCenter supports multiple load balancer providers for Kubernetes services:
+opencenter supports multiple load balancer providers for Kubernetes services:
 
 ```yaml
 opencenter:
@@ -246,7 +246,7 @@ opencenter:
 
 ### CNI Plugin Selection
 
-openCenter supports three CNI plugins. **Only one can be enabled at a time:**
+opencenter supports three CNI plugins. **Only one can be enabled at a time:**
 
 #### Calico (Default)
 

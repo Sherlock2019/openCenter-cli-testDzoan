@@ -16,7 +16,7 @@
 - [Open Questions](#open-questions)
 - [References](#references)
 ## Background
-Organizations operating in multi-tenant OpenStack clouds need an automated, auditable way to deploy Talos-backed Kubernetes clusters. The previous `readme.md` captured a narrative of Zero Trust controls (immutability, attestation, Barbican-backed secrets, WireGuard access). This PRD distills that narrative into implementable requirements for the openCenter CLI Talos provider.
+Organizations operating in multi-tenant OpenStack clouds need an automated, auditable way to deploy Talos-backed Kubernetes clusters. The previous `readme.md` captured a narrative of Zero Trust controls (immutability, attestation, Barbican-backed secrets, WireGuard access). This PRD distills that narrative into implementable requirements for the opencenter CLI Talos provider.
 
 ## Goals
 1. Enable secure, immutable Kubernetes clusters using Talos Linux on OpenStack with minimal manual steps.

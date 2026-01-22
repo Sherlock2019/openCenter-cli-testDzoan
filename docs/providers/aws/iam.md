@@ -15,17 +15,17 @@
 - [External Resources](#external-resources)
 **doc_type: reference**
 
-This document provides IAM policies, roles, and permissions required for openCenter to provision and manage Kubernetes clusters on AWS.
+This document provides IAM policies, roles, and permissions required for opencenter to provision and manage Kubernetes clusters on AWS.
 
 ## Purpose
 
-IAM (Identity and Access Management) controls access to AWS resources. openCenter requires specific permissions to create VPCs, EC2 instances, load balancers, and other infrastructure components. This guide provides the minimum required permissions and recommended security practices.
+IAM (Identity and Access Management) controls access to AWS resources. opencenter requires specific permissions to create VPCs, EC2 instances, load balancers, and other infrastructure components. This guide provides the minimum required permissions and recommended security practices.
 
 ## IAM Overview
 
 ### Authentication Methods
 
-openCenter supports two IAM authentication methods:
+opencenter supports two IAM authentication methods:
 
 **IAM User with Access Keys:**
 - Programmatic access for automation
@@ -41,7 +41,7 @@ openCenter supports two IAM authentication methods:
 
 ### Permission Scope
 
-openCenter requires permissions in these AWS service categories:
+opencenter requires permissions in these AWS service categories:
 
 - **EC2**: Instance, volume, and network management
 - **VPC**: Network infrastructure creation
@@ -54,7 +54,7 @@ openCenter requires permissions in these AWS service categories:
 
 ### IAM Policy for Infrastructure Provisioning
 
-This policy grants minimum permissions for openCenter to provision cluster infrastructure:
+This policy grants minimum permissions for opencenter to provision cluster infrastructure:
 
 ```json
 {
@@ -251,7 +251,7 @@ EOF
 aws iam create-policy \
   --policy-name OpenCenterProvisioning \
   --policy-document file://opencenter-provisioning-policy.json \
-  --description "Permissions for openCenter to provision Kubernetes clusters"
+  --description "Permissions for opencenter to provision Kubernetes clusters"
 
 # Note the policy ARN from output
 ```
@@ -670,7 +670,7 @@ For EBS CSI driver to manage volumes:
   "Resource": "arn:aws:ec2:*:*:instance/*",
   "Condition": {
     "StringEquals": {
-      "ec2:ResourceTag/ManagedBy": "openCenter"
+      "ec2:ResourceTag/ManagedBy": "opencenter"
     }
   }
 }
@@ -871,4 +871,4 @@ aws iam attach-user-policy \
 ---
 
 **Last Updated**: January 2025  
-**Maintained By**: openCenter Team
+**Maintained By**: opencenter Team

@@ -1,6 +1,6 @@
 # Config Commands Reference
 
-Configuration management commands for openCenter CLI.
+Configuration management commands for opencenter CLI.
 
 ## Available Commands
 
@@ -8,7 +8,7 @@ Configuration management commands for openCenter CLI.
 Generate IDE configuration files for enhanced development experience.
 
 ```bash
-openCenter config ide [--vscode] [--jetbrains] [--all]
+opencenter config ide [--vscode] [--jetbrains] [--all]
 ```
 
 **Use Cases:**

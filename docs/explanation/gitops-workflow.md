@@ -1,4 +1,4 @@
-# GitOps Workflow in openCenter
+# GitOps Workflow in opencenter
 
 
 ## Table of Contents
@@ -6,7 +6,7 @@
 - [What GitOps Means Here](#what-gitops-means-here)
 - [Why GitOps](#why-gitops)
 - [Repository Structure](#repository-structure)
-- [How openCenter Generates Repositories](#how-opencenter-generates-repositories)
+- [How opencenter Generates Repositories](#how-opencenter-generates-repositories)
 - [FluxCD Integration](#fluxcd-integration)
 - [ArgoCD Integration](#argocd-integration)
 - [Configuration Change Workflow](#configuration-change-workflow)
@@ -14,13 +14,13 @@
 - [Common Misconceptions](#common-misconceptions)
 **doc_type: explanation**
 
-This document explains what GitOps means in openCenter's context, why it's the default approach, and how configuration changes flow through Git to your cluster.
+This document explains what GitOps means in opencenter's context, why it's the default approach, and how configuration changes flow through Git to your cluster.
 
 ## What GitOps Means Here
 
 GitOps treats Git as the single source of truth for infrastructure and application configuration. Every change to your cluster—whether it's a new service, a configuration update, or an infrastructure modification—flows through a Git commit. A continuous delivery tool (FluxCD or ArgoCD) watches the repository and automatically applies changes to the cluster.
 
-openCenter generates a complete GitOps repository from your cluster configuration. The repository contains everything needed to provision infrastructure, deploy Kubernetes, and install applications. You commit this repository to Git, point FluxCD or ArgoCD at it, and the cluster converges to match what's in the repository.
+opencenter generates a complete GitOps repository from your cluster configuration. The repository contains everything needed to provision infrastructure, deploy Kubernetes, and install applications. You commit this repository to Git, point FluxCD or ArgoCD at it, and the cluster converges to match what's in the repository.
 
 ## Why GitOps
 
@@ -42,7 +42,7 @@ Developers commit application changes. Platform engineers commit infrastructure 
 
 ## Repository Structure
 
-openCenter generates a repository with two top-level directories:
+opencenter generates a repository with two top-level directories:
 
 ```
 gitops-repo/
@@ -97,9 +97,9 @@ This directory is not managed by FluxCD. You run `mise run tofu-apply` or `mise 
 
 The `.flux-system/` directory contains FluxCD's own configuration. This includes the Kustomization that bootstraps FluxCD itself. When you run `flux bootstrap`, it creates this directory and commits it to the repository.
 
-## How openCenter Generates Repositories
+## How opencenter Generates Repositories
 
-openCenter embeds templates in the binary using Go's `embed` package. When you run `openCenter cluster setup`, it:
+opencenter embeds templates in the binary using Go's `embed` package. When you run `opencenter cluster setup`, it:
 
 1. Creates a workspace directory for generation
 2. Copies base files from `gitops-base-dir/` (README, .gitignore, directory structure)
@@ -110,7 +110,7 @@ openCenter embeds templates in the binary using Go's `embed` package. When you r
 
 Templates have access to your entire cluster configuration. A template can reference `{{ .OpenCenter.Meta.Name }}` to get the cluster name or `{{ .OpenCenter.Infrastructure.Provider }}` to conditionally generate provider-specific resources.
 
-The generation process runs in stages with checkpointing. If a stage fails, openCenter rolls back to the previous checkpoint. This prevents partial repository generation that could leave you with an inconsistent state.
+The generation process runs in stages with checkpointing. If a stage fails, opencenter rolls back to the previous checkpoint. This prevents partial repository generation that could leave you with an inconsistent state.
 
 ### Template Rendering
 
@@ -120,7 +120,7 @@ The template engine uses Sprig functions for string manipulation, date formattin
 
 ### Service Filtering
 
-openCenter skips disabled services during generation. If you set `services.cert-manager.enabled: false` in your configuration, the generator won't create cert-manager manifests or FluxCD Kustomizations. This keeps the repository clean and avoids deploying unwanted services.
+opencenter skips disabled services during generation. If you set `services.cert-manager.enabled: false` in your configuration, the generator won't create cert-manager manifests or FluxCD Kustomizations. This keeps the repository clean and avoids deploying unwanted services.
 
 ## FluxCD Integration
 
@@ -151,7 +151,7 @@ FluxCD detects drift by comparing the manifests in Git to the resources in the c
 
 ArgoCD is an alternative to FluxCD with a similar reconciliation model but a different architecture. It provides a web UI for visualizing application state and manually triggering syncs.
 
-openCenter generates FluxCD-compatible manifests by default, but the repository structure works with ArgoCD as well. You need to create ArgoCD Application resources that point to the `applications/overlays/<cluster-name>/` directory.
+opencenter generates FluxCD-compatible manifests by default, but the repository structure works with ArgoCD as well. You need to create ArgoCD Application resources that point to the `applications/overlays/<cluster-name>/` directory.
 
 ArgoCD's reconciliation loop works the same way: poll Git, compare to cluster, apply differences. The main difference is that ArgoCD has a centralized API server and UI, while FluxCD is fully decentralized with CLI-only management.
 
@@ -160,7 +160,7 @@ ArgoCD's reconciliation loop works the same way: poll Git, compare to cluster, a
 Here's how a typical configuration change flows through the system:
 
 1. **Edit Configuration**: You modify `.opencenter-config.yaml` to change a service setting
-2. **Regenerate Repository**: Run `openCenter cluster render` to update the GitOps repository
+2. **Regenerate Repository**: Run `opencenter cluster render` to update the GitOps repository
 3. **Review Changes**: Run `git diff` to see what changed in the generated manifests
 4. **Commit Changes**: Run `git commit -am "Update ingress controller replicas"` and `git push`
 5. **Automatic Deployment**: FluxCD detects the new commit and applies the changes to the cluster
@@ -188,7 +188,7 @@ Sometimes you need to make an emergency change without going through Git. You ca
 
 **Imperative** (running `kubectl apply` directly) is simpler for small clusters or development environments. You don't need Git or FluxCD. The cost is no audit trail, no automated rollback, and no drift detection.
 
-openCenter defaults to GitOps because it targets production clusters where audit trails and automated reconciliation matter. For local development with Kind, you can skip the GitOps repository and apply manifests directly.
+opencenter defaults to GitOps because it targets production clusters where audit trails and automated reconciliation matter. For local development with Kind, you can skip the GitOps repository and apply manifests directly.
 
 ### Complexity vs Benefits
 
@@ -202,7 +202,7 @@ For small teams or simple clusters, this might be overkill. For regulated enviro
 
 The GitOps repository grows over time. Every commit adds to the history. Large Helm charts or binary files (like container images) bloat the repository.
 
-openCenter generates text-based manifests, not binaries. The repository stays small. If you add Helm charts, use HelmRepository sources instead of committing the chart tarballs.
+opencenter generates text-based manifests, not binaries. The repository stays small. If you add Helm charts, use HelmRepository sources instead of committing the chart tarballs.
 
 ## Common Misconceptions
 
@@ -222,19 +222,19 @@ GitOps *detects* and *corrects* manual changes, but it doesn't prevent them. You
 
 If you need to prevent manual changes entirely, use Kubernetes admission controllers or RBAC policies.
 
-### "I need to learn Kustomize to use openCenter"
+### "I need to learn Kustomize to use opencenter"
 
-openCenter generates Kustomize manifests for you. You don't need to write Kustomize overlays by hand. If you want to customize beyond what openCenter supports, you can edit the generated files, but the basic workflow doesn't require Kustomize knowledge.
+opencenter generates Kustomize manifests for you. You don't need to write Kustomize overlays by hand. If you want to customize beyond what opencenter supports, you can edit the generated files, but the basic workflow doesn't require Kustomize knowledge.
 
 ### "GitOps is only for applications"
 
-openCenter uses GitOps for both applications and infrastructure configuration. The infrastructure provisioning (Terraform/Ansible) runs outside the cluster, but the cluster configuration (services, networking, storage) is managed through GitOps.
+opencenter uses GitOps for both applications and infrastructure configuration. The infrastructure provisioning (Terraform/Ansible) runs outside the cluster, but the cluster configuration (services, networking, storage) is managed through GitOps.
 
 ---
 
 **Related Documentation**
 
-- [Architecture Overview](architecture.md) - How openCenter components fit together
+- [Architecture Overview](architecture.md) - How opencenter components fit together
 - [Security Model](security-model.md) - How secrets are encrypted and managed
 - [Template Engine](template-engine.md) - How templates generate manifests
 - [Configuration System](configuration-system.md) - How the YAML configuration works
@@ -248,4 +248,4 @@ openCenter uses GitOps for both applications and infrastructure configuration. T
 ---
 
 **Last Updated**: January 19, 2026  
-**openCenter Version**: 1.0.0
+**opencenter Version**: 1.0.0

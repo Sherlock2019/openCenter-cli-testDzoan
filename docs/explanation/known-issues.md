@@ -19,7 +19,7 @@
 - [Conclusion](#conclusion)
 **doc_type**: explanation
 
-This document describes current limitations, known issues, and planned improvements in openCenter. It's organized by functional area to help you understand what works, what doesn't, and what workarounds exist.
+This document describes current limitations, known issues, and planned improvements in opencenter. It's organized by functional area to help you understand what works, what doesn't, and what workarounds exist.
 
 ## Validation System
 
@@ -29,7 +29,7 @@ This document describes current limitations, known issues, and planned improveme
 
 **Impact**: The validation pipeline architecture described in documentation exists, but the actual pipeline adapter doesn't perform validation. Instead, validation runs through the `EnhancedConfigValidator` directly.
 
-**Workaround**: Use `openCenter cluster validate` which calls the enhanced validator. The validation still works—it just doesn't use the pipeline adapter architecture yet.
+**Workaround**: Use `opencenter cluster validate` which calls the enhanced validator. The validation still works—it just doesn't use the pipeline adapter architecture yet.
 
 **Status**: Planned for implementation. The architecture is designed and documented in `docs/dev/validation-pipeline.md`.
 
@@ -87,13 +87,13 @@ openstack image list
 
 ### Bare Metal Support
 
-**Issue**: openCenter assumes cloud provider APIs for provisioning. There's no bare metal provider.
+**Issue**: opencenter assumes cloud provider APIs for provisioning. There's no bare metal provider.
 
-**Impact**: You can't use openCenter to provision bare metal servers. You'd need to provision manually and then apply generated Kubernetes manifests.
+**Impact**: You can't use opencenter to provision bare metal servers. You'd need to provision manually and then apply generated Kubernetes manifests.
 
 **Workaround**: 
 1. Provision bare metal servers with your existing tools
-2. Use openCenter to generate Kubernetes manifests
+2. Use opencenter to generate Kubernetes manifests
 3. Manually apply manifests to your infrastructure
 
 This workflow isn't officially supported but is technically possible.
@@ -104,7 +104,7 @@ This workflow isn't officially supported but is technically possible.
 
 ### No Automated Cluster Upgrades
 
-**Issue**: openCenter creates clusters but doesn't manage Kubernetes version upgrades.
+**Issue**: opencenter creates clusters but doesn't manage Kubernetes version upgrades.
 
 **Impact**: To upgrade Kubernetes, you must:
 1. Update `kubernetes.version` in config
@@ -119,7 +119,7 @@ This workflow isn't officially supported but is technically possible.
 
 **Issue**: The `ScheduleBackups` method in `internal/operations/backup_manager.go` returns "not yet implemented".
 
-**Impact**: You can't schedule automatic backups through openCenter. Backup operations must be triggered manually.
+**Impact**: You can't schedule automatic backups through opencenter. Backup operations must be triggered manually.
 
 **Workaround**: Use external scheduling tools:
 - Kubernetes CronJobs for in-cluster backups
@@ -224,7 +224,7 @@ done
 
 **Workarounds**:
 - Create VPCs manually for complex networking requirements
-- Set up IAM roles before running openCenter
+- Set up IAM roles before running opencenter
 - Use EC2 instances with Kubespray for Kubernetes deployment
 
 ### vSphere
@@ -313,19 +313,19 @@ done
 
 **Impact**: You might need to refer to provider documentation directly for advanced configuration options.
 
-**Workaround**: Check provider official documentation for details not covered in openCenter docs. Open an issue if you find gaps.
+**Workaround**: Check provider official documentation for details not covered in opencenter docs. Open an issue if you find gaps.
 
 **Status**: Provider documentation is being expanded incrementally.
 
 ### API Documentation
 
-**Issue**: There's no API documentation for using openCenter as a library.
+**Issue**: There's no API documentation for using opencenter as a library.
 
-**Impact**: If you want to embed openCenter in another Go application, you'll need to read the source code to understand the API.
+**Impact**: If you want to embed opencenter in another Go application, you'll need to read the source code to understand the API.
 
 **Workaround**: The CLI commands in `cmd/` show how to use the internal packages. Use them as examples.
 
-**Status**: API documentation is not currently planned. openCenter is designed as a CLI tool, not a library.
+**Status**: API documentation is not currently planned. opencenter is designed as a CLI tool, not a library.
 
 ## Workarounds Summary
 
@@ -346,10 +346,10 @@ Here's a quick reference for common issues and their workarounds:
 
 If you encounter an issue not listed here:
 
-1. Check if it's a configuration error (run `openCenter cluster validate`)
+1. Check if it's a configuration error (run `opencenter cluster validate`)
 2. Search GitHub issues for similar problems
 3. If not found, open a new issue with:
-   - openCenter version (`openCenter version`)
+   - opencenter version (`opencenter version`)
    - Provider and environment details
    - Steps to reproduce
    - Expected vs. actual behavior
@@ -382,8 +382,8 @@ Check the GitHub milestones for planned release timelines.
 
 ## Conclusion
 
-openCenter is under active development. These limitations reflect the current state, not the final vision. Many are planned for future releases.
+opencenter is under active development. These limitations reflect the current state, not the final vision. Many are planned for future releases.
 
 The workarounds provided are production-tested. They're not ideal, but they work. If you find better workarounds or want to contribute fixes, see the contributing guide.
 
-Understanding these limitations helps you make informed decisions about using openCenter. For most use cases, the workarounds are sufficient. For cases where they're not, consider whether openCenter is the right tool for your needs.
+Understanding these limitations helps you make informed decisions about using opencenter. For most use cases, the workarounds are sufficient. For cases where they're not, consider whether opencenter is the right tool for your needs.

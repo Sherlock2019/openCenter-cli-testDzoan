@@ -348,5 +348,5 @@ func GetDefaultBackupDir() string {
 		return "/tmp/opencenter-backups"
 	}
 
-	return filepath.Join(homeDir, ".config", "openCenter", "backups")
+	return filepath.Join(homeDir, ".config", "opencenter", "backups")
 }

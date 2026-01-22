@@ -1,9 +1,9 @@
-# openCenter Documentation
+# opencenter Documentation
 
 
 ## Table of Contents
 
-- [What is openCenter?](#what-is-opencenter)
+- [What is opencenter?](#what-is-opencenter)
 - [Quick Navigation](#quick-navigation)
 - [Documentation Structure](#documentation-structure)
 - [By User Role](#by-user-role)
@@ -17,15 +17,15 @@
 - [License](#license)
 **doc_type: reference**
 
-Welcome to openCenter documentation. This guide helps you find what you need quickly.
+Welcome to opencenter documentation. This guide helps you find what you need quickly.
 
-## What is openCenter?
+## What is opencenter?
 
-openCenter transforms a single YAML configuration into a production-ready Kubernetes cluster with GitOps workflows, secrets management, and multi-cloud support.
+opencenter transforms a single YAML configuration into a production-ready Kubernetes cluster with GitOps workflows, secrets management, and multi-cloud support.
 
 ## Quick Navigation
 
-**New to openCenter?** Start with [Getting Started](tutorials/getting-started.md) for a 15-minute walkthrough.
+**New to opencenter?** Start with [Getting Started](tutorials/getting-started.md) for a 15-minute walkthrough.
 
 **Need to solve a problem?** Check [How-To Guides](how-to/README.md) for task-focused instructions.
 
@@ -101,7 +101,7 @@ You manage secrets and enforce security policies.
 4. [Secrets Reference](reference/secrets.md)
 
 ### Developers
-You extend openCenter or integrate it into workflows.
+You extend opencenter or integrate it into workflows.
 
 1. [Developer Guide](dev/README.md)
 2. [API Reference](reference/api.md)
@@ -111,7 +111,7 @@ You extend openCenter or integrate it into workflows.
 ## By Task
 
 ### Initial Setup
-- [Install openCenter](tutorials/getting-started.md#installation)
+- [Install opencenter](tutorials/getting-started.md#installation)
 - [Initialize first cluster](tutorials/getting-started.md#initialize-cluster)
 - [Configure cloud provider](how-to/provider-setup.md)
 - [Generate SOPS keys](how-to/secrets-management.md#generating-keys)
@@ -186,9 +186,9 @@ Internal documentation for contributors and maintainers:
 - [Age Encryption](https://age-encryption.org/)
 
 ### Community
-- [GitHub Repository](https://github.com/rackerlabs/openCenter-cli)
-- [Issue Tracker](https://github.com/rackerlabs/openCenter-cli/issues)
-- [Discussions](https://github.com/rackerlabs/openCenter-cli/discussions)
+- [GitHub Repository](https://github.com/rackerlabs/opencenter-cli)
+- [Issue Tracker](https://github.com/rackerlabs/opencenter-cli/issues)
+- [Discussions](https://github.com/rackerlabs/opencenter-cli/discussions)
 
 ### Support
 - [Troubleshooting Guide](how-to/troubleshooting.md)
@@ -206,7 +206,7 @@ We welcome documentation improvements. See [Contributing Guide](../contributing.
 ## Version Information
 
 - **Documentation Version:** 1.0.0
-- **openCenter Version:** 1.0.0
+- **opencenter Version:** 1.0.0
 - **Last Updated:** January 19, 2026
 
 ## License

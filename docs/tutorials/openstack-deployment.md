@@ -44,7 +44,7 @@ By the end of this tutorial, you'll have:
 Before starting, you need:
 - **OpenStack account** with project access
 - **OpenStack credentials** (application credentials or password)
-- **openCenter installed** (see [Getting Started](getting-started.md))
+- **opencenter installed** (see [Getting Started](getting-started.md))
 - **OpenStack CLI tools** installed (`python3-openstackclient`)
 - **Terraform or OpenTofu** installed (v1.6+)
 - **Git** installed and configured
@@ -84,7 +84,7 @@ Create application credentials for better security:
 
 ```bash
 openstack application credential create opencenter-prod \
-  --description "openCenter cluster deployment" \
+  --description "opencenter cluster deployment" \
   --role member
 ```
 
@@ -158,7 +158,7 @@ Record:
 Create your cluster configuration with OpenStack-specific settings:
 
 ```bash
-openCenter cluster init prod-k8s \
+opencenter cluster init prod-k8s \
   --opencenter.meta.env=production \
   --opencenter.meta.region=sjc3 \
   --opencenter.infrastructure.provider=openstack \
@@ -182,15 +182,15 @@ Replace these values with your OpenStack details:
 You'll see output like:
 
 ```
-Generated ed25519 SSH key pair at ~/.config/openCenter/clusters/opencenter/secrets/ssh/prod-k8s-production-sjc3
-Created cluster configuration in organization 'opencenter' at '~/.config/openCenter/clusters/opencenter/infrastructure/clusters/prod-k8s'
+Generated ed25519 SSH key pair at ~/.config/opencenter/clusters/opencenter/secrets/ssh/prod-k8s-production-sjc3
+Created cluster configuration in organization 'opencenter' at '~/.config/opencenter/clusters/opencenter/infrastructure/clusters/prod-k8s'
 GitOps repository root: /home/user/gitops/prod-k8s
-SOPS key location: ~/.config/openCenter/clusters/opencenter/secrets/age/keys/prod-k8s-key.txt
+SOPS key location: ~/.config/opencenter/clusters/opencenter/secrets/age/keys/prod-k8s-key.txt
 ```
 
 The configuration file is at:
 ```
-~/.config/openCenter/clusters/opencenter/.prod-k8s-config.yaml
+~/.config/opencenter/clusters/opencenter/.prod-k8s-config.yaml
 ```
 
 
@@ -200,7 +200,7 @@ Edit your cluster configuration to add credentials and network details:
 
 ```bash
 # Open the configuration file
-vim ~/.config/openCenter/clusters/opencenter/.prod-k8s-config.yaml
+vim ~/.config/opencenter/clusters/opencenter/.prod-k8s-config.yaml
 ```
 
 ### Add Authentication Credentials
@@ -353,13 +353,13 @@ The SOPS Age key was created during initialization. Configure it in your cluster
 
 ```yaml
 secrets:
-  sops_age_key_file: "/home/user/.config/openCenter/clusters/opencenter/secrets/age/keys/prod-k8s-key.txt"
+  sops_age_key_file: "/home/user/.config/opencenter/clusters/opencenter/secrets/age/keys/prod-k8s-key.txt"
 ```
 
 Verify the key exists:
 
 ```bash
-cat ~/.config/openCenter/clusters/opencenter/secrets/age/keys/prod-k8s-key.txt
+cat ~/.config/opencenter/clusters/opencenter/secrets/age/keys/prod-k8s-key.txt
 ```
 
 You should see an Age key starting with `AGE-SECRET-KEY-`.
@@ -427,7 +427,7 @@ For OpenStack Swift as S3 backend, use the Swift endpoint and Swift credentials.
 Check that your configuration is valid before deployment:
 
 ```bash
-openCenter cluster validate prod-k8s
+opencenter cluster validate prod-k8s
 ```
 
 You should see:
@@ -460,7 +460,7 @@ If validation fails, read the error messages carefully. They indicate which fiel
 Create the GitOps repository structure with all manifests:
 
 ```bash
-openCenter cluster setup prod-k8s
+opencenter cluster setup prod-k8s
 ```
 
 This command:
@@ -524,7 +524,7 @@ git push -u origin main
 Deploy the cluster infrastructure to OpenStack:
 
 ```bash
-openCenter cluster bootstrap prod-k8s
+opencenter cluster bootstrap prod-k8s
 ```
 
 This command runs these steps automatically:
@@ -609,13 +609,13 @@ If bootstrap fails partway through, fix the issue and resume:
 
 ```bash
 # Resume from where it failed
-openCenter cluster bootstrap prod-k8s
+opencenter cluster bootstrap prod-k8s
 
 # Or restart from a specific step
-openCenter cluster bootstrap prod-k8s --from-step terraform-apply
+opencenter cluster bootstrap prod-k8s --from-step terraform-apply
 
 # Or restart completely
-openCenter cluster bootstrap prod-k8s --restart
+opencenter cluster bootstrap prod-k8s --restart
 ```
 
 Bootstrap state is saved in:
@@ -822,7 +822,7 @@ openstack server show prod-k8s-cp-1 -f value -c addresses
 ### SSH to Master Node
 
 ```bash
-ssh -i ~/.config/openCenter/clusters/opencenter/secrets/ssh/prod-k8s-production-sjc3 ubuntu@203.0.113.50
+ssh -i ~/.config/opencenter/clusters/opencenter/secrets/ssh/prod-k8s-production-sjc3 ubuntu@203.0.113.50
 ```
 
 Replace:
@@ -841,7 +841,7 @@ ssh 10.0.0.20  # Worker node private IP
 Or use SSH proxy jump:
 
 ```bash
-ssh -i ~/.config/openCenter/clusters/opencenter/secrets/ssh/prod-k8s-production-sjc3 \
+ssh -i ~/.config/opencenter/clusters/opencenter/secrets/ssh/prod-k8s-production-sjc3 \
   -J ubuntu@203.0.113.50 \
   ubuntu@10.0.0.20
 ```
@@ -948,7 +948,7 @@ opencenter:
 Then regenerate and apply:
 
 ```bash
-openCenter cluster setup prod-k8s --force
+opencenter cluster setup prod-k8s --force
 cd /home/user/gitops/prod-k8s
 git add .
 git commit -m "Enable monitoring and logging services"
@@ -991,8 +991,8 @@ opencenter:
 Apply changes:
 
 ```bash
-openCenter cluster validate prod-k8s
-openCenter cluster setup prod-k8s --force
+opencenter cluster validate prod-k8s
+opencenter cluster setup prod-k8s --force
 cd /home/user/gitops/prod-k8s/infrastructure/clusters/prod-k8s
 terraform apply
 ```
@@ -1015,8 +1015,8 @@ Follow the upgrade procedure in [Cluster Upgrades](../how-to/cluster-upgrades.md
 Deploy additional clusters:
 
 ```bash
-openCenter cluster init prod-k8s-west --opencenter.meta.region=dfw3
-openCenter cluster init staging-k8s --opencenter.meta.env=staging
+opencenter cluster init prod-k8s-west --opencenter.meta.region=dfw3
+opencenter cluster init staging-k8s --opencenter.meta.env=staging
 ```
 
 See [Multi-Cluster Management](../how-to/multi-cluster.md) for managing multiple clusters.
@@ -1377,10 +1377,10 @@ openstack floating ip list
 rm -rf /home/user/gitops/prod-k8s
 
 # Remove cluster configuration (optional)
-rm ~/.config/openCenter/clusters/opencenter/.prod-k8s-config.yaml
+rm ~/.config/opencenter/clusters/opencenter/.prod-k8s-config.yaml
 
 # Remove SOPS keys (optional, keep for recovery)
-# rm ~/.config/openCenter/clusters/opencenter/secrets/age/keys/prod-k8s-key.txt
+# rm ~/.config/opencenter/clusters/opencenter/secrets/age/keys/prod-k8s-key.txt
 ```
 
 **Warning**: Keep SOPS keys if you have encrypted backups you might need to restore.
@@ -1388,7 +1388,7 @@ rm ~/.config/openCenter/clusters/opencenter/.prod-k8s-config.yaml
 
 ## Summary
 
-You've successfully deployed a production Kubernetes cluster on OpenStack using openCenter. The deployment includes:
+You've successfully deployed a production Kubernetes cluster on OpenStack using opencenter. The deployment includes:
 
 **Infrastructure:**
 - 3 master nodes for control plane HA
@@ -1423,18 +1423,18 @@ The cluster is ready for application deployment. Follow the Next Steps section t
 
 ## Related Documentation
 
-- [Getting Started Tutorial](getting-started.md) - Basic openCenter concepts
+- [Getting Started Tutorial](getting-started.md) - Basic opencenter concepts
 - [Configuration Reference](../reference/configuration.md) - Complete configuration options
 - [OpenStack Provider](../providers/openstack/README.md) - OpenStack-specific details
 - [Secrets Management](../how-to/secrets-management.md) - SOPS and encryption
 - [Troubleshooting Guide](../how-to/troubleshooting.md) - Common issues and solutions
-- [GitOps Workflow](../explanation/gitops-workflow.md) - Understanding GitOps with openCenter
+- [GitOps Workflow](../explanation/gitops-workflow.md) - Understanding GitOps with opencenter
 - [Security Model](../explanation/security-model.md) - Security architecture
 
 ## Getting Help
 
 **Issues with this tutorial:**
-- Check [GitHub Issues](https://github.com/rackerlabs/openCenter-cli/issues)
+- Check [GitHub Issues](https://github.com/rackerlabs/opencenter-cli/issues)
 - Review [Troubleshooting Guide](../how-to/troubleshooting.md)
 
 **OpenStack-specific questions:**
@@ -1449,5 +1449,5 @@ The cluster is ready for application deployment. Follow the Next Steps section t
 
 **Tutorial Duration**: 45 minutes  
 **Last Updated**: January 2025  
-**Maintained By**: openCenter Team
+**Maintained By**: opencenter Team
 

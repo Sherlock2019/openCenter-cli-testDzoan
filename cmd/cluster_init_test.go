@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 )
 
 func TestGenerateDefaultSOPSKey(t *testing.T) {

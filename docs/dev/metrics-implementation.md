@@ -14,7 +14,7 @@
 - [Conclusion](#conclusion)
 ## Overview
 
-This document summarizes the implementation of the performance metrics system for openCenter, which tracks template rendering times, configuration building times, and GitOps generation times.
+This document summarizes the implementation of the performance metrics system for opencenter, which tracks template rendering times, configuration building times, and GitOps generation times.
 
 ## Implementation Details
 
@@ -186,7 +186,7 @@ All tests pass successfully:
 
 ```
 PASS
-ok      github.com/rackerlabs/openCenter-cli/internal/util/metrics      0.387s
+ok      github.com/rackerlabs/opencenter-cli/internal/util/metrics      0.387s
 ```
 
 ### Test Categories
@@ -270,4 +270,4 @@ Complete documentation is available in:
 
 ## Conclusion
 
-The metrics implementation provides a robust, efficient, and easy-to-use system for tracking performance across openCenter operations. It integrates seamlessly with existing components and provides valuable insights for optimization and monitoring.
+The metrics implementation provides a robust, efficient, and easy-to-use system for tracking performance across opencenter operations. It integrates seamlessly with existing components and provides valuable insights for optimization and monitoring.

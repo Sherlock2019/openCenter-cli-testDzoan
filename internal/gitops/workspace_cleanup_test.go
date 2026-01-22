@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 )
 
 // TestWorkspaceCleanupCheckpoints tests that cleanup removes all checkpoints.

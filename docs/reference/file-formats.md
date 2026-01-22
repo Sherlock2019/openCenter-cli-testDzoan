@@ -2,9 +2,9 @@
 
 **Document Type:** Reference  
 **Audience:** All users  
-**Purpose:** Precise specifications for all file formats used in openCenter-cli
+**Purpose:** Precise specifications for all file formats used in opencenter-cli
 
-This document provides complete specifications for configuration files, schemas, templates, and other file formats used throughout openCenter-cli. All specifications are based on actual implementation.
+This document provides complete specifications for configuration files, schemas, templates, and other file formats used throughout opencenter-cli. All specifications are based on actual implementation.
 
 ---
 
@@ -28,12 +28,12 @@ This document provides complete specifications for configuration files, schemas,
 Cluster configurations are stored in organization-based directory structures:
 
 ```
-~/.config/openCenter/clusters/<organization>/<cluster>/.{cluster}-config.yaml
+~/.config/opencenter/clusters/<organization>/<cluster>/.{cluster}-config.yaml
 ```
 
 **Alternative locations** (backward compatibility):
-- `~/.config/openCenter/clusters/<organization>/.{cluster}-config.yaml`
-- `~/.config/openCenter/{cluster}.yaml` (legacy flat structure)
+- `~/.config/opencenter/clusters/<organization>/.{cluster}-config.yaml`
+- `~/.config/opencenter/{cluster}.yaml` (legacy flat structure)
 
 ### File Format
 
@@ -409,7 +409,7 @@ gitops:
   git_dir: ./gitops-repo
   git_url: ssh://git@github.com/myorg/my-cluster-gitops.git
   git_branch: main
-  gitops_base_repo: ssh://git@github.com/rackerlabs/openCenter-gitops-base.git
+  gitops_base_repo: ssh://git@github.com/rackerlabs/opencenter-gitops-base.git
   gitops_base_release: v0.1.0
   flux:
     interval: 15m
@@ -586,7 +586,7 @@ opentofu:
 ### File Location
 
 ```
-~/.config/openCenter/config.yaml
+~/.config/opencenter/config.yaml
 ```
 
 ### File Format
@@ -610,9 +610,9 @@ behavior:
   auto_approve: false
   color: true
 paths:
-  clusters_dir: ~/.config/openCenter/clusters
-  plugins_dir: ~/.config/openCenter/plugins
-  cache_dir: ~/.cache/openCenter
+  clusters_dir: ~/.config/opencenter/clusters
+  plugins_dir: ~/.config/opencenter/plugins
+  cache_dir: ~/.cache/opencenter
 defaults:
   provider: openstack
   region: sjc3
@@ -645,7 +645,7 @@ active_cluster: ""
 schema/cluster.schema.json
 ```
 
-Generated via: `openCenter cluster schema --output schema/cluster.schema.json`
+Generated via: `opencenter cluster schema --output schema/cluster.schema.json`
 
 ### File Format
 
@@ -660,7 +660,7 @@ Generated via: `openCenter cluster schema --output schema/cluster.schema.json`
 {
   "$id": "https://opencenter.cloud/schemas/cluster-config.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "description": "Complete schema for openCenter cluster configuration",
+  "description": "Complete schema for opencenter cluster configuration",
   "properties": {
     "schema_version": {},
     "opencenter": {},
@@ -866,13 +866,13 @@ stringData:
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
-  name: openCenter-gitops-base
+  name: opencenter-gitops-base
   namespace: flux-system
 spec:
   interval: 15m
   ref:
     tag: v0.1.0
-  url: ssh://git@github.com/rackerlabs/openCenter-gitops-base.git
+  url: ssh://git@github.com/rackerlabs/opencenter-gitops-base.git
 ```
 
 ---
@@ -1027,8 +1027,8 @@ data:
 ### File Location
 
 ```
-~/.config/openCenter/clusters/<organization>/<cluster>/secrets/ssh/<cluster>
-~/.config/openCenter/clusters/<organization>/<cluster>/secrets/ssh/<cluster>.pub
+~/.config/opencenter/clusters/<organization>/<cluster>/secrets/ssh/<cluster>
+~/.config/opencenter/clusters/<organization>/<cluster>/secrets/ssh/<cluster>.pub
 ```
 
 ### File Format
@@ -1080,7 +1080,7 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEr... user@hostname
 ### File Location
 
 ```
-~/.config/openCenter/clusters/<organization>/<cluster>/secrets/age/keys/<cluster>-key.txt
+~/.config/opencenter/clusters/<organization>/<cluster>/secrets/age/keys/<cluster>-key.txt
 ```
 
 ### File Format
@@ -1168,7 +1168,7 @@ s3://<bucket>/<key-path>/terraform.tfstate
 #### File Location
 
 ```
-~/.config/openCenter/clusters/<organization>/<cluster>/.state
+~/.config/opencenter/clusters/<organization>/<cluster>/.state
 ```
 
 #### File Format
@@ -1370,7 +1370,7 @@ opencenter:
 
 | Directory | Permissions | Description |
 |-----------|-------------|-------------|
-| `~/.config/openCenter/` | 0755 | Config root directory |
+| `~/.config/opencenter/` | 0755 | Config root directory |
 | `clusters/<org>/<cluster>/` | 0755 | Cluster directory |
 | `secrets/age/keys/` | 0700 | Age keys directory (restricted) |
 | `secrets/ssh/` | 0700 | SSH keys directory (restricted) |
@@ -1431,7 +1431,7 @@ All text files use **UTF-8 encoding** without BOM (Byte Order Mark).
 
 ### Configuration Migration
 
-openCenter-cli automatically migrates configurations between schema versions.
+opencenter-cli automatically migrates configurations between schema versions.
 
 **Migration Process:**
 
@@ -1452,13 +1452,13 @@ openCenter-cli automatically migrates configurations between schema versions.
 
 ```
 # Legacy flat structure
-~/.config/openCenter/{cluster}.yaml
+~/.config/opencenter/{cluster}.yaml
 
 # Legacy cluster directory
-~/.config/openCenter/clusters/{cluster}/.{cluster}-config.yaml
+~/.config/opencenter/clusters/{cluster}/.{cluster}-config.yaml
 
 # Current organization-based structure
-~/.config/openCenter/clusters/{organization}/{cluster}/.{cluster}-config.yaml
+~/.config/opencenter/clusters/{organization}/{cluster}/.{cluster}-config.yaml
 ```
 
 **Resolution Order:**

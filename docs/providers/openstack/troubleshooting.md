@@ -22,7 +22,7 @@ last_updated: 2025-01-XX
 - [Getting Help](#getting-help)
 - [Related Documentation](#related-documentation)
 - [Additional Resources](#additional-resources)
-This guide provides solutions to common OpenStack-specific issues encountered when deploying and managing Kubernetes clusters with openCenter.
+This guide provides solutions to common OpenStack-specific issues encountered when deploying and managing Kubernetes clusters with opencenter.
 
 ## Quick Diagnostics
 
@@ -33,13 +33,13 @@ Before troubleshooting, run preflight checks to identify common issues:
 ```bash
 # Run preflight checks for active cluster
 mise run build
-./bin/openCenter cluster preflight
+./bin/opencenter cluster preflight
 
 # Run preflight checks for specific cluster
-./bin/openCenter cluster preflight my-cluster
+./bin/opencenter cluster preflight my-cluster
 
 # Run preflight checks for organization/cluster
-./bin/openCenter cluster preflight myorg/my-cluster
+./bin/opencenter cluster preflight myorg/my-cluster
 ```
 
 **Preflight checks verify:**
@@ -53,10 +53,10 @@ mise run build
 
 ```bash
 # Validate cluster configuration
-./bin/openCenter cluster validate my-cluster
+./bin/opencenter cluster validate my-cluster
 
 # View cluster configuration
-cat ~/.config/openCenter/clusters/myorg/.my-cluster-config.yaml
+cat ~/.config/opencenter/clusters/myorg/.my-cluster-config.yaml
 ```
 
 ## Authentication Issues
@@ -1006,7 +1006,7 @@ Field 'opencenter.infrastructure.cloud.openstack.auth_url' is required
 
 1. **Run validation:**
    ```bash
-   ./bin/openCenter cluster validate my-cluster
+   ./bin/opencenter cluster validate my-cluster
    ```
 
 2. **Check required fields:**
@@ -1065,12 +1065,12 @@ When reporting issues, collect:
 
 1. **Preflight check output:**
    ```bash
-   ./bin/openCenter cluster preflight my-cluster > preflight.log 2>&1
+   ./bin/opencenter cluster preflight my-cluster > preflight.log 2>&1
    ```
 
 2. **Validation output:**
    ```bash
-   ./bin/openCenter cluster validate my-cluster > validation.log 2>&1
+   ./bin/opencenter cluster validate my-cluster > validation.log 2>&1
    ```
 
 3. **OpenStack environment:**
@@ -1083,7 +1083,7 @@ When reporting issues, collect:
 4. **Cluster configuration (sanitized):**
    ```bash
    # Remove sensitive data before sharing
-   cat ~/.config/openCenter/clusters/myorg/.my-cluster-config.yaml | \
+   cat ~/.config/opencenter/clusters/myorg/.my-cluster-config.yaml | \
      sed 's/application_credential_secret:.*/application_credential_secret: REDACTED/' | \
      sed 's/password:.*/password: REDACTED/'
    ```
@@ -1105,12 +1105,12 @@ export TF_LOG=DEBUG
 export TF_LOG_PATH=./terraform-debug.log
 
 # Run commands with verbose output
-./bin/openCenter cluster setup my-cluster --verbose
+./bin/opencenter cluster setup my-cluster --verbose
 ```
 
 ### Common Log Locations
 
-- **openCenter logs**: `./openCenter.log` (if enabled)
+- **opencenter logs**: `./opencenter.log` (if enabled)
 - **Terraform logs**: `<gitops-repo>/infrastructure/clusters/<cluster-name>/terraform-debug.log`
 - **Cloud-init logs**: `/var/log/cloud-init.log` (on instances)
 - **Kubernetes logs**: `kubectl logs -n kube-system <pod-name>`

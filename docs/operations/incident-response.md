@@ -17,7 +17,7 @@
 - [Training and Preparedness](#training-and-preparedness)
 **doc_type: how-to**
 
-Procedures for responding to and resolving incidents in openCenter-managed Kubernetes clusters. This guide covers incident classification, response procedures, escalation paths, and post-incident reviews.
+Procedures for responding to and resolving incidents in opencenter-managed Kubernetes clusters. This guide covers incident classification, response procedures, escalation paths, and post-incident reviews.
 
 ## Who This Is For
 
@@ -160,7 +160,7 @@ kubectl get pods -n kube-system | grep -E "apiserver|controller|scheduler|etcd"
 kubectl get nodes -l node-role.kubernetes.io/control-plane
 
 # SSH to control plane node
-ssh -i ~/.config/openCenter/secrets/ssh/cluster-key ubuntu@control-plane-1
+ssh -i ~/.config/opencenter/secrets/ssh/cluster-key ubuntu@control-plane-1
 
 # Check kubelet status
 sudo systemctl status kubelet
@@ -214,7 +214,7 @@ kubectl describe node <node-name>
 kubectl get node <node-name> -o json | jq '.status.conditions'
 
 # Try SSH to node
-ssh -i ~/.config/openCenter/secrets/ssh/cluster-key ubuntu@<node-ip>
+ssh -i ~/.config/opencenter/secrets/ssh/cluster-key ubuntu@<node-ip>
 
 # If SSH works, check kubelet
 sudo systemctl status kubelet

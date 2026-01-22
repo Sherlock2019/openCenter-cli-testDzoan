@@ -11,8 +11,8 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/rackerlabs/openCenter-cli/internal/sops"
-	"github.com/rackerlabs/openCenter-cli/internal/util/crypto"
+	"github.com/rackerlabs/opencenter-cli/internal/sops"
+	"github.com/rackerlabs/opencenter-cli/internal/util/crypto"
 )
 
 // NewSOPSCmd creates the SOPS management command group
@@ -28,7 +28,7 @@ The SOPS command group includes:
 • Key Backup: Create secure backups of Age keys and SOPS configuration
 • Validation: Validate Age key configuration and SOPS setup
 
-These commands integrate with openCenter workflows to provide seamless secret management
+These commands integrate with opencenter workflows to provide seamless secret management
 for standalone clusters and GitOps deployments.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
@@ -1366,7 +1366,7 @@ func loadSOPSAgeKeys() ([]string, error) {
 	}
 
 	if len(keyNames) == 0 {
-		return nil, fmt.Errorf("no age keys found - run 'openCenter sops generate-key' first")
+		return nil, fmt.Errorf("no age keys found - run 'opencenter sops generate-key' first")
 	}
 
 	// Use the first available key

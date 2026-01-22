@@ -17,7 +17,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config/services"
+	"github.com/rackerlabs/opencenter-cli/internal/config/services"
 )
 
 // TestValidationErrorsIncludeFieldPathsAndSuggestions verifies that ALL validation

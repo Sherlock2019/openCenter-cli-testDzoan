@@ -20,13 +20,13 @@
 
 ## Who this is for
 
-Developers and architects who want to understand why openCenter is built the way it is. This document explains the reasoning behind major design decisions, the alternatives considered, and the trade-offs made.
+Developers and architects who want to understand why opencenter is built the way it is. This document explains the reasoning behind major design decisions, the alternatives considered, and the trade-offs made.
 
 ## Configuration as a single YAML file
 
 ### The decision
 
-openCenter uses a single YAML file as the source of truth for an entire cluster configuration.
+opencenter uses a single YAML file as the source of truth for an entire cluster configuration.
 
 ### Why we chose this
 
@@ -66,7 +66,7 @@ openCenter uses a single YAML file as the source of truth for an entire cluster 
 
 ### The decision
 
-All GitOps templates are embedded in the openCenter binary using Go's `//go:embed` directive.
+All GitOps templates are embedded in the opencenter binary using Go's `//go:embed` directive.
 
 ### Why we chose this
 
@@ -94,7 +94,7 @@ All GitOps templates are embedded in the openCenter binary using Go's `//go:embe
 
 ### Trade-offs accepted
 
-**Customization requires recompilation**: To change templates, you must fork openCenter and rebuild. This is a high barrier for customization.
+**Customization requires recompilation**: To change templates, you must fork opencenter and rebuild. This is a high barrier for customization.
 
 **Mitigation**: Most customization needs are met by configuration options. For advanced needs, Kustomize overlays allow modifying generated manifests without changing templates. For complete control, forking is acceptable—it's a one-time cost for organizations with unique requirements.
 
@@ -109,7 +109,7 @@ All GitOps templates are embedded in the openCenter binary using Go's `//go:embe
 Clusters are organized by organization in the filesystem:
 
 ```
-~/.config/openCenter/clusters/
+~/.config/opencenter/clusters/
 ├── acme-corp/
 │   ├── prod-cluster/
 │   ├── staging-cluster/
@@ -131,7 +131,7 @@ Clusters are organized by organization in the filesystem:
 
 ### Alternatives considered
 
-**Flat structure**: All clusters in one directory (`~/.config/openCenter/clusters/prod`, `~/.config/openCenter/clusters/staging`).
+**Flat structure**: All clusters in one directory (`~/.config/opencenter/clusters/prod`, `~/.config/opencenter/clusters/staging`).
 
 **Why we rejected it**: Doesn't scale beyond a single team. Name collisions are inevitable. No natural isolation boundary.
 
@@ -236,7 +236,7 @@ Use SOPS (Secrets OPerationS) with Age encryption for managing secrets in GitOps
 
 **Key management burden**: Users must manage Age keys securely. Lost keys mean lost secrets.
 
-**Mitigation**: Documentation emphasizes key backup. Keys are stored in a well-known location (`~/.config/openCenter/clusters/<org>/secrets/age/keys/`). Backup procedures are documented.
+**Mitigation**: Documentation emphasizes key backup. Keys are stored in a well-known location (`~/.config/opencenter/clusters/<org>/secrets/age/keys/`). Backup procedures are documented.
 
 **No automatic key rotation**: Rotating keys requires re-encrypting all secrets.
 
@@ -416,11 +416,11 @@ These design decisions aren't arbitrary—they reflect hard-won lessons from ope
 
 **Developer experience matters**: Mise, clear error messages, and comprehensive documentation make the tool pleasant to use.
 
-The common thread is **production reliability through opinionated simplicity**. openCenter makes decisions for you, and those decisions are informed by operational experience. This isn't the right approach for every tool, but for infrastructure management, it's the right trade-off.
+The common thread is **production reliability through opinionated simplicity**. opencenter makes decisions for you, and those decisions are informed by operational experience. This isn't the right approach for every tool, but for infrastructure management, it's the right trade-off.
 
 ## Evolution and future decisions
 
-Design decisions aren't permanent. As openCenter evolves, some decisions may change:
+Design decisions aren't permanent. As opencenter evolves, some decisions may change:
 
 **Plugin API**: Currently, plugins are separate executables. A future plugin API might allow tighter integration while maintaining isolation.
 

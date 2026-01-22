@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/rackerlabs/openCenter-cli/internal/talos"
+	"github.com/rackerlabs/opencenter-cli/internal/talos"
 )
 
 func TestNewRefreshEngine(t *testing.T) {

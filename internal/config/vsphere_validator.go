@@ -16,7 +16,7 @@ package config
 import (
 	"context"
 
-	"github.com/rackerlabs/openCenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
 )
 
 // VSphereValidator validates vSphere-specific configuration.

@@ -1,6 +1,6 @@
-# openCenter
+# opencenter
 
-**openCenter** is a command-line tool that streamlines cluster bootstrapping by turning a single, declarative configuration file into a ready-to-use GitOps repository.
+**opencenter** is a command-line tool that streamlines cluster bootstrapping by turning a single, declarative configuration file into a ready-to-use GitOps repository.
 
 It is designed to standardize how teams scaffold and validate Kubernetes and OpenStack-based environments, providing a configuration-first workflow that is both user-friendly and automation-ready.
 
@@ -30,7 +30,7 @@ The fastest way to get started is to follow our getting started guide. You will 
     mise run build
     ```
 3.  **Follow the getting started guide**:
-    For a complete walkthrough from installing openCenter to creating your first cluster, see our [**Getting Started Guide**](./docs/getting-started.md).
+    For a complete walkthrough from installing opencenter to creating your first cluster, see our [**Getting Started Guide**](./docs/getting-started.md).
 
 ## Documentation
 
@@ -43,7 +43,7 @@ Comprehensive documentation is available in the `docs/` directory, organized fol
 ### Documentation by Type
 
 #### 📚 Tutorials (Learning-Oriented)
-Step-by-step guides to help you learn openCenter:
+Step-by-step guides to help you learn opencenter:
 *   **[Getting Started](./docs/getting-started.md)** - Create your first cluster
 *   **[OpenStack Quickstart](./docs/tutorials/quickstart-openstack.md)** - Deploy on OpenStack
 *   **[AWS Quickstart](./docs/tutorials/quickstart-aws.md)** - Deploy on AWS
@@ -65,7 +65,7 @@ Technical specifications and detailed information:
 
 #### 💡 Explanation (Understanding-Oriented)
 Conceptual explanations and background:
-*   **[Overview](./docs/explanation/overview.md)** - What is openCenter?
+*   **[Overview](./docs/explanation/overview.md)** - What is opencenter?
 *   **[Architecture](./docs/explanation/architecture.md)** - Technical architecture and design
 *   **[Current Status](./docs/explanation/current-status.md)** - Implementation status and roadmap
 
@@ -77,33 +77,33 @@ Conceptual explanations and background:
 
 ### Cluster Management
 ```bash
-openCenter cluster init <name>        # Initialize new cluster
-openCenter cluster list                # List all clusters
-openCenter cluster select <name>       # Select active cluster
-openCenter cluster validate <name>     # Validate configuration
-openCenter cluster setup <name>        # Setup GitOps repository
-openCenter cluster bootstrap <name>    # Bootstrap cluster
+opencenter cluster init <name>        # Initialize new cluster
+opencenter cluster list                # List all clusters
+opencenter cluster select <name>       # Select active cluster
+opencenter cluster validate <name>     # Validate configuration
+opencenter cluster setup <name>        # Setup GitOps repository
+opencenter cluster bootstrap <name>    # Bootstrap cluster
 ```
 
 ### Configuration Management
 ```bash
-openCenter config view                 # View current configuration
-openCenter config set <key> <value>    # Set configuration value
-openCenter config get <key>            # Get configuration value
+opencenter config view                 # View current configuration
+opencenter config set <key> <value>    # Set configuration value
+opencenter config get <key>            # Get configuration value
 ```
 
 ### Secrets Management
 ```bash
-openCenter sops generate-key           # Generate Age key pair
-openCenter sops validate               # Validate SOPS configuration
-openCenter sops secrets-encrypt        # Encrypt secrets
+opencenter sops generate-key           # Generate Age key pair
+opencenter sops validate               # Validate SOPS configuration
+opencenter sops secrets-encrypt        # Encrypt secrets
 ```
 
 ### Other Commands
 ```bash
-openCenter version                     # Show version information
-openCenter plugins list                # List available plugins
-openCenter --help                      # Show help
+opencenter version                     # Show version information
+opencenter plugins list                # List available plugins
+opencenter --help                      # Show help
 ```
 
 For complete command documentation, see the [CLI Reference](./docs/reference/readme.md).

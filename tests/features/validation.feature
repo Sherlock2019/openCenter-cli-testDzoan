@@ -14,7 +14,7 @@ Feature: Configuration validation rules
         gitops:
           git_dir: ""
       """
-    When I run "openCenter cluster info mgd --validate"
+    When I run "opencenter cluster info mgd --validate"
     Then the exit code should not be 0
     And stderr should contain "GitOps directory must be set"
 
@@ -38,7 +38,7 @@ Feature: Configuration validation rules
             key: k
             region: us-east-1
       """
-    When I run "openCenter cluster info s3 --validate"
+    When I run "opencenter cluster info s3 --validate"
     Then the exit code should not be 0
     And stderr should contain "opencenter.cluster.aws_access_key"
     And stderr should contain "opencenter.cluster.aws_secret_access_key"
@@ -63,7 +63,7 @@ Feature: Configuration validation rules
             key: k
             region: us-east-1
       """
-    When I run "openCenter cluster info s3ok --validate"
+    When I run "opencenter cluster info s3ok --validate"
     Then the exit code should be 0
 
   # All other legacy iac.* validations removed in the new model.
@@ -288,7 +288,7 @@ Feature: Configuration validation rules
               calico_nat_outgoing: true
           modules:
               openstack-nova:
-                  source: "github.com/rackerlabs/openCenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main"
+                  source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main"
                   availability_zone: "local.availability_zone"
                   application_credential_id: "local.application_credential_id"
                   application_credential_secret: "local.application_credential_secret"
@@ -341,7 +341,7 @@ Feature: Configuration validation rules
                   worker_node_bfv_source_type: "local.worker_node_bfv_source_type"
                   worker_node_bfv_volume_type: "local.worker_node_bfv_volume_type"
               kubespray-cluster:
-                  source: "github.com/rackerlabs/openCenter-gitops-base.git//iac/provider/kubespray?ref=main"
+                  source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/provider/kubespray?ref=main"
                   address_bastion: "module.openstack-nova.bastion_floating_ip"
                   cluster_name: "local.cluster_name"
                   cni_iface: "local.cni_iface"
@@ -369,7 +369,7 @@ Feature: Configuration validation rules
                   windows_nodes: "module.openstack-nova.windows_nodes"
                   use_octavia: "local.use_octavia"
               calico:
-                  source: "github.com/rackerlabs/openCenter-gitops-base.git//iac/cni/calico?ref=main"
+                  source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/cni/calico?ref=main"
                   calico_interface_autodetect: "local.calico_interface_autodetect"
                   calico_encapsulation_type: "local.calico_encapsulation_type"
                   calico_nat_outgoing: "local.calico_nat_outgoing"
@@ -388,7 +388,7 @@ Feature: Configuration validation rules
           vrrp_enabled: true
           vrrp_ip: "10.0.4.10"
       """
-    When I run "openCenter cluster validate prosys.dev.dfw3"
+    When I run "opencenter cluster validate prosys.dev.dfw3"
     Then the exit code should be 0
     And stdout should contain "Validation successful"
 
@@ -424,11 +424,11 @@ Feature: Configuration validation rules
                   application_credential_id: "12345678-1234-1234-1234-123456789012"
                   application_credential_secret: "test-app-cred-secret"
       """
-    When I run "openCenter cluster validate prosys.dev.dfw3 --generate-debug-config --output-dir <<tmp>>"
+    When I run "opencenter cluster validate prosys.dev.dfw3 --generate-debug-config --output-dir <<tmp>>"
     Then the exit code should be 0
     And stdout should contain "Debug config saved to"
     And stdout should contain "Validation successful"
-    And a file "<<tmp>>/.openCenter.yaml" should exist
+    And a file "<<tmp>>/.opencenter.yaml" should exist
 
   @validation @prosys_cluster_vrrp_validation
   Scenario: prosys.dev.dfw3 cluster VRRP validation with networking section
@@ -468,7 +468,7 @@ Feature: Configuration validation rules
           vrrp_enabled: true
           vrrp_ip: "10.0.4.10"
       """
-    When I run "openCenter cluster validate prosys.dev.dfw3"
+    When I run "opencenter cluster validate prosys.dev.dfw3"
     Then the exit code should be 0
     And stdout should contain "Validation successful"
 
@@ -513,7 +513,7 @@ Feature: Configuration validation rules
           vrrp_enabled: true
           vrrp_ip: ""
       """
-    When I run "openCenter cluster validate prosys.dev.dfw3"
+    When I run "opencenter cluster validate prosys.dev.dfw3"
     Then the exit code should not be 0
     And stderr should contain "vrrp_ip must be set when use_octavia is false"
     And stderr should contain "opencenter.infrastructure.cloud.openstack.region must be set when provider is openstack"

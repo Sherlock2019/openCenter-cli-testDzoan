@@ -29,7 +29,7 @@ weight: 30
 - [Best Practices](#best-practices)
 - [Next Steps](#next-steps)
 - [Additional Resources](#additional-resources)
-This tutorial teaches you how to manage multiple Kubernetes clusters with openCenter, including organizing clusters by environment, switching between clusters, and maintaining consistent configurations across your infrastructure.
+This tutorial teaches you how to manage multiple Kubernetes clusters with opencenter, including organizing clusters by environment, switching between clusters, and maintaining consistent configurations across your infrastructure.
 
 ## What You'll Learn
 
@@ -45,17 +45,17 @@ By the end of this tutorial, you'll be able to:
 
 Before starting, ensure you have:
 
-- openCenter CLI installed and configured
+- opencenter CLI installed and configured
 - Access to cloud infrastructure (OpenStack, AWS, or local Kind)
 - Basic understanding of Kubernetes concepts
 - Familiarity with GitOps workflows
 
 ## Understanding Organization Structure
 
-openCenter uses an organization-based directory structure to manage multiple clusters:
+opencenter uses an organization-based directory structure to manage multiple clusters:
 
 ```
-~/.config/openCenter/clusters/
+~/.config/opencenter/clusters/
 ├── production/                    # Production organization
 │   ├── .prod-east-config.yaml    # Cluster config at org level
 │   ├── .prod-west-config.yaml
@@ -95,7 +95,7 @@ This structure provides:
 Start by creating a development organization:
 
 ```bash
-./bin/openCenter cluster init dev-local \
+./bin/opencenter cluster init dev-local \
   --org development \
   --opencenter.meta.env=dev \
   --opencenter.meta.region=local
@@ -111,7 +111,7 @@ This creates:
 The configuration is stored at:
 
 ```
-~/.config/openCenter/clusters/development/.dev-local-config.yaml
+~/.config/opencenter/clusters/development/.dev-local-config.yaml
 ```
 
 ## Step 2: Add More Clusters to the Organization
@@ -120,14 +120,14 @@ Add additional development clusters:
 
 ```bash
 # Development cluster in cloud region
-./bin/openCenter cluster init dev-cloud \
+./bin/opencenter cluster init dev-cloud \
   --org development \
   --opencenter.meta.env=dev \
   --opencenter.meta.region=us-east-1 \
   --opencenter.infrastructure.provider=openstack
 
 # Development cluster for testing
-./bin/openCenter cluster init dev-test \
+./bin/opencenter cluster init dev-test \
   --org development \
   --opencenter.meta.env=dev \
   --opencenter.meta.region=local \
@@ -145,7 +145,7 @@ All three clusters share:
 Set up a staging environment:
 
 ```bash
-./bin/openCenter cluster init staging \
+./bin/opencenter cluster init staging \
   --org staging \
   --opencenter.meta.env=staging \
   --opencenter.meta.region=us-east-1 \
@@ -162,7 +162,7 @@ Set up production clusters:
 
 ```bash
 # Production cluster in US East
-./bin/openCenter cluster init prod-east \
+./bin/opencenter cluster init prod-east \
   --org production \
   --opencenter.meta.env=prod \
   --opencenter.meta.region=us-east-1 \
@@ -171,7 +171,7 @@ Set up production clusters:
   --opencenter.cluster.kubernetes.worker_count=5
 
 # Production cluster in US West (for HA)
-./bin/openCenter cluster init prod-west \
+./bin/opencenter cluster init prod-west \
   --org production \
   --opencenter.meta.env=prod \
   --opencenter.meta.region=us-west-2 \
@@ -191,7 +191,7 @@ Production clusters share encryption keys within the `production` organization, 
 View all configured clusters:
 
 ```bash
-./bin/openCenter cluster list
+./bin/opencenter cluster list
 ```
 
 Output shows clusters in `organization/cluster` format:
@@ -212,7 +212,7 @@ The asterisk (`*`) indicates the currently active cluster.
 Select a cluster to work with:
 
 ```bash
-./bin/openCenter cluster select development/dev-local
+./bin/opencenter cluster select development/dev-local
 ```
 
 This displays comprehensive cluster information:
@@ -226,23 +226,23 @@ Cluster Information:
   Organization: development
 
 GitOps Repository:
-  GitOps Directory:      ~/.config/openCenter/clusters/development
-  Applications Directory: ~/.config/openCenter/clusters/development/applications/overlays/dev-local
-  Infrastructure Directory: ~/.config/openCenter/clusters/development/infrastructure/clusters/dev-local
-  Secrets Directory:     ~/.config/openCenter/clusters/development/secrets
+  GitOps Directory:      ~/.config/opencenter/clusters/development
+  Applications Directory: ~/.config/opencenter/clusters/development/applications/overlays/dev-local
+  Infrastructure Directory: ~/.config/opencenter/clusters/development/infrastructure/clusters/dev-local
+  Secrets Directory:     ~/.config/opencenter/clusters/development/secrets
 
 Cluster Paths:
-  Cluster Directory:     ~/.config/openCenter/clusters/development/infrastructure/clusters/dev-local
-  SOPS Key Path:         ~/.config/openCenter/clusters/development/secrets/age/keys/dev-local-key.txt
-  SOPS Config Path:      ~/.config/openCenter/clusters/development/.sops.yaml
+  Cluster Directory:     ~/.config/opencenter/clusters/development/infrastructure/clusters/dev-local
+  SOPS Key Path:         ~/.config/opencenter/clusters/development/secrets/age/keys/dev-local-key.txt
+  SOPS Config Path:      ~/.config/opencenter/clusters/development/.sops.yaml
 ```
 
 ### Interactive Selection
 
-If you don't specify a cluster name, openCenter shows an interactive menu:
+If you don't specify a cluster name, opencenter shows an interactive menu:
 
 ```bash
-./bin/openCenter cluster select
+./bin/opencenter cluster select
 ```
 
 Use arrow keys to navigate and Enter to select.
@@ -252,7 +252,7 @@ Use arrow keys to navigate and Enter to select.
 Set up your shell environment for the selected cluster:
 
 ```bash
-eval $(./bin/openCenter cluster select development/dev-local --activate --export-only)
+eval $(./bin/opencenter cluster select development/dev-local --activate --export-only)
 ```
 
 This configures:
@@ -275,20 +275,20 @@ kubectl cluster-info
 Check which cluster is currently active:
 
 ```bash
-./bin/openCenter cluster current
+./bin/opencenter cluster current
 ```
 
 For use in shell prompts:
 
 ```bash
 # Full cluster name
-./bin/openCenter cluster current --quiet
+./bin/opencenter cluster current --quiet
 
 # Short name (just cluster, no organization)
-./bin/openCenter cluster active-fast --short
+./bin/opencenter cluster active-fast --short
 
 # Formatted for prompt
-./bin/openCenter cluster active-fast --prompt
+./bin/opencenter cluster active-fast --prompt
 ```
 
 ## Step 9: Share Configuration Across Clusters
@@ -297,10 +297,10 @@ Create a base configuration template for reuse:
 
 ```bash
 # Export staging configuration as template
-./bin/openCenter cluster render staging > staging-template.yaml
+./bin/opencenter cluster render staging > staging-template.yaml
 
 # Create new cluster from template
-./bin/openCenter cluster init staging-eu \
+./bin/opencenter cluster init staging-eu \
   --org staging \
   --config staging-template.yaml \
   --opencenter.meta.region=eu-west-1
@@ -314,7 +314,7 @@ Clusters within an organization share SOPS encryption keys, making it easy to sh
 
 ```bash
 # Encrypt a secret in development organization
-cd ~/.config/openCenter/clusters/development
+cd ~/.config/opencenter/clusters/development
 echo "database_password: supersecret" > db-secret.yaml
 sops -e -i db-secret.yaml
 
@@ -334,10 +334,10 @@ Use development clusters for rapid iteration:
 
 ```bash
 # Select development cluster
-eval $(./bin/openCenter cluster select development/dev-local --activate --export-only)
+eval $(./bin/opencenter cluster select development/dev-local --activate --export-only)
 
 # Make changes to applications
-cd ~/.config/openCenter/clusters/development/applications/overlays/dev-local
+cd ~/.config/opencenter/clusters/development/applications/overlays/dev-local
 vim my-app.yaml
 
 # Test changes
@@ -354,14 +354,14 @@ Promote changes to staging for validation:
 
 ```bash
 # Select staging cluster
-eval $(./bin/openCenter cluster select staging/staging --activate --export-only)
+eval $(./bin/opencenter cluster select staging/staging --activate --export-only)
 
 # Copy validated changes from development
-cp ~/.config/openCenter/clusters/development/applications/overlays/dev-local/my-app.yaml \
-   ~/.config/openCenter/clusters/staging/applications/overlays/staging/
+cp ~/.config/opencenter/clusters/development/applications/overlays/dev-local/my-app.yaml \
+   ~/.config/opencenter/clusters/staging/applications/overlays/staging/
 
 # Apply to staging
-kubectl apply -f ~/.config/openCenter/clusters/staging/applications/overlays/staging/my-app.yaml
+kubectl apply -f ~/.config/opencenter/clusters/staging/applications/overlays/staging/my-app.yaml
 
 # Run integration tests
 ./run-integration-tests.sh
@@ -373,14 +373,14 @@ Deploy to production after staging validation:
 
 ```bash
 # Select production cluster
-eval $(./bin/openCenter cluster select production/prod-east --activate --export-only)
+eval $(./bin/opencenter cluster select production/prod-east --activate --export-only)
 
 # Copy validated changes from staging
-cp ~/.config/openCenter/clusters/staging/applications/overlays/staging/my-app.yaml \
-   ~/.config/openCenter/clusters/production/applications/overlays/prod-east/
+cp ~/.config/opencenter/clusters/staging/applications/overlays/staging/my-app.yaml \
+   ~/.config/opencenter/clusters/production/applications/overlays/prod-east/
 
 # Apply to production (with caution)
-kubectl apply -f ~/.config/openCenter/clusters/production/applications/overlays/prod-east/my-app.yaml
+kubectl apply -f ~/.config/opencenter/clusters/production/applications/overlays/prod-east/my-app.yaml
 
 # Monitor rollout
 kubectl rollout status deployment/my-app
@@ -394,10 +394,10 @@ Maintain identical configurations across regions:
 
 ```bash
 # Create base configuration
-./bin/openCenter cluster render production/prod-east > prod-base.yaml
+./bin/opencenter cluster render production/prod-east > prod-base.yaml
 
 # Deploy to west region with region-specific overrides
-./bin/openCenter cluster init prod-west \
+./bin/opencenter cluster init prod-west \
   --org production \
   --config prod-base.yaml \
   --opencenter.meta.region=us-west-2 \
@@ -418,11 +418,11 @@ TARGET_ORG="staging"
 TARGET_CLUSTER="staging"
 
 # Copy application manifests
-cp -r ~/.config/openCenter/clusters/$SOURCE_ORG/applications/overlays/$SOURCE_CLUSTER/* \
-      ~/.config/openCenter/clusters/$TARGET_ORG/applications/overlays/$TARGET_CLUSTER/
+cp -r ~/.config/opencenter/clusters/$SOURCE_ORG/applications/overlays/$SOURCE_CLUSTER/* \
+      ~/.config/opencenter/clusters/$TARGET_ORG/applications/overlays/$TARGET_CLUSTER/
 
 # Commit changes
-cd ~/.config/openCenter/clusters/$TARGET_ORG
+cd ~/.config/opencenter/clusters/$TARGET_ORG
 git add applications/
 git commit -m "Promote from $SOURCE_ORG/$SOURCE_CLUSTER to $TARGET_ORG/$TARGET_CLUSTER"
 git push
@@ -436,12 +436,12 @@ Compare configurations across clusters:
 
 ```bash
 # Compare development and staging
-diff <(./bin/openCenter cluster render development/dev-cloud) \
-     <(./bin/openCenter cluster render staging/staging)
+diff <(./bin/opencenter cluster render development/dev-cloud) \
+     <(./bin/opencenter cluster render staging/staging)
 
 # Compare production regions
-diff <(./bin/openCenter cluster render production/prod-east) \
-     <(./bin/openCenter cluster render production/prod-west)
+diff <(./bin/opencenter cluster render production/prod-east) \
+     <(./bin/opencenter cluster render production/prod-west)
 ```
 
 ## Shell Integration
@@ -453,9 +453,9 @@ Add cluster information to your shell prompt:
 Add to `~/.bashrc`:
 
 ```bash
-# openCenter cluster prompt
+# opencenter cluster prompt
 opencenter_prompt() {
-  local cluster=$(./bin/openCenter cluster active-fast --prompt 2>/dev/null)
+  local cluster=$(./bin/opencenter cluster active-fast --prompt 2>/dev/null)
   if [ -n "$cluster" ]; then
     echo "$cluster "
   fi
@@ -469,9 +469,9 @@ PS1='$(opencenter_prompt)\u@\h:\w\$ '
 Add to `~/.zshrc`:
 
 ```zsh
-# openCenter cluster prompt
+# opencenter cluster prompt
 opencenter_prompt() {
-  local cluster=$(./bin/openCenter cluster active-fast --prompt 2>/dev/null)
+  local cluster=$(./bin/opencenter cluster active-fast --prompt 2>/dev/null)
   if [[ -n "$cluster" ]]; then
     echo "$cluster "
   fi
@@ -485,9 +485,9 @@ PROMPT='$(opencenter_prompt)%n@%m:%~%# '
 Add to `~/.config/fish/config.fish`:
 
 ```fish
-# openCenter cluster prompt
+# opencenter cluster prompt
 function opencenter_prompt
-  set -l cluster (./bin/openCenter cluster active-fast --prompt 2>/dev/null)
+  set -l cluster (./bin/opencenter cluster active-fast --prompt 2>/dev/null)
   if test -n "$cluster"
     echo "$cluster "
   end
@@ -508,10 +508,10 @@ end
 
 ```bash
 # Wrong
-./bin/openCenter cluster select my-cluster
+./bin/opencenter cluster select my-cluster
 
 # Correct
-./bin/openCenter cluster select production/my-cluster
+./bin/opencenter cluster select production/my-cluster
 ```
 
 ### Wrong Cluster Active
@@ -522,10 +522,10 @@ end
 
 ```bash
 # Check current cluster
-./bin/openCenter cluster current
+./bin/opencenter cluster current
 
 # Switch to correct cluster
-eval $(./bin/openCenter cluster select production/prod-east --activate --export-only)
+eval $(./bin/opencenter cluster select production/prod-east --activate --export-only)
 
 # Verify
 echo $OPENCENTER_ACTIVE_CLUSTER
@@ -540,13 +540,13 @@ kubectl config current-context
 
 ```bash
 # Check key location
-ls -la ~/.config/openCenter/clusters/production/secrets/age/keys/
+ls -la ~/.config/opencenter/clusters/production/secrets/age/keys/
 
 # Verify SOPS configuration
-cat ~/.config/openCenter/clusters/production/.sops.yaml
+cat ~/.config/opencenter/clusters/production/.sops.yaml
 
 # Test decryption
-sops -d ~/.config/openCenter/clusters/production/applications/overlays/prod-east/secret.yaml
+sops -d ~/.config/opencenter/clusters/production/applications/overlays/prod-east/secret.yaml
 ```
 
 ## Best Practices

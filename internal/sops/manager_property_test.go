@@ -27,9 +27,9 @@ import (
 	"github.com/leanovate/gopter"
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/util/crypto"
-	"github.com/rackerlabs/openCenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/util/crypto"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
 )
 
 // Feature: stub-implementation-completion, Property 38: SOPS Unavailable Error

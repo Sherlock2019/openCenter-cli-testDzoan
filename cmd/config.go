@@ -18,7 +18,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -32,7 +32,7 @@ func NewConfigCmd() *cobra.Command {
 		Short: "Manage CLI configuration settings",
 		Long: `Manage CLI configuration settings including logging, paths, behavior, and defaults.
 
-The configuration file is stored at ~/.config/openCenter/config.yaml by default,
+The configuration file is stored at ~/.config/opencenter/config.yaml by default,
 or at the location specified by the OPENCENTER_CONFIG_DIR environment variable.
 
 Configuration values can be accessed and modified using dot notation (e.g., logging.level).`,
@@ -61,7 +61,7 @@ func newConfigViewCmd() *cobra.Command {
 		Long: `Display the current CLI configuration in YAML format.
 
 This shows the configuration file content exactly as it would appear in an editor.
-Use 'openCenter config edit' to modify the configuration.`,
+Use 'opencenter config edit' to modify the configuration.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Get the configuration file path
 			cm, err := config.NewConfigManager("")
@@ -75,7 +75,7 @@ Use 'openCenter config edit' to modify the configuration.`,
 			data, err := os.ReadFile(configPath)
 			if err != nil {
 				if os.IsNotExist(err) {
-					return fmt.Errorf("configuration file not found at %s. Run 'openCenter config edit' to create it", configPath)
+					return fmt.Errorf("configuration file not found at %s. Run 'opencenter config edit' to create it", configPath)
 				}
 				return fmt.Errorf("failed to read configuration file: %w", err)
 			}
@@ -95,11 +95,11 @@ func newConfigSetCmd() *cobra.Command {
 		Long: `Set a configuration value using dot notation.
 
 Examples:
-  openCenter config set logging.level debug
-  openCenter config set paths.clustersDir ~/my-clusters
-  openCenter config set paths.pluginsDir ~/my-plugins
-  openCenter config set behavior.autoConfirm true
-  openCenter config set defaults.provider openstack
+  opencenter config set logging.level debug
+  opencenter config set paths.clustersDir ~/my-clusters
+  opencenter config set paths.pluginsDir ~/my-plugins
+  opencenter config set behavior.autoConfirm true
+  opencenter config set defaults.provider openstack
 
 Supported configuration sections:
   - logging.level (debug, info, warn, error)
@@ -159,10 +159,10 @@ func newConfigGetCmd() *cobra.Command {
 		Long: `Get a configuration value using dot notation.
 
 Examples:
-  openCenter config get logging.level
-  openCenter config get paths.clustersDir
-  openCenter config get paths.pluginsDir
-  openCenter config get behavior.autoConfirm
+  opencenter config get logging.level
+  opencenter config get paths.clustersDir
+  opencenter config get paths.pluginsDir
+  opencenter config get behavior.autoConfirm
 
 Use dot notation to access nested configuration values. If the key doesn't exist,
 an error will be returned.`,
@@ -225,9 +225,9 @@ Default values:
   - logging.level: warn
   - logging.format: text
   - logging.output: stderr
-  - paths.configDir: ~/.config/openCenter
-  - paths.clustersDir: ~/.config/openCenter/clusters
-  - paths.pluginsDir: ~/.config/openCenter/plugins
+  - paths.configDir: ~/.config/opencenter
+  - paths.clustersDir: ~/.config/opencenter/clusters
+  - paths.pluginsDir: ~/.config/opencenter/plugins
   - behavior.autoConfirm: false
   - behavior.dryRun: false
   - behavior.verbose: false
@@ -261,7 +261,7 @@ func newConfigPathCmd() *cobra.Command {
 
 The configuration file location is determined by:
 1. OPENCENTER_CONFIG_DIR environment variable (if set)
-2. Default OS-specific config directory (~/.config/openCenter on Linux/macOS)
+2. Default OS-specific config directory (~/.config/opencenter on Linux/macOS)
 
 The configuration file is named 'config.yaml' within the configuration directory.`,
 		RunE: func(cmd *cobra.Command, args []string) error {

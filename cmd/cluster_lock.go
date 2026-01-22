@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -42,13 +42,13 @@ This is useful for protecting production clusters or clusters undergoing mainten
 
 Examples:
   # Lock the currently selected cluster
-  openCenter cluster lock --reason "Production cluster - do not modify"
+  opencenter cluster lock --reason "Production cluster - do not modify"
 
   # Lock a specific cluster
-  openCenter cluster lock my-cluster --reason "Under maintenance"
+  opencenter cluster lock my-cluster --reason "Under maintenance"
 
   # Lock a cluster in a specific organization
-  openCenter cluster lock myorg/my-cluster --reason "Critical infrastructure"`,
+  opencenter cluster lock myorg/my-cluster --reason "Critical infrastructure"`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve cluster name from args or active cluster
@@ -94,7 +94,7 @@ Examples:
 
 			fmt.Fprintf(cmd.OutOrStdout(), "✓ Cluster '%s' has been locked\n", clusterName)
 			fmt.Fprintf(cmd.OutOrStdout(), "Reason: %s\n", reason)
-			fmt.Fprintf(cmd.OutOrStdout(), "\nTo unlock this cluster, run: openCenter cluster unlock %s --reason \"<unlock reason>\"\n", clusterName)
+			fmt.Fprintf(cmd.OutOrStdout(), "\nTo unlock this cluster, run: opencenter cluster unlock %s --reason \"<unlock reason>\"\n", clusterName)
 
 			return nil
 		},
@@ -124,13 +124,13 @@ A reason must be provided to document why the cluster is being unlocked.
 
 Examples:
   # Unlock the currently selected cluster
-  openCenter cluster unlock --reason "Maintenance completed"
+  opencenter cluster unlock --reason "Maintenance completed"
 
   # Unlock a specific cluster
-  openCenter cluster unlock my-cluster --reason "Emergency fix applied"
+  opencenter cluster unlock my-cluster --reason "Emergency fix applied"
 
   # Unlock a cluster in a specific organization
-  openCenter cluster unlock myorg/my-cluster --reason "Approved by ops team"`,
+  opencenter cluster unlock myorg/my-cluster --reason "Approved by ops team"`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve cluster name from args or active cluster

@@ -21,7 +21,7 @@ weight: 50
 - [Security Considerations](#security-considerations)
 - [Testing and CI/CD](#testing-and-cicd)
 - [Related Documentation](#related-documentation)
-Complete reference for all environment variables used by openCenter CLI.
+Complete reference for all environment variables used by opencenter CLI.
 
 ## Core Configuration Variables
 
@@ -29,7 +29,7 @@ Complete reference for all environment variables used by openCenter CLI.
 
 **Description**: Override the default configuration directory location.
 
-**Default**: `~/.config/openCenter`
+**Default**: `~/.config/opencenter`
 
 **Valid Values**: Any valid directory path
 
@@ -37,10 +37,10 @@ Complete reference for all environment variables used by openCenter CLI.
 ```bash
 # Use custom config directory
 export OPENCENTER_CONFIG_DIR=/path/to/custom/config
-openCenter cluster list
+opencenter cluster list
 
 # Temporary override for single command
-OPENCENTER_CONFIG_DIR=./testdata/config openCenter cluster init test-cluster
+OPENCENTER_CONFIG_DIR=./testdata/config opencenter cluster init test-cluster
 ```
 
 **Notes**:
@@ -52,7 +52,7 @@ OPENCENTER_CONFIG_DIR=./testdata/config openCenter cluster init test-cluster
 
 **Description**: Override the default clusters directory location.
 
-**Default**: `~/.config/openCenter/clusters`
+**Default**: `~/.config/opencenter/clusters`
 
 **Valid Values**: Any valid directory path
 
@@ -60,7 +60,7 @@ OPENCENTER_CONFIG_DIR=./testdata/config openCenter cluster init test-cluster
 ```bash
 # Use custom clusters directory
 export OPENCENTER_CLUSTERS_DIR=/path/to/clusters
-openCenter cluster list
+opencenter cluster list
 ```
 
 **Notes**:
@@ -79,7 +79,7 @@ openCenter cluster list
 ```bash
 # Use custom plugins directory
 export OPENCENTER_PLUGINS_DIR=./testdata/plugins
-openCenter plugins list
+opencenter plugins list
 ```
 
 **Notes**:
@@ -102,10 +102,10 @@ openCenter plugins list
 ```bash
 # Enable debug mode
 export OPENCENTER_DEBUG=true
-openCenter cluster validate my-cluster
+opencenter cluster validate my-cluster
 
 # Enable for single command
-OPENCENTER_DEBUG=true openCenter cluster setup my-cluster
+OPENCENTER_DEBUG=true opencenter cluster setup my-cluster
 ```
 
 **Effects**:
@@ -131,7 +131,7 @@ OPENCENTER_DEBUG=true openCenter cluster setup my-cluster
 **Usage**:
 ```bash
 # Automatically set by cluster select
-eval $(openCenter cluster select my-cluster --activate --export-only)
+eval $(opencenter cluster select my-cluster --activate --export-only)
 echo $OPENCENTER_ACTIVE_CLUSTER
 
 # Check active cluster in scripts
@@ -144,7 +144,7 @@ fi
 - Set automatically by `cluster select --activate`
 - Updated by shell integration on each prompt
 - Used by shell prompts to display active cluster
-- Read-only (managed by openCenter)
+- Read-only (managed by opencenter)
 
 ## Container Runtime Variables
 
@@ -160,11 +160,11 @@ fi
 ```bash
 # Use Podman for Kind clusters
 export CONTAINER_RUNTIME=podman
-openCenter cluster bootstrap my-kind-cluster
+opencenter cluster bootstrap my-kind-cluster
 
 # Use Docker explicitly
 export CONTAINER_RUNTIME=docker
-openCenter cluster bootstrap my-kind-cluster
+opencenter cluster bootstrap my-kind-cluster
 ```
 
 **Notes**:
@@ -184,12 +184,12 @@ openCenter cluster bootstrap my-kind-cluster
 ```bash
 # Enable Podman support in Kind
 export KIND_EXPERIMENTAL_PROVIDER=podman
-openCenter cluster bootstrap my-kind-cluster
+opencenter cluster bootstrap my-kind-cluster
 ```
 
 **Notes**:
 - Native Kind environment variable
-- `CONTAINER_RUNTIME` is preferred in openCenter
+- `CONTAINER_RUNTIME` is preferred in opencenter
 - Both variables are checked during bootstrap
 
 ## Kubernetes Configuration Variables
@@ -206,10 +206,10 @@ openCenter cluster bootstrap my-kind-cluster
 ```bash
 # Use custom kubeconfig
 export KUBECONFIG=/path/to/kubeconfig
-openCenter cluster bootstrap my-cluster
+opencenter cluster bootstrap my-cluster
 
 # Set by cluster activation
-eval $(openCenter cluster select my-cluster --activate --export-only)
+eval $(opencenter cluster select my-cluster --activate --export-only)
 echo $KUBECONFIG
 ```
 
@@ -236,7 +236,7 @@ export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
 export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 
 # Run preflight checks
-openCenter cluster preflight my-aws-cluster
+opencenter cluster preflight my-aws-cluster
 ```
 
 **Notes**:
@@ -279,7 +279,7 @@ openCenter cluster preflight my-aws-cluster
 source ~/openstack-rc.sh
 
 # Run preflight checks
-openCenter cluster preflight my-openstack-cluster
+opencenter cluster preflight my-openstack-cluster
 ```
 
 **Notes**:
@@ -302,7 +302,7 @@ openCenter cluster preflight my-openstack-cluster
 ```bash
 # Enable new template engine
 export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 ```
 
 **Notes**:
@@ -322,7 +322,7 @@ openCenter cluster setup my-cluster
 ```bash
 # Enable new config builder
 export OPENCENTER_USE_NEW_CONFIG_BUILDER=true
-openCenter cluster init my-cluster
+opencenter cluster init my-cluster
 ```
 
 **Notes**:
@@ -342,7 +342,7 @@ openCenter cluster init my-cluster
 ```bash
 # Enable service registry
 export OPENCENTER_USE_SERVICE_REGISTRY=true
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 ```
 
 **Notes**:
@@ -362,12 +362,12 @@ openCenter cluster setup my-cluster
 ```bash
 # Enable all new features
 export OPENCENTER_ENABLE_ALL_NEW_FEATURES=true
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 
 # Override specific feature
 export OPENCENTER_ENABLE_ALL_NEW_FEATURES=true
 export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=false  # Disable this one
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 ```
 
 **Notes**:
@@ -387,7 +387,7 @@ openCenter cluster setup my-cluster
 ```bash
 # Enable feature flag debug logging
 export OPENCENTER_FEATURE_FLAG_DEBUG=true
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 ```
 
 **Effects**:
@@ -397,7 +397,7 @@ openCenter cluster setup my-cluster
 
 ## Variable Precedence
 
-When multiple configuration sources are available, openCenter uses this precedence order (highest to lowest):
+When multiple configuration sources are available, opencenter uses this precedence order (highest to lowest):
 
 1. **Command-line flags** (e.g., `--config-dir`)
 2. **Environment variables** (e.g., `OPENCENTER_CONFIG_DIR`)
@@ -443,7 +443,7 @@ mise run godog
 ### Environment Cleanup
 
 ```bash
-# Unset all openCenter variables
+# Unset all opencenter variables
 unset OPENCENTER_CONFIG_DIR
 unset OPENCENTER_CLUSTERS_DIR
 unset OPENCENTER_PLUGINS_DIR

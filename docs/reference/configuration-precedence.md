@@ -10,11 +10,11 @@
 - [Best Practices](#best-practices)
 - [Related Commands](#related-commands)
 - [See Also](#see-also)
-This document describes the order of precedence for configuration values when initializing or managing clusters with openCenter CLI.
+This document describes the order of precedence for configuration values when initializing or managing clusters with opencenter CLI.
 
 ## Overview
 
-openCenter CLI uses a layered configuration system where values can come from multiple sources. Understanding the precedence order helps you predict which values will be used when multiple sources provide the same configuration.
+opencenter CLI uses a layered configuration system where values can come from multiple sources. Understanding the precedence order helps you predict which values will be used when multiple sources provide the same configuration.
 
 ## Precedence Order
 
@@ -27,13 +27,13 @@ Explicit command-line flags always take precedence over all other configuration 
 **Examples:**
 ```bash
 # Override provider
-openCenter cluster init my-cluster --type aws
+opencenter cluster init my-cluster --type aws
 
 # Override organization
-openCenter cluster init my-cluster --org production
+opencenter cluster init my-cluster --org production
 
 # Override any field using dot notation
-openCenter cluster init my-cluster \
+opencenter cluster init my-cluster \
   --opencenter.meta.env=prod \
   --opencenter.meta.region=us-west-2 \
   --opencenter.cluster.kubernetes.version=1.31.4
@@ -53,10 +53,10 @@ When using the `--config` flag to load an existing configuration file, values fr
 **Example:**
 ```bash
 # Load configuration from file
-openCenter cluster init --config my-cluster-config.yaml
+opencenter cluster init --config my-cluster-config.yaml
 
 # Load from file but override specific values
-openCenter cluster init --config template.yaml \
+opencenter cluster init --config template.yaml \
   --opencenter.meta.env=staging
 ```
 
@@ -69,15 +69,15 @@ openCenter cluster init --config template.yaml \
 
 ### 3. CLI Config Defaults
 
-Global defaults set in the CLI configuration file (`~/.config/openCenter/config.yaml`) are applied to specific fields when they are empty or still set to schema defaults.
+Global defaults set in the CLI configuration file (`~/.config/opencenter/config.yaml`) are applied to specific fields when they are empty or still set to schema defaults.
 
 **Setting CLI Defaults:**
 ```bash
 # Set global defaults
-openCenter config set defaults.provider openstack
-openCenter config set defaults.region us-west-2
-openCenter config set defaults.environment production
-openCenter config set defaults.ssh_authorized_keys "ssh-ed25519 AAAA... user@host"
+opencenter config set defaults.provider openstack
+opencenter config set defaults.region us-west-2
+opencenter config set defaults.environment production
+opencenter config set defaults.ssh_authorized_keys "ssh-ed25519 AAAA... user@host"
 ```
 
 **When Applied:**
@@ -96,15 +96,15 @@ CLI defaults are applied intelligently based on field state:
 # CLI config has: defaults.region=us-west-2, defaults.environment=production
 
 # This cluster will use CLI defaults
-openCenter cluster init my-cluster
+opencenter cluster init my-cluster
 # Result: region=us-west-2, environment=production
 
 # This cluster overrides with flags
-openCenter cluster init my-cluster --opencenter.meta.region=eu-west-1
+opencenter cluster init my-cluster --opencenter.meta.region=eu-west-1
 # Result: region=eu-west-1, environment=production (CLI default)
 
 # This cluster loads from config file
-openCenter cluster init --config existing.yaml
+opencenter cluster init --config existing.yaml
 # Result: Uses values from existing.yaml, CLI defaults fill in empty fields
 ```
 
@@ -172,14 +172,14 @@ Here's how a configuration value is resolved:
 
 **Setup:**
 ```bash
-openCenter config set defaults.provider aws
-openCenter config set defaults.region us-east-1
-openCenter config set defaults.environment production
+opencenter config set defaults.provider aws
+opencenter config set defaults.region us-east-1
+opencenter config set defaults.environment production
 ```
 
 **Command:**
 ```bash
-openCenter cluster init my-cluster
+opencenter cluster init my-cluster
 ```
 
 **Result:**
@@ -209,7 +209,7 @@ opencenter:
 
 **Command:**
 ```bash
-openCenter cluster init --config template.yaml
+opencenter cluster init --config template.yaml
 ```
 
 **Result:**
@@ -239,7 +239,7 @@ opencenter:
 
 **Command:**
 ```bash
-openCenter cluster init --config template.yaml \
+opencenter cluster init --config template.yaml \
   --opencenter.meta.region=eu-central-1 \
   --opencenter.meta.env=production
 ```
@@ -262,7 +262,7 @@ defaults:
 
 **Scenario A - New Cluster:**
 ```bash
-openCenter cluster init my-cluster
+opencenter cluster init my-cluster
 ```
 **Result:** Uses SSH key from CLI defaults
 
@@ -274,13 +274,13 @@ opencenter:
       - ssh-rsa AAAAB3... user@host
 ```
 ```bash
-openCenter cluster init --config existing.yaml
+opencenter cluster init --config existing.yaml
 ```
 **Result:** Uses SSH key from config file (not CLI defaults)
 
 **Scenario C - Command-Line Override:**
 ```bash
-openCenter cluster init my-cluster \
+opencenter cluster init my-cluster \
   --opencenter.cluster.ssh_authorized_keys="ssh-ed25519 AAAA... override@host"
 ```
 **Result:** Uses SSH key from command-line flag
@@ -293,10 +293,10 @@ openCenter cluster init my-cluster \
 
 Set organization-wide defaults in CLI config:
 ```bash
-openCenter config set defaults.provider openstack
-openCenter config set defaults.region us-west-2
-openCenter config set defaults.environment production
-openCenter config set defaults.ssh_authorized_keys "$(cat ~/.ssh/id_ed25519.pub)"
+opencenter config set defaults.provider openstack
+opencenter config set defaults.region us-west-2
+opencenter config set defaults.environment production
+opencenter config set defaults.ssh_authorized_keys "$(cat ~/.ssh/id_ed25519.pub)"
 ```
 
 ### 2. Use Config Files for Cluster Templates
@@ -304,18 +304,18 @@ openCenter config set defaults.ssh_authorized_keys "$(cat ~/.ssh/id_ed25519.pub)
 Create reusable templates for different cluster types:
 ```bash
 # Create production template
-openCenter cluster init prod-template --config prod-template.yaml
+opencenter cluster init prod-template --config prod-template.yaml
 
 # Use template for new clusters
-openCenter cluster init prod-cluster-1 --config prod-template.yaml
-openCenter cluster init prod-cluster-2 --config prod-template.yaml
+opencenter cluster init prod-cluster-1 --config prod-template.yaml
+opencenter cluster init prod-cluster-2 --config prod-template.yaml
 ```
 
 ### 3. Use Command-Line Flags for One-Off Overrides
 
 Override specific values without modifying templates:
 ```bash
-openCenter cluster init test-cluster \
+opencenter cluster init test-cluster \
   --config prod-template.yaml \
   --opencenter.meta.env=test \
   --opencenter.cluster.kubernetes.version=1.30.0
@@ -326,20 +326,20 @@ openCenter cluster init test-cluster \
 View the final resolved configuration:
 ```bash
 # After init, check what was actually set
-openCenter cluster info my-cluster
+opencenter cluster info my-cluster
 
 # Or view the config file directly
-cat ~/.config/openCenter/clusters/<org>/.my-cluster-config.yaml
+cat ~/.config/opencenter/clusters/<org>/.my-cluster-config.yaml
 ```
 
 ---
 
 ## Related Commands
 
-- `openCenter config view` - View CLI configuration and defaults
-- `openCenter config set` - Set CLI configuration defaults
-- `openCenter cluster init --help` - See all available flags
-- `openCenter cluster info` - View resolved cluster configuration
+- `opencenter config view` - View CLI configuration and defaults
+- `opencenter config set` - Set CLI configuration defaults
+- `opencenter cluster init --help` - See all available flags
+- `opencenter cluster info` - View resolved cluster configuration
 
 ---
 

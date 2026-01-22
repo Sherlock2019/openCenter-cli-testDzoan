@@ -31,15 +31,15 @@ import (
 	"time"
 
 	"filippo.io/age"
-	"github.com/rackerlabs/openCenter-cli/internal/util/crypto"
-	"github.com/rackerlabs/openCenter-cli/internal/util/files"
+	"github.com/rackerlabs/opencenter-cli/internal/util/crypto"
+	"github.com/rackerlabs/opencenter-cli/internal/util/files"
 	"github.com/zalando/go-keyring"
 	"golang.org/x/crypto/argon2"
 )
 
 const (
 	// KeyringService is the service name for OS keyring storage
-	KeyringService = "openCenter"
+	KeyringService = "opencenter"
 
 	// KeyringAccountSuffix is the suffix for keyring account names
 	KeyringAccountSuffix = "-age-key"

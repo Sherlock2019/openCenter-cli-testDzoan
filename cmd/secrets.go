@@ -22,8 +22,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/rackerlabs/openCenter-cli/internal/barbican"
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/barbican"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )

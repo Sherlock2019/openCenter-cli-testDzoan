@@ -14,7 +14,7 @@ Feature: Destroy clusters safely
         gitops:
           git_dir: "<<tmp>>/opencenter-demo"
       """
-    When I run "openCenter cluster destroy demo --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster destroy demo --config-dir <<tmp>>/conf"
     Then the command should succeed
     And a file "<<tmp>>/conf/demo.yaml" should not exist
     And a directory "<<tmp>>/opencenter-demo" should not exist

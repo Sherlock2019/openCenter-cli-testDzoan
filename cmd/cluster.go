@@ -17,13 +17,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/security"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/security"
 	"github.com/spf13/cobra"
 )
 
 // NewClusterCmd creates the top-level "cluster" command. It has
-// several subcommands defined in separate files. Running "openCenter
+// several subcommands defined in separate files. Running "opencenter
 // cluster" without subcommand prints help.
 func NewClusterCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -43,39 +43,39 @@ Common Workflow:
   5. Bootstrap the cluster with Flux
 
 Configuration files are stored in organization-based directories:
-  ~/.config/openCenter/clusters/<organization>/<cluster>/`,
+  ~/.config/opencenter/clusters/<organization>/<cluster>/`,
 		Example: `  # Initialize a new cluster
-  openCenter cluster init my-cluster
+  opencenter cluster init my-cluster
 
   # Initialize with organization
-  openCenter cluster init my-cluster --opencenter.meta.organization=myorg
+  opencenter cluster init my-cluster --opencenter.meta.organization=myorg
 
   # Validate configuration
-  openCenter cluster validate my-cluster
+  opencenter cluster validate my-cluster
 
   # List all clusters
-  openCenter cluster list
+  opencenter cluster list
 
   # Select active cluster (session-scoped)
-  openCenter cluster select my-cluster
+  opencenter cluster select my-cluster
 
   # Select cluster persistently (all terminals)
-  openCenter cluster select my-cluster --persistent
+  opencenter cluster select my-cluster --persistent
 
   # Export cluster environment
-  eval "$(openCenter cluster env)"
+  eval "$(opencenter cluster env)"
 
   # Select and activate cluster environment
-  eval "$(openCenter cluster select my-cluster --activate --export-only)"
+  eval "$(opencenter cluster select my-cluster --activate --export-only)"
 
   # Deactivate cluster environment
-  eval "$(openCenter cluster select --clear --export-only)"
+  eval "$(opencenter cluster select --clear --export-only)"
 
   # Clear persistent cluster selection
-  openCenter cluster select --clear-persistent
+  opencenter cluster select --clear-persistent
 
   # Show current cluster
-  openCenter cluster current`,
+  opencenter cluster current`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},
@@ -151,7 +151,7 @@ func resolveClusterName(args []string, requireActive bool) (string, error) {
 
 	if activeName == "" {
 		if requireActive {
-			return "", fmt.Errorf("no active cluster set. Use 'openCenter cluster select <cluster>' or provide cluster name as argument")
+			return "", fmt.Errorf("no active cluster set. Use 'opencenter cluster select <cluster>' or provide cluster name as argument")
 		}
 		return "", nil
 	}
@@ -203,7 +203,7 @@ func resolveClusterNameFromFlag(flagValue string, requireActive bool) (string, e
 
 	if activeName == "" {
 		if requireActive {
-			return "", fmt.Errorf("no active cluster set. Use 'openCenter cluster select <cluster>' or provide --cluster flag")
+			return "", fmt.Errorf("no active cluster set. Use 'opencenter cluster select <cluster>' or provide --cluster flag")
 		}
 		return "", nil
 	}

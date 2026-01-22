@@ -23,8 +23,8 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/credentials"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/credentials"
 	"github.com/spf13/cobra"
 )
 
@@ -349,9 +349,9 @@ func validateClusterExists(clusterName string, pathResolver *config.PathResolver
 			for _, cluster := range availableClusters {
 				errMsg.WriteString(fmt.Sprintf("\n  - %s", cluster))
 			}
-			errMsg.WriteString("\n\nUse 'openCenter cluster list' to see all available clusters")
+			errMsg.WriteString("\n\nUse 'opencenter cluster list' to see all available clusters")
 		} else {
-			errMsg.WriteString("\n\nUse 'openCenter cluster list' to see available clusters")
+			errMsg.WriteString("\n\nUse 'opencenter cluster list' to see available clusters")
 		}
 
 		// Add hint about organization format
@@ -376,9 +376,9 @@ func validateClusterExists(clusterName string, pathResolver *config.PathResolver
 			for _, cluster := range availableClusters {
 				errMsg.WriteString(fmt.Sprintf("\n  - %s", cluster))
 			}
-			errMsg.WriteString("\n\nUse 'openCenter cluster list' to see all available clusters")
+			errMsg.WriteString("\n\nUse 'opencenter cluster list' to see all available clusters")
 		} else {
-			errMsg.WriteString("\n\nUse 'openCenter cluster list' to see available clusters")
+			errMsg.WriteString("\n\nUse 'opencenter cluster list' to see available clusters")
 		}
 
 		// Add hint about organization format
@@ -430,11 +430,11 @@ func displayClusterSelectOutput(output ClusterSelectOutput, cmd *cobra.Command) 
 		// Provide shell-specific instructions
 		switch output.Shell {
 		case "fish":
-			fmt.Fprintf(cmd.OutOrStdout(), "  openCenter cluster select %s --export-only | source\n", output.Metadata.Name)
+			fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster select %s --export-only | source\n", output.Metadata.Name)
 		case "powershell":
-			fmt.Fprintf(cmd.OutOrStdout(), "  openCenter cluster select %s --export-only | Invoke-Expression\n", output.Metadata.Name)
+			fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster select %s --export-only | Invoke-Expression\n", output.Metadata.Name)
 		default:
-			fmt.Fprintf(cmd.OutOrStdout(), "  eval \"$(openCenter cluster select %s --export-only)\"\n", output.Metadata.Name)
+			fmt.Fprintf(cmd.OutOrStdout(), "  eval \"$(opencenter cluster select %s --export-only)\"\n", output.Metadata.Name)
 		}
 	} else {
 		fmt.Fprintf(cmd.OutOrStdout(), "Environment Setup:\n")
@@ -537,7 +537,7 @@ Use --activate to automatically activate the cluster environment (sets environme
 				} else {
 					fmt.Fprintf(cmd.OutOrStdout(), "Active cluster cleared\n\n")
 					fmt.Fprintf(cmd.OutOrStdout(), "To deactivate the cluster environment, run:\n")
-					fmt.Fprintf(cmd.OutOrStdout(), "  eval $(openCenter cluster select --clear --export-only)\n")
+					fmt.Fprintf(cmd.OutOrStdout(), "  eval $(opencenter cluster select --clear --export-only)\n")
 				}
 				return nil
 			}
@@ -545,6 +545,18 @@ Use --activate to automatically activate the cluster environment (sets environme
 			var name string
 			if len(args) > 0 {
 				name = args[0]
+			}
+
+			// If name not provided and --export-only is used, try to get active cluster
+			if name == "" && showExportOnly {
+				activeCluster, err := config.GetActive()
+				if err != nil {
+					return fmt.Errorf("no cluster specified and failed to get active cluster: %w", err)
+				}
+				if activeCluster == "" {
+					return errors.New("no cluster specified and no active cluster set")
+				}
+				name = activeCluster
 			}
 
 			// If name not provided, prompt with interactive selection
@@ -739,11 +751,11 @@ Use --activate to automatically activate the cluster environment (sets environme
 					// Provide shell-specific instructions
 					switch shell {
 					case "fish":
-						fmt.Fprintf(cmd.OutOrStdout(), "  openCenter cluster select %s --activate --export-only | source\n", name)
+						fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster select %s --activate --export-only | source\n", name)
 					case "powershell":
-						fmt.Fprintf(cmd.OutOrStdout(), "  openCenter cluster select %s --activate --export-only | Invoke-Expression\n", name)
+						fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster select %s --activate --export-only | Invoke-Expression\n", name)
 					default:
-						fmt.Fprintf(cmd.OutOrStdout(), "  eval $(openCenter cluster select %s --activate --export-only)\n", name)
+						fmt.Fprintf(cmd.OutOrStdout(), "  eval $(opencenter cluster select %s --activate --export-only)\n", name)
 					}
 				}
 				return nil
@@ -768,7 +780,7 @@ Use --activate to automatically activate the cluster environment (sets environme
 
 				// Inform user about activation
 				fmt.Fprintf(cmd.OutOrStdout(), "\nTo activate the cluster environment with credentials, run:\n")
-				fmt.Fprintf(cmd.OutOrStdout(), "  eval $(openCenter cluster select %s --activate --export-only)\n", name)
+				fmt.Fprintf(cmd.OutOrStdout(), "  eval $(opencenter cluster select %s --activate --export-only)\n", name)
 			}
 
 			return nil

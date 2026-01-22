@@ -20,7 +20,7 @@
 - [Emergency Certificate Renewal](#emergency-certificate-renewal)
 **doc_type: how-to**
 
-Step-by-step procedures for renewing and rotating certificates in openCenter-managed Kubernetes clusters, including Kubernetes API certificates, etcd certificates, and application TLS certificates.
+Step-by-step procedures for renewing and rotating certificates in opencenter-managed Kubernetes clusters, including Kubernetes API certificates, etcd certificates, and application TLS certificates.
 
 ## Who This Is For
 
@@ -28,7 +28,7 @@ Operations teams and SREs responsible for certificate lifecycle management. Use 
 
 ## Prerequisites
 
-- Running openCenter cluster with cert-manager enabled
+- Running opencenter cluster with cert-manager enabled
 - Access to cluster configuration and SOPS keys
 - `kubectl` access with cluster-admin permissions
 - SSH access to control plane nodes
@@ -36,7 +36,7 @@ Operations teams and SREs responsible for certificate lifecycle management. Use 
 
 ## Certificate Overview
 
-openCenter clusters use multiple certificate types:
+opencenter clusters use multiple certificate types:
 
 **Kubernetes Certificates**:
 - API server certificate (client and server)
@@ -442,7 +442,7 @@ opencenter:
 
 ```bash
 # Apply configuration
-openCenter cluster setup my-cluster --force
+opencenter cluster setup my-cluster --force
 
 # Verify kubelet configuration on nodes
 ssh ubuntu@worker-1

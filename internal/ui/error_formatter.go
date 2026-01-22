@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rackerlabs/openCenter-cli/internal/security"
-	"github.com/rackerlabs/openCenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/security"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
 )
 
 // Severity represents the severity level of an error
@@ -360,7 +360,7 @@ func (f *DefaultErrorFormatter) initializeErrorRegistry() {
 		Title:       "OpenStack region not configured",
 		Description: "The OpenStack provider requires a region to be specified.",
 		Fix:         "Add region to your configuration:",
-		FixCommand:  "openCenter cluster update {cluster} --opencenter.infrastructure.cloud.openstack.region=RegionOne",
+		FixCommand:  "opencenter cluster update {cluster} --opencenter.infrastructure.cloud.openstack.region=RegionOne",
 		Hint:        "List available regions: openstack region list",
 		DocsURL:     "https://docs.opencenter.cloud/errors/E1001",
 		Severity:    SeverityCritical,
@@ -371,8 +371,8 @@ func (f *DefaultErrorFormatter) initializeErrorRegistry() {
 		Title:       "SOPS key not found",
 		Description: "The SOPS Age encryption key for this cluster could not be found.",
 		Fix:         "Generate a new SOPS key:",
-		FixCommand:  "openCenter sops keygen {cluster}",
-		Hint:        "Check if the key file exists: ls -la ~/.config/openCenter/clusters/{org}/{cluster}/secrets/age/",
+		FixCommand:  "opencenter sops keygen {cluster}",
+		Hint:        "Check if the key file exists: ls -la ~/.config/opencenter/clusters/{org}/{cluster}/secrets/age/",
 		DocsURL:     "https://docs.opencenter.cloud/errors/E1002",
 		Severity:    SeverityCritical,
 	}
@@ -382,7 +382,7 @@ func (f *DefaultErrorFormatter) initializeErrorRegistry() {
 		Title:       "Invalid cluster name",
 		Description: "Cluster names must start with a letter and contain only alphanumeric characters, hyphens, and underscores (max 63 characters).",
 		Fix:         "Use a valid cluster name:",
-		FixCommand:  "openCenter cluster init my-cluster",
+		FixCommand:  "opencenter cluster init my-cluster",
 		Hint:        "Valid examples: my-cluster, prod_cluster, cluster123",
 		DocsURL:     "https://docs.opencenter.cloud/errors/E1003",
 		Severity:    SeverityCritical,
@@ -393,8 +393,8 @@ func (f *DefaultErrorFormatter) initializeErrorRegistry() {
 		Title:       "Configuration validation failed",
 		Description: "The cluster configuration contains validation errors.",
 		Fix:         "Run validation to see specific errors:",
-		FixCommand:  "openCenter cluster validate {cluster}",
-		Hint:        "View the configuration schema: openCenter cluster schema",
+		FixCommand:  "opencenter cluster validate {cluster}",
+		Hint:        "View the configuration schema: opencenter cluster schema",
 		DocsURL:     "https://docs.opencenter.cloud/errors/E1004",
 		Severity:    SeverityCritical,
 	}
@@ -404,8 +404,8 @@ func (f *DefaultErrorFormatter) initializeErrorRegistry() {
 		Title:       "Required field missing",
 		Description: "A required configuration field is missing or empty.",
 		Fix:         "Edit the configuration and add the required field:",
-		FixCommand:  "openCenter cluster edit {cluster}",
-		Hint:        "Check the schema for required fields: openCenter cluster schema",
+		FixCommand:  "opencenter cluster edit {cluster}",
+		Hint:        "Check the schema for required fields: opencenter cluster schema",
 		DocsURL:     "https://docs.opencenter.cloud/errors/E1005",
 		Severity:    SeverityCritical,
 	}
@@ -516,7 +516,7 @@ func (f *DefaultErrorFormatter) initializeErrorRegistry() {
 		Description: "An error occurred while communicating with the OpenStack API.",
 		Fix:         "Verify OpenStack credentials and connectivity:",
 		FixCommand:  "openstack server list",
-		Hint:        "Run preflight checks: openCenter cluster preflight {cluster}",
+		Hint:        "Run preflight checks: opencenter cluster preflight {cluster}",
 		DocsURL:     "https://docs.opencenter.cloud/errors/E5001",
 		Severity:    SeverityCritical,
 	}
@@ -548,7 +548,7 @@ func (f *DefaultErrorFormatter) initializeErrorRegistry() {
 		Title:       "Drift detection failed",
 		Description: "Unable to detect configuration drift for the cluster.",
 		Fix:         "Verify cluster is accessible:",
-		FixCommand:  "openCenter cluster info {cluster}",
+		FixCommand:  "opencenter cluster info {cluster}",
 		Hint:        "Check cloud provider connectivity",
 		DocsURL:     "https://docs.opencenter.cloud/errors/E6001",
 		Severity:    SeverityWarning,
@@ -559,7 +559,7 @@ func (f *DefaultErrorFormatter) initializeErrorRegistry() {
 		Title:       "Backup creation failed",
 		Description: "Unable to create a backup of the cluster configuration.",
 		Fix:         "Check disk space and permissions:",
-		FixCommand:  "df -h && ls -la ~/.config/openCenter/backups/",
+		FixCommand:  "df -h && ls -la ~/.config/opencenter/backups/",
 		Hint:        "Ensure the backup directory is writable",
 		DocsURL:     "https://docs.opencenter.cloud/errors/E6002",
 		Severity:    SeverityCritical,
@@ -570,7 +570,7 @@ func (f *DefaultErrorFormatter) initializeErrorRegistry() {
 		Title:       "Lock acquisition failed",
 		Description: "Unable to acquire a lock for the cluster operation.",
 		Fix:         "Wait for the current operation to complete or break the lock:",
-		FixCommand:  "openCenter cluster lock break {cluster}",
+		FixCommand:  "opencenter cluster lock break {cluster}",
 		Hint:        "Check if another operation is in progress",
 		DocsURL:     "https://docs.opencenter.cloud/errors/E6003",
 		Severity:    SeverityWarning,

@@ -787,7 +787,7 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 				"type":        "string",
 				"description": "URL of the GitOps base repository",
 				"pattern":     "^(https?://|git@|ssh://)",
-				"default":     "ssh://git@github.com/rackerlabs/openCenter-gitops-base.git",
+				"default":     "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git",
 			},
 			"gitops_base_release": map[string]any{
 				"type":        "string",
@@ -880,15 +880,15 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 	schema := map[string]any{
 		"$schema":     "https://json-schema.org/draft/2020-12/schema",
 		"$id":         "https://opencenter.cloud/schemas/cluster-config.json",
-		"title":       "openCenter Cluster Configuration",
-		"description": "Complete schema for openCenter cluster configuration with validation rules and constraints",
+		"title":       "opencenter Cluster Configuration",
+		"description": "Complete schema for opencenter cluster configuration with validation rules and constraints",
 		"version":     SchemaVersion,
 		"type":        "object",
 		"required":    []string{"opencenter"},
 		"properties": map[string]any{
 			"opencenter": map[string]any{
 				"type":        "object",
-				"description": "Main openCenter configuration section",
+				"description": "Main opencenter configuration section",
 				"required":    []string{"meta", "infrastructure", "cluster", "gitops"},
 				"properties": map[string]any{
 					"meta": map[string]any{

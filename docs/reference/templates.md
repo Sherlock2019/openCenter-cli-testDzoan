@@ -21,11 +21,11 @@ weight: 30
 - [Troubleshooting](#troubleshooting)
 - [Best Practices](#best-practices)
 - [See Also](#see-also)
-This document provides complete reference information for the openCenter CLI template system, including template functions, variables, structure, and customization.
+This document provides complete reference information for the opencenter CLI template system, including template functions, variables, structure, and customization.
 
 ## Overview
 
-openCenter CLI uses Go's `text/template` package enhanced with [Sprig functions](http://masterminds.github.io/sprig/) to render configuration files and GitOps manifests. Templates are embedded in the binary and rendered during cluster setup.
+opencenter CLI uses Go's `text/template` package enhanced with [Sprig functions](http://masterminds.github.io/sprig/) to render configuration files and GitOps manifests. Templates are embedded in the binary and rendered during cluster setup.
 
 ### Template Types
 
@@ -364,7 +364,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 15m
-  url: {{ $service.Uri | default "https://github.com/rackerlabs/openCenter-gitops-base.git" }}
+  url: {{ $service.Uri | default "https://github.com/rackerlabs/opencenter-gitops-base.git" }}
   ref:
     {{- if $service.Release }}
     tag: {{ $service.Release }}
@@ -615,22 +615,22 @@ data:
    EOF
    ```
 
-2. **Render template** using openCenter CLI:
+2. **Render template** using opencenter CLI:
    ```bash
-   openCenter cluster setup my-cluster --render
+   opencenter cluster setup my-cluster --render
    ```
 
 ### Template Validation
 
 ```bash
 # Validate template syntax
-openCenter template validate custom-templates/my-service.yaml.tmpl
+opencenter template validate custom-templates/my-service.yaml.tmpl
 
 # Render template to stdout (dry-run)
-openCenter template render custom-templates/my-service.yaml.tmpl --cluster my-cluster
+opencenter template render custom-templates/my-service.yaml.tmpl --cluster my-cluster
 
 # Render template to file
-openCenter template render custom-templates/my-service.yaml.tmpl --cluster my-cluster --output my-service.yaml
+opencenter template render custom-templates/my-service.yaml.tmpl --cluster my-cluster --output my-service.yaml
 ```
 
 ---
@@ -642,8 +642,8 @@ openCenter template render custom-templates/my-service.yaml.tmpl --cluster my-cl
 ```go
 import (
     "context"
-    "github.com/rackerlabs/openCenter-cli/internal/template"
-    "github.com/rackerlabs/openCenter-cli/internal/config"
+    "github.com/rackerlabs/opencenter-cli/internal/template"
+    "github.com/rackerlabs/opencenter-cli/internal/config"
 )
 
 // Create template engine
@@ -796,7 +796,7 @@ Region: {{ .OpenCenter.Meta.Region }}
 # Validate all templates
 find . -name "*.tpl" -o -name "*.tmpl" | while read f; do
   echo "Validating $f"
-  openCenter template validate "$f" || echo "Failed: $f"
+  opencenter template validate "$f" || echo "Failed: $f"
 done
 ```
 

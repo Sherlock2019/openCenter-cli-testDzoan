@@ -979,7 +979,7 @@ func TestConditionalConfigurationRealWorldScenario(t *testing.T) {
 					WithK8sHardening(true).
 					WithOSHardening(true).
 					WithTag("environment", "production").
-					WithTag("managed-by", "openCenter")
+					WithTag("managed-by", "opencenter")
 			}).
 			// Development settings for local clusters
 			WhenProvider("kind", func(b ConfigBuilder) ConfigBuilder {

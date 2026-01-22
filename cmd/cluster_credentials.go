@@ -51,19 +51,19 @@ Common workflow:
   2. Use with other cloud tools (terraform, ansible, etc.)
   3. Unset credentials when done`,
 		Example: `  # Export AWS credentials for current cluster
-  eval $(openCenter cluster credentials export --provider aws)
+  eval $(opencenter cluster credentials export --provider aws)
 
   # Export OpenStack credentials for specific cluster
-  eval $(openCenter cluster credentials export my-cluster --provider openstack)
+  eval $(opencenter cluster credentials export my-cluster --provider openstack)
 
   # Export all credentials in JSON format
-  openCenter cluster credentials export --provider all --format json
+  opencenter cluster credentials export --provider all --format json
 
   # Clear AWS credentials from environment
-  eval $(openCenter cluster credentials unset --provider aws)
+  eval $(opencenter cluster credentials unset --provider aws)
 
   # Clear all credentials from environment
-  eval $(openCenter cluster credentials unset --provider all)`,
+  eval $(opencenter cluster credentials unset --provider all)`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},

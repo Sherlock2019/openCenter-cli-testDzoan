@@ -108,7 +108,7 @@ By default, the system uses the legacy generation functions:
 
 ```bash
 # No environment variable set - uses legacy system
-openCenter cluster render my-cluster
+opencenter cluster render my-cluster
 ```
 
 **Result:** Uses `CopyBase`, `RenderClusterApps`, `RenderInfrastructureCluster` internally.
@@ -120,7 +120,7 @@ To test the new pipeline-based system:
 ```bash
 # Enable pipeline generator
 export OPENCENTER_USE_PIPELINE_GENERATOR=true
-openCenter cluster render my-cluster
+opencenter cluster render my-cluster
 ```
 
 **Result:** Attempts to use the new pipeline system. If not yet implemented, falls back to legacy system gracefully.
@@ -152,10 +152,10 @@ unset OPENCENTER_USE_PIPELINE_GENERATOR
 **Before and After - Same Usage:**
 ```bash
 # Render templates for active cluster
-openCenter cluster render
+opencenter cluster render
 
 # Render templates for specific cluster
-openCenter cluster render my-cluster
+opencenter cluster render my-cluster
 ```
 
 **Implementation:**
@@ -302,7 +302,7 @@ The system will automatically fall back to the legacy generation functions.
 **Solution:** Enable the pipeline generator feature flag:
 ```bash
 export OPENCENTER_USE_PIPELINE_GENERATOR=true
-openCenter cluster render my-cluster
+opencenter cluster render my-cluster
 ```
 
 If the pipeline system is not yet fully implemented, it will gracefully fall back to the legacy system.
@@ -312,7 +312,7 @@ If the pipeline system is not yet fully implemented, it will gracefully fall bac
 **Solution:** Enable feature flag debug logging:
 ```bash
 export OPENCENTER_FEATURE_FLAG_DEBUG=true
-openCenter cluster render my-cluster
+opencenter cluster render my-cluster
 ```
 
 This will print feature flag evaluation to stderr, showing which system is being used.
@@ -337,13 +337,13 @@ go test -v ./cmd -run RenderClusterTemplatesIntegration
 
 ```bash
 # Create a test cluster
-openCenter cluster init test-compat --force
+opencenter cluster init test-compat --force
 
 # Render templates (uses unified interface)
-openCenter cluster render test-compat
+opencenter cluster render test-compat
 
 # Verify output
-ls -la ~/.config/openCenter/clusters/opencenter/gitops/
+ls -la ~/.config/opencenter/clusters/opencenter/gitops/
 ```
 
 **Expected Result:** GitOps repository is generated successfully ✅
@@ -355,10 +355,10 @@ ls -la ~/.config/openCenter/clusters/opencenter/gitops/
 export OPENCENTER_USE_PIPELINE_GENERATOR=true
 
 # Render templates (should fall back to legacy gracefully)
-openCenter cluster render test-compat
+opencenter cluster render test-compat
 
 # Verify output is identical
-ls -la ~/.config/openCenter/clusters/opencenter/gitops/
+ls -la ~/.config/opencenter/clusters/opencenter/gitops/
 ```
 
 **Expected Result:** GitOps repository is generated successfully (using legacy fallback) ✅

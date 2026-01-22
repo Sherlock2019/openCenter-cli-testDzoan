@@ -20,7 +20,7 @@ Show the current active cluster and its status information.
 ## Synopsis
 
 ```bash
-openCenter cluster status [flags]
+opencenter cluster status [flags]
 ```
 
 ## Description
@@ -38,16 +38,16 @@ If no cluster is active, it shows available clusters and suggests using `cluster
 
 ```bash
 # Show active cluster status
-openCenter cluster status
+opencenter cluster status
 
 # Show active cluster with file paths
-openCenter cluster status --paths
+opencenter cluster status --paths
 
 # Quiet output (just the cluster name)
-openCenter cluster status --quiet
+opencenter cluster status --quiet
 
 # Use in scripts
-CLUSTER=$(openCenter cluster status --quiet)
+CLUSTER=$(opencenter cluster status --quiet)
 ```
 
 ## Output Format
@@ -64,7 +64,7 @@ Active Cluster: my-cluster
   Provider:     openstack
 
 Next Steps:
-  - Run 'eval $(openCenter cluster activate)' to configure your environment
+  - Run 'eval $(opencenter cluster activate)' to configure your environment
   - Use 'kubectl' to interact with the cluster
 ```
 
@@ -80,15 +80,15 @@ Active Cluster: my-cluster
   Provider:     openstack
 
 Cluster Paths:
-  Config Directory:  /home/user/.config/openCenter/clusters/myorg/infrastructure/clusters/my-cluster
-  SOPS Key:          /home/user/.config/openCenter/clusters/myorg/secrets/age/my-cluster-key.txt
+  Config Directory:  /home/user/.config/opencenter/clusters/myorg/infrastructure/clusters/my-cluster
+  SOPS Key:          /home/user/.config/opencenter/clusters/myorg/secrets/age/my-cluster-key.txt
   GitOps Directory:  /home/user/gitops/myorg
   SOPS Key Status:   ✓ Present
   GitOps Status:     ✓ Initialized
   Kubeconfig:        ✓ Present
 
 Next Steps:
-  - Run 'eval $(openCenter cluster activate)' to configure your environment
+  - Run 'eval $(opencenter cluster activate)' to configure your environment
   - Use 'kubectl' to interact with the cluster
 ```
 
@@ -108,7 +108,7 @@ Available clusters:
   - cluster2
   - my-cluster
 
-Use 'openCenter cluster select <name>' to set an active cluster
+Use 'opencenter cluster select <name>' to set an active cluster
 ```
 
 ## Information Displayed
@@ -136,26 +136,26 @@ The command suggests next steps based on cluster status:
 ### initialized
 ```
 Next Steps:
-  - Run 'openCenter cluster validate my-cluster' to validate configuration
-  - Run 'openCenter cluster setup my-cluster' to generate GitOps repository
+  - Run 'opencenter cluster validate my-cluster' to validate configuration
+  - Run 'opencenter cluster setup my-cluster' to generate GitOps repository
 ```
 
 ### validated
 ```
 Next Steps:
-  - Run 'openCenter cluster setup my-cluster' to generate GitOps repository
+  - Run 'opencenter cluster setup my-cluster' to generate GitOps repository
 ```
 
 ### setup or ready
 ```
 Next Steps:
-  - Run 'openCenter cluster bootstrap my-cluster' to deploy the cluster
+  - Run 'opencenter cluster bootstrap my-cluster' to deploy the cluster
 ```
 
 ### deployed
 ```
 Next Steps:
-  - Run 'eval $(openCenter cluster activate)' to configure your environment
+  - Run 'eval $(opencenter cluster activate)' to configure your environment
   - Use 'kubectl' to interact with the cluster
 ```
 
@@ -165,21 +165,21 @@ Next Steps:
 
 ```bash
 # Check active cluster
-openCenter cluster status
+opencenter cluster status
 ```
 
 ### Verify File Paths
 
 ```bash
 # Check if all required files exist
-openCenter cluster status --paths
+opencenter cluster status --paths
 ```
 
 ### Scripting Integration
 
 ```bash
 # Get active cluster name
-CLUSTER=$(openCenter cluster status --quiet)
+CLUSTER=$(opencenter cluster status --quiet)
 
 # Check if cluster is active
 if [ -z "$CLUSTER" ]; then
@@ -188,7 +188,7 @@ if [ -z "$CLUSTER" ]; then
 fi
 
 # Use cluster name in other commands
-openCenter cluster validate "$CLUSTER"
+opencenter cluster validate "$CLUSTER"
 ```
 
 ### CI/CD Integration
@@ -198,14 +198,14 @@ openCenter cluster validate "$CLUSTER"
 set -e
 
 # Verify active cluster
-CLUSTER=$(openCenter cluster status --quiet)
+CLUSTER=$(opencenter cluster status --quiet)
 if [ -z "$CLUSTER" ]; then
   echo "Error: No active cluster set"
   exit 1
 fi
 
 # Check cluster status
-STATUS=$(openCenter cluster info "$CLUSTER" --json | jq -r '.metadata.status')
+STATUS=$(opencenter cluster info "$CLUSTER" --json | jq -r '.metadata.status')
 if [ "$STATUS" != "deployed" ]; then
   echo "Error: Cluster is not deployed (status: $STATUS)"
   exit 1
@@ -219,12 +219,12 @@ echo "Operating on cluster: $CLUSTER"
 
 ```bash
 # Check file availability
-openCenter cluster status --paths
+opencenter cluster status --paths
 
 # Verify SOPS key exists
-if openCenter cluster status --paths | grep -q "SOPS Key Status:   ✗ Missing"; then
+if opencenter cluster status --paths | grep -q "SOPS Key Status:   ✗ Missing"; then
   echo "SOPS key is missing, regenerating..."
-  openCenter cluster init my-cluster --regenerate-keys
+  opencenter cluster init my-cluster --regenerate-keys
 fi
 ```
 
@@ -238,7 +238,7 @@ Available clusters:
   - cluster1
   - cluster2
 
-Use 'openCenter cluster select <name>' to set an active cluster
+Use 'opencenter cluster select <name>' to set an active cluster
 ```
 
 **Configuration not found:**

@@ -16,8 +16,8 @@ package di
 import (
 	"github.com/sirupsen/logrus"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/ui"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/ui"
 )
 
 // SetupContainer creates and configures a new DI container with all major components.

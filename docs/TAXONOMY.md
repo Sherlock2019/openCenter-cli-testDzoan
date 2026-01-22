@@ -1,4 +1,4 @@
-# openCenter Documentation Taxonomy 1.0.0
+# opencenter Documentation Taxonomy 1.0.0
 
 
 ## Table of Contents
@@ -18,7 +18,7 @@
 - [Version History](#version-history)
 **doc_type: reference**
 
-This document defines the complete documentation structure for openCenter 1.0.0 release. It serves as the master plan for documentation organization, content requirements, and maintenance guidelines.
+This document defines the complete documentation structure for opencenter 1.0.0 release. It serves as the master plan for documentation organization, content requirements, and maintenance guidelines.
 
 ## Purpose
 

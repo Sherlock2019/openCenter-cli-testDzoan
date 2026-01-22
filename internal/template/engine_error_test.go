@@ -23,7 +23,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rackerlabs/openCenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
 )
 
 // TestTemplateErrorWithLineNumbers tests that template errors include line numbers.

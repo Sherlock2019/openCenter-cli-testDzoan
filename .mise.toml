@@ -120,9 +120,10 @@ echo ""
 echo "Note: Windows builds excluded due to platform-specific dependencies"
 '''
 
-# Build release binaries for all platforms with specified version
-# Usage: mise run release <version>
+# Build release binaries for all platforms with specified version and generate release notes
+# Usage: mise run release <version> [publish-target]
 # Example: mise run release v0.0.1-rc3
+# Example: mise run release v0.0.1-rc3 opencenter-cloud/community-artifacts
 release = '''
 #!/usr/bin/env bash
 set -e
@@ -130,16 +131,21 @@ set -e
 # Check if version argument is provided
 if [ -z "$1" ]; then
   echo "ERROR: Version argument required"
-  echo "Usage: mise run release <version>"
+  echo "Usage: mise run release <version> [publish-target]"
   echo "Example: mise run release v0.0.1-rc3"
+  echo "Example: mise run release v0.0.1-rc3 opencenter-cloud/community-artifacts"
   exit 1
 fi
 
 VERSION="$1"
+PUBLISH_TARGET="${2:-rackerlabs/openCenter-cli}"
+
 # Strip 'v' prefix if present for consistency
 VERSION="${VERSION#v}"
 
 echo "Building release binaries for version ${VERSION}..."
+echo "Publish target: ${PUBLISH_TARGET}"
+echo ""
 
 # Get git information
 GIT_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
@@ -187,29 +193,61 @@ echo "  - macOS ARM64 (Apple Silicon)"
 echo ""
 echo "Note: Windows builds are not currently supported due to platform-specific dependencies"
 echo ""
+
+# Generate release notes
+echo "=== Generating Release Notes ==="
+echo ""
+mise run publish "${VERSION}" "${PUBLISH_TARGET}"
+
+echo ""
+echo "=== Release Complete ==="
+echo ""
 echo "Next steps:"
-echo "  1. Test binaries on target platforms"
-echo "  2. Run 'mise run publish' to create GitHub release"
+echo "  1. Review release notes in bin/release/RELEASE_NOTES_${VERSION}.md"
+echo "  2. Test binaries on target platforms"
+echo "  3. Create and push git tag:"
+echo "     git tag -a v${VERSION} -m 'Release ${VERSION}'"
+echo "     git push origin v${VERSION}"
+echo ""
+echo "  4. Create GitHub release using gh CLI (if installed):"
+echo "     gh release create v${VERSION} \\"
+echo "       --repo ${PUBLISH_TARGET} \\"
+echo "       --title 'openCenter ${VERSION}' \\"
+echo "       --notes-file bin/release/RELEASE_NOTES_${VERSION}.md \\"
+echo "       --prerelease \\"
+echo "       bin/release/openCenter-*"
+echo ""
+echo "     OR manually at: https://github.com/${PUBLISH_TARGET}/releases/new?tag=v${VERSION}"
 '''
 
 # Publish release to GitHub with auto-generated release notes
+# Usage: mise run publish <version> [publish-target]
+# Example: mise run publish 1.0.0-rc2
+# Example: mise run publish 1.0.0-rc2 opencenter-cloud/community-artifacts
 publish = '''
 #!/usr/bin/env bash
 set -e
 
-VERSION="1.0.0-rc2"
+# Check if version argument is provided
+if [ -z "$1" ]; then
+  echo "ERROR: Version argument required"
+  echo "Usage: mise run publish <version> [publish-target]"
+  echo "Example: mise run publish 1.0.0-rc2"
+  echo "Example: mise run publish 1.0.0-rc2 opencenter-cloud/community-artifacts"
+  exit 1
+fi
+
+VERSION="$1"
+PUBLISH_TARGET="${2:-rackerlabs/openCenter-cli}"
+
+# Strip 'v' prefix if present for consistency
+VERSION="${VERSION#v}"
 TAG="v${VERSION}"
 RELEASE_DIR="bin/release"
 
-echo "=== Publishing Release ${VERSION} ==="
+echo "=== Generating Release Notes for ${VERSION} ==="
+echo "Publish target: ${PUBLISH_TARGET}"
 echo ""
-
-# Check if release binaries exist
-if [ ! -d "$RELEASE_DIR" ] || [ -z "$(ls -A $RELEASE_DIR 2>/dev/null)" ]; then
-  echo "ERROR: No release binaries found in $RELEASE_DIR"
-  echo "Run 'mise run release' first to build binaries"
-  exit 1
-fi
 
 # Get the last tag to generate changelog
 LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
@@ -222,14 +260,13 @@ else
 fi
 
 # Generate release notes following documentation steering guidelines
-RELEASE_NOTES_FILE="bin/release/RELEASE_NOTES_${VERSION}.md"
+RELEASE_NOTES_FILE="${RELEASE_DIR}/RELEASE_NOTES_${VERSION}.md"
+mkdir -p "${RELEASE_DIR}"
 
 cat > "$RELEASE_NOTES_FILE" << EOF
 # openCenter ${VERSION}
 
-First release candidate for version 1.0.0.
-
-This release includes CLI defaults, cluster locking, and configuration precedence improvements.
+Release ${VERSION} of openCenter CLI.
 
 ## Changes in This Release
 
@@ -281,28 +318,28 @@ Download the binary for your platform and move it to your PATH.
 
 **Linux (x86_64)**
 \`\`\`bash
-curl -L https://github.com/rackerlabs/openCenter-cli/releases/download/${TAG}/openCenter-${VERSION}-linux-amd64 -o openCenter
+curl -L https://github.com/${PUBLISH_TARGET}/releases/download/${TAG}/openCenter-${VERSION}-linux-amd64 -o openCenter
 chmod +x openCenter
 sudo mv openCenter /usr/local/bin/
 \`\`\`
 
 **Linux (ARM64)**
 \`\`\`bash
-curl -L https://github.com/rackerlabs/openCenter-cli/releases/download/${TAG}/openCenter-${VERSION}-linux-arm64 -o openCenter
+curl -L https://github.com/${PUBLISH_TARGET}/releases/download/${TAG}/openCenter-${VERSION}-linux-arm64 -o openCenter
 chmod +x openCenter
 sudo mv openCenter /usr/local/bin/
 \`\`\`
 
 **macOS (Intel)**
 \`\`\`bash
-curl -L https://github.com/rackerlabs/openCenter-cli/releases/download/${TAG}/openCenter-${VERSION}-darwin-amd64 -o openCenter
+curl -L https://github.com/${PUBLISH_TARGET}/releases/download/${TAG}/openCenter-${VERSION}-darwin-amd64 -o openCenter
 chmod +x openCenter
 sudo mv openCenter /usr/local/bin/
 \`\`\`
 
 **macOS (Apple Silicon)**
 \`\`\`bash
-curl -L https://github.com/rackerlabs/openCenter-cli/releases/download/${TAG}/openCenter-${VERSION}-darwin-arm64 -o openCenter
+curl -L https://github.com/${PUBLISH_TARGET}/releases/download/${TAG}/openCenter-${VERSION}-darwin-arm64 -o openCenter
 chmod +x openCenter
 sudo mv openCenter /usr/local/bin/
 \`\`\`
@@ -324,41 +361,20 @@ Windows is not supported in this release due to platform-specific file locking c
 
 ## Known Issues
 
-See the [issue tracker](https://github.com/rackerlabs/openCenter-cli/issues) for current known issues.
+See the [issue tracker](https://github.com/${PUBLISH_TARGET}/issues) for current known issues.
 
 ## Full Changelog
 
-Compare changes: https://github.com/rackerlabs/openCenter-cli/compare/${LAST_TAG}...${TAG}
+Compare changes: https://github.com/${PUBLISH_TARGET}/compare/${LAST_TAG}...${TAG}
 EOF
 
 echo "✅ Release notes generated: $RELEASE_NOTES_FILE"
 echo ""
 cat "$RELEASE_NOTES_FILE"
 echo ""
-echo "=== Next Steps ==="
+echo "=== Release Notes Complete ==="
 echo ""
-echo "1. Review release notes above"
-echo "2. Create and push git tag:"
-echo "   git tag -a ${TAG} -m 'Release ${VERSION}'"
-echo "   git push upstream ${TAG}"
-echo ""
-echo "3. Create GitHub release using gh CLI (if installed):"
-echo "   gh release create ${TAG} \\"
-echo "     --title 'openCenter ${VERSION}' \\"
-echo "     --notes-file ${RELEASE_NOTES_FILE} \\"
-echo "     --prerelease \\"
-echo "     ${RELEASE_DIR}/*"
-echo ""
-echo "   OR manually at: https://github.com/rackerlabs/openCenter-cli/releases/new?tag=${TAG}"
-echo ""
-echo "4. Upload these binaries:"
-for binary in ${RELEASE_DIR}/openCenter-*; do
-  if [[ $(basename "$binary") != RELEASE_NOTES* ]]; then
-    echo "   - $(basename $binary)"
-  fi
-done
-echo ""
-echo "Release artifacts ready in: ${RELEASE_DIR}/"
+echo "File saved to: ${RELEASE_NOTES_FILE}"
 '''
 
 # Build the openCenter binary

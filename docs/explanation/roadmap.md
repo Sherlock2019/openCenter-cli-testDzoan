@@ -24,11 +24,11 @@
 
 ## Who this is for
 
-Users and contributors who want to understand where openCenter is headed, what features are planned, and how the project is evolving.
+Users and contributors who want to understand where opencenter is headed, what features are planned, and how the project is evolving.
 
 ## Current status
 
-openCenter is production-ready for OpenStack-based Kubernetes clusters. The core functionality is stable:
+opencenter is production-ready for OpenStack-based Kubernetes clusters. The core functionality is stable:
 
 - ✅ Configuration management with validation
 - ✅ GitOps repository generation
@@ -42,7 +42,7 @@ The tool is actively used in production environments and receives regular update
 
 ## Development philosophy
 
-openCenter follows a **stability-first** approach:
+opencenter follows a **stability-first** approach:
 
 **Production reliability over feature velocity**: New features are added carefully, with comprehensive testing and documentation. Breaking changes are avoided when possible.
 
@@ -52,7 +52,7 @@ openCenter follows a **stability-first** approach:
 
 **Backward compatibility matters**: Existing configurations and workflows continue to work across versions.
 
-This philosophy means openCenter evolves deliberately. Features are added when they're needed and can be implemented reliably, not because they're trendy or interesting.
+This philosophy means opencenter evolves deliberately. Features are added when they're needed and can be implemented reliably, not because they're trendy or interesting.
 
 ## Near-term priorities (next 3-6 months)
 
@@ -98,7 +98,7 @@ This philosophy means openCenter evolves deliberately. Features are added when t
 - EKS integration (optional)
 - AWS-specific services (ALB ingress, EBS CSI)
 
-**Why**: Many users deploy on AWS. Currently, openCenter focuses on OpenStack. AWS support expands the tool's applicability.
+**Why**: Many users deploy on AWS. Currently, opencenter focuses on OpenStack. AWS support expands the tool's applicability.
 
 **Impact**: New provider option. Existing OpenStack users unaffected.
 
@@ -108,13 +108,13 @@ This philosophy means openCenter evolves deliberately. Features are added when t
 
 **Status**: In development
 
-**What**: Built-in observability for openCenter operations:
+**What**: Built-in observability for opencenter operations:
 - Structured logging with levels
 - Metrics collection (Prometheus format)
 - Distributed tracing (OpenTelemetry)
 - Performance profiling
 
-**Why**: Understanding what openCenter is doing (especially during long operations like bootstrap) helps with debugging and optimization.
+**Why**: Understanding what opencenter is doing (especially during long operations like bootstrap) helps with debugging and optimization.
 
 **Impact**: Optional feature—can be enabled for troubleshooting. No impact on normal operation.
 
@@ -180,7 +180,7 @@ This philosophy means openCenter evolves deliberately. Features are added when t
 - Version management
 - Signature verification
 
-**Why**: Community contributions extend openCenter's capabilities. A marketplace makes discovery and installation easy.
+**Why**: Community contributions extend opencenter's capabilities. A marketplace makes discovery and installation easy.
 
 **Impact**: Optional feature. Embedded templates remain the default.
 
@@ -194,7 +194,7 @@ This philosophy means openCenter evolves deliberately. Features are added when t
 
 **What**: Manage entire cluster lifecycle declaratively:
 - Define desired state in configuration
-- openCenter reconciles actual state to desired state
+- opencenter reconciles actual state to desired state
 - Automatic updates, scaling, and healing
 - GitOps-driven cluster management
 
@@ -254,31 +254,31 @@ This philosophy means openCenter evolves deliberately. Features are added when t
 
 ## Features we're not planning
 
-Some features are explicitly not planned because they conflict with openCenter's philosophy:
+Some features are explicitly not planned because they conflict with opencenter's philosophy:
 
 ### Graphical user interface
 
-**Why not**: openCenter is a CLI tool designed for automation and GitOps workflows. A GUI would require maintaining two interfaces and would be less automatable.
+**Why not**: opencenter is a CLI tool designed for automation and GitOps workflows. A GUI would require maintaining two interfaces and would be less automatable.
 
 **Alternative**: The planned TUI (terminal UI) provides interactivity while remaining scriptable.
 
 ### Built-in cluster runtime management
 
-**Why not**: openCenter generates GitOps repositories. Flux/ArgoCD handle runtime management. Duplicating their functionality would be redundant.
+**Why not**: opencenter generates GitOps repositories. Flux/ArgoCD handle runtime management. Duplicating their functionality would be redundant.
 
-**Alternative**: Use Flux/ArgoCD for runtime management. openCenter focuses on cluster bootstrapping and configuration.
+**Alternative**: Use Flux/ArgoCD for runtime management. opencenter focuses on cluster bootstrapping and configuration.
 
 ### Application deployment
 
-**Why not**: openCenter deploys infrastructure and platform services. Application deployment is handled by GitOps tools (Flux/ArgoCD) or CI/CD pipelines.
+**Why not**: opencenter deploys infrastructure and platform services. Application deployment is handled by GitOps tools (Flux/ArgoCD) or CI/CD pipelines.
 
-**Alternative**: Use Flux/ArgoCD for application deployment. openCenter provides the platform.
+**Alternative**: Use Flux/ArgoCD for application deployment. opencenter provides the platform.
 
 ### Custom Kubernetes distributions
 
-**Why not**: openCenter uses standard Kubernetes (via Kubespray) or Talos. Supporting custom distributions (Rancher, OpenShift) would require significant provider-specific code.
+**Why not**: opencenter uses standard Kubernetes (via Kubespray) or Talos. Supporting custom distributions (Rancher, OpenShift) would require significant provider-specific code.
 
-**Alternative**: Use the distribution's native tools. openCenter focuses on standard Kubernetes.
+**Alternative**: Use the distribution's native tools. opencenter focuses on standard Kubernetes.
 
 ## How features are prioritized
 
@@ -287,7 +287,7 @@ Feature prioritization considers:
 1. **User demand**: How many users need this feature?
 2. **Production impact**: Does this improve reliability or reduce operational risk?
 3. **Maintenance burden**: How much ongoing maintenance will this require?
-4. **Alignment with philosophy**: Does this fit openCenter's stability-first approach?
+4. **Alignment with philosophy**: Does this fit opencenter's stability-first approach?
 5. **Implementation complexity**: Can this be implemented reliably?
 
 Features that improve production reliability for many users are prioritized. Features that add complexity without clear benefit are deferred or rejected.
@@ -319,7 +319,7 @@ This policy ensures users have time to adapt to changes without disruption.
 
 ## Version numbering
 
-openCenter follows semantic versioning:
+opencenter follows semantic versioning:
 
 - **Major version** (1.x.x → 2.x.x): Breaking changes, major features
 - **Minor version** (x.1.x → x.2.x): New features, backward compatible
@@ -341,7 +341,7 @@ This cadence balances feature delivery with stability. Users can upgrade minor v
 
 ## Technology evolution
 
-openCenter's technology stack evolves conservatively:
+opencenter's technology stack evolves conservatively:
 
 **Go version**: Stay current with Go releases (currently 1.25.2)
 
@@ -355,7 +355,7 @@ The goal is to stay current without chasing every new technology. Stability matt
 
 ## Community and governance
 
-openCenter is developed by Rackspace Technology with community contributions welcome.
+opencenter is developed by Rackspace Technology with community contributions welcome.
 
 **Decision making**: Core team makes final decisions, informed by community feedback
 
@@ -369,7 +369,7 @@ This model balances the need for direction with community input.
 
 ## How to stay informed
 
-Track openCenter's progress:
+Track opencenter's progress:
 
 - **GitHub releases**: Announcements of new versions
 - **Changelog**: Detailed list of changes in each release
@@ -380,15 +380,15 @@ Subscribe to GitHub notifications to stay informed about releases and major chan
 
 ## Conclusion
 
-openCenter's roadmap reflects its core philosophy: **production reliability through opinionated simplicity**. Features are added when they improve reliability, reduce operational risk, or address clear user needs.
+opencenter's roadmap reflects its core philosophy: **production reliability through opinionated simplicity**. Features are added when they improve reliability, reduce operational risk, or address clear user needs.
 
 The roadmap is a living document. Priorities shift based on user feedback, production experience, and technology evolution. But the philosophy remains constant: build a tool that makes Kubernetes cluster deployment reliable and maintainable.
 
-If you have feedback on the roadmap or feature requests, open an issue on GitHub. Your input helps shape openCenter's future.
+If you have feedback on the roadmap or feature requests, open an issue on GitHub. Your input helps shape opencenter's future.
 
 ## See also
 
 - **[Architecture](./architecture.md)**: Technical architecture and design
-- **[Design Decisions](./design-decisions.md)**: Why openCenter is built this way
-- **[Contributing Guide](../contributing.md)**: How to contribute to openCenter
+- **[Design Decisions](./design-decisions.md)**: Why opencenter is built this way
+- **[Contributing Guide](../contributing.md)**: How to contribute to opencenter
 - **[Changelog](../../CHANGELOG.md)**: Detailed history of changes

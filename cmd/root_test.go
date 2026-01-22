@@ -19,7 +19,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/rackerlabs/openCenter-cli/internal/di"
+	"github.com/rackerlabs/opencenter-cli/internal/di"
 )
 
 // TestGetContainer tests retrieving the DI container from context

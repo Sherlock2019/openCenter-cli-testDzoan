@@ -1,6 +1,6 @@
-# Contributing to openCenter
+# Contributing to opencenter
 
-Thank you for your interest in contributing to `openCenter`! We welcome contributions from everyone. This document provides guidelines and instructions to help you get started.
+Thank you for your interest in contributing to `opencenter`! We welcome contributions from everyone. This document provides guidelines and instructions to help you get started.
 
 ## Getting Started
 
@@ -16,8 +16,8 @@ Before you can contribute, you'll need to set up your local development environm
 
 1.  **Fork and Clone the Repository**:
     ```bash
-    git clone git@github.com:your-username/openCenter.git
-    cd openCenter
+    git clone git@github.com:your-username/opencenter.git
+    cd opencenter
     ```
 
 2.  **Install Tools**: Use Mise to install the correct versions of all development tools.
@@ -25,12 +25,12 @@ Before you can contribute, you'll need to set up your local development environm
     mise install
     ```
 
-3.  **Build the CLI**: Compile the `openCenter` binary.
+3.  **Build the CLI**: Compile the `opencenter` binary.
     ```bash
     mise run build
     ```
 
-    You should now have a working `openCenter` executable in your project root.
+    You should now have a working `opencenter` executable in your project root.
 
 ## Development Workflow
 
@@ -44,7 +44,7 @@ Before you can contribute, you'll need to set up your local development environm
 
 ## Extensibility Points
 
-`openCenter` is designed to be extensible. Here are the most common ways to add new functionality:
+`opencenter` is designed to be extensible. Here are the most common ways to add new functionality:
 
 ### Adding New Config Keys
 

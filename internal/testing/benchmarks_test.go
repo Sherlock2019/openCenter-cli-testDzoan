@@ -19,8 +19,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/template"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/template"
 )
 
 func TestNewBenchmarkFramework(t *testing.T) {

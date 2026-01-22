@@ -13,7 +13,7 @@ weight: 20
 - [Prerequisites](#prerequisites)
 - [Step 1: Install Kind](#step-1-install-kind)
 - [Step 2: Create a Kind Cluster](#step-2-create-a-kind-cluster)
-- [Step 3: Initialize openCenter Configuration](#step-3-initialize-opencenter-configuration)
+- [Step 3: Initialize opencenter Configuration](#step-3-initialize-opencenter-configuration)
 - [Step 4: Customize for Local Development](#step-4-customize-for-local-development)
 - [Step 5: Set Up GitOps Repository](#step-5-set-up-gitops-repository)
 - [Step 6: Validate Configuration](#step-6-validate-configuration)
@@ -27,7 +27,7 @@ weight: 20
 - [Next Steps](#next-steps)
 - [Troubleshooting](#troubleshooting)
 - [Additional Resources](#additional-resources)
-This tutorial walks you through setting up a local Kubernetes cluster using Kind (Kubernetes in Docker) for testing openCenter configurations without cloud infrastructure costs.
+This tutorial walks you through setting up a local Kubernetes cluster using Kind (Kubernetes in Docker) for testing opencenter configurations without cloud infrastructure costs.
 
 ## What You'll Learn
 
@@ -35,7 +35,7 @@ By the end of this tutorial, you'll be able to:
 
 - Install and configure Kind for local development
 - Create a multi-node Kubernetes cluster on your workstation
-- Initialize an openCenter cluster configuration for Kind
+- Initialize an opencenter cluster configuration for Kind
 - Test GitOps workflows locally before deploying to production
 - Debug cluster configurations in a safe environment
 
@@ -46,11 +46,11 @@ Before starting, ensure you have:
 - Docker or Podman installed and running
 - At least 8GB of available RAM
 - 20GB of free disk space
-- openCenter CLI installed (`mise run build`)
+- opencenter CLI installed (`mise run build`)
 
 ## Step 1: Install Kind
 
-openCenter includes Kind as a managed tool through mise. Install it with:
+opencenter includes Kind as a managed tool through mise. Install it with:
 
 ```bash
 mise install kind
@@ -66,7 +66,7 @@ You should see output showing the Kind version (e.g., `kind v0.20.0`).
 
 ## Step 2: Create a Kind Cluster
 
-openCenter provides a pre-configured mise task for creating Kind clusters with the right settings:
+opencenter provides a pre-configured mise task for creating Kind clusters with the right settings:
 
 ```bash
 mise run kind-cluster-no-cni
@@ -76,8 +76,8 @@ This command creates a cluster named `opencenter-dev` with:
 
 - One control plane node
 - Three worker nodes
-- No default CNI (you'll install Calico through openCenter)
-- Custom pod and service subnets matching openCenter defaults
+- No default CNI (you'll install Calico through opencenter)
+- Custom pod and service subnets matching opencenter defaults
 
 The cluster nodes will show `NotReady` status until you install a CNI plugin. This is expected.
 
@@ -92,18 +92,18 @@ KIND_EXPERIMENTAL_PROVIDER=podman
 
 The `kind-cluster-no-cni` task automatically uses Podman when available.
 
-## Step 3: Initialize openCenter Configuration
+## Step 3: Initialize opencenter Configuration
 
 Create a new cluster configuration for your Kind cluster:
 
 ```bash
-./bin/openCenter cluster init kind-demo \
+./bin/opencenter cluster init kind-demo \
   --org local \
   --opencenter.infrastructure.provider=kind \
   --opencenter.cluster.kubernetes.version=1.33.5
 ```
 
-This creates a configuration in `~/.config/openCenter/clusters/local/` with:
+This creates a configuration in `~/.config/opencenter/clusters/local/` with:
 
 - Organization: `local` (for local development clusters)
 - Provider: `kind` (uses Kind-specific bootstrap logic)
@@ -114,7 +114,7 @@ This creates a configuration in `~/.config/openCenter/clusters/local/` with:
 Your local development cluster follows the organization-based structure:
 
 ```
-~/.config/openCenter/clusters/local/
+~/.config/opencenter/clusters/local/
 ├── .kind-demo-config.yaml          # Cluster configuration
 ├── infrastructure/
 │   └── clusters/
@@ -135,7 +135,7 @@ Your local development cluster follows the organization-based structure:
 Edit the configuration to optimize for local development:
 
 ```bash
-./bin/openCenter cluster update kind-demo \
+./bin/opencenter cluster update kind-demo \
   --opencenter.cluster.kubernetes.master_count=1 \
   --opencenter.cluster.kubernetes.worker_count=2 \
   --opencenter.cluster.kubernetes.flavor_master=local \
@@ -153,7 +153,7 @@ These settings reduce resource usage for local testing:
 Initialize the GitOps repository structure:
 
 ```bash
-./bin/openCenter cluster setup kind-demo
+./bin/opencenter cluster setup kind-demo
 ```
 
 This command:
@@ -167,7 +167,7 @@ This command:
 The GitOps repository is created at:
 
 ```
-~/.config/openCenter/clusters/local/
+~/.config/opencenter/clusters/local/
 ```
 
 This directory becomes your GitOps repository root, containing both infrastructure and application manifests.
@@ -177,7 +177,7 @@ This directory becomes your GitOps repository root, containing both infrastructu
 Before bootstrapping, validate your configuration:
 
 ```bash
-./bin/openCenter cluster validate kind-demo
+./bin/opencenter cluster validate kind-demo
 ```
 
 The validator checks:
@@ -195,7 +195,7 @@ Fix any validation errors before proceeding.
 Deploy your configuration to the Kind cluster:
 
 ```bash
-./bin/openCenter cluster bootstrap kind-demo
+./bin/opencenter cluster bootstrap kind-demo
 ```
 
 For Kind clusters, this command:
@@ -217,7 +217,7 @@ kubectl get pods -A --watch
 Check that all components are running:
 
 ```bash
-./bin/openCenter cluster status kind-demo
+./bin/opencenter cluster status kind-demo
 ```
 
 You should see:
@@ -240,7 +240,7 @@ Make a change to test the GitOps workflow:
 1. Edit an application manifest:
 
 ```bash
-cd ~/.config/openCenter/clusters/local/applications/overlays/kind-demo
+cd ~/.config/opencenter/clusters/local/applications/overlays/kind-demo
 vim my-app.yaml
 ```
 
@@ -268,7 +268,7 @@ kubectl get deployment my-app -o yaml
 Set up your environment to access the cluster:
 
 ```bash
-eval $(./bin/openCenter cluster select kind-demo --activate --export-only)
+eval $(./bin/opencenter cluster select kind-demo --activate --export-only)
 ```
 
 This configures:
@@ -293,17 +293,17 @@ You can run multiple Kind clusters simultaneously for testing different configur
 kind create cluster --name opencenter-staging
 
 # Initialize configuration
-./bin/openCenter cluster init kind-staging --org local
+./bin/opencenter cluster init kind-staging --org local
 
 # Switch between clusters
-./bin/openCenter cluster select kind-demo
-./bin/openCenter cluster select kind-staging
+./bin/opencenter cluster select kind-demo
+./bin/opencenter cluster select kind-staging
 ```
 
 List all local clusters:
 
 ```bash
-./bin/openCenter cluster list
+./bin/opencenter cluster list
 kind get clusters
 ```
 
@@ -340,11 +340,11 @@ If your workstation struggles with the cluster:
 
 ```bash
 # Reduce worker nodes
-./bin/openCenter cluster update kind-demo \
+./bin/opencenter cluster update kind-demo \
   --opencenter.cluster.kubernetes.worker_count=1
 
 # Disable resource-intensive services
-./bin/openCenter cluster update kind-demo \
+./bin/opencenter cluster update kind-demo \
   --opencenter.services.kube-prometheus-stack.enabled=false
 ```
 
@@ -356,8 +356,8 @@ When you're done testing, clean up resources:
 # Delete the Kind cluster
 kind delete cluster --name opencenter-dev
 
-# Remove openCenter configuration (optional)
-./bin/openCenter cluster destroy kind-demo
+# Remove opencenter configuration (optional)
+./bin/opencenter cluster destroy kind-demo
 ```
 
 The destroy command removes:
@@ -407,14 +407,14 @@ podman network inspect kind
 **Solution**: Verify Age key exists:
 
 ```bash
-ls -la ~/.config/openCenter/clusters/local/secrets/age/keys/
-cat ~/.config/openCenter/clusters/local/secrets/age/keys/kind-demo-key.txt
+ls -la ~/.config/opencenter/clusters/local/secrets/age/keys/
+cat ~/.config/opencenter/clusters/local/secrets/age/keys/kind-demo-key.txt
 ```
 
 If missing, regenerate:
 
 ```bash
-./bin/openCenter cluster init kind-demo --regenerate-keys --force
+./bin/opencenter cluster init kind-demo --regenerate-keys --force
 ```
 
 ### Flux Bootstrap Fails
@@ -437,4 +437,4 @@ kubectl apply -f flux-system.yaml
 - [Kind Documentation](https://kind.sigs.k8s.io/)
 - [Flux Documentation](https://fluxcd.io/docs/)
 - [Calico Documentation](https://docs.tigera.io/calico/latest/about/)
-- [openCenter Configuration Reference](../reference/config.md)
+- [opencenter Configuration Reference](../reference/config.md)

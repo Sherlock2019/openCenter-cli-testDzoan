@@ -18,7 +18,7 @@ Detect and reconcile infrastructure drift between desired configuration and actu
 ## Synopsis
 
 ```bash
-openCenter cluster drift <subcommand> [flags]
+opencenter cluster drift <subcommand> [flags]
 ```
 
 ## Description
@@ -34,7 +34,7 @@ The `cluster drift` command detects and reconciles differences between desired c
 Detect infrastructure drift for a cluster.
 
 ```bash
-openCenter cluster drift detect <cluster> [flags]
+opencenter cluster drift detect <cluster> [flags]
 ```
 
 **Flags:**
@@ -45,13 +45,13 @@ openCenter cluster drift detect <cluster> [flags]
 
 ```bash
 # Detect drift for a cluster
-openCenter cluster drift detect my-cluster
+opencenter cluster drift detect my-cluster
 
 # Output drift report as JSON
-openCenter cluster drift detect my-cluster --output=json
+opencenter cluster drift detect my-cluster --output=json
 
 # Show only critical drift
-openCenter cluster drift detect my-cluster --severity=critical
+opencenter cluster drift detect my-cluster --severity=critical
 ```
 
 **Drift Report Contents:**
@@ -129,7 +129,7 @@ Drifts:
 Reconcile detected infrastructure drift.
 
 ```bash
-openCenter cluster drift reconcile <cluster> [flags]
+opencenter cluster drift reconcile <cluster> [flags]
 ```
 
 **Flags:**
@@ -140,13 +140,13 @@ openCenter cluster drift reconcile <cluster> [flags]
 
 ```bash
 # Show what would be reconciled (dry-run)
-openCenter cluster drift reconcile my-cluster --dry-run
+opencenter cluster drift reconcile my-cluster --dry-run
 
 # Apply reconciliation
-openCenter cluster drift reconcile my-cluster
+opencenter cluster drift reconcile my-cluster
 
 # Reconcile with confirmation prompt
-openCenter cluster drift reconcile my-cluster --confirm
+opencenter cluster drift reconcile my-cluster --confirm
 ```
 
 **Behavior:**
@@ -173,7 +173,7 @@ openCenter cluster drift reconcile my-cluster --confirm
 Schedule periodic drift detection (not yet implemented).
 
 ```bash
-openCenter cluster drift schedule <cluster> [flags]
+opencenter cluster drift schedule <cluster> [flags]
 ```
 
 **Flags:**
@@ -184,10 +184,10 @@ openCenter cluster drift schedule <cluster> [flags]
 
 ```bash
 # Schedule drift detection every 24 hours
-openCenter cluster drift schedule my-cluster --interval=24h
+opencenter cluster drift schedule my-cluster --interval=24h
 
 # Schedule with custom callback
-openCenter cluster drift schedule my-cluster --interval=12h --callback=https://example.com/drift
+opencenter cluster drift schedule my-cluster --interval=12h --callback=https://example.com/drift
 ```
 
 **Status:** This feature is not yet implemented and will be available in a future release.
@@ -222,27 +222,27 @@ openCenter cluster drift schedule my-cluster --interval=12h --callback=https://e
 ## Use Cases
 
 ### Detect Manual Changes
-Identify resources modified outside of openCenter:
+Identify resources modified outside of opencenter:
 ```bash
-openCenter cluster drift detect my-cluster
+opencenter cluster drift detect my-cluster
 ```
 
 ### Validate Infrastructure
 Verify infrastructure matches configuration after manual operations:
 ```bash
-openCenter cluster drift detect my-cluster --severity=critical
+opencenter cluster drift detect my-cluster --severity=critical
 ```
 
 ### Automated Monitoring
 Schedule periodic drift checks:
 ```bash
-openCenter cluster drift schedule my-cluster --interval=24h
+opencenter cluster drift schedule my-cluster --interval=24h
 ```
 
 ### Reconcile Drift
 Automatically fix reconcilable drift:
 ```bash
-openCenter cluster drift reconcile my-cluster
+opencenter cluster drift reconcile my-cluster
 ```
 
 ## Implementation Status

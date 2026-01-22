@@ -20,7 +20,7 @@
 - [Conclusion](#conclusion)
 ## Overview
 
-This document summarizes the implementation of the service plugin system for openCenter, which enables dynamic loading of service plugins from manifest files.
+This document summarizes the implementation of the service plugin system for opencenter, which enables dynamic loading of service plugins from manifest files.
 
 ## Implemented Components
 

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/talos"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/talos"
 )
 
 // GenerateSecurityGroups creates security group rules with default-deny policies

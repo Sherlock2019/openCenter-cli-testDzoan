@@ -24,15 +24,15 @@ doc_type: explanation
 - [Common Misconceptions](#common-misconceptions)
 - [Future Directions](#future-directions)
 - [See Also](#see-also)
-This document explains the openCenter codebase architecture, design patterns, and organizational principles.
+This document explains the opencenter codebase architecture, design patterns, and organizational principles.
 
 ## Who this is for
 
-Developers who need to understand how openCenter is structured internally, why certain design decisions were made, and how components interact.
+Developers who need to understand how opencenter is structured internally, why certain design decisions were made, and how components interact.
 
 ## Architectural Overview
 
-openCenter follows a layered architecture with clear separation of concerns:
+opencenter follows a layered architecture with clear separation of concerns:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -134,7 +134,7 @@ Commands should be thin - delegate to `internal/` packages.
 
 ### Configuration (`internal/config/`)
 
-Configuration management is the heart of openCenter:
+Configuration management is the heart of opencenter:
 
 ```
 internal/config/
@@ -496,7 +496,7 @@ Test complete workflows from user perspective:
 ```gherkin
 Feature: Cluster Initialization
   Scenario: Initialize cluster with defaults
-    When I run "openCenter cluster init my-cluster"
+    When I run "opencenter cluster init my-cluster"
     Then a cluster configuration "my-cluster" should exist
     And the configuration should be valid
 ```
@@ -523,7 +523,7 @@ func TestGitOpsGenerationIntegration(t *testing.T) {
 Organization-based directory structure:
 
 ```
-~/.config/openCenter/clusters/
+~/.config/opencenter/clusters/
 └── <organization>/
     ├── .<cluster>-config.yaml
     ├── infrastructure/
@@ -543,14 +543,14 @@ Organization-based directory structure:
 
 ## Plugin System
 
-Plugins extend openCenter with custom commands:
+Plugins extend opencenter with custom commands:
 
 **Discovery**:
 1. `OPENCENTER_PLUGINS_DIR` environment variable
 2. `<config-dir>/plugins` directory
 3. System `PATH`
 
-**Naming**: `openCenter-<plugin-name>`
+**Naming**: `opencenter-<plugin-name>`
 
 **Registration**: Plugins are dynamically registered as Cobra subcommands
 

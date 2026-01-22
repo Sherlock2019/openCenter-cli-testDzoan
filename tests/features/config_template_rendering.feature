@@ -19,9 +19,9 @@ Feature: Configuration-driven template rendering
           account_service_token: "token-456"
           core_account_number: "account-789"
       """
-    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster select test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster setup --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
 
@@ -46,9 +46,9 @@ Feature: Configuration-driven template rendering
           account_service_token: "token-456"
           core_account_number: "account-789"
       """
-    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster select test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster setup --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
 
@@ -73,9 +73,9 @@ Feature: Configuration-driven template rendering
           aws_access_key: "AKIAEXAMPLE123"
           aws_secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
       """
-    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster select test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster setup --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
 
@@ -101,9 +101,9 @@ Feature: Configuration-driven template rendering
           aws_access_key: "AKIAEXAMPLE456"
           aws_secret_access_key: "secretkey789"
       """
-    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster select test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster setup --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
 
@@ -131,9 +131,9 @@ Feature: Configuration-driven template rendering
         loki:
           swift_password: "my-secure-password"
       """
-    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster select test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster setup --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
 
@@ -161,9 +161,9 @@ Feature: Configuration-driven template rendering
         loki:
           swift_password: "password"
       """
-    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster select test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster setup --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
 
@@ -182,9 +182,9 @@ Feature: Configuration-driven template rendering
             velero_backup_bucket: "my-backup-bucket"
             velero_region: "us-west-1"
       """
-    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster select test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster setup --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
 
@@ -211,9 +211,9 @@ Feature: Configuration-driven template rendering
           client_secret: "secret123"
           admin_password: "admin123"
       """
-    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster select test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster setup --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
 
@@ -237,9 +237,9 @@ Feature: Configuration-driven template rendering
         headlamp:
           oidc_client_secret: "headlamp-secret"
       """
-    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster select test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster setup --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
 
@@ -262,9 +262,9 @@ Feature: Configuration-driven template rendering
           password: "mypassword"
           password_hash: "$2a$10$abcdefghijklmnopqrstuv"
       """
-    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster select test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster setup --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
 
@@ -290,9 +290,9 @@ Feature: Configuration-driven template rendering
         grafana:
           admin_password: "grafana-admin-pass"
       """
-    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster select test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster setup --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
 
@@ -325,9 +325,9 @@ Feature: Configuration-driven template rendering
         grafana:
           admin_password: "password"
       """
-    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster select test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster setup --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
 
@@ -357,9 +357,9 @@ Feature: Configuration-driven template rendering
         grafana:
           admin_password: "password"
       """
-    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster select test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster setup --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
 
@@ -376,7 +376,7 @@ Feature: Configuration-driven template rendering
           cert-manager:
             enabled: true
       """
-    When I run "openCenter cluster validate test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster validate test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should not be 0
     And stderr should contain "secret"
 
@@ -390,9 +390,9 @@ Feature: Configuration-driven template rendering
         gitops:
           git_dir: <<tmp>>/gitops-repo
       """
-    When I run "openCenter cluster select test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster select test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster setup --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
 
@@ -415,7 +415,7 @@ Feature: Configuration-driven template rendering
           default_storage_class: csi-cinder-sc-delete
         gitops:
           git_dir: <<tmp>>/gitops-repo
-          gitops_base_repo: ssh://git@github.com/rackerlabs/openCenter-gitops-base.git
+          gitops_base_repo: ssh://git@github.com/rackerlabs/opencenter-gitops-base.git
           gitops_base_release: v0.2.0
           gitops_branch: main
         services:
@@ -481,9 +481,9 @@ Feature: Configuration-driven template rendering
           account_service_token: token-test-integration-67890
           core_account_number: account-test-integration-11111
       """
-    When I run "openCenter cluster select test-integration --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster select test-integration --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    When I run "openCenter cluster setup --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster setup --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And the directory "<<tmp>>/gitops-repo" should exist
 
@@ -500,7 +500,7 @@ Feature: Configuration-driven template rendering
           cert-manager:
             enabled: true
       """
-    When I run "openCenter cluster validate test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster validate test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should not be 0
 
   @validation @missing-secrets @priority4
@@ -531,7 +531,7 @@ Feature: Configuration-driven template rendering
         weave_gitops:
           password_hash: test
       """
-    When I run "openCenter cluster validate test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster validate test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should not be 0
 
   @validation @invalid-email @priority4
@@ -555,7 +555,7 @@ Feature: Configuration-driven template rendering
         weave_gitops:
           password_hash: test
       """
-    When I run "openCenter cluster validate test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster validate test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should not be 0
 
   @validation @invalid-domain @priority4
@@ -579,7 +579,7 @@ Feature: Configuration-driven template rendering
         weave_gitops:
           password_hash: test
       """
-    When I run "openCenter cluster validate test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster validate test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should not be 0
 
   @validation @valid-config
@@ -621,5 +621,5 @@ Feature: Configuration-driven template rendering
             application_credential_id: "12345678-1234-1234-1234-123456789012"
             application_credential_secret: "test-app-cred-secret"
       """
-    When I run "openCenter cluster validate test-cluster --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster validate test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0

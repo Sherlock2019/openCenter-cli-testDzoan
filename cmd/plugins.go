@@ -5,14 +5,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rackerlabs/openCenter-cli/internal/plugins"
+	"github.com/rackerlabs/opencenter-cli/internal/plugins"
 	"github.com/spf13/cobra"
 )
 
 func NewPluginsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "plugins",
-		Short: "Manage openCenter plugins",
+		Short: "Manage opencenter plugins",
 	}
 
 	cmd.AddCommand(newPluginsListCmd())

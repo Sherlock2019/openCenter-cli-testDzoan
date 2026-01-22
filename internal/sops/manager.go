@@ -23,9 +23,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/util/crypto"
-	"github.com/rackerlabs/openCenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/util/crypto"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
 )
 
 // DefaultSOPSManager implements SOPSManager interface
@@ -114,7 +114,7 @@ func (m *DefaultSOPSManager) EncryptOverlayFiles(ctx context.Context, overlayPat
 			Type:    errors.SOPSError,
 			Message: "No age encryption keys available",
 			Suggestions: []string{
-				"Generate an age key using: openCenter sops generate-key",
+				"Generate an age key using: opencenter sops generate-key",
 				"Import an existing age key",
 				"Set SOPS_AGE_KEY_FILE environment variable to point to your key file",
 				"Configure secrets.sopsAgeKeyFile in your cluster configuration",
@@ -206,7 +206,7 @@ func (m *DefaultSOPSManager) CreateSOPSConfig(overlayPath string, cfg *config.Co
 			Message: "Cannot create SOPS config with placeholder key",
 			Cause:   err,
 			Suggestions: []string{
-				"Generate a proper age key using 'openCenter sops generate-key'",
+				"Generate a proper age key using 'opencenter sops generate-key'",
 				"Import an existing age key",
 				"Check the SOPS configuration",
 			},
@@ -392,7 +392,7 @@ func (m *DefaultSOPSManager) generateSOPSConfig(cfg *config.Config) (string, err
 			Type:    errors.SOPSError,
 			Message: "No age encryption keys available for SOPS configuration",
 			Suggestions: []string{
-				"Generate an age key using: openCenter sops generate-key",
+				"Generate an age key using: opencenter sops generate-key",
 				"Import an existing age key",
 				"Set SOPS_AGE_KEY_FILE environment variable to point to your key file",
 				"Configure secrets.sopsAgeKeyFile in your cluster configuration",

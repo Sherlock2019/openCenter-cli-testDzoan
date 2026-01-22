@@ -19,7 +19,7 @@ package template
 import (
 	"testing"
 
-	"github.com/rackerlabs/openCenter-cli/internal/gitops"
+	"github.com/rackerlabs/opencenter-cli/internal/gitops"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

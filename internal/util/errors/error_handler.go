@@ -21,7 +21,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rackerlabs/openCenter-cli/internal/security"
+	"github.com/rackerlabs/opencenter-cli/internal/security"
 )
 
 // DefaultErrorHandler implements ErrorHandler interface

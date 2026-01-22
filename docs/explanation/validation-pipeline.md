@@ -18,7 +18,7 @@
 - [Conclusion](#conclusion)
 **doc_type**: explanation
 
-This document explains how openCenter validates cluster configurations before deployment. It covers the validation system's architecture, the stages configurations pass through, and why validation is structured this way.
+This document explains how opencenter validates cluster configurations before deployment. It covers the validation system's architecture, the stages configurations pass through, and why validation is structured this way.
 
 ## What Validation Does
 
@@ -97,7 +97,7 @@ The connectivity validator lives in `internal/config/connectivity_validator.go` 
 
 ## Error Handling and Suggestions
 
-When validation fails, openCenter provides structured errors with context and suggestions. Each error includes:
+When validation fails, opencenter provides structured errors with context and suggestions. Each error includes:
 
 - **Type**: The error category (validation, credential, cloud, network)
 - **Field**: The configuration path that failed (e.g., `opencenter.cluster.kubernetes.master_count`)
@@ -216,7 +216,7 @@ Adding a new provider means implementing the `CloudProviderValidator` interface 
 
 ### Strictness vs. Flexibility
 
-openCenter validation is strict. Some configurations that "might work" are rejected. For example, a Kubernetes version without patch number (1.31 instead of 1.31.4) fails validation even though Kubernetes might accept it.
+opencenter validation is strict. Some configurations that "might work" are rejected. For example, a Kubernetes version without patch number (1.31 instead of 1.31.4) fails validation even though Kubernetes might accept it.
 
 This strictness prevents ambiguity. It's better to reject a questionable configuration than to deploy something that fails unpredictably.
 
@@ -236,7 +236,7 @@ To handle this, connectivity checks are warnings, not errors. You can proceed wi
 
 Comprehensive validation would make API calls to verify every resource exists (networks, flavors, images). This would be slow and require credentials for validation.
 
-openCenter balances completeness with performance. It validates format and structure without making expensive API calls. Preflight checks (run during bootstrap) perform the expensive verification.
+opencenter balances completeness with performance. It validates format and structure without making expensive API calls. Preflight checks (run during bootstrap) perform the expensive verification.
 
 ## Common Validation Patterns
 

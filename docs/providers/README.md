@@ -18,11 +18,11 @@
 - [External Resources](#external-resources)
 **doc_type: reference**
 
-This directory contains provider-specific documentation for openCenter. Each provider has its own setup requirements, configuration options, and operational characteristics.
+This directory contains provider-specific documentation for opencenter. Each provider has its own setup requirements, configuration options, and operational characteristics.
 
 ## Purpose
 
-Provider documentation explains how openCenter integrates with different infrastructure platforms. Use this section to understand provider capabilities, choose the right provider for your use case, and configure provider-specific settings.
+Provider documentation explains how opencenter integrates with different infrastructure platforms. Use this section to understand provider capabilities, choose the right provider for your use case, and configure provider-specific settings.
 
 ## Supported Providers
 
@@ -215,7 +215,7 @@ All providers use infrastructure-as-code tools:
 - **Pulumi**: Talos
 - **Docker CLI**: Kind
 
-Configuration is generated from the cluster YAML file by openCenter.
+Configuration is generated from the cluster YAML file by opencenter.
 
 ### Kubernetes Installation
 
@@ -317,9 +317,9 @@ See [Provider Development Guide](../dev/provider-development.md) (planned) for i
 - Review provider GitHub issues
 - Consult provider community forums
 
-**openCenter integration issues:**
+**opencenter integration issues:**
 - Check [Troubleshooting Guide](../how-to/troubleshooting.md)
-- Review [GitHub Issues](https://github.com/rackerlabs/openCenter-cli/issues)
+- Review [GitHub Issues](https://github.com/rackerlabs/opencenter-cli/issues)
 - Ask in community Slack/Discord
 
 **Security concerns:**
@@ -346,4 +346,4 @@ See [Provider Development Guide](../dev/provider-development.md) (planned) for i
 ---
 
 **Last Updated**: January 2026  
-**Maintained By**: openCenter Team
+**Maintained By**: opencenter Team

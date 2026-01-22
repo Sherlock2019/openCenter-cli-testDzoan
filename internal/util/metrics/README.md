@@ -1,6 +1,6 @@
 # Metrics Package
 
-The metrics package provides performance tracking and metrics collection for openCenter operations. It tracks template rendering times, configuration building times, and GitOps generation times to help monitor and optimize system performance.
+The metrics package provides performance tracking and metrics collection for opencenter operations. It tracks template rendering times, configuration building times, and GitOps generation times to help monitor and optimize system performance.
 
 ## Features
 
@@ -26,7 +26,7 @@ The package tracks the following metric types:
 ### Basic Metrics Collection
 
 ```go
-import "github.com/rackerlabs/openCenter-cli/internal/util/metrics"
+import "github.com/rackerlabs/opencenter-cli/internal/util/metrics"
 
 // Create a metrics collector
 collector := metrics.NewMetricsCollector()
@@ -236,4 +236,4 @@ The metrics package provides comprehensive performance tracking for:
 - Configuration building times
 - GitOps generation times
 
-These metrics enable performance analysis, optimization, and monitoring of the openCenter system.
+These metrics enable performance analysis, optimization, and monitoring of the opencenter system.

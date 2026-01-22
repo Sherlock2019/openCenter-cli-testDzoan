@@ -80,7 +80,7 @@ source ~/.bashrc  # or ~/.zshrc for zsh
 ```bash
 # Check if shell integration is active
 echo $OPENCENTER_SESSION_FILE
-# Should output: /home/user/.config/openCenter/.session-XXXXX
+# Should output: /home/user/.config/opencenter/.session-XXXXX
 
 # Check helper functions are available
 type opencenter_current_cluster_short
@@ -159,7 +159,7 @@ opencenter cluster info  # Compare configuration
 When shell integration is enabled:
 
 1. Each terminal gets a unique **session ID** (`OPENCENTER_SESSION_ID`)
-2. A **session file** is created at `~/.config/openCenter/.session-<ID>`
+2. A **session file** is created at `~/.config/opencenter/.session-<ID>`
 3. `opencenter cluster select` writes the cluster name to this session file
 4. The session file is automatically cleaned up when the shell exits
 
@@ -341,7 +341,7 @@ end
 3. Verify it's active:
    ```bash
    echo $OPENCENTER_SESSION_FILE
-   # Should output: /home/user/.config/openCenter/.session-XXXXX
+   # Should output: /home/user/.config/opencenter/.session-XXXXX
    ```
 
 ### Commands still use wrong cluster
@@ -403,14 +403,14 @@ If session IDs are the same, shell integration may not be properly loaded. Resta
 
 ### Session files not cleaned up
 
-**Symptom:** Stale session files in `~/.config/openCenter/.session-*`
+**Symptom:** Stale session files in `~/.config/opencenter/.session-*`
 
 **Cause:** Shell exited abnormally without running cleanup.
 
 **Solution:**
 Session files are automatically cleaned up on normal shell exit. Stale files can be safely deleted:
 ```bash
-rm -f ~/.config/openCenter/.session-*
+rm -f ~/.config/opencenter/.session-*
 ```
 
 ## Command Reference

@@ -1,9 +1,9 @@
-Feature: openCenter cluster basics
+Feature: opencenter cluster basics
   Background:
     Given an empty directory "<<tmp>>/conf"
 
   Scenario: Initialize a cluster with defaults
-    When I run "openCenter cluster init demo --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster init demo --config-dir <<tmp>>/conf"
     Then a file "<<tmp>>/conf/demo.yaml" should exist
     And the file "<<tmp>>/conf/demo.yaml" should contain "cluster_name: demo"
 
@@ -14,7 +14,7 @@ Feature: openCenter cluster basics
         cluster:
           cluster_name: demo
       """
-    When I run "openCenter cluster select demo --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster select demo --config-dir <<tmp>>/conf"
     Then the file "<<tmp>>/conf/.active" should match regex "^demo$"
 
   Scenario: Show current cluster
@@ -24,8 +24,8 @@ Feature: openCenter cluster basics
         cluster:
           cluster_name: demo
       """
-    And I run "openCenter cluster select demo --config-dir <<tmp>>/conf"
-    When I run "openCenter cluster current --config-dir <<tmp>>/conf"
+    And I run "opencenter cluster select demo --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster current --config-dir <<tmp>>/conf"
     Then stdout should contain "demo"
 
   Scenario: List clusters
@@ -47,7 +47,7 @@ Feature: openCenter cluster basics
         cluster:
           cluster_name: green
       """
-    When I run "openCenter cluster list --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster list --config-dir <<tmp>>/conf"
     Then stdout should contain:
       """
       blue
@@ -74,7 +74,7 @@ Feature: openCenter cluster basics
         cluster:
           cluster_name: green
       """
-    When I run "openCenter cluster list --json --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster list --json --config-dir <<tmp>>/conf"
     Then stdout should contain '["blue","demo","green"]'
 
   Scenario: Info for a cluster
@@ -84,8 +84,8 @@ Feature: openCenter cluster basics
         cluster:
           cluster_name: demo
       """
-    And I run "openCenter cluster select demo --config-dir <<tmp>>/conf"
-    When I run "openCenter cluster info --config-dir <<tmp>>/conf"
+    And I run "opencenter cluster select demo --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster info --config-dir <<tmp>>/conf"
     Then stdout should contain "cluster_name: demo"
 
   Scenario: Validate constraints
@@ -112,7 +112,7 @@ Feature: openCenter cluster basics
             application_credential_id: "12345678-1234-1234-1234-123456789012"
             application_credential_secret: "test-secret"
       """
-    When I run "openCenter cluster validate demo --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster validate demo --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And stdout should contain "Validation successful."
 
@@ -125,7 +125,7 @@ Feature: openCenter cluster basics
         gitops:
           git_dir: ""
       """
-    When I run "openCenter cluster validate demo --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster validate demo --config-dir <<tmp>>/conf"
     Then exit code should be 1
     And stderr should contain "GitOps directory must be set"
 
@@ -136,8 +136,8 @@ Feature: openCenter cluster basics
         cluster:
           cluster_name: demo
       """
-    And I run "openCenter cluster select demo --config-dir <<tmp>>/conf"
-    When I run "openCenter cluster preflight --config-dir <<tmp>>/conf"
+    And I run "opencenter cluster select demo --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster preflight --config-dir <<tmp>>/conf"
     Then stdout should contain "Preflight complete."
 
   @hangs @wip
@@ -159,8 +159,8 @@ Feature: openCenter cluster basics
         gitops:
           git_url: "git@localhost:newuser/gitops-repo.git"
       """
-    And I run "openCenter cluster render demo --config-dir <<tmp>>/conf"
-    When I run "openCenter cluster bootstrap demo --force --config-dir <<tmp>>/conf"
+    And I run "opencenter cluster render demo --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster bootstrap demo --force --config-dir <<tmp>>/conf"
     Then the command should succeed
     And the remote git repository should contain a "Bootstrap commit"
 
@@ -176,7 +176,7 @@ Feature: openCenter cluster basics
       opentofu:
         enabled: true
       """
-    When I run "openCenter cluster render demo --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster render demo --config-dir <<tmp>>/conf"
     Then a file "<<tmp>>/opencenter-demo/infrastructure/clusters/demo/main.tf" should exist
     And a file "<<tmp>>/opencenter-demo/infrastructure/clusters/demo/provider.tf" should exist
 
@@ -190,7 +190,7 @@ Feature: openCenter cluster basics
         gitops:
           git_dir: "<<tmp>>/opencenter-demo"
       """
-    When I run "openCenter cluster destroy demo --config-dir <<tmp>>/conf"
+    When I run "opencenter cluster destroy demo --config-dir <<tmp>>/conf"
     Then the command should succeed
     And a file "<<tmp>>/conf/demo.yaml" should not exist
     And a directory "<<tmp>>/opencenter-demo" should not exist

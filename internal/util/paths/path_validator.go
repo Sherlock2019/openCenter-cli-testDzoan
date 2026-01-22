@@ -76,7 +76,7 @@ func (v *DefaultPathValidator) ValidateDirectoryPermissions(dir string) error {
 	}
 
 	// Test write permissions by creating a temporary file
-	testFile := filepath.Join(dir, ".openCenter_permission_test")
+	testFile := filepath.Join(dir, ".opencenter_permission_test")
 	file, err := os.Create(testFile)
 	if err != nil {
 		return fmt.Errorf("cannot write to directory: %w", err)
@@ -92,7 +92,7 @@ func (v *DefaultPathValidator) ValidateDirectoryPermissions(dir string) error {
 	return nil
 }
 
-// ValidateClusterName validates a cluster name according to openCenter conventions
+// ValidateClusterName validates a cluster name according to opencenter conventions
 func (v *DefaultPathValidator) ValidateClusterName(name string) error {
 	if name == "" {
 		return fmt.Errorf("cluster name cannot be empty")
@@ -134,7 +134,7 @@ func (v *DefaultPathValidator) ValidateClusterName(name string) error {
 	return nil
 }
 
-// ValidateOrganizationName validates an organization name according to openCenter conventions
+// ValidateOrganizationName validates an organization name according to opencenter conventions
 func (v *DefaultPathValidator) ValidateOrganizationName(name string) error {
 	if name == "" {
 		return fmt.Errorf("organization name cannot be empty")

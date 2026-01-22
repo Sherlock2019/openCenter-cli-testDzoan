@@ -16,7 +16,7 @@
 - [Next steps](#next-steps)
 **doc_type:** how-to
 
-This guide shows you how to deploy configuration changes to an existing cluster using the openCenter workflow.
+This guide shows you how to deploy configuration changes to an existing cluster using the opencenter workflow.
 
 ## When to use this guide
 
@@ -28,8 +28,8 @@ Use this workflow when you need to:
 
 ## Prerequisites
 
-- Existing cluster initialized with `openCenter cluster init`
-- Configuration file at `~/.config/openCenter/clusters/<organization>/.cluster-config.yaml`
+- Existing cluster initialized with `opencenter cluster init`
+- Configuration file at `~/.config/opencenter/clusters/<organization>/.cluster-config.yaml`
 - SOPS Age key configured for secrets encryption
 - Git repository initialized in the GitOps directory
 
@@ -50,10 +50,10 @@ Open your cluster configuration file:
 
 ```bash
 # For organization-based structure
-vim ~/.config/openCenter/clusters/<organization>/.<cluster>-config.yaml
+vim ~/.config/opencenter/clusters/<organization>/.<cluster>-config.yaml
 
 # Or use the active cluster
-openCenter cluster edit
+opencenter cluster edit
 ```
 
 Make your changes. Common modifications:
@@ -75,7 +75,7 @@ opencenter:
 Run validation to catch errors before deployment:
 
 ```bash
-openCenter cluster validate <cluster-name>
+opencenter cluster validate <cluster-name>
 ```
 
 The validator checks:
@@ -92,7 +92,7 @@ Fix any validation errors before proceeding.
 Update the GitOps repository with your changes:
 
 ```bash
-openCenter cluster setup <cluster-name>
+opencenter cluster setup <cluster-name>
 ```
 
 This command:
@@ -104,7 +104,7 @@ This command:
 Use `--force` to overwrite existing files:
 
 ```bash
-openCenter cluster setup <cluster-name> --force
+opencenter cluster setup <cluster-name> --force
 ```
 
 ### 4. Commit and push changes
@@ -112,7 +112,7 @@ openCenter cluster setup <cluster-name> --force
 Review the generated changes:
 
 ```bash
-cd ~/.config/openCenter/clusters/<organization>/gitops
+cd ~/.config/opencenter/clusters/<organization>/gitops
 git status
 git diff
 ```
@@ -142,7 +142,7 @@ kubectl logs -n flux-system -l app=kustomize-controller -f
 
 ## GitOps workflow integration
 
-openCenter generates a GitOps repository structure that FluxCD monitors:
+opencenter generates a GitOps repository structure that FluxCD monitors:
 
 ```
 gitops/
@@ -186,9 +186,9 @@ secrets:
 Run the workflow:
 
 ```bash
-openCenter cluster validate my-cluster
-openCenter cluster setup my-cluster --force
-cd ~/.config/openCenter/clusters/myorg/gitops
+opencenter cluster validate my-cluster
+opencenter cluster setup my-cluster --force
+cd ~/.config/opencenter/clusters/myorg/gitops
 git add . && git commit -m "Enable cert-manager" && git push
 ```
 
@@ -206,8 +206,8 @@ opencenter:
 For infrastructure changes, run bootstrap after setup:
 
 ```bash
-openCenter cluster setup my-cluster --force
-openCenter cluster bootstrap my-cluster
+opencenter cluster setup my-cluster --force
+opencenter cluster bootstrap my-cluster
 ```
 
 ### Updating secrets
@@ -216,10 +216,10 @@ Edit encrypted secrets directly:
 
 ```bash
 # Edit with SOPS
-sops ~/.config/openCenter/clusters/myorg/gitops/applications/overlays/my-cluster/secrets/credentials.yaml
+sops ~/.config/opencenter/clusters/myorg/gitops/applications/overlays/my-cluster/secrets/credentials.yaml
 
 # Or update configuration and re-run setup
-openCenter cluster setup my-cluster --force
+opencenter cluster setup my-cluster --force
 ```
 
 ## Troubleshooting
@@ -232,7 +232,7 @@ Solution: Add the required secret to your configuration or environment:
 
 ```bash
 export SERVICE_SECRET="your-secret-value"
-openCenter cluster validate my-cluster
+opencenter cluster validate my-cluster
 ```
 
 ### Setup fails with "already initialized"
@@ -242,7 +242,7 @@ Error: `GitOps repository already initialized`
 Solution: Use `--force` to overwrite:
 
 ```bash
-openCenter cluster setup my-cluster --force
+opencenter cluster setup my-cluster --force
 ```
 
 ### FluxCD not reconciling changes
@@ -283,7 +283,7 @@ To revert changes:
 1. Identify the last working commit:
 
 ```bash
-cd ~/.config/openCenter/clusters/myorg/gitops
+cd ~/.config/opencenter/clusters/myorg/gitops
 git log --oneline
 ```
 
@@ -314,10 +314,10 @@ kubectl rollout undo deployment/<name> -n <namespace>
 
 ## Related commands
 
-- `openCenter cluster validate` - Validate configuration
-- `openCenter cluster setup` - Regenerate GitOps repository
-- `openCenter cluster bootstrap` - Apply infrastructure changes
-- `openCenter sops secrets-encrypt` - Encrypt secrets files
+- `opencenter cluster validate` - Validate configuration
+- `opencenter cluster setup` - Regenerate GitOps repository
+- `opencenter cluster bootstrap` - Apply infrastructure changes
+- `opencenter sops secrets-encrypt` - Encrypt secrets files
 - `flux reconcile` - Force FluxCD reconciliation
 
 ## Next steps

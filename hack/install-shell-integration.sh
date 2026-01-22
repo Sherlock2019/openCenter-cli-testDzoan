@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# openCenter Shell Integration Installer
+# opencenter Shell Integration Installer
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SHELL_INTEGRATION_DIR="$SCRIPT_DIR/shell-integration"
-OPENCENTER_CONFIG_DIR="${HOME}/.config/openCenter"
+OPENCENTER_CONFIG_DIR="${HOME}/.config/opencenter"
 INTEGRATION_DIR="${OPENCENTER_CONFIG_DIR}/shell"
 
 # Colors for output
@@ -31,7 +31,7 @@ print_error() {
     echo -e "${RED}✗${NC} $1"
 }
 
-print_header "openCenter Shell Integration Installer"
+print_header "opencenter Shell Integration Installer"
 echo ""
 
 # Verify source files exist
@@ -49,7 +49,7 @@ done
 
 # Create directories
 mkdir -p "$INTEGRATION_DIR"
-mkdir -p "${HOME}/.cache/openCenter"
+mkdir -p "${HOME}/.cache/opencenter"
 
 print_success "Created directories"
 
@@ -78,7 +78,7 @@ case "$SHELL_NAME" in
         echo ""
         echo -e "${BLUE}source $INTEGRATION_DIR/shell-integration.sh${NC}"
         echo ""
-        echo "To add openCenter cluster to your prompt:"
+        echo "To add opencenter cluster to your prompt:"
         echo ""
         echo -e "${BLUE}PS1=\"\\\$(opencenter_prompt)\$PS1\"${NC}"
         echo ""
@@ -90,7 +90,7 @@ case "$SHELL_NAME" in
             if [[ $REPLY =~ ^[Yy]$ ]]; then
                 if ! grep -q "shell-integration.sh" "${HOME}/.bashrc"; then
                     echo "" >> "${HOME}/.bashrc"
-                    echo "# openCenter shell integration" >> "${HOME}/.bashrc"
+                    echo "# opencenter shell integration" >> "${HOME}/.bashrc"
                     echo "source $INTEGRATION_DIR/shell-integration.sh" >> "${HOME}/.bashrc"
                     print_success "Added to ~/.bashrc"
                 else
@@ -106,7 +106,7 @@ case "$SHELL_NAME" in
         echo ""
         echo -e "${BLUE}source $INTEGRATION_DIR/shell-integration.sh${NC}"
         echo ""
-        echo "To add openCenter cluster to your prompt:"
+        echo "To add opencenter cluster to your prompt:"
         echo ""
         echo -e "${BLUE}PROMPT=\"\\\$(opencenter_prompt)\$PROMPT\"${NC}"
         echo ""
@@ -118,7 +118,7 @@ case "$SHELL_NAME" in
             if [[ $REPLY =~ ^[Yy]$ ]]; then
                 if ! grep -q "shell-integration.sh" "${HOME}/.zshrc"; then
                     echo "" >> "${HOME}/.zshrc"
-                    echo "# openCenter shell integration" >> "${HOME}/.zshrc"
+                    echo "# opencenter shell integration" >> "${HOME}/.zshrc"
                     echo "source $INTEGRATION_DIR/shell-integration.sh" >> "${HOME}/.zshrc"
                     print_success "Added to ~/.zshrc"
                 else
@@ -141,7 +141,7 @@ case "$SHELL_NAME" in
         fi
         
         echo ""
-        echo "To add openCenter cluster to your prompt, modify your fish_prompt function:"
+        echo "To add opencenter cluster to your prompt, modify your fish_prompt function:"
         echo ""
         echo -e "${BLUE}echo -n (opencenter_prompt)${NC}"
         ;;
@@ -182,24 +182,24 @@ echo ""
 print_header "Verification"
 echo ""
 
-# Check if openCenter binary exists
-if command -v openCenter >/dev/null 2>&1; then
-    OPENCENTER_VERSION=$(openCenter version 2>/dev/null | head -1 || echo "unknown")
-    print_success "openCenter binary found: $OPENCENTER_VERSION"
+# Check if opencenter binary exists
+if command -v opencenter >/dev/null 2>&1; then
+    OPENCENTER_VERSION=$(opencenter version 2>/dev/null | head -1 || echo "unknown")
+    print_success "opencenter binary found: $OPENCENTER_VERSION"
 else
-    print_warning "openCenter binary not found in PATH"
+    print_warning "opencenter binary not found in PATH"
     echo "  Build and install: mise run build"
-    echo "  Then add bin/openCenter to your PATH or copy to /usr/local/bin"
+    echo "  Then add bin/opencenter to your PATH or copy to /usr/local/bin"
 fi
 
 # Check for active cluster
-if [[ -f "${HOME}/.config/openCenter/.active" ]]; then
-    ACTIVE_CLUSTER=$(cat "${HOME}/.config/openCenter/.active" 2>/dev/null || echo "")
+if [[ -f "${HOME}/.config/opencenter/.active" ]]; then
+    ACTIVE_CLUSTER=$(cat "${HOME}/.config/opencenter/.active" 2>/dev/null || echo "")
     if [[ -n "$ACTIVE_CLUSTER" ]]; then
         print_success "Active cluster: $ACTIVE_CLUSTER"
     fi
 else
-    echo "  No active cluster set (use: openCenter cluster select)"
+    echo "  No active cluster set (use: opencenter cluster select)"
 fi
 
 echo ""

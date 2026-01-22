@@ -19,15 +19,15 @@
 - [Related Documentation](#related-documentation)
 **doc_type: how-to**
 
-This guide shows you how to enable, configure, and add services to your openCenter cluster. Services are Kubernetes applications deployed and managed through FluxCD.
+This guide shows you how to enable, configure, and add services to your opencenter cluster. Services are Kubernetes applications deployed and managed through FluxCD.
 
 ## Who This Is For
 
-Cluster operators who need to enable built-in services or add custom services to their openCenter deployment.
+Cluster operators who need to enable built-in services or add custom services to their opencenter deployment.
 
 ## Service Architecture
 
-openCenter uses a registry-based service system where each service:
+opencenter uses a registry-based service system where each service:
 1. Has a configuration type registered in `internal/config/services/`
 2. Stores manifests in `internal/gitops/templates/cluster-apps-base/services/<service-name>/`
 3. Defines FluxCD Kustomization in `internal/gitops/templates/cluster-apps-base/services/fluxcd/<service-name>.yaml.tpl`
@@ -36,7 +36,7 @@ openCenter uses a registry-based service system where each service:
 
 ## Available Services
 
-openCenter includes these built-in services:
+opencenter includes these built-in services:
 
 **Networking & Ingress**
 - `calico` - Calico CNI with network policies
@@ -98,7 +98,7 @@ opencenter:
       prometheus_volume_size: 50
 ```
 
-Run `openCenter cluster init` to generate the GitOps repository with your enabled services.
+Run `opencenter cluster init` to generate the GitOps repository with your enabled services.
 
 ## Service Configuration Patterns
 
@@ -119,7 +119,7 @@ opencenter:
 
 Available fields:
 - `enabled` - Enable or disable the service
-- `status` - Deployment status (managed by openCenter)
+- `status` - Deployment status (managed by opencenter)
 - `namespace` - Kubernetes namespace
 - `hostname` - HTTPRoute hostname
 - `image_repository` - Custom image repository
@@ -316,13 +316,13 @@ opencenter:
 
 ## Adding Custom Services
 
-Follow these steps to add a new service to openCenter.
+Follow these steps to add a new service to opencenter.
 
 ### Prerequisites
 
 - Go 1.25.2 or later
 - Mise installed
-- openCenter source code
+- opencenter source code
 
 ### Step 1: Create Service Configuration Type
 
@@ -332,7 +332,7 @@ Create a new file in `internal/config/services/<service-name>.go`:
 package services
 
 import (
-	"github.com/rackerlabs/openCenter-cli/internal/config/registry"
+	"github.com/rackerlabs/opencenter-cli/internal/config/registry"
 )
 
 // MyServiceConfig extends BaseConfig with service-specific configuration
@@ -480,10 +480,10 @@ opencenter:
 EOF
 
 # Generate GitOps repository
-./bin/openCenter cluster init --config test-config.yaml
+./bin/opencenter cluster init --config test-config.yaml
 
 # Verify generated files
-ls -la ~/.config/openCenter/clusters/*/my-cluster/gitops/
+ls -la ~/.config/opencenter/clusters/*/my-cluster/gitops/
 ```
 
 ### Step 7: Validate Schema
@@ -493,7 +493,7 @@ ls -la ~/.config/openCenter/clusters/*/my-cluster/gitops/
 mise run schema
 
 # Validate configuration
-./bin/openCenter cluster validate --config test-config.yaml
+./bin/opencenter cluster validate --config test-config.yaml
 ```
 
 ## Template Variables
@@ -686,7 +686,7 @@ The openstack-csi service shows a simpler Helm pattern:
 
 - Validate Go template syntax in `.tpl` files
 - Check that referenced config fields exist in `ServiceCfg` struct
-- Use `mise run build && ./bin/openCenter cluster init` to test
+- Use `mise run build && ./bin/opencenter cluster init` to test
 
 ### FluxCD reconciliation failures
 

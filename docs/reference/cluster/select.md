@@ -1,4 +1,4 @@
-# `openCenter cluster select` - Select the Active Cluster
+# `opencenter cluster select` - Select the Active Cluster
 
 
 ## Table of Contents
@@ -14,7 +14,7 @@
 - [See Also](#see-also)
 ## Synopsis
 ```bash
-openCenter cluster select [name] [OPTIONS]
+opencenter cluster select [name] [OPTIONS]
 ```
 
 ## Description
@@ -44,31 +44,31 @@ For deployed clusters, the command generates environment setup commands to confi
 
 ### Basic usage
 ```bash
-openCenter cluster select my-cluster
+opencenter cluster select my-cluster
 ```
 Sets the active cluster and displays comprehensive information.
 
 ### Interactive selection
 ```bash
-openCenter cluster select
+opencenter cluster select
 ```
 Displays an interactive menu to select from available clusters.
 
 ### Select cluster in organization
 ```bash
-openCenter cluster select production/prod-cluster
+opencenter cluster select production/prod-cluster
 ```
 Selects a cluster within a specific organization.
 
 ### Export-only mode for shell evaluation
 ```bash
-eval "$(openCenter cluster select my-cluster --export-only)"
+eval "$(opencenter cluster select my-cluster --export-only)"
 ```
 Configures shell environment with cluster-specific variables.
 
 ### Configure environment in one command
 ```bash
-eval "$(openCenter cluster select production/prod-cluster --export-only)"
+eval "$(opencenter cluster select production/prod-cluster --export-only)"
 ```
 Sets up environment for a deployed cluster in the production organization.
 
@@ -87,33 +87,33 @@ Cluster Information:
   Organization: production
 
 GitOps Repository:
-  GitOps Directory:      /home/user/.config/openCenter/clusters/production/gitops
-  Applications Directory: /home/user/.config/openCenter/clusters/production/gitops/applications/overlays/prod-cluster
-  Infrastructure Directory: /home/user/.config/openCenter/clusters/production/gitops/infrastructure/clusters/prod-cluster
-  Secrets Directory:     /home/user/.config/openCenter/clusters/production/secrets
+  GitOps Directory:      /home/user/.config/opencenter/clusters/production/gitops
+  Applications Directory: /home/user/.config/opencenter/clusters/production/gitops/applications/overlays/prod-cluster
+  Infrastructure Directory: /home/user/.config/opencenter/clusters/production/gitops/infrastructure/clusters/prod-cluster
+  Secrets Directory:     /home/user/.config/opencenter/clusters/production/secrets
 
 Cluster Paths:
-  Cluster Directory:     /home/user/.config/openCenter/clusters/production/prod-cluster
-  SOPS Key Path:         /home/user/.config/openCenter/clusters/production/secrets/age/keys/prod-cluster.txt
-  SOPS Config Path:      /home/user/.config/openCenter/clusters/production/.sops.yaml
+  Cluster Directory:     /home/user/.config/opencenter/clusters/production/prod-cluster
+  SOPS Key Path:         /home/user/.config/opencenter/clusters/production/secrets/age/keys/prod-cluster.txt
+  SOPS Config Path:      /home/user/.config/opencenter/clusters/production/.sops.yaml
 
 Environment Setup Commands:
-  export KUBECONFIG=/home/user/.config/openCenter/clusters/production/prod-cluster/kubeconfig.yaml
-  export ANSIBLE_INVENTORY=/home/user/.config/openCenter/clusters/production/prod-cluster/inventory
-  source /home/user/.config/openCenter/clusters/production/prod-cluster/.venv/bin/activate
-  export PATH=/home/user/.config/openCenter/clusters/production/prod-cluster/.bin:$PATH
+  export KUBECONFIG=/home/user/.config/opencenter/clusters/production/prod-cluster/kubeconfig.yaml
+  export ANSIBLE_INVENTORY=/home/user/.config/opencenter/clusters/production/prod-cluster/inventory
+  source /home/user/.config/opencenter/clusters/production/prod-cluster/.venv/bin/activate
+  export PATH=/home/user/.config/opencenter/clusters/production/prod-cluster/.bin:$PATH
 
 To configure your shell environment, run:
-  eval "$(openCenter cluster select prod-cluster)"
+  eval "$(opencenter cluster select prod-cluster)"
 ```
 
 ### Export-Only Output (--export-only)
 
 ```bash
-export KUBECONFIG=/home/user/.config/openCenter/clusters/production/prod-cluster/kubeconfig.yaml
-export ANSIBLE_INVENTORY=/home/user/.config/openCenter/clusters/production/prod-cluster/inventory
-source /home/user/.config/openCenter/clusters/production/prod-cluster/.venv/bin/activate
-export PATH=/home/user/.config/openCenter/clusters/production/prod-cluster/.bin:$PATH
+export KUBECONFIG=/home/user/.config/opencenter/clusters/production/prod-cluster/kubeconfig.yaml
+export ANSIBLE_INVENTORY=/home/user/.config/opencenter/clusters/production/prod-cluster/inventory
+source /home/user/.config/opencenter/clusters/production/prod-cluster/.venv/bin/activate
+export PATH=/home/user/.config/opencenter/clusters/production/prod-cluster/.bin:$PATH
 ```
 
 ### Interactive Selection Menu
@@ -168,7 +168,7 @@ export PATH=/path/to/cluster/.bin:$PATH
 
 ## Notes
 
-- The active cluster is stored in `~/.config/openCenter/.active`
+- The active cluster is stored in `~/.config/opencenter/.active`
 - Interactive mode uses Bubble Tea for terminal UI
 - Organization information is displayed in the interactive menu
 - Environment setup commands are only generated for deployed clusters
@@ -179,7 +179,7 @@ export PATH=/path/to/cluster/.bin:$PATH
 
 ## See Also
 
-- `openCenter cluster current` - Show current active cluster
-- `openCenter cluster list` - List all clusters
-- `openCenter cluster info` - Show detailed cluster information
-- `openCenter cluster init` - Initialize a new cluster
+- `opencenter cluster current` - Show current active cluster
+- `opencenter cluster list` - List all clusters
+- `opencenter cluster info` - Show detailed cluster information
+- `opencenter cluster init` - Initialize a new cluster

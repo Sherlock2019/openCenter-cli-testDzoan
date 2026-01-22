@@ -18,7 +18,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rackerlabs/openCenter-cli/internal/util/security"
+	"github.com/rackerlabs/opencenter-cli/internal/util/security"
 )
 
 // SecurityFlagHandler handles security-related flags and warnings

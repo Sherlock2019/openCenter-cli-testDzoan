@@ -1,4 +1,4 @@
-# `openCenter cluster update` - Update Cluster Configuration Fields
+# `opencenter cluster update` - Update Cluster Configuration Fields
 
 
 ## Table of Contents
@@ -17,7 +17,7 @@
 - [See Also](#see-also)
 ## Synopsis
 ```bash
-openCenter cluster update [name] [OPTIONS]
+opencenter cluster update [name] [OPTIONS]
 ```
 
 ## Description
@@ -68,7 +68,7 @@ The command supports updating IAC (Infrastructure as Code) configuration fields:
 
 ### OpenCenter Configuration
 
-Update core openCenter configuration:
+Update core opencenter configuration:
 
 ```bash
 --opencenter.meta.env=<value>
@@ -94,31 +94,31 @@ Update secrets-related configuration:
 
 ### Show available configuration keys
 ```bash
-openCenter cluster update --help
+opencenter cluster update --help
 ```
 Displays all available IAC configuration keys.
 
 ### Update master node count
 ```bash
-openCenter cluster update --iac.main.master_count=5
+opencenter cluster update --iac.main.master_count=5
 ```
 Updates the master node count for the active cluster.
 
 ### Update specific cluster
 ```bash
-openCenter cluster update my-cluster --iac.main.worker_count=3
+opencenter cluster update my-cluster --iac.main.worker_count=3
 ```
 Updates worker node count for a specific cluster.
 
 ### Update Kubernetes version
 ```bash
-openCenter cluster update --iac.main.kubernetes_version=1.30.4
+opencenter cluster update --iac.main.kubernetes_version=1.30.4
 ```
 Updates the Kubernetes version.
 
 ### Update multiple fields
 ```bash
-openCenter cluster update my-cluster \
+opencenter cluster update my-cluster \
   --iac.main.master_count=3 \
   --iac.main.worker_count=5 \
   --iac.main.kubernetes_version=1.31.4
@@ -127,7 +127,7 @@ Updates multiple configuration fields at once.
 
 ### Update with strict validation
 ```bash
-openCenter cluster update my-cluster \
+opencenter cluster update my-cluster \
   --iac.main.master_count=3 \
   --strict
 ```
@@ -135,19 +135,19 @@ Updates configuration and validates the result.
 
 ### Update environment
 ```bash
-openCenter cluster update my-cluster --opencenter.meta.env=prod
+opencenter cluster update my-cluster --opencenter.meta.env=prod
 ```
 Changes the cluster environment designation.
 
 ### Update provider
 ```bash
-openCenter cluster update my-cluster --opencenter.infrastructure.provider=aws
+opencenter cluster update my-cluster --opencenter.infrastructure.provider=aws
 ```
 Changes the infrastructure provider.
 
 ### Update organization cluster
 ```bash
-openCenter cluster update production/prod-cluster --iac.main.worker_count=10
+opencenter cluster update production/prod-cluster --iac.main.worker_count=10
 ```
 Updates a cluster within a specific organization.
 
@@ -171,7 +171,7 @@ validation failed
 
 ## Available IAC Keys
 
-Run `openCenter cluster update --help` to see all available IAC configuration keys. The command dynamically generates the list from the JSON schema, showing only keys that are specific to IAC configuration (excluding those that overlap with opencenter configuration).
+Run `opencenter cluster update --help` to see all available IAC configuration keys. The command dynamically generates the list from the JSON schema, showing only keys that are specific to IAC configuration (excluding those that overlap with opencenter configuration).
 
 Example output:
 ```
@@ -228,16 +228,16 @@ Typical workflow for updating configuration:
 
 ```bash
 # 1. Update configuration
-openCenter cluster update my-cluster --iac.main.worker_count=5
+opencenter cluster update my-cluster --iac.main.worker_count=5
 
 # 2. Validate changes
-openCenter cluster validate my-cluster
+opencenter cluster validate my-cluster
 
 # 3. Re-render GitOps templates
-openCenter cluster setup my-cluster --render
+opencenter cluster setup my-cluster --render
 
 # 4. Review changes
-cd ~/.config/openCenter/clusters/org/gitops
+cd ~/.config/opencenter/clusters/org/gitops
 git diff
 
 # 5. Commit and apply
@@ -248,7 +248,7 @@ git push
 
 ## See Also
 
-- `openCenter cluster validate` - Validate configuration after updates
-- `openCenter cluster edit` - Edit configuration file directly
-- `openCenter cluster info` - Show current configuration
-- `openCenter cluster setup` - Re-render GitOps templates
+- `opencenter cluster validate` - Validate configuration after updates
+- `opencenter cluster edit` - Edit configuration file directly
+- `opencenter cluster info` - Show current configuration
+- `opencenter cluster setup` - Re-render GitOps templates

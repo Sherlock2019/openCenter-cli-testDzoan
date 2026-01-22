@@ -16,7 +16,7 @@ func TestLoadExternalPlugins_AddsAndRunsExecutable(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	script := filepath.Join(dir, "openCenter-hello")
+	script := filepath.Join(dir, "opencenter-hello")
 	content := "#!/usr/bin/env sh\necho plugin-ok\n"
 	if err := os.WriteFile(script, []byte(content), 0o755); err != nil {
 		t.Fatalf("write plugin: %v", err)
@@ -25,7 +25,7 @@ func TestLoadExternalPlugins_AddsAndRunsExecutable(t *testing.T) {
 	// Point discovery to the temp dir only
 	t.Setenv("OPENCENTER_PLUGINS_DIR", dir)
 
-	root := &cobra.Command{Use: "openCenter-test"}
+	root := &cobra.Command{Use: "opencenter-test"}
 	LoadExternalPlugins(root)
 
 	var hello *cobra.Command
@@ -78,7 +78,7 @@ func TestLoadExternalPlugins_AcceptsLowercasePrefix(t *testing.T) {
 
 	t.Setenv("OPENCENTER_PLUGINS_DIR", dir)
 
-	root := &cobra.Command{Use: "openCenter-test"}
+	root := &cobra.Command{Use: "opencenter-test"}
 	LoadExternalPlugins(root)
 
 	var lower *cobra.Command

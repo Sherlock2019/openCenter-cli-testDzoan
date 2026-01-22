@@ -8,18 +8,18 @@ import (
 	"path/filepath"
 	"strings"
 
-	icfg "github.com/rackerlabs/openCenter-cli/internal/config"
+	icfg "github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
 // BinaryPrefix is the expected prefix for external plugin executables.
-const BinaryPrefix = "openCenter-"
+const BinaryPrefix = "opencenter-"
 
 var binaryPrefixLower = strings.ToLower(BinaryPrefix)
 
 // LoadExternalPlugins discovers external plugin binaries and attaches them as
 // cobra Commands to the provided root command. A plugin is any executable whose
-// name starts with "openCenter-" located either in PATH or in the plugins dir.
+// name starts with "opencenter-" located either in PATH or in the plugins dir.
 //
 // Discovery locations (in order):
 //  1. OPENCENTER_PLUGINS_DIR (if set)

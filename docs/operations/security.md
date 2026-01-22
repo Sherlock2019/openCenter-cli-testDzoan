@@ -19,7 +19,7 @@
 - [Next Steps](#next-steps)
 **doc_type: how-to**
 
-Security operations procedures for openCenter-managed Kubernetes clusters, covering vulnerability management, certificate rotation, secrets management, compliance validation, and incident response.
+Security operations procedures for opencenter-managed Kubernetes clusters, covering vulnerability management, certificate rotation, secrets management, compliance validation, and incident response.
 
 ## Who This Is For
 
@@ -27,14 +27,14 @@ Security engineers, compliance officers, and operations teams responsible for ma
 
 ## Prerequisites
 
-- Running openCenter cluster with security features enabled
+- Running opencenter cluster with security features enabled
 - Access to cluster configuration and SOPS keys
 - `kubectl` access with appropriate RBAC permissions
 - Understanding of Kubernetes security concepts
 
 ## Security Architecture Overview
 
-openCenter implements defense-in-depth security:
+opencenter implements defense-in-depth security:
 
 - **Secrets Management** - SOPS with Age encryption for sensitive data
 - **Certificate Management** - cert-manager with automated renewal
@@ -48,7 +48,7 @@ openCenter implements defense-in-depth security:
 
 ### Enable Security Hardening
 
-Security hardening is enabled by default in openCenter:
+Security hardening is enabled by default in opencenter:
 
 ```yaml
 opencenter:
@@ -124,14 +124,14 @@ Rotate encryption keys annually or after security incidents:
 
 ```bash
 # Generate new Age key
-openCenter sops keygen my-cluster --rotate
+opencenter sops keygen my-cluster --rotate
 
 # Update .sops.yaml with new key
 # Old key: age1old...
 # New key: age1new...
 
 # Re-encrypt all secrets with new key
-cd ~/.config/openCenter/clusters/myorg/my-cluster
+cd ~/.config/opencenter/clusters/myorg/my-cluster
 find . -name "*.enc.yaml" -o -name "*-secret.yaml" | while read file; do
   sops updatekeys "$file"
 done
@@ -145,8 +145,8 @@ git commit -m "security: Rotate SOPS Age keys"
 git push
 
 # Archive old key securely
-mv ~/.config/openCenter/secrets/age/my-cluster-key.txt \
-   ~/.config/openCenter/secrets/age/my-cluster-key-$(date +%Y%m%d).txt.old
+mv ~/.config/opencenter/secrets/age/my-cluster-key.txt \
+   ~/.config/opencenter/secrets/age/my-cluster-key-$(date +%Y%m%d).txt.old
 ```
 
 ### Rotate Kubernetes Secrets
@@ -173,10 +173,10 @@ Rotate SSH keys for cluster access:
 
 ```bash
 # Generate new SSH key pair
-ssh-keygen -t ed25519 -f ~/.config/openCenter/secrets/ssh/my-cluster-new -C "my-cluster-$(date +%Y%m%d)"
+ssh-keygen -t ed25519 -f ~/.config/opencenter/secrets/ssh/my-cluster-new -C "my-cluster-$(date +%Y%m%d)"
 
 # Update cluster configuration
-sops ~/.config/openCenter/clusters/myorg/.my-cluster-config.yaml
+sops ~/.config/opencenter/clusters/myorg/.my-cluster-config.yaml
 # Update ssh_key.private and ssh_key.public paths
 
 # Deploy new key to nodes (requires cluster access)
@@ -184,10 +184,10 @@ sops ~/.config/openCenter/clusters/myorg/.my-cluster-config.yaml
 openstack server add security group <server-id> <security-group>
 
 # Test new key
-ssh -i ~/.config/openCenter/secrets/ssh/my-cluster-new ubuntu@<node-ip>
+ssh -i ~/.config/opencenter/secrets/ssh/my-cluster-new ubuntu@<node-ip>
 
 # Remove old key after verification
-rm ~/.config/openCenter/secrets/ssh/my-cluster
+rm ~/.config/opencenter/secrets/ssh/my-cluster
 ```
 
 ## Certificate Management
@@ -276,7 +276,7 @@ sops -e certificates-backup-$(date +%Y%m%d).yaml > \
 
 # Store securely
 mv certificates-backup-$(date +%Y%m%d).enc.yaml \
-  ~/.config/openCenter/backups/
+  ~/.config/opencenter/backups/
 ```
 
 ## Vulnerability Scanning

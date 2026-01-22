@@ -26,18 +26,18 @@
 
 ## Overview
 
-This guide shows you how to implement audit logging and compliance workflows with openCenter. You'll learn how to enable audit logging, query audit events, verify integrity, and integrate compliance checks into your deployment pipelines.
+This guide shows you how to implement audit logging and compliance workflows with opencenter. You'll learn how to enable audit logging, query audit events, verify integrity, and integrate compliance checks into your deployment pipelines.
 
 ## Prerequisites
 
-- openCenter CLI installed and configured
+- opencenter CLI installed and configured
 - Understanding of security compliance requirements
 - Access to audit log storage location
 - Familiarity with SOPS and secrets management
 
 ## Understanding Audit Logging
 
-openCenter provides tamper-evident audit logging for security-critical operations:
+opencenter provides tamper-evident audit logging for security-critical operations:
 
 1. **Event Logging**: Records all security-relevant operations
 2. **Integrity Protection**: HMAC signatures prevent tampering
@@ -61,7 +61,7 @@ Audit logging is enabled by default. Configure the log path:
 
 ```bash
 # Set custom audit log path
-export OPENCENTER_AUDIT_LOG="${HOME}/.config/openCenter/audit/audit.log"
+export OPENCENTER_AUDIT_LOG="${HOME}/.config/opencenter/audit/audit.log"
 
 # Verify audit log directory exists
 mkdir -p "$(dirname "$OPENCENTER_AUDIT_LOG")"
@@ -76,10 +76,10 @@ Run a command that generates audit events:
 mise run build
 
 # Generate Age key (creates audit event)
-./bin/openCenter sops generate-key my-cluster
+./bin/opencenter sops generate-key my-cluster
 
 # Check audit log
-cat ~/.config/openCenter/audit/audit.log
+cat ~/.config/opencenter/audit/audit.log
 ```
 
 Expected output:
@@ -105,13 +105,13 @@ Audit logs automatically rotate at 100MB. Configure retention:
 
 ```bash
 # View all audit events
-cat ~/.config/openCenter/audit/audit.log | jq '.'
+cat ~/.config/opencenter/audit/audit.log | jq '.'
 
 # View last 10 events
-tail -n 10 ~/.config/openCenter/audit/audit.log | jq '.'
+tail -n 10 ~/.config/opencenter/audit/audit.log | jq '.'
 
 # View events from today
-cat ~/.config/openCenter/audit/audit.log | \
+cat ~/.config/opencenter/audit/audit.log | \
   jq --arg date "$(date +%Y-%m-%d)" \
   'select(.timestamp | startswith($date))'
 ```
@@ -120,15 +120,15 @@ cat ~/.config/openCenter/audit/audit.log | \
 
 ```bash
 # Find all key generation events
-cat ~/.config/openCenter/audit/audit.log | \
+cat ~/.config/opencenter/audit/audit.log | \
   jq 'select(.event_type == "key.generated")'
 
 # Find all validation failures
-cat ~/.config/openCenter/audit/audit.log | \
+cat ~/.config/opencenter/audit/audit.log | \
   jq 'select(.event_type == "validation.failed")'
 
 # Find all failed operations
-cat ~/.config/openCenter/audit/audit.log | \
+cat ~/.config/opencenter/audit/audit.log | \
   jq 'select(.result == "failure")'
 ```
 
@@ -136,12 +136,12 @@ cat ~/.config/openCenter/audit/audit.log | \
 
 ```bash
 # Find events by specific user
-cat ~/.config/openCenter/audit/audit.log | \
+cat ~/.config/opencenter/audit/audit.log | \
   jq --arg actor "user@example.com" \
   'select(.actor == $actor)'
 
 # Find events by resource (cluster)
-cat ~/.config/openCenter/audit/audit.log | \
+cat ~/.config/opencenter/audit/audit.log | \
   jq --arg resource "production-cluster" \
   'select(.resource == $resource)'
 ```
@@ -153,7 +153,7 @@ cat ~/.config/openCenter/audit/audit.log | \
 cat > generate-audit-report.sh <<'EOF'
 #!/bin/bash
 
-AUDIT_LOG="${HOME}/.config/openCenter/audit/audit.log"
+AUDIT_LOG="${HOME}/.config/opencenter/audit/audit.log"
 REPORT_FILE="audit-report-$(date +%Y%m%d).txt"
 
 echo "Audit Report - $(date)" > "$REPORT_FILE"
@@ -212,7 +212,7 @@ The audit logger automatically verifies signatures when querying events. Tampere
 # If tampering is detected, warnings are logged to stderr
 
 # Example: Manually verify integrity
-cat ~/.config/openCenter/audit/audit.log | while read -r line; do
+cat ~/.config/opencenter/audit/audit.log | while read -r line; do
   # Each line is verified when parsed by the audit logger
   echo "$line" | jq -r '.id'
 done 2>&1 | grep -i "signature verification failed"
@@ -224,7 +224,7 @@ done 2>&1 | grep -i "signature verification failed"
 cat > verify-audit-integrity.sh <<'EOF'
 #!/bin/bash
 
-AUDIT_LOG="${HOME}/.config/openCenter/audit/audit.log"
+AUDIT_LOG="${HOME}/.config/opencenter/audit/audit.log"
 
 echo "Verifying audit log integrity..."
 echo "Log file: $AUDIT_LOG"
@@ -308,7 +308,7 @@ echo ""
 
 # Check 3: Audit logging enabled
 echo "✓ Checking audit logging..."
-AUDIT_LOG="${HOME}/.config/openCenter/audit/audit.log"
+AUDIT_LOG="${HOME}/.config/opencenter/audit/audit.log"
 if [ ! -f "$AUDIT_LOG" ]; then
   echo "⚠️  WARNING: Audit log not found"
 else
@@ -318,7 +318,7 @@ echo ""
 
 # Check 4: Configuration validation
 echo "✓ Validating configuration..."
-if ! openCenter config validate --config "$CLUSTER_CONFIG" > /dev/null 2>&1; then
+if ! opencenter config validate --config "$CLUSTER_CONFIG" > /dev/null 2>&1; then
   echo "❌ FAIL: Configuration validation failed"
   exit 1
 fi
@@ -380,11 +380,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Install openCenter CLI
+      - name: Install opencenter CLI
         run: |
-          curl -L https://github.com/rackerlabs/openCenter-cli/releases/latest/download/openCenter-linux-amd64 \
-            -o /usr/local/bin/openCenter
-          chmod +x /usr/local/bin/openCenter
+          curl -L https://github.com/rackerlabs/opencenter-cli/releases/latest/download/opencenter-linux-amd64 \
+            -o /usr/local/bin/opencenter
+          chmod +x /usr/local/bin/opencenter
       
       - name: Run compliance checks
         run: |
@@ -512,7 +512,7 @@ chmod +x .git/hooks/pre-commit
 cat > export-audit-logs.sh <<'EOF'
 #!/bin/bash
 
-AUDIT_LOG="${HOME}/.config/openCenter/audit/audit.log"
+AUDIT_LOG="${HOME}/.config/opencenter/audit/audit.log"
 START_DATE="${1:-$(date -d '30 days ago' +%Y-%m-%d)}"
 END_DATE="${2:-$(date +%Y-%m-%d)}"
 OUTPUT_FILE="audit-export-${START_DATE}-to-${END_DATE}.json"
@@ -557,7 +557,7 @@ chmod +x export-audit-logs.sh
 cat > archive-audit-logs.sh <<'EOF'
 #!/bin/bash
 
-AUDIT_DIR="${HOME}/.config/openCenter/audit"
+AUDIT_DIR="${HOME}/.config/opencenter/audit"
 ARCHIVE_DIR="${AUDIT_DIR}/archives"
 CURRENT_LOG="${AUDIT_DIR}/audit.log"
 
@@ -590,7 +590,7 @@ chmod +x archive-audit-logs.sh
 cat > monitor-compliance.sh <<'EOF'
 #!/bin/bash
 
-AUDIT_LOG="${HOME}/.config/openCenter/audit/audit.log"
+AUDIT_LOG="${HOME}/.config/opencenter/audit/audit.log"
 ALERT_THRESHOLD=5  # Alert if more than 5 failures in last hour
 
 echo "Monitoring compliance status..."
@@ -652,8 +652,8 @@ crontab -e
 
 **Solution**: Verify audit logging is enabled and directory exists:
 ```bash
-mkdir -p ~/.config/openCenter/audit
-export OPENCENTER_AUDIT_LOG="${HOME}/.config/openCenter/audit/audit.log"
+mkdir -p ~/.config/opencenter/audit
+export OPENCENTER_AUDIT_LOG="${HOME}/.config/opencenter/audit/audit.log"
 ```
 
 ### Signature Verification Fails
@@ -663,12 +663,12 @@ export OPENCENTER_AUDIT_LOG="${HOME}/.config/openCenter/audit/audit.log"
 **Solution**: This indicates potential tampering. Investigate immediately:
 ```bash
 # Check for modified entries
-cat ~/.config/openCenter/audit/audit.log | \
+cat ~/.config/opencenter/audit/audit.log | \
   jq 'select(.signature == null or .signature == "")'
 
 # Restore from backup if tampering confirmed
-cp ~/.config/openCenter/audit/audit.log.backup \
-   ~/.config/openCenter/audit/audit.log
+cp ~/.config/opencenter/audit/audit.log.backup \
+   ~/.config/opencenter/audit/audit.log
 ```
 
 ### Compliance Check Fails
@@ -682,7 +682,7 @@ cp ~/.config/openCenter/audit/audit.log.backup \
 
 # Check configuration validation
 mise run build
-./bin/openCenter config validate --config clusters/my-cluster.yaml
+./bin/opencenter config validate --config clusters/my-cluster.yaml
 ```
 
 ## Next Steps

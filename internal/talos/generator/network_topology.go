@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/talos"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/talos"
 )
 
 // GenerateNetworkTopology creates network definitions with three-zone architecture:

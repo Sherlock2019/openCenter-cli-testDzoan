@@ -1,4 +1,4 @@
-# `openCenter cluster validate` - Validate Cluster Configuration
+# `opencenter cluster validate` - Validate Cluster Configuration
 
 
 ## Table of Contents
@@ -17,7 +17,7 @@
 - [See Also](#see-also)
 ## Synopsis
 ```bash
-openCenter cluster validate [name] [OPTIONS]
+opencenter cluster validate [name] [OPTIONS]
 ```
 
 ## Description
@@ -36,7 +36,7 @@ If no cluster name is provided, validates the currently active cluster.
 ## Options
 
 ### `--generate-debug-config`
-- **Description**: Generate complete openCenter.yaml config file for debugging purposes
+- **Description**: Generate complete opencenter.yaml config file for debugging purposes
 - **Type**: Boolean
 - **Default**: `false`
 
@@ -86,37 +86,37 @@ The command performs the following validation checks:
 
 ### Validate active cluster
 ```bash
-openCenter cluster validate
+opencenter cluster validate
 ```
 Validates the currently active cluster configuration.
 
 ### Validate specific cluster
 ```bash
-openCenter cluster validate my-cluster
+opencenter cluster validate my-cluster
 ```
 Validates the specified cluster configuration.
 
 ### Validate cluster in organization
 ```bash
-openCenter cluster validate production/prod-cluster
+opencenter cluster validate production/prod-cluster
 ```
 Validates a cluster within a specific organization.
 
 ### Validate and generate debug config
 ```bash
-openCenter cluster validate my-cluster --generate-debug-config
+opencenter cluster validate my-cluster --generate-debug-config
 ```
 Validates and generates a complete configuration file for debugging.
 
 ### Validate and save debug config to specific directory
 ```bash
-openCenter cluster validate my-cluster --generate-debug-config --output-dir=/tmp
+opencenter cluster validate my-cluster --generate-debug-config --output-dir=/tmp
 ```
 Saves the debug configuration to a specific directory.
 
 ### Validate with debug mode
 ```bash
-OPENCENTER_DEBUG=1 openCenter cluster validate my-cluster
+OPENCENTER_DEBUG=1 opencenter cluster validate my-cluster
 ```
 Enables debug mode and automatically generates debug config.
 
@@ -140,13 +140,13 @@ validation failed
 ### With Debug Config Generation
 
 ```
-Debug config saved to /home/user/.config/openCenter/clusters/myorg/gitops/.openCenter.yaml
+Debug config saved to /home/user/.config/opencenter/clusters/myorg/gitops/.opencenter.yaml
 Validation successful.
 ```
 
 ## Debug Configuration
 
-The `--generate-debug-config` flag generates a complete `.openCenter.yaml` file that includes:
+The `--generate-debug-config` flag generates a complete `.opencenter.yaml` file that includes:
 
 - All configuration values (including defaults)
 - Resolved paths and references
@@ -171,7 +171,7 @@ This file is useful for:
 
 **Solution**: Set the Kubernetes version in configuration:
 ```bash
-openCenter cluster update my-cluster --opencenter.cluster.kubernetes.version=1.31.4
+opencenter cluster update my-cluster --opencenter.cluster.kubernetes.version=1.31.4
 ```
 
 ### Invalid provider
@@ -179,7 +179,7 @@ openCenter cluster update my-cluster --opencenter.cluster.kubernetes.version=1.3
 
 **Solution**: Set a valid provider:
 ```bash
-openCenter cluster update my-cluster --opencenter.infrastructure.provider=openstack
+opencenter cluster update my-cluster --opencenter.infrastructure.provider=openstack
 ```
 
 ### Network CIDR conflicts
@@ -187,7 +187,7 @@ openCenter cluster update my-cluster --opencenter.infrastructure.provider=openst
 
 **Solution**: Adjust network CIDRs to avoid conflicts:
 ```bash
-openCenter cluster update my-cluster \
+opencenter cluster update my-cluster \
   --opencenter.cluster.network.pod_cidr=10.244.0.0/16 \
   --opencenter.cluster.network.service_cidr=10.96.0.0/12
 ```
@@ -198,10 +198,10 @@ openCenter cluster update my-cluster \
 **Solution**: Generate SOPS key or update path:
 ```bash
 # Regenerate keys
-openCenter cluster init my-cluster --force
+opencenter cluster init my-cluster --force
 
 # Or update path
-openCenter cluster update my-cluster --secrets.sops_age_key_file=/correct/path/to/key.txt
+opencenter cluster update my-cluster --secrets.sops_age_key_file=/correct/path/to/key.txt
 ```
 
 ### Missing required fields
@@ -209,7 +209,7 @@ openCenter cluster update my-cluster --secrets.sops_age_key_file=/correct/path/t
 
 **Solution**: Provide required fields:
 ```bash
-openCenter cluster update my-cluster --opencenter.meta.env=dev
+opencenter cluster update my-cluster --opencenter.meta.env=dev
 ```
 
 ## Notes
@@ -226,8 +226,8 @@ openCenter cluster update my-cluster --opencenter.meta.env=dev
 
 ## See Also
 
-- `openCenter cluster init` - Initialize cluster with validation
-- `openCenter cluster update` - Update cluster configuration
-- `openCenter cluster info` - Show cluster information
-- `openCenter cluster schema` - Export JSON schema
-- `openCenter cluster preflight` - Run preflight checks
+- `opencenter cluster init` - Initialize cluster with validation
+- `opencenter cluster update` - Update cluster configuration
+- `opencenter cluster info` - Show cluster information
+- `opencenter cluster schema` - Export JSON schema
+- `opencenter cluster preflight` - Run preflight checks

@@ -22,7 +22,7 @@ This document explains VPC (Virtual Private Cloud) networking concepts for Kuber
 
 ## Purpose
 
-Understanding VPC design helps you plan network topology that balances security, performance, and cost. This guide explains how openCenter structures AWS networks and how to customize them for your requirements.
+Understanding VPC design helps you plan network topology that balances security, performance, and cost. This guide explains how opencenter structures AWS networks and how to customize them for your requirements.
 
 ## VPC Architecture Overview
 
@@ -190,7 +190,7 @@ opencenter:
 
 ### CIDR Overlap Detection
 
-openCenter validates that CIDRs don't overlap:
+opencenter validates that CIDRs don't overlap:
 
 ```bash
 # Validation checks for:
@@ -201,7 +201,7 @@ openCenter validates that CIDRs don't overlap:
 # - Subnet vs pod/service networks
 
 mise run build
-./bin/openCenter cluster validate my-aws-cluster
+./bin/opencenter cluster validate my-aws-cluster
 ```
 
 ## Multi-AZ Deployment
@@ -308,7 +308,7 @@ One NAT Gateway per availability zone:
 
 **Configuration:**
 ```yaml
-# openCenter creates NAT Gateway automatically
+# opencenter creates NAT Gateway automatically
 # One per public subnet (one per AZ)
 opencenter:
   infrastructure:
@@ -660,4 +660,4 @@ aws ec2 describe-security-groups \
 ---
 
 **Last Updated**: January 2025  
-**Maintained By**: openCenter Team
+**Maintained By**: opencenter Team

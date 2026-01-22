@@ -20,8 +20,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/credentials"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/credentials"
 )
 
 // newClusterCredentialsExportCmd creates the "cluster credentials export" command.
@@ -51,24 +51,24 @@ Output Formats:
   • clouds-yaml: OpenStack clouds.yaml format (OpenStack only)
 
 The exported credentials can be used with:
-  • eval $(openCenter cluster credentials export --provider aws)
+  • eval $(opencenter cluster credentials export --provider aws)
   • Terraform/OpenTofu infrastructure provisioning
   • Ansible playbooks and inventory
   • Direct cloud CLI tools (aws, openstack)`,
 		Example: `  # Export AWS credentials for current cluster
-  eval $(openCenter cluster credentials export --provider aws)
+  eval $(opencenter cluster credentials export --provider aws)
 
   # Export OpenStack credentials for specific cluster
-  eval $(openCenter cluster credentials export my-cluster --provider openstack)
+  eval $(opencenter cluster credentials export my-cluster --provider openstack)
 
   # Export all credentials in JSON format
-  openCenter cluster credentials export --provider all --format json
+  opencenter cluster credentials export --provider all --format json
 
   # Export AWS credentials in Terraform format
-  openCenter cluster credentials export --provider aws --format terraform
+  opencenter cluster credentials export --provider aws --format terraform
 
   # Export OpenStack credentials as clouds.yaml
-  openCenter cluster credentials export --provider openstack --format clouds-yaml`,
+  opencenter cluster credentials export --provider openstack --format clouds-yaml`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve cluster name from args or active cluster
@@ -82,7 +82,7 @@ The exported credentials can be used with:
 					return fmt.Errorf("failed to get active cluster: %w", err)
 				}
 				if activeName == "" {
-					return fmt.Errorf("no cluster name provided and no active cluster set; specify a cluster name or use 'openCenter cluster select <name>' to set an active cluster")
+					return fmt.Errorf("no cluster name provided and no active cluster set; specify a cluster name or use 'opencenter cluster select <name>' to set an active cluster")
 				}
 				name = activeName
 			}

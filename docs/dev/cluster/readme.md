@@ -1,4 +1,4 @@
-# `openCenter cluster` - Developer Documentation
+# `opencenter cluster` - Developer Documentation
 
 
 ## Table of Contents
@@ -74,7 +74,7 @@ cmd/
 ### Directory Layout
 
 ```
-~/.config/openCenter/
+~/.config/opencenter/
 └── clusters/
     └── <organization>/
         ├── .sops.yaml                    # Organization SOPS config
@@ -225,7 +225,7 @@ Behavior-driven tests using Godog:
 ```gherkin
 Feature: Cluster Initialization
   Scenario: Initialize cluster with defaults
-    When I run "openCenter cluster init test-cluster"
+    When I run "opencenter cluster init test-cluster"
     Then the cluster configuration should exist
     And SOPS keys should be generated
     And SSH keys should be generated
@@ -274,12 +274,12 @@ mise run godog -- features/cluster_lifecycle.feature
 
 ```bash
 export OPENCENTER_DEBUG=1
-openCenter cluster <command>
+opencenter cluster <command>
 ```
 
 ### Debug Output Locations
 
-- Debug config: `<git_dir>/.openCenter.yaml`
+- Debug config: `<git_dir>/.opencenter.yaml`
 - Bootstrap log: `<git_dir>/infrastructure/clusters/<cluster>/bootstrap.log`
 - SOPS debug: Check `.sops.yaml` configuration
 
@@ -300,7 +300,7 @@ config.Debugf("Template data: %+v", templateData)
 #### SOPS Configuration
 Verify SOPS config:
 ```bash
-cat ~/.config/openCenter/clusters/org/.sops.yaml
+cat ~/.config/opencenter/clusters/org/.sops.yaml
 ```
 
 ## Performance Considerations

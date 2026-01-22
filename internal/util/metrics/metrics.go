@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package metrics provides performance tracking and metrics collection for openCenter operations.
+// Package metrics provides performance tracking and metrics collection for opencenter operations.
 // It tracks template rendering times, configuration building times, and GitOps generation times.
 package metrics
 

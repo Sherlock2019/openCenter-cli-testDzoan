@@ -23,7 +23,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/rackerlabs/openCenter-cli/internal/util/crypto"
+	"github.com/rackerlabs/opencenter-cli/internal/util/crypto"
 )
 
 // KeyManager is an alias for crypto.KeyManager for backward compatibility

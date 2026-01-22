@@ -12,12 +12,12 @@
 // limitations under the License.
 
 /*
-Package util provides utility functions for openCenter.
+Package util provides utility functions for opencenter.
 
 This package contains helper functions that are used by other packages in the application.
 
 # When to use
 
-This package is used internally by openCenter and is not intended for direct use by end-users.
+This package is used internally by opencenter and is not intended for direct use by end-users.
 */
 package util

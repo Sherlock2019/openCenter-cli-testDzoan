@@ -19,7 +19,7 @@ weight: 10
 - [util Package](#util-package)
 - [Usage Examples](#usage-examples)
 - [See Also](#see-also)
-This document provides reference documentation for the internal Go packages in openCenter CLI. These packages form the core implementation of the CLI tool and can be used for extending functionality or understanding the codebase.
+This document provides reference documentation for the internal Go packages in opencenter CLI. These packages form the core implementation of the CLI tool and can be used for extending functionality or understanding the codebase.
 
 ## Package Overview
 
@@ -69,7 +69,7 @@ type Config struct {
 
 #### SimplifiedOpenCenter
 
-Contains all openCenter-specific configuration including cluster, infrastructure, services, and GitOps settings.
+Contains all opencenter-specific configuration including cluster, infrastructure, services, and GitOps settings.
 
 ```go
 type SimplifiedOpenCenter struct {
@@ -614,7 +614,7 @@ func ResolvePath(base, path string) (string, error)
 ```go
 import (
     "context"
-    "github.com/rackerlabs/openCenter-cli/internal/config"
+    "github.com/rackerlabs/opencenter-cli/internal/config"
 )
 
 // Load configuration
@@ -637,8 +637,8 @@ if !result.IsValid {
 
 ```go
 import (
-    "github.com/rackerlabs/openCenter-cli/internal/config"
-    "github.com/rackerlabs/openCenter-cli/internal/gitops"
+    "github.com/rackerlabs/opencenter-cli/internal/config"
+    "github.com/rackerlabs/opencenter-cli/internal/gitops"
 )
 
 // Load configuration
@@ -666,8 +666,8 @@ if err := gitops.RenderInfrastructureCluster(cfg); err != nil {
 ```go
 import (
     "context"
-    "github.com/rackerlabs/openCenter-cli/internal/sops"
-    "github.com/rackerlabs/openCenter-cli/internal/config"
+    "github.com/rackerlabs/opencenter-cli/internal/sops"
+    "github.com/rackerlabs/opencenter-cli/internal/config"
 )
 
 // Create SOPS manager
@@ -697,7 +697,7 @@ if err := manager.CreateSOPSConfig(overlayPath, &cfg); err != nil {
 ```go
 import (
     "context"
-    "github.com/rackerlabs/openCenter-cli/internal/template"
+    "github.com/rackerlabs/opencenter-cli/internal/template"
 )
 
 // Create template engine

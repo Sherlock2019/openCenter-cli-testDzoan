@@ -18,7 +18,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +27,7 @@ func newClusterSchemaCmd() *cobra.Command {
 		Use:    "schema",
 		Short:  "Export cluster JSON schema with validation rules",
 		Hidden: true, // Hidden from help - internal/development command
-		Long: `Export the JSON schema for openCenter cluster configuration.
+		Long: `Export the JSON schema for opencenter cluster configuration.
 
 The schema includes comprehensive validation rules, constraints, and documentation
 for all configuration sections. It can be used for IDE integration, validation,
@@ -35,13 +35,13 @@ and documentation purposes.
 
 Examples:
   # Print schema to stdout
-  openCenter cluster schema
+  opencenter cluster schema
 
   # Save schema to file with pretty formatting
-  openCenter cluster schema --out schema/cluster.schema.json --pretty
+  opencenter cluster schema --out schema/cluster.schema.json --pretty
 
   # Show schema version
-  openCenter cluster schema --version`,
+  opencenter cluster schema --version`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			showVersion, _ := cmd.Flags().GetBool("version")
 			if showVersion {

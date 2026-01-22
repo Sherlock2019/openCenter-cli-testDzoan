@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config/services"
+	"github.com/rackerlabs/opencenter-cli/internal/config/services"
 )
 
 // BenchmarkValidation_SmallConfig benchmarks validation of a small configuration.

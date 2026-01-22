@@ -1,7 +1,7 @@
 package talos
 
 import (
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/sirupsen/logrus"
 )
 

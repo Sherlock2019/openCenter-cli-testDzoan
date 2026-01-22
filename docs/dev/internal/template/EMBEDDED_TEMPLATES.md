@@ -14,7 +14,7 @@
 - [Statistics](#statistics)
 - [Future Enhancements](#future-enhancements)
 - [See Also](#see-also)
-This document describes the embedded template registration system that automatically catalogs all templates embedded in the openCenter CLI binary.
+This document describes the embedded template registration system that automatically catalogs all templates embedded in the opencenter CLI binary.
 
 ## Overview
 
@@ -47,7 +47,7 @@ Currently, templates are embedded from two main sources:
 ### Getting the Global Registry
 
 ```go
-import "github.com/rackerlabs/openCenter-cli/internal/template"
+import "github.com/rackerlabs/opencenter-cli/internal/template"
 
 // Get the global registry (initialized once, thread-safe)
 registry, err := template.GetGlobalRegistry()

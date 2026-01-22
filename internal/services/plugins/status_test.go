@@ -3,8 +3,8 @@ package plugins
 import (
 	"testing"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config/services"
-	svc "github.com/rackerlabs/openCenter-cli/internal/services"
+	"github.com/rackerlabs/opencenter-cli/internal/config/services"
+	svc "github.com/rackerlabs/opencenter-cli/internal/services"
 	"github.com/stretchr/testify/assert"
 )
 

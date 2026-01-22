@@ -22,8 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
 )
 
 // DefaultValidator implements Validator interface
@@ -78,7 +78,7 @@ func (v *DefaultValidator) ValidateKeyForProduction(key string) error {
 			Type:    errors.ValidationError,
 			Message: "Placeholder key detected - this should not be used in production",
 			Suggestions: []string{
-				"Generate a proper age key using 'openCenter sops generate-key'",
+				"Generate a proper age key using 'opencenter sops generate-key'",
 				"Import an existing age key",
 				"Check the SOPS configuration",
 			},

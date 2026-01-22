@@ -33,17 +33,17 @@ type PathResolver struct {
 // ClusterPaths contains all organization-aware paths for a cluster.
 // This structure supports the new organization-based directory layout.
 type ClusterPaths struct {
-	OrganizationDir string // ~/.config/openCenter/clusters/<organization>
-	GitOpsDir       string // ~/.config/openCenter/clusters/<organization>
-	ClusterDir      string // ~/.config/openCenter/clusters/<organization>/infrastructure/clusters/<cluster>
-	ApplicationsDir string // ~/.config/openCenter/clusters/<organization>/applications/overlays/<cluster>
-	SecretsDir      string // ~/.config/openCenter/clusters/<organization>/secrets
-	SOPSKeyPath     string // ~/.config/openCenter/clusters/<organization>/secrets/age/keys/<cluster>.txt
-	SOPSConfigPath  string // ~/.config/openCenter/clusters/<organization>/.sops.yaml
-	KubeconfigPath  string // ~/.config/openCenter/clusters/<organization>/infrastructure/clusters/<cluster>/kubeconfig.yaml
-	InventoryPath   string // ~/.config/openCenter/clusters/<organization>/infrastructure/clusters/<cluster>/inventory/
-	VenvPath        string // ~/.config/openCenter/clusters/<organization>/infrastructure/clusters/<cluster>/venv/
-	BinPath         string // ~/.config/openCenter/clusters/<organization>/infrastructure/clusters/<cluster>/.bin/
+	OrganizationDir string // ~/.config/opencenter/clusters/<organization>
+	GitOpsDir       string // ~/.config/opencenter/clusters/<organization>
+	ClusterDir      string // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>
+	ApplicationsDir string // ~/.config/opencenter/clusters/<organization>/applications/overlays/<cluster>
+	SecretsDir      string // ~/.config/opencenter/clusters/<organization>/secrets
+	SOPSKeyPath     string // ~/.config/opencenter/clusters/<organization>/secrets/age/keys/<cluster>.txt
+	SOPSConfigPath  string // ~/.config/opencenter/clusters/<organization>/.sops.yaml
+	KubeconfigPath  string // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/kubeconfig.yaml
+	InventoryPath   string // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/inventory/
+	VenvPath        string // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/venv/
+	BinPath         string // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/.bin/
 }
 
 // MigrationManager handles migration from legacy flat structure to organization-based structure.
@@ -804,7 +804,7 @@ func (pr *PathResolver) OrganizationAwareSecretsPath(clusterName string) (string
 // validateDirectoryPermissions validates that a directory has proper read/write permissions.
 func (pr *PathResolver) validateDirectoryPermissions(dir string) error {
 	// Test write permissions by creating a temporary file
-	testFile := filepath.Join(dir, ".openCenter_permission_test")
+	testFile := filepath.Join(dir, ".opencenter_permission_test")
 	file, err := os.Create(testFile)
 	if err != nil {
 		return fmt.Errorf("cannot write to directory: %w", err)

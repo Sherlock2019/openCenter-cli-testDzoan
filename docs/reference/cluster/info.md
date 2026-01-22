@@ -24,7 +24,7 @@ Display detailed information about a cluster.
 ## Synopsis
 
 ```bash
-openCenter cluster info [name] [flags]
+opencenter cluster info [name] [flags]
 ```
 
 ## Description
@@ -46,22 +46,22 @@ The `cluster info` command displays comprehensive information about a cluster, i
 
 ```bash
 # Show info for active cluster
-openCenter cluster info
+opencenter cluster info
 
 # Show info for specific cluster
-openCenter cluster info my-cluster
+opencenter cluster info my-cluster
 
 # Validate configuration
-openCenter cluster info my-cluster --validate
+opencenter cluster info my-cluster --validate
 
 # Output as JSON
-openCenter cluster info my-cluster --json
+opencenter cluster info my-cluster --json
 
 # Export only environment variables
-openCenter cluster info my-cluster --export-only
+opencenter cluster info my-cluster --export-only
 
 # Export for specific shell
-openCenter cluster info my-cluster --export-only --shell=fish
+opencenter cluster info my-cluster --export-only --shell=fish
 ```
 
 ## Output Format
@@ -70,7 +70,7 @@ openCenter cluster info my-cluster --export-only --shell=fish
 
 ```
 Active cluster: my-cluster
-Config Path: /home/user/.config/openCenter/clusters/myorg/.my-cluster-config.yaml
+Config Path: /home/user/.config/opencenter/clusters/myorg/.my-cluster-config.yaml
 
 git_dir: /home/user/gitops/myorg
 git_url: git@github.com:myorg/gitops.git
@@ -92,7 +92,7 @@ Lock Status:
 
 ```json
 {
-  "config_path": "/home/user/.config/openCenter/clusters/myorg/.my-cluster-config.yaml",
+  "config_path": "/home/user/.config/opencenter/clusters/myorg/.my-cluster-config.yaml",
   "cluster_name": "my-cluster",
   "organization": "myorg",
   "provider": "openstack",
@@ -154,7 +154,7 @@ The command shows "Active cluster:" prefix when:
 With `--validate` flag, the command validates configuration and reports errors:
 
 ```bash
-openCenter cluster info my-cluster --validate
+opencenter cluster info my-cluster --validate
 ```
 
 **Success:**
@@ -174,7 +174,7 @@ validation failed
 The `--export-only` flag outputs only environment variable export commands, suitable for shell evaluation:
 
 ```bash
-eval $(openCenter cluster info my-cluster --export-only)
+eval $(opencenter cluster info my-cluster --export-only)
 ```
 
 This sets environment variables for:
@@ -225,22 +225,22 @@ Lock Status:
 
 ### Quick Status Check
 ```bash
-openCenter cluster info
+opencenter cluster info
 ```
 
 ### Configuration Validation
 ```bash
-openCenter cluster info my-cluster --validate
+opencenter cluster info my-cluster --validate
 ```
 
 ### Environment Setup
 ```bash
-eval $(openCenter cluster info my-cluster --export-only)
+eval $(opencenter cluster info my-cluster --export-only)
 ```
 
 ### Scripting Integration
 ```bash
-CLUSTER_INFO=$(openCenter cluster info my-cluster --json)
+CLUSTER_INFO=$(opencenter cluster info my-cluster --json)
 PROVIDER=$(echo "$CLUSTER_INFO" | jq -r '.provider')
 ```
 

@@ -17,7 +17,7 @@ Manage cluster configuration backups for disaster recovery.
 ## Synopsis
 
 ```bash
-openCenter cluster backup <subcommand> [flags]
+opencenter cluster backup <subcommand> [flags]
 ```
 
 ## Description
@@ -33,7 +33,7 @@ Backups are compressed with gzip, include SHA-256 checksums for integrity verifi
 Create a backup of cluster configuration and related files.
 
 ```bash
-openCenter cluster backup create <cluster> [flags]
+opencenter cluster backup create <cluster> [flags]
 ```
 
 **Flags:**
@@ -44,13 +44,13 @@ openCenter cluster backup create <cluster> [flags]
 
 ```bash
 # Create a backup
-openCenter cluster backup create my-cluster
+opencenter cluster backup create my-cluster
 
 # Create an encrypted backup (prompts for passphrase)
-openCenter cluster backup create my-cluster --encrypt
+opencenter cluster backup create my-cluster --encrypt
 
 # Create an encrypted backup with passphrase
-openCenter cluster backup create my-cluster --passphrase="secret123"
+opencenter cluster backup create my-cluster --passphrase="secret123"
 ```
 
 **Output:**
@@ -65,7 +65,7 @@ openCenter cluster backup create my-cluster --passphrase="secret123"
 Restore cluster configuration from a backup.
 
 ```bash
-openCenter cluster backup restore <backup-id> [flags]
+opencenter cluster backup restore <backup-id> [flags]
 ```
 
 **Flags:**
@@ -75,10 +75,10 @@ openCenter cluster backup restore <backup-id> [flags]
 
 ```bash
 # Restore from backup
-openCenter cluster backup restore my-cluster-20260118-143000
+opencenter cluster backup restore my-cluster-20260118-143000
 
 # Restore from encrypted backup
-openCenter cluster backup restore my-cluster-20260118-143000 --passphrase="secret123"
+opencenter cluster backup restore my-cluster-20260118-143000 --passphrase="secret123"
 ```
 
 **Behavior:**
@@ -87,26 +87,26 @@ openCenter cluster backup restore my-cluster-20260118-143000 --passphrase="secre
 - Prompts for passphrase if backup is encrypted and passphrase not provided
 
 **Restored File Locations:**
-- Config: `~/.config/openCenter/clusters/restored/.restored-config.yaml`
-- Age key: `~/.config/openCenter/secrets/age/restored-key.txt`
-- SSH keys: `~/.config/openCenter/secrets/ssh/restored-keys`
+- Config: `~/.config/opencenter/clusters/restored/.restored-config.yaml`
+- Age key: `~/.config/opencenter/secrets/age/restored-key.txt`
+- SSH keys: `~/.config/opencenter/secrets/ssh/restored-keys`
 
 ### list
 
 List all backups for a cluster or all clusters.
 
 ```bash
-openCenter cluster backup list [cluster]
+opencenter cluster backup list [cluster]
 ```
 
 **Examples:**
 
 ```bash
 # List all backups
-openCenter cluster backup list
+opencenter cluster backup list
 
 # List backups for a specific cluster
-openCenter cluster backup list my-cluster
+opencenter cluster backup list my-cluster
 ```
 
 **Output Format:**
@@ -121,7 +121,7 @@ my-cluster-20260118-143000    my-cluster   2026-01-18 14:30:00  1024    /path/to
 Delete a backup by its ID.
 
 ```bash
-openCenter cluster backup delete <backup-id> [flags]
+opencenter cluster backup delete <backup-id> [flags]
 ```
 
 **Flags:**
@@ -131,10 +131,10 @@ openCenter cluster backup delete <backup-id> [flags]
 
 ```bash
 # Delete a backup (with confirmation)
-openCenter cluster backup delete my-cluster-20260118-143000
+opencenter cluster backup delete my-cluster-20260118-143000
 
 # Delete without confirmation
-openCenter cluster backup delete my-cluster-20260118-143000 --force
+opencenter cluster backup delete my-cluster-20260118-143000 --force
 ```
 
 **Warning:** This operation is irreversible.
@@ -144,7 +144,7 @@ openCenter cluster backup delete my-cluster-20260118-143000 --force
 Schedule periodic backups for a cluster (not yet implemented).
 
 ```bash
-openCenter cluster backup schedule <cluster> [flags]
+opencenter cluster backup schedule <cluster> [flags]
 ```
 
 **Flags:**
@@ -155,10 +155,10 @@ openCenter cluster backup schedule <cluster> [flags]
 
 ```bash
 # Schedule daily backups
-openCenter cluster backup schedule my-cluster --interval=24h
+opencenter cluster backup schedule my-cluster --interval=24h
 
 # Schedule with retention policy
-openCenter cluster backup schedule my-cluster --interval=24h --retention=30d
+opencenter cluster backup schedule my-cluster --interval=24h --retention=30d
 ```
 
 **Status:** This feature is not yet implemented and will be available in a future release.
@@ -181,7 +181,7 @@ Each backup includes:
 
 ## Storage Location
 
-Backups are stored in: `~/.config/openCenter/backups/`
+Backups are stored in: `~/.config/opencenter/backups/`
 
 ## See Also
 

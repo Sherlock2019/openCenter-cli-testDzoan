@@ -23,11 +23,11 @@ weight: 50
 - [Key Files Reference](#key-files-reference)
 - [Testing Configuration Changes](#testing-configuration-changes)
 - [See Also](#see-also)
-This document provides a comprehensive reference for the openCenter cluster configuration structure, including how configuration values map to Terraform/OpenTofu templates and the underlying infrastructure.
+This document provides a comprehensive reference for the opencenter cluster configuration structure, including how configuration values map to Terraform/OpenTofu templates and the underlying infrastructure.
 
 ## Who this is for
 
-Developers working on openCenter who need to understand:
+Developers working on opencenter who need to understand:
 - Configuration structure and organization
 - How YAML config maps to Terraform variables
 - Template rendering and variable substitution
@@ -76,7 +76,7 @@ type Config struct {
 ```
 
 **Purpose**: Top-level configuration container
-**File Location**: `~/.config/openCenter/clusters/<org>/<cluster>/.config.yaml`
+**File Location**: `~/.config/opencenter/clusters/<org>/<cluster>/.config.yaml`
 
 
 ### OpenCenter Section
@@ -645,7 +645,7 @@ module "your-module" {
 
 ```bash
 mise run build
-./bin/openCenter cluster schema --out schema/cluster.schema.json --pretty
+./bin/opencenter cluster schema --out schema/cluster.schema.json --pretty
 ```
 
 ### 5. Test the Field
@@ -653,17 +653,17 @@ mise run build
 ```bash
 # Generate template with new field
 mise run build
-./bin/openCenter cluster template --out test-config.yaml
+./bin/opencenter cluster template --out test-config.yaml
 
 # Verify field is present
 grep "new_field" test-config.yaml
 
 # Test with cluster init
-./bin/openCenter cluster init test-cluster --no-keygen
-grep "new_field" ~/.config/openCenter/clusters/opencenter/.test-cluster-config.yaml
+./bin/opencenter cluster init test-cluster --no-keygen
+grep "new_field" ~/.config/opencenter/clusters/opencenter/.test-cluster-config.yaml
 
 # Validate configuration
-./bin/openCenter cluster validate test-cluster
+./bin/opencenter cluster validate test-cluster
 ```
 
 ### 6. Update Documentation
@@ -737,7 +737,7 @@ type LokiConfig struct {
 // internal/config/services/loki.go
 package services
 
-import "github.com/rackerlabs/openCenter-cli/internal/config/registry"
+import "github.com/rackerlabs/opencenter-cli/internal/config/registry"
 
 // LokiConfig extends BaseConfig with Loki-specific configuration
 type LokiConfig struct {
@@ -793,7 +793,7 @@ func (sm *ServiceMap) UnmarshalYAML(node *yaml.Node) error {
 // internal/config/services/myservice.go
 package services
 
-import "github.com/rackerlabs/openCenter-cli/internal/config/registry"
+import "github.com/rackerlabs/opencenter-cli/internal/config/registry"
 
 type MyServiceConfig struct {
     BaseConfig `yaml:",inline"`
@@ -815,7 +815,7 @@ Services: ServiceMap{
     "myservice": &services.MyServiceConfig{
         BaseConfig: services.BaseConfig{
             Enabled:             false,
-            GitOpsSourceRepo:    "ssh://git@github.com/rackerlabs/openCenter-gitops-base.git",
+            GitOpsSourceRepo:    "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git",
             GitOpsSourceRelease: "v0.1.0",
             GitOpsSourceBranch:  "main",
         },
@@ -828,8 +828,8 @@ Services: ServiceMap{
 
 ```bash
 mise run build
-./bin/openCenter cluster init test-service --no-keygen
-grep -A 10 "myservice:" ~/.config/openCenter/clusters/opencenter/.test-service-config.yaml
+./bin/opencenter cluster init test-service --no-keygen
+grep -A 10 "myservice:" ~/.config/opencenter/clusters/opencenter/.test-service-config.yaml
 ```
 
 Verify all fields render (not just BaseConfig fields).
@@ -873,7 +873,7 @@ MyField: "default-value",
 // Add init() function to service file (e.g., internal/config/services/myservice.go)
 package services
 
-import "github.com/rackerlabs/openCenter-cli/internal/config/registry"
+import "github.com/rackerlabs/opencenter-cli/internal/config/registry"
 
 type MyServiceConfig struct {
     BaseConfig `yaml:",inline"`
@@ -889,13 +889,13 @@ func init() {
 ```bash
 # After adding registration, rebuild and test
 mise run build
-./bin/openCenter cluster init test-service --no-keygen
+./bin/opencenter cluster init test-service --no-keygen
 
 # Count fields - should match struct definition
-grep -A 30 "myservice:" ~/.config/openCenter/clusters/opencenter/.test-service-config.yaml | wc -l
+grep -A 30 "myservice:" ~/.config/opencenter/clusters/opencenter/.test-service-config.yaml | wc -l
 
 # Should see all fields, not just BaseConfig fields
-grep -A 30 "myservice:" ~/.config/openCenter/clusters/opencenter/.test-service-config.yaml
+grep -A 30 "myservice:" ~/.config/opencenter/clusters/opencenter/.test-service-config.yaml
 ```
 
 See [Service Registry Patterns](./service-registry-patterns.md) for detailed debugging registered in registry
@@ -949,10 +949,10 @@ your_field = "{{ .OpenCenter.YourSection.YourField | default "fallback" }}"
 ```bash
 # Regenerate schema
 mise run build
-./bin/openCenter cluster schema --out schema/cluster.schema.json --pretty
+./bin/opencenter cluster schema --out schema/cluster.schema.json --pretty
 
 # Check validation rules
-./bin/openCenter cluster validate test-cluster --verbose
+./bin/opencenter cluster validate test-cluster --verbose
 ```
 
 
@@ -962,53 +962,53 @@ mise run build
 
 ```bash
 # See all available fields
-./bin/openCenter cluster template --out complete.yaml
+./bin/opencenter cluster template --out complete.yaml
 
 # Check specific provider
-./bin/openCenter cluster template --provider openstack --out openstack.yaml
+./bin/opencenter cluster template --provider openstack --out openstack.yaml
 ```
 
 #### 2. Inspect Configuration
 
 ```bash
 # View loaded configuration
-./bin/openCenter cluster info test-cluster
+./bin/opencenter cluster info test-cluster
 
 # View as JSON
-./bin/openCenter cluster info test-cluster --output json | jq .
+./bin/opencenter cluster info test-cluster --output json | jq .
 ```
 
 #### 3. Validate Configuration
 
 ```bash
 # Run validation
-./bin/openCenter cluster validate test-cluster
+./bin/opencenter cluster validate test-cluster
 
 # Verbose output
-./bin/openCenter cluster validate test-cluster --verbose
+./bin/opencenter cluster validate test-cluster --verbose
 
 # Check specific sections
-./bin/openCenter cluster validate test-cluster --check infrastructure
+./bin/opencenter cluster validate test-cluster --check infrastructure
 ```
 
 #### 4. Render Templates
 
 ```bash
 # Render without applying
-./bin/openCenter cluster render test-cluster --dry-run
+./bin/opencenter cluster render test-cluster --dry-run
 
 # See generated Terraform
-cat ~/.config/openCenter/clusters/opencenter/test-cluster/infrastructure/clusters/test-cluster/main.tf
+cat ~/.config/opencenter/clusters/opencenter/test-cluster/infrastructure/clusters/test-cluster/main.tf
 ```
 
 #### 5. Check Schema
 
 ```bash
 # Generate current schema
-./bin/openCenter cluster schema --pretty
+./bin/opencenter cluster schema --pretty
 
 # Compare with committed schema
-diff <(./bin/openCenter cluster schema) schema/cluster.schema.json
+diff <(./bin/opencenter cluster schema) schema/cluster.schema.json
 ```
 
 ## Configuration File Locations
@@ -1016,7 +1016,7 @@ diff <(./bin/openCenter cluster schema) schema/cluster.schema.json
 ### User Configuration
 
 ```
-~/.config/openCenter/
+~/.config/opencenter/
 ├── clusters/
 │   └── <organization>/
 │       ├── .<cluster>-config.yaml          # Main config
@@ -1053,8 +1053,8 @@ internal/
 ### Configuration Loading Order
 
 1. **Embedded defaults** - `defaultConfig()` in `internal/config/config.go`
-2. **CLI defaults** - `~/.config/openCenter/config.yaml` (user-level defaults)
-3. **Cluster config file** - `~/.config/openCenter/clusters/<org>/.<cluster>-config.yaml`
+2. **CLI defaults** - `~/.config/opencenter/config.yaml` (user-level defaults)
+3. **Cluster config file** - `~/.config/opencenter/clusters/<org>/.<cluster>-config.yaml`
 4. **Environment variables** - `OPENCENTER_*` variables
 5. **Command-line flags** - Highest precedence
 
@@ -1164,16 +1164,16 @@ mise run godog -- --tags @cluster-init
 mise run build
 
 # Initialize test cluster
-./bin/openCenter cluster init test-cluster --no-keygen
+./bin/opencenter cluster init test-cluster --no-keygen
 
 # Validate
-./bin/openCenter cluster validate test-cluster
+./bin/opencenter cluster validate test-cluster
 
 # Render templates
-./bin/openCenter cluster render test-cluster --dry-run
+./bin/opencenter cluster render test-cluster --dry-run
 
 # Check generated files
-ls -la ~/.config/openCenter/clusters/opencenter/test-cluster/
+ls -la ~/.config/opencenter/clusters/opencenter/test-cluster/
 ```
 
 ## See Also

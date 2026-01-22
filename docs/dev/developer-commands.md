@@ -18,7 +18,7 @@ weight: 90
 - [Migration Guide](#migration-guide)
 - [Related Documentation](#related-documentation)
 - [See Also](#see-also)
-openCenter includes several developer commands that are useful for development, debugging, and advanced workflows. These commands are intentionally hidden from the main help menu to keep it focused on primary user workflows, but they remain fully functional and documented here.
+opencenter includes several developer commands that are useful for development, debugging, and advanced workflows. These commands are intentionally hidden from the main help menu to keep it focused on primary user workflows, but they remain fully functional and documented here.
 
 ## Who this is for
 
@@ -27,7 +27,7 @@ Developers, power users, and CI/CD pipelines that need access to advanced functi
 ## Overview
 
 Hidden commands are registered in Cobra with `Hidden: true`, which means:
-- They don't appear in `openCenter --help` or `openCenter cluster --help`
+- They don't appear in `opencenter --help` or `opencenter cluster --help`
 - They are fully functional and can be invoked directly
 - They follow the same flag and argument patterns as visible commands
 - They are tested and maintained as part of the codebase
@@ -52,19 +52,19 @@ Hidden commands are registered in Cobra with `Hidden: true`, which means:
 
 ```bash
 # Generate complete template to stdout
-openCenter cluster template
+opencenter cluster template
 
 # Save template to file
-openCenter cluster template --out complete-config.yaml
+opencenter cluster template --out complete-config.yaml
 
 # Generate template for specific provider
-openCenter cluster template --provider openstack --out openstack-template.yaml
+opencenter cluster template --provider openstack --out openstack-template.yaml
 
 # Generate with inline comments
-openCenter cluster template --comments --out documented-config.yaml
+opencenter cluster template --comments --out documented-config.yaml
 
 # Generate minimal template (only required fields)
-openCenter cluster template --minimal --out minimal-config.yaml
+opencenter cluster template --minimal --out minimal-config.yaml
 ```
 
 **Flags**:
@@ -84,22 +84,22 @@ openCenter cluster template --minimal --out minimal-config.yaml
 
 ```bash
 # OpenStack template with all OpenStack-specific fields
-openCenter cluster template --provider openstack --out openstack-full.yaml
+opencenter cluster template --provider openstack --out openstack-full.yaml
 
 # AWS template with all AWS-specific fields
-openCenter cluster template --provider aws --out aws-full.yaml
+opencenter cluster template --provider aws --out aws-full.yaml
 
 # Talos template with Talos Linux configuration
-openCenter cluster template --provider talos --out talos-full.yaml
+opencenter cluster template --provider talos --out talos-full.yaml
 
 # Kind template for local development
-openCenter cluster template --provider kind --out kind-full.yaml
+opencenter cluster template --provider kind --out kind-full.yaml
 
 # Baremetal template with pre-configured nodes
-openCenter cluster template --provider baremetal --out baremetal-full.yaml
+opencenter cluster template --provider baremetal --out baremetal-full.yaml
 
 # All providers (includes all provider configurations)
-openCenter cluster template --provider all --out complete-full.yaml
+opencenter cluster template --provider all --out complete-full.yaml
 ```
 
 **Template Contents**:
@@ -145,22 +145,22 @@ secrets: {}
 
 ```bash
 # Generate template for documentation
-openCenter cluster template --comments --out docs/examples/complete-config.yaml
+opencenter cluster template --comments --out docs/examples/complete-config.yaml
 
 # Generate provider-specific examples
-openCenter cluster template --provider openstack --comments --out docs/examples/openstack.yaml
-openCenter cluster template --provider aws --comments --out docs/examples/aws.yaml
+opencenter cluster template --provider openstack --comments --out docs/examples/openstack.yaml
+opencenter cluster template --provider aws --comments --out docs/examples/aws.yaml
 ```
 
 **Use in Testing**:
 
 ```bash
 # Generate test fixtures
-openCenter cluster template --provider openstack --out testdata/openstack-full.yaml
-openCenter cluster template --minimal --out testdata/minimal-config.yaml
+opencenter cluster template --provider openstack --out testdata/openstack-full.yaml
+opencenter cluster template --minimal --out testdata/minimal-config.yaml
 
 # Validate generated template
-openCenter cluster validate --config testdata/openstack-full.yaml
+opencenter cluster validate --config testdata/openstack-full.yaml
 ```
 
 **Related Files**:
@@ -186,16 +186,16 @@ openCenter cluster validate --config testdata/openstack-full.yaml
 
 ```bash
 # Print schema to stdout
-openCenter cluster schema
+opencenter cluster schema
 
 # Save schema to file with pretty formatting
-openCenter cluster schema --out schema/cluster.schema.json --pretty
+opencenter cluster schema --out schema/cluster.schema.json --pretty
 
 # Show schema version
-openCenter cluster schema --version
+opencenter cluster schema --version
 
 # Save without pretty printing (compact)
-openCenter cluster schema --out schema.json --pretty=false
+opencenter cluster schema --out schema.json --pretty=false
 ```
 
 **Flags**:
@@ -278,19 +278,19 @@ Export cloud provider credentials from SOPS-encrypted cluster configuration.
 
 ```bash
 # Export AWS credentials for current cluster
-eval $(openCenter cluster credentials export --provider aws)
+eval $(opencenter cluster credentials export --provider aws)
 
 # Export OpenStack credentials for specific cluster
-eval $(openCenter cluster credentials export my-cluster --provider openstack)
+eval $(opencenter cluster credentials export my-cluster --provider openstack)
 
 # Export all credentials in JSON format
-openCenter cluster credentials export --provider all --format json
+opencenter cluster credentials export --provider all --format json
 
 # Export AWS credentials in Terraform format
-openCenter cluster credentials export --provider aws --format terraform
+opencenter cluster credentials export --provider aws --format terraform
 
 # Export OpenStack credentials as clouds.yaml
-openCenter cluster credentials export --provider openstack --format clouds-yaml
+opencenter cluster credentials export --provider openstack --format clouds-yaml
 ```
 
 **Flags**:
@@ -382,7 +382,7 @@ clouds:
 **1. Use with Terraform**:
 ```bash
 # Export AWS credentials
-eval $(openCenter cluster credentials export --provider aws)
+eval $(opencenter cluster credentials export --provider aws)
 
 # Run Terraform
 cd infrastructure/
@@ -393,7 +393,7 @@ terraform apply
 **2. Use with OpenStack CLI**:
 ```bash
 # Export OpenStack credentials
-eval $(openCenter cluster credentials export --provider openstack)
+eval $(opencenter cluster credentials export --provider openstack)
 
 # Use OpenStack CLI
 openstack server list
@@ -403,7 +403,7 @@ openstack network list
 **3. Generate clouds.yaml for OpenStack tools**:
 ```bash
 # Generate clouds.yaml
-openCenter cluster credentials export \
+opencenter cluster credentials export \
   --provider openstack \
   --format clouds-yaml > ~/.config/openstack/clouds.yaml
 
@@ -414,7 +414,7 @@ openstack --os-cloud prod-cluster server list
 **4. CI/CD Pipeline**:
 ```bash
 # Export credentials as JSON for parsing
-CREDS=$(openCenter cluster credentials export --provider aws --format json)
+CREDS=$(opencenter cluster credentials export --provider aws --format json)
 AWS_KEY=$(echo $CREDS | jq -r '.access_key')
 AWS_SECRET=$(echo $CREDS | jq -r '.secret_access_key')
 ```
@@ -436,16 +436,16 @@ Generate shell commands to unset cloud provider credentials from the environment
 
 ```bash
 # Unset AWS credentials
-eval $(openCenter cluster credentials unset --provider aws)
+eval $(opencenter cluster credentials unset --provider aws)
 
 # Unset OpenStack credentials
-eval $(openCenter cluster credentials unset --provider openstack)
+eval $(opencenter cluster credentials unset --provider openstack)
 
 # Unset all cloud provider credentials
-eval $(openCenter cluster credentials unset --provider all)
+eval $(opencenter cluster credentials unset --provider all)
 
 # Preview unset commands without executing
-openCenter cluster credentials unset --provider aws
+opencenter cluster credentials unset --provider aws
 ```
 
 **Flags**:
@@ -483,25 +483,25 @@ unset AWS_SESSION_TOKEN
 **1. Switch between clusters**:
 ```bash
 # Work with prod cluster
-eval $(openCenter cluster credentials export prod-cluster --provider aws)
+eval $(opencenter cluster credentials export prod-cluster --provider aws)
 terraform apply
 
 # Switch to dev cluster
-eval $(openCenter cluster credentials unset --provider aws)
-eval $(openCenter cluster credentials export dev-cluster --provider aws)
+eval $(opencenter cluster credentials unset --provider aws)
+eval $(opencenter cluster credentials export dev-cluster --provider aws)
 terraform apply
 ```
 
 **2. Clean up after operations**:
 ```bash
 # Export credentials
-eval $(openCenter cluster credentials export --provider all)
+eval $(opencenter cluster credentials export --provider all)
 
 # Perform operations
 ansible-playbook deploy.yml
 
 # Clean up
-eval $(openCenter cluster credentials unset --provider all)
+eval $(opencenter cluster credentials unset --provider all)
 ```
 
 ---
@@ -550,14 +550,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Install openCenter
+      - name: Install opencenter
         run: |
-          curl -L https://github.com/rackerlabs/openCenter-cli/releases/latest/download/openCenter-linux-amd64 -o openCenter
-          chmod +x openCenter
-          sudo mv openCenter /usr/local/bin/
+          curl -L https://github.com/rackerlabs/opencenter-cli/releases/latest/download/opencenter-linux-amd64 -o opencenter
+          chmod +x opencenter
+          sudo mv opencenter /usr/local/bin/
       
       - name: Generate Schema
-        run: openCenter cluster schema --out schema.json
+        run: opencenter cluster schema --out schema.json
       
       - name: Validate Against Schema
         run: |
@@ -574,14 +574,14 @@ If you're using deprecated hidden commands, here's how to migrate:
 
 **Old way** (still works):
 ```bash
-eval $(openCenter cluster credentials export prod-cluster --provider aws)
+eval $(opencenter cluster credentials export prod-cluster --provider aws)
 terraform apply
-eval $(openCenter cluster credentials unset --provider aws)
+eval $(opencenter cluster credentials unset --provider aws)
 ```
 
 **New way** (recommended):
 ```bash
-openCenter cluster select prod-cluster --activate
+opencenter cluster select prod-cluster --activate
 terraform apply
 # Credentials automatically scoped to cluster context
 ```

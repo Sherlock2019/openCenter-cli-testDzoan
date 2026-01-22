@@ -15,7 +15,7 @@
 - [External Resources](#external-resources)
 **doc_type: how-to**
 
-This guide provides solutions to common AWS-specific issues encountered when deploying and managing Kubernetes clusters with openCenter.
+This guide provides solutions to common AWS-specific issues encountered when deploying and managing Kubernetes clusters with opencenter.
 
 ## Quick Diagnostics
 
@@ -24,11 +24,11 @@ This guide provides solutions to common AWS-specific issues encountered when dep
 Before troubleshooting, validate your configuration:
 
 ```bash
-# Build openCenter
+# Build opencenter
 mise run build
 
 # Validate cluster configuration
-./bin/openCenter cluster validate my-aws-cluster
+./bin/opencenter cluster validate my-aws-cluster
 ```
 
 **Validation checks:**
@@ -903,7 +903,7 @@ When reporting issues, collect:
 1. **Validation output:**
 
 ```bash
-./bin/openCenter cluster validate my-aws-cluster > validation.log 2>&1
+./bin/opencenter cluster validate my-aws-cluster > validation.log 2>&1
 ```
 
 2. **AWS environment:**
@@ -918,7 +918,7 @@ aws ec2 describe-regions --region us-east-1 >> aws-info.log 2>&1
 
 ```bash
 # Remove sensitive data before sharing
-cat ~/.config/openCenter/clusters/opencenter/.my-aws-cluster-config.yaml | \
+cat ~/.config/opencenter/clusters/opencenter/.my-aws-cluster-config.yaml | \
   sed 's/access_key:.*/access_key: REDACTED/' | \
   sed 's/secret_access_key:.*/secret_access_key: REDACTED/'
 ```
@@ -941,12 +941,12 @@ export TF_LOG=DEBUG
 export TF_LOG_PATH=./terraform-debug.log
 
 # Run commands with verbose output
-./bin/openCenter cluster setup my-aws-cluster --verbose
+./bin/opencenter cluster setup my-aws-cluster --verbose
 ```
 
 ### Common Log Locations
 
-- **openCenter logs**: `./openCenter.log` (if enabled)
+- **opencenter logs**: `./opencenter.log` (if enabled)
 - **Terraform logs**: `<gitops-repo>/infrastructure/clusters/<cluster>/terraform-debug.log`
 - **Cloud-init logs**: `/var/log/cloud-init.log` (on instances)
 - **AWS CloudTrail**: AWS Console → CloudTrail → Event history
@@ -969,4 +969,4 @@ export TF_LOG_PATH=./terraform-debug.log
 ---
 
 **Last Updated**: January 2025  
-**Maintained By**: openCenter Team
+**Maintained By**: opencenter Team

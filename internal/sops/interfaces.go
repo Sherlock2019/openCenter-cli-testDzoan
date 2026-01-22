@@ -19,8 +19,8 @@ package sops
 import (
 	"context"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/util/crypto"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/util/crypto"
 )
 
 // SOPSManager interface for managing SOPS operations

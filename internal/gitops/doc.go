@@ -18,6 +18,6 @@ This package is responsible for copying and rendering embedded templates into th
 
 # When to use
 
-This package is used internally by openCenter to set up the GitOps repository for a cluster. It is invoked as part of the `cluster setup` command.
+This package is used internally by opencenter to set up the GitOps repository for a cluster. It is invoked as part of the `cluster setup` command.
 */
 package gitops

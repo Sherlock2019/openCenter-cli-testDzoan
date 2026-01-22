@@ -22,7 +22,7 @@ List all configured clusters across all organizations.
 ## Synopsis
 
 ```bash
-openCenter cluster list [flags]
+opencenter cluster list [flags]
 ```
 
 ## Aliases
@@ -43,13 +43,13 @@ The active cluster is indicated with an asterisk (`*`) prefix.
 
 ```bash
 # List all clusters
-openCenter cluster list
+opencenter cluster list
 
 # List clusters using alias
-openCenter cluster ls
+opencenter cluster ls
 
 # Output as JSON for scripting
-openCenter cluster list --json
+opencenter cluster list --json
 ```
 
 ## Output Format
@@ -82,19 +82,19 @@ The command discovers clusters from multiple directory structures:
 
 ### Organization-Based Structure
 ```
-~/.config/openCenter/clusters/<organization>/
+~/.config/opencenter/clusters/<organization>/
 └── .<cluster>-config.yaml
 ```
 
 ### Legacy Structure
 ```
-~/.config/openCenter/clusters/<cluster>/
+~/.config/opencenter/clusters/<cluster>/
 └── .<cluster>-config.yaml
 ```
 
 ### Flat Structure
 ```
-~/.config/openCenter/
+~/.config/opencenter/
 └── .<cluster>-config.yaml
 ```
 
@@ -109,7 +109,7 @@ The active cluster is marked with an asterisk (`*`) in plain text output:
 
 To set the active cluster:
 ```bash
-openCenter cluster select my-cluster
+opencenter cluster select my-cluster
 ```
 
 ## Sorting
@@ -120,35 +120,35 @@ Cluster names are sorted alphabetically for consistent output.
 
 ### Quick Cluster Discovery
 ```bash
-openCenter cluster list
+opencenter cluster list
 ```
 
 ### Scripting Integration
 ```bash
 # Get all cluster names as JSON array
-CLUSTERS=$(openCenter cluster list --json)
+CLUSTERS=$(opencenter cluster list --json)
 
 # Iterate over clusters
-for cluster in $(openCenter cluster list --json | jq -r '.[]'); do
+for cluster in $(opencenter cluster list --json | jq -r '.[]'); do
   echo "Processing $cluster"
-  openCenter cluster validate "$cluster"
+  opencenter cluster validate "$cluster"
 done
 ```
 
 ### Check Active Cluster
 ```bash
 # Find active cluster
-ACTIVE=$(openCenter cluster list | grep '^\*' | sed 's/^\* //')
+ACTIVE=$(opencenter cluster list | grep '^\*' | sed 's/^\* //')
 echo "Active cluster: $ACTIVE"
 ```
 
 ### Count Clusters
 ```bash
 # Count total clusters
-openCenter cluster list | wc -l
+opencenter cluster list | wc -l
 
 # Count using JSON
-openCenter cluster list --json | jq 'length'
+opencenter cluster list --json | jq 'length'
 ```
 
 ## Error Handling

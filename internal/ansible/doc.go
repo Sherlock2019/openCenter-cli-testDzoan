@@ -18,6 +18,6 @@ This package is used to create Ansible inventory and configuration files from te
 
 # When to use
 
-This package is used internally by openCenter and is not intended for direct use by end-users. It is invoked as part of the `cluster setup` command.
+This package is used internally by opencenter and is not intended for direct use by end-users. It is invoked as part of the `cluster setup` command.
 */
 package ansible

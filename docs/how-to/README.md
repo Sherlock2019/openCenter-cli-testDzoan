@@ -12,7 +12,7 @@
 - [Contributing](#contributing)
 **doc_type: how-to**
 
-Practical guides for accomplishing specific tasks with openCenter. Each guide focuses on solving one problem with clear, tested steps.
+Practical guides for accomplishing specific tasks with opencenter. Each guide focuses on solving one problem with clear, tested steps.
 
 ## Who These Are For
 
@@ -53,11 +53,11 @@ Add new services to your cluster configuration and deploy them.
 **[Custom Templates](custom-templates.md)** - Customize generated manifests
 Override default templates and create custom resource definitions.
 
-**[Plugin Development](plugin-development.md)** - Extend openCenter
+**[Plugin Development](plugin-development.md)** - Extend opencenter
 Create custom commands and integrate with external tools.
 
 **[CI/CD Integration](cicd-integration.md)** - Automate workflows
-Integrate openCenter into CI/CD pipelines for automated deployments.
+Integrate opencenter into CI/CD pipelines for automated deployments.
 
 ### Security and Compliance
 
@@ -139,7 +139,7 @@ If a guide doesn't solve your problem:
 1. Check [Troubleshooting](troubleshooting.md) for diagnostic steps
 2. Review [FAQ](../explanation/faq.md) for common questions
 3. Search [Reference](../reference/README.md) for technical details
-4. Ask in [GitHub Discussions](https://github.com/rackerlabs/openCenter-cli/discussions)
+4. Ask in [GitHub Discussions](https://github.com/rackerlabs/opencenter-cli/discussions)
 
 ## Related Documentation
 

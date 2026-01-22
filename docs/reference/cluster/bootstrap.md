@@ -24,7 +24,7 @@ Run provider-specific bootstrap actions to deploy cluster infrastructure.
 ## Synopsis
 
 ```bash
-openCenter cluster bootstrap [name] [flags]
+opencenter cluster bootstrap [name] [flags]
 ```
 
 ## Description
@@ -51,28 +51,28 @@ Bootstrap operations are stateful and resumable. The command tracks completed st
 
 ```bash
 # Bootstrap active cluster
-openCenter cluster bootstrap
+opencenter cluster bootstrap
 
 # Bootstrap specific cluster
-openCenter cluster bootstrap my-cluster
+opencenter cluster bootstrap my-cluster
 
 # Bootstrap with specific kubeconfig
-openCenter cluster bootstrap my-cluster --kubeconfig=/path/to/kubeconfig
+opencenter cluster bootstrap my-cluster --kubeconfig=/path/to/kubeconfig
 
 # Bootstrap Kind cluster with Podman
-openCenter cluster bootstrap kind-cluster --container-runtime=podman
+opencenter cluster bootstrap kind-cluster --container-runtime=podman
 
 # Dry-run mode
-openCenter cluster bootstrap my-cluster --dry-run
+opencenter cluster bootstrap my-cluster --dry-run
 
 # Restart from a specific step
-openCenter cluster bootstrap my-cluster --from-step=terraform-apply
+opencenter cluster bootstrap my-cluster --from-step=terraform-apply
 
 # Run only a specific step
-openCenter cluster bootstrap my-cluster --step=terraform-init
+opencenter cluster bootstrap my-cluster --step=terraform-init
 
 # Restart all steps (ignore saved state)
-openCenter cluster bootstrap my-cluster --restart
+opencenter cluster bootstrap my-cluster --restart
 ```
 
 ## Provider-Specific Behavior
@@ -141,7 +141,7 @@ Bootstrap operations are logged to timestamped files:
 
 Log format:
 ```
-# openCenter bootstrap log
+# opencenter bootstrap log
 # time: 2026-01-18T14:30:00Z
 # cluster: my-cluster
 # dir: /path/to/gitops/infrastructure/clusters/my-cluster
@@ -165,7 +165,7 @@ Bootstrap operations acquire an exclusive lock on the cluster to prevent concurr
 If another operation is in progress:
 ```
 Error: failed to acquire lock for cluster "my-cluster": lock already held
-Another operation may be in progress. Wait for it to complete or use 'openCenter cluster info my-cluster' to check lock status
+Another operation may be in progress. Wait for it to complete or use 'opencenter cluster info my-cluster' to check lock status
 ```
 
 ## Exit Codes

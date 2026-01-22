@@ -1,4 +1,4 @@
-# Integrating openCenter with CI/CD Pipelines
+# Integrating opencenter with CI/CD Pipelines
 
 
 ## Table of Contents
@@ -24,18 +24,18 @@
 
 ## Overview
 
-This guide shows you how to integrate openCenter into CI/CD pipelines for automated cluster provisioning, validation, and deployment. You'll learn how to set up pipelines in GitHub Actions, GitLab CI, and Jenkins.
+This guide shows you how to integrate opencenter into CI/CD pipelines for automated cluster provisioning, validation, and deployment. You'll learn how to set up pipelines in GitHub Actions, GitLab CI, and Jenkins.
 
 ## Prerequisites
 
-- openCenter CLI installed
+- opencenter CLI installed
 - CI/CD platform access (GitHub Actions, GitLab CI, or Jenkins)
 - Git repository for cluster configurations
 - Cloud provider credentials configured
 
 ## Understanding CI/CD Integration
 
-openCenter supports automation through:
+opencenter supports automation through:
 
 1. **Validation Pipelines**: Validate configuration changes before merge
 2. **Deployment Pipelines**: Automate cluster provisioning and setup
@@ -81,26 +81,26 @@ jobs:
         with:
           version: latest
       
-      - name: Install openCenter CLI
+      - name: Install opencenter CLI
         run: |
           # Download latest release
-          curl -L https://github.com/rackerlabs/openCenter-cli/releases/latest/download/openCenter-linux-amd64 \
-            -o /usr/local/bin/openCenter
-          chmod +x /usr/local/bin/openCenter
-          openCenter version
+          curl -L https://github.com/rackerlabs/opencenter-cli/releases/latest/download/opencenter-linux-amd64 \
+            -o /usr/local/bin/opencenter
+          chmod +x /usr/local/bin/opencenter
+          opencenter version
       
       - name: Validate cluster configurations
         run: |
           for config in clusters/**/*.yaml; do
             echo "Validating $config..."
-            openCenter config validate --config "$config"
+            opencenter config validate --config "$config"
           done
       
       - name: Run schema validation
         run: |
           for config in clusters/**/*.yaml; do
             echo "Schema validation for $config..."
-            openCenter config validate --config "$config" --schema-only
+            opencenter config validate --config "$config" --schema-only
           done
       
       - name: Check for secrets in plaintext
@@ -164,11 +164,11 @@ jobs:
       - name: Install mise
         uses: jdx/mise-action@v2
       
-      - name: Install openCenter CLI
+      - name: Install opencenter CLI
         run: |
-          curl -L https://github.com/rackerlabs/openCenter-cli/releases/latest/download/openCenter-linux-amd64 \
-            -o /usr/local/bin/openCenter
-          chmod +x /usr/local/bin/openCenter
+          curl -L https://github.com/rackerlabs/opencenter-cli/releases/latest/download/opencenter-linux-amd64 \
+            -o /usr/local/bin/opencenter
+          chmod +x /usr/local/bin/opencenter
       
       - name: Configure cloud credentials
         env:
@@ -199,25 +199,25 @@ jobs:
       
       - name: Validate cluster configuration
         run: |
-          openCenter config validate \
+          opencenter config validate \
             --config clusters/${{ inputs.cluster_name }}.yaml
       
       - name: Run preflight checks
         run: |
-          openCenter cluster preflight ${{ inputs.cluster_name }} \
+          opencenter cluster preflight ${{ inputs.cluster_name }} \
             --config clusters/${{ inputs.cluster_name }}.yaml
       
       - name: Generate GitOps repository
         if: ${{ !inputs.dry_run }}
         run: |
-          openCenter cluster setup ${{ inputs.cluster_name }} \
+          opencenter cluster setup ${{ inputs.cluster_name }} \
             --config clusters/${{ inputs.cluster_name }}.yaml \
             --render
       
       - name: Provision infrastructure
         if: ${{ !inputs.dry_run }}
         run: |
-          openCenter cluster bootstrap ${{ inputs.cluster_name }} \
+          opencenter cluster bootstrap ${{ inputs.cluster_name }} \
             --config clusters/${{ inputs.cluster_name }}.yaml \
             --skip-gitops
       
@@ -295,11 +295,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Install openCenter CLI
+      - name: Install opencenter CLI
         run: |
-          curl -L https://github.com/rackerlabs/openCenter-cli/releases/latest/download/openCenter-linux-amd64 \
-            -o /usr/local/bin/openCenter
-          chmod +x /usr/local/bin/openCenter
+          curl -L https://github.com/rackerlabs/opencenter-cli/releases/latest/download/opencenter-linux-amd64 \
+            -o /usr/local/bin/opencenter
+          chmod +x /usr/local/bin/opencenter
       
       - name: Configure kubeconfig
         env:
@@ -312,7 +312,7 @@ jobs:
         id: drift
         run: |
           # Compare deployed state with desired state
-          openCenter cluster validate ${{ matrix.cluster }} \
+          opencenter cluster validate ${{ matrix.cluster }} \
             --config clusters/${{ matrix.cluster }}.yaml \
             --check-deployed > drift-report.txt || echo "drift_detected=true" >> $GITHUB_OUTPUT
       
@@ -352,10 +352,10 @@ variables:
 
 .install_opencenter: &install_opencenter
   - |
-    curl -L https://github.com/rackerlabs/openCenter-cli/releases/latest/download/openCenter-linux-amd64 \
-      -o /usr/local/bin/openCenter
-    chmod +x /usr/local/bin/openCenter
-    openCenter version
+    curl -L https://github.com/rackerlabs/opencenter-cli/releases/latest/download/opencenter-linux-amd64 \
+      -o /usr/local/bin/opencenter
+    chmod +x /usr/local/bin/opencenter
+    opencenter version
 
 validate:config:
   stage: validate
@@ -367,7 +367,7 @@ validate:config:
     - |
       for config in clusters/**/*.yaml; do
         echo "Validating $config..."
-        openCenter config validate --config "$config"
+        opencenter config validate --config "$config"
       done
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -394,7 +394,7 @@ build:gitops:
     - *install_opencenter
   script:
     - |
-      openCenter cluster setup ${CLUSTER_NAME} \
+      opencenter cluster setup ${CLUSTER_NAME} \
         --config clusters/${CLUSTER_NAME}.yaml \
         --render
   artifacts:
@@ -423,11 +423,11 @@ deploy:cluster:
       export OS_PROJECT_NAME="${OS_PROJECT_NAME}"
       
       # Run preflight checks
-      openCenter cluster preflight ${CLUSTER_NAME} \
+      opencenter cluster preflight ${CLUSTER_NAME} \
         --config clusters/${CLUSTER_NAME}.yaml
       
       # Bootstrap cluster
-      openCenter cluster bootstrap ${CLUSTER_NAME} \
+      opencenter cluster bootstrap ${CLUSTER_NAME} \
         --config clusters/${CLUSTER_NAME}.yaml
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
@@ -509,11 +509,11 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        # Install openCenter CLI
-                        curl -L https://github.com/rackerlabs/openCenter-cli/releases/latest/download/openCenter-linux-amd64 \
-                            -o /usr/local/bin/openCenter
-                        chmod +x /usr/local/bin/openCenter
-                        openCenter version
+                        # Install opencenter CLI
+                        curl -L https://github.com/rackerlabs/opencenter-cli/releases/latest/download/opencenter-linux-amd64 \
+                            -o /usr/local/bin/opencenter
+                        chmod +x /usr/local/bin/opencenter
+                        opencenter version
                         
                         # Install SOPS
                         curl -L https://github.com/getsops/sops/releases/latest/download/sops-v3.8.1.linux.amd64 \
@@ -528,7 +528,7 @@ pipeline {
             steps {
                 script {
                     sh """
-                        openCenter config validate \
+                        opencenter config validate \
                             --config clusters/${params.CLUSTER_NAME}.yaml
                     """
                 }
@@ -542,7 +542,7 @@ pipeline {
             steps {
                 script {
                     sh """
-                        openCenter cluster preflight ${params.CLUSTER_NAME} \
+                        opencenter cluster preflight ${params.CLUSTER_NAME} \
                             --config clusters/${params.CLUSTER_NAME}.yaml
                     """
                 }
@@ -556,7 +556,7 @@ pipeline {
             steps {
                 script {
                     sh """
-                        openCenter cluster setup ${params.CLUSTER_NAME} \
+                        opencenter cluster setup ${params.CLUSTER_NAME} \
                             --config clusters/${params.CLUSTER_NAME}.yaml \
                             --render
                     """
@@ -571,7 +571,7 @@ pipeline {
             steps {
                 script {
                     sh """
-                        openCenter cluster bootstrap ${params.CLUSTER_NAME} \
+                        opencenter cluster bootstrap ${params.CLUSTER_NAME} \
                             --config clusters/${params.CLUSTER_NAME}.yaml
                     """
                 }
@@ -604,7 +604,7 @@ pipeline {
                 input message: 'Are you sure you want to destroy the cluster?', ok: 'Destroy'
                 script {
                     sh """
-                        openCenter cluster destroy ${params.CLUSTER_NAME} \
+                        opencenter cluster destroy ${params.CLUSTER_NAME} \
                             --config clusters/${params.CLUSTER_NAME}.yaml \
                             --force
                     """
@@ -670,10 +670,10 @@ jobs:
       
       - name: Install dependencies
         run: |
-          # Install openCenter CLI
-          curl -L https://github.com/rackerlabs/openCenter-cli/releases/latest/download/openCenter-linux-amd64 \
-            -o /usr/local/bin/openCenter
-          chmod +x /usr/local/bin/openCenter
+          # Install opencenter CLI
+          curl -L https://github.com/rackerlabs/opencenter-cli/releases/latest/download/opencenter-linux-amd64 \
+            -o /usr/local/bin/opencenter
+          chmod +x /usr/local/bin/opencenter
           
           # Install kind for local testing
           curl -Lo ./kind https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64
@@ -687,7 +687,7 @@ jobs:
       - name: Test cluster setup
         run: |
           # Test GitOps generation
-          openCenter cluster setup test-cluster \
+          opencenter cluster setup test-cluster \
             --config clusters/test-cluster.yaml \
             --render
       
@@ -780,7 +780,7 @@ jobs:
 **Solution**: Run validation locally first:
 ```bash
 mise run build
-./bin/openCenter config validate --config clusters/my-cluster.yaml
+./bin/opencenter config validate --config clusters/my-cluster.yaml
 ```
 
 ### Credentials Not Working
@@ -792,7 +792,7 @@ mise run build
 # Test credentials locally
 export OS_AUTH_URL="..."
 export OS_USERNAME="..."
-openCenter cluster preflight my-cluster
+opencenter cluster preflight my-cluster
 ```
 
 ### SOPS Decryption Fails

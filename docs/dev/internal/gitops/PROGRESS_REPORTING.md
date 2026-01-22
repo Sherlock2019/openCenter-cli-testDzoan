@@ -34,7 +34,7 @@ The progress reporting system provides real-time feedback to users during GitOps
 ```go
 import (
     "os"
-    "github.com/rackerlabs/openCenter-cli/internal/gitops"
+    "github.com/rackerlabs/opencenter-cli/internal/gitops"
 )
 
 // Create a progress reporter

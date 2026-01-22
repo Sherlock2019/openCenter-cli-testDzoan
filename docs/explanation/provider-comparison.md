@@ -22,11 +22,11 @@ related:
 - [Migration Between Providers](#migration-between-providers)
 - [Conclusion](#conclusion)
 - [Related Documentation](#related-documentation)
-This document explains the different infrastructure providers supported by openCenter, their characteristics, trade-offs, and guidance for choosing the right provider for your use case.
+This document explains the different infrastructure providers supported by opencenter, their characteristics, trade-offs, and guidance for choosing the right provider for your use case.
 
 ## Overview
 
-openCenter supports multiple infrastructure providers to accommodate different deployment scenarios, from local development to production cloud deployments. Each provider has distinct characteristics, capabilities, and operational considerations.
+opencenter supports multiple infrastructure providers to accommodate different deployment scenarios, from local development to production cloud deployments. Each provider has distinct characteristics, capabilities, and operational considerations.
 
 ## Supported Providers
 
@@ -152,7 +152,7 @@ opencenter:
 **When to Choose Kind**:
 - Local development and testing
 - CI/CD pipeline testing
-- Learning Kubernetes and openCenter
+- Learning Kubernetes and opencenter
 - Validating configurations before production deployment
 - No cloud access available
 
@@ -401,7 +401,7 @@ func PreflightOpenStack(authURL string) []string {
 
 ## Migration Between Providers
 
-openCenter configurations are designed to be provider-agnostic where possible, but migration between providers requires careful planning:
+opencenter configurations are designed to be provider-agnostic where possible, but migration between providers requires careful planning:
 
 ### Configuration Portability
 
@@ -421,7 +421,7 @@ openCenter configurations are designed to be provider-agnostic where possible, b
 
 1. **Export Configuration**: Save current cluster configuration
 2. **Update Provider Settings**: Modify `infrastructure.provider` and cloud-specific settings
-3. **Validate Configuration**: Run `openCenter cluster validate`
+3. **Validate Configuration**: Run `opencenter cluster validate`
 4. **Test in Development**: Deploy to Kind or test environment first
 5. **Migrate Workloads**: Use Velero or manual migration
 6. **Update DNS**: Point DNS to new cluster
@@ -439,7 +439,7 @@ Provider selection is a critical architectural decision that impacts security, o
 - **On-premises**: Bare Metal or Talos
 - **Cloud-native**: OpenStack or AWS
 
-The openCenter CLI abstracts many provider differences, but understanding each provider's characteristics helps you make informed decisions and operate clusters effectively.
+The opencenter CLI abstracts many provider differences, but understanding each provider's characteristics helps you make informed decisions and operate clusters effectively.
 
 ---
 

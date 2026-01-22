@@ -14,7 +14,7 @@
 package credentials
 
 import (
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 )
 
 // Extractor extracts cloud provider credentials from cluster configuration

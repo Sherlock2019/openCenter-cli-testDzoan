@@ -12,25 +12,25 @@
 - [Common Error Messages](#common-error-messages)
 **doc_type: how-to**
 
-This guide helps you diagnose and resolve common issues with openCenter.
+This guide helps you diagnose and resolve common issues with opencenter.
 
 ## General Troubleshooting Steps
 
 ### 1. Enable Verbose Logging
 
 ```bash
-openCenter --verbose <command>
+opencenter --verbose <command>
 ```
 
-This provides detailed debug information about what openCenter is doing.
+This provides detailed debug information about what opencenter is doing.
 
 ### 2. Generate Debug Configuration
 
 ```bash
-openCenter cluster validate my-cluster --generate-debug-config
+opencenter cluster validate my-cluster --generate-debug-config
 ```
 
-This creates a complete configuration file (`.openCenter.yaml`) in your GitOps directory showing all resolved values.
+This creates a complete configuration file (`.opencenter.yaml`) in your GitOps directory showing all resolved values.
 
 ### 3. Check Environment Variables
 
@@ -64,11 +64,11 @@ Ensure all required tools are installed and at the correct versions.
 **Solution:**
 ```bash
 # Either provide cluster name explicitly
-openCenter cluster validate my-cluster
+opencenter cluster validate my-cluster
 
 # Or set active cluster
-openCenter cluster select my-cluster
-openCenter cluster validate
+opencenter cluster select my-cluster
+opencenter cluster validate
 ```
 
 #### Issue: "invalid cluster name"
@@ -80,7 +80,7 @@ openCenter cluster validate
 **Solution:**
 ```bash
 # Use valid cluster name
-openCenter cluster init my-valid-cluster-name
+opencenter cluster init my-valid-cluster-name
 
 # Invalid examples:
 # - "My Cluster" (spaces not allowed)
@@ -102,7 +102,7 @@ openCenter cluster init my-valid-cluster-name
 4. Generate debug config to see resolved values
 
 ```bash
-openCenter --verbose cluster validate my-cluster --generate-debug-config
+opencenter --verbose cluster validate my-cluster --generate-debug-config
 ```
 
 #### Issue: "only one network plugin can be enabled"
@@ -152,7 +152,7 @@ brew install sops age
 # Download from https://github.com/FiloSottile/age/releases
 
 # Check directory permissions
-ls -la ~/.config/openCenter/clusters/
+ls -la ~/.config/opencenter/clusters/
 ```
 
 #### Issue: "Age key file not found"
@@ -164,14 +164,14 @@ ls -la ~/.config/openCenter/clusters/
 **Solution:**
 ```bash
 # Generate new key
-openCenter sops generate-key
+opencenter sops generate-key
 
 # Or specify correct path in configuration
 secrets:
   sops_age_key_file: /correct/path/to/key.txt
 
 # Or regenerate for cluster
-openCenter cluster init my-cluster --force
+opencenter cluster init my-cluster --force
 ```
 
 #### Issue: "failed to encrypt file"
@@ -183,16 +183,16 @@ openCenter cluster init my-cluster --force
 **Solution:**
 ```bash
 # Validate SOPS setup
-openCenter sops validate
+opencenter sops validate
 
 # Check .sops.yaml exists
 ls -la .sops.yaml
 
 # Verify Age key is readable
-cat ~/.config/openCenter/clusters/myorg/infrastructure/clusters/my-cluster/secrets/age/keys/my-cluster-key.txt
+cat ~/.config/opencenter/clusters/myorg/infrastructure/clusters/my-cluster/secrets/age/keys/my-cluster-key.txt
 
 # Regenerate SOPS configuration
-openCenter sops generate-key --update-sops-config
+opencenter sops generate-key --update-sops-config
 ```
 
 ### GitOps Issues
@@ -206,7 +206,7 @@ openCenter sops generate-key --update-sops-config
 **Solution:**
 ```bash
 # Update configuration with git_dir
-openCenter cluster update my-cluster \
+opencenter cluster update my-cluster \
   --opencenter.gitops.git_dir=./gitops-my-cluster
 
 # Or edit configuration file directly
@@ -238,7 +238,7 @@ sudo yum install git      # RHEL/CentOS
 ls -la $(dirname ./gitops-my-cluster)
 
 # Try with force flag
-openCenter cluster setup my-cluster --force
+opencenter cluster setup my-cluster --force
 ```
 
 #### Issue: "template rendering failed"
@@ -250,13 +250,13 @@ openCenter cluster setup my-cluster --force
 **Solution:**
 ```bash
 # Validate configuration first
-openCenter cluster validate my-cluster
+opencenter cluster validate my-cluster
 
 # Generate debug config to see all values
-openCenter cluster validate my-cluster --generate-debug-config
+opencenter cluster validate my-cluster --generate-debug-config
 
 # Check for missing required fields
-openCenter --verbose cluster setup my-cluster
+opencenter --verbose cluster setup my-cluster
 ```
 
 ### Provider Issues
@@ -270,7 +270,7 @@ openCenter --verbose cluster setup my-cluster
 **Solution:**
 ```bash
 # Update configuration with OpenStack details
-openCenter cluster update my-cluster \
+opencenter cluster update my-cluster \
   --opencenter.infrastructure.cloud.openstack.auth_url=https://keystone.example.com/v3/ \
   --opencenter.infrastructure.cloud.openstack.region=RegionOne \
   --opencenter.infrastructure.cloud.openstack.tenant_name=my-project
@@ -285,7 +285,7 @@ openCenter cluster update my-cluster \
 **Solution:**
 ```bash
 # Add AWS credentials to configuration
-openCenter cluster update my-cluster \
+opencenter cluster update my-cluster \
   --opencenter.cluster.aws_access_key=AKIAIOSFODNN7EXAMPLE \
   --opencenter.cluster.aws_secret_access_key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 ```
@@ -341,7 +341,7 @@ echo 'eval "$(mise activate zsh)"' >> ~/.zshrc    # Zsh
 
 #### Issue: "go: command not found"
 
-**Symptom:** Cannot build openCenter.
+**Symptom:** Cannot build opencenter.
 
 **Cause:** Go not installed or not in PATH.
 
@@ -389,16 +389,16 @@ go test ./tests/... -v -run TestFeatureName
 **Solution:**
 ```bash
 # Check permissions on config directory
-ls -la ~/.config/openCenter/
+ls -la ~/.config/opencenter/
 
 # Create directory manually if needed
-mkdir -p ~/.config/openCenter/clusters
+mkdir -p ~/.config/opencenter/clusters
 
 # Set correct permissions
-chmod 755 ~/.config/openCenter/clusters
+chmod 755 ~/.config/opencenter/clusters
 
 # Try with different config directory
-OPENCENTER_CONFIG_DIR=/tmp/opencenter openCenter cluster init my-cluster
+OPENCENTER_CONFIG_DIR=/tmp/opencenter opencenter cluster init my-cluster
 ```
 
 #### Issue: "cluster configuration file not found"
@@ -410,16 +410,16 @@ OPENCENTER_CONFIG_DIR=/tmp/opencenter openCenter cluster init my-cluster
 **Solution:**
 ```bash
 # List available clusters
-openCenter cluster list
+opencenter cluster list
 
 # Check if cluster exists
-ls -la ~/.config/openCenter/clusters/
+ls -la ~/.config/opencenter/clusters/
 
 # Initialize cluster if missing
-openCenter cluster init my-cluster
+opencenter cluster init my-cluster
 
 # Specify custom config directory
-openCenter --config-dir=/path/to/configs cluster list
+opencenter --config-dir=/path/to/configs cluster list
 ```
 
 ## Debugging Techniques
@@ -428,33 +428,33 @@ openCenter --config-dir=/path/to/configs cluster list
 
 ```bash
 # View cluster configuration
-cat ~/.config/openCenter/clusters/myorg/infrastructure/clusters/my-cluster/.my-cluster-config.yaml
+cat ~/.config/opencenter/clusters/myorg/infrastructure/clusters/my-cluster/.my-cluster-config.yaml
 
 # View generated debug configuration
-cat ./gitops-my-cluster/.openCenter.yaml
+cat ./gitops-my-cluster/.opencenter.yaml
 
 # View SOPS configuration
-cat ~/.config/openCenter/clusters/myorg/.sops.yaml
+cat ~/.config/opencenter/clusters/myorg/.sops.yaml
 ```
 
 ### 2. Check File Permissions
 
 ```bash
 # Check config directory permissions
-ls -la ~/.config/openCenter/
+ls -la ~/.config/opencenter/
 
 # Check cluster directory permissions
-ls -la ~/.config/openCenter/clusters/myorg/infrastructure/clusters/my-cluster/
+ls -la ~/.config/opencenter/clusters/myorg/infrastructure/clusters/my-cluster/
 
 # Check SOPS key permissions (should be 0600)
-ls -la ~/.config/openCenter/clusters/myorg/infrastructure/clusters/my-cluster/secrets/age/keys/
+ls -la ~/.config/opencenter/clusters/myorg/infrastructure/clusters/my-cluster/secrets/age/keys/
 ```
 
 ### 3. Validate JSON Schema
 
 ```bash
 # Generate schema
-openCenter cluster schema --pretty --out schema.json
+opencenter cluster schema --pretty --out schema.json
 
 # Use online validator
 # Upload schema.json and your config to https://www.jsonschemavalidator.net/
@@ -464,7 +464,7 @@ openCenter cluster schema --pretty --out schema.json
 
 ```bash
 # Export Age key
-export SOPS_AGE_KEY_FILE=~/.config/openCenter/clusters/myorg/infrastructure/clusters/my-cluster/secrets/age/keys/my-cluster-key.txt
+export SOPS_AGE_KEY_FILE=~/.config/opencenter/clusters/myorg/infrastructure/clusters/my-cluster/secrets/age/keys/my-cluster-key.txt
 
 # Test encryption
 echo "test: secret" > test.yaml
@@ -504,7 +504,7 @@ kind get clusters
 **Solution:**
 ```bash
 # Use dry-run mode for faster feedback
-openCenter --dry-run cluster validate my-cluster
+opencenter --dry-run cluster validate my-cluster
 
 # Disable connectivity checks (if implemented)
 # Check only schema and business rules
@@ -522,7 +522,7 @@ openCenter --dry-run cluster validate my-cluster
 # Render only required templates
 
 # Use copy mode instead of render mode
-openCenter cluster setup my-cluster  # Without --render flag
+opencenter cluster setup my-cluster  # Without --render flag
 ```
 
 ## Getting More Help
@@ -531,7 +531,7 @@ openCenter cluster setup my-cluster  # Without --render flag
 
 ```bash
 export OPENCENTER_DEBUG=true
-openCenter cluster validate my-cluster
+opencenter cluster validate my-cluster
 ```
 
 This creates additional debug artifacts and enables detailed logging.
@@ -544,13 +544,13 @@ uname -a
 go version
 mise list
 
-# openCenter version
-./bin/openCenter --version
+# opencenter version
+./bin/opencenter --version
 
 # Configuration
-openCenter cluster list
-openCenter cluster current
-openCenter --verbose cluster validate my-cluster
+opencenter cluster list
+opencenter cluster current
+opencenter --verbose cluster validate my-cluster
 
 # Environment
 env | grep OPENCENTER
@@ -560,7 +560,7 @@ env | grep OPENCENTER
 
 When reporting issues, include:
 
-1. **openCenter version:** `./bin/openCenter --version`
+1. **opencenter version:** `./bin/opencenter --version`
 2. **Go version:** `go version`
 3. **Operating system:** `uname -a`
 4. **Command executed:** Full command with flags
@@ -568,7 +568,7 @@ When reporting issues, include:
 6. **Configuration:** Sanitized configuration file (remove secrets)
 7. **Debug output:** Output with `--verbose` flag
 
-Submit issues at: https://github.com/rackerlabs/openCenter-cli/issues
+Submit issues at: https://github.com/rackerlabs/opencenter-cli/issues
 
 ## Additional Resources
 
@@ -581,12 +581,12 @@ Submit issues at: https://github.com/rackerlabs/openCenter-cli/issues
 
 ### Error Code Reference
 
-openCenter uses structured error codes to help you quickly identify and resolve issues. Each error code follows the format `EXXX` where XXX is a unique identifier.
+opencenter uses structured error codes to help you quickly identify and resolve issues. Each error code follows the format `EXXX` where XXX is a unique identifier.
 
 | Error Code | Category | Description | Quick Fix |
 |------------|----------|-------------|-----------|
 | E1001 | Configuration | OpenStack region not configured | Add `--opencenter.infrastructure.cloud.openstack.region=RegionOne` |
-| E1002 | Secrets | SOPS key not found | Run `openCenter sops generate-key <cluster>` |
+| E1002 | Secrets | SOPS key not found | Run `opencenter sops generate-key <cluster>` |
 | E1003 | Validation | Invalid cluster name format | Use lowercase alphanumeric with hyphens, 3-63 chars |
 | E1004 | Network | Network plugin conflict | Ensure only one network plugin is enabled |
 | E1005 | GitOps | GitOps directory not set | Add `--opencenter.gitops.git_dir=./gitops-<cluster>` |
@@ -630,4 +630,4 @@ openCenter uses structured error codes to help you quickly identify and resolve 
 
 ---
 
-If you encounter an issue not covered here, please check the [documentation index](INDEX.md) or [report it](https://github.com/rackerlabs/openCenter-cli/issues).
+If you encounter an issue not covered here, please check the [documentation index](INDEX.md) or [report it](https://github.com/rackerlabs/opencenter-cli/issues).

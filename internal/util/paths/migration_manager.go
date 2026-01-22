@@ -49,7 +49,7 @@ func (m *DefaultMigrationManager) DetectLegacyStructure() ([]string, error) {
 		return nil, fmt.Errorf("failed to get user home directory: %w", err)
 	}
 
-	clustersDir := filepath.Join(homeDir, ".config", "openCenter", "clusters")
+	clustersDir := filepath.Join(homeDir, ".config", "opencenter", "clusters")
 
 	// Check if clusters directory exists
 	if _, err := os.Stat(clustersDir); os.IsNotExist(err) {

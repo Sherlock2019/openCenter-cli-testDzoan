@@ -3,7 +3,7 @@ package config
 import (
 	"testing"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config/services"
+	"github.com/rackerlabs/opencenter-cli/internal/config/services"
 )
 
 func TestValidateServiceSecretsSimple(t *testing.T) {

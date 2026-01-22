@@ -18,7 +18,7 @@
 - [Version History](#version-history)
 ## Overview
 
-The openCenter CLI is migrating from a legacy generation system to a new pipeline-based system that provides:
+The opencenter CLI is migrating from a legacy generation system to a new pipeline-based system that provides:
 
 - **Atomic operations** with automatic rollback on failure
 - **Progress reporting** for long-running operations  
@@ -129,8 +129,8 @@ The system uses the `OPENCENTER_USE_PIPELINE_GENERATOR` environment variable to 
 export OPENCENTER_USE_PIPELINE_GENERATOR=true
 
 # Run your commands as normal
-openCenter cluster init my-cluster
-openCenter cluster render my-cluster
+opencenter cluster init my-cluster
+opencenter cluster render my-cluster
 
 # Disable to revert to legacy system
 unset OPENCENTER_USE_PIPELINE_GENERATOR

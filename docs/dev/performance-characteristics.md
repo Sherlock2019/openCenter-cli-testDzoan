@@ -15,7 +15,7 @@
 - [Conclusion](#conclusion)
 ## Overview
 
-This document provides baseline performance metrics, identifies bottlenecks, and documents optimization opportunities for the openCenter configuration system refactor. All benchmarks were run on Apple M4 (ARM64) architecture.
+This document provides baseline performance metrics, identifies bottlenecks, and documents optimization opportunities for the opencenter configuration system refactor. All benchmarks were run on Apple M4 (ARM64) architecture.
 
 **Last Updated:** January 2026  
 **Benchmark Environment:** macOS, Apple M4, Go 1.25.5

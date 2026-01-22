@@ -16,7 +16,7 @@
 - [External Resources](#external-resources)
 **doc_type: reference**
 
-This document describes the AWS provider for openCenter. It covers architecture, features, requirements, configuration options, and deployment workflow for running Kubernetes clusters on Amazon Web Services.
+This document describes the AWS provider for opencenter. It covers architecture, features, requirements, configuration options, and deployment workflow for running Kubernetes clusters on Amazon Web Services.
 
 ## Purpose
 
@@ -42,7 +42,7 @@ The AWS provider uses a layered architecture:
 
 ```
 ┌─────────────────────────────────────────┐
-│         openCenter CLI                  │
+│         opencenter CLI                  │
 │  (Configuration & Orchestration)        │
 └─────────────────┬───────────────────────┘
                   │
@@ -380,7 +380,7 @@ Create cluster configuration:
 
 ```bash
 mise run build
-./bin/openCenter cluster init my-aws-cluster \
+./bin/opencenter cluster init my-aws-cluster \
   --opencenter.infrastructure.provider=aws \
   --opencenter.infrastructure.cloud.aws.region=us-east-1
 ```
@@ -388,7 +388,7 @@ mise run build
 Edit the generated configuration file:
 
 ```yaml
-# ~/.config/openCenter/clusters/opencenter/.my-aws-cluster-config.yaml
+# ~/.config/opencenter/clusters/opencenter/.my-aws-cluster-config.yaml
 schema_version: "1.0"
 opencenter:
   meta:
@@ -410,7 +410,7 @@ opencenter:
 Validate configuration:
 
 ```bash
-./bin/openCenter cluster validate my-aws-cluster
+./bin/opencenter cluster validate my-aws-cluster
 ```
 
 The validator checks:
@@ -425,7 +425,7 @@ The validator checks:
 Generate GitOps repository and Terraform configuration:
 
 ```bash
-./bin/openCenter cluster setup my-aws-cluster
+./bin/opencenter cluster setup my-aws-cluster
 ```
 
 This creates:
@@ -549,4 +549,4 @@ The AWS provider is under active development. Current priorities:
 
 **Last Updated**: January 2025  
 **Provider Status**: Alpha (In Development)  
-**Maintained By**: openCenter Team
+**Maintained By**: opencenter Team

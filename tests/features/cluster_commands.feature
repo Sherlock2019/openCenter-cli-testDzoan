@@ -1,5 +1,5 @@
 # tests/features/cluster_commands.feature
-# Expected behavior for the "openCenter cluster" command group:
+# Expected behavior for the "opencenter cluster" command group:
 # - Parent "cluster" prints help & subcommands
 # - list/ls scans config_dir for *.yaml and prints names (no .yaml); --json outputs JSON
 # - select (by name & interactive), writes active_pointer; header when CWD == git_dir
@@ -37,8 +37,8 @@ Feature: Cluster command group
   # Parent: help shows subcommands
   # ---------------------------------------------------------------------------
   @help @priority6
-  Scenario: "openCenter cluster" prints help with all subcommands
-    When I run "openCenter cluster --config-dir tmp/conf"
+  Scenario: "opencenter cluster" prints help with all subcommands
+    When I run "opencenter cluster --config-dir tmp/conf"
     Then the exit code should be 0
     And stdout should contain "list"
     And stdout should contain "select"
@@ -68,14 +68,14 @@ Feature: Cluster command group
   @init @by_name
   Scenario: init <cluster-name> creates a YAML with defaults; does not overwrite unless --force
     Given the file "tmp/conf/newone.yaml" does not exist
-    When I run "openCenter cluster init newone --config-dir tmp/conf"
+    When I run "opencenter cluster init newone --config-dir tmp/conf"
     Then the exit code should be 0
     And the file "tmp/conf/newone.yaml" should exist
     And stdout should contain "Created"
-    When I run "openCenter cluster init newone --config-dir tmp/conf"
+    When I run "opencenter cluster init newone --config-dir tmp/conf"
     Then the exit code should not be 0
     And stderr should contain "exists"
-    When I run "openCenter cluster init newone --force --config-dir tmp/conf"
+    When I run "opencenter cluster init newone --force --config-dir tmp/conf"
     Then the exit code should be 0
 
   # interactive init wizard has been removed

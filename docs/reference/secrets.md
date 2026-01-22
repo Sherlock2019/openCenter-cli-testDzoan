@@ -21,11 +21,11 @@ weight: 20
 - [Security Best Practices](#security-best-practices)
 - [Troubleshooting](#troubleshooting)
 - [See Also](#see-also)
-This document provides complete reference information for secrets management in openCenter CLI, including SOPS configuration, Age encryption keys, and secrets organization.
+This document provides complete reference information for secrets management in opencenter CLI, including SOPS configuration, Age encryption keys, and secrets organization.
 
 ## Overview
 
-openCenter CLI uses [SOPS](https://github.com/mozilla/sops) (Secrets OPerationS) with [Age](https://age-encryption.org/) encryption for managing sensitive data. All secrets are encrypted at rest and only decrypted when needed by the cluster.
+opencenter CLI uses [SOPS](https://github.com/mozilla/sops) (Secrets OPerationS) with [Age](https://age-encryption.org/) encryption for managing sensitive data. All secrets are encrypted at rest and only decrypted when needed by the cluster.
 
 ### Key Concepts
 
@@ -195,7 +195,7 @@ Age keys are generated automatically during cluster initialization or can be cre
 
 ```bash
 # During cluster init
-openCenter cluster init my-cluster
+opencenter cluster init my-cluster
 
 # Generates key at: ~/.config/sops/age/my-cluster-key.txt
 ```
@@ -231,13 +231,13 @@ AGE-SECRET-KEY-1XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 ```
 ~/.config/sops/age/           # Default SOPS Age key directory
-~/.config/openCenter/clusters/ # Cluster-specific keys
+~/.config/opencenter/clusters/ # Cluster-specific keys
 ```
 
 #### Organization-Based Structure
 
 ```
-~/.config/openCenter/clusters/
+~/.config/opencenter/clusters/
 └── <organization>/
     └── secrets/
         └── age/
@@ -248,7 +248,7 @@ AGE-SECRET-KEY-1XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #### Legacy Structure
 
 ```
-~/.config/openCenter/clusters/
+~/.config/opencenter/clusters/
 └── <cluster>/
     └── secrets/
         └── age/
@@ -501,7 +501,7 @@ sops --encrypt --in-place secrets.yaml
 ```go
 import (
     "context"
-    "github.com/rackerlabs/openCenter-cli/internal/sops"
+    "github.com/rackerlabs/opencenter-cli/internal/sops"
 )
 
 manager := sops.NewSOPSManager()
@@ -536,7 +536,7 @@ sops --decrypt --in-place secrets.yaml
 ```go
 import (
     "context"
-    "github.com/rackerlabs/openCenter-cli/internal/sops"
+    "github.com/rackerlabs/opencenter-cli/internal/sops"
 )
 
 manager := sops.NewSOPSManager()
@@ -578,11 +578,11 @@ export EDITOR=vim
 export SOPS_CONFIG=.sops.yaml
 ```
 
-### openCenter Environment Variables
+### opencenter Environment Variables
 
 ```bash
 # Configuration directory
-export OPENCENTER_CONFIG_DIR=~/.config/openCenter
+export OPENCENTER_CONFIG_DIR=~/.config/opencenter
 
 # Test mode (uses placeholder credentials)
 export OPENCENTER_TEST_MODE=true

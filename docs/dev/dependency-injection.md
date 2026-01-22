@@ -19,7 +19,7 @@
 - [References](#references)
 ## Overview
 
-The openCenter CLI uses a dependency injection (DI) container to manage component lifecycle and dependencies. This eliminates global state, improves testability, and makes the codebase more maintainable.
+The opencenter CLI uses a dependency injection (DI) container to manage component lifecycle and dependencies. This eliminates global state, improves testability, and makes the codebase more maintainable.
 
 ## Purpose
 

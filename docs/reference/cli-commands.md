@@ -12,7 +12,7 @@
 - [Environment Variables](#environment-variables)
 - [Exit Codes](#exit-codes)
 - [See Also](#see-also)
-Complete reference for all openCenter CLI commands.
+Complete reference for all opencenter CLI commands.
 
 ## Global Flags
 
@@ -20,7 +20,7 @@ These flags are available for all commands:
 
 ```bash
 --config string          Alternative cluster configuration file path
---config-dir string      Configuration directory (default: ~/.config/openCenter)
+--config-dir string      Configuration directory (default: ~/.config/opencenter)
 --dry-run               Enable dry-run mode (show actions without executing)
 --log-level string      Set log level (debug, info, warn, error) (default: "warn")
 --set stringArray       Override configuration values using dot notation
@@ -31,16 +31,16 @@ These flags are available for all commands:
 
 ```bash
 # Use custom config directory
-openCenter --config-dir=/tmp/configs cluster list
+opencenter --config-dir=/tmp/configs cluster list
 
 # Dry-run mode
-openCenter --dry-run cluster init test-cluster
+opencenter --dry-run cluster init test-cluster
 
 # Override configuration values
-openCenter --set opencenter.meta.env=prod cluster init my-cluster
+opencenter --set opencenter.meta.env=prod cluster init my-cluster
 
 # Verbose logging
-openCenter --verbose cluster validate my-cluster
+opencenter --verbose cluster validate my-cluster
 ```
 
 ## Cluster Commands
@@ -50,7 +50,7 @@ openCenter --verbose cluster validate my-cluster
 Initialize a new cluster configuration with default values.
 
 ```bash
-openCenter cluster init <name> [flags]
+opencenter cluster init <name> [flags]
 ```
 
 **Flags:**
@@ -63,22 +63,22 @@ openCenter cluster init <name> [flags]
 
 ```bash
 # Basic initialization
-openCenter cluster init my-cluster
+opencenter cluster init my-cluster
 
 # Initialize with organization
-openCenter cluster init my-cluster --opencenter.meta.organization=myorg
+opencenter cluster init my-cluster --opencenter.meta.organization=myorg
 
 # Initialize with custom values
-openCenter cluster init my-cluster \
+opencenter cluster init my-cluster \
   --opencenter.meta.env=prod \
   --opencenter.cluster.kubernetes.version=1.31.4 \
   --opencenter.infrastructure.provider=aws
 
 # Force overwrite existing
-openCenter cluster init my-cluster --force
+opencenter cluster init my-cluster --force
 
 # Skip SOPS key generation
-openCenter cluster init my-cluster --no-sops-keygen
+opencenter cluster init my-cluster --no-sops-keygen
 ```
 
 **Output:**
@@ -92,7 +92,7 @@ openCenter cluster init my-cluster --no-sops-keygen
 Validate cluster configuration against schema and business rules.
 
 ```bash
-openCenter cluster validate [name] [flags]
+opencenter cluster validate [name] [flags]
 ```
 
 **Flags:**
@@ -103,16 +103,16 @@ openCenter cluster validate [name] [flags]
 
 ```bash
 # Validate active cluster
-openCenter cluster validate
+opencenter cluster validate
 
 # Validate specific cluster
-openCenter cluster validate my-cluster
+opencenter cluster validate my-cluster
 
 # Generate debug configuration
-openCenter cluster validate my-cluster --generate-debug-config
+opencenter cluster validate my-cluster --generate-debug-config
 
 # Save debug config to specific directory
-openCenter cluster validate my-cluster --generate-debug-config --output-dir=/tmp
+opencenter cluster validate my-cluster --generate-debug-config --output-dir=/tmp
 ```
 
 **Validation Checks:**
@@ -129,7 +129,7 @@ openCenter cluster validate my-cluster --generate-debug-config --output-dir=/tmp
 List all configured clusters across all organizations.
 
 ```bash
-openCenter cluster list
+opencenter cluster list
 ```
 
 **Output:**
@@ -139,7 +139,7 @@ openCenter cluster list
 **Example:**
 
 ```bash
-$ openCenter cluster list
+$ opencenter cluster list
 cluster1
 cluster2
 my-prod-cluster
@@ -151,17 +151,17 @@ test-cluster
 Set the active cluster for subsequent commands.
 
 ```bash
-openCenter cluster select <name>
+opencenter cluster select <name>
 ```
 
 **Examples:**
 
 ```bash
 # Select a cluster
-openCenter cluster select my-cluster
+opencenter cluster select my-cluster
 
 # Verify selection
-openCenter cluster current
+opencenter cluster current
 ```
 
 ### cluster current
@@ -169,13 +169,13 @@ openCenter cluster current
 Display the currently active cluster.
 
 ```bash
-openCenter cluster current
+opencenter cluster current
 ```
 
 **Example:**
 
 ```bash
-$ openCenter cluster current
+$ opencenter cluster current
 my-cluster
 ```
 
@@ -184,17 +184,17 @@ my-cluster
 Display detailed information about a cluster.
 
 ```bash
-openCenter cluster info [name]
+opencenter cluster info [name]
 ```
 
 **Examples:**
 
 ```bash
 # Show info for active cluster
-openCenter cluster info
+opencenter cluster info
 
 # Show info for specific cluster
-openCenter cluster info my-cluster
+opencenter cluster info my-cluster
 ```
 
 **Output:**
@@ -211,7 +211,7 @@ openCenter cluster info my-cluster
 Setup GitOps directory structure and initialize Git repository.
 
 ```bash
-openCenter cluster setup [name] [flags]
+opencenter cluster setup [name] [flags]
 ```
 
 **Flags:**
@@ -222,13 +222,13 @@ openCenter cluster setup [name] [flags]
 
 ```bash
 # Setup GitOps for active cluster
-openCenter cluster setup
+opencenter cluster setup
 
 # Setup with template rendering
-openCenter cluster setup my-cluster --render
+opencenter cluster setup my-cluster --render
 
 # Force reinitialize
-openCenter cluster setup my-cluster --force
+opencenter cluster setup my-cluster --force
 ```
 
 **Using Feature Flags:**
@@ -236,18 +236,18 @@ openCenter cluster setup my-cluster --force
 ```bash
 # Use new template engine for better performance
 export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 
 # Use pipeline-based generation with rollback support
 export OPENCENTER_USE_PIPELINE_GENERATOR=true
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 
 # Enable all new features
 export OPENCENTER_ENABLE_ALL_NEW_FEATURES=true
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 
 # Enable for a single command
-OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true openCenter cluster setup my-cluster
+OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true opencenter cluster setup my-cluster
 ```
 
 **Actions:**
@@ -263,7 +263,7 @@ OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true openCenter cluster setup my-cluster
 Run provider-specific bootstrap actions.
 
 ```bash
-openCenter cluster bootstrap [name] [flags]
+opencenter cluster bootstrap [name] [flags]
 ```
 
 **Flags:**
@@ -276,16 +276,16 @@ openCenter cluster bootstrap [name] [flags]
 
 ```bash
 # Bootstrap active cluster
-openCenter cluster bootstrap
+opencenter cluster bootstrap
 
 # Bootstrap with specific kubeconfig
-openCenter cluster bootstrap my-cluster --kubeconfig=/path/to/kubeconfig
+opencenter cluster bootstrap my-cluster --kubeconfig=/path/to/kubeconfig
 
 # Bootstrap Kind cluster with Podman
-openCenter cluster bootstrap kind-cluster --container-runtime=podman
+opencenter cluster bootstrap kind-cluster --container-runtime=podman
 
 # Dry-run mode
-openCenter cluster bootstrap my-cluster --dry-run
+opencenter cluster bootstrap my-cluster --dry-run
 ```
 
 **Provider-Specific Actions:**
@@ -305,17 +305,17 @@ openCenter cluster bootstrap my-cluster --dry-run
 Render cluster templates without full setup.
 
 ```bash
-openCenter cluster render [name]
+opencenter cluster render [name]
 ```
 
 **Examples:**
 
 ```bash
 # Render templates for active cluster
-openCenter cluster render
+opencenter cluster render
 
 # Render for specific cluster
-openCenter cluster render my-cluster
+opencenter cluster render my-cluster
 ```
 
 **Using Feature Flags:**
@@ -323,11 +323,11 @@ openCenter cluster render my-cluster
 ```bash
 # Use new template engine with caching
 export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true
-openCenter cluster render my-cluster
+opencenter cluster render my-cluster
 
 # Compare legacy vs new template engine output
-openCenter cluster render my-cluster > /tmp/legacy.txt
-OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true openCenter cluster render my-cluster > /tmp/new.txt
+opencenter cluster render my-cluster > /tmp/legacy.txt
+OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true opencenter cluster render my-cluster > /tmp/new.txt
 diff /tmp/legacy.txt /tmp/new.txt
 ```
 
@@ -336,7 +336,7 @@ diff /tmp/legacy.txt /tmp/new.txt
 Generate and display JSON schema for cluster configuration.
 
 ```bash
-openCenter cluster schema [flags]
+opencenter cluster schema [flags]
 ```
 
 **Flags:**
@@ -347,10 +347,10 @@ openCenter cluster schema [flags]
 
 ```bash
 # Display schema
-openCenter cluster schema --pretty
+opencenter cluster schema --pretty
 
 # Save to file
-openCenter cluster schema --pretty --out schema/cluster.schema.json
+opencenter cluster schema --pretty --out schema/cluster.schema.json
 ```
 
 **Output:**
@@ -365,7 +365,7 @@ openCenter cluster schema --pretty --out schema/cluster.schema.json
 Update cluster configuration with new values.
 
 ```bash
-openCenter cluster update <name> [flags]
+opencenter cluster update <name> [flags]
 ```
 
 **Flags:**
@@ -375,13 +375,13 @@ openCenter cluster update <name> [flags]
 
 ```bash
 # Update Kubernetes version
-openCenter cluster update my-cluster --opencenter.cluster.kubernetes.version=1.31.4
+opencenter cluster update my-cluster --opencenter.cluster.kubernetes.version=1.31.4
 
 # Update provider
-openCenter cluster update my-cluster --opencenter.infrastructure.provider=aws
+opencenter cluster update my-cluster --opencenter.infrastructure.provider=aws
 
 # Update multiple values
-openCenter cluster update my-cluster \
+opencenter cluster update my-cluster \
   --opencenter.meta.env=prod \
   --opencenter.cluster.kubernetes.master_count=5
 ```
@@ -391,7 +391,7 @@ openCenter cluster update my-cluster \
 Migrate cluster configuration to new schema version.
 
 ```bash
-openCenter cluster migrate <name> [flags]
+opencenter cluster migrate <name> [flags]
 ```
 
 **Flags:**
@@ -402,13 +402,13 @@ openCenter cluster migrate <name> [flags]
 
 ```bash
 # Migrate to latest schema
-openCenter cluster migrate my-cluster
+opencenter cluster migrate my-cluster
 
 # Migrate to specific version
-openCenter cluster migrate my-cluster --to-version=2.0.0
+opencenter cluster migrate my-cluster --to-version=2.0.0
 
 # Migrate without backup
-openCenter cluster migrate my-cluster --backup=false
+opencenter cluster migrate my-cluster --backup=false
 ```
 
 ### cluster preflight
@@ -416,17 +416,17 @@ openCenter cluster migrate my-cluster --backup=false
 Run preflight checks before cluster deployment.
 
 ```bash
-openCenter cluster preflight [name]
+opencenter cluster preflight [name]
 ```
 
 **Examples:**
 
 ```bash
 # Run preflight checks for active cluster
-openCenter cluster preflight
+opencenter cluster preflight
 
 # Run for specific cluster
-openCenter cluster preflight my-cluster
+opencenter cluster preflight my-cluster
 ```
 
 **Checks:**
@@ -442,7 +442,7 @@ openCenter cluster preflight my-cluster
 Destroy cluster infrastructure and clean up resources.
 
 ```bash
-openCenter cluster destroy <name> [flags]
+opencenter cluster destroy <name> [flags]
 ```
 
 **Flags:**
@@ -453,13 +453,13 @@ openCenter cluster destroy <name> [flags]
 
 ```bash
 # Destroy cluster (with confirmation)
-openCenter cluster destroy my-cluster
+opencenter cluster destroy my-cluster
 
 # Force destroy without confirmation
-openCenter cluster destroy my-cluster --force
+opencenter cluster destroy my-cluster --force
 
 # Destroy but keep configuration
-openCenter cluster destroy my-cluster --keep-config
+opencenter cluster destroy my-cluster --keep-config
 ```
 
 ## SOPS Commands
@@ -469,7 +469,7 @@ openCenter cluster destroy my-cluster --keep-config
 Generate new Age key pair for SOPS encryption.
 
 ```bash
-openCenter sops generate-key [flags]
+opencenter sops generate-key [flags]
 ```
 
 **Flags:**
@@ -481,13 +481,13 @@ openCenter sops generate-key [flags]
 
 ```bash
 # Generate new key
-openCenter sops generate-key
+opencenter sops generate-key
 
 # Generate with custom path
-openCenter sops generate-key --key-file=/path/to/key.txt
+opencenter sops generate-key --key-file=/path/to/key.txt
 
 # Dry-run mode
-openCenter sops generate-key --dry-run
+opencenter sops generate-key --dry-run
 ```
 
 ### sops rotate-key
@@ -495,7 +495,7 @@ openCenter sops generate-key --dry-run
 Rotate Age keys and re-encrypt existing secrets.
 
 ```bash
-openCenter sops rotate-key [flags]
+opencenter sops rotate-key [flags]
 ```
 
 **Flags:**
@@ -507,13 +507,13 @@ openCenter sops rotate-key [flags]
 
 ```bash
 # Rotate key and re-encrypt all secrets
-openCenter sops rotate-key
+opencenter sops rotate-key
 
 # Rotate with custom search path
-openCenter sops rotate-key --search-path=./gitops
+opencenter sops rotate-key --search-path=./gitops
 
 # Dry-run mode
-openCenter sops rotate-key --dry-run
+opencenter sops rotate-key --dry-run
 ```
 
 **Process:**
@@ -528,7 +528,7 @@ openCenter sops rotate-key --dry-run
 Create backup of Age keys and SOPS configuration.
 
 ```bash
-openCenter sops backup-key [flags]
+opencenter sops backup-key [flags]
 ```
 
 **Flags:**
@@ -540,13 +540,13 @@ openCenter sops backup-key [flags]
 
 ```bash
 # Create backup
-openCenter sops backup-key
+opencenter sops backup-key
 
 # Backup to custom directory
-openCenter sops backup-key --backup-dir=/secure/backups
+opencenter sops backup-key --backup-dir=/secure/backups
 
 # Dry-run mode
-openCenter sops backup-key --dry-run
+opencenter sops backup-key --dry-run
 ```
 
 ### sops validate
@@ -554,7 +554,7 @@ openCenter sops backup-key --dry-run
 Validate Age key configuration and SOPS setup.
 
 ```bash
-openCenter sops validate [flags]
+opencenter sops validate [flags]
 ```
 
 **Flags:**
@@ -566,13 +566,13 @@ openCenter sops validate [flags]
 
 ```bash
 # Validate SOPS setup
-openCenter sops validate
+opencenter sops validate
 
 # Validate with custom config
-openCenter sops validate --config-file=/path/to/.sops.yaml
+opencenter sops validate --config-file=/path/to/.sops.yaml
 
 # Dry-run mode
-openCenter sops validate --dry-run
+opencenter sops validate --dry-run
 ```
 
 **Validation Checks:**
@@ -587,7 +587,7 @@ openCenter sops validate --dry-run
 List all SOPS-encrypted files.
 
 ```bash
-openCenter sops secrets-list [flags]
+opencenter sops secrets-list [flags]
 ```
 
 **Flags:**
@@ -598,10 +598,10 @@ openCenter sops secrets-list [flags]
 
 ```bash
 # List encrypted files
-openCenter sops secrets-list
+opencenter sops secrets-list
 
 # List in specific directory
-openCenter sops secrets-list --search-path=./gitops
+opencenter sops secrets-list --search-path=./gitops
 ```
 
 ### sops secrets-encrypt
@@ -609,7 +609,7 @@ openCenter sops secrets-list --search-path=./gitops
 Encrypt secrets with automatic backup creation.
 
 ```bash
-openCenter sops secrets-encrypt [flags]
+opencenter sops secrets-encrypt [flags]
 ```
 
 **Flags:**
@@ -621,13 +621,13 @@ openCenter sops secrets-encrypt [flags]
 
 ```bash
 # Encrypt all secrets
-openCenter sops secrets-encrypt
+opencenter sops secrets-encrypt
 
 # Encrypt without backups (faster)
-openCenter sops secrets-encrypt --backups=false
+opencenter sops secrets-encrypt --backups=false
 
 # Dry-run mode
-openCenter sops secrets-encrypt --dry-run
+opencenter sops secrets-encrypt --dry-run
 ```
 
 ### sops secrets-decrypt
@@ -635,7 +635,7 @@ openCenter sops secrets-encrypt --dry-run
 Decrypt secrets with automatic backup creation.
 
 ```bash
-openCenter sops secrets-decrypt [flags]
+opencenter sops secrets-decrypt [flags]
 ```
 
 **Flags:**
@@ -647,13 +647,13 @@ openCenter sops secrets-decrypt [flags]
 
 ```bash
 # Decrypt all secrets
-openCenter sops secrets-decrypt
+opencenter sops secrets-decrypt
 
 # Decrypt without backups (faster)
-openCenter sops secrets-decrypt --backups=false
+opencenter sops secrets-decrypt --backups=false
 
 # Dry-run mode
-openCenter sops secrets-decrypt --dry-run
+opencenter sops secrets-decrypt --dry-run
 ```
 
 ## Config Commands
@@ -663,7 +663,7 @@ openCenter sops secrets-decrypt --dry-run
 Display feature flag status and manage gradual migration to refactored systems.
 
 ```bash
-openCenter config features [flags]
+opencenter config features [flags]
 ```
 
 **Flags:**
@@ -673,16 +673,16 @@ openCenter config features [flags]
 
 ```bash
 # Display feature status (default table format)
-openCenter config features
+opencenter config features
 
 # Display as JSON for scripting
-openCenter config features --output json
+opencenter config features --output json
 
 # Generate environment variable exports
-openCenter config features --output env
+opencenter config features --output env
 
 # Save to file for sourcing
-openCenter config features --output env > feature-flags.sh
+opencenter config features --output env > feature-flags.sh
 source feature-flags.sh
 ```
 
@@ -704,7 +704,7 @@ export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true
 export OPENCENTER_ENABLE_ALL_NEW_FEATURES=true
 
 # Enable for a single command
-OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true openCenter cluster setup my-cluster
+OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true opencenter cluster setup my-cluster
 
 # Enable debug logging
 export OPENCENTER_FEATURE_FLAG_DEBUG=true
@@ -719,7 +719,7 @@ See [config features documentation](config/features.md) for detailed information
 Generate IDE configuration files for enhanced development experience.
 
 ```bash
-openCenter config ide [flags]
+opencenter config ide [flags]
 ```
 
 **Flags:**
@@ -731,10 +731,10 @@ openCenter config ide [flags]
 
 ```bash
 # Generate VS Code config
-openCenter config ide --vscode
+opencenter config ide --vscode
 
 # Generate all IDE configs
-openCenter config ide --all
+opencenter config ide --all
 ```
 
 **Generated Files:**
@@ -748,7 +748,7 @@ openCenter config ide --all
 Display version and build information.
 
 ```bash
-openCenter version [flags]
+opencenter version [flags]
 ```
 
 **Flags:**
@@ -758,18 +758,18 @@ openCenter version [flags]
 
 ```bash
 # Show full version information
-openCenter version
+opencenter version
 
 # Show short version only
-openCenter version --short
+opencenter version --short
 
 # Alternative: use --version flag
-openCenter --version
+opencenter --version
 ```
 
 **Output (Full):**
 ```
-openCenter version: 0.0.1-3ddfb1c
+opencenter version: 0.0.1-3ddfb1c
 Git commit:         3ddfb1c764b3aa4cc481cdb2a56ab0fea5a2a47d
 Git branch:         main
 Build date:         2025-11-07T20:33:55Z
@@ -794,7 +794,7 @@ Platform:           darwin/amd64
 List all available plugins.
 
 ```bash
-openCenter plugins list
+opencenter plugins list
 ```
 
 **Output:**
@@ -808,7 +808,7 @@ openCenter plugins list
 Install a plugin from a repository.
 
 ```bash
-openCenter plugins install <name> [flags]
+opencenter plugins install <name> [flags]
 ```
 
 **Flags:**
@@ -819,13 +819,13 @@ openCenter plugins install <name> [flags]
 
 ```bash
 # Install from default repository
-openCenter plugins install my-plugin
+opencenter plugins install my-plugin
 
 # Install from custom source
-openCenter plugins install my-plugin --source=https://github.com/org/plugin
+opencenter plugins install my-plugin --source=https://github.com/org/plugin
 
 # Install specific version
-openCenter plugins install my-plugin --version=1.0.0
+opencenter plugins install my-plugin --version=1.0.0
 ```
 
 ### plugins remove
@@ -833,13 +833,13 @@ openCenter plugins install my-plugin --version=1.0.0
 Remove an installed plugin.
 
 ```bash
-openCenter plugins remove <name>
+opencenter plugins remove <name>
 ```
 
 **Example:**
 
 ```bash
-openCenter plugins remove my-plugin
+opencenter plugins remove my-plugin
 ```
 
 ## Environment Variables
@@ -879,17 +879,17 @@ export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true
 export OPENCENTER_ENABLE_ALL_NEW_FEATURES=true
 
 # Enable for single command
-OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true openCenter cluster setup my-cluster
+OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true opencenter cluster setup my-cluster
 
 # Check feature status
-openCenter config features
+opencenter config features
 
 # Enable debug logging
 export OPENCENTER_FEATURE_FLAG_DEBUG=true
-openCenter config features
+opencenter config features
 ```
 
-See `openCenter config features --help` for more information.
+See `opencenter config features --help` for more information.
 
 ## Exit Codes
 

@@ -290,7 +290,7 @@ func TestProperty_ErrorMessageStructure(t *testing.T) {
 				if info.FixCommand == "" {
 					continue
 				}
-				// Should start with a command (openCenter, chmod, ls, etc.)
+				// Should start with a command (opencenter, chmod, ls, etc.)
 				words := strings.Fields(info.FixCommand)
 				if len(words) == 0 {
 					return false

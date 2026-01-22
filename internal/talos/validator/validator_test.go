@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/talos"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/talos"
 )
 
 func TestNewValidator(t *testing.T) {

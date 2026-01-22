@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# openCenter Shell Integration
+# opencenter Shell Integration
 # Source this file in your .bashrc, .zshrc, or .profile for enhanced shell integration
 
 # Cache file for active cluster to avoid repeated file reads
-OPENCENTER_CACHE_FILE="${HOME}/.cache/openCenter/active_cluster"
-OPENCENTER_ACTIVE_FILE="${HOME}/.config/openCenter/.active"
+OPENCENTER_CACHE_FILE="${HOME}/.cache/opencenter/active_cluster"
+OPENCENTER_ACTIVE_FILE="${HOME}/.config/opencenter/.active"
 
 # Ensure cache directory exists
 mkdir -p "$(dirname "$OPENCENTER_CACHE_FILE")"
@@ -45,9 +45,9 @@ opencenter_active_short() {
 
 # Convenient aliases
 alias oc-active='opencenter_active'
-alias oc-status='openCenter cluster status'
-alias oc-select='openCenter cluster select'
-alias oc-list='openCenter cluster list'
+alias oc-status='opencenter cluster status'
+alias oc-select='opencenter cluster select'
+alias oc-list='opencenter cluster list'
 
 # Environment variable for current active cluster (updated on each prompt)
 export OPENCENTER_ACTIVE_CLUSTER=""
@@ -57,13 +57,13 @@ opencenter_update_env() {
     OPENCENTER_ACTIVE_CLUSTER=$(opencenter_active 2>/dev/null || echo "")
 }
 
-# Auto-completion for cluster names (if openCenter supports it)
-if command -v openCenter >/dev/null 2>&1; then
+# Auto-completion for cluster names (if opencenter supports it)
+if command -v opencenter >/dev/null 2>&1; then
     # Enable completion if available
-    if openCenter completion bash >/dev/null 2>&1; then
-        source <(openCenter completion bash)
-    elif openCenter completion zsh >/dev/null 2>&1; then
-        source <(openCenter completion zsh)
+    if opencenter completion bash >/dev/null 2>&1; then
+        source <(opencenter completion bash)
+    elif opencenter completion zsh >/dev/null 2>&1; then
+        source <(opencenter completion zsh)
     fi
 fi
 
@@ -94,10 +94,10 @@ fi
 # Fish shell integration (separate file needed)
 if [[ "$SHELL" == *"fish"* ]]; then
     echo "For Fish shell integration, source the fish integration file:"
-    echo "source ~/.config/openCenter/shell-integration.fish"
+    echo "source ~/.config/opencenter/shell-integration.fish"
 fi
 
-echo "openCenter shell integration loaded!"
+echo "opencenter shell integration loaded!"
 echo "Available functions:"
 echo "  opencenter_active      - Get active cluster name"
 echo "  opencenter_prompt      - Get formatted prompt string"

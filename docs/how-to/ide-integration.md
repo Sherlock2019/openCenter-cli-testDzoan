@@ -11,7 +11,7 @@
 - [Vim/Neovim](#vimneovim)
 - [Emacs](#emacs)
 - [Schema Management](#schema-management)
-- [Using the openCenter Config IDE Command](#using-the-opencenter-config-ide-command)
+- [Using the opencenter Config IDE Command](#using-the-opencenter-config-ide-command)
 - [YAML Linting](#yaml-linting)
 - [Troubleshooting](#troubleshooting)
 - [Best Practices](#best-practices)
@@ -19,11 +19,11 @@
 - [External Resources](#external-resources)
 **doc_type: how-to**
 
-This guide shows you how to set up IDE integration for openCenter cluster configuration files with autocomplete, validation, and inline documentation.
+This guide shows you how to set up IDE integration for opencenter cluster configuration files with autocomplete, validation, and inline documentation.
 
 ## Who This Is For
 
-Developers and operators who edit openCenter cluster configuration files and want IDE support for faster, error-free configuration.
+Developers and operators who edit opencenter cluster configuration files and want IDE support for faster, error-free configuration.
 
 ## What You Get
 
@@ -37,7 +37,7 @@ Developers and operators who edit openCenter cluster configuration files and wan
 Run the IDE integration command:
 
 ```bash
-openCenter config ide
+opencenter config ide
 ```
 
 This generates the JSON schema and configures VS Code automatically. For other IDEs, see the sections below.
@@ -55,7 +55,7 @@ VS Code has the best support through the YAML extension.
 
 2. Run the setup command:
    ```bash
-   openCenter config ide --ide=vscode
+   opencenter config ide --ide=vscode
    ```
 
 3. Restart VS Code
@@ -96,13 +96,13 @@ IntelliJ IDEA, PyCharm, WebStorm, and other JetBrains IDEs have built-in JSON Sc
 
 1. Generate the schema:
    ```bash
-   openCenter cluster schema --out schema/cluster.schema.json
+   opencenter cluster schema --out schema/cluster.schema.json
    ```
 
 2. Open **Settings/Preferences** → **Languages & Frameworks** → **Schemas and DTDs** → **JSON Schema Mappings**
 
 3. Click **+** to add a new mapping:
-   - **Name**: openCenter Cluster Configuration
+   - **Name**: opencenter Cluster Configuration
    - **Schema file or URL**: `schema/cluster.schema.json`
    - **Schema version**: JSON Schema version 7
 
@@ -149,7 +149,7 @@ Use the YAML language server with coc.nvim or nvim-lspconfig.
 
 4. Generate the schema:
    ```bash
-   openCenter cluster schema --out schema/cluster.schema.json
+   opencenter cluster schema --out schema/cluster.schema.json
    ```
 
 ### Option 2: nvim-lspconfig
@@ -182,7 +182,7 @@ Use the YAML language server with coc.nvim or nvim-lspconfig.
 
 4. Generate the schema:
    ```bash
-   openCenter cluster schema --out schema/cluster.schema.json
+   opencenter cluster schema --out schema/cluster.schema.json
    ```
 
 ## Emacs
@@ -212,7 +212,7 @@ Use lsp-mode with yaml-language-server.
 
 4. Generate the schema:
    ```bash
-   openCenter cluster schema --out schema/cluster.schema.json
+   opencenter cluster schema --out schema/cluster.schema.json
    ```
 
 5. Restart Emacs
@@ -227,13 +227,13 @@ Generate or update the schema:
 
 ```bash
 # Generate to default location
-openCenter cluster schema --out schema/cluster.schema.json
+opencenter cluster schema --out schema/cluster.schema.json
 
 # Pretty-print (default)
-openCenter cluster schema --out schema/cluster.schema.json --pretty
+opencenter cluster schema --out schema/cluster.schema.json --pretty
 
 # Check schema version
-openCenter cluster schema --version
+opencenter cluster schema --version
 ```
 
 The schema includes:
@@ -247,35 +247,35 @@ The schema includes:
 ### When to Regenerate
 
 Regenerate the schema after:
-- Updating openCenter to a new version
+- Updating opencenter to a new version
 - Adding custom service types
 - Modifying configuration structs
 - Changing validation rules
 
 Commit the updated schema to version control so your team uses the same validation rules.
 
-## Using the openCenter Config IDE Command
+## Using the opencenter Config IDE Command
 
-The `openCenter config ide` command automates IDE setup.
+The `opencenter config ide` command automates IDE setup.
 
 ### Basic Usage
 
 ```bash
 # Auto-detect IDE and configure
-openCenter config ide
+opencenter config ide
 
 # Target specific IDE
-openCenter config ide --ide=vscode
-openCenter config ide --ide=jetbrains
-openCenter config ide --ide=vim
-openCenter config ide --ide=emacs
+opencenter config ide --ide=vscode
+opencenter config ide --ide=jetbrains
+opencenter config ide --ide=vim
+opencenter config ide --ide=emacs
 
 # Generate schema only
-openCenter config ide --schema-only
+opencenter config ide --schema-only
 
 # Show setup instructions
-openCenter config ide --show-instructions
-openCenter config ide --show-instructions --ide=vim
+opencenter config ide --show-instructions
+opencenter config ide --show-instructions --ide=vim
 ```
 
 ### What It Does
@@ -312,10 +312,10 @@ yamllint --version
 
 ```bash
 # Lint a specific file
-yamllint ~/.config/openCenter/clusters/myorg/my-cluster/.my-cluster-config.yaml
+yamllint ~/.config/opencenter/clusters/myorg/my-cluster/.my-cluster-config.yaml
 
 # Lint all cluster configs
-yamllint ~/.config/openCenter/clusters/
+yamllint ~/.config/opencenter/clusters/
 
 # Check from project root
 yamllint testdata/
@@ -341,7 +341,7 @@ The `.yamllint` configuration enforces:
 
 2. Regenerate the schema:
    ```bash
-   openCenter cluster schema --out schema/cluster.schema.json
+   opencenter cluster schema --out schema/cluster.schema.json
    ```
 
 3. Restart your IDE or reload the window
@@ -352,18 +352,18 @@ The `.yamllint` configuration enforces:
 
 ### Validation Errors on Valid Config
 
-**Symptom**: IDE shows errors for configuration that passes `openCenter cluster validate`
+**Symptom**: IDE shows errors for configuration that passes `opencenter cluster validate`
 
 **Solutions**:
-1. Ensure schema version matches openCenter version:
+1. Ensure schema version matches opencenter version:
    ```bash
-   openCenter cluster schema --version
-   openCenter version
+   opencenter cluster schema --version
+   opencenter version
    ```
 
-2. Regenerate schema after updating openCenter:
+2. Regenerate schema after updating opencenter:
    ```bash
-   openCenter cluster schema --out schema/cluster.schema.json
+   opencenter cluster schema --out schema/cluster.schema.json
    ```
 
 3. Check file path matches schema patterns (must contain `clusters/` or end with `-config.yaml`)
@@ -417,14 +417,14 @@ VS Code (`.vscode/settings.json`):
 
 ### Configuration Organization
 
-1. Store configs in `~/.config/openCenter/clusters/<org>/<cluster>/`
+1. Store configs in `~/.config/opencenter/clusters/<org>/<cluster>/`
 2. Use version control for all configuration files
 3. Encrypt secrets with SOPS before committing
-4. Run `openCenter cluster validate` before committing changes
+4. Run `opencenter cluster validate` before committing changes
 
 ### Schema Maintenance
 
-1. Regenerate schema after updating openCenter
+1. Regenerate schema after updating opencenter
 2. Commit schema changes with configuration changes
 3. Document breaking schema changes in commit messages
 4. Test existing configs after schema updates
@@ -432,7 +432,7 @@ VS Code (`.vscode/settings.json`):
 ### IDE Configuration
 
 1. Enable format-on-save for YAML files
-2. Use 2-space indentation (matches openCenter defaults)
+2. Use 2-space indentation (matches opencenter defaults)
 3. Keep real-time validation enabled
 4. Create snippets for common configuration patterns
 
@@ -450,7 +450,7 @@ Add to `.vscode/opencenter.code-snippets`:
       "  namespace: ${3:$1}",
       "  $0"
     ],
-    "description": "Add an openCenter service"
+    "description": "Add an opencenter service"
   }
 }
 ```
@@ -458,7 +458,7 @@ Add to `.vscode/opencenter.code-snippets`:
 ## Related Documentation
 
 - [Configuration Reference](../reference/configuration.md) - Complete configuration field reference
-- [CLI Commands](../reference/cli-commands.md) - All openCenter commands
+- [CLI Commands](../reference/cli-commands.md) - All opencenter commands
 - [Adding Services](adding-services.md) - How to enable and configure services
 
 ## External Resources
@@ -466,4 +466,4 @@ Add to `.vscode/opencenter.code-snippets`:
 - [JSON Schema Documentation](https://json-schema.org/)
 - [YAML Language Server](https://github.com/redhat-developer/yaml-language-server)
 - [VS Code YAML Extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml)
-- [openCenter GitHub](https://github.com/rackerlabs/openCenter-cli)
+- [opencenter GitHub](https://github.com/rackerlabs/opencenter-cli)

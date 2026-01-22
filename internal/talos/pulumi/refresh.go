@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rackerlabs/openCenter-cli/internal/talos"
+	"github.com/rackerlabs/opencenter-cli/internal/talos"
 )
 
 // RefreshEngine handles Pulumi refresh operations for drift detection.
@@ -143,7 +143,7 @@ func (r *RefreshEngine) generateRemediation(resource talos.DriftedResource) talo
 		Description: "Resource configuration has drifted from expected state",
 		Steps: []string{
 			"Review the differences between expected and actual state",
-			"Run 'openCenter talos apply' to restore expected configuration",
+			"Run 'opencenter talos apply' to restore expected configuration",
 			"Or update the Pulumi program to match actual state if intentional",
 		},
 	}

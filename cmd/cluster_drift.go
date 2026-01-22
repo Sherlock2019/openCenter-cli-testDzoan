@@ -21,8 +21,8 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/operations"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/operations"
 )
 
 // newClusterDriftCmd creates the parent drift command
@@ -36,16 +36,16 @@ Drift detection compares the cluster configuration with the actual state of clou
 (VMs, networks, security groups, load balancers) and reports any differences. Drift can be
 classified by severity (critical, warning, info) and reconcilability.`,
 		Example: `  # Detect drift for a cluster
-  openCenter cluster drift detect my-cluster
+  opencenter cluster drift detect my-cluster
 
   # Reconcile detected drift (dry-run)
-  openCenter cluster drift reconcile my-cluster --dry-run
+  opencenter cluster drift reconcile my-cluster --dry-run
 
   # Reconcile detected drift (apply changes)
-  openCenter cluster drift reconcile my-cluster
+  opencenter cluster drift reconcile my-cluster
 
   # Schedule periodic drift detection
-  openCenter cluster drift schedule my-cluster --interval=24h`,
+  opencenter cluster drift schedule my-cluster --interval=24h`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},
@@ -75,13 +75,13 @@ configuration. It generates a drift report showing:
   - Severity (critical, warning, info)
   - Whether the drift is reconcilable`,
 		Example: `  # Detect drift for a cluster
-  openCenter cluster drift detect my-cluster
+  opencenter cluster drift detect my-cluster
 
   # Output drift report as JSON
-  openCenter cluster drift detect my-cluster --output=json
+  opencenter cluster drift detect my-cluster --output=json
 
   # Show only critical drift
-  openCenter cluster drift detect my-cluster --severity=critical`,
+  opencenter cluster drift detect my-cluster --severity=critical`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clusterName := args[0]
@@ -124,13 +124,13 @@ requires manual intervention.
 
 Use --dry-run to see what changes would be made without applying them.`,
 		Example: `  # Show what would be reconciled (dry-run)
-  openCenter cluster drift reconcile my-cluster --dry-run
+  opencenter cluster drift reconcile my-cluster --dry-run
 
   # Apply reconciliation
-  openCenter cluster drift reconcile my-cluster
+  opencenter cluster drift reconcile my-cluster
 
   # Reconcile with confirmation prompt
-  openCenter cluster drift reconcile my-cluster --confirm`,
+  opencenter cluster drift reconcile my-cluster --confirm`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clusterName := args[0]
@@ -172,10 +172,10 @@ func newClusterDriftScheduleCmd() *cobra.Command {
 This command sets up a background process that periodically checks for drift and
 reports results. Drift reports can be sent to a callback URL or logged locally.`,
 		Example: `  # Schedule drift detection every 24 hours
-  openCenter cluster drift schedule my-cluster --interval=24h
+  opencenter cluster drift schedule my-cluster --interval=24h
 
   # Schedule with custom callback
-  openCenter cluster drift schedule my-cluster --interval=12h --callback=https://example.com/drift`,
+  opencenter cluster drift schedule my-cluster --interval=12h --callback=https://example.com/drift`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clusterName := args[0]

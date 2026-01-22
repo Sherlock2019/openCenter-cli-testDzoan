@@ -18,7 +18,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -63,16 +63,16 @@ Troubleshooting:
   • Verify cloud provider credentials are set correctly
   • Ensure SOPS key file exists and is readable`,
 		Example: `  # Validate active cluster
-  openCenter cluster validate
+  opencenter cluster validate
 
   # Validate specific cluster
-  openCenter cluster validate my-cluster
+  opencenter cluster validate my-cluster
 
   # Validate and generate debug config
-  openCenter cluster validate my-cluster --generate-debug-config
+  opencenter cluster validate my-cluster --generate-debug-config
 
   # Validate and save debug config to specific directory
-  openCenter cluster validate my-cluster --generate-debug-config --output-dir=/tmp`,
+  opencenter cluster validate my-cluster --generate-debug-config --output-dir=/tmp`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve cluster name from args or active cluster
@@ -114,7 +114,7 @@ Troubleshooting:
 				if err := config.SaveDebugConfig(cfg.ClusterName(), outputDir); err != nil {
 					return fmt.Errorf("failed to save debug config: %w", err)
 				}
-				debugPath := filepath.Join(outputDir, ".openCenter.yaml")
+				debugPath := filepath.Join(outputDir, ".opencenter.yaml")
 				fmt.Fprintf(cmd.OutOrStdout(), "Debug config saved to %s\n", debugPath)
 			}
 
@@ -129,7 +129,7 @@ Troubleshooting:
 		},
 	}
 
-	cmd.Flags().Bool("generate-debug-config", false, "generate complete openCenter.yaml config for debugging")
+	cmd.Flags().Bool("generate-debug-config", false, "generate complete opencenter.yaml config for debugging")
 	cmd.Flags().String("output-dir", "", "directory to save debug config (defaults to GitOps directory or current directory)")
 
 	return cmd

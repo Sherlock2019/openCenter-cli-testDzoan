@@ -16,11 +16,11 @@
 - [Revision History](#revision-history)
 **doc_type: how-to**
 
-This guide provides procedures for backing up and recovering openCenter cluster configurations in disaster scenarios.
+This guide provides procedures for backing up and recovering opencenter cluster configurations in disaster scenarios.
 
 ## Overview
 
-openCenter provides comprehensive backup and disaster recovery capabilities to protect against:
+opencenter provides comprehensive backup and disaster recovery capabilities to protect against:
 - Accidental configuration deletion
 - Corrupted configuration files
 - Lost SOPS encryption keys
@@ -53,10 +53,10 @@ All backups are:
 Create an unencrypted backup:
 
 ```bash
-openCenter cluster backup create my-cluster
+opencenter cluster backup create my-cluster
 ```
 
-This creates a compressed backup in `~/.config/openCenter/backups/` with the naming format:
+This creates a compressed backup in `~/.config/opencenter/backups/` with the naming format:
 ```
 <cluster>-<timestamp>.tar.gz
 ```
@@ -69,10 +69,10 @@ Create an encrypted backup (recommended for production):
 
 ```bash
 # Prompt for passphrase
-openCenter cluster backup create my-cluster --encrypt
+opencenter cluster backup create my-cluster --encrypt
 
 # Or provide passphrase directly
-openCenter cluster backup create my-cluster --passphrase="your-secure-passphrase"
+opencenter cluster backup create my-cluster --passphrase="your-secure-passphrase"
 ```
 
 **Important**: Store the passphrase securely! Without it, the backup cannot be restored.
@@ -83,7 +83,7 @@ Schedule periodic backups (future feature):
 
 ```bash
 # Daily backups with 30-day retention
-openCenter cluster backup schedule my-cluster --interval=24h --retention=30d
+opencenter cluster backup schedule my-cluster --interval=24h --retention=30d
 ```
 
 ### Listing Backups
@@ -92,17 +92,17 @@ View all backups:
 
 ```bash
 # List all backups
-openCenter cluster backup list
+opencenter cluster backup list
 
 # List backups for specific cluster
-openCenter cluster backup list my-cluster
+opencenter cluster backup list my-cluster
 ```
 
 Output example:
 ```
 BACKUP ID                        CLUSTER      CREATED              SIZE      LOCATION
-my-cluster-20260118-143000      my-cluster   2026-01-18 14:30:00  1048576   ~/.config/openCenter/backups/...
-my-cluster-20260117-143000      my-cluster   2026-01-17 14:30:00  1048576   ~/.config/openCenter/backups/...
+my-cluster-20260118-143000      my-cluster   2026-01-18 14:30:00  1048576   ~/.config/opencenter/backups/...
+my-cluster-20260117-143000      my-cluster   2026-01-17 14:30:00  1048576   ~/.config/opencenter/backups/...
 ```
 
 ### Verifying Backups
@@ -113,10 +113,10 @@ Manual verification:
 
 ```bash
 # Calculate checksum
-sha256sum ~/.config/openCenter/backups/my-cluster-20260118-143000.tar.gz
+sha256sum ~/.config/opencenter/backups/my-cluster-20260118-143000.tar.gz
 
 # Compare with stored checksum
-cat ~/.config/openCenter/backups/my-cluster-20260118-143000.tar.gz.sha256
+cat ~/.config/opencenter/backups/my-cluster-20260118-143000.tar.gz.sha256
 ```
 
 ## Restoration Procedures
@@ -128,7 +128,7 @@ cat ~/.config/openCenter/backups/my-cluster-20260118-143000.tar.gz.sha256
 Restore from an unencrypted backup:
 
 ```bash
-openCenter cluster backup restore my-cluster-20260118-143000
+opencenter cluster backup restore my-cluster-20260118-143000
 ```
 
 #### Encrypted Backup Restoration
@@ -137,10 +137,10 @@ Restore from an encrypted backup:
 
 ```bash
 # Prompt for passphrase
-openCenter cluster backup restore my-cluster-20260118-143000
+opencenter cluster backup restore my-cluster-20260118-143000
 
 # Or provide passphrase directly
-openCenter cluster backup restore my-cluster-20260118-143000 --passphrase="your-secure-passphrase"
+opencenter cluster backup restore my-cluster-20260118-143000 --passphrase="your-secure-passphrase"
 ```
 
 #### Post-Restoration Steps
@@ -148,7 +148,7 @@ openCenter cluster backup restore my-cluster-20260118-143000 --passphrase="your-
 After restoration, files are placed in a `restored` directory to prevent overwriting existing configurations:
 
 ```
-~/.config/openCenter/
+~/.config/opencenter/
 ├── clusters/restored/
 │   └── .restored-config.yaml
 ├── secrets/
@@ -162,31 +162,31 @@ After restoration, files are placed in a `restored` directory to prevent overwri
 
 1. Review restored configuration:
    ```bash
-   cat ~/.config/openCenter/clusters/restored/.restored-config.yaml
+   cat ~/.config/opencenter/clusters/restored/.restored-config.yaml
    ```
 
 2. Move configuration to correct location:
    ```bash
-   mv ~/.config/openCenter/clusters/restored/.restored-config.yaml \
-      ~/.config/openCenter/clusters/<org>/<cluster>/.<cluster>-config.yaml
+   mv ~/.config/opencenter/clusters/restored/.restored-config.yaml \
+      ~/.config/opencenter/clusters/<org>/<cluster>/.<cluster>-config.yaml
    ```
 
 3. Restore Age keys:
    ```bash
-   mv ~/.config/openCenter/secrets/age/restored-key.txt \
-      ~/.config/openCenter/secrets/age/<cluster>-key.txt
+   mv ~/.config/opencenter/secrets/age/restored-key.txt \
+      ~/.config/opencenter/secrets/age/<cluster>-key.txt
    ```
 
 4. Restore SSH keys:
    ```bash
-   mv ~/.config/openCenter/secrets/ssh/restored-keys \
-      ~/.config/openCenter/secrets/ssh/<cluster>-<env>-<region>
-   chmod 600 ~/.config/openCenter/secrets/ssh/<cluster>-<env>-<region>
+   mv ~/.config/opencenter/secrets/ssh/restored-keys \
+      ~/.config/opencenter/secrets/ssh/<cluster>-<env>-<region>
+   chmod 600 ~/.config/opencenter/secrets/ssh/<cluster>-<env>-<region>
    ```
 
 5. Validate restored configuration:
    ```bash
-   openCenter cluster validate <cluster>
+   opencenter cluster validate <cluster>
    ```
 
 ### Deleting Backups
@@ -195,10 +195,10 @@ Remove old or unnecessary backups:
 
 ```bash
 # With confirmation prompt
-openCenter cluster backup delete my-cluster-20260118-143000
+opencenter cluster backup delete my-cluster-20260118-143000
 
 # Without confirmation
-openCenter cluster backup delete my-cluster-20260118-143000 --force
+opencenter cluster backup delete my-cluster-20260118-143000 --force
 ```
 
 ## Key Escrow Procedures
@@ -217,13 +217,13 @@ Export Age keys from OS keyring:
 
 ```bash
 # macOS Keychain
-security find-generic-password -s "openCenter" -a "<cluster>-age-key" -w
+security find-generic-password -s "opencenter" -a "<cluster>-age-key" -w
 
 # Linux Secret Service
-secret-tool lookup service openCenter account "<cluster>-age-key"
+secret-tool lookup service opencenter account "<cluster>-age-key"
 
 # Windows Credential Manager
-cmdkey /list | findstr openCenter
+cmdkey /list | findstr opencenter
 ```
 
 Save exported keys to encrypted storage:
@@ -260,13 +260,13 @@ Rotate keys periodically (recommended: annually):
 
 ```bash
 # Generate new key
-openCenter sops keygen <cluster> --rotate
+opencenter sops keygen <cluster> --rotate
 
 # Re-encrypt all secrets with new key
-openCenter sops reencrypt <cluster>
+opencenter sops reencrypt <cluster>
 
 # Archive old key
-openCenter cluster backup create <cluster> --encrypt
+opencenter cluster backup create <cluster> --encrypt
 ```
 
 ## Common Disaster Scenarios
@@ -278,18 +278,18 @@ openCenter cluster backup create <cluster> --encrypt
 **Solution**:
 1. List available backups:
    ```bash
-   openCenter cluster backup list my-cluster
+   opencenter cluster backup list my-cluster
    ```
 
 2. Restore from most recent backup:
    ```bash
-   openCenter cluster backup restore my-cluster-20260118-143000
+   opencenter cluster backup restore my-cluster-20260118-143000
    ```
 
 3. Move restored configuration to correct location
 4. Validate configuration:
    ```bash
-   openCenter cluster validate my-cluster
+   opencenter cluster validate my-cluster
    ```
 
 **Recovery Time**: 5-10 minutes
@@ -303,7 +303,7 @@ openCenter cluster backup create <cluster> --encrypt
 **If backup exists:**
 1. Restore from backup:
    ```bash
-   openCenter cluster backup restore my-cluster-20260118-143000 --passphrase="..."
+   opencenter cluster backup restore my-cluster-20260118-143000 --passphrase="..."
    ```
 
 2. Move restored Age key to correct location
@@ -316,7 +316,7 @@ openCenter cluster backup create <cluster> --encrypt
 1. Use alternate Age key to decrypt secrets
 2. Generate new primary key:
    ```bash
-   openCenter sops keygen my-cluster
+   opencenter sops keygen my-cluster
    ```
 3. Re-encrypt all secrets with new key
 
@@ -336,18 +336,18 @@ openCenter cluster backup create <cluster> --encrypt
 **Solution**:
 1. Restore from backup:
    ```bash
-   openCenter cluster backup restore my-cluster-20260118-143000
+   opencenter cluster backup restore my-cluster-20260118-143000
    ```
 
 2. Extract GitOps state from backup
 3. Re-initialize GitOps repository:
    ```bash
-   openCenter cluster setup my-cluster --force
+   opencenter cluster setup my-cluster --force
    ```
 
 4. Verify repository contents:
    ```bash
-   cd ~/.config/openCenter/gitops
+   cd ~/.config/opencenter/gitops
    git log
    git status
    ```
@@ -365,30 +365,30 @@ openCenter cluster backup create <cluster> --encrypt
 - Backup passphrases stored securely (password manager)
 
 **Steps:**
-1. Install openCenter on new system:
+1. Install opencenter on new system:
    ```bash
    # Install from release
-   curl -L https://github.com/rackerlabs/openCenter-cli/releases/latest/download/openCenter-linux-amd64 -o openCenter
-   chmod +x openCenter
-   sudo mv openCenter /usr/local/bin/
+   curl -L https://github.com/rackerlabs/opencenter-cli/releases/latest/download/opencenter-linux-amd64 -o opencenter
+   chmod +x opencenter
+   sudo mv opencenter /usr/local/bin/
    ```
 
 2. Retrieve backups from remote storage:
    ```bash
-   mkdir -p ~/.config/openCenter/backups
+   mkdir -p ~/.config/opencenter/backups
    # Copy backups from remote storage
    ```
 
 3. Restore each cluster:
    ```bash
-   openCenter cluster backup restore my-cluster-20260118-143000 --passphrase="..."
+   opencenter cluster backup restore my-cluster-20260118-143000 --passphrase="..."
    ```
 
 4. Move restored files to correct locations
 5. Validate all clusters:
    ```bash
-   openCenter cluster list
-   openCenter cluster validate my-cluster
+   opencenter cluster list
+   opencenter cluster validate my-cluster
    ```
 
 **Recovery Time**: 1-2 hours (depending on number of clusters)
@@ -400,18 +400,18 @@ openCenter cluster backup create <cluster> --encrypt
 **Solution**:
 1. Restore from backup:
    ```bash
-   openCenter cluster backup restore my-cluster-20260118-143000
+   opencenter cluster backup restore my-cluster-20260118-143000
    ```
 
 2. Move restored Terraform state:
    ```bash
-   mv ~/.config/openCenter/clusters/restored/terraform.tfstate \
-      ~/.config/openCenter/clusters/<org>/<cluster>/terraform.tfstate
+   mv ~/.config/opencenter/clusters/restored/terraform.tfstate \
+      ~/.config/opencenter/clusters/<org>/<cluster>/terraform.tfstate
    ```
 
 3. Verify state:
    ```bash
-   cd ~/.config/openCenter/clusters/<org>/<cluster>
+   cd ~/.config/opencenter/clusters/<org>/<cluster>
    terraform show
    ```
 
@@ -438,7 +438,7 @@ openCenter cluster backup create <cluster> --encrypt
 
 ### Backup Storage
 
-- **Local**: `~/.config/openCenter/backups/` (default)
+- **Local**: `~/.config/opencenter/backups/` (default)
 - **Remote**: Copy to S3, network storage, or backup service
 - **Offline**: Periodic copies to external media for disaster recovery
 
@@ -448,7 +448,7 @@ Test backup restoration regularly:
 
 ```bash
 # Monthly: Test restore in isolated environment
-openCenter cluster backup restore <backup-id> --passphrase="..."
+opencenter cluster backup restore <backup-id> --passphrase="..."
 
 # Quarterly: Full disaster recovery drill
 # - Simulate complete system loss
@@ -488,7 +488,7 @@ Create a cron job for automated backups:
 crontab -e
 
 # Add daily backup at 2 AM
-0 2 * * * /usr/local/bin/openCenter cluster backup create my-cluster --passphrase="$(cat ~/.backup-passphrase)" 2>&1 | logger -t opencenter-backup
+0 2 * * * /usr/local/bin/opencenter cluster backup create my-cluster --passphrase="$(cat ~/.backup-passphrase)" 2>&1 | logger -t opencenter-backup
 ```
 
 ### Backup Script
@@ -499,20 +499,20 @@ Create a backup script for multiple clusters:
 #!/bin/bash
 # backup-all-clusters.sh
 
-CLUSTERS=$(openCenter cluster list --format=json | jq -r '.[].name')
+CLUSTERS=$(opencenter cluster list --format=json | jq -r '.[].name')
 PASSPHRASE=$(cat ~/.backup-passphrase)
 
 for cluster in $CLUSTERS; do
     echo "Backing up $cluster..."
-    openCenter cluster backup create "$cluster" --passphrase="$PASSPHRASE"
+    opencenter cluster backup create "$cluster" --passphrase="$PASSPHRASE"
     
     # Copy to remote storage
-    BACKUP_FILE=$(ls -t ~/.config/openCenter/backups/${cluster}-*.tar.gz.enc | head -1)
+    BACKUP_FILE=$(ls -t ~/.config/opencenter/backups/${cluster}-*.tar.gz.enc | head -1)
     aws s3 cp "$BACKUP_FILE" s3://my-backup-bucket/opencenter/
 done
 
 # Clean up old backups (keep last 30 days)
-find ~/.config/openCenter/backups/ -name "*.tar.gz*" -mtime +30 -delete
+find ~/.config/opencenter/backups/ -name "*.tar.gz*" -mtime +30 -delete
 ```
 
 ### Monitoring
@@ -521,7 +521,7 @@ Monitor backup success/failure:
 
 ```bash
 # Check last backup age
-LAST_BACKUP=$(ls -t ~/.config/openCenter/backups/my-cluster-*.tar.gz | head -1)
+LAST_BACKUP=$(ls -t ~/.config/opencenter/backups/my-cluster-*.tar.gz | head -1)
 BACKUP_AGE=$(( ($(date +%s) - $(stat -f %m "$LAST_BACKUP")) / 86400 ))
 
 if [ $BACKUP_AGE -gt 1 ]; then
@@ -549,7 +549,7 @@ fi
 ### Getting Help
 
 - Documentation: https://docs.opencenter.cloud/operations/disaster-recovery
-- GitHub Issues: https://github.com/rackerlabs/openCenter-cli/issues
+- GitHub Issues: https://github.com/rackerlabs/opencenter-cli/issues
 - Community Support: https://community.opencenter.cloud
 
 ## Appendix: Backup File Format

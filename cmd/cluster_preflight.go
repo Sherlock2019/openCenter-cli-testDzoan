@@ -17,8 +17,8 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/rackerlabs/openCenter-cli/internal/cloud/openstack"
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/cloud/openstack"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 

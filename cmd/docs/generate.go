@@ -20,8 +20,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rackerlabs/openCenter-cli/cmd"
-	"github.com/rackerlabs/openCenter-cli/internal/plugins"
+	"github.com/rackerlabs/opencenter-cli/cmd"
+	"github.com/rackerlabs/opencenter-cli/internal/plugins"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 )
@@ -41,7 +41,7 @@ func main() {
 	plugins.LoadExternalPlugins(rootCmd)
 
 	// Set the output directory for the documentation
-	outputDir := "docs/reference/openCenter"
+	outputDir := "docs/reference/opencenter"
 
 	// Remove the existing directory to ensure a clean slate
 	if err := os.RemoveAll(outputDir); err != nil {

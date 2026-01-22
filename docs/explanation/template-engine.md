@@ -27,7 +27,7 @@ related:
 - [Future Enhancements](#future-enhancements)
 - [Conclusion](#conclusion)
 - [Related Documentation](#related-documentation)
-This document explains the design and architecture of openCenter's template engine, which transforms cluster configurations into GitOps repository manifests, Terraform files, and Ansible inventories.
+This document explains the design and architecture of opencenter's template engine, which transforms cluster configurations into GitOps repository manifests, Terraform files, and Ansible inventories.
 
 ## Overview
 
@@ -358,7 +358,7 @@ Template context:
 
 ### Sprig Functions
 
-openCenter includes all [Sprig v3](http://masterminds.github.io/sprig/) functions:
+opencenter includes all [Sprig v3](http://masterminds.github.io/sprig/) functions:
 
 **String Functions**:
 - `trim`, `trimPrefix`, `trimSuffix`
@@ -389,7 +389,7 @@ openCenter includes all [Sprig v3](http://masterminds.github.io/sprig/) function
 
 ### Custom Functions
 
-openCenter can register custom template functions:
+opencenter can register custom template functions:
 
 ```go
 engine.RegisterFunction("clusterFQDN", func(name, region, domain string) string {
@@ -774,7 +774,7 @@ Understanding the template engine helps you:
 - Create custom templates for your use cases
 - Debug template rendering issues effectively
 - Optimize template performance
-- Extend openCenter with new template types
+- Extend opencenter with new template types
 - Contribute template improvements
 
 ---

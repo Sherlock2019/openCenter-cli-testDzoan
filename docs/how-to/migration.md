@@ -26,18 +26,18 @@
 
 ## Overview
 
-This guide shows you how to migrate clusters and configurations in openCenter. You'll learn how to migrate from legacy flat structure to organization-based structure, migrate between cloud providers, and upgrade cluster configurations.
+This guide shows you how to migrate clusters and configurations in opencenter. You'll learn how to migrate from legacy flat structure to organization-based structure, migrate between cloud providers, and upgrade cluster configurations.
 
 ## Prerequisites
 
-- openCenter CLI installed and configured
+- opencenter CLI installed and configured
 - Existing cluster configurations
 - Backup of current configurations
 - Understanding of target migration scenario
 
 ## Understanding Migration Types
 
-openCenter supports several migration scenarios:
+opencenter supports several migration scenarios:
 
 1. **Structure Migration**: Legacy flat → Organization-based structure
 2. **Provider Migration**: OpenStack → AWS, bare metal → cloud
@@ -46,7 +46,7 @@ openCenter supports several migration scenarios:
 
 ## Task 1: Migrate to Organization Structure
 
-openCenter uses an organization-based directory structure for better multi-tenancy support.
+opencenter uses an organization-based directory structure for better multi-tenancy support.
 
 ### Step 1: Detect Legacy Clusters
 
@@ -55,13 +55,13 @@ openCenter uses an organization-based directory structure for better multi-tenan
 mise run build
 
 # Check for legacy clusters
-./bin/openCenter config list
+./bin/opencenter config list
 
 # Legacy structure:
-# ~/.config/openCenter/clusters/my-cluster/
+# ~/.config/opencenter/clusters/my-cluster/
 
 # New structure:
-# ~/.config/openCenter/clusters/opencenter/my-cluster/
+# ~/.config/opencenter/clusters/opencenter/my-cluster/
 ```
 
 ### Step 2: Backup Existing Configuration
@@ -69,12 +69,12 @@ mise run build
 ```bash
 # Create backup before migration
 CLUSTER_NAME="my-cluster"
-BACKUP_DIR="${HOME}/.config/openCenter/backups/$(date +%Y%m%d-%H%M%S)"
+BACKUP_DIR="${HOME}/.config/opencenter/backups/$(date +%Y%m%d-%H%M%S)"
 
 mkdir -p "$BACKUP_DIR"
 
 # Backup cluster directory
-cp -r "${HOME}/.config/openCenter/clusters/${CLUSTER_NAME}" \
+cp -r "${HOME}/.config/opencenter/clusters/${CLUSTER_NAME}" \
       "$BACKUP_DIR/"
 
 echo "Backup created: $BACKUP_DIR"
@@ -84,26 +84,26 @@ echo "Backup created: $BACKUP_DIR"
 
 ```bash
 # Migrate single cluster to default organization
-./bin/openCenter config migrate $CLUSTER_NAME
+./bin/opencenter config migrate $CLUSTER_NAME
 
 # Migrate to specific organization
-./bin/openCenter config migrate $CLUSTER_NAME --organization my-org
+./bin/opencenter config migrate $CLUSTER_NAME --organization my-org
 
 # Migrate all legacy clusters
-./bin/openCenter config migrate --all
+./bin/opencenter config migrate --all
 ```
 
 ### Step 4: Verify Migration
 
 ```bash
 # Check new structure
-ls -la ~/.config/openCenter/clusters/opencenter/$CLUSTER_NAME/
+ls -la ~/.config/opencenter/clusters/opencenter/$CLUSTER_NAME/
 
 # Verify configuration
-./bin/openCenter config show $CLUSTER_NAME
+./bin/opencenter config show $CLUSTER_NAME
 
 # Validate migrated configuration
-./bin/openCenter config validate $CLUSTER_NAME
+./bin/opencenter config validate $CLUSTER_NAME
 ```
 
 ### Step 5: Update GitOps Repository Path
@@ -112,10 +112,10 @@ After migration, update GitOps repository references:
 
 ```bash
 # Check current GitOps path
-./bin/openCenter config show $CLUSTER_NAME | grep git_dir
+./bin/opencenter config show $CLUSTER_NAME | grep git_dir
 
 # Update if needed
-vim ~/.config/openCenter/clusters/opencenter/$CLUSTER_NAME/.$CLUSTER_NAME-config.yaml
+vim ~/.config/opencenter/clusters/opencenter/$CLUSTER_NAME/.$CLUSTER_NAME-config.yaml
 
 # Update git_dir to point to organization root
 # opencenter:
@@ -127,7 +127,7 @@ vim ~/.config/openCenter/clusters/opencenter/$CLUSTER_NAME/.$CLUSTER_NAME-config
 
 ```bash
 # After verifying migration success, remove legacy directory
-LEGACY_DIR="${HOME}/.config/openCenter/clusters/${CLUSTER_NAME}"
+LEGACY_DIR="${HOME}/.config/opencenter/clusters/${CLUSTER_NAME}"
 
 if [ -d "$LEGACY_DIR" ]; then
   echo "Removing legacy directory: $LEGACY_DIR"
@@ -142,7 +142,7 @@ fi
 ```bash
 # Export current cluster configuration
 CLUSTER_NAME="openstack-cluster"
-./bin/openCenter config show $CLUSTER_NAME --format yaml > current-config.yaml
+./bin/opencenter config show $CLUSTER_NAME --format yaml > current-config.yaml
 
 # Review configuration
 cat current-config.yaml
@@ -152,11 +152,11 @@ cat current-config.yaml
 
 ```bash
 # Initialize new cluster for target provider
-./bin/openCenter cluster init aws-cluster --provider aws
+./bin/opencenter cluster init aws-cluster --provider aws
 
 # Copy service configurations from source
 SOURCE_CONFIG="current-config.yaml"
-TARGET_CONFIG="${HOME}/.config/openCenter/clusters/opencenter/aws-cluster/.aws-cluster-config.yaml"
+TARGET_CONFIG="${HOME}/.config/opencenter/clusters/opencenter/aws-cluster/.aws-cluster-config.yaml"
 
 # Extract and copy service configurations
 yq eval '.opencenter.services' "$SOURCE_CONFIG" > services.yaml
@@ -187,17 +187,17 @@ vim "$TARGET_CONFIG"
 
 ```bash
 # Validate new configuration
-./bin/openCenter config validate aws-cluster
+./bin/opencenter config validate aws-cluster
 
 # Run preflight checks
-./bin/openCenter cluster preflight aws-cluster
+./bin/opencenter cluster preflight aws-cluster
 ```
 
 ### Step 5: Generate GitOps Repository
 
 ```bash
 # Generate GitOps repo for new cluster
-./bin/openCenter cluster setup aws-cluster --render
+./bin/opencenter cluster setup aws-cluster --render
 
 # Review generated manifests
 ls -la ~/gitops/aws-cluster/
@@ -221,7 +221,7 @@ kubectl apply -f workloads-export.yaml
 
 ```bash
 # Check configuration version
-./bin/openCenter config show $CLUSTER_NAME | grep version
+./bin/opencenter config show $CLUSTER_NAME | grep version
 
 # Example output:
 # opencenter:
@@ -233,10 +233,10 @@ kubectl apply -f workloads-export.yaml
 ```bash
 # Create backup
 CLUSTER_NAME="my-cluster"
-BACKUP_FILE="${HOME}/.config/openCenter/backups/${CLUSTER_NAME}-$(date +%Y%m%d-%H%M%S).yaml"
+BACKUP_FILE="${HOME}/.config/opencenter/backups/${CLUSTER_NAME}-$(date +%Y%m%d-%H%M%S).yaml"
 
 mkdir -p "$(dirname "$BACKUP_FILE")"
-cp "${HOME}/.config/openCenter/clusters/opencenter/${CLUSTER_NAME}/.${CLUSTER_NAME}-config.yaml" \
+cp "${HOME}/.config/opencenter/clusters/opencenter/${CLUSTER_NAME}/.${CLUSTER_NAME}-config.yaml" \
    "$BACKUP_FILE"
 
 echo "Backup created: $BACKUP_FILE"
@@ -246,10 +246,10 @@ echo "Backup created: $BACKUP_FILE"
 
 ```bash
 # Migrate to latest schema version
-./bin/openCenter config migrate-schema $CLUSTER_NAME
+./bin/opencenter config migrate-schema $CLUSTER_NAME
 
 # Migrate to specific version
-./bin/openCenter config migrate-schema $CLUSTER_NAME --target-version 2.0
+./bin/opencenter config migrate-schema $CLUSTER_NAME --target-version 2.0
 ```
 
 ### Step 4: Review Changes
@@ -257,17 +257,17 @@ echo "Backup created: $BACKUP_FILE"
 ```bash
 # Show differences
 diff "$BACKUP_FILE" \
-     "${HOME}/.config/openCenter/clusters/opencenter/${CLUSTER_NAME}/.${CLUSTER_NAME}-config.yaml"
+     "${HOME}/.config/opencenter/clusters/opencenter/${CLUSTER_NAME}/.${CLUSTER_NAME}-config.yaml"
 
 # Validate upgraded configuration
-./bin/openCenter config validate $CLUSTER_NAME
+./bin/opencenter config validate $CLUSTER_NAME
 ```
 
 ### Step 5: Update GitOps Repository
 
 ```bash
 # Regenerate GitOps manifests with new schema
-./bin/openCenter cluster setup $CLUSTER_NAME --render --force
+./bin/opencenter cluster setup $CLUSTER_NAME --render --force
 
 # Review changes
 cd ~/gitops/$CLUSTER_NAME
@@ -281,13 +281,13 @@ git diff
 ```bash
 # Export Age keys
 CLUSTER_NAME="my-cluster"
-AGE_KEY_PATH="${HOME}/.config/openCenter/clusters/opencenter/${CLUSTER_NAME}/secrets/age/${CLUSTER_NAME}-key.txt"
+AGE_KEY_PATH="${HOME}/.config/opencenter/clusters/opencenter/${CLUSTER_NAME}/secrets/age/${CLUSTER_NAME}-key.txt"
 
 # Backup Age key
 cp "$AGE_KEY_PATH" "${AGE_KEY_PATH}.backup"
 
 # Export SSH keys
-SSH_KEY_PATH="${HOME}/.config/openCenter/clusters/opencenter/${CLUSTER_NAME}/secrets/ssh"
+SSH_KEY_PATH="${HOME}/.config/opencenter/clusters/opencenter/${CLUSTER_NAME}/secrets/ssh"
 tar -czf ssh-keys-backup.tar.gz -C "$SSH_KEY_PATH" .
 ```
 
@@ -296,13 +296,13 @@ tar -czf ssh-keys-backup.tar.gz -C "$SSH_KEY_PATH" .
 ```bash
 # Copy Age key to new cluster
 NEW_CLUSTER="new-cluster"
-NEW_AGE_KEY_PATH="${HOME}/.config/openCenter/clusters/opencenter/${NEW_CLUSTER}/secrets/age/${NEW_CLUSTER}-key.txt"
+NEW_AGE_KEY_PATH="${HOME}/.config/opencenter/clusters/opencenter/${NEW_CLUSTER}/secrets/age/${NEW_CLUSTER}-key.txt"
 
 mkdir -p "$(dirname "$NEW_AGE_KEY_PATH")"
 cp "$AGE_KEY_PATH" "$NEW_AGE_KEY_PATH"
 
 # Copy SSH keys
-NEW_SSH_KEY_PATH="${HOME}/.config/openCenter/clusters/opencenter/${NEW_CLUSTER}/secrets/ssh"
+NEW_SSH_KEY_PATH="${HOME}/.config/opencenter/clusters/opencenter/${NEW_CLUSTER}/secrets/ssh"
 mkdir -p "$NEW_SSH_KEY_PATH"
 tar -xzf ssh-keys-backup.tar.gz -C "$NEW_SSH_KEY_PATH"
 ```
@@ -393,7 +393,7 @@ git push -u origin main
 
 ```bash
 # Update GitOps repository URL in cluster config
-vim ~/.config/openCenter/clusters/opencenter/${NEW_CLUSTER}/.${NEW_CLUSTER}-config.yaml
+vim ~/.config/opencenter/clusters/opencenter/${NEW_CLUSTER}/.${NEW_CLUSTER}-config.yaml
 
 # Update:
 # opencenter:
@@ -408,20 +408,20 @@ vim ~/.config/openCenter/clusters/opencenter/${NEW_CLUSTER}/.${NEW_CLUSTER}-conf
 
 ```bash
 # List available backups
-ls -la ~/.config/openCenter/backups/
+ls -la ~/.config/opencenter/backups/
 
 # Identify backup to restore
-BACKUP_DIR="${HOME}/.config/openCenter/backups/20240115-103000"
+BACKUP_DIR="${HOME}/.config/opencenter/backups/20240115-103000"
 ```
 
 ### Step 2: Stop Cluster Operations
 
 ```bash
 # Ensure no operations are running
-ps aux | grep openCenter
+ps aux | grep opencenter
 
 # Stop any running operations
-# pkill -f openCenter
+# pkill -f opencenter
 ```
 
 ### Step 3: Restore Configuration
@@ -429,14 +429,14 @@ ps aux | grep openCenter
 ```bash
 # Restore cluster configuration
 CLUSTER_NAME="my-cluster"
-CURRENT_CONFIG="${HOME}/.config/openCenter/clusters/opencenter/${CLUSTER_NAME}"
+CURRENT_CONFIG="${HOME}/.config/opencenter/clusters/opencenter/${CLUSTER_NAME}"
 
 # Remove current configuration
 rm -rf "$CURRENT_CONFIG"
 
 # Restore from backup
 cp -r "$BACKUP_DIR/${CLUSTER_NAME}" \
-      "${HOME}/.config/openCenter/clusters/"
+      "${HOME}/.config/opencenter/clusters/"
 
 echo "Configuration restored from backup"
 ```
@@ -446,10 +446,10 @@ echo "Configuration restored from backup"
 ```bash
 # Validate restored configuration
 mise run build
-./bin/openCenter config validate $CLUSTER_NAME
+./bin/opencenter config validate $CLUSTER_NAME
 
 # Check cluster status
-./bin/openCenter cluster status $CLUSTER_NAME
+./bin/opencenter cluster status $CLUSTER_NAME
 ```
 
 ### Step 5: Restore GitOps Repository
@@ -470,7 +470,7 @@ cp -r "$BACKUP_DIR/gitops-${CLUSTER_NAME}" ~/gitops/$CLUSTER_NAME
 
 ```bash
 # List all clusters
-./bin/openCenter config list > clusters.txt
+./bin/opencenter config list > clusters.txt
 
 # Create migration plan
 cat > migration-plan.txt <<EOF
@@ -486,7 +486,7 @@ Migration order:
 3. Production clusters
 
 Rollback plan:
-- Backups stored in: ~/.config/openCenter/backups/
+- Backups stored in: ~/.config/opencenter/backups/
 - Rollback window: 24 hours
 - Validation required before next cluster
 EOF
@@ -514,26 +514,26 @@ while IFS= read -r cluster; do
   
   # Backup
   echo "  Creating backup..." | tee -a "$LOG_FILE"
-  BACKUP_DIR="${HOME}/.config/openCenter/backups/$(date +%Y%m%d-%H%M%S)-${cluster}"
+  BACKUP_DIR="${HOME}/.config/opencenter/backups/$(date +%Y%m%d-%H%M%S)-${cluster}"
   mkdir -p "$BACKUP_DIR"
-  cp -r "${HOME}/.config/openCenter/clusters/${cluster}" "$BACKUP_DIR/" || {
+  cp -r "${HOME}/.config/opencenter/clusters/${cluster}" "$BACKUP_DIR/" || {
     echo "  ❌ Backup failed for $cluster" | tee -a "$LOG_FILE"
     continue
   }
   
   # Migrate
   echo "  Running migration..." | tee -a "$LOG_FILE"
-  if ./bin/openCenter config migrate "$cluster" >> "$LOG_FILE" 2>&1; then
+  if ./bin/opencenter config migrate "$cluster" >> "$LOG_FILE" 2>&1; then
     echo "  ✓ Migration successful" | tee -a "$LOG_FILE"
     
     # Validate
     echo "  Validating..." | tee -a "$LOG_FILE"
-    if ./bin/openCenter config validate "$cluster" >> "$LOG_FILE" 2>&1; then
+    if ./bin/opencenter config validate "$cluster" >> "$LOG_FILE" 2>&1; then
       echo "  ✓ Validation successful" | tee -a "$LOG_FILE"
     else
       echo "  ⚠️  Validation failed, rolling back..." | tee -a "$LOG_FILE"
-      rm -rf "${HOME}/.config/openCenter/clusters/opencenter/${cluster}"
-      cp -r "$BACKUP_DIR/${cluster}" "${HOME}/.config/openCenter/clusters/"
+      rm -rf "${HOME}/.config/opencenter/clusters/opencenter/${cluster}"
+      cp -r "$BACKUP_DIR/${cluster}" "${HOME}/.config/opencenter/clusters/"
     fi
   else
     echo "  ❌ Migration failed for $cluster" | tee -a "$LOG_FILE"
@@ -564,7 +564,7 @@ tail -f migration-*.log
 # Verify all migrated clusters
 for cluster in $(cat clusters.txt); do
   echo "Verifying: $cluster"
-  ./bin/openCenter config validate "$cluster"
+  ./bin/opencenter config validate "$cluster"
   echo ""
 done
 ```
@@ -590,7 +590,7 @@ done
 
 **Solution**: Check directory permissions:
 ```bash
-chmod -R u+w ~/.config/openCenter/clusters/
+chmod -R u+w ~/.config/opencenter/clusters/
 ```
 
 ### Configuration Validation Fails After Migration
@@ -600,11 +600,11 @@ chmod -R u+w ~/.config/openCenter/clusters/
 **Solution**: Review and fix validation errors:
 ```bash
 # Show detailed validation errors
-./bin/openCenter config validate $CLUSTER_NAME --verbose
+./bin/opencenter config validate $CLUSTER_NAME --verbose
 
 # Compare with backup
-diff ~/.config/openCenter/backups/*/my-cluster/.my-cluster-config.yaml \
-     ~/.config/openCenter/clusters/opencenter/my-cluster/.my-cluster-config.yaml
+diff ~/.config/opencenter/backups/*/my-cluster/.my-cluster-config.yaml \
+     ~/.config/opencenter/clusters/opencenter/my-cluster/.my-cluster-config.yaml
 ```
 
 ### GitOps Repository Path Incorrect
@@ -613,7 +613,7 @@ diff ~/.config/openCenter/backups/*/my-cluster/.my-cluster-config.yaml \
 
 **Solution**: Update git_dir in configuration:
 ```bash
-vim ~/.config/openCenter/clusters/opencenter/$CLUSTER_NAME/.$CLUSTER_NAME-config.yaml
+vim ~/.config/opencenter/clusters/opencenter/$CLUSTER_NAME/.$CLUSTER_NAME-config.yaml
 
 # Update git_dir to correct path
 # opencenter:
@@ -628,10 +628,10 @@ vim ~/.config/openCenter/clusters/opencenter/$CLUSTER_NAME/.$CLUSTER_NAME-config
 **Solution**: Verify Age key is correctly migrated:
 ```bash
 # Check Age key exists
-ls -la ~/.config/openCenter/clusters/opencenter/$CLUSTER_NAME/secrets/age/
+ls -la ~/.config/opencenter/clusters/opencenter/$CLUSTER_NAME/secrets/age/
 
 # Test decryption
-export SOPS_AGE_KEY_FILE=~/.config/openCenter/clusters/opencenter/$CLUSTER_NAME/secrets/age/$CLUSTER_NAME-key.txt
+export SOPS_AGE_KEY_FILE=~/.config/opencenter/clusters/opencenter/$CLUSTER_NAME/secrets/age/$CLUSTER_NAME-key.txt
 sops -d ~/gitops/$CLUSTER_NAME/secrets.yaml
 ```
 

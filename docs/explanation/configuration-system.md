@@ -25,11 +25,11 @@ related:
 - [Future Enhancements](#future-enhancements)
 - [Conclusion](#conclusion)
 - [Related Documentation](#related-documentation)
-This document explains the design and architecture of openCenter's configuration system, including schema validation, the builder pattern, configuration migration, and the rationale behind key design decisions.
+This document explains the design and architecture of opencenter's configuration system, including schema validation, the builder pattern, configuration migration, and the rationale behind key design decisions.
 
 ## Overview
 
-The configuration system is the foundation of openCenter's declarative approach to Kubernetes cluster management. It transforms a single YAML file into a complete, validated cluster specification that drives infrastructure provisioning, Kubernetes installation, and GitOps repository generation.
+The configuration system is the foundation of opencenter's declarative approach to Kubernetes cluster management. It transforms a single YAML file into a complete, validated cluster specification that drives infrastructure provisioning, Kubernetes installation, and GitOps repository generation.
 
 ## Core Design Principles
 
@@ -239,14 +239,14 @@ func (cm *ConfigMigrator) MigrateToOrganization(ctx context.Context, clusterName
 
 ```
 Legacy Structure:
-~/.config/openCenter/clusters/
+~/.config/opencenter/clusters/
 └── my-cluster/
     ├── .my-cluster-config.yaml
     ├── secrets/
     └── inventory/
 
 Organization Structure:
-~/.config/openCenter/clusters/
+~/.config/opencenter/clusters/
 └── acme-corp/
     ├── .my-cluster-config.yaml
     ├── infrastructure/
@@ -353,7 +353,7 @@ Organization Structure:
 
 ```bash
 mise run build
-./bin/openCenter cluster init my-cluster --provider openstack
+./bin/opencenter cluster init my-cluster --provider openstack
 ```
 
 **Process**:
@@ -394,7 +394,7 @@ func Load(name string) (Config, error) {
 
 ```bash
 mise run build
-./bin/openCenter cluster validate my-cluster
+./bin/opencenter cluster validate my-cluster
 ```
 
 **Process**:
@@ -417,9 +417,9 @@ type ValidationError struct {
 
 **Via YAML**:
 ```bash
-vim ~/.config/openCenter/clusters/acme-corp/.my-cluster-config.yaml
+vim ~/.config/opencenter/clusters/acme-corp/.my-cluster-config.yaml
 mise run build
-./bin/openCenter cluster validate my-cluster
+./bin/opencenter cluster validate my-cluster
 ```
 
 **Via Builder**:
@@ -436,7 +436,7 @@ updated, _ := builder.
 
 ```bash
 mise run build
-./bin/openCenter cluster migrate my-cluster --organization acme-corp
+./bin/opencenter cluster migrate my-cluster --organization acme-corp
 ```
 
 **Process**:
@@ -518,10 +518,10 @@ func ConfigPath(name string) (string, error) {
 ```
 
 **Search Order**:
-1. `~/.config/openCenter/clusters/org/.cluster-config.yaml`
-2. `~/.config/openCenter/clusters/org/infrastructure/clusters/cluster/.cluster-config.yaml`
-3. `~/.config/openCenter/cluster.yaml` (flat)
-4. `~/.config/openCenter/clusters/cluster/.cluster-config.yaml` (legacy)
+1. `~/.config/opencenter/clusters/org/.cluster-config.yaml`
+2. `~/.config/opencenter/clusters/org/infrastructure/clusters/cluster/.cluster-config.yaml`
+3. `~/.config/opencenter/cluster.yaml` (flat)
+4. `~/.config/opencenter/clusters/cluster/.cluster-config.yaml` (legacy)
 
 ## Performance Considerations
 
@@ -603,8 +603,8 @@ Test user workflows with Gherkin scenarios:
 ```gherkin
 Feature: Configuration Management
   Scenario: Initialize and validate cluster
-    Given I have openCenter CLI installed
-    When I run "openCenter cluster init test-cluster --provider openstack"
+    Given I have opencenter CLI installed
+    When I run "opencenter cluster init test-cluster --provider openstack"
     Then a configuration file should be created
     And the configuration should be valid
 ```
@@ -632,7 +632,7 @@ Feature: Configuration Management
 
 ## Conclusion
 
-The configuration system is the cornerstone of openCenter's declarative approach. Its layered architecture provides:
+The configuration system is the cornerstone of opencenter's declarative approach. Its layered architecture provides:
 
 - **Flexibility**: Support both YAML and programmatic configuration
 - **Safety**: Multi-stage validation catches errors early
@@ -643,7 +643,7 @@ The configuration system is the cornerstone of openCenter's declarative approach
 Understanding the configuration system helps you:
 - Write correct configurations faster
 - Debug validation errors effectively
-- Extend openCenter with custom providers
+- Extend opencenter with custom providers
 - Contribute to configuration system improvements
 
 ---

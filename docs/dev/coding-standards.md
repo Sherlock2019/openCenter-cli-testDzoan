@@ -20,11 +20,11 @@ doc_type: reference
 - [Common Patterns](#common-patterns)
 - [Code Review Checklist](#code-review-checklist)
 - [See Also](#see-also)
-This document defines the code style, naming conventions, and best practices for openCenter development. These standards are derived from actual codebase patterns and Go community conventions.
+This document defines the code style, naming conventions, and best practices for opencenter development. These standards are derived from actual codebase patterns and Go community conventions.
 
 ## Who this is for
 
-Developers contributing to openCenter who need to understand expected code style, naming conventions, testing patterns, and architectural principles.
+Developers contributing to opencenter who need to understand expected code style, naming conventions, testing patterns, and architectural principles.
 
 ## Go Language Standards
 
@@ -56,8 +56,8 @@ import (
     "gopkg.in/yaml.v3"
     
     // Internal packages
-    "github.com/rackerlabs/openCenter-cli/internal/config"
-    "github.com/rackerlabs/openCenter-cli/internal/security"
+    "github.com/rackerlabs/opencenter-cli/internal/config"
+    "github.com/rackerlabs/opencenter-cli/internal/security"
 )
 ```
 
@@ -111,7 +111,7 @@ as functions for loading, saving, and validating configurations.
 
 # When to use
 
-This package is used internally by openCenter to manage cluster configurations.
+This package is used internally by opencenter to manage cluster configurations.
 */
 package config
 ```
@@ -522,7 +522,7 @@ Feature: Cluster Initialization
   So that I can deploy Kubernetes clusters
 
   Scenario: Initialize cluster with defaults
-    When I run "openCenter cluster init my-cluster"
+    When I run "opencenter cluster init my-cluster"
     Then the command should succeed
     And a cluster configuration "my-cluster" should exist
     And the configuration should be valid
@@ -540,7 +540,7 @@ func TestFeatures(t *testing.T) {
     }
     
     status := godog.TestSuite{
-        Name:                 "openCenter",
+        Name:                 "opencenter",
         ScenarioInitializer:  InitializeScenario,
         Options:              &opts,
     }.Run()
@@ -594,7 +594,7 @@ functionality for generating a JSON schema for the configuration.
 
 # When to use
 
-This package is used internally by openCenter to manage cluster configurations.
+This package is used internally by opencenter to manage cluster configurations.
 It is not intended for direct use by end-users.
 
 # Configuration structure
@@ -633,7 +633,7 @@ func NewConfigManager(path string) (*ConfigManager, error) {
 Document exported types:
 
 ```go
-// Config represents the root configuration for an openCenter cluster.
+// Config represents the root configuration for an opencenter cluster.
 //
 // The configuration is organized into logical sections:
 //   - OpenCenter: Core cluster configuration

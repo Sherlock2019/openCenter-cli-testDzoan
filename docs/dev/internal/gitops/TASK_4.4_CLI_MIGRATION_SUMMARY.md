@@ -110,7 +110,7 @@ $ go test ./cmd/... -v -run TestClusterRender
 === RUN   TestRenderClusterTemplatesContextHandling
 --- PASS: TestRenderClusterTemplatesContextHandling (0.00s)
 PASS
-ok      github.com/rackerlabs/openCenter-cli/cmd        1.014s
+ok      github.com/rackerlabs/opencenter-cli/cmd        1.014s
 ```
 
 ```bash
@@ -126,7 +126,7 @@ $ go test ./internal/gitops/ -v -run "TestGenerate|TestLegacy"
 === RUN   TestGenerateGitOpsRepositoryBackwardCompatibility
 --- PASS: TestGenerateGitOpsRepositoryBackwardCompatibility (0.11s)
 PASS
-ok      github.com/rackerlabs/openCenter-cli/internal/gitops    0.727s
+ok      github.com/rackerlabs/opencenter-cli/internal/gitops    0.727s
 ```
 
 ### Build Verification
@@ -172,7 +172,7 @@ The following commands do NOT need updates because they don't directly call GitO
 
 ```bash
 # Works the same as before
-openCenter cluster render my-cluster
+opencenter cluster render my-cluster
 
 # Output is identical
 Rendering templates to: /path/to/gitops

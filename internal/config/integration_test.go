@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config/services"
+	"github.com/rackerlabs/opencenter-cli/internal/config/services"
 )
 
 // addDefaultSecrets adds all required secrets for services that are enabled by default.
@@ -50,7 +50,7 @@ func addDefaultSecrets(config *Config) {
 
 func TestConfigurationManagerIntegration(t *testing.T) {
 	// Create a temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "openCenter-config-test")
+	tempDir, err := os.MkdirTemp("", "opencenter-config-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -235,7 +235,7 @@ func TestConfigCacheIntegration(t *testing.T) {
 
 func TestPathResolverIntegration(t *testing.T) {
 	// Create a temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "openCenter-path-test")
+	tempDir, err := os.MkdirTemp("", "opencenter-path-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -307,7 +307,7 @@ func TestPathResolverIntegration(t *testing.T) {
 
 func TestFullClusterRendering(t *testing.T) {
 	// Create a temporary directory for testing
-	tempDir, err := os.MkdirTemp("", "openCenter-render-test")
+	tempDir, err := os.MkdirTemp("", "opencenter-render-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp directory: %v", err)
 	}
@@ -363,8 +363,8 @@ func TestFullClusterRendering(t *testing.T) {
 		}
 
 		// Verify GitOps configuration
-		if config.OpenCenter.GitOps.GitOpsBaseRepo != "ssh://git@github.com/rackerlabs/openCenter-gitops-base.git" {
-			t.Errorf("Expected GitOps base repo 'ssh://git@github.com/rackerlabs/openCenter-gitops-base.git', got '%s'", config.OpenCenter.GitOps.GitOpsBaseRepo)
+		if config.OpenCenter.GitOps.GitOpsBaseRepo != "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git" {
+			t.Errorf("Expected GitOps base repo 'ssh://git@github.com/rackerlabs/opencenter-gitops-base.git', got '%s'", config.OpenCenter.GitOps.GitOpsBaseRepo)
 		}
 
 		if config.OpenCenter.GitOps.GitOpsBaseRelease != "v0.2.0" {

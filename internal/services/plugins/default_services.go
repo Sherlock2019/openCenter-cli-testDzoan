@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config/services"
-	svc "github.com/rackerlabs/openCenter-cli/internal/services"
+	"github.com/rackerlabs/opencenter-cli/internal/config/services"
+	svc "github.com/rackerlabs/opencenter-cli/internal/services"
 )
 
 // DefaultServicePlugin implements the ServicePlugin interface for services with no specific configuration

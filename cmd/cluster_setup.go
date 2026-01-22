@@ -19,10 +19,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/gitops"
-	"github.com/rackerlabs/openCenter-cli/internal/resilience"
-	"github.com/rackerlabs/openCenter-cli/internal/tofu"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/gitops"
+	"github.com/rackerlabs/opencenter-cli/internal/resilience"
+	"github.com/rackerlabs/opencenter-cli/internal/tofu"
 	"github.com/spf13/cobra"
 )
 
@@ -58,13 +58,13 @@ The setup process:
 
 Configuration must have opencenter.gitops.git_dir set.`,
 		Example: `  # Set up GitOps repository for active cluster
-  openCenter cluster setup
+  opencenter cluster setup
 
   # Set up for a specific cluster
-  openCenter cluster setup my-cluster
+  opencenter cluster setup my-cluster
 
   # Force overwrite existing repository
-  openCenter cluster setup my-cluster --force`,
+  opencenter cluster setup my-cluster --force`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Resolve cluster name from args or active cluster

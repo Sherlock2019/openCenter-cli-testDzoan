@@ -25,15 +25,15 @@ doc_type: how-to
 - [Communication](#communication)
 - [Troubleshooting](#troubleshooting)
 - [See Also](#see-also)
-This document describes the release process for openCenter, including versioning, building, testing, and distribution.
+This document describes the release process for opencenter, including versioning, building, testing, and distribution.
 
 ## Who this is for
 
-Maintainers responsible for creating and publishing openCenter releases.
+Maintainers responsible for creating and publishing opencenter releases.
 
 ## Versioning Strategy
 
-openCenter follows [Semantic Versioning 2.0.0](https://semver.org/):
+opencenter follows [Semantic Versioning 2.0.0](https://semver.org/):
 
 **Format**: `MAJOR.MINOR.PATCH`
 
@@ -186,11 +186,11 @@ mise run build-all
 ```
 
 This creates binaries in `bin/`:
-- `openCenter-linux-amd64`
-- `openCenter-linux-arm64`
-- `openCenter-darwin-amd64`
-- `openCenter-darwin-arm64`
-- `openCenter-windows-amd64.exe`
+- `opencenter-linux-amd64`
+- `opencenter-linux-arm64`
+- `opencenter-darwin-amd64`
+- `opencenter-darwin-arm64`
+- `opencenter-windows-amd64.exe`
 
 ### Version Injection
 
@@ -209,12 +209,12 @@ go build -ldflags "\
   -X main.gitBranch=${GIT_BRANCH} \
   -X main.gitTag=${GIT_TAG} \
   -X main.buildDate=${BUILD_DATE}" \
-  -o bin/openCenter
+  -o bin/opencenter
 ```
 
 Verify version:
 ```bash
-./bin/openCenter version
+./bin/opencenter version
 ```
 
 ### CI/CD Build
@@ -306,19 +306,19 @@ Basic functionality tests:
 
 ```bash
 # Version check
-./bin/openCenter version
+./bin/opencenter version
 
 # Help output
-./bin/openCenter --help
+./bin/opencenter --help
 
 # Initialize cluster
-./bin/openCenter cluster init test-cluster
+./bin/opencenter cluster init test-cluster
 
 # Validate configuration
-./bin/openCenter cluster validate test-cluster
+./bin/opencenter cluster validate test-cluster
 
 # Generate schema
-./bin/openCenter cluster schema --pretty
+./bin/opencenter cluster schema --pretty
 ```
 
 ### Integration Tests
@@ -340,20 +340,20 @@ Test on each platform:
 
 **Linux**:
 ```bash
-./openCenter-linux-amd64 version
-./openCenter-linux-amd64 cluster init test-linux
+./opencenter-linux-amd64 version
+./opencenter-linux-amd64 cluster init test-linux
 ```
 
 **macOS**:
 ```bash
-./openCenter-darwin-amd64 version
-./openCenter-darwin-amd64 cluster init test-macos
+./opencenter-darwin-amd64 version
+./opencenter-darwin-amd64 cluster init test-macos
 ```
 
 **Windows**:
 ```powershell
-.\openCenter-windows-amd64.exe version
-.\openCenter-windows-amd64.exe cluster init test-windows
+.\opencenter-windows-amd64.exe version
+.\opencenter-windows-amd64.exe cluster init test-windows
 ```
 
 ### Upgrade Tests
@@ -372,14 +372,14 @@ Test upgrade from previous version:
 
 1. **Create release** on GitHub
 2. **Upload binaries**:
-   - `openCenter-linux-amd64`
-   - `openCenter-linux-arm64`
-   - `openCenter-darwin-amd64`
-   - `openCenter-darwin-arm64`
-   - `openCenter-windows-amd64.exe`
+   - `opencenter-linux-amd64`
+   - `opencenter-linux-arm64`
+   - `opencenter-darwin-amd64`
+   - `opencenter-darwin-arm64`
+   - `opencenter-windows-amd64.exe`
 3. **Add checksums**:
    ```bash
-   sha256sum openCenter-* > checksums.txt
+   sha256sum opencenter-* > checksums.txt
    ```
 4. **Add release notes** from CHANGELOG.md
 5. **Mark as latest release**
@@ -388,11 +388,11 @@ Test upgrade from previous version:
 
 Future distribution channels:
 
-- **Homebrew**: `brew install openCenter`
-- **APT**: `apt install openCenter`
-- **RPM**: `yum install openCenter`
-- **Chocolatey**: `choco install openCenter`
-- **Snap**: `snap install openCenter`
+- **Homebrew**: `brew install opencenter`
+- **APT**: `apt install opencenter`
+- **RPM**: `yum install opencenter`
+- **Chocolatey**: `choco install opencenter`
+- **Snap**: `snap install opencenter`
 
 ## Hotfix Process
 
@@ -547,9 +547,9 @@ Use metrics to improve:
 ### Release Announcement Template
 
 ```markdown
-# openCenter 1.0.0 Released
+# opencenter 1.0.0 Released
 
-We're excited to announce the release of openCenter 1.0.0!
+We're excited to announce the release of opencenter 1.0.0!
 
 ## Highlights
 
@@ -565,11 +565,11 @@ We're excited to announce the release of openCenter 1.0.0!
 ## Installation
 
 Download from GitHub releases:
-https://github.com/rackerlabs/openCenter-cli/releases/tag/1.0.0
+https://github.com/rackerlabs/opencenter-cli/releases/tag/1.0.0
 
 Or use Homebrew:
 ```bash
-brew install openCenter
+brew install opencenter
 ```
 
 ## Upgrade Guide

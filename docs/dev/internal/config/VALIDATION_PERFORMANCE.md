@@ -15,7 +15,7 @@
 - [References](#references)
 ## Overview
 
-This document summarizes the performance characteristics of the configuration validation system for the openCenter CLI. The validation system has been tested with configurations of varying sizes to ensure acceptable performance for large configurations.
+This document summarizes the performance characteristics of the configuration validation system for the opencenter CLI. The validation system has been tested with configurations of varying sizes to ensure acceptable performance for large configurations.
 
 ## Test Environment
 

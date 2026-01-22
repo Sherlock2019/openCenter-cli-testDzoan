@@ -25,18 +25,18 @@
 
 ## Overview
 
-This guide shows you how to customize the GitOps templates that openCenter uses to generate cluster manifests. You'll learn how to modify existing templates, create custom templates, and integrate them into your cluster setup workflow.
+This guide shows you how to customize the GitOps templates that opencenter uses to generate cluster manifests. You'll learn how to modify existing templates, create custom templates, and integrate them into your cluster setup workflow.
 
 ## Prerequisites
 
-- openCenter CLI installed and configured
+- opencenter CLI installed and configured
 - Basic understanding of Go templates
 - Familiarity with Kubernetes manifests
 - A cluster configuration file
 
 ## Understanding the Template System
 
-openCenter uses Go's `text/template` package with Sprig functions to render GitOps manifests. Templates are embedded in the binary and rendered during `cluster setup`.
+opencenter uses Go's `text/template` package with Sprig functions to render GitOps manifests. Templates are embedded in the binary and rendered during `cluster setup`.
 
 ### Template Types
 
@@ -70,13 +70,13 @@ First, generate the GitOps repository with unrendered templates:
 ```bash
 # Initialize cluster configuration
 mise run build
-./bin/openCenter cluster init my-cluster
+./bin/opencenter cluster init my-cluster
 
 # Edit configuration as needed
-vim ~/.config/openCenter/clusters/opencenter/my-cluster/.my-cluster-config.yaml
+vim ~/.config/opencenter/clusters/opencenter/my-cluster/.my-cluster-config.yaml
 
 # Generate GitOps repo without rendering .tmpl files
-./bin/openCenter cluster setup my-cluster
+./bin/opencenter cluster setup my-cluster
 ```
 
 ### Step 2: Locate Template Files
@@ -121,7 +121,7 @@ After editing, render templates to generate final manifests:
 
 ```bash
 # Re-run setup with --render flag
-./bin/openCenter cluster setup my-cluster --render
+./bin/opencenter cluster setup my-cluster --render
 ```
 
 ### Step 5: Validate Changes
@@ -200,7 +200,7 @@ namespace: my-custom-service
 Edit your cluster configuration:
 
 ```yaml
-# ~/.config/openCenter/clusters/opencenter/my-cluster/.my-cluster-config.yaml
+# ~/.config/opencenter/clusters/opencenter/my-cluster/.my-cluster-config.yaml
 opencenter:
   services:
     my-custom-service:
@@ -220,7 +220,7 @@ opencenter:
 
 ```bash
 # Render templates
-./bin/openCenter cluster setup my-cluster --render
+./bin/opencenter cluster setup my-cluster --render
 
 # Verify rendered manifest
 cat applications/overlays/my-cluster/services/my-custom-service/base/deployment.yaml
@@ -381,7 +381,7 @@ Use the template engine's validation:
 mise run build
 
 # Validate specific template
-./bin/openCenter cluster setup my-cluster --validate-only
+./bin/opencenter cluster setup my-cluster --validate-only
 ```
 
 ### Step 2: Dry Run Rendering
@@ -390,7 +390,7 @@ Test template rendering without applying:
 
 ```bash
 # Render to temporary directory
-./bin/openCenter cluster setup my-cluster --render --output /tmp/test-render
+./bin/opencenter cluster setup my-cluster --render --output /tmp/test-render
 
 # Compare with existing
 diff -r ~/gitops/my-cluster /tmp/test-render
@@ -422,7 +422,7 @@ Render each configuration:
 
 ```bash
 for config in test-config-*.yaml; do
-  ./bin/openCenter cluster setup $(basename $config .yaml) --config $config --render
+  ./bin/opencenter cluster setup $(basename $config .yaml) --config $config --render
 done
 ```
 
@@ -457,7 +457,7 @@ Create `TEMPLATES.md` in your GitOps repo:
 - **Location**: `applications/overlays/my-cluster/services/my-custom-service/`
 - **Purpose**: Custom application deployment
 - **Configuration**: See `.my-cluster-config.yaml` under `opencenter.services.my-custom-service`
-- **Rendering**: Run `openCenter cluster setup my-cluster --render`
+- **Rendering**: Run `opencenter cluster setup my-cluster --render`
 
 ## Modified Templates
 
@@ -482,7 +482,7 @@ can't evaluate field Invalid in type config.Config
 
 ```bash
 # Verify configuration structure
-./bin/openCenter config show my-cluster --format json | jq '.opencenter'
+./bin/opencenter config show my-cluster --format json | jq '.opencenter'
 
 # Check available fields in template context
 # Templates have access to entire Config struct

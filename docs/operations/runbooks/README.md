@@ -109,7 +109,7 @@ Common issues encountered during the procedure and their solutions.
 4. **Notify stakeholders** - Alert teams about planned maintenance
 5. **Create backup** - Always backup before making changes:
    ```bash
-   openCenter cluster backup create <cluster> --encrypt
+   opencenter cluster backup create <cluster> --encrypt
    ```
 
 ### During Execution

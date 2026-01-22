@@ -18,7 +18,7 @@ This package defines the data structures for the cluster configuration, as well 
 
 # When to use
 
-This package is used internally by openCenter to manage cluster configurations. It is not intended for direct use by end-users.
+This package is used internally by opencenter to manage cluster configurations. It is not intended for direct use by end-users.
 
 # Configuration structure
 

@@ -22,12 +22,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/config/flags"
-	"github.com/rackerlabs/openCenter-cli/internal/security"
-	"github.com/rackerlabs/openCenter-cli/internal/sops"
-	"github.com/rackerlabs/openCenter-cli/internal/util"
-	"github.com/rackerlabs/openCenter-cli/internal/util/crypto"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config/flags"
+	"github.com/rackerlabs/opencenter-cli/internal/security"
+	"github.com/rackerlabs/opencenter-cli/internal/sops"
+	"github.com/rackerlabs/opencenter-cli/internal/util"
+	"github.com/rackerlabs/opencenter-cli/internal/util/crypto"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -195,7 +195,7 @@ specify it as an argument. You can still provide a name argument to override
 the name in the config file.
 
 The configuration is created in an organization-based directory structure:
-  ~/.config/openCenter/clusters/<organization>/<cluster>/
+  ~/.config/opencenter/clusters/<organization>/<cluster>/
 
 	By default, the organization is set to "opencenter". Use --org to
 	specify a different organization.
@@ -222,46 +222,46 @@ Configuration Override:
 Troubleshooting:
   • If cluster already exists, use --force to overwrite config file (preserves keys)
   • Use --strict to enable validation during initialization
-  • Check ~/.config/openCenter/clusters/ for created files`,
+  • Check ~/.config/opencenter/clusters/ for created files`,
 		Example: `  # Initialize with defaults (uses "opencenter" as organization)
-	  openCenter cluster init my-cluster
+	  opencenter cluster init my-cluster
 
   # Initialize from existing config file (cluster name extracted from config)
-  openCenter cluster init --config my-cluster-config.yaml
+  opencenter cluster init --config my-cluster-config.yaml
 
   # Initialize from config file with explicit name (overrides config file name)
-  openCenter cluster init my-cluster --config template-config.yaml
+  opencenter cluster init my-cluster --config template-config.yaml
 
   # Initialize bare metal cluster
-  openCenter cluster init my-cluster --org myorg --type baremetal
+  opencenter cluster init my-cluster --org myorg --type baremetal
 
   # Initialize with organization using --org flag
-  openCenter cluster init my-cluster --org myorg
+  opencenter cluster init my-cluster --org myorg
 
   # Initialize with organization using dot notation
-  openCenter cluster init my-cluster --opencenter.meta.organization=myorg
+  opencenter cluster init my-cluster --opencenter.meta.organization=myorg
 
   # Initialize with custom values
-  openCenter cluster init my-cluster \
+  opencenter cluster init my-cluster \
     --org production \
     --opencenter.meta.env=prod \
     --opencenter.cluster.kubernetes.version=1.31.4 \
     --opencenter.infrastructure.provider=aws
 
   # Initialize without key generation (SOPS and SSH)
-  openCenter cluster init my-cluster --no-keygen
+  opencenter cluster init my-cluster --no-keygen
 
   # Regenerate keys even if they already exist
-  openCenter cluster init my-cluster --regenerate-keys
+  opencenter cluster init my-cluster --regenerate-keys
 
   # Overwrite existing config file (preserves existing keys)
-  openCenter cluster init my-cluster --force
+  opencenter cluster init my-cluster --force
 
   # Overwrite active cluster config file (preserves existing keys)
-  openCenter cluster init --force
+  opencenter cluster init --force
 
   # Initialize with strict validation
-  openCenter cluster init my-cluster --strict`,
+  opencenter cluster init my-cluster --strict`,
 		Args: cobra.MaximumNArgs(1),
 		FParseErrWhitelist: cobra.FParseErrWhitelist{
 			UnknownFlags: true,
@@ -333,7 +333,7 @@ Troubleshooting:
 					return fmt.Errorf("failed to get active cluster: %w", err)
 				}
 				if activeName == "" {
-					return fmt.Errorf("no cluster name provided and no active cluster set; specify a cluster name, use --config with a config file, or use 'openCenter cluster select <name>' to set an active cluster")
+					return fmt.Errorf("no cluster name provided and no active cluster set; specify a cluster name, use --config with a config file, or use 'opencenter cluster select <name>' to set an active cluster")
 				}
 				name = activeName
 			}
@@ -1071,12 +1071,17 @@ contains_sensitive_data() {
 is_cluster_config() {
     local file="$1"
     
+    # Skip test files and fixtures
+    if [[ "$file" =~ ^tests/ ]] || [[ "$file" =~ ^testdata/ ]] || [[ "$file" =~ \.feature$ ]]; then
+        return 1
+    fi
+    
     # Check if it's a cluster config file by pattern
     if [[ "$file" =~ \..*-config\.yaml$ ]] || [[ "$file" =~ cluster.*\.yaml$ ]]; then
         return 0
     fi
     
-    # Check if file contains openCenter configuration structure
+    # Check if file contains opencenter configuration structure
     if grep -q "opencenter:" "$file" 2>/dev/null; then
         return 0
     fi
@@ -1107,7 +1112,7 @@ validate_file() {
         if ! is_sops_encrypted "$file"; then
             print_error "File '$file' contains sensitive data but is not SOPS encrypted!"
             print_error "Please encrypt the file using: sops -e -i '$file'"
-            print_error "Or use: openCenter sops secrets-encrypt '$file'"
+            print_error "Or use: opencenter sops secrets-encrypt '$file'"
             errors=1
         else
             print_success "File '$file' is properly SOPS encrypted"
@@ -1149,8 +1154,8 @@ main() {
         echo "To fix this issue:"
         echo "1. Encrypt sensitive files with SOPS:"
         echo "   sops -e -i <file>"
-        echo "2. Or use the openCenter CLI:"
-        echo "   openCenter sops secrets-encrypt <file>"
+        echo "2. Or use the opencenter CLI:"
+        echo "   opencenter sops secrets-encrypt <file>"
         echo "3. Stage the encrypted files:"
         echo "   git add <file>"
         echo "4. Commit again"

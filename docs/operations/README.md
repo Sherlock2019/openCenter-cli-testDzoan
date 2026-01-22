@@ -15,7 +15,7 @@
 - [Version Compatibility](#version-compatibility)
 **doc_type: reference**
 
-Operational procedures, runbooks, and reference material for teams running openCenter-managed Kubernetes clusters in production.
+Operational procedures, runbooks, and reference material for teams running opencenter-managed Kubernetes clusters in production.
 
 ## Who This Is For
 
@@ -250,8 +250,8 @@ Found an issue or have improvements for operational procedures? See our [Contrib
 
 ## Version Compatibility
 
-This operations documentation is for openCenter 1.0.0. Procedures may vary for different versions:
+This operations documentation is for opencenter 1.0.0. Procedures may vary for different versions:
 - Check the version tag in GitHub
 - Review the changelog for operational changes
-- Use `openCenter version` to check your installed version
+- Use `opencenter version` to check your installed version
 - Test procedures in non-production before applying to production

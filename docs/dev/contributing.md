@@ -2,7 +2,7 @@
 doc_type: how-to
 ---
 
-# Contributing to openCenter
+# Contributing to opencenter
 
 
 ## Table of Contents
@@ -20,11 +20,11 @@ doc_type: how-to
 - [Code of Conduct](#code-of-conduct)
 - [Recognition](#recognition)
 - [See Also](#see-also)
-This guide covers how to contribute code, documentation, and tests to openCenter.
+This guide covers how to contribute code, documentation, and tests to opencenter.
 
 ## Who this is for
 
-Anyone who wants to contribute to openCenter, whether fixing bugs, adding features, or improving documentation.
+Anyone who wants to contribute to opencenter, whether fixing bugs, adding features, or improving documentation.
 
 ## Getting Started
 
@@ -40,13 +40,13 @@ Anyone who wants to contribute to openCenter, whether fixing bugs, adding featur
 
 2. **Clone your fork**:
    ```bash
-   git clone https://github.com/your-username/openCenter-cli.git
-   cd openCenter-cli
+   git clone https://github.com/your-username/opencenter-cli.git
+   cd opencenter-cli
    ```
 
 3. **Add upstream remote**:
    ```bash
-   git remote add upstream https://github.com/rackerlabs/openCenter-cli.git
+   git remote add upstream https://github.com/rackerlabs/opencenter-cli.git
    ```
 
 4. **Install tools**:
@@ -311,7 +311,7 @@ Add scenarios to `tests/features/*.feature`:
 ```gherkin
 Feature: Cluster Initialization
   Scenario: Initialize cluster with custom organization
-    When I run "openCenter cluster init my-cluster --opencenter.meta.organization=my-org"
+    When I run "opencenter cluster init my-cluster --opencenter.meta.organization=my-org"
     Then a cluster configuration "my-cluster" should exist
     And the cluster configuration "my-cluster" should have "opencenter.meta.organization" set to "my-org"
 ```
@@ -546,7 +546,7 @@ Contributors are recognized in:
 - Contributors list
 - Git history
 
-Thank you for contributing to openCenter!
+Thank you for contributing to opencenter!
 
 ## See Also
 

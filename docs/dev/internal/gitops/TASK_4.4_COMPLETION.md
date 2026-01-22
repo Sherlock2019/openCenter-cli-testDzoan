@@ -60,13 +60,13 @@ $ go test -v ./internal/gitops -run TestGenerateGitOpsRepositoryBackwardCompatib
 === RUN   TestGenerateGitOpsRepositoryBackwardCompatibility
 --- PASS: TestGenerateGitOpsRepositoryBackwardCompatibility (0.11s)
 PASS
-ok      github.com/rackerlabs/openCenter-cli/internal/gitops    0.793s
+ok      github.com/rackerlabs/opencenter-cli/internal/gitops    0.793s
 ```
 
 **All legacy compatibility tests pass:**
 ```bash
 $ go test ./internal/gitops
-ok      github.com/rackerlabs/openCenter-cli/internal/gitops    2.318s
+ok      github.com/rackerlabs/opencenter-cli/internal/gitops    2.318s
 ```
 
 ## Verification

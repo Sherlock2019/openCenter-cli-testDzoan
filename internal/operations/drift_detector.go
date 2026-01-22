@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 )
 
 // Severity represents the severity level of drift

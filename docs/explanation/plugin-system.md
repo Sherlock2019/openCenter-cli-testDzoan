@@ -25,23 +25,23 @@
 
 ## Who this is for
 
-Developers who want to understand how openCenter's plugin system works, why it's designed the way it is, and how to extend openCenter with custom functionality.
+Developers who want to understand how opencenter's plugin system works, why it's designed the way it is, and how to extend opencenter with custom functionality.
 
 ## What plugins solve
 
-openCenter provides a comprehensive set of commands for cluster management, but every organization has unique workflows. The plugin system lets you extend openCenter without modifying its source code.
+opencenter provides a comprehensive set of commands for cluster management, but every organization has unique workflows. The plugin system lets you extend opencenter without modifying its source code.
 
-A plugin is an executable that openCenter discovers and exposes as a subcommand. If you create `openCenter-backup`, users can run `openCenter backup` as if it were a built-in command.
+A plugin is an executable that opencenter discovers and exposes as a subcommand. If you create `opencenter-backup`, users can run `opencenter backup` as if it were a built-in command.
 
 ## How plugin discovery works
 
-openCenter searches three locations for plugins, in this order:
+opencenter searches three locations for plugins, in this order:
 
 1. **`OPENCENTER_PLUGINS_DIR`** environment variable
-2. **`<config-dir>/plugins`** directory (typically `~/.config/openCenter/plugins`)
+2. **`<config-dir>/plugins`** directory (typically `~/.config/opencenter/plugins`)
 3. **System `PATH`**
 
-When openCenter starts, it scans these locations for executables matching the pattern `openCenter-*`. Each discovered plugin becomes a subcommand.
+When opencenter starts, it scans these locations for executables matching the pattern `opencenter-*`. Each discovered plugin becomes a subcommand.
 
 ### Why this search order?
 
@@ -55,17 +55,17 @@ Plugin discovery happens once at startup rather than on-demand. This means:
 - **Predictable behavior**: The available commands don't change during execution
 - **Simple caching**: Discovered plugins are cached in memory
 
-The trade-off is that newly installed plugins require restarting openCenter to be recognized. But this is acceptable—plugin installation is rare compared to command execution.
+The trade-off is that newly installed plugins require restarting opencenter to be recognized. But this is acceptable—plugin installation is rare compared to command execution.
 
 ## Plugin naming convention
 
-Plugins must follow the naming pattern `openCenter-<name>`. The prefix is case-insensitive, so `openCenter-backup`, `OPENCENTER-backup`, and `OpenCenter-backup` all work.
+Plugins must follow the naming pattern `opencenter-<name>`. The prefix is case-insensitive, so `opencenter-backup`, `OPENCENTER-backup`, and `OpenCenter-backup` all work.
 
-The plugin name (the part after the prefix) becomes the subcommand. So `openCenter-backup` is invoked as `openCenter backup`.
+The plugin name (the part after the prefix) becomes the subcommand. So `opencenter-backup` is invoked as `opencenter backup`.
 
 ### Why require a prefix?
 
-The prefix prevents accidental plugin registration. Without it, any executable in your PATH could become an openCenter command. The prefix makes plugin registration explicit and prevents naming conflicts with other tools.
+The prefix prevents accidental plugin registration. Without it, any executable in your PATH could become an opencenter command. The prefix makes plugin registration explicit and prevents naming conflicts with other tools.
 
 ### Why case-insensitive?
 
@@ -73,47 +73,47 @@ Different operating systems have different conventions. Windows is case-insensit
 
 ## How plugins execute
 
-When you run `openCenter backup --restore latest`, here's what happens:
+When you run `opencenter backup --restore latest`, here's what happens:
 
 1. **Command parsing**: Cobra parses `backup` as a subcommand
-2. **Plugin lookup**: openCenter finds the `openCenter-backup` executable
+2. **Plugin lookup**: opencenter finds the `opencenter-backup` executable
 3. **Argument forwarding**: All arguments after `backup` are passed to the plugin
 4. **Process execution**: The plugin runs as a separate process
 5. **Output streaming**: Plugin stdout/stderr stream to the terminal
-6. **Exit code preservation**: The plugin's exit code becomes openCenter's exit code
+6. **Exit code preservation**: The plugin's exit code becomes opencenter's exit code
 
 ### Why separate processes?
 
 Plugins run as separate processes rather than being loaded as libraries. This design choice has significant implications:
 
-**Isolation**: A plugin crash doesn't crash openCenter. A plugin memory leak doesn't affect openCenter. A plugin can be written in any language—Go, Python, Bash, Rust—as long as it produces an executable.
+**Isolation**: A plugin crash doesn't crash opencenter. A plugin memory leak doesn't affect opencenter. A plugin can be written in any language—Go, Python, Bash, Rust—as long as it produces an executable.
 
 **Simplicity**: No plugin API to maintain. No version compatibility issues. No shared memory concerns. Plugins are just executables that follow Unix conventions.
 
-**Security**: Plugins can't access openCenter's internal state. They can't modify configuration in memory or bypass validation. They interact with openCenter only through the CLI interface.
+**Security**: Plugins can't access opencenter's internal state. They can't modify configuration in memory or bypass validation. They interact with opencenter only through the CLI interface.
 
 The trade-off is performance—process creation has overhead. But for typical plugin operations (which involve network calls or file I/O), this overhead is negligible.
 
 ## Flag handling
 
-Plugins receive all flags and arguments exactly as the user provided them. openCenter doesn't parse plugin flags—it forwards them transparently.
+Plugins receive all flags and arguments exactly as the user provided them. opencenter doesn't parse plugin flags—it forwards them transparently.
 
 This is implemented with Cobra's `DisableFlagParsing: true` option. When enabled, Cobra treats everything after the plugin name as raw arguments.
 
 ### Why transparent forwarding?
 
-Each plugin defines its own flags. If openCenter tried to parse them, it would need to know every plugin's flag schema—impossible for external plugins. By forwarding transparently, plugins have complete control over their interface.
+Each plugin defines its own flags. If opencenter tried to parse them, it would need to know every plugin's flag schema—impossible for external plugins. By forwarding transparently, plugins have complete control over their interface.
 
-### How plugins access openCenter state
+### How plugins access opencenter state
 
-Plugins can't directly access openCenter's configuration or state. Instead, they use the CLI:
+Plugins can't directly access opencenter's configuration or state. Instead, they use the CLI:
 
 ```bash
 #!/bin/bash
-# openCenter-backup plugin
+# opencenter-backup plugin
 
 # Get cluster configuration
-config=$(openCenter config view --format json)
+config=$(opencenter config view --format json)
 
 # Parse with jq
 cluster_name=$(echo "$config" | jq -r '.opencenter.meta.name')
@@ -125,12 +125,12 @@ echo "Backing up cluster: $cluster_name"
 This indirection has benefits:
 
 - **Stability**: Plugins depend on the CLI interface, which is stable and versioned
-- **Testability**: Plugins can be tested independently of openCenter internals
-- **Portability**: Plugins work across openCenter versions as long as the CLI interface is compatible
+- **Testability**: Plugins can be tested independently of opencenter internals
+- **Portability**: Plugins work across opencenter versions as long as the CLI interface is compatible
 
 ## Service plugins vs command plugins
 
-openCenter has two plugin concepts that serve different purposes:
+opencenter has two plugin concepts that serve different purposes:
 
 ### Command plugins (external executables)
 
@@ -138,7 +138,7 @@ These are the plugins described above—executables that extend the CLI with new
 
 **Use case**: Adding new workflows, integrating with external tools, custom automation.
 
-**Example**: `openCenter-backup` for cluster backup operations.
+**Example**: `opencenter-backup` for cluster backup operations.
 
 ### Service plugins (internal Go packages)
 
@@ -152,7 +152,7 @@ These are Go packages in `internal/services/` that define how services (like cer
 
 They solve different problems:
 
-- **Command plugins** extend what openCenter can do (new commands, new workflows)
+- **Command plugins** extend what opencenter can do (new commands, new workflows)
 - **Service plugins** extend what clusters can include (new services, new components)
 
 Command plugins are external and language-agnostic. Service plugins are internal and Go-specific. This separation keeps the extension points focused and simple.
@@ -278,11 +278,11 @@ This manifest-based approach allows defining services without writing Go code. T
 
 ### Why manifests?
 
-Manifests lower the barrier to adding services. You can define a new service by writing YAML and templates, without understanding openCenter's internal APIs. This makes the system more accessible to operators who know Kubernetes but not Go.
+Manifests lower the barrier to adding services. You can define a new service by writing YAML and templates, without understanding opencenter's internal APIs. This makes the system more accessible to operators who know Kubernetes but not Go.
 
 ## Dependency injection integration
 
-The plugin system integrates with openCenter's dependency injection container. When a command needs a service registry, it requests it from the DI container:
+The plugin system integrates with opencenter's dependency injection container. When a command needs a service registry, it requests it from the DI container:
 
 ```go
 func newServiceEnableCmd(container di.Container) *cobra.Command {
@@ -311,15 +311,15 @@ This also makes the system more flexible. You can swap registry implementations 
 
 ### Command plugin security
 
-Command plugins run with the same permissions as openCenter. If openCenter has access to cloud credentials, plugins have access too.
+Command plugins run with the same permissions as opencenter. If opencenter has access to cloud credentials, plugins have access too.
 
 **Mitigation**: Only install plugins from trusted sources. Review plugin code before installation. Use the config directory (not system PATH) for user-specific plugins.
 
 ### Service plugin security
 
-Service plugins run in-process and have full access to openCenter's memory and state.
+Service plugins run in-process and have full access to opencenter's memory and state.
 
-**Mitigation**: Service plugins are part of openCenter's codebase and go through code review. External service plugins (via manifests) are sandboxed—they can only define configuration and templates, not execute arbitrary code.
+**Mitigation**: Service plugins are part of opencenter's codebase and go through code review. External service plugins (via manifests) are sandboxed—they can only define configuration and templates, not execute arbitrary code.
 
 ### Template security
 
@@ -349,10 +349,10 @@ Plugins that wrap existing tools:
 
 ```bash
 #!/bin/bash
-# openCenter-kubectl: Run kubectl with cluster context
+# opencenter-kubectl: Run kubectl with cluster context
 
-cluster=$(openCenter config get opencenter.meta.name)
-kubeconfig="$HOME/.config/openCenter/clusters/$cluster/kubeconfig"
+cluster=$(opencenter config get opencenter.meta.name)
+kubeconfig="$HOME/.config/opencenter/clusters/$cluster/kubeconfig"
 
 kubectl --kubeconfig="$kubeconfig" "$@"
 ```
@@ -363,12 +363,12 @@ Plugins that integrate with external systems:
 
 ```bash
 #!/bin/bash
-# openCenter-slack: Send cluster events to Slack
+# opencenter-slack: Send cluster events to Slack
 
 event="$1"
 message="$2"
 
-webhook_url=$(openCenter config get integrations.slack.webhook)
+webhook_url=$(opencenter config get integrations.slack.webhook)
 curl -X POST "$webhook_url" -d "{\"text\": \"$event: $message\"}"
 ```
 
@@ -378,9 +378,9 @@ Plugins that perform custom validation:
 
 ```bash
 #!/bin/bash
-# openCenter-compliance: Check cluster compliance
+# opencenter-compliance: Check cluster compliance
 
-config=$(openCenter config view --format json)
+config=$(opencenter config view --format json)
 
 # Check for required security settings
 if ! echo "$config" | jq -e '.opencenter.cluster.networking.security.os_hardening == true' > /dev/null; then
@@ -402,7 +402,7 @@ A formal Go API for plugins that need tighter integration:
 ```go
 package main
 
-import "github.com/rackerlabs/openCenter-cli/pkg/plugin"
+import "github.com/rackerlabs/opencenter-cli/pkg/plugin"
 
 func main() {
     plugin.Register(&plugin.Definition{
@@ -417,14 +417,14 @@ func main() {
 }
 ```
 
-This would allow plugins to use openCenter's libraries (configuration, validation, etc.) while still being separate executables.
+This would allow plugins to use opencenter's libraries (configuration, validation, etc.) while still being separate executables.
 
 ### Plugin marketplace
 
 A registry of community plugins with installation support:
 
 ```bash
-openCenter plugin install backup
+opencenter plugin install backup
 # Fetches from registry, verifies signature, installs to config directory
 ```
 
@@ -437,7 +437,7 @@ Version constraints for plugin compatibility:
 name: backup
 version: 1.0.0
 requires:
-  openCenter: ">=1.0.0 <2.0.0"
+  opencenter: ">=1.0.0 <2.0.0"
 ```
 
 ## Trade-offs and limitations
@@ -450,9 +450,9 @@ Spawning a process for each plugin invocation has overhead. For plugins that run
 
 ### No shared state
 
-Plugins can't share state with openCenter or other plugins except through the filesystem or CLI.
+Plugins can't share state with opencenter or other plugins except through the filesystem or CLI.
 
-**Mitigation**: Use the CLI interface for state access. For complex state sharing, consider contributing to openCenter core instead of using a plugin.
+**Mitigation**: Use the CLI interface for state access. For complex state sharing, consider contributing to opencenter core instead of using a plugin.
 
 ### Discovery limitations
 
@@ -464,7 +464,7 @@ Plugins must be in specific directories or PATH. There's no automatic discovery 
 
 ### Kubectl plugins
 
-Kubectl uses a similar executable-based plugin system. openCenter's design is inspired by kubectl but adds:
+Kubectl uses a similar executable-based plugin system. opencenter's design is inspired by kubectl but adds:
 
 - Service plugins for internal extensibility
 - Dependency resolution for service plugins
@@ -472,15 +472,15 @@ Kubectl uses a similar executable-based plugin system. openCenter's design is in
 
 ### Helm plugins
 
-Helm plugins are also executables but use a manifest file for metadata. openCenter's command plugins don't require manifests (simpler) but service plugins do (more structured).
+Helm plugins are also executables but use a manifest file for metadata. opencenter's command plugins don't require manifests (simpler) but service plugins do (more structured).
 
 ### Terraform providers
 
-Terraform providers are separate binaries that communicate via gRPC. This provides tighter integration but requires more complex plugin development. openCenter's simpler approach is appropriate for its use case.
+Terraform providers are separate binaries that communicate via gRPC. This provides tighter integration but requires more complex plugin development. opencenter's simpler approach is appropriate for its use case.
 
 ## See also
 
-- **[Developer Guide](../dev/readme.md)**: How to develop openCenter plugins
+- **[Developer Guide](../dev/readme.md)**: How to develop opencenter plugins
 - **[Service Configuration](../reference/services.md)**: Available services and their configuration
 - **[CLI Commands](../reference/cli-commands.md)**: Built-in commands that plugins can extend
 - **[Architecture](./architecture.md)**: How plugins fit into the overall system

@@ -28,5 +28,5 @@ limitations under the License.
 //
 // The package includes custom template functions for HCL rendering,
 // field validation, and common template operations used throughout
-// the openCenter infrastructure generation process.
+// the opencenter infrastructure generation process.
 package template

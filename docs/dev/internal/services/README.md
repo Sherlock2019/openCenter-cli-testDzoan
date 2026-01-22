@@ -16,7 +16,7 @@
 - [Future Enhancements](#future-enhancements)
 - [Contributing](#contributing)
 - [License](#license)
-The service plugin system provides a modular, extensible architecture for managing cluster services in openCenter. Services can be loaded dynamically from manifest files, with automatic dependency resolution and lifecycle management.
+The service plugin system provides a modular, extensible architecture for managing cluster services in opencenter. Services can be loaded dynamically from manifest files, with automatic dependency resolution and lifecycle management.
 
 ## Overview
 
@@ -139,7 +139,7 @@ The following service types are supported:
 ### Creating a Service Registry
 
 ```go
-import "github.com/rackerlabs/openCenter-cli/internal/services"
+import "github.com/rackerlabs/opencenter-cli/internal/services"
 
 // Create a new registry
 registry := services.NewServiceRegistry()
@@ -545,4 +545,4 @@ When adding new services:
 
 ## License
 
-This service plugin system is part of openCenter and follows the same license.
+This service plugin system is part of opencenter and follows the same license.

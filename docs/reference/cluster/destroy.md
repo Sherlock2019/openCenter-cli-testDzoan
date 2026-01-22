@@ -24,7 +24,7 @@ Destroy cluster infrastructure and clean up resources.
 ## Synopsis
 
 ```bash
-openCenter cluster destroy <name> [flags]
+opencenter cluster destroy <name> [flags]
 ```
 
 ## Description
@@ -45,10 +45,10 @@ The `cluster destroy` command permanently removes cluster infrastructure, config
 
 ```bash
 # Destroy cluster (with confirmation)
-openCenter cluster destroy my-cluster
+opencenter cluster destroy my-cluster
 
 # Force destroy without confirmation
-openCenter cluster destroy my-cluster --force
+opencenter cluster destroy my-cluster --force
 ```
 
 ## Confirmation Prompt
@@ -104,7 +104,7 @@ Destroy operations acquire an exclusive lock on the cluster to prevent concurren
 If another operation is in progress:
 ```
 Error: failed to acquire lock for cluster "my-cluster": lock already held
-Another operation may be in progress. Wait for it to complete or use 'openCenter cluster info my-cluster' to check lock status
+Another operation may be in progress. Wait for it to complete or use 'opencenter cluster info my-cluster' to check lock status
 ```
 
 ## Output

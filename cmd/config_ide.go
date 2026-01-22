@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +32,7 @@ func newConfigIDECmd() *cobra.Command {
 		Long: `Set up IDE integration with JSON schema and YAML language server support.
 
 This command configures your IDE to provide autocomplete, validation, and
-documentation for openCenter cluster configuration files. It generates the
+documentation for opencenter cluster configuration files. It generates the
 JSON schema and creates IDE-specific configuration files.
 
 Supported IDEs:
@@ -49,16 +49,16 @@ The setup process:
 
 After running this command, restart your IDE to activate the integration.`,
 		Example: `  # Set up IDE integration with default settings
-  openCenter config ide
+  opencenter config ide
 
   # Set up for specific IDE
-  openCenter config ide --ide=vscode
+  opencenter config ide --ide=vscode
 
   # Generate schema only
-  openCenter config ide --schema-only
+  opencenter config ide --schema-only
 
   # Show setup instructions
-  openCenter config ide --show-instructions`,
+  opencenter config ide --show-instructions`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ide, _ := cmd.Flags().GetString("ide")
 			schemaOnly, _ := cmd.Flags().GetBool("schema-only")
@@ -87,7 +87,7 @@ After running this command, restart your IDE to activate the integration.`,
 
 // setupIDEIntegration sets up IDE integration
 func setupIDEIntegration(cmd *cobra.Command, ide string, schemaOnly bool) error {
-	fmt.Println("🔧 Setting up IDE integration for openCenter...")
+	fmt.Println("🔧 Setting up IDE integration for opencenter...")
 
 	// Generate JSON schema
 	fmt.Println("📄 Generating JSON schema...")
@@ -133,15 +133,15 @@ func setupIDEIntegration(cmd *cobra.Command, ide string, schemaOnly bool) error 
 
 	case "jetbrains":
 		fmt.Println("ℹ️  JetBrains IDE integration requires manual setup")
-		fmt.Println("💡 Run 'openCenter config ide --show-instructions --ide=jetbrains' for setup steps")
+		fmt.Println("💡 Run 'opencenter config ide --show-instructions --ide=jetbrains' for setup steps")
 
 	case "vim":
 		fmt.Println("ℹ️  Vim/Neovim integration requires manual setup")
-		fmt.Println("💡 Run 'openCenter config ide --show-instructions --ide=vim' for setup steps")
+		fmt.Println("💡 Run 'opencenter config ide --show-instructions --ide=vim' for setup steps")
 
 	case "emacs":
 		fmt.Println("ℹ️  Emacs integration requires manual setup")
-		fmt.Println("💡 Run 'openCenter config ide --show-instructions --ide=emacs' for setup steps")
+		fmt.Println("💡 Run 'opencenter config ide --show-instructions --ide=emacs' for setup steps")
 
 	default:
 		fmt.Printf("⚠️  Unknown IDE: %s\n", ide)
@@ -251,7 +251,7 @@ Visual Studio Code Setup Instructions
    code --install-extension redhat.vscode-yaml
 
 2. Run the IDE setup command:
-   openCenter config ide --ide=vscode
+   opencenter config ide --ide=vscode
 
 3. Restart VS Code
 
@@ -272,12 +272,12 @@ JetBrains IDEs Setup Instructions
 ==================================
 
 1. Generate the JSON schema:
-   openCenter cluster schema --out schema/cluster.schema.json
+   opencenter cluster schema --out schema/cluster.schema.json
 
 2. Open Settings/Preferences → Languages & Frameworks → Schemas and DTDs → JSON Schema Mappings
 
 3. Add a new mapping:
-   - Name: openCenter Cluster Configuration
+   - Name: opencenter Cluster Configuration
    - Schema file: schema/cluster.schema.json
    - Schema version: JSON Schema version 7
 
@@ -323,7 +323,7 @@ Option 1: Using coc.nvim
    }
 
 4. Generate the schema:
-   openCenter cluster schema --out schema/cluster.schema.json
+   opencenter cluster schema --out schema/cluster.schema.json
 
 Option 2: Using nvim-lspconfig
 -------------------------------
@@ -350,7 +350,7 @@ Option 2: Using nvim-lspconfig
    }
 
 4. Generate the schema:
-   openCenter cluster schema --out schema/cluster.schema.json
+   opencenter cluster schema --out schema/cluster.schema.json
 
 For more information, see: docs/ide-integration.md
 `)
@@ -377,7 +377,7 @@ Emacs Setup Instructions
    (add-to-list 'auto-mode-alist '("\\.opencenter\\.yaml\\'" . yaml-mode))
 
 5. Generate the schema:
-   openCenter cluster schema --out schema/cluster.schema.json
+   opencenter cluster schema --out schema/cluster.schema.json
 
 6. Restart Emacs
 
@@ -427,7 +427,7 @@ func installShellIntegration(cmd *cobra.Command) error {
 	}
 	defer f.Close()
 
-	integrationBlock := fmt.Sprintf("\n# openCenter shell integration\n%s\n", integrationLine)
+	integrationBlock := fmt.Sprintf("\n# opencenter shell integration\n%s\n", integrationLine)
 	if _, err := f.WriteString(integrationBlock); err != nil {
 		return fmt.Errorf("failed to write to %s: %w", rcFile, err)
 	}

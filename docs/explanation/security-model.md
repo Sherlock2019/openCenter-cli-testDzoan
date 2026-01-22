@@ -1,7 +1,7 @@
 ---
 title: Security Model
 doc_type: explanation
-description: Security architecture and design principles in openCenter
+description: Security architecture and design principles in opencenter
 keywords: [security, encryption, sops, age, secrets, audit, compliance]
 related:
   - ../reference/sops-commands.md
@@ -28,9 +28,9 @@ related:
 - [Conclusion](#conclusion)
 ## Overview
 
-openCenter implements a defense-in-depth security model designed to protect sensitive data throughout the cluster lifecycle—from initial configuration through deployment and ongoing operations. The security architecture is built on the principle that **no plaintext secrets should ever be committed to version control**, while maintaining usability for DevOps workflows.
+opencenter implements a defense-in-depth security model designed to protect sensitive data throughout the cluster lifecycle—from initial configuration through deployment and ongoing operations. The security architecture is built on the principle that **no plaintext secrets should ever be committed to version control**, while maintaining usability for DevOps workflows.
 
-This document explains the security principles, threat model, encryption mechanisms, and compliance considerations that guide openCenter's design.
+This document explains the security principles, threat model, encryption mechanisms, and compliance considerations that guide opencenter's design.
 
 ## Core Security Principles
 
@@ -58,7 +58,7 @@ This document explains the security principles, threat model, encryption mechani
 
 **Key Storage Locations**:
 ```
-~/.config/openCenter/clusters/<organization>/<cluster>/secrets/age/keys/
+~/.config/opencenter/clusters/<organization>/<cluster>/secrets/age/keys/
 ```
 
 **Encrypted File Patterns**:
@@ -98,7 +98,7 @@ This document explains the security principles, threat model, encryption mechani
 
 **Audit Log Location**:
 ```
-~/.config/openCenter/audit/audit.log
+~/.config/opencenter/audit/audit.log
 ```
 
 ### 5. Input Validation
@@ -127,7 +127,7 @@ This document explains the security principles, threat model, encryption mechani
 
 ### Why Age Over GPG?
 
-openCenter uses Age encryption instead of GPG for several compelling reasons:
+opencenter uses Age encryption instead of GPG for several compelling reasons:
 
 | Aspect | Age | GPG |
 |--------|-----|-----|
@@ -164,7 +164,7 @@ age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
    ```
 
 3. **Automatic Encryption**:
-   - openCenter encrypts files during `cluster setup`
+   - opencenter encrypts files during `cluster setup`
    - Only specified fields are encrypted (preserves YAML structure)
    - Metadata remains plaintext for GitOps tooling
 
@@ -547,7 +547,7 @@ sops:
 - **Requirement 8 - Identify and Authenticate Access**:
   - Unique credentials per cluster
   - No shared or default passwords
-  - Multi-factor authentication recommended (not enforced by openCenter)
+  - Multi-factor authentication recommended (not enforced by opencenter)
 
 - **Requirement 10 - Track and Monitor All Access**:
   - Audit logging of all access to cardholder data
@@ -555,7 +555,7 @@ sops:
   - Audit log review procedures
 
 **PCI-DSS Compliance Notes**:
-- openCenter provides encryption and audit logging primitives
+- opencenter provides encryption and audit logging primitives
 - Organizations must implement additional controls (network segmentation, access controls, etc.)
 - Regular security assessments (QSA audits) required for PCI compliance
 
@@ -624,7 +624,7 @@ sops:
    mise run sops backup-keys --output /secure/backup/location
    
    # Verify key permissions
-   chmod 600 ~/.config/openCenter/clusters/*/secrets/age/keys/*.txt
+   chmod 600 ~/.config/opencenter/clusters/*/secrets/age/keys/*.txt
    ```
 
 2. **Rotate Keys Regularly**:
@@ -672,7 +672,7 @@ sops:
 
 3. **Validate Input in Custom Scripts**:
    ```go
-   import "github.com/rackerlabs/openCenter-cli/internal/security"
+   import "github.com/rackerlabs/opencenter-cli/internal/security"
    
    validator := security.NewDefaultInputValidator()
    if err := validator.ValidateClusterName(userInput); err != nil {
@@ -766,7 +766,7 @@ sops:
 
 ## Conclusion
 
-openCenter's security model balances strong cryptographic protection with operational usability. By encrypting secrets at rest, masking credentials in logs, validating all inputs, and maintaining tamper-evident audit trails, openCenter provides a solid foundation for secure Kubernetes cluster management.
+opencenter's security model balances strong cryptographic protection with operational usability. By encrypting secrets at rest, masking credentials in logs, validating all inputs, and maintaining tamper-evident audit trails, opencenter provides a solid foundation for secure Kubernetes cluster management.
 
 However, security is a shared responsibility. Organizations must:
 - Protect Age private keys with appropriate access controls
@@ -774,4 +774,4 @@ However, security is a shared responsibility. Organizations must:
 - Monitor audit logs for suspicious activity
 - Implement additional controls for compliance requirements (MFA, network segmentation, etc.)
 
-For questions or security concerns, please contact the openCenter security team or file a confidential security issue.
+For questions or security concerns, please contact the opencenter security team or file a confidential security issue.

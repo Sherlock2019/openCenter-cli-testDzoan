@@ -1,10 +1,10 @@
 # Talos on OpenStack — Design Document
 
 ## Purpose
-This document translates the Talos provider research into an implementable product strategy for the openCenter CLI. It describes **what** experience we are building for platform and security engineers who must provision Zero Trust Talos clusters on OpenStack. The document informs backlog prioritization, UX flows, and verification criteria that downstream AI agents will execute.
+This document translates the Talos provider research into an implementable product strategy for the opencenter CLI. It describes **what** experience we are building for platform and security engineers who must provision Zero Trust Talos clusters on OpenStack. The document informs backlog prioritization, UX flows, and verification criteria that downstream AI agents will execute.
 
 ## Audience
-- openCenter CLI contributors
+- opencenter CLI contributors
 - Security, platform, and network engineers partnering on the Talos provider
 - AI agents that will implement the spec in code, infrastructure templates, docs, and tests
 
@@ -16,7 +16,7 @@ Highly regulated organizations want Kubernetes clusters that inherit Talos immut
 
 ## Goals
 1. **Secure-by-default experience**: every generated artifact (machine config, network policy, load balancer, disk) adheres to the hardening guidance from `readme.md` without manual toggles.
-2. **Declarative lifecycle**: cluster creation, upgrades, and replacement run through first-party Pulumi programs surfaced via openCenter CLI commands (no CAPI/CAPO dependency in this iteration).
+2. **Declarative lifecycle**: cluster creation, upgrades, and replacement run through first-party Pulumi programs surfaced via opencenter CLI commands (no CAPI/CAPO dependency in this iteration).
 3. **Auditable management**: no SSH; all mutable actions happen through Talos API guarded by WireGuard and short-lived certificates.
 4. **Composable automation**: output assets and state are automation-friendly (GitOps repos, Pulumi stacks, schemas).
 
@@ -24,7 +24,7 @@ Highly regulated organizations want Kubernetes clusters that inherit Talos immut
 - Supporting non-Talos operating systems or mutable management patterns.
 - Providing a generic OpenStack orchestrator unrelated to Kubernetes.
 - Shipping CAPI/CAPO integrations in this iteration (future enhancement).
-- Implementing enterprise UI/portal features inside openCenter CLI.
+- Implementing enterprise UI/portal features inside opencenter CLI.
 
 ## Product Personas & Key Jobs
 | Persona | Key Job | Success Signal |
@@ -60,7 +60,7 @@ The experience is organized into four pillars that map to CLI commands and autom
 ## Experience Narrative
 1. Engineer runs a validation command; CLI reports Barbican availability, Glance signature enforcement, and required Neutron networks.
 2. Engineer initializes a new Talos blueprint specifying tenant/project IDs and desired cluster size. CLI outputs GitOps-ready directories with encrypted credentials, Pulumi stack configuration, and documentation stubs.
-3. CI pipeline applies the blueprint. openCenter invokes Pulumi via Go bindings to create the dedicated OpenStack project, enforce the network/security posture, and provision Talos nodes that expose only required ports. The CLI prints attestation fingerprints.
+3. CI pipeline applies the blueprint. opencenter invokes Pulumi via Go bindings to create the dedicated OpenStack project, enforce the network/security posture, and provision Talos nodes that expose only required ports. The CLI prints attestation fingerprints.
 4. Operations team monitors status through CLI, which fetches Talos API health via WireGuard and compares deployed resources against the blueprint for drift. Rotations trigger node replacements automatically.
 
 ## Scope of Work

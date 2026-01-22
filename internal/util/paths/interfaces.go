@@ -64,17 +64,17 @@ type DirectoryManager interface {
 
 // ClusterPaths contains all organization-aware paths for a cluster
 type ClusterPaths struct {
-	OrganizationDir string // ~/.config/openCenter/clusters/<organization>
-	GitOpsDir       string // ~/.config/openCenter/clusters/<organization>
-	ClusterDir      string // ~/.config/openCenter/clusters/<organization>/infrastructure/clusters/<cluster>
-	ApplicationsDir string // ~/.config/openCenter/clusters/<organization>/applications/overlays/<cluster>
-	SecretsDir      string // ~/.config/openCenter/clusters/<organization>/secrets
-	SOPSKeyPath     string // ~/.config/openCenter/clusters/<organization>/secrets/age/keys/<cluster>.txt
-	SOPSConfigPath  string // ~/.config/openCenter/clusters/<organization>/.sops.yaml
-	KubeconfigPath  string // ~/.config/openCenter/clusters/<organization>/infrastructure/clusters/<cluster>/kubeconfig.yaml
-	InventoryPath   string // ~/.config/openCenter/clusters/<organization>/infrastructure/clusters/<cluster>/inventory/
-	VenvPath        string // ~/.config/openCenter/clusters/<organization>/infrastructure/clusters/<cluster>/venv/
-	BinPath         string // ~/.config/openCenter/clusters/<organization>/infrastructure/clusters/<cluster>/.bin/
+	OrganizationDir string // ~/.config/opencenter/clusters/<organization>
+	GitOpsDir       string // ~/.config/opencenter/clusters/<organization>
+	ClusterDir      string // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>
+	ApplicationsDir string // ~/.config/opencenter/clusters/<organization>/applications/overlays/<cluster>
+	SecretsDir      string // ~/.config/opencenter/clusters/<organization>/secrets
+	SOPSKeyPath     string // ~/.config/opencenter/clusters/<organization>/secrets/age/keys/<cluster>.txt
+	SOPSConfigPath  string // ~/.config/opencenter/clusters/<organization>/.sops.yaml
+	KubeconfigPath  string // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/kubeconfig.yaml
+	InventoryPath   string // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/inventory/
+	VenvPath        string // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/venv/
+	BinPath         string // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/.bin/
 }
 
 // PathExpander interface for expanding environment variables and user paths

@@ -18,11 +18,11 @@
 - [Related Documentation](#related-documentation)
 **doc_type: how-to**
 
-Configure openCenter to deploy Kubernetes clusters on AWS infrastructure. This guide walks through AWS account setup, IAM configuration, VPC planning, and cluster configuration.
+Configure opencenter to deploy Kubernetes clusters on AWS infrastructure. This guide walks through AWS account setup, IAM configuration, VPC planning, and cluster configuration.
 
 ## Task Summary
 
-Set up openCenter to provision Kubernetes clusters on AWS by configuring IAM credentials, planning VPC topology, selecting instance types, and validating the configuration. The result is a validated cluster configuration ready for deployment.
+Set up opencenter to provision Kubernetes clusters on AWS by configuring IAM credentials, planning VPC topology, selecting instance types, and validating the configuration. The result is a validated cluster configuration ready for deployment.
 
 ## Prerequisites
 
@@ -30,7 +30,7 @@ Before starting, you need:
 
 - **AWS account** with administrative access or sufficient IAM permissions
 - **AWS CLI** installed and configured (version 2.x recommended)
-- **openCenter installed** (see [Getting Started](../../tutorials/getting-started.md))
+- **opencenter installed** (see [Getting Started](../../tutorials/getting-started.md))
 - **Terraform or OpenTofu** installed (version 1.5+ or compatible)
 - **Basic AWS knowledge**: VPCs, subnets, EC2, IAM
 
@@ -47,7 +47,7 @@ aws sts get-caller-identity
 
 ## Step 1: Configure AWS Credentials
 
-openCenter supports two authentication methods: IAM access keys or AWS CLI profiles.
+opencenter supports two authentication methods: IAM access keys or AWS CLI profiles.
 
 ### Option A: IAM Access Keys (Recommended for CI/CD)
 
@@ -144,11 +144,11 @@ You should see your account ID, user ARN, and user ID.
 
 ## Step 2: Plan VPC and Network Configuration
 
-Design your cluster's network topology. You can use an existing VPC or let openCenter create one.
+Design your cluster's network topology. You can use an existing VPC or let opencenter create one.
 
 ### Option A: Auto-Create VPC (Simplest)
 
-Let openCenter create a new VPC with default settings:
+Let opencenter create a new VPC with default settings:
 
 ```yaml
 opencenter:
@@ -161,7 +161,7 @@ opencenter:
         public_subnets: []   # Auto-calculated
 ```
 
-openCenter will create:
+opencenter will create:
 - VPC with 10.0.0.0/16 CIDR
 - 3 public subnets (10.0.1.0/24, 10.0.2.0/24, 10.0.3.0/24)
 - 3 private subnets (10.0.11.0/24, 10.0.12.0/24, 10.0.13.0/24)
@@ -383,7 +383,7 @@ Initialize a cluster configuration with your settings:
 
 ```bash
 mise run build
-./bin/openCenter cluster init my-aws-cluster \
+./bin/opencenter cluster init my-aws-cluster \
   --opencenter.infrastructure.provider=aws \
   --opencenter.infrastructure.cloud.aws.region=us-east-1 \
   --opencenter.cluster.kubernetes.master_count=3 \
@@ -392,7 +392,7 @@ mise run build
 
 This creates a configuration file at:
 ```
-~/.config/openCenter/clusters/opencenter/.my-aws-cluster-config.yaml
+~/.config/opencenter/clusters/opencenter/.my-aws-cluster-config.yaml
 ```
 
 ### Edit Configuration File
@@ -461,7 +461,7 @@ secrets:
 Run validation checks:
 
 ```bash
-./bin/openCenter cluster validate my-aws-cluster
+./bin/opencenter cluster validate my-aws-cluster
 ```
 
 The validator checks:
@@ -698,7 +698,7 @@ aws ec2 describe-availability-zones --region us-east-1
 
 After validating your configuration:
 
-1. **Generate GitOps repository**: Run `openCenter cluster setup` to create infrastructure manifests
+1. **Generate GitOps repository**: Run `opencenter cluster setup` to create infrastructure manifests
 2. **Review Terraform configuration**: Check generated `main.tf` in your GitOps repository
 3. **Deploy infrastructure**: Run `terraform apply` to provision AWS resources
 4. **Install Kubernetes**: Follow Kubernetes installation guide (TBD)
@@ -714,4 +714,4 @@ After validating your configuration:
 ---
 
 **Last Updated**: January 2025  
-**Maintained By**: openCenter Team
+**Maintained By**: opencenter Team

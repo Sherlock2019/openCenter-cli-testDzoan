@@ -15,7 +15,7 @@
 - [Requirements](#requirements)
 ## Overview
 
-The openCenter CLI uses structured logging to track feature flag evaluation and usage. This provides visibility into which systems are active during execution and helps with monitoring, debugging, and troubleshooting during the migration from legacy to new implementations.
+The opencenter CLI uses structured logging to track feature flag evaluation and usage. This provides visibility into which systems are active during execution and helps with monitoring, debugging, and troubleshooting during the migration from legacy to new implementations.
 
 ## Logging Framework
 
@@ -24,7 +24,7 @@ Feature flag logging uses [logrus](https://github.com/sirupsen/logrus) for struc
 - **Structured Data**: All log entries include structured fields for easy parsing and analysis
 - **Multiple Formats**: Supports JSON, text, and YAML output formats
 - **Log Levels**: Configurable log levels (debug, info, warn, error)
-- **Integration**: Integrates with existing openCenter logging infrastructure
+- **Integration**: Integrates with existing opencenter logging infrastructure
 
 ## Log Events
 

@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rackerlabs/openCenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
 )
 
 // OpenStackValidator validates OpenStack-specific configuration.

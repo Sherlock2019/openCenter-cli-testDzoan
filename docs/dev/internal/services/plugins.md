@@ -12,7 +12,7 @@
 - [Testing](#testing)
 - [Migration from Legacy System](#migration-from-legacy-system)
 - [Future Enhancements](#future-enhancements)
-This directory contains the plugin implementations for all built-in openCenter services. These plugins implement the `ServicePlugin` interface and provide validation, rendering, and status reporting capabilities for each service.
+This directory contains the plugin implementations for all built-in opencenter services. These plugins implement the `ServicePlugin` interface and provide validation, rendering, and status reporting capabilities for each service.
 
 ## Overview
 
@@ -96,8 +96,8 @@ To register all built-in services with a service registry:
 
 ```go
 import (
-    "github.com/rackerlabs/openCenter-cli/internal/services"
-    "github.com/rackerlabs/openCenter-cli/internal/services/plugins"
+    "github.com/rackerlabs/opencenter-cli/internal/services"
+    "github.com/rackerlabs/opencenter-cli/internal/services/plugins"
 )
 
 registry := services.NewServiceRegistry()
@@ -166,8 +166,8 @@ import (
     "context"
     "fmt"
     
-    "github.com/rackerlabs/openCenter-cli/internal/config/services"
-    svc "github.com/rackerlabs/openCenter-cli/internal/services"
+    "github.com/rackerlabs/opencenter-cli/internal/config/services"
+    svc "github.com/rackerlabs/opencenter-cli/internal/services"
 )
 
 type MyServicePlugin struct{}

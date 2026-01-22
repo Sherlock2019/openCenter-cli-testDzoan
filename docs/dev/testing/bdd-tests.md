@@ -1,6 +1,6 @@
 # BDD Test Suite (Godog)
 
-This suite validates openCenter’s behavior end‑to‑end using Gherkin feature files and Godog step definitions.
+This suite validates opencenter’s behavior end‑to‑end using Gherkin feature files and Godog step definitions.
 
 ## Running the suite
 

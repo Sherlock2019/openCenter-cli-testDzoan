@@ -14,7 +14,7 @@
 - [Troubleshooting](#troubleshooting)
 - [Cluster Selection Modes](#cluster-selection-modes)
 - [See Also](#see-also)
-openCenter provides shell integration for session-scoped cluster selection, allowing multiple terminal sessions to work with different clusters independently.
+opencenter provides shell integration for session-scoped cluster selection, allowing multiple terminal sessions to work with different clusters independently.
 
 ## Quick Start
 
@@ -190,7 +190,7 @@ PS1="\$(opencenter_prompt)$PS1"
 
 **Complete example for ~/.bashrc:**
 ```bash
-# openCenter shell integration
+# opencenter shell integration
 eval "$(opencenter shell-init)"
 
 # Add cluster to prompt
@@ -237,7 +237,7 @@ RPROMPT='%F{cyan}$(opencenter_current_cluster_short)%f'
 
 **Complete example for ~/.zshrc:**
 ```zsh
-# openCenter shell integration
+# opencenter shell integration
 eval "$(opencenter shell-init)"
 
 # Enable prompt substitution
@@ -411,7 +411,7 @@ Make sure you've:
 
 ### Session file not cleaned up
 
-Session files are automatically cleaned up when the shell exits. If you find stale session files in `~/.config/openCenter/.session-*`, you can safely delete them.
+Session files are automatically cleaned up when the shell exits. If you find stale session files in `~/.config/opencenter/.session-*`, you can safely delete them.
 
 ## Cluster Selection Modes
 

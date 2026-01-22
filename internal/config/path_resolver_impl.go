@@ -460,7 +460,7 @@ func (pr *PathResolverImpl) getLegacyClusterPath(clusterName string) (string, er
 // validateDirectoryPermissions validates that a directory has proper read/write permissions.
 func (pr *PathResolverImpl) validateDirectoryPermissions(dir string) error {
 	// Test write permissions by creating a temporary file
-	testFile := filepath.Join(dir, ".openCenter_permission_test")
+	testFile := filepath.Join(dir, ".opencenter_permission_test")
 	file, err := os.Create(testFile)
 	if err != nil {
 		return fmt.Errorf("cannot write to directory: %w", err)

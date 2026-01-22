@@ -19,7 +19,7 @@ Manage cloud provider credentials from cluster configuration.
 ## Synopsis
 
 ```bash
-openCenter cluster credentials <subcommand> [flags]
+opencenter cluster credentials <subcommand> [flags]
 ```
 
 ## Description
@@ -50,7 +50,7 @@ The `cluster credentials` command manages cloud provider credentials extracted f
 Export cloud provider credentials as environment variables.
 
 ```bash
-openCenter cluster credentials export [cluster] [flags]
+opencenter cluster credentials export [cluster] [flags]
 ```
 
 **Flags:**
@@ -61,16 +61,16 @@ openCenter cluster credentials export [cluster] [flags]
 
 ```bash
 # Export AWS credentials for current cluster
-eval $(openCenter cluster credentials export --provider aws)
+eval $(opencenter cluster credentials export --provider aws)
 
 # Export OpenStack credentials for specific cluster
-eval $(openCenter cluster credentials export my-cluster --provider openstack)
+eval $(opencenter cluster credentials export my-cluster --provider openstack)
 
 # Export all credentials in JSON format
-openCenter cluster credentials export --provider all --format json
+opencenter cluster credentials export --provider all --format json
 
 # Export credentials in YAML format
-openCenter cluster credentials export --provider all --format yaml
+opencenter cluster credentials export --provider all --format yaml
 ```
 
 **Output Formats:**
@@ -106,7 +106,7 @@ aws:
 Clear cloud provider credentials from environment.
 
 ```bash
-openCenter cluster credentials unset [flags]
+opencenter cluster credentials unset [flags]
 ```
 
 **Flags:**
@@ -116,13 +116,13 @@ openCenter cluster credentials unset [flags]
 
 ```bash
 # Clear AWS credentials from environment
-eval $(openCenter cluster credentials unset --provider aws)
+eval $(opencenter cluster credentials unset --provider aws)
 
 # Clear OpenStack credentials from environment
-eval $(openCenter cluster credentials unset --provider openstack)
+eval $(opencenter cluster credentials unset --provider openstack)
 
 # Clear all credentials from environment
-eval $(openCenter cluster credentials unset --provider all)
+eval $(opencenter cluster credentials unset --provider all)
 ```
 
 **Output:**
@@ -140,13 +140,13 @@ unset AWS_DEFAULT_REGION
 
 ```bash
 # Export credentials
-eval $(openCenter cluster credentials export --provider aws)
+eval $(opencenter cluster credentials export --provider aws)
 
 # Use AWS CLI
 aws s3 ls
 
 # Clear credentials
-eval $(openCenter cluster credentials unset --provider aws)
+eval $(opencenter cluster credentials unset --provider aws)
 ```
 
 ## Security Considerations
@@ -162,10 +162,10 @@ The recommended approach is to use `cluster select --activate`:
 
 ```bash
 # Old approach
-eval $(openCenter cluster credentials export --provider aws)
+eval $(opencenter cluster credentials export --provider aws)
 
 # New approach (recommended)
-eval $(openCenter cluster select my-cluster --activate)
+eval $(opencenter cluster select my-cluster --activate)
 ```
 
 The `select --activate` command:

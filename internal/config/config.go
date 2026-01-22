@@ -27,7 +27,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config/services"
+	"github.com/rackerlabs/opencenter-cli/internal/config/services"
 )
 
 // Config represents the simplified root configuration for a cluster based on the new schema.
@@ -208,7 +208,7 @@ func defaultConfig(name string) Config {
 						},
 						Modules: OpenStackModulesConfig{
 							OpenstackNova: OpenstackNovaModuleConfig{
-								Source: "github.com/rackerlabs/openCenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main",
+								Source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main",
 							},
 						},
 					},
@@ -280,7 +280,7 @@ func defaultConfig(name string) Config {
 							NATOutgoing:               true,
 							Modules: CalicoModulesConfig{
 								Calico: CalicoModuleConfig{
-									Source: "github.com/rackerlabs/openCenter-gitops-base.git//iac/cni/calico?ref=main",
+									Source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/cni/calico?ref=main",
 								},
 							},
 						},
@@ -290,7 +290,7 @@ func defaultConfig(name string) Config {
 							KubeProxyReplacement: true,
 							Modules: CiliumModulesConfig{
 								Cilium: CiliumModuleConfig{
-									Source: "github.com/rackerlabs/openCenter-gitops-base.git//iac/cni/cilium?ref=main",
+									Source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/cni/cilium?ref=main",
 								},
 							},
 						},
@@ -299,14 +299,14 @@ func defaultConfig(name string) Config {
 							CiliumIntegration: true,
 							Modules: KubeOVNModulesConfig{
 								KubeOVN: KubeOVNModuleConfig{
-									Source: "github.com/rackerlabs/openCenter-gitops-base.git//iac/cni/kube-ovn?ref=main",
+									Source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/cni/kube-ovn?ref=main",
 								},
 							},
 						},
 					},
 					Modules: KubernetesModulesConfig{
 						KubesprayCluster: KubesprayClusterModuleConfig{
-							Source: "github.com/rackerlabs/openCenter-gitops-base.git//iac/provider/kubespray?ref=main",
+							Source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/provider/kubespray?ref=main",
 						},
 					},
 					OIDC: OIDCConfig{
@@ -334,7 +334,7 @@ func defaultConfig(name string) Config {
 				GitSSHKey:         "",
 				GitSSHPub:         "",
 				GitBranch:         "main",
-				GitOpsBaseRepo:    "ssh://git@github.com/rackerlabs/openCenter-gitops-base.git",
+				GitOpsBaseRepo:    "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git",
 				GitOpsBaseRelease: "v0.1.0",
 				GitOpsBranch:      "main",
 				Flux: GitOpsFlux{
@@ -357,7 +357,7 @@ func defaultConfig(name string) Config {
 						Enabled:             false, // Disabled by default - requires device ID, service token, and account number
 						ImageRepository:     "ghcr.io/rackerlabs/alert-proxy",
 						ImageTag:            "latest",
-						GitOpsSourceRepo:    "ssh://git@github.com/rackerlabs/openCenter-gitops-base.git",
+						GitOpsSourceRepo:    "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git",
 						GitOpsSourceRelease: "v0.1.0",
 						GitOpsSourceBranch:  "main",
 					},
@@ -633,7 +633,7 @@ func (c Config) GitOps() GitOpsConfig {
 
 // ResolveConfigDir resolves the configuration directory based on the OPENCENTER_CONFIG_DIR
 // environment variable. If the variable is not set, it falls back to the user's
-// standard config directory (e.g., ~/.config/openCenter on Linux).
+// standard config directory (e.g., ~/.config/opencenter on Linux).
 // The directory is created if it does not exist.
 //
 // Outputs:
@@ -653,14 +653,14 @@ func ResolveConfigDir() (string, error) {
 			if base == "" {
 				base = os.Getenv("USERPROFILE")
 			}
-			dir = filepath.Join(base, "openCenter")
+			dir = filepath.Join(base, "opencenter")
 		default:
 			home, herr := os.UserHomeDir()
 			if herr != nil {
 				err = herr
 				return "", err
 			}
-			dir = filepath.Join(home, ".config", "openCenter")
+			dir = filepath.Join(home, ".config", "opencenter")
 		}
 	}
 	// Ensure absolute path
@@ -1162,7 +1162,7 @@ func GenerateCompleteConfigYAML(name string) ([]byte, error) {
 	return mergedYAML, nil
 }
 
-// SaveDebugConfig saves a complete configuration to the GitOps directory as .openCenter.yaml
+// SaveDebugConfig saves a complete configuration to the GitOps directory as .opencenter.yaml
 // for debugging purposes. This is only called when OPENCENTER_DEBUG environment variable exists.
 //
 // Inputs:
@@ -1180,7 +1180,7 @@ func SaveDebugConfig(clusterName, gitDir string) error {
 		return fmt.Errorf("failed to create git directory %s: %w", gitDir, err)
 	}
 
-	debugPath := filepath.Join(gitDir, ".openCenter.yaml")
+	debugPath := filepath.Join(gitDir, ".opencenter.yaml")
 
 	// Generate the complete config YAML
 	data, err := GenerateCompleteConfigYAML(clusterName)

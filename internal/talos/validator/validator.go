@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/talos"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/talos"
 )
 
 // DefaultValidator implements the Validator interface.

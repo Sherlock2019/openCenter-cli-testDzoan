@@ -4,12 +4,12 @@
 
 set -e
 
-echo "=== Testing openCenter Shell Integration ==="
+echo "=== Testing opencenter Shell Integration ==="
 echo
 
 # Test 1: Check if shell-init command works
 echo "Test 1: Checking shell-init command..."
-if ./bin/openCenter shell-init --shell bash > /dev/null 2>&1; then
+if ./bin/opencenter shell-init --shell bash > /dev/null 2>&1; then
     echo "✓ shell-init command works"
 else
     echo "✗ shell-init command failed"
@@ -19,7 +19,7 @@ fi
 # Test 2: Check if integration script defines required functions
 echo
 echo "Test 2: Checking if integration defines helper functions..."
-SCRIPT_OUTPUT=$(./bin/openCenter shell-init --shell bash)
+SCRIPT_OUTPUT=$(./bin/opencenter shell-init --shell bash)
 
 if echo "$SCRIPT_OUTPUT" | grep -q "opencenter_current_cluster()"; then
     echo "✓ opencenter_current_cluster() function defined"
@@ -55,7 +55,7 @@ fi
 # Test 4: Check zsh integration
 echo
 echo "Test 4: Checking zsh-specific integration..."
-ZSH_OUTPUT=$(./bin/openCenter shell-init --shell zsh)
+ZSH_OUTPUT=$(./bin/opencenter shell-init --shell zsh)
 
 if echo "$ZSH_OUTPUT" | grep -q "setopt PROMPT_SUBST"; then
     echo "⚠ Prompt integration is enabled by default (should be commented)"
@@ -67,7 +67,7 @@ echo
 echo "=== All tests passed ==="
 echo
 echo "To test manually:"
-echo "1. eval \"\$(./bin/openCenter shell-init)\""
+echo "1. eval \"\$(./bin/opencenter shell-init)\""
 echo "2. type opencenter_current_cluster_short"
-echo "3. ./bin/openCenter cluster select test-cluster"
+echo "3. ./bin/opencenter cluster select test-cluster"
 echo "4. opencenter_current_cluster_short"

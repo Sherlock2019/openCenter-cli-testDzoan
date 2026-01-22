@@ -22,9 +22,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/di"
-	"github.com/rackerlabs/openCenter-cli/internal/plugins"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/di"
+	"github.com/rackerlabs/opencenter-cli/internal/plugins"
 )
 
 // ContainerKey is the context key for the DI container
@@ -52,9 +52,9 @@ type GlobalFlags struct {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "openCenter",
-	Short: "openCenter CLI manages cluster configurations and GitOps scaffolding",
-	Long: `openCenter is a command-line tool for managing Kubernetes cluster configurations
+	Use:   "opencenter",
+	Short: "opencenter CLI manages cluster configurations and GitOps scaffolding",
+	Long: `opencenter is a command-line tool for managing Kubernetes cluster configurations
 and GitOps repositories. It provides a declarative approach to cluster lifecycle
 management with built-in validation, secrets management, and multi-provider support.
 
@@ -67,28 +67,28 @@ Key Features:
   • Organization-based multi-tenancy support
 
 Documentation: https://docs.opencenter.cloud
-Support: https://github.com/rackerlabs/openCenter-cli/issues`,
+Support: https://github.com/rackerlabs/opencenter-cli/issues`,
 	Example: `  # Initialize a new cluster configuration
-  openCenter cluster init my-cluster
+  opencenter cluster init my-cluster
 
   # Validate cluster configuration
-  openCenter cluster validate my-cluster
+  opencenter cluster validate my-cluster
 
   # Generate and view JSON schema
-  openCenter cluster schema --pretty
+  opencenter cluster schema --pretty
 
   # List all clusters
-  openCenter cluster list
+  opencenter cluster list
 
   # Bootstrap a cluster with GitOps
-  openCenter cluster bootstrap my-cluster`,
+  opencenter cluster bootstrap my-cluster`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
 	},
 }
 
 // Execute runs the root command and returns any error. This is the main
-// entrypoint for the openCenter CLI. It is called by main.main().
+// entrypoint for the opencenter CLI. It is called by main.main().
 //
 // Inputs:
 //   - version: The version string for the application.
@@ -145,7 +145,7 @@ func ExecuteWithContext(ctx context.Context, version string) error {
 // addGlobalFlags adds global persistent flags to the root command.
 func addGlobalFlags(cmd *cobra.Command) {
 	// Legacy config-dir flag (kept for backward compatibility)
-	cmd.PersistentFlags().String("config-dir", "", "configuration directory (defaults to ~/.config/openCenter on Linux/macOS)")
+	cmd.PersistentFlags().String("config-dir", "", "configuration directory (defaults to ~/.config/opencenter on Linux/macOS)")
 
 	// New global flags
 	cmd.PersistentFlags().String("config", "", "alternative cluster configuration file path")
@@ -333,7 +333,7 @@ func displayActiveCluster(cmd *cobra.Command) error {
 
 	if activeCluster == "" {
 		fmt.Fprintf(cmd.OutOrStdout(), "No active cluster set\n")
-		fmt.Fprintf(cmd.OutOrStdout(), "Use 'openCenter cluster select <name>' to set an active cluster\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "Use 'opencenter cluster select <name>' to set an active cluster\n")
 	} else {
 		fmt.Fprintf(cmd.OutOrStdout(), "Active cluster: %s\n", activeCluster)
 	}
@@ -433,7 +433,7 @@ func formatErrorWithInfo(err error, code string) error {
 The OpenStack provider requires a region to be specified.
 
 Fix: Add region to your configuration:
-  openCenter cluster update my-cluster \
+  opencenter cluster update my-cluster \
     --opencenter.infrastructure.cloud.openstack.region=RegionOne
 
 Hint: List available regions:

@@ -19,7 +19,7 @@
 - [Next Steps](#next-steps)
 **doc_type: how-to**
 
-Set up comprehensive monitoring and observability for openCenter-managed Kubernetes clusters using Prometheus, Grafana, Loki, and integrated alerting.
+Set up comprehensive monitoring and observability for opencenter-managed Kubernetes clusters using Prometheus, Grafana, Loki, and integrated alerting.
 
 ## Who This Is For
 
@@ -27,14 +27,14 @@ Operations teams and SREs responsible for monitoring cluster health, investigati
 
 ## Prerequisites
 
-- Running openCenter cluster with GitOps configured
+- Running opencenter cluster with GitOps configured
 - Access to cluster configuration file
 - `kubectl` access to the cluster
 - Understanding of Prometheus metrics and PromQL
 
 ## Monitoring Stack Overview
 
-openCenter integrates a complete observability stack:
+opencenter integrates a complete observability stack:
 
 - **Prometheus** - Metrics collection and storage
 - **Grafana** - Visualization and dashboards
@@ -102,10 +102,10 @@ Deploy the monitoring stack:
 
 ```bash
 # Validate configuration
-openCenter cluster validate my-cluster
+opencenter cluster validate my-cluster
 
 # Apply changes through GitOps
-cd ~/.config/openCenter/clusters/myorg/my-cluster
+cd ~/.config/opencenter/clusters/myorg/my-cluster
 git add .
 git commit -m "Enable monitoring stack"
 git push

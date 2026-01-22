@@ -16,8 +16,8 @@ package gitops
 import (
 	"testing"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/config/services"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config/services"
 )
 
 func TestShouldSkipFile_DisabledServiceSources(t *testing.T) {

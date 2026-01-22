@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -115,9 +115,9 @@ func showUpdateHelp(cmd *cobra.Command) error {
 
 	fmt.Fprintln(cmd.OutOrStdout())
 	fmt.Fprintln(cmd.OutOrStdout(), "Examples:")
-	fmt.Fprintln(cmd.OutOrStdout(), "  openCenter cluster update --iac.main.master_count=5")
-	fmt.Fprintln(cmd.OutOrStdout(), "  openCenter cluster update my-cluster --iac.main.worker_count=3")
-	fmt.Fprintln(cmd.OutOrStdout(), "  openCenter cluster update --iac.main.kubernetes_version=1.30.4")
+	fmt.Fprintln(cmd.OutOrStdout(), "  opencenter cluster update --iac.main.master_count=5")
+	fmt.Fprintln(cmd.OutOrStdout(), "  opencenter cluster update my-cluster --iac.main.worker_count=3")
+	fmt.Fprintln(cmd.OutOrStdout(), "  opencenter cluster update --iac.main.kubernetes_version=1.30.4")
 
 	return nil
 }

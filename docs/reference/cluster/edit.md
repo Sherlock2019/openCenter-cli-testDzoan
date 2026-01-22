@@ -22,7 +22,7 @@ Edit cluster configuration in your preferred editor.
 ## Synopsis
 
 ```bash
-openCenter cluster edit [name]
+opencenter cluster edit [name]
 ```
 
 ## Description
@@ -42,13 +42,13 @@ The editor is determined by checking environment variables in this order:
 
 ```bash
 # Edit the currently selected cluster
-openCenter cluster edit
+opencenter cluster edit
 
 # Edit a specific cluster
-openCenter cluster edit my-cluster
+opencenter cluster edit my-cluster
 
 # Edit a cluster in a specific organization
-openCenter cluster edit myorg/my-cluster
+opencenter cluster edit myorg/my-cluster
 ```
 
 ## Editor Selection
@@ -58,19 +58,19 @@ The command uses the following precedence for editor selection:
 1. **EDITOR environment variable**
    ```bash
    export EDITOR=nano
-   openCenter cluster edit my-cluster
+   opencenter cluster edit my-cluster
    ```
 
 2. **VISUAL environment variable**
    ```bash
    export VISUAL=emacs
-   openCenter cluster edit my-cluster
+   opencenter cluster edit my-cluster
    ```
 
 3. **Default fallback: vi**
    ```bash
    # If neither EDITOR nor VISUAL is set
-   openCenter cluster edit my-cluster  # Opens in vi
+   opencenter cluster edit my-cluster  # Opens in vi
    ```
 
 ## Security Validation
@@ -91,7 +91,7 @@ Configuration file saved.
 
 **No cluster name and no active cluster:**
 ```
-Error: no cluster selected. Use 'openCenter cluster select' to select a cluster or provide a cluster name
+Error: no cluster selected. Use 'opencenter cluster select' to select a cluster or provide a cluster name
 ```
 
 **Invalid cluster name:**
@@ -101,7 +101,7 @@ Error: invalid cluster name 'my-cluster!@#': cluster name must contain only alph
 
 **Configuration file not found:**
 ```
-Error: cluster configuration file 'my-cluster' not found. Use 'openCenter cluster list' to see available clusters
+Error: cluster configuration file 'my-cluster' not found. Use 'opencenter cluster list' to see available clusters
 ```
 
 **Invalid EDITOR environment variable:**
@@ -119,39 +119,39 @@ Error: failed to open editor: exec: "invalid-editor": executable file not found 
 ### nano
 ```bash
 export EDITOR=nano
-openCenter cluster edit my-cluster
+opencenter cluster edit my-cluster
 ```
 
 ### vim
 ```bash
 export EDITOR=vim
-openCenter cluster edit my-cluster
+opencenter cluster edit my-cluster
 ```
 
 ### emacs
 ```bash
 export EDITOR=emacs
-openCenter cluster edit my-cluster
+opencenter cluster edit my-cluster
 ```
 
 ### VS Code
 ```bash
 export EDITOR="code --wait"
-openCenter cluster edit my-cluster
+opencenter cluster edit my-cluster
 ```
 
 ### Sublime Text
 ```bash
 export EDITOR="subl --wait"
-openCenter cluster edit my-cluster
+opencenter cluster edit my-cluster
 ```
 
 ## Configuration File Location
 
 Configuration files are stored in organization-based structure:
-- Organization-based: `~/.config/openCenter/clusters/<org>/.<cluster>-config.yaml`
-- Legacy: `~/.config/openCenter/clusters/<cluster>/.<cluster>-config.yaml`
-- Flat: `~/.config/openCenter/.<cluster>-config.yaml`
+- Organization-based: `~/.config/opencenter/clusters/<org>/.<cluster>-config.yaml`
+- Legacy: `~/.config/opencenter/clusters/<cluster>/.<cluster>-config.yaml`
+- Flat: `~/.config/opencenter/.<cluster>-config.yaml`
 
 ## Post-Edit Validation
 
@@ -159,10 +159,10 @@ After editing, validate the configuration:
 
 ```bash
 # Edit configuration
-openCenter cluster edit my-cluster
+opencenter cluster edit my-cluster
 
 # Validate changes
-openCenter cluster validate my-cluster
+opencenter cluster validate my-cluster
 ```
 
 ## See Also

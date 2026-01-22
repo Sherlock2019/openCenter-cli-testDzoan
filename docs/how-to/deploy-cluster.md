@@ -11,11 +11,11 @@
 - [Region-Specific Examples](#region-specific-examples)
 - [Best Practices](#best-practices)
 - [Next Steps](#next-steps)
-This guide covers the complete workflow for deploying and destroying Kubernetes clusters using openCenter CLI on OpenStack.
+This guide covers the complete workflow for deploying and destroying Kubernetes clusters using opencenter CLI on OpenStack.
 
 ## Prerequisites
 
-- openCenter CLI installed and built (`mise run build`)
+- opencenter CLI installed and built (`mise run build`)
 - OpenStack credentials configured in `~/.config/openstack/clouds.yaml`
 - Terraform installed (`mise use -g terraform@latest && mise install terraform`)
 - SSH access to target infrastructure
@@ -184,27 +184,27 @@ opentofu:
 Initialize the cluster configuration, which generates SSH keys, SOPS keys, and GitOps structure:
 
 ```bash
-./bin/openCenter cluster init my-cluster --config my-cluster-config.yaml
+./bin/opencenter cluster init my-cluster --config my-cluster-config.yaml
 ```
 
 This creates:
-- Cluster configuration at `~/.config/openCenter/clusters/<organization>/.my-cluster-config.yaml`
-- SSH keypair at `~/.config/openCenter/clusters/<organization>/secrets/ssh/`
-- SOPS Age key at `~/.config/openCenter/clusters/<organization>/secrets/age/keys/`
-- GitOps directory structure at `~/.config/openCenter/clusters/<organization>/`
+- Cluster configuration at `~/.config/opencenter/clusters/<organization>/.my-cluster-config.yaml`
+- SSH keypair at `~/.config/opencenter/clusters/<organization>/secrets/ssh/`
+- SOPS Age key at `~/.config/opencenter/clusters/<organization>/secrets/age/keys/`
+- GitOps directory structure at `~/.config/opencenter/clusters/<organization>/`
 
 ### Step 3: Validate Configuration
 
 Validate the cluster configuration:
 
 ```bash
-./bin/openCenter cluster validate my-cluster
+./bin/opencenter cluster validate my-cluster
 ```
 
 Run preflight checks to verify OpenStack connectivity and resources:
 
 ```bash
-./bin/openCenter cluster preflight my-cluster
+./bin/opencenter cluster preflight my-cluster
 ```
 
 ### Step 4: Render GitOps Templates
@@ -212,7 +212,7 @@ Run preflight checks to verify OpenStack connectivity and resources:
 Generate the GitOps repository with Terraform and Kubernetes manifests:
 
 ```bash
-./bin/openCenter cluster render my-cluster
+./bin/opencenter cluster render my-cluster
 ```
 
 This creates:
@@ -224,7 +224,7 @@ This creates:
 Create a `terraform.tfvars` file with your OpenStack credentials:
 
 ```bash
-cat > ~/.config/openCenter/clusters/<organization>/infrastructure/clusters/my-cluster/terraform.tfvars << 'EOF'
+cat > ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/my-cluster/terraform.tfvars << 'EOF'
 os_application_credential_id = "your-credential-id"
 os_application_credential_secret = "your-credential-secret"
 EOF
@@ -237,7 +237,7 @@ EOF
 Deploy the infrastructure and install Kubernetes:
 
 ```bash
-mise exec -- ./bin/openCenter cluster bootstrap my-cluster
+mise exec -- ./bin/opencenter cluster bootstrap my-cluster
 ```
 
 The bootstrap process:
@@ -259,27 +259,27 @@ The bootstrap process:
 
 ### Step 7: Access the Cluster
 
-Once bootstrap completes, activate the cluster environment. openCenter detects your shell and provides the correct syntax.
+Once bootstrap completes, activate the cluster environment. opencenter detects your shell and provides the correct syntax.
 
 **Bash/Zsh:**
 ```bash
-eval $(openCenter cluster select my-cluster --activate --export-only)
+eval $(opencenter cluster select my-cluster --activate --export-only)
 ```
 
 **Fish:**
 ```fish
-openCenter cluster select my-cluster --activate --export-only | source
+opencenter cluster select my-cluster --activate --export-only | source
 ```
 
 **PowerShell:**
 ```powershell
-openCenter cluster select my-cluster --activate --export-only | Invoke-Expression
+opencenter cluster select my-cluster --activate --export-only | Invoke-Expression
 ```
 
 **Override shell detection:**
 ```bash
 # Force Fish syntax even if running in bash
-openCenter cluster select my-cluster --activate --export-only --shell fish | source
+opencenter cluster select my-cluster --activate --export-only --shell fish | source
 ```
 
 This configures:
@@ -327,7 +327,7 @@ Error: Invalid input for allocation_pools. Reason: '${local.subnet_nodes_oct}.50
 ```
 **Solution:** This is a template rendering bug. Fix the rendered `main.tf`:
 ```bash
-sed -i 's/\$\${\(local\.subnet_nodes_oct\)}/${\1}/g' ~/.config/openCenter/clusters/<organization>/infrastructure/clusters/<cluster-name>/main.tf
+sed -i 's/\$\${\(local\.subnet_nodes_oct\)}/${\1}/g' ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster-name>/main.tf
 ```
 
 **Issue: Terraform not found**
@@ -346,27 +346,27 @@ If bootstrap fails, you can resume from a specific step:
 
 ```bash
 # Resume from terraform apply
-mise exec -- ./bin/openCenter cluster bootstrap my-cluster --from-step terraform-apply
+mise exec -- ./bin/opencenter cluster bootstrap my-cluster --from-step terraform-apply
 
 # Restart entire bootstrap
-mise exec -- ./bin/openCenter cluster bootstrap my-cluster --restart
+mise exec -- ./bin/opencenter cluster bootstrap my-cluster --restart
 ```
 
 ### Viewing Bootstrap Logs
 
 Bootstrap logs are saved to:
 ```
-~/.config/openCenter/clusters/<organization>/infrastructure/clusters/<cluster-name>/logs/bootstrap-YYYY-MM-DD-TIMESTAMP.log
+~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster-name>/logs/bootstrap-YYYY-MM-DD-TIMESTAMP.log
 ```
 
 ## Destroying a Cluster
 
-### Using openCenter CLI (Recommended)
+### Using opencenter CLI (Recommended)
 
 Destroy the cluster and all associated resources:
 
 ```bash
-./bin/openCenter cluster destroy my-cluster
+./bin/opencenter cluster destroy my-cluster
 ```
 
 This will:
@@ -378,7 +378,7 @@ This will:
 To skip confirmation:
 
 ```bash
-./bin/openCenter cluster destroy my-cluster --force
+./bin/opencenter cluster destroy my-cluster --force
 ```
 
 ### Manual Cleanup (If CLI Fails)

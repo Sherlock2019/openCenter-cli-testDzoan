@@ -1,6 +1,6 @@
 package config
 
-// OpenCenter holds global openCenter-level settings and secrets.
+// OpenCenter holds global opencenter-level settings and secrets.
 // The AWS credentials here are used by the OpenTofu S3 backend when provided.
 type OpenCenter struct {
 	AWSAccessKey       string `yaml:"aws_access_key" json:"aws_access_key"`

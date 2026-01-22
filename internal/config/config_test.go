@@ -24,7 +24,7 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
-	"github.com/rackerlabs/openCenter-cli/internal/config/services"
+	"github.com/rackerlabs/opencenter-cli/internal/config/services"
 	"gopkg.in/yaml.v3"
 )
 
@@ -158,13 +158,13 @@ func TestResolveConfigDir(t *testing.T) {
 		t.Fatal(err)
 	}
 	home, _ := os.UserHomeDir()
-	expected := filepath.Join(home, ".config", "openCenter")
+	expected := filepath.Join(home, ".config", "opencenter")
 	if dir != expected {
 		t.Errorf("expected config dir %s, but got %s", expected, dir)
 	}
 
 	// Set env var to test override (use repo testdata)
-	testDir := "testdata/openCenter-test"
+	testDir := "testdata/opencenter-test"
 	os.Setenv("OPENCENTER_CONFIG_DIR", testDir)
 	defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
 
@@ -515,7 +515,7 @@ func TestSaveDebugConfig(t *testing.T) {
 	}
 
 	// Verify debug config file was created
-	debugPath := filepath.Join(gitDir, ".openCenter.yaml")
+	debugPath := filepath.Join(gitDir, ".opencenter.yaml")
 	if _, err := os.Stat(debugPath); os.IsNotExist(err) {
 		t.Error("debug config file was not created")
 	}
@@ -1139,8 +1139,8 @@ func TestDefaultConfigNewFields(t *testing.T) {
 
 	// Test GitOpsConfig new fields
 	t.Run("GitOpsConfig fields", func(t *testing.T) {
-		if cfg.OpenCenter.GitOps.GitOpsBaseRepo != "ssh://git@github.com/rackerlabs/openCenter-gitops-base.git" {
-			t.Errorf("expected GitOpsBaseRepo 'ssh://git@github.com/rackerlabs/openCenter-gitops-base.git', got %s", cfg.OpenCenter.GitOps.GitOpsBaseRepo)
+		if cfg.OpenCenter.GitOps.GitOpsBaseRepo != "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git" {
+			t.Errorf("expected GitOpsBaseRepo 'ssh://git@github.com/rackerlabs/opencenter-gitops-base.git', got %s", cfg.OpenCenter.GitOps.GitOpsBaseRepo)
 		}
 
 		if cfg.OpenCenter.GitOps.GitOpsBaseRelease != "v0.1.0" {
@@ -1284,7 +1284,7 @@ func TestDefaultConfigMatchesSpecifications(t *testing.T) {
 		{
 			name:     "GitOpsBaseRepo default",
 			getValue: func(c Config) any { return c.OpenCenter.GitOps.GitOpsBaseRepo },
-			expected: "ssh://git@github.com/rackerlabs/openCenter-gitops-base.git",
+			expected: "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git",
 		},
 		{
 			name:     "GitOpsBaseRelease default",

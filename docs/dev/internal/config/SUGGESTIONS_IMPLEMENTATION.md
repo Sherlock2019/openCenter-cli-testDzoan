@@ -13,7 +13,7 @@
 - [Files Modified](#files-modified)
 ## Overview
 
-This document describes the implementation of the validation suggestions system that guides users to correct configuration errors in openCenter CLI.
+This document describes the implementation of the validation suggestions system that guides users to correct configuration errors in opencenter CLI.
 
 ## Implementation
 

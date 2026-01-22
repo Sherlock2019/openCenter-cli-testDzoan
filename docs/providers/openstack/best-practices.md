@@ -16,7 +16,7 @@
 - [External Resources](#external-resources)
 **doc_type: how-to**
 
-This guide provides production recommendations for deploying and operating Kubernetes clusters on OpenStack using openCenter. It covers configuration choices, operational patterns, and lessons learned from production deployments.
+This guide provides production recommendations for deploying and operating Kubernetes clusters on OpenStack using opencenter. It covers configuration choices, operational patterns, and lessons learned from production deployments.
 
 ## Purpose
 
@@ -27,7 +27,7 @@ Use this guide when preparing to deploy production Kubernetes clusters on OpenSt
 - OpenStack environment configured and accessible
 - Application credentials or user credentials with appropriate permissions
 - Understanding of Kubernetes concepts and operations
-- Familiarity with openCenter configuration format
+- Familiarity with opencenter configuration format
 
 ## Production Configuration
 
@@ -782,4 +782,4 @@ Minimize data transfer costs.
 ---
 
 **Last Updated**: January 2026  
-**Maintained By**: openCenter Team
+**Maintained By**: opencenter Team

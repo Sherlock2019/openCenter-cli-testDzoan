@@ -17,7 +17,7 @@ doc_type: reference
 - [Common Error Patterns](#common-error-patterns)
 - [Error Message Format](#error-message-format)
 - [Reporting Bugs](#reporting-bugs)
-Complete reference for openCenter CLI error codes, organized by category. Use this to diagnose and resolve issues.
+Complete reference for opencenter CLI error codes, organized by category. Use this to diagnose and resolve issues.
 
 ## Error Code Format
 
@@ -48,7 +48,7 @@ Each error message includes:
 
 **Resolution**:
 ```bash
-openCenter cluster update {cluster} --opencenter.infrastructure.cloud.openstack.region=RegionOne
+opencenter cluster update {cluster} --opencenter.infrastructure.cloud.openstack.region=RegionOne
 ```
 
 **Hint**: List available regions with `openstack region list`
@@ -64,7 +64,7 @@ The OpenStack provider requires a region to be specified.
 Details: validation failed for field opencenter.infrastructure.cloud.openstack.region
 
 Fix: Add region to your configuration:
-  openCenter cluster update my-cluster --opencenter.infrastructure.cloud.openstack.region=RegionOne
+  opencenter cluster update my-cluster --opencenter.infrastructure.cloud.openstack.region=RegionOne
 
 Hint: List available regions: openstack region list
 ```
@@ -75,14 +75,14 @@ Hint: List available regions: openstack region list
 
 **Description**: The SOPS Age encryption key for this cluster could not be found.
 
-**Cause**: The Age key file does not exist at the expected location (`~/.config/openCenter/clusters/{org}/{cluster}/secrets/age/`).
+**Cause**: The Age key file does not exist at the expected location (`~/.config/opencenter/clusters/{org}/{cluster}/secrets/age/`).
 
 **Resolution**:
 ```bash
-openCenter sops keygen {cluster}
+opencenter sops keygen {cluster}
 ```
 
-**Hint**: Check if the key file exists: `ls -la ~/.config/openCenter/clusters/{org}/{cluster}/secrets/age/`
+**Hint**: Check if the key file exists: `ls -la ~/.config/opencenter/clusters/{org}/{cluster}/secrets/age/`
 
 **Related Commands**: `sops keygen`, `sops encrypt`, `cluster setup`
 
@@ -93,9 +93,9 @@ Error: SOPS key not found (E1002)
 The SOPS Age encryption key for this cluster could not be found.
 
 Fix: Generate a new SOPS key:
-  openCenter sops keygen prod-cluster
+  opencenter sops keygen prod-cluster
 
-Hint: Check if the key file exists: ls -la ~/.config/openCenter/clusters/myorg/prod-cluster/secrets/age/
+Hint: Check if the key file exists: ls -la ~/.config/opencenter/clusters/myorg/prod-cluster/secrets/age/
 ```
 
 ---
@@ -108,7 +108,7 @@ Hint: Check if the key file exists: ls -la ~/.config/openCenter/clusters/myorg/p
 
 **Resolution**:
 ```bash
-openCenter cluster init my-cluster
+opencenter cluster init my-cluster
 ```
 
 **Hint**: Valid examples: `my-cluster`, `prod_cluster`, `cluster123`
@@ -124,7 +124,7 @@ Cluster names must start with a letter and contain only alphanumeric characters,
 Details: cluster name "my.cluster!" contains invalid characters
 
 Fix: Use a valid cluster name:
-  openCenter cluster init my-cluster
+  opencenter cluster init my-cluster
 
 Hint: Valid examples: my-cluster, prod_cluster, cluster123
 ```
@@ -139,10 +139,10 @@ Hint: Valid examples: my-cluster, prod_cluster, cluster123
 
 **Resolution**:
 ```bash
-openCenter cluster validate {cluster}
+opencenter cluster validate {cluster}
 ```
 
-**Hint**: View the configuration schema: `openCenter cluster schema`
+**Hint**: View the configuration schema: `opencenter cluster schema`
 
 **Related Commands**: `cluster validate`, `cluster schema`, `cluster edit`
 
@@ -155,9 +155,9 @@ The cluster configuration contains validation errors.
 Details: 3 validation errors found
 
 Fix: Run validation to see specific errors:
-  openCenter cluster validate prod-cluster
+  opencenter cluster validate prod-cluster
 
-Hint: View the configuration schema: openCenter cluster schema
+Hint: View the configuration schema: opencenter cluster schema
 ```
 
 ---
@@ -170,10 +170,10 @@ Hint: View the configuration schema: openCenter cluster schema
 
 **Resolution**:
 ```bash
-openCenter cluster edit {cluster}
+opencenter cluster edit {cluster}
 ```
 
-**Hint**: Check the schema for required fields: `openCenter cluster schema`
+**Hint**: Check the schema for required fields: `opencenter cluster schema`
 
 **Related Commands**: `cluster edit`, `cluster validate`, `cluster schema`
 
@@ -186,9 +186,9 @@ A required configuration field is missing or empty.
 Details: field opencenter.meta.organization is required
 
 Fix: Edit the configuration and add the required field:
-  openCenter cluster edit prod-cluster
+  opencenter cluster edit prod-cluster
 
-Hint: Check the schema for required fields: openCenter cluster schema
+Hint: Check the schema for required fields: opencenter cluster schema
 ```
 
 ---
@@ -394,10 +394,10 @@ Error: File not found (E4001)
 
 The specified file or directory does not exist.
 
-Details: no such file: /home/user/.config/openCenter/clusters/myorg/prod/.prod-config.yaml
+Details: no such file: /home/user/.config/opencenter/clusters/myorg/prod/.prod-config.yaml
 
 Fix: Verify the path exists:
-  ls -la /home/user/.config/openCenter/clusters/myorg/prod/
+  ls -la /home/user/.config/opencenter/clusters/myorg/prod/
 
 Hint: Check for typos in the file path
 ```
@@ -425,12 +425,12 @@ Error: Permission denied (E4002)
 
 You do not have permission to access this file or directory.
 
-Details: cannot write to /etc/openCenter/config.yaml
+Details: cannot write to /etc/opencenter/config.yaml
 
 Fix: Grant appropriate permissions:
-  chmod +w /etc/openCenter/config.yaml
+  chmod +w /etc/opencenter/config.yaml
 
-Hint: Check file ownership: ls -la /etc/openCenter/config.yaml
+Hint: Check file ownership: ls -la /etc/opencenter/config.yaml
 ```
 
 ---
@@ -456,7 +456,7 @@ Error: Disk space exhausted (E4003)
 
 There is not enough disk space to complete the operation.
 
-Details: no space left on device: /home/user/.config/openCenter
+Details: no space left on device: /home/user/.config/opencenter
 
 Fix: Free up disk space:
   df -h
@@ -479,7 +479,7 @@ Hint: Remove old logs or unused files
 openstack server list
 ```
 
-**Hint**: Run preflight checks: `openCenter cluster preflight {cluster}`
+**Hint**: Run preflight checks: `opencenter cluster preflight {cluster}`
 
 **Related Commands**: `cluster preflight`, `cluster bootstrap`, OpenStack operations
 
@@ -494,7 +494,7 @@ Details: authentication failed: invalid credentials
 Fix: Verify OpenStack credentials and connectivity:
   openstack server list
 
-Hint: Run preflight checks: openCenter cluster preflight prod-cluster
+Hint: Run preflight checks: opencenter cluster preflight prod-cluster
 ```
 
 ---
@@ -567,7 +567,7 @@ Hint: Check credential expiration and permissions
 
 **Resolution**:
 ```bash
-openCenter cluster info {cluster}
+opencenter cluster info {cluster}
 ```
 
 **Hint**: Check cloud provider connectivity
@@ -583,7 +583,7 @@ Unable to detect configuration drift for the cluster.
 Details: cannot read cluster state: connection timeout
 
 Fix: Verify cluster is accessible:
-  openCenter cluster info prod-cluster
+  opencenter cluster info prod-cluster
 
 Hint: Check cloud provider connectivity
 ```
@@ -598,7 +598,7 @@ Hint: Check cloud provider connectivity
 
 **Resolution**:
 ```bash
-df -h && ls -la ~/.config/openCenter/backups/
+df -h && ls -la ~/.config/opencenter/backups/
 ```
 
 **Hint**: Ensure the backup directory is writable
@@ -614,7 +614,7 @@ Unable to create a backup of the cluster configuration.
 Details: cannot write backup file: permission denied
 
 Fix: Check disk space and permissions:
-  df -h && ls -la ~/.config/openCenter/backups/
+  df -h && ls -la ~/.config/opencenter/backups/
 
 Hint: Ensure the backup directory is writable
 ```
@@ -629,7 +629,7 @@ Hint: Ensure the backup directory is writable
 
 **Resolution**:
 ```bash
-openCenter cluster lock break {cluster}
+opencenter cluster lock break {cluster}
 ```
 
 **Hint**: Check if another operation is in progress
@@ -645,7 +645,7 @@ Unable to acquire a lock for the cluster operation.
 Details: lock held by process 12345 since 2024-01-15 10:30:00
 
 Fix: Wait for the current operation to complete or break the lock:
-  openCenter cluster lock break prod-cluster
+  opencenter cluster lock break prod-cluster
 
 Hint: Check if another operation is in progress
 ```
@@ -687,7 +687,7 @@ Hint: The service may be experiencing issues
 
 **Diagnosis**:
 ```bash
-openCenter cluster validate {cluster}
+opencenter cluster validate {cluster}
 ```
 
 **Common Causes**:
@@ -706,8 +706,8 @@ openCenter cluster validate {cluster}
 
 **Diagnosis**:
 ```bash
-openCenter cluster schema
-openCenter cluster validate {cluster}
+opencenter cluster schema
+opencenter cluster validate {cluster}
 ```
 
 **Common Causes**:
@@ -725,7 +725,7 @@ openCenter cluster validate {cluster}
 
 **Diagnosis**:
 ```bash
-openCenter cluster validate {cluster}
+opencenter cluster validate {cluster}
 ```
 
 **Common Causes**:
@@ -744,7 +744,7 @@ openCenter cluster validate {cluster}
 
 **Diagnosis**:
 ```bash
-openCenter cluster preflight {cluster}
+opencenter cluster preflight {cluster}
 ```
 
 **Common Causes**:
@@ -767,7 +767,7 @@ openCenter cluster preflight {cluster}
 
 **Diagnosis**:
 ```bash
-openCenter cluster preflight {cluster}
+opencenter cluster preflight {cluster}
 ping {host}
 curl -v {url}
 ```
@@ -792,8 +792,8 @@ curl -v {url}
 
 **Diagnosis**:
 ```bash
-ls -la ~/.config/openCenter/clusters/{org}/{cluster}/secrets/age/
-openCenter sops keygen {cluster}
+ls -la ~/.config/opencenter/clusters/{org}/{cluster}/secrets/age/
+opencenter sops keygen {cluster}
 ```
 
 **Common Causes**:
@@ -846,15 +846,15 @@ Learn more: https://docs.opencenter.cloud/errors/{Code}
 If you encounter an error that:
 - Does not have an error code
 - Has incorrect or unhelpful information
-- Represents a bug in openCenter
+- Represents a bug in opencenter
 
-Report it at: https://github.com/rackerlabs/openCenter-cli/issues
+Report it at: https://github.com/rackerlabs/opencenter-cli/issues
 
 Include:
 - Full error message
 - Command that triggered the error
 - Configuration file (redact sensitive data)
-- Output of `openCenter version`
+- Output of `opencenter version`
 - Steps to reproduce
 
 For security issues, email: security@rackspace.com

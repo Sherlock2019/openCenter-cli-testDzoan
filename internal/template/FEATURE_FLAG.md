@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `OPENCENTER_USE_NEW_TEMPLATE_ENGINE` feature flag controls whether the new template engine or the legacy text/template implementation is used for rendering templates throughout the openCenter CLI.
+The `OPENCENTER_USE_NEW_TEMPLATE_ENGINE` feature flag controls whether the new template engine or the legacy text/template implementation is used for rendering templates throughout the opencenter CLI.
 
 ## Purpose
 
@@ -18,21 +18,21 @@ This feature flag enables:
 
 ```bash
 export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 ```
 
 ### Disable (Use Legacy System)
 
 ```bash
 export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=false
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 ```
 
 ### Check Current Status
 
 ```bash
 export OPENCENTER_FEATURE_FLAG_DEBUG=true
-openCenter cluster setup my-cluster
+opencenter cluster setup my-cluster
 ```
 
 This will print feature flag evaluation to stderr, showing which system is active.
@@ -100,7 +100,7 @@ The new template engine is designed to produce **byte-for-byte identical output*
 - `TestLegacyCompatibility`: Validates identical output for common patterns
 - `TestLegacySystemOutputIdentity`: Tests real-world template patterns
 - `TestFeatureFlagOutputIdentity`: Verifies identity when toggling the flag
-- `TestMigrationWithRealWorldTemplates`: Tests actual openCenter templates
+- `TestMigrationWithRealWorldTemplates`: Tests actual opencenter templates
 
 ## Rollback Procedure
 
@@ -150,11 +150,11 @@ Test with real cluster configurations:
 ```bash
 # With new engine
 export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=true
-openCenter cluster setup test-cluster
+opencenter cluster setup test-cluster
 
 # With legacy engine
 export OPENCENTER_USE_NEW_TEMPLATE_ENGINE=false
-openCenter cluster setup test-cluster
+opencenter cluster setup test-cluster
 
 # Compare outputs
 diff -r gitops-new/ gitops-legacy/
@@ -188,7 +188,7 @@ diff -r gitops-new/ gitops-legacy/
 ### Check if New Engine is Enabled
 
 ```go
-import "github.com/rackerlabs/openCenter-cli/internal/template"
+import "github.com/rackerlabs/opencenter-cli/internal/template"
 
 if template.UseNewTemplateEngine() {
     // New engine is active

@@ -19,11 +19,11 @@
 - [Related Documentation](#related-documentation)
 **doc_type: how-to**
 
-Configure openCenter to deploy Kubernetes clusters on OpenStack infrastructure. This guide walks through authentication setup, network planning, compute resource selection, storage configuration, and load balancing options.
+Configure opencenter to deploy Kubernetes clusters on OpenStack infrastructure. This guide walks through authentication setup, network planning, compute resource selection, storage configuration, and load balancing options.
 
 ## Task Summary
 
-Set up openCenter to provision Kubernetes clusters on OpenStack by configuring authentication credentials, network topology, compute flavors, storage volumes, and load balancing. The result is a validated cluster configuration ready for deployment.
+Set up opencenter to provision Kubernetes clusters on OpenStack by configuring authentication credentials, network topology, compute flavors, storage volumes, and load balancing. The result is a validated cluster configuration ready for deployment.
 
 ## Prerequisites
 
@@ -38,7 +38,7 @@ Before starting, you need:
   - Floating IPs: 1+ (for API access)
   - Security groups: 2+
   - Volumes: 5+ (boot volumes for nodes)
-- **openCenter installed** (see [Getting Started](../../tutorials/getting-started.md))
+- **opencenter installed** (see [Getting Started](../../tutorials/getting-started.md))
 - **OpenStack CLI tools** (optional but recommended for verification)
 
 Check your quotas:
@@ -57,7 +57,7 @@ Application credentials provide scoped, revocable access without exposing your p
 Create an application credential:
 ```bash
 openstack application credential create opencenter-cluster \
-  --description "openCenter cluster provisioning" \
+  --description "opencenter cluster provisioning" \
   --role member
 ```
 
@@ -101,7 +101,7 @@ export OS_PASSWORD="your-password"
 
 Reference them in your config:
 ```yaml
-# openCenter expands environment variables in config files
+# opencenter expands environment variables in config files
 user_name: "${OS_USERNAME}"
 user_password: "${OS_PASSWORD}"
 ```
@@ -290,7 +290,7 @@ Find available images:
 openstack image list --property os_distro=ubuntu
 ```
 
-openCenter supports Ubuntu 22.04 and 24.04.
+opencenter supports Ubuntu 22.04 and 24.04.
 
 ### Additional Block Devices (Optional)
 
@@ -363,7 +363,7 @@ Configure SSH keys and security groups for cluster access.
 
 ### SSH Key Configuration
 
-openCenter generates SSH keys automatically during initialization. To use existing keys:
+opencenter generates SSH keys automatically during initialization. To use existing keys:
 
 ```yaml
 secrets:
@@ -418,7 +418,7 @@ opencenter:
 Initialize a cluster configuration with your settings:
 
 ```bash
-./bin/openCenter cluster init my-openstack-cluster \
+./bin/opencenter cluster init my-openstack-cluster \
   --opencenter.infrastructure.cloud.openstack.auth_url="https://identity.example.com:5000/v3" \
   --opencenter.infrastructure.cloud.openstack.region="RegionOne" \
   --opencenter.infrastructure.cloud.openstack.tenant_name="my-project" \
@@ -430,7 +430,7 @@ Initialize a cluster configuration with your settings:
 
 This creates a configuration file at:
 ```
-~/.config/openCenter/clusters/opencenter/.my-openstack-cluster-config.yaml
+~/.config/opencenter/clusters/opencenter/.my-openstack-cluster-config.yaml
 ```
 
 Edit the file to add authentication credentials and other settings.
@@ -440,7 +440,7 @@ Edit the file to add authentication credentials and other settings.
 Run preflight checks to verify your configuration:
 
 ```bash
-./bin/openCenter cluster validate my-openstack-cluster
+./bin/opencenter cluster validate my-openstack-cluster
 ```
 
 The validator checks:
@@ -664,9 +664,9 @@ opencenter:
 
 After validating your configuration:
 
-1. **Generate GitOps repository**: Run `openCenter cluster setup` to create infrastructure manifests
+1. **Generate GitOps repository**: Run `opencenter cluster setup` to create infrastructure manifests
 2. **Review generated files**: Check Terraform configurations in your GitOps repository
-3. **Deploy cluster**: Run `openCenter cluster bootstrap` to provision infrastructure
+3. **Deploy cluster**: Run `opencenter cluster bootstrap` to provision infrastructure
 4. **Verify deployment**: Access your cluster with `kubectl` after bootstrap completes
 
 See [OpenStack Deployment Tutorial](../../tutorials/openstack-deployment.md) (planned) for complete deployment workflow.
@@ -682,4 +682,4 @@ See [OpenStack Deployment Tutorial](../../tutorials/openstack-deployment.md) (pl
 ---
 
 **Last Updated**: January 2026  
-**Maintained By**: openCenter Team
+**Maintained By**: opencenter Team

@@ -1,7 +1,7 @@
 # sandbox deployment
 
 ```
-openCenter cluster init sandbox.opencenter.sjc3 \
+opencenter cluster init sandbox.opencenter.sjc3 \
   --org opencenter \
   --opencenter.meta.env=sandbox \
   --opencenter.meta.region=sjc3 \
@@ -28,6 +28,6 @@ openCenter cluster init sandbox.opencenter.sjc3 \
   --opencenter.cluster.kubernetes.additional_server_pools_worker.1.node_worker=-gpu
 ```
 
-openCenter cluster init sandbox \
+opencenter cluster init sandbox \
   --org rmpk.dev \
   --opencenter.meta.env=dev \

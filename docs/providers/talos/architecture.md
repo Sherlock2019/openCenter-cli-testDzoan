@@ -14,7 +14,7 @@
 - [Fallback Strategies](#fallback-strategies)
 - [Dependencies & Assumptions](#dependencies-assumptions)
 ## Scope
-This document captures the Pulumi-based system blueprint that implements the Talos provider for openCenter CLI. It translates the Zero Trust narrative from `readme.md` into concrete components, responsibilities, and integration points that AI agents must implement without relying on Terraform or Cluster API (CAPI/CAPO).
+This document captures the Pulumi-based system blueprint that implements the Talos provider for opencenter CLI. It translates the Zero Trust narrative from `readme.md` into concrete components, responsibilities, and integration points that AI agents must implement without relying on Terraform or Cluster API (CAPI/CAPO).
 
 ## System Context
 ```
@@ -25,7 +25,7 @@ This document captures the Pulumi-based system blueprint that implements the Tal
               |                                 ^
               v                                 |
 +-------------+---------------------------------+----------------+
-|      openCenter Talos Provider CLI + Pulumi Run-Time           |
+|      opencenter Talos Provider CLI + Pulumi Run-Time           |
 | - validate OpenStack prerequisites                              |
 | - generate Talos + Pulumi blueprints                            |
 | - execute Go Pulumi programs to manage OpenStack + Talos        |
@@ -48,7 +48,7 @@ This document captures the Pulumi-based system blueprint that implements the Tal
 ```
 
 ## Component Responsibilities
-1. **openCenter Talos Commands & Pulumi Runtime**
+1. **opencenter Talos Commands & Pulumi Runtime**
    - Collects OpenStack credentials and validates Keystone MFA, service catalog, quotas, and Barbican/Octavia availability.
    - Generates blueprints: Talos machine configs, Pulumi stack configuration (YAML) inspired by `third-party/openstack-flex-examples/pulumi/talos-cluster-ts` and `third-party/liberty-infrastructure`, WireGuard assets, and `.sops.yaml` entries.
    - Executes Pulumi programs written in Go to create/update/delete the dedicated OpenStack project, networks, security groups, bastion, load balancers, boot volumes with vTPM, and Talos nodes.
@@ -120,6 +120,6 @@ This document captures the Pulumi-based system blueprint that implements the Tal
 
 ## Dependencies & Assumptions
 - OpenStack tenant exposes Nova, Neutron, Cinder, Glance, Barbican, Octavia, Keystone (with MFA + application credentials) APIs.
-- Pulumi CLI/runtime available to the openCenter binary; Go Pulumi SDK leveraged for inline programs.
+- Pulumi CLI/runtime available to the opencenter binary; Go Pulumi SDK leveraged for inline programs.
 - Talos images with required drivers are available in Glance and carry signature metadata.
 - WireGuard and `talosctl` binaries exist on operator workstation/CI runner.

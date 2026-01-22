@@ -41,15 +41,15 @@ func NewVersionCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Display version and build information",
-		Long: `Display version and build information for openCenter.
+		Long: `Display version and build information for opencenter.
 
 Shows the version, git commit, branch, tag (if applicable), build date,
 Go version, and platform information.`,
 		Example: `  # Show full version information
-  openCenter version
+  opencenter version
 
   # Show short version only
-  openCenter version --short`,
+  opencenter version --short`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if short {
 				// Short format: just the version string
@@ -83,7 +83,7 @@ func getVersionString() string {
 func getFullVersionInfo() string {
 	versionStr := getVersionString()
 
-	info := fmt.Sprintf("openCenter version: %s\n", versionStr)
+	info := fmt.Sprintf("opencenter version: %s\n", versionStr)
 
 	if GitCommit != "unknown" {
 		info += fmt.Sprintf("Git commit:         %s\n", GitCommit)

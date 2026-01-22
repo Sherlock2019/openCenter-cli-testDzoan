@@ -28,9 +28,9 @@ import (
 	"time"
 
 	"github.com/cucumber/godog"
-	"github.com/rackerlabs/openCenter-cli/internal/config"
-	"github.com/rackerlabs/openCenter-cli/internal/config/services"
-	"github.com/rackerlabs/openCenter-cli/internal/util"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config/services"
+	"github.com/rackerlabs/opencenter-cli/internal/util"
 	yaml "gopkg.in/yaml.v3"
 	"regexp"
 )
@@ -55,7 +55,7 @@ type world struct {
 
 var compiledBinary string
 
-// buildBinary builds the openCenter binary once per test suite. The
+// buildBinary builds the opencenter binary once per test suite. The
 // resulting executable is placed in a temporary directory and its
 // path is cached in compiledBinary.
 func buildBinary() (string, error) {
@@ -69,7 +69,7 @@ func buildBinary() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	bin := filepath.Join(tmp, "openCenter")
+	bin := filepath.Join(tmp, "opencenter")
 	// Build the binary
 	cmd := exec.Command("go", "build", "-o", bin, ".")
 	cmd.Dir = "../../.." // parent of features/steps is project root
@@ -150,15 +150,15 @@ func (w *world) runOpenCenter(args []string) error {
 }
 
 // pathFromFeature converts a path potentially starting with
-// "~/.config/openCenter" into an absolute path in the isolated
+// "~/.config/opencenter" into an absolute path in the isolated
 // configuration directory. Otherwise it returns the absolute path
 // unchanged.
 func (w *world) pathFromFeature(p string) string {
 	// Normalize any <<tmp>> or tmp/ prefixes into the per-scenario tmp dir
 	p = w.replaceTmp(p)
 	// Map config-dir home shorthand to the isolated config dir
-	if strings.HasPrefix(p, "~/.config/openCenter") {
-		suffix := strings.TrimPrefix(p, "~/.config/openCenter")
+	if strings.HasPrefix(p, "~/.config/opencenter") {
+		suffix := strings.TrimPrefix(p, "~/.config/opencenter")
 		return filepath.Join(w.configDir, suffix)
 	}
 	return p
@@ -460,7 +460,7 @@ func (w *world) iRunCommand(arg string) error {
 	if len(fields) == 0 {
 		return fmt.Errorf("no command")
 	}
-	if fields[0] == "openCenter" {
+	if fields[0] == "opencenter" {
 		fields = fields[1:]
 	}
 	// Replace <<tmp>> token

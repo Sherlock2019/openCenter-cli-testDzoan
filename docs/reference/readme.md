@@ -16,7 +16,7 @@
 - [Version Compatibility](#version-compatibility)
 **doc_type: reference**
 
-Complete technical specifications for openCenter. Look up commands, configuration options, APIs, and error codes.
+Complete technical specifications for opencenter. Look up commands, configuration options, APIs, and error codes.
 
 ## Who This Is For
 
@@ -97,7 +97,7 @@ Go package documentation for programmatic use.
 - Usage examples
 
 ### [Environment Variables](environment-variables.md)
-All environment variables that affect openCenter behavior.
+All environment variables that affect opencenter behavior.
 
 **Includes:**
 - Variable names
@@ -135,7 +135,7 @@ Template system and available templates.
 - Template functions
 
 ### [File Formats](file-formats.md)
-File format specifications for openCenter files.
+File format specifications for opencenter files.
 
 **Includes:**
 - Configuration files
@@ -146,7 +146,7 @@ File format specifications for openCenter files.
 ## Additional Reference
 
 ### [Glossary](glossary.md)
-Definitions of terms used throughout openCenter documentation.
+Definitions of terms used throughout opencenter documentation.
 
 **Includes:**
 - Technical terms
@@ -224,7 +224,7 @@ Found an error in the reference docs? See our [Contributing Guide](../../contrib
 
 ## Version Compatibility
 
-This reference documentation is for openCenter 1.0.0. For other versions:
+This reference documentation is for opencenter 1.0.0. For other versions:
 - Check the version tag in GitHub
 - Review the changelog for differences
-- Use `openCenter version` to check your installed version
+- Use `opencenter version` to check your installed version

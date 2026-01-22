@@ -18,7 +18,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/rackerlabs/openCenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -37,8 +37,8 @@ After editing, the configuration will be validated. If validation fails, you'll
 be notified of the errors but the file will remain saved.
 
 Examples:
-  openCenter config edit
-  EDITOR=nano openCenter config edit`,
+  opencenter config edit
+  EDITOR=nano opencenter config edit`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Get the configuration file path
 			cm, err := config.NewConfigManager("")
@@ -81,7 +81,7 @@ Examples:
 			if err != nil {
 				fmt.Printf("⚠️  Configuration validation failed: %v\n", err)
 				fmt.Printf("The file has been saved but may contain errors.\n")
-				fmt.Printf("Run 'openCenter config view' to see the current configuration.\n")
+				fmt.Printf("Run 'opencenter config view' to see the current configuration.\n")
 				return nil // Don't return error to avoid confusion
 			}
 

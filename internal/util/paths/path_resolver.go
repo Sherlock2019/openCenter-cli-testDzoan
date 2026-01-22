@@ -51,7 +51,7 @@ func (r *DefaultPathResolver) ResolveClusterPaths(clusterName, organization stri
 	if clustersDir == "" {
 		// Fallback to default
 		homeDir, _ := os.UserHomeDir()
-		clustersDir = filepath.Join(homeDir, ".config", "openCenter", "clusters")
+		clustersDir = filepath.Join(homeDir, ".config", "opencenter", "clusters")
 	}
 
 	// Expand environment variables and tilde
@@ -163,7 +163,7 @@ func (r *DefaultPathResolver) GetLegacyClusterPath(clusterName string) (string, 
 	clustersDir := r.baseDir
 	if clustersDir == "" {
 		homeDir, _ := os.UserHomeDir()
-		clustersDir = filepath.Join(homeDir, ".config", "openCenter", "clusters")
+		clustersDir = filepath.Join(homeDir, ".config", "opencenter", "clusters")
 	}
 
 	clustersDir = r.expander.ExpandPath(clustersDir)
@@ -277,7 +277,7 @@ func (r *DefaultPathResolver) getClusterOrganization(clusterName string) (string
 	clustersDir := r.baseDir
 	if clustersDir == "" {
 		homeDir, _ := os.UserHomeDir()
-		clustersDir = filepath.Join(homeDir, ".config", "openCenter", "clusters")
+		clustersDir = filepath.Join(homeDir, ".config", "opencenter", "clusters")
 	}
 
 	clustersDir = r.expander.ExpandPath(clustersDir)
