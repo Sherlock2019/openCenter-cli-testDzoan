@@ -11,12 +11,12 @@ spec:
   path: ./applications/overlays/stage-cluster/services/sources
   prune: true
   sourceRef:
-  kind: GitRepository
-  name: flux-system
-  namespace: flux-system
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
   wait: true
   commonMetadata:
-  labels:
-  app.kubernetes.io/part-of: sources
-  app.kubernetes.io/managed-by: flux
-  opencenter/managed-by: opencenter
+    labels:
+      app.kubernetes.io/part-of: sources
+      app.kubernetes.io/managed-by: flux
+      opencenter/managed-by: opencenter

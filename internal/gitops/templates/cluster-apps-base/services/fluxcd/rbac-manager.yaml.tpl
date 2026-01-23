@@ -6,27 +6,27 @@ metadata:
   namespace: flux-system
 spec:
   dependsOn:
-  - name: sources
-  namespace: flux-system
-  - name: kube-prometheus-stack-base
-  namespace: flux-system
+    - name: sources
+      namespace: flux-system
+    - name: kube-prometheus-stack-base
+      namespace: flux-system
   interval: 15m
   retryInterval: 1m
   timeout: 10m
   sourceRef:
-  kind: GitRepository
-  name: opencenter-rbac-manager
-  namespace: flux-system
+    kind: GitRepository
+    name: opencenter-rbac-manager
+    namespace: flux-system
   path: applications/base/services/rbac-manager
   targetNamespace: rbac-system
   prune: true
   healthChecks:
-  - apiVersion: helm.toolkit.fluxcd.io/v2
-  kind: HelmRelease
-  name: rbac-manager
-  namespace: rbac-system
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: rbac-manager
+      namespace: rbac-system
   commonMetadata:
-  labels:
-  app.kubernetes.io/part-of: rbac-manager
-  app.kubernetes.io/managed-by: flux
-  opencenter/managed-by: opencenter
+    labels:
+      app.kubernetes.io/part-of: rbac-manager
+      app.kubernetes.io/managed-by: flux
+      opencenter/managed-by: opencenter

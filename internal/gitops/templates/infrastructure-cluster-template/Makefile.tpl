@@ -1,4 +1,4 @@
-.PHONY: clean lint rke terraform kubectl helm velero sops age kustomize flux gitops kubelogin egctl
+.PHONY: clean lint rke terraform kubectl helm velero sops age kustomize flux gitops kubelogin egctl k9s tools
 .PHONY: secrets-encrypt secrets-decrypt secrets-list secrets-check secrets-status
 
 BIN := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))/.bin
@@ -12,6 +12,7 @@ FLUX_VERSION := 2.2.2
 GITOPS_VERSION := 0.38.0
 EGCTL_VERSION := 1.5.4
 HELM_VERSION := 3.13.0
+K9S_VERSION := 0.50.18
 
 export PATH := $(BIN):$(PATH)
 export TF_CLI_CONFIG_FILE=config.tfrc
@@ -125,6 +126,14 @@ egctl:
 		mkdir -p $(BIN); \
 		curl -L "https://github.com/envoyproxy/gateway/releases/download/v$(EGCTL_VERSION)/egctl_v$(EGCTL_VERSION)_$(OS)_$(ARCH).tar.gz" | tar xz -C $(BIN) bin/$(OS)/$(ARCH)/egctl --strip-components=3; \
 	fi;
+
+k9s:
+	@if ! k9s version 2>/dev/null | grep -q "v$(K9S_VERSION)"; then \
+		mkdir -p $(BIN); \
+		curl -L "https://github.com/derailed/k9s/releases/download/v$(K9S_VERSION)/k9s_$(OS)_$(ARCH).tar.gz" | tar xz -C $(BIN) k9s; \
+	fi;
+
+tools: terraform kubectl helm velero sops age kustomize k9s flux kubelogin egctl
 
 ###############################################################################
 # SOPS Secrets Management Targets
