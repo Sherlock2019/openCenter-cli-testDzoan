@@ -244,232 +244,6 @@ opencenter:
         enabled: false
 
   #############################################################################
-  # DEPLOYMENT - Kamaji Hosted Control Plane Configuration
-  #############################################################################
-  deployment:
-    method: "kamaji"
-    
-    # Kamaji - Hosted Control Plane with Cluster API
-    kamaji:
-      enabled: true
-      version: "v1.0.0"
-      
-      # Control plane configuration (runs in management cluster)
-      control_plane:
-        # Number of control plane replicas (for HA)
-        replicas: 3
-        
-        # Datastore backend for etcd data
-        datastore: "etcd"  # etcd | postgresql | mysql
-        
-        # Etcd configuration (when datastore: etcd)
-        etcd:
-          storage_class: "csi-cinder-sc-delete"
-          storage_size: "10Gi"
-          # Etcd runs as StatefulSet in management cluster
-        
-        # PostgreSQL configuration (alternative to etcd)
-        # postgresql:
-        #   host: "postgres.management-cluster.svc.cluster.local"
-        #   port: 5432
-        #   database: "kamaji"
-        #   ssl_mode: "require"
-        #   # Credentials from secrets.kamaji.postgresql_*
-        
-        # Control plane endpoint configuration
-        service_type: "LoadBalancer"  # LoadBalancer | NodePort
-        api_server_port: 6443
-        
-        # Resource requests/limits for control plane pods
-        resources:
-          api_server:
-            requests:
-              cpu: "500m"
-              memory: "1Gi"
-            limits:
-              cpu: "2000m"
-              memory: "4Gi"
-          controller_manager:
-            requests:
-              cpu: "200m"
-              memory: "512Mi"
-            limits:
-              cpu: "1000m"
-              memory: "2Gi"
-          scheduler:
-            requests:
-              cpu: "100m"
-              memory: "256Mi"
-            limits:
-              cpu: "500m"
-              memory: "1Gi"
-      
-      # Cluster API configuration
-      cluster_api:
-        version: "v1.6.0"
-        
-        # CAPI providers
-        providers:
-          infrastructure: "openstack"  # openstack | aws | azure | vsphere | metal3
-          bootstrap: "kubeadm"  # kubeadm | talos
-          control_plane: "kubeadm"  # kubeadm | talos (not used with Kamaji)
-        
-        # Infrastructure provider configuration
-        openstack:
-          # References infrastructure.cloud.openstack for credentials
-          cloud_name: "openstack"
-          dns_nameservers: ["8.8.8.8", "8.8.4.4"]
-          external_network_id: "723f8fa2-dbf7-4cec-8d5f-017e62c12f79"
-          
-          # Machine template defaults
-          machine_template:
-            image_name: "ubuntu-24.04-k8s"
-            ssh_key_name: "tenant-cluster-01-key"
-      
-      # Worker node pools (mixed OS support via CAPI)
-      worker_pools:
-        # Ubuntu workers via kubeadm bootstrap
-        - name: "ubuntu-workers"
-          os: "ubuntu"
-          count: 3
-          flavor: "gp.0.4.16"
-          image: "ubuntu-24.04-k8s"
-          bootstrap_provider: "kubeadm"
-          
-          # Boot volume configuration
-          boot_volume:
-            size: 100
-            type: "HA-Standard"
-            delete_on_termination: true
-          
-          # Additional data volumes
-          additional_volumes: []
-          
-          # Node labels and taints
-          labels:
-            node-role.kubernetes.io/worker: ""
-            workload-type: "general"
-          taints: []
-          
-          # Autoscaling (optional)
-          autoscaling:
-            enabled: false
-            min_replicas: 3
-            max_replicas: 10
-        
-        # Windows workers via kubeadm bootstrap
-        - name: "windows-workers"
-          os: "windows"
-          count: 2
-          flavor: "gp.5.4.16"
-          image: "windows-2022-k8s"
-          bootstrap_provider: "kubeadm"
-          
-          boot_volume:
-            size: 150
-            type: "HA-Standard"
-            delete_on_termination: true
-          
-          additional_volumes:
-            - device_name: "/dev/sdb"
-              size: 200
-              type: "HA-Performance"
-              delete_on_termination: false
-          
-          labels:
-            node-role.kubernetes.io/worker: ""
-            kubernetes.io/os: "windows"
-            workload-type: "windows"
-          taints:
-            - key: "os"
-              value: "windows"
-              effect: "NoSchedule"
-          
-          autoscaling:
-            enabled: false
-        
-        # Talos workers via talos bootstrap
-        - name: "talos-workers"
-          os: "talos"
-          count: 3
-          flavor: "gp.0.4.16"
-          image: "talos-v1.8.0"
-          bootstrap_provider: "talos"
-          talos_version: "v1.8.0"
-          
-          boot_volume:
-            size: 100
-            type: "HA-Performance"
-            delete_on_termination: true
-          
-          additional_volumes:
-            - device_name: "/dev/vdb"
-              size: 500
-              type: "HA-Performance"
-              delete_on_termination: false
-          
-          labels:
-            node-role.kubernetes.io/worker: ""
-            workload-type: "secure"
-          taints: []
-          
-          # Talos-specific configuration
-          talos_config:
-            machine_config:
-              app_armor_enabled: true
-              seccomp_enabled: true
-              disk_encryption: true
-            security_config:
-              vtpm_enabled: true
-              image_verification: true
-          
-          autoscaling:
-            enabled: true
-            min_replicas: 3
-            max_replicas: 10
-        
-        # High-memory workers for data processing
-        - name: "high-memory-workers"
-          os: "ubuntu"
-          count: 2
-          flavor: "gp.0.8.64"
-          image: "ubuntu-24.04-k8s"
-          bootstrap_provider: "kubeadm"
-          
-          boot_volume:
-            size: 200
-            type: "HA-Performance"
-            delete_on_termination: true
-          
-          additional_volumes:
-            - device_name: "/dev/vdb"
-              size: 1000
-              type: "HA-Performance"
-              delete_on_termination: false
-          
-          labels:
-            node-role.kubernetes.io/worker: ""
-            workload-type: "memory-intensive"
-          taints:
-            - key: "workload"
-              value: "memory-intensive"
-              effect: "NoSchedule"
-          
-          autoscaling:
-            enabled: true
-            min_replicas: 2
-            max_replicas: 8
-      
-      # GitOps modules for Kamaji deployment
-      modules:
-        kamaji:
-          source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/deployment/kamaji?ref=main"
-        cluster_api:
-          source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/deployment/cluster-api?ref=main"
-        cluster_api_provider_openstack:
-          source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/deployment/cluster-api/providers/openstack?ref=main"
-
-  #############################################################################
   # GITOPS - Repository Configuration
   #############################################################################
   gitops:
@@ -622,10 +396,240 @@ opentofu:
       region: "us-east-1"
 
 #############################################################################
-# DEPLOYMENT - Auto-deploy Settings
+# DEPLOYMENT - Kamaji Hosted Control Plane Configuration
 #############################################################################
 deployment:
   auto_deploy: false
+  method: "kamaji"
+  
+  # Kubespray (disabled in Kamaji deployment)
+  kubespray:
+    enabled: false
+  
+  # Kamaji - Hosted Control Plane with Cluster API
+  kamaji:
+    enabled: true
+    version: "v1.0.0"
+    
+    # Control plane configuration (runs in management cluster)
+    control_plane:
+      # Number of control plane replicas (for HA)
+      replicas: 3
+      
+      # Datastore backend for etcd data
+      datastore: "etcd"  # etcd | postgresql | mysql
+      
+      # Etcd configuration (when datastore: etcd)
+      etcd:
+        storage_class: "csi-cinder-sc-delete"
+        storage_size: "10Gi"
+        # Etcd runs as StatefulSet in management cluster
+      
+      # PostgreSQL configuration (alternative to etcd)
+      # postgresql:
+      #   host: "postgres.management-cluster.svc.cluster.local"
+      #   port: 5432
+      #   database: "kamaji"
+      #   ssl_mode: "require"
+      #   # Credentials from secrets.kamaji.postgresql_*
+      
+      # Control plane endpoint configuration
+      service_type: "LoadBalancer"  # LoadBalancer | NodePort
+      api_server_port: 6443
+      
+      # Resource requests/limits for control plane pods
+      resources:
+        api_server:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "2000m"
+            memory: "4Gi"
+        controller_manager:
+          requests:
+            cpu: "200m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "2Gi"
+        scheduler:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "1Gi"
+    
+    # Cluster API configuration
+    cluster_api:
+      version: "v1.6.0"
+      
+      # CAPI providers
+      providers:
+        infrastructure: "openstack"  # openstack | aws | azure | vsphere | metal3
+        bootstrap: "kubeadm"  # kubeadm | talos
+        control_plane: "kubeadm"  # kubeadm | talos (not used with Kamaji)
+      
+      # Infrastructure provider configuration
+      openstack:
+        # References infrastructure.cloud.openstack for credentials
+        cloud_name: "openstack"
+        dns_nameservers: ["8.8.8.8", "8.8.4.4"]
+        external_network_id: "723f8fa2-dbf7-4cec-8d5f-017e62c12f79"
+        
+        # Machine template defaults
+        machine_template:
+          image_name: "ubuntu-24.04-k8s"
+          ssh_key_name: "tenant-cluster-01-key"
+    
+    # Worker node pools (mixed OS support via CAPI)
+    worker_pools:
+      # Ubuntu workers via kubeadm bootstrap
+      - name: "ubuntu-workers"
+        os: "ubuntu"
+        count: 3
+        flavor: "gp.0.4.16"
+        image: "ubuntu-24.04-k8s"
+        bootstrap_provider: "kubeadm"
+        
+        # Boot volume configuration
+        boot_volume:
+          size: 100
+          type: "HA-Standard"
+          delete_on_termination: true
+        
+        # Additional data volumes
+        additional_volumes: []
+        
+        # Node labels and taints
+        labels:
+          node-role.kubernetes.io/worker: ""
+          workload-type: "general"
+        taints: []
+        
+        # Autoscaling (optional)
+        autoscaling:
+          enabled: false
+          min_replicas: 3
+          max_replicas: 10
+      
+      # Windows workers via kubeadm bootstrap
+      - name: "windows-workers"
+        os: "windows"
+        count: 2
+        flavor: "gp.5.4.16"
+        image: "windows-2022-k8s"
+        bootstrap_provider: "kubeadm"
+        
+        boot_volume:
+          size: 150
+          type: "HA-Standard"
+          delete_on_termination: true
+        
+        additional_volumes:
+          - device_name: "/dev/sdb"
+            size: 200
+            type: "HA-Performance"
+            delete_on_termination: false
+        
+        labels:
+          node-role.kubernetes.io/worker: ""
+          kubernetes.io/os: "windows"
+          workload-type: "windows"
+        taints:
+          - key: "os"
+            value: "windows"
+            effect: "NoSchedule"
+        
+        autoscaling:
+          enabled: false
+      
+      # Talos workers via talos bootstrap
+      - name: "talos-workers"
+        os: "talos"
+        count: 3
+        flavor: "gp.0.4.16"
+        image: "talos-v1.8.0"
+        bootstrap_provider: "talos"
+        talos_version: "v1.8.0"
+        
+        boot_volume:
+          size: 100
+          type: "HA-Performance"
+          delete_on_termination: true
+        
+        additional_volumes:
+          - device_name: "/dev/vdb"
+            size: 500
+            type: "HA-Performance"
+            delete_on_termination: false
+        
+        labels:
+          node-role.kubernetes.io/worker: ""
+          workload-type: "secure"
+        taints: []
+        
+        # Talos-specific configuration
+        talos_config:
+          machine_config:
+            app_armor_enabled: true
+            seccomp_enabled: true
+            disk_encryption: true
+          security_config:
+            vtpm_enabled: true
+            image_verification: true
+        
+        autoscaling:
+          enabled: true
+          min_replicas: 3
+          max_replicas: 10
+      
+      # High-memory workers for data processing
+      - name: "high-memory-workers"
+        os: "ubuntu"
+        count: 2
+        flavor: "gp.0.8.64"
+        image: "ubuntu-24.04-k8s"
+        bootstrap_provider: "kubeadm"
+        
+        boot_volume:
+          size: 200
+          type: "HA-Performance"
+          delete_on_termination: true
+        
+        additional_volumes:
+          - device_name: "/dev/vdb"
+            size: 1000
+            type: "HA-Performance"
+            delete_on_termination: false
+        
+        labels:
+          node-role.kubernetes.io/worker: ""
+          workload-type: "memory-intensive"
+        taints:
+          - key: "workload"
+            value: "memory-intensive"
+            effect: "NoSchedule"
+        
+        autoscaling:
+          enabled: true
+          min_replicas: 2
+          max_replicas: 8
+    
+    # GitOps modules for Kamaji deployment
+    modules:
+      kamaji:
+        source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/deployment/kamaji?ref=main"
+      cluster_api:
+        source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/deployment/cluster-api?ref=main"
+      cluster_api_provider_openstack:
+        source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/deployment/cluster-api/providers/openstack?ref=main"
+  
+  # Talos (disabled in Kamaji deployment)
+  talos:
+    enabled: false
+
 
 #############################################################################
 # SECRETS - Credentials (SOPS Encrypted in Production)

@@ -54,6 +54,10 @@ OpenCenter uses a unified, hierarchical configuration model that transforms a si
 
 **Schema Version**: `2.0`
 
+**Supported Cloud Providers**: 
+- **OpenStack** - Fully supported and production-ready
+- AWS, GCP, Azure, VMware - Included in schema for architectural completeness but not currently scheduled or planned for implementation
+
 ---
 
 ## Architecture
@@ -91,13 +95,12 @@ OpenCenter uses a unified, hierarchical configuration model that transforms a si
 │  │   ├── meta ─────────────────► Identity & Ownership        │
 │  │   ├── cluster ──────────────► Kubernetes Semantics        │
 │  │   ├── infrastructure ───────► Networking, Compute         │
-│  │   ├── deployment ───────────► Installation Method         │
 │  │   ├── services ─────────────► Platform Workloads          │
 │  │   └── managed_services ─────► External Integrations       │
 │  │                                                           │
+│  ├── deployment ───────────────► Installation Method & Auto-deploy │
 │  ├── opentofu ─────────────────► IaC Backend                 │
-│  ├── secrets ──────────────────► Credentials & Keys          │
-│  └── deployment ───────────────► Auto-deploy Settings        │
+│  └── secrets ──────────────────► Credentials & Keys          │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -117,7 +120,7 @@ OpenCenter uses a unified, hierarchical configuration model that transforms a si
               ┌────────────┼────────────┐
               │            │            │
        ┌──────▼──────┐     │     ┌──────▼──────┐
-       │Infrastructure│     │     │  Deployment │
+       │Infrastructure│     │     │ Deployment  │
        │  (Provider)  │     │     │  (Method)   │
        └──────┬──────┘     │     └──────┬──────┘
               │            │            │
@@ -194,6 +197,17 @@ opencenter:
         kube-ovn:
           enabled: false
       
+      # CSI Plugin Selection
+      storage_plugin:
+        vsphere_csi:
+          enabled: true
+        cinder_csi:
+          enabled: false
+        trident:
+          enabled: false
+        ceph:
+          enabled: false
+
       # Security
       security:
         k8s_hardening: true
@@ -235,7 +249,7 @@ Provider-agnostic core with provider-specific extensions.
 ```yaml
 opencenter:
   infrastructure:
-    provider: "openstack"    # openstack | aws | gcp | azure | baremetal | vsphere
+    provider: "openstack"    # openstack (production-ready) | aws | gcp | azure | baremetal | vsphere (future/reference only)
     ssh_user: "ubuntu"
     ssh_key_path: ""
     os_version: "24"
@@ -309,6 +323,8 @@ opencenter:
     
     cloud:
       # Provider-specific configuration
+      # NOTE: Only OpenStack is currently supported in production
+      # Other providers are included for architectural completeness
       openstack:
         auth_url: "https://identity.example.com/v3"
         region: "RegionOne"
@@ -329,6 +345,7 @@ opencenter:
             mtu: 1500
             provider: "physnet1"
       
+      # Future/reference implementations (not scheduled)
       aws:
         profile: ""
         region: "us-east-1"
@@ -376,6 +393,7 @@ opencenter:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Provider Interface (All providers must implement)           │
+│  NOTE: Currently only OpenStack is production-ready          │
 ├─────────────────────────────────────────────────────────────┤
 │  Authentication                                              │
 │  ├── Validate credentials                                    │
@@ -406,86 +424,86 @@ opencenter:
 
 ### Deployment Domain
 
-Deployment method configuration (how Kubernetes is installed).
+Deployment method configuration (how Kubernetes is installed) and automation settings.
 
 ```yaml
-opencenter:
-  deployment:
-    method: "kubespray"    # kubespray | talos | kamaji | eks | gke | aks | cluster-api
+deployment:
+  auto_deploy: false
+  method: "kubespray"    # kubespray | talos | kamaji | eks | gke | aks | cluster-api
+  
+  kubespray:
+    version: "v2.29.1"
+    modules:
+      kubespray_cluster:
+        source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/provider/kubespray?ref=main"
+  
+  # Kamaji - Hosted Control Plane with Cluster API
+  kamaji:
+    enabled: false
+    version: "v1.0.0"
     
-    kubespray:
-      version: "v2.29.1"
-      modules:
-        kubespray_cluster:
-          source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/provider/kubespray?ref=main"
+    # Control plane configuration
+    control_plane:
+      replicas: 3
+      datastore: "etcd"  # etcd | postgresql | mysql
+      
+      # Etcd configuration (when datastore: etcd)
+      etcd:
+        storage_class: "csi-cinder-sc-delete"
+        storage_size: "10Gi"
+      
+      # PostgreSQL configuration (when datastore: postgresql)
+      postgresql:
+        host: ""
+        port: 5432
+        database: "kamaji"
+        ssl_mode: "require"
+      
+      # Control plane endpoint
+      service_type: "LoadBalancer"  # LoadBalancer | NodePort
+      api_server_port: 6443
     
-    # Kamaji - Hosted Control Plane with Cluster API
-    kamaji:
-      enabled: false
-      version: "v1.0.0"
+    # Cluster API configuration
+    cluster_api:
+      version: "v1.6.0"
+      providers:
+        infrastructure: "openstack"  # openstack | aws | azure | vsphere
+        bootstrap: "kubeadm"
+        control_plane: "kubeadm"
+    
+    # Worker node pools (mixed OS support)
+    worker_pools:
+      # Ubuntu workers via Kubespray/CAPI
+      - name: "ubuntu-workers"
+        os: "ubuntu"
+        count: 3
+        flavor: "gp.0.4.16"
+        image: "ubuntu-24.04-k8s"
+        bootstrap_provider: "kubeadm"
       
-      # Control plane configuration
-      control_plane:
-        replicas: 3
-        datastore: "etcd"  # etcd | postgresql | mysql
-        
-        # Etcd configuration (when datastore: etcd)
-        etcd:
-          storage_class: "csi-cinder-sc-delete"
-          storage_size: "10Gi"
-        
-        # PostgreSQL configuration (when datastore: postgresql)
-        postgresql:
-          host: ""
-          port: 5432
-          database: "kamaji"
-          ssl_mode: "require"
-        
-        # Control plane endpoint
-        service_type: "LoadBalancer"  # LoadBalancer | NodePort
-        api_server_port: 6443
+      # Windows workers via Kubespray/CAPI
+      - name: "windows-workers"
+        os: "windows"
+        count: 2
+        flavor: "gp.5.4.16"
+        image: "windows-2022-k8s"
+        bootstrap_provider: "kubeadm"
       
-      # Cluster API configuration
+      # Talos workers via CAPI
+      - name: "talos-workers"
+        os: "talos"
+        count: 3
+        flavor: "gp.0.4.16"
+        image: "talos-v1.8.0"
+        bootstrap_provider: "talos"
+        talos_version: "v1.8.0"
+    
+    modules:
+      kamaji:
+        source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/deployment/kamaji?ref=main"
       cluster_api:
-        version: "v1.6.0"
-        providers:
-          infrastructure: "openstack"  # openstack | aws | azure | vsphere
-          bootstrap: "kubeadm"
-          control_plane: "kubeadm"
-      
-      # Worker node pools (mixed OS support)
-      worker_pools:
-        # Ubuntu workers via Kubespray/CAPI
-        - name: "ubuntu-workers"
-          os: "ubuntu"
-          count: 3
-          flavor: "gp.0.4.16"
-          image: "ubuntu-24.04-k8s"
-          bootstrap_provider: "kubeadm"
-        
-        # Windows workers via Kubespray/CAPI
-        - name: "windows-workers"
-          os: "windows"
-          count: 2
-          flavor: "gp.5.4.16"
-          image: "windows-2022-k8s"
-          bootstrap_provider: "kubeadm"
-        
-        # Talos workers via CAPI
-        - name: "talos-workers"
-          os: "talos"
-          count: 3
-          flavor: "gp.0.4.16"
-          image: "talos-v1.8.0"
-          bootstrap_provider: "talos"
-          talos_version: "v1.8.0"
-      
-      modules:
-        kamaji:
-          source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/deployment/kamaji?ref=main"
-        cluster_api:
-          source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/deployment/cluster-api?ref=main"
-    
+        source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/deployment/cluster-api?ref=main"
+  
   # Talos configuration (standalone or as worker pool in Kamaji)
   talos:
     enabled: false
@@ -547,22 +565,24 @@ opencenter:
 │  Infrastructure Provider    │    Deployment Method           │
 │  (WHERE to deploy)          │    (HOW to deploy)             │
 ├─────────────────────────────┼───────────────────────────────┤
-│  OpenStack                  │    Kubespray                   │
-│  AWS                        │    Talos                       │
-│  GCP                        │    Cluster API                 │
-│  Azure                      │    EKS/GKE/AKS (managed)       │
-│  Bare Metal                 │                                │
-│  VMware                     │                                │
+│  OpenStack (production)     │    Kubespray                   │
+│  AWS (future)               │    Talos                       │
+│  GCP (future)               │    Cluster API                 │
+│  Azure (future)             │    EKS/GKE/AKS (managed)       │
+│  Bare Metal (future)        │                                │
+│  VMware (future)            │                                │
 └─────────────────────────────┴───────────────────────────────┘
 
-Supported Combinations:
-  OpenStack + Kubespray  ✓
-  OpenStack + Talos      ✓
-  AWS + Kubespray        ✓
-  AWS + EKS              ✓
-  GCP + GKE              ✓
-  Bare Metal + Kubespray ✓
-  Bare Metal + Talos     ✓
+Currently Supported Combinations:
+  OpenStack + Kubespray  ✓ (production-ready)
+  OpenStack + Talos      ✓ (production-ready)
+  
+Future/Reference Combinations (not scheduled):
+  AWS + Kubespray        
+  AWS + EKS              
+  GCP + GKE              
+  Bare Metal + Kubespray 
+  Bare Metal + Talos     
 ```
 
 ---
@@ -635,11 +655,14 @@ opencenter:
     gateway-api:
       enabled: true
     
-    # Storage CSI Drivers (provider-specific)
+    # Storage CSI Drivers (configured via cluster.kubernetes.storage_plugin)
+    # The CSI driver selection is made in cluster.kubernetes.storage_plugin
+    # These services deploy the actual CSI driver workloads
     external-snapshotter:
       enabled: true
+    
+    # OpenStack Cinder CSI (when storage_plugin.cinder_csi.enabled = true)
     openstack-csi:
-      enabled: true
       storage_classes:
         - name: "csi-cinder-sc-delete"
           provisioner: "cinder.csi.openstack.org"
@@ -652,29 +675,40 @@ opencenter:
           reclaim_policy: "Retain"
           parameters:
             type: "HA-Performance"
+    
+    # AWS EBS CSI (when storage_plugin.aws_ebs_csi.enabled = true)
     aws-ebs-csi:
-      enabled: false
       storage_classes:
         - name: "gp3"
           provisioner: "ebs.csi.aws.com"
           parameters:
             type: "gp3"
             encrypted: "true"
+    
+    # vSphere CSI (when storage_plugin.vsphere_csi.enabled = true)
     vsphere-csi:
-      enabled: false
       storage_classes:
         - name: "vsphere-standard"
           provisioner: "csi.vsphere.vmware.com"
           parameters:
             storagepolicyname: "vSAN Default Storage Policy"
+    
+    # Ceph CSI (when storage_plugin.ceph.enabled = true)
     ceph-csi:
-      enabled: false
       monitors: []
       storage_classes:
         - name: "ceph-rbd"
           provisioner: "rbd.csi.ceph.com"
           parameters:
             pool: "kubernetes"
+    
+    # NetApp Trident (when storage_plugin.trident.enabled = true)
+    trident:
+      storage_classes:
+        - name: "netapp-file"
+          provisioner: "csi.trident.netapp.io"
+          parameters:
+            backendType: "ontap-nas"
     
     # Cloud Controller Managers (provider-specific)
     openstack-ccm:
@@ -723,11 +757,17 @@ opencenter:
 │  ├── Provider-specific volume types (HA-Standard, gp3)       │
 │  └── Configured during infrastructure provisioning           │
 ├─────────────────────────────────────────────────────────────┤
-│  Kubernetes Storage (services.<csi-driver>)                  │
-│  ├── CSI drivers deployed as Kubernetes workloads            │
-│  ├── StorageClasses for dynamic provisioning                 │
-│  ├── Volume snapshots and cloning                            │
-│  └── Examples: openstack-csi, aws-ebs-csi, vsphere-csi       │
+│  CSI Plugin Selection (cluster.kubernetes.storage_plugin)    │
+│  ├── Cluster-level decision on which CSI driver to use       │
+│  ├── Only one CSI driver enabled per cluster                 │
+│  ├── Options: vsphere_csi, cinder_csi, aws_ebs_csi, etc.     │
+│  └── Similar to CNI plugin selection                         │
+├─────────────────────────────────────────────────────────────┤
+│  CSI Driver Deployment (services.<csi-driver>)               │
+│  ├── CSI driver pods deployed in kube-system namespace       │
+│  ├── StorageClass definitions and parameters                 │
+│  ├── Volume snapshots and cloning capabilities               │
+│  └── Deployed based on storage_plugin selection              │
 ├─────────────────────────────────────────────────────────────┤
 │  Application Storage (services.<app>.storage_class)          │
 │  ├── References StorageClass from CSI driver                 │
@@ -742,13 +782,17 @@ opencenter:
 ┌─────────────────────────────────────────────────────────────┐
 │  Provider    │  CSI Driver           │  StorageClass Prefix  │
 ├──────────────┼───────────────────────┼──────────────────────┤
-│  OpenStack   │  openstack-csi        │  csi-cinder-*         │
-│  AWS         │  aws-ebs-csi          │  gp2, gp3, io1        │
-│  GCP         │  gcp-compute-csi      │  standard, ssd        │
-│  Azure       │  azure-disk-csi       │  managed-*            │
-│  VMware      │  vsphere-csi          │  vsphere-*            │
-│  Bare Metal  │  local-path, ceph-csi │  local-path, ceph-*   │
+│  OpenStack   │  cinder_csi           │  csi-cinder-*         │ ✓ Production
+│  AWS         │  aws_ebs_csi          │  gp2, gp3, io1        │ Future
+│  GCP         │  gcp_compute_csi      │  standard, ssd        │ Future
+│  Azure       │  azure_disk_csi       │  managed-*            │ Future
+│  VMware      │  vsphere_csi          │  vsphere-*            │ Future
+│  Bare Metal  │  local-path, ceph     │  local-path, ceph-*   │ Future
+│  NetApp      │  trident              │  netapp-*             │ Future
 └──────────────┴───────────────────────┴──────────────────────┘
+
+Note: Only OpenStack (cinder_csi) is currently production-ready.
+Other providers are included for architectural completeness.
 ```
 
 **Storage Configuration Flow**:
@@ -758,18 +802,25 @@ opencenter:
    └─► infrastructure.storage.worker_volume_type = "HA-Standard"
        (Creates boot volumes for worker nodes)
 
-2. CSI Driver Deployment
-   └─► services.openstack-csi.enabled = true
-       (Deploys CSI driver pods in kube-system namespace)
+2. CSI Plugin Selection (Cluster-Level Decision)
+   └─► cluster.kubernetes.storage_plugin.cinder_csi.enabled = true
+       (Selects which CSI driver to deploy - only one can be enabled)
 
-3. StorageClass Creation
-   └─► services.openstack-csi.storage_classes[0].name = "csi-cinder-sc-delete"
-       (Creates Kubernetes StorageClass resource)
+3. CSI Driver Deployment
+   └─► services.openstack-csi.storage_classes[...]
+       (Deploys CSI driver pods and creates StorageClass resources)
 
 4. Application Volume Provisioning
    └─► services.prometheus.storage_class = "csi-cinder-sc-delete"
        (Application PVC uses StorageClass for dynamic provisioning)
 ```
+
+**CSI Plugin Selection Rules**:
+
+- Only **one** CSI plugin can be enabled per cluster (similar to CNI)
+- Selection is made in `cluster.kubernetes.storage_plugin`
+- The corresponding service configuration in `services.<csi-driver>` defines StorageClasses
+- Provider-specific: OpenStack uses `cinder_csi`, AWS uses `aws_ebs_csi`, etc.
 
 ---
 

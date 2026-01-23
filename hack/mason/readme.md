@@ -1,0 +1,1 @@
+# This creates a container image that contains all the necesary bits to deploy a kubernetes cluster.

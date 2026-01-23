@@ -299,50 +299,6 @@ opencenter:
         enabled: false
 
   #############################################################################
-  # DEPLOYMENT - Deployment Method Configuration
-  #############################################################################
-  deployment:
-    method: "kubespray"    # kubespray | talos | kamaji | eks | gke | aks
-    
-    kubespray:
-      version: "v2.29.1"
-      modules:
-        kubespray_cluster:
-          source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/provider/kubespray?ref=main"
-    
-    # Kamaji - Hosted Control Plane (disabled in this example)
-    # See cluster-config-kamaji.yaml for a complete Kamaji deployment example
-    kamaji:
-      enabled: false
-      version: "v1.0.0"
-      
-      control_plane:
-        replicas: 3
-        datastore: "etcd"
-        
-        etcd:
-          storage_class: "csi-cinder-sc-delete"
-          storage_size: "10Gi"
-        
-        service_type: "LoadBalancer"
-        api_server_port: 6443
-      
-      cluster_api:
-        version: "v1.6.0"
-        providers:
-          infrastructure: "openstack"
-          bootstrap: "kubeadm"
-          control_plane: "kubeadm"
-      
-      worker_pools: []
-      
-      modules:
-        kamaji:
-          source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/deployment/kamaji?ref=main"
-        cluster_api:
-          source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/deployment/cluster-api?ref=main"
-
-  #############################################################################
   # GITOPS - Repository Configuration
   #############################################################################
   gitops:
@@ -523,11 +479,6 @@ opentofu:
       key: "prod-cluster/terraform.tfstate"
       region: "us-east-1"
 
-#############################################################################
-# DEPLOYMENT - Auto-deploy Settings
-#############################################################################
-deployment:
-  auto_deploy: false
 
 #############################################################################
 # SECRETS - Credentials (SOPS Encrypted in Production)
@@ -588,3 +539,106 @@ secrets:
     datacenters: ""
     insecure_flag: "false"
     port: "443"
+
+#############################################################################
+# DEPLOYMENT - Deployment Method Configuration
+#############################################################################
+deployment:
+  auto_deploy: false
+  method: "kubespray"    # kubespray | talos | kamaji | eks | gke | aks | cluster-api
+  
+  # Kubespray - Ansible-based Kubernetes deployment
+  kubespray:
+    version: "v2.29.1"
+    modules:
+      kubespray_cluster:
+        source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/provider/kubespray?ref=main"
+  
+  # Kamaji - Hosted Control Plane with Cluster API (disabled in this example)
+  # See cluster-config-kamaji.yaml for a complete Kamaji deployment example
+  kamaji:
+    enabled: false
+    version: "v1.0.0"
+    
+    # Control plane configuration
+    control_plane:
+      replicas: 3
+      datastore: "etcd"  # etcd | postgresql | mysql
+      
+      # Etcd configuration (when datastore: etcd)
+      etcd:
+        storage_class: "csi-cinder-sc-delete"
+        storage_size: "10Gi"
+      
+      # PostgreSQL configuration (when datastore: postgresql)
+      postgresql:
+        host: ""
+        port: 5432
+        database: "kamaji"
+        ssl_mode: "require"
+      
+      # Control plane endpoint
+      service_type: "LoadBalancer"  # LoadBalancer | NodePort
+      api_server_port: 6443
+    
+    # Cluster API configuration
+    cluster_api:
+      version: "v1.6.0"
+      providers:
+        infrastructure: "openstack"  # openstack | aws | azure | vsphere
+        bootstrap: "kubeadm"
+        control_plane: "kubeadm"
+    
+    # Worker node pools (mixed OS support)
+    worker_pools:
+      # Ubuntu workers via Kubespray/CAPI
+      - name: "ubuntu-workers"
+        os: "ubuntu"
+        count: 3
+        flavor: "gp.0.4.16"
+        image: "ubuntu-24.04-k8s"
+        bootstrap_provider: "kubeadm"
+      
+      # Windows workers via Kubespray/CAPI
+      - name: "windows-workers"
+        os: "windows"
+        count: 2
+        flavor: "gp.5.4.16"
+        image: "windows-2022-k8s"
+        bootstrap_provider: "kubeadm"
+      
+      # Talos workers via CAPI
+      - name: "talos-workers"
+        os: "talos"
+        count: 3
+        flavor: "gp.0.4.16"
+        image: "talos-v1.8.0"
+        bootstrap_provider: "talos"
+        talos_version: "v1.8.0"
+    
+    modules:
+      kamaji:
+        source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/deployment/kamaji?ref=main"
+      cluster_api:
+        source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/deployment/cluster-api?ref=main"
+  
+  # Talos - Immutable Linux OS for Kubernetes (disabled in this example)
+  talos:
+    enabled: false
+    version: "v1.8.0"
+    image_url: "https://github.com/siderolabs/talos/releases/download/v1.8.0/talos-amd64.iso"
+    
+    machine_config:
+      app_armor_enabled: true
+      seccomp_enabled: true
+      disk_encryption: true
+    
+    network_config:
+      management_subnet: "10.0.1.0/24"
+      control_subnet: "10.0.2.0/24"
+      data_subnet: "10.0.3.0/24"
+    
+    security_config:
+      vtpm_enabled: true
+      image_verification: true
+      audit_log_enabled: true
