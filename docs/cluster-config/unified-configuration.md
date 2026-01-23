@@ -206,16 +206,6 @@ opencenter:
         enabled: false
         kube_oidc_url: ""
         kube_oidc_client_id: "kubernetes"
-      
-      # Additional worker pools (can override infrastructure defaults)
-      additional_server_pools_worker:
-        - name: "high-memory"
-          worker_count: 2
-          flavor_worker: "gp.0.8.64"
-          worker_node_bfv_volume_size: 200
-          additional_block_devices_worker:
-            - device_name: "/dev/vdb"
-              volume_size: 1000
 ```
 
 **Networking Ownership**:
@@ -272,6 +262,30 @@ opencenter:
       master_count: 3
       worker_count: 5
       worker_count_windows: 0
+      
+      # Additional worker pools with custom configurations
+      # Each pool can override flavors, storage, and node counts
+      additional_server_pools_worker:
+        - name: "high-memory"
+          worker_count: 2
+          flavor_worker: "gp.0.8.64"
+          node_worker: "mem"
+          server_group_affinity: "anti-affinity"
+          image_id: "799dcf97-3656-4361-8187-13ab1b295e33"
+          
+          # Override boot volume configuration for this pool
+          worker_node_bfv_volume_size: 200
+          worker_node_bfv_destination_type: "volume"
+          worker_node_bfv_source_type: "image"
+          worker_node_bfv_volume_type: "HA-Performance"
+          worker_node_bfv_delete_on_termination: true
+          
+          # Additional data volumes for this pool
+          additional_block_devices_worker:
+            - device_name: "/dev/vdb"
+              volume_size: 1000
+              volume_type: "HA-Performance"
+              delete_on_termination: false
     
     # Storage configuration (boot volumes, additional devices)
     storage:
@@ -333,6 +347,16 @@ opencenter:
 │  ├── worker_count ────────► Worker node count                │
 │  └── worker_count_windows ► Windows worker count             │
 ├─────────────────────────────────────────────────────────────┤
+│  infrastructure.compute (Compute Layer)                      │
+│  ├── flavor_* ────────────► Instance types/sizes             │
+│  ├── master_count ────────► Control plane node count         │
+│  ├── worker_count ────────► Worker node count                │
+│  ├── worker_count_windows ► Windows worker count             │
+│  └── additional_server_pools_worker ──► Custom worker pools  │
+│      ├── flavor_worker ───────► Pool-specific flavor         │
+│      ├── worker_node_bfv_* ───► Pool-specific volumes        │
+│      └── additional_block_devices_* ─► Pool-specific data    │
+├─────────────────────────────────────────────────────────────┤
 │  infrastructure.storage (Storage Layer)                      │
 │  ├── default_storage_class ──► Kubernetes default SC         │
 │  ├── worker_volume_* ────────► Worker boot volume config     │
@@ -341,11 +365,9 @@ opencenter:
 ├─────────────────────────────────────────────────────────────┤
 │  cluster.kubernetes (Kubernetes Layer)                       │
 │  ├── version ─────────────────► Kubernetes version           │
-│  ├── additional_server_pools_worker ──► Custom worker pools  │
-│  │   ├── flavor_worker ─────────► Pool-specific flavor       │
-│  │   ├── worker_node_bfv_* ─────► Pool-specific volumes      │
-│  │   └── additional_block_devices_* ─► Pool-specific data    │
-│  └── additional_server_pools_worker_windows ► Windows pools  │
+│  ├── subnet_pods ─────────────► Pod network CIDR             │
+│  ├── subnet_services ─────────► Service network CIDR         │
+│  └── network_plugin ──────────► CNI selection                │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -947,17 +969,8 @@ infrastructure:
     flavor_worker: "gp.0.4.16"
     master_count: 3
     worker_count: 5
-  
-  storage:
-    default_storage_class: "csi-cinder-sc-delete"
-    worker_volume_size: 100
-    worker_volume_type: "HA-Standard"
-    additional_block_devices: []
-
-# Cluster with additional worker pools
-cluster:
-  kubernetes:
-    version: "1.33.5"
+    
+    # Additional worker pools for specialized workloads
     additional_server_pools_worker:
       - name: "high-memory"
         worker_count: 2
@@ -966,6 +979,17 @@ cluster:
         additional_block_devices_worker:
           - device_name: "/dev/vdb"
             volume_size: 1000
+  
+  storage:
+    default_storage_class: "csi-cinder-sc-delete"
+    worker_volume_size: 100
+    worker_volume_type: "HA-Standard"
+    additional_block_devices: []
+
+# Cluster configuration
+cluster:
+  kubernetes:
+    version: "1.33.5"
 
 # Services with provider-specific configuration
 services:

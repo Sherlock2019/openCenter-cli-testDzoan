@@ -76,6 +76,52 @@ opencenter:
       master_count: 3
       worker_count: 5
       worker_count_windows: 0
+      
+      # Additional worker pools with custom configurations
+      # Each pool can override flavors, storage, and node counts
+      additional_server_pools_worker:
+        - name: "high-memory"
+          worker_count: 2
+          flavor_worker: "gp.0.8.64"
+          node_worker: "mem"
+          server_group_affinity: "anti-affinity"
+          image_id: "799dcf97-3656-4361-8187-13ab1b295e33"
+          
+          # Override boot volume configuration for this pool
+          worker_node_bfv_volume_size: 200
+          worker_node_bfv_destination_type: "volume"
+          worker_node_bfv_source_type: "image"
+          worker_node_bfv_volume_type: "HA-Performance"
+          worker_node_bfv_delete_on_termination: true
+          
+          # Additional data volumes for this pool
+          additional_block_devices_worker:
+            - device_name: "/dev/vdb"
+              volume_size: 1000
+              volume_type: "HA-Performance"
+              delete_on_termination: false
+        
+        - name: "gpu-workers"
+          worker_count: 2
+          flavor_worker: "gpu.0.8.32"
+          node_worker: "gpu"
+          server_group_affinity: "anti-affinity"
+          image_id: "799dcf97-3656-4361-8187-13ab1b295e33"
+          
+          # GPU workers with larger boot volume
+          worker_node_bfv_volume_size: 300
+          worker_node_bfv_volume_type: "HA-Performance"
+          
+          # Multiple data volumes for GPU workloads
+          additional_block_devices_worker:
+            - device_name: "/dev/vdb"
+              volume_size: 500
+              volume_type: "HA-Performance"
+              delete_on_termination: false
+            - device_name: "/dev/vdc"
+              volume_size: 2000
+              volume_type: "HA-Performance"
+              delete_on_termination: false
     
     # Storage configuration (boot volumes, additional devices)
     storage:
@@ -204,51 +250,6 @@ opencenter:
       api_port: 443
       kube_vip_enabled: true
       kubelet_rotate_server_certificates: false
-      
-      # Additional worker pools with custom storage configurations
-      additional_server_pools_worker:
-        - name: "high-memory"
-          worker_count: 2
-          flavor_worker: "gp.0.8.64"
-          node_worker: "mem"
-          server_group_affinity: "anti-affinity"
-          image_id: "799dcf97-3656-4361-8187-13ab1b295e33"
-          
-          # Override boot volume configuration for this pool
-          worker_node_bfv_volume_size: 200
-          worker_node_bfv_destination_type: "volume"
-          worker_node_bfv_source_type: "image"
-          worker_node_bfv_volume_type: "HA-Performance"
-          worker_node_bfv_delete_on_termination: true
-          
-          # Additional data volumes for this pool
-          additional_block_devices_worker:
-            - device_name: "/dev/vdb"
-              volume_size: 1000
-              volume_type: "HA-Performance"
-              delete_on_termination: false
-        
-        - name: "gpu-workers"
-          worker_count: 2
-          flavor_worker: "gpu.0.8.32"
-          node_worker: "gpu"
-          server_group_affinity: "anti-affinity"
-          image_id: "799dcf97-3656-4361-8187-13ab1b295e33"
-          
-          # GPU workers with larger boot volume
-          worker_node_bfv_volume_size: 300
-          worker_node_bfv_volume_type: "HA-Performance"
-          
-          # Multiple data volumes for GPU workloads
-          additional_block_devices_worker:
-            - device_name: "/dev/vdb"
-              volume_size: 500
-              volume_type: "HA-Performance"
-              delete_on_termination: false
-            - device_name: "/dev/vdc"
-              volume_size: 2000
-              volume_type: "HA-Performance"
-              delete_on_termination: false
       
       # Kubernetes networking (CNI-managed)
       subnet_pods: "10.42.0.0/16"

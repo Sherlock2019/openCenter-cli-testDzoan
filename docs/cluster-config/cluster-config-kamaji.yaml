@@ -82,6 +82,10 @@ opencenter:
       master_count: 0  # Control plane is hosted
       worker_count: 0  # Workers defined in deployment.kamaji.worker_pools
       worker_count_windows: 0
+      
+      # Additional worker pools not used in Kamaji
+      # Worker pools are defined in deployment.kamaji.worker_pools instead
+      additional_server_pools_worker: []
     
     # Storage configuration
     storage:
@@ -194,10 +198,6 @@ opencenter:
       api_port: 6443
       kube_vip_enabled: false  # Not used in Kamaji
       kubelet_rotate_server_certificates: false
-      
-      # No additional worker pools in cluster config for Kamaji
-      # Worker pools are defined in deployment.kamaji.worker_pools
-      additional_server_pools_worker: []
       
       # Kubernetes networking (CNI-managed)
       subnet_pods: "10.42.0.0/16"
