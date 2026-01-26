@@ -53,8 +53,14 @@ Examples:
 }
 
 func runClusterValidateManifests(cmd *cobra.Command, args []string) error {
+	// Resolve cluster name from args or active cluster
+	name, err := resolveClusterName(args, true)
+	if err != nil {
+		return err
+	}
+
 	// Load configuration
-	cfg, err := loadConfigForCommand(cmd, args)
+	cfg, err := config.Load(name)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
@@ -78,35 +84,4 @@ func runClusterValidateManifests(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("✅ All manifests validated successfully\n")
 	return nil
-}
-
-// loadConfigForCommand loads the configuration for a cluster command
-func loadConfigForCommand(cmd *cobra.Command, args []string) (config.Config, error) {
-	var clusterName string
-	if len(args) > 0 {
-		clusterName = args[0]
-	}
-
-	// Get config manager
-	cm, err := config.NewConfigManager("")
-	if err != nil {
-		return config.Config{}, fmt.Errorf("failed to create config manager: %w", err)
-	}
-
-	// If no cluster name provided, use current cluster
-	if clusterName == "" {
-		currentCluster, err := cm.GetCurrentCluster()
-		if err != nil {
-			return config.Config{}, fmt.Errorf("no cluster specified and no current cluster set: %w", err)
-		}
-		clusterName = currentCluster
-	}
-
-	// Load cluster configuration
-	cfg, err := cm.LoadClusterConfig(clusterName)
-	if err != nil {
-		return config.Config{}, fmt.Errorf("failed to load cluster config: %w", err)
-	}
-
-	return cfg, nil
 }

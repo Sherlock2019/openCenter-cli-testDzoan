@@ -76,7 +76,7 @@ func newClusterBackupCreateCmd() *cobra.Command {
 	var encrypt bool
 
 	cmd := &cobra.Command{
-		Use:   "create <cluster>",
+		Use:   "create [cluster]",
 		Short: "Create a backup of cluster configuration",
 		Long: `Create a backup of cluster configuration and related files.
 
@@ -87,8 +87,13 @@ The backup includes:
   - GitOps repository state
   - Terraform state files
 
-Backups are compressed with gzip and can be encrypted with a passphrase.`,
-		Example: `  # Create a backup
+Backups are compressed with gzip and can be encrypted with a passphrase.
+
+If no cluster name is provided, uses the currently active cluster.`,
+		Example: `  # Create a backup of active cluster
+  opencenter cluster backup create
+
+  # Create a backup of specific cluster
   opencenter cluster backup create my-cluster
 
   # Create an encrypted backup (will prompt for passphrase)
@@ -96,9 +101,13 @@ Backups are compressed with gzip and can be encrypted with a passphrase.`,
 
   # Create an encrypted backup with passphrase
   opencenter cluster backup create my-cluster --passphrase="secret123"`,
-		Args: cobra.ExactArgs(1),
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clusterName := args[0]
+			// Resolve cluster name from args or active cluster
+			clusterName, err := resolveClusterName(args, true)
+			if err != nil {
+				return err
+			}
 
 			// Get config directory
 			homeDir, err := os.UserHomeDir()
@@ -366,20 +375,29 @@ func newClusterBackupScheduleCmd() *cobra.Command {
 	var retention string
 
 	cmd := &cobra.Command{
-		Use:   "schedule <cluster>",
+		Use:   "schedule [cluster]",
 		Short: "Schedule periodic backups for a cluster",
 		Long: `Schedule periodic backups for a cluster.
 
 This feature is not yet implemented. It will support cron-style scheduling
-and automatic backup retention policies.`,
-		Example: `  # Schedule daily backups
+and automatic backup retention policies.
+
+If no cluster name is provided, uses the currently active cluster.`,
+		Example: `  # Schedule daily backups for active cluster
+  opencenter cluster backup schedule --interval=24h
+
+  # Schedule daily backups for specific cluster
   opencenter cluster backup schedule my-cluster --interval=24h
 
   # Schedule with retention policy
   opencenter cluster backup schedule my-cluster --interval=24h --retention=30d`,
-		Args: cobra.ExactArgs(1),
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clusterName := args[0]
+			// Resolve cluster name from args or active cluster
+			clusterName, err := resolveClusterName(args, true)
+			if err != nil {
+				return err
+			}
 
 			fmt.Printf("Scheduling backups for cluster %s...\n", clusterName)
 			fmt.Printf("  Interval: %s\n", interval)

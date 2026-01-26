@@ -62,7 +62,7 @@ classified by severity (critical, warning, info) and reconcilability.`,
 // newClusterDriftDetectCmd creates the drift detect subcommand
 func newClusterDriftDetectCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "detect <cluster>",
+		Use:   "detect [cluster]",
 		Short: "Detect infrastructure drift for a cluster",
 		Long: `Detect differences between desired configuration and actual infrastructure state.
 
@@ -73,8 +73,13 @@ configuration. It generates a drift report showing:
   - Field that has drifted
   - Expected vs actual values
   - Severity (critical, warning, info)
-  - Whether the drift is reconcilable`,
-		Example: `  # Detect drift for a cluster
+  - Whether the drift is reconcilable
+
+If no cluster name is provided, uses the currently active cluster.`,
+		Example: `  # Detect drift for active cluster
+  opencenter cluster drift detect
+
+  # Detect drift for a specific cluster
   opencenter cluster drift detect my-cluster
 
   # Output drift report as JSON
@@ -82,9 +87,13 @@ configuration. It generates a drift report showing:
 
   # Show only critical drift
   opencenter cluster drift detect my-cluster --severity=critical`,
-		Args: cobra.ExactArgs(1),
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clusterName := args[0]
+			// Resolve cluster name from args or active cluster
+			clusterName, err := resolveClusterName(args, true)
+			if err != nil {
+				return err
+			}
 
 			// Load configuration
 			_, err := config.Load(clusterName)
@@ -113,7 +122,7 @@ configuration. It generates a drift report showing:
 // newClusterDriftReconcileCmd creates the drift reconcile subcommand
 func newClusterDriftReconcileCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "reconcile <cluster>",
+		Use:   "reconcile [cluster]",
 		Short: "Reconcile detected infrastructure drift",
 		Long: `Reconcile differences between desired configuration and actual infrastructure state.
 
@@ -122,8 +131,13 @@ state back in line with the desired configuration. Only reconcilable drift can b
 automatically. Non-reconcilable drift (e.g., deleted resources, manual resource creation)
 requires manual intervention.
 
-Use --dry-run to see what changes would be made without applying them.`,
-		Example: `  # Show what would be reconciled (dry-run)
+Use --dry-run to see what changes would be made without applying them.
+
+If no cluster name is provided, uses the currently active cluster.`,
+		Example: `  # Reconcile drift for active cluster
+  opencenter cluster drift reconcile
+
+  # Show what would be reconciled (dry-run)
   opencenter cluster drift reconcile my-cluster --dry-run
 
   # Apply reconciliation
@@ -131,13 +145,18 @@ Use --dry-run to see what changes would be made without applying them.`,
 
   # Reconcile with confirmation prompt
   opencenter cluster drift reconcile my-cluster --confirm`,
-		Args: cobra.ExactArgs(1),
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clusterName := args[0]
+			// Resolve cluster name from args or active cluster
+			clusterName, err := resolveClusterName(args, true)
+			if err != nil {
+				return err
+			}
+
 			dryRun, _ := cmd.Flags().GetBool("dry-run")
 
 			// Load configuration
-			_, err := config.Load(clusterName)
+			_, err = config.Load(clusterName)
 			if err != nil {
 				return fmt.Errorf("failed to load cluster configuration: %w", err)
 			}
@@ -160,6 +179,7 @@ Use --dry-run to see what changes would be made without applying them.`,
 	cmd.Flags().Bool("confirm", false, "Prompt for confirmation before applying changes")
 
 	return cmd
+}	return cmd
 }
 
 // newClusterDriftScheduleCmd creates the drift schedule subcommand
@@ -167,18 +187,33 @@ func newClusterDriftScheduleCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "schedule <cluster>",
 		Short: "Schedule periodic drift detection",
+// newClusterDriftScheduleCmd creates the drift schedule subcommand
+func newClusterDriftScheduleCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "schedule [cluster]",
+		Short: "Schedule periodic drift detection",
 		Long: `Schedule periodic drift detection for a cluster.
 
 This command sets up a background process that periodically checks for drift and
-reports results. Drift reports can be sent to a callback URL or logged locally.`,
-		Example: `  # Schedule drift detection every 24 hours
+reports results. Drift reports can be sent to a callback URL or logged locally.
+
+If no cluster name is provided, uses the currently active cluster.`,
+		Example: `  # Schedule drift detection for active cluster every 24 hours
+  opencenter cluster drift schedule --interval=24h
+
+  # Schedule for specific cluster every 24 hours
   opencenter cluster drift schedule my-cluster --interval=24h
 
   # Schedule with custom callback
   opencenter cluster drift schedule my-cluster --interval=12h --callback=https://example.com/drift`,
-		Args: cobra.ExactArgs(1),
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clusterName := args[0]
+			// Resolve cluster name from args or active cluster
+			clusterName, err := resolveClusterName(args, true)
+			if err != nil {
+				return err
+			}
+
 			intervalStr, _ := cmd.Flags().GetString("interval")
 
 			// Parse interval
