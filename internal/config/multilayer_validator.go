@@ -84,8 +84,11 @@ func registerCustomValidations(v *validator.Validate) {
 	// Register semver validation
 	v.RegisterValidation("semver", validateSemVer)
 	
-	// Register fqdn validation (already built-in, but we can override)
-	// validator already has fqdn, so we don't need to register it
+	// Override built-in email validation with stricter version
+	v.RegisterValidation("email", validateEmail)
+	
+	// Override built-in fqdn validation with stricter version
+	v.RegisterValidation("fqdn", validateFQDN)
 }
 
 // validateDNS1123 validates DNS-1123 compliant names
@@ -166,6 +169,132 @@ func validateSemVer(fl validator.FieldLevel) bool {
 	return true
 }
 
+// validateEmail validates email addresses with strict rules
+func validateEmail(fl validator.FieldLevel) bool {
+	value := fl.Field().String()
+	if value == "" {
+		return true // Empty is valid for optional fields
+	}
+	
+	// Email must contain exactly one @
+	atIndex := strings.Index(value, "@")
+	if atIndex == -1 {
+		return false // No @ sign
+	}
+	
+	// Check for multiple @ signs
+	if strings.Count(value, "@") > 1 {
+		return false
+	}
+	
+	// Split into local and domain parts
+	localPart := value[:atIndex]
+	domainPart := value[atIndex+1:]
+	
+	// Local part must not be empty
+	if localPart == "" {
+		return false
+	}
+	
+	// Domain part must not be empty
+	if domainPart == "" {
+		return false
+	}
+	
+	// Domain must contain at least one dot
+	if !strings.Contains(domainPart, ".") {
+		return false
+	}
+	
+	// Domain must not start or end with dot
+	if strings.HasPrefix(domainPart, ".") || strings.HasSuffix(domainPart, ".") {
+		return false
+	}
+	
+	// Domain must have a TLD (at least one character after the last dot)
+	lastDotIndex := strings.LastIndex(domainPart, ".")
+	if lastDotIndex == len(domainPart)-1 {
+		return false
+	}
+	
+	// Basic character validation for local part
+	for _, c := range localPart {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || 
+			(c >= '0' && c <= '9') || c == '.' || c == '_' || c == '-' || c == '+') {
+			return false
+		}
+	}
+	
+	// Basic character validation for domain part
+	for _, c := range domainPart {
+		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || 
+			(c >= '0' && c <= '9') || c == '.' || c == '-') {
+			return false
+		}
+	}
+	
+	return true
+}
+
+// validateFQDN validates fully qualified domain names with strict rules
+func validateFQDN(fl validator.FieldLevel) bool {
+	value := fl.Field().String()
+	if value == "" {
+		return true // Empty is valid for optional fields
+	}
+	
+	// FQDN must contain at least one dot
+	if !strings.Contains(value, ".") {
+		return false
+	}
+	
+	// FQDN must not start or end with dot
+	if strings.HasPrefix(value, ".") || strings.HasSuffix(value, ".") {
+		return false
+	}
+	
+	// Split into labels
+	labels := strings.Split(value, ".")
+	if len(labels) < 2 {
+		return false
+	}
+	
+	// Each label must be valid
+	for _, label := range labels {
+		if label == "" {
+			return false
+		}
+		
+		// Label must not exceed 63 characters
+		if len(label) > 63 {
+			return false
+		}
+		
+		// Label must start and end with alphanumeric
+		if len(label) > 0 {
+			first := label[0]
+			last := label[len(label)-1]
+			
+			if !((first >= 'a' && first <= 'z') || (first >= 'A' && first <= 'Z') || (first >= '0' && first <= '9')) {
+				return false
+			}
+			if !((last >= 'a' && last <= 'z') || (last >= 'A' && last <= 'Z') || (last >= '0' && last <= '9')) {
+				return false
+			}
+		}
+		
+		// Label can contain alphanumeric and hyphens
+		for _, c := range label {
+			if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || 
+				(c >= '0' && c <= '9') || c == '-') {
+				return false
+			}
+		}
+	}
+	
+	return true
+}
+
 // Validate performs all validation layers
 func (v *multiLayerValidator) Validate(cfg *Config) []V2ValidationError {
 	var errors []V2ValidationError
@@ -211,12 +340,53 @@ func (v *multiLayerValidator) ValidateSchema(cfg *Config) []V2ValidationError {
 	for _, fieldErr := range validationErrors {
 		errors = append(errors, V2ValidationError{
 			Code:    getErrorCode(fieldErr.Tag()),
-			Field:   fieldErr.Namespace(),
+			Field:   normalizeFieldPath(fieldErr.Namespace()),
 			Message: getErrorMessage(fieldErr),
 		})
 	}
 	
 	return errors
+}
+
+// normalizeFieldPath converts validator namespace to expected field path format
+// Example: Config.OpenCenter.Cluster.AdminEmail -> opencenter.cluster.admin_email
+func normalizeFieldPath(namespace string) string {
+	// Remove "Config." prefix if present
+	path := strings.TrimPrefix(namespace, "Config.")
+	
+	// Split by dots to process each segment
+	segments := strings.Split(path, ".")
+	var result []string
+	
+	for _, segment := range segments {
+		// Special case for known compound words
+		lowerSegment := strings.ToLower(segment)
+		if lowerSegment == "opencenter" || lowerSegment == "opentofu" {
+			result = append(result, lowerSegment)
+			continue
+		}
+		
+		// Convert PascalCase to snake_case
+		var segmentResult strings.Builder
+		
+		for i, r := range segment {
+			if r >= 'A' && r <= 'Z' {
+				// Add underscore before uppercase if not at start and previous was lowercase
+				if i > 0 {
+					prevChar := rune(segment[i-1])
+					if prevChar >= 'a' && prevChar <= 'z' {
+						segmentResult.WriteRune('_')
+					}
+				}
+				segmentResult.WriteRune(r + 32) // Convert to lowercase
+			} else {
+				segmentResult.WriteRune(r)
+			}
+		}
+		result = append(result, segmentResult.String())
+	}
+	
+	return strings.Join(result, ".")
 }
 
 // ValidateBusinessRules performs business rule validation

@@ -446,6 +446,8 @@ opencenter performs comprehensive validation:
 5. **Network Validation**: Network CIDRs must not conflict
 6. **Plugin Validation**: Only one network plugin can be enabled
 
+For detailed schema documentation including IDE integration, see [JSON Schema Reference](json-schema.md).
+
 ## Configuration Examples
 
 ### Minimal OpenStack Cluster
@@ -569,6 +571,7 @@ secrets:
 
 ## See Also
 
+- [JSON Schema Reference](json-schema.md) - JSON schema documentation and IDE integration
 - [CLI Commands Reference](cli-commands.md)
 - [Schema Reference](schema.md)
 - [How-To: Configure a Cluster](../how-to/configure-cluster.md)

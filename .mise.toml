@@ -419,6 +419,48 @@ tag-wip-failures = "python3 hack/tag_wip_failures.py"
 # Run all BDD tests (alias for godog)
 test-bdd = "go test ./... -v args --godog.tags=~@wip --godog.paths=tests/features"
 
+# Run all property-based tests
+test-properties = '''
+#!/usr/bin/env bash
+set -e
+
+echo "=== Running Property-Based Tests ==="
+echo ""
+
+# Run all property tests across the codebase
+go test ./internal/... -v -run "TestProperty"
+
+echo ""
+echo "=== Property-Based Tests Complete ==="
+'''
+
+# Run v2-specific tests (v2 schema, migration, validation)
+test-v2 = '''
+#!/usr/bin/env bash
+set -e
+
+echo "=== Running v2 Configuration Tests ==="
+echo ""
+
+echo "1. Testing v2 configuration structs..."
+go test -v ./internal/config/v2 -run "Test"
+
+echo ""
+echo "2. Testing configuration migration..."
+go test -v ./internal/config -run "TestMigration"
+
+echo ""
+echo "3. Testing v2 validation..."
+go test -v ./internal/config -run "TestV2"
+
+echo ""
+echo "4. Testing v2 property tests..."
+go test -v ./internal/config/v2 -run "TestProperty"
+
+echo ""
+echo "=== v2 Configuration Tests Complete ==="
+'''
+
 # Run all security-related tests (Phase 1 security components)
 test-security = '''
 #!/usr/bin/env bash

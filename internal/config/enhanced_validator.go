@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -32,6 +33,7 @@ type EnhancedConfigValidator struct {
 	autoRepair            bool
 	cloudValidators       map[string]CloudProviderValidator
 	connectivityValidator *ConnectivityValidator
+	multiLayerValidator   V2Validator
 }
 
 // CloudProviderValidator defines the interface for cloud provider-specific validation.
@@ -50,6 +52,7 @@ func NewEnhancedConfigValidator(autoRepair bool) *EnhancedConfigValidator {
 		autoRepair:            autoRepair,
 		cloudValidators:       make(map[string]CloudProviderValidator),
 		connectivityValidator: NewConnectivityValidator(10 * time.Second),
+		multiLayerValidator:   NewMultiLayerValidator(),
 	}
 
 	// Register cloud provider validators
@@ -192,6 +195,16 @@ func (v *EnhancedConfigValidator) validateBasicStructure(ctx context.Context, co
 		return
 	}
 
+	// Use multilayer validator for schema validation (includes email, fqdn, etc.)
+	v2Errors := v.multiLayerValidator.ValidateSchema(config)
+	for _, v2Err := range v2Errors {
+		aggregator.AddError(errors.CreateValidationError(
+			v2Err.Field,
+			v2Err.Message,
+			fmt.Sprintf("Fix the %s field", v2Err.Field),
+		))
+	}
+
 	// Validate cluster name
 	if config.ClusterName() == "" {
 		aggregator.AddError(errors.CreateValidationError(
@@ -268,6 +281,15 @@ func (v *EnhancedConfigValidator) validateCrossFieldDependencies(ctx context.Con
 			"Use ssh-keygen to generate key pairs if needed",
 		))
 	}
+	
+	// Validate service-specific secrets
+	v.validateServiceSecrets(config, aggregator)
+	
+	// Validate Loki storage configuration
+	v.validateLokiStorageConfiguration(config, aggregator)
+	
+	// Validate VRRP configuration
+	v.validateVRRPConfiguration(config, aggregator)
 }
 
 // validateNetworkConfiguration validates network plugin and subnet configuration.
@@ -521,7 +543,7 @@ func (v *EnhancedConfigValidator) validateS3BackendConfiguration(config *Config,
 		aggregator.AddError(errors.CreateCredentialError(
 			"AWS",
 			"opencenter.cluster.aws_access_key or secrets.global.aws.infrastructure.access_key",
-			"AWS credentials required for S3/AWS backend: either set opencenter.cluster.aws_access_key/aws_secret_access_key or secrets.global.aws.infrastructure.access_key/secret_access_key",
+			"AWS credentials required for S3 backend: either set opencenter.cluster.aws_access_key/aws_secret_access_key or secrets.global.aws.infrastructure.access_key/secret_access_key",
 			nil,
 		))
 	}
@@ -734,3 +756,219 @@ func (v *EnhancedConfigValidator) validatePreFlightRequirements(ctx context.Cont
 		))
 	}
 }
+
+// validateServiceSecrets validates that required secrets are configured for enabled services
+func (v *EnhancedConfigValidator) validateServiceSecrets(config *Config, aggregator *errors.ValidationAggregator) {
+	// Define interface for checking if a service is enabled
+	type enabledChecker interface {
+		IsEnabled() bool
+	}
+	
+	// Check cert-manager secrets
+	if svc, ok := config.OpenCenter.Services["cert-manager"]; ok {
+		if checker, ok := svc.(enabledChecker); ok && checker.IsEnabled() {
+			if config.Secrets.CertManager.AWSAccessKey == "" {
+				aggregator.AddError(errors.CreateValidationError(
+					"secrets.cert_manager.aws_access_key",
+					"cert-manager requires AWS access key for Route53 DNS validation",
+					"Set secrets.cert_manager.aws_access_key",
+					"Or configure a different DNS provider",
+				))
+			}
+			if config.Secrets.CertManager.AWSSecretAccessKey == "" {
+				aggregator.AddError(errors.CreateValidationError(
+					"secrets.cert_manager.aws_secret_access_key",
+					"cert-manager requires AWS secret access key for Route53 DNS validation",
+					"Set secrets.cert_manager.aws_secret_access_key",
+					"Or configure a different DNS provider",
+				))
+			}
+		}
+	}
+	
+	// Check loki secrets
+	if svc, ok := config.OpenCenter.Services["loki"]; ok {
+		if checker, ok := svc.(enabledChecker); ok && checker.IsEnabled() {
+			// Use reflection to check SwiftAuthURL field
+			v := reflect.ValueOf(svc)
+			if v.Kind() == reflect.Ptr {
+				v = v.Elem()
+			}
+			
+			swiftAuthURLField := v.FieldByName("SwiftAuthURL")
+			if swiftAuthURLField.IsValid() && swiftAuthURLField.String() == "" {
+				aggregator.AddError(errors.CreateValidationError(
+					"opencenter.services.loki.swift_auth_url",
+					"loki requires Swift auth URL when using Swift storage",
+					"Set opencenter.services.loki.swift_auth_url",
+					"Or configure a different storage backend",
+				))
+			}
+			
+			if config.Secrets.Loki.SwiftPassword == "" {
+				aggregator.AddError(errors.CreateValidationError(
+					"secrets.loki.swift_password",
+					"loki requires Swift password when using Swift storage",
+					"Set secrets.loki.swift_password",
+					"Or use Swift application credentials",
+				))
+			}
+		}
+	}
+	
+	// Check keycloak secrets
+	if svc, ok := config.OpenCenter.Services["keycloak"]; ok {
+		if checker, ok := svc.(enabledChecker); ok && checker.IsEnabled() {
+			if config.Secrets.Keycloak.AdminPassword == "" {
+				aggregator.AddError(errors.CreateValidationError(
+					"secrets.keycloak.admin_password",
+					"keycloak requires admin password",
+					"Set secrets.keycloak.admin_password",
+					"Use a strong password for the Keycloak admin user",
+				))
+			}
+		}
+	}
+	
+	// Check weave-gitops secrets
+	if svc, ok := config.OpenCenter.Services["weave-gitops"]; ok {
+		if checker, ok := svc.(enabledChecker); ok && checker.IsEnabled() {
+			if config.Secrets.WeaveGitOps.PasswordHash == "" {
+				aggregator.AddError(errors.CreateValidationError(
+					"secrets.weave_gitops.password_hash",
+					"weave-gitops requires password hash",
+					"Set secrets.weave_gitops.password_hash",
+					"Generate bcrypt hash of your password",
+				))
+			}
+		}
+	}
+	
+	// Check grafana secrets (kube-prometheus-stack)
+	if svc, ok := config.OpenCenter.Services["kube-prometheus-stack"]; ok {
+		if checker, ok := svc.(enabledChecker); ok && checker.IsEnabled() {
+			if config.Secrets.Grafana.AdminPassword == "" {
+				aggregator.AddError(errors.CreateValidationError(
+					"secrets.grafana.admin_password",
+					"kube-prometheus-stack requires Grafana admin password",
+					"Set secrets.grafana.admin_password",
+					"Use a strong password for the Grafana admin user",
+				))
+			}
+		}
+	}
+}
+
+// validateLokiStorageConfiguration validates Loki storage backend configuration
+func (v *EnhancedConfigValidator) validateLokiStorageConfiguration(config *Config, aggregator *errors.ValidationAggregator) {
+	// Define interface for checking if a service is enabled
+	type enabledChecker interface {
+		IsEnabled() bool
+	}
+	
+	// Check if Loki is enabled
+	if svc, ok := config.OpenCenter.Services["loki"]; ok {
+		if checker, ok := svc.(enabledChecker); ok && checker.IsEnabled() {
+			// Use reflection to check Loki-specific fields
+			v := reflect.ValueOf(svc)
+			if v.Kind() == reflect.Ptr {
+				v = v.Elem()
+			}
+			
+			// Get storage type
+			storageTypeField := v.FieldByName("StorageType")
+			var storageType string
+			if storageTypeField.IsValid() {
+				storageType = storageTypeField.String()
+			}
+			
+			// Get S3 fields
+			s3EndpointField := v.FieldByName("S3Endpoint")
+			s3RegionField := v.FieldByName("S3Region")
+			hasS3Config := false
+			if s3EndpointField.IsValid() && s3EndpointField.String() != "" {
+				hasS3Config = true
+			}
+			if s3RegionField.IsValid() && s3RegionField.String() != "" {
+				hasS3Config = true
+			}
+			
+			// Get Swift fields
+			swiftAuthURLField := v.FieldByName("SwiftAuthURL")
+			swiftRegionField := v.FieldByName("SwiftRegion")
+			swiftAppCredIDField := v.FieldByName("SwiftApplicationCredentialID")
+			hasSwiftConfig := false
+			if swiftAuthURLField.IsValid() && swiftAuthURLField.String() != "" {
+				hasSwiftConfig = true
+			}
+			if swiftRegionField.IsValid() && swiftRegionField.String() != "" {
+				hasSwiftConfig = true
+			}
+			if swiftAppCredIDField.IsValid() && swiftAppCredIDField.String() != "" {
+				hasSwiftConfig = true
+			}
+			
+			// Check for Swift credentials when Swift storage is configured
+			if hasSwiftConfig {
+				hasSwiftPassword := config.Secrets.Loki.SwiftPassword != ""
+				hasSwiftAppCred := config.Secrets.Loki.SwiftApplicationCredentialSecret != ""
+				
+				if !hasSwiftPassword && !hasSwiftAppCred {
+					aggregator.AddError(errors.CreateValidationError(
+						"secrets.loki",
+						"Swift authentication credentials are required when using Swift storage",
+						"Set secrets.loki.swift_password for password authentication",
+						"Or set secrets.loki.swift_application_credential_secret for application credential authentication",
+					))
+				}
+			}
+			
+			// Check for conflicting storage backends
+			if hasS3Config && hasSwiftConfig {
+				aggregator.AddError(errors.CreateValidationError(
+					"opencenter.services.loki",
+					"Cannot configure both S3 and Swift storage backends for Loki",
+					"Choose either S3 or Swift storage",
+					"Remove configuration for the unused storage backend",
+				))
+			}
+			
+			// Check for storage type mismatch
+			if storageType == "swift" && hasS3Config && !hasSwiftConfig {
+				aggregator.AddError(errors.CreateValidationError(
+					"opencenter.services.loki.loki_storage_type",
+					"Storage type is set to 'swift' but only S3 configuration is present",
+					"Set storage type to 's3' or provide Swift configuration",
+					"Ensure storage_type matches the configured backend",
+				))
+			}
+			
+			if storageType == "s3" && hasSwiftConfig && !hasS3Config {
+				aggregator.AddError(errors.CreateValidationError(
+					"opencenter.services.loki.loki_storage_type",
+					"Storage type is set to 's3' but only Swift configuration is present",
+					"Set storage type to 'swift' or provide S3 configuration",
+					"Ensure storage_type matches the configured backend",
+				))
+			}
+		}
+	}
+}
+
+// validateVRRPConfiguration validates VRRP networking configuration
+func (v *EnhancedConfigValidator) validateVRRPConfiguration(config *Config, aggregator *errors.ValidationAggregator) {
+	networking := config.OpenCenter.Cluster.Kubernetes.Networking
+	
+	// When VRRP is enabled and Octavia is not used, VRRP IP must be set
+	if networking.VRRPEnabled && !networking.UseOctavia && networking.VRRPIP == "" {
+		aggregator.AddError(errors.CreateValidationError(
+			"networking.vrrp_ip",
+			"vrrp_ip must be set when use_octavia is false and VRRP is enabled",
+			"Set networking.vrrp_ip to a valid IP address",
+			"Or enable use_octavia to use Octavia load balancer",
+			"Or disable VRRP by setting vrrp_enabled to false",
+		))
+	}
+}
+
+// validateCrossFieldDependencies validates dependencies between different configuration fields

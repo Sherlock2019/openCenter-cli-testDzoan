@@ -221,13 +221,25 @@ Use lsp-mode with yaml-language-server.
 
 The JSON schema is generated from Go struct definitions and includes type validation, pattern matching, and inline documentation.
 
+### Schema Versions
+
+opencenter supports multiple schema versions:
+
+- **v1.0** (current): Production schema at `schema/cluster.schema.json`
+- **v2.0** (development): Next-generation schema at `schema/cluster-v2.schema.json`
+
+For complete schema documentation, see [JSON Schema Reference](../reference/json-schema.md).
+
 ### Generating the Schema
 
 Generate or update the schema:
 
 ```bash
-# Generate to default location
+# Generate v1.0 schema (current)
 opencenter cluster schema --out schema/cluster.schema.json
+
+# Generate v2.0 schema (development)
+opencenter cluster schema --version 2.0 --out schema/cluster-v2.schema.json
 
 # Pretty-print (default)
 opencenter cluster schema --out schema/cluster.schema.json --pretty
@@ -253,6 +265,25 @@ Regenerate the schema after:
 - Changing validation rules
 
 Commit the updated schema to version control so your team uses the same validation rules.
+
+### Schema Versioning
+
+Configurations can specify their schema version:
+
+```yaml
+# v1.0 (implicit, default)
+opencenter:
+  meta:
+    name: my-cluster
+
+# v2.0 (explicit)
+schema_version: "2.0"
+opencenter:
+  meta:
+    name: my-cluster
+```
+
+For migration between versions, see [Migration Guide](../cluster-config/migration-guide.md).
 
 ## Using the opencenter Config IDE Command
 
@@ -457,9 +488,11 @@ Add to `.vscode/opencenter.code-snippets`:
 
 ## Related Documentation
 
+- [JSON Schema Reference](../reference/json-schema.md) - Complete JSON schema documentation
 - [Configuration Reference](../reference/configuration.md) - Complete configuration field reference
 - [CLI Commands](../reference/cli-commands.md) - All opencenter commands
 - [Adding Services](adding-services.md) - How to enable and configure services
+- [Migration Guide](../cluster-config/migration-guide.md) - v1 to v2 schema migration
 
 ## External Resources
 

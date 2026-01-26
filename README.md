@@ -60,6 +60,7 @@ Practical guides for specific tasks:
 Technical specifications and detailed information:
 *   **[CLI Commands](./docs/reference/cli-commands.md)** - Complete command reference
 *   **[Configuration](./docs/reference/configuration.md)** - Configuration file structure
+*   **[JSON Schema](./docs/reference/json-schema.md)** - JSON schema documentation and IDE integration
 *   **[Cluster Commands](./docs/reference/cluster/readme.md)** - Cluster lifecycle commands
 *   **[Shell Integration](./docs/reference/shell-integration.md)** - Shell completion and integration
 

@@ -1479,7 +1479,7 @@ func TestValidateDomainFormat(t *testing.T) {
 			name:        "empty domain",
 			domain:      "",
 			field:       "base_domain",
-			expectError: false, // Empty is allowed, just not validated
+			expectError: true, // Empty is not allowed for required fields
 		},
 	}
 
