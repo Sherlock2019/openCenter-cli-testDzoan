@@ -3,21 +3,20 @@
 
 BIN := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))/.bin
 TERRAFORM_VERSION := 1.12.2
-KUBECTL_VERSION := 1.28.0
-HELM_VERSION := 3.13.0
+KUBECTL_VERSION := {{ .OpenCenter.Cluster.Kubernetes.Version }}
+HELM_VERSION := 3.20.0
 VELERO_VERSION := 1.12.1
-SOPS_VERSION := 3.8.1
-KUSTOMIZE_VERSION := 5.2.1
-FLUX_VERSION := 2.2.2
+SOPS_VERSION := 3.9.3
+KUSTOMIZE_VERSION := 5.8.0
+FLUX_VERSION := 2.7.5
 GITOPS_VERSION := 0.38.0
-EGCTL_VERSION := 1.5.4
-HELM_VERSION := 3.13.0
+EGCTL_VERSION := 1.6.1
 K9S_VERSION := 0.50.18
 
 export PATH := $(BIN):$(PATH)
 export TF_CLI_CONFIG_FILE=config.tfrc
 
-export ANSIBLE_INVENTORY = {{- if .OpenCenter.GitOps.GitDir }}{{ .OpenCenter.GitOps.GitDir }}/infrastructure/clusters/{{ .OpenCenter.Cluster.ClusterName }}/inventory/inventory.yaml{{- else }}/tmp/inventory/inventory.yaml{{- end }}
+export ANSIBLE_INVENTORY = {{ if .OpenCenter.GitOps.GitDir }}{{ .OpenCenter.GitOps.GitDir }}/infrastructure/clusters/{{ .OpenCenter.Cluster.ClusterName }}/inventory/inventory.yaml{{ else }}/tmp/inventory/inventory.yaml{{ end }}
 
 # SOPS Configuration
 SOPS_SCRIPT := ./sops_manager.sh

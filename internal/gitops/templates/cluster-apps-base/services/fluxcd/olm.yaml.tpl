@@ -14,7 +14,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: opencenter-olm-config
-  path: ./applications/overlays/stage-cluster/services/olm
+  path: ./applications/overlays/{{ .OpenCenter.Cluster.ClusterName }}/services/olm
   prune: true
   wait: true
   commonMetadata:

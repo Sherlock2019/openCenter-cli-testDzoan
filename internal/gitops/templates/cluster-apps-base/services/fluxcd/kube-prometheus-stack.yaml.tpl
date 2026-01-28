@@ -15,7 +15,7 @@ spec:
   timeout: 10m
   sourceRef:
     kind: GitRepository
-    name: opencenter-observability
+    name: opencenter-kube-prometheus-stack
     namespace: flux-system
   path: applications/base/services/observability/kube-prometheus-stack
   targetNamespace: observability
@@ -47,7 +47,7 @@ spec:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  path: ./applications/overlays/stage-cluster/services/kube-prometheus-stack
+  path: ./applications/overlays/{{ .OpenCenter.Cluster.ClusterName }}/services/kube-prometheus-stack
   targetNamespace: observability
   prune: true
   wait: true

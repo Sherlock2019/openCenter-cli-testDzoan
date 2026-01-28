@@ -189,8 +189,8 @@ This command creates a new cluster configuration file with sensible defaults
 based on the JSON schema. You can override any configuration value using
 command-line flags with dot notation.
 
-By default, this command generates v2 configuration (schema_version: "2.0").
-Use --schema-version=1.0 to generate v1 configuration for backward compatibility.
+This command generates v2 configuration (schema_version: "2.0") only.
+For v1 configurations, use 'cluster migrate-config' to migrate existing v1 configs to v2.
 
 When using --config flag, the cluster name is automatically extracted from the
 configuration file (opencenter.cluster.cluster_name), so you don't need to
@@ -217,9 +217,8 @@ Configuration Override:
     --type baremetal
     --type openstack (default)
   
-  Use --schema-version flag to specify configuration schema version:
-    --schema-version=2.0 (default, recommended)
-    --schema-version=1.0 (legacy, for backward compatibility)
+  Schema version is always v2.0 for new clusters.
+  Use 'cluster migrate-config' to migrate v1 configs to v2.
   
   Use dot notation to override any configuration value:
     --opencenter.meta.env=prod
@@ -232,9 +231,6 @@ Troubleshooting:
   • Check ~/.config/opencenter/clusters/ for created files`,
 		Example: `  # Initialize with defaults (uses "opencenter" as organization, v2 schema)
 	  opencenter cluster init my-cluster
-
-  # Initialize with v1 schema for backward compatibility
-  opencenter cluster init my-cluster --schema-version=1.0
 
   # Initialize from existing config file (cluster name extracted from config)
   opencenter cluster init --config my-cluster-config.yaml
@@ -251,10 +247,9 @@ Troubleshooting:
   # Initialize with organization using dot notation
   opencenter cluster init my-cluster --opencenter.meta.organization=myorg
 
-  # Initialize with custom values and v2 schema
+  # Initialize with custom values
   opencenter cluster init my-cluster \
     --org production \
-    --schema-version=2.0 \
     --opencenter.meta.env=prod \
     --opencenter.cluster.kubernetes.version=1.31.4 \
     --opencenter.infrastructure.provider=aws
@@ -415,9 +410,10 @@ Troubleshooting:
 				fullSchema, _ := cmd.Flags().GetBool("full-schema")
 				schemaVersion, _ := cmd.Flags().GetString("schema-version")
 
-				// Validate schema version
-				if schemaVersion != "1.0" && schemaVersion != "2.0" {
-					return fmt.Errorf("invalid schema version '%s': must be 1.0 or 2.0", schemaVersion)
+				// Only v2 schema is supported for new clusters
+				// v1 is deprecated and only supported for migration via cluster migrate-config
+				if schemaVersion != "2.0" {
+					return fmt.Errorf("invalid schema version '%s': only v2.0 is supported for new clusters (use 'cluster migrate-config' to migrate v1 configs)", schemaVersion)
 				}
 
 				var schemaDefaultYAML []byte
@@ -444,10 +440,10 @@ Troubleshooting:
 					return fmt.Errorf("failed to parse schema defaults to struct: %w", err)
 				}
 
-				// Set the schema version from the flag
-				cfg.SchemaVersion = schemaVersion
+				// Set the schema version to v2.0
+				cfg.SchemaVersion = "2.0"
 				// For v2, set schema_version at root level
-				configMap["schema_version"] = schemaVersion
+				configMap["schema_version"] = "2.0"
 			}
 
 			// Apply overrides from flags to the config struct (for validation) and map (for output)
@@ -921,7 +917,7 @@ Troubleshooting:
 	}
 	cmd.Flags().String("org", "", "organization name (defaults to cluster name if not specified)")
 	cmd.Flags().String("type", "openstack", "cluster type: openstack, baremetal, kind, vmware (defaults to openstack)")
-	cmd.Flags().String("schema-version", "2.0", "configuration schema version: 1.0 or 2.0 (defaults to 2.0)")
+	cmd.Flags().String("schema-version", "2.0", "configuration schema version (v2 only, v1 deprecated)")
 	cmd.Flags().Bool("strict", false, "fail if required values are missing")
 	cmd.Flags().Bool("force", false, "overwrite existing config file (preserves keys and other files)")
 	cmd.Flags().Bool("no-keygen", false, "do not auto-generate SOPS age keys and SSH key pairs")

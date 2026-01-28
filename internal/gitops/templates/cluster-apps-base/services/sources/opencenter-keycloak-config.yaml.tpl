@@ -6,13 +6,13 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  url: ssh://git@github.com/rpc-environments/000000-opencenter-example.git
+  url: {{ .OpenCenter.GitOps.GitURL }}
   ref:
-  branch: main
+    branch: {{ .OpenCenter.GitOps.GitBranch }}
   secretRef:
-  name: flux-system
+    name: flux-system
   include:
-  - repository:
-    name: opencenter-keycloak
-  fromPath: applications/base/services/keycloak
-  toPath: applications/overlays/stage-cluster/services/base/keycloak/
+    - repository:
+        name: opencenter-keycloak
+      fromPath: applications/base/services/keycloak
+      toPath: applications/overlays/{{ .OpenCenter.Cluster.ClusterName }}/services/base/keycloak/
