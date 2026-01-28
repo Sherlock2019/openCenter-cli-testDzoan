@@ -392,6 +392,16 @@ func RenderInfrastructureCluster(cfg config.Config) error {
 		provider = "openstack" // default
 	}
 
+	// Map provider to template file
+	var mainTfTemplate string
+	switch provider {
+	case "baremetal":
+		mainTfTemplate = "main-baremetal.tf.tpl"
+	default:
+		// openstack and all other providers use main-default.tf.tpl
+		mainTfTemplate = "main-default.tf.tpl"
+	}
+
 	// Walk embedded infrastructure-cluster-template files
 	return fs.WalkDir(Files, "templates/infrastructure-cluster-template", func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -408,9 +418,15 @@ func RenderInfrastructureCluster(cfg config.Config) error {
 
 		filename := d.Name()
 
-		// Skip the old baremetal-specific template if it exists
-		if filename == "main-baremetal.tf.tpl" {
-			return nil
+		// Skip provider-specific main.tf templates that don't match current provider
+		if filename == "main-baremetal.tf.tpl" || filename == "main-default.tf.tpl" {
+			if filename != mainTfTemplate {
+				// Skip this template, it's not for the current provider
+				return nil
+			}
+			// This is the correct template for the provider, render it as main.tf
+			dst := filepath.Join(target, "main.tf")
+			return renderTemplate(path, dst, cfg)
 		}
 
 		// Replace cluster-name and cluster_name placeholders in filename
@@ -672,6 +688,16 @@ func RenderInfrastructureClusterAtomic(cfg config.Config, workspace *GitOpsWorks
 		provider = "openstack" // default
 	}
 
+	// Map provider to template file
+	var mainTfTemplate string
+	switch provider {
+	case "baremetal":
+		mainTfTemplate = "main-baremetal.tf.tpl"
+	default:
+		// openstack and all other providers use main-default.tf.tpl
+		mainTfTemplate = "main-default.tf.tpl"
+	}
+
 	// Walk embedded infrastructure-cluster-template files
 	return fs.WalkDir(Files, "templates/infrastructure-cluster-template", func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -688,9 +714,15 @@ func RenderInfrastructureClusterAtomic(cfg config.Config, workspace *GitOpsWorks
 
 		filename := d.Name()
 
-		// Skip the old baremetal-specific template if it exists
-		if filename == "main-baremetal.tf.tpl" {
-			return nil
+		// Skip provider-specific main.tf templates that don't match current provider
+		if filename == "main-baremetal.tf.tpl" || filename == "main-default.tf.tpl" {
+			if filename != mainTfTemplate {
+				// Skip this template, it's not for the current provider
+				return nil
+			}
+			// This is the correct template for the provider, render it as main.tf
+			dst := filepath.Join(target, "main.tf")
+			return renderTemplateAtomic(path, dst, cfg, workspace)
 		}
 
 		// Replace cluster-name and cluster_name placeholders in filename

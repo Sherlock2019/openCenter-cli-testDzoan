@@ -19,7 +19,7 @@ type Config struct {
 	SchemaVersion string            `yaml:"schema_version" json:"schema_version" validate:"required,eq=2.0"`
 	Metadata      ConfigMetadata    `yaml:"metadata,omitempty" json:"metadata,omitempty"`
 	OpenCenter    OpenCenterConfig  `yaml:"opencenter" json:"opencenter" validate:"required"`
-	Deployment    DeploymentSettings `yaml:"deployment,omitempty" json:"deployment,omitempty"`
+	Deployment    DeploymentConfig  `yaml:"deployment,omitempty" json:"deployment,omitempty"`
 	OpenTofu      OpenTofuConfig    `yaml:"opentofu,omitempty" json:"opentofu,omitempty"`
 	Secrets       SecretsConfig     `yaml:"secrets" json:"secrets" validate:"required"`
 }
@@ -54,10 +54,7 @@ type MetaConfig struct {
 	Status       string `yaml:"status,omitempty" json:"status,omitempty"`
 }
 
-// DeploymentSettings controls auto-deployment behavior.
-type DeploymentSettings struct {
-	AutoDeploy bool `yaml:"auto_deploy" json:"auto_deploy"`
-}
+
 
 // OpenTofuConfig represents OpenTofu/Terraform backend configuration.
 // Requirements: 20.1

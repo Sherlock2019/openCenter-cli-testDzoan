@@ -16,7 +16,8 @@ package v2
 // DeploymentConfig represents deployment method configuration.
 // Requirements: 5.1, 5.2, 5.3, 5.4, 5.5
 type DeploymentConfig struct {
-	Method     string          `yaml:"method" json:"method" validate:"required,oneof=kubespray talos kamaji eks gke aks cluster-api"`
+	AutoDeploy bool             `yaml:"auto_deploy" json:"auto_deploy"`
+	Method     string           `yaml:"method" json:"method" validate:"required,oneof=kubespray talos kamaji eks gke aks cluster-api"`
 	Kubespray  *KubesprayConfig `yaml:"kubespray,omitempty" json:"kubespray,omitempty"`
 	Talos      *TalosConfig     `yaml:"talos,omitempty" json:"talos,omitempty"`
 	Kamaji     *KamajiConfig    `yaml:"kamaji,omitempty" json:"kamaji,omitempty"`
@@ -32,6 +33,7 @@ type KubesprayConfig struct {
 
 // ModuleConfig represents a deployment module configuration.
 type ModuleConfig struct {
+	Source  string         `yaml:"source,omitempty" json:"source,omitempty"`
 	Enabled bool           `yaml:"enabled" json:"enabled"`
 	Version string         `yaml:"version,omitempty" json:"version,omitempty"`
 	Config  map[string]any `yaml:"config,omitempty" json:"config,omitempty"`
