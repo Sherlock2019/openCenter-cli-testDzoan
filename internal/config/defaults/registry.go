@@ -100,6 +100,7 @@ func (r *defaultRegistry) registerBuiltinDefaults() {
 	r.RegisterDefaults("openstack", "sjc3", newOpenStackSJC3Defaults())
 	r.RegisterDefaults("openstack", "dfw3", newOpenStackDFW3Defaults())
 	r.RegisterDefaults("openstack", "iad3", newOpenStackIAD3Defaults())
+	r.RegisterDefaults("openstack", "ord1", newOpenStackORD1Defaults())
 
 	// AWS regions
 	r.RegisterDefaults("aws", "us-east-1", newAWSUSEast1Defaults())

@@ -60,7 +60,10 @@ func (h *defaultHydrator) Hydrate(cfg interface{}, provider, region string) erro
 	// Get provider-region defaults from registry
 	providerDefaults, err := h.registry.GetDefaults(provider, region)
 	if err != nil {
-		return fmt.Errorf("failed to get defaults for provider '%s' region '%s': %w", provider, region, err)
+		// If region not found, log warning and continue without applying defaults
+		log.Printf("[WARN] No defaults found for provider '%s' region '%s': %v", provider, region, err)
+		log.Printf("[WARN] Continuing without applying provider-region defaults")
+		return nil
 	}
 
 	// Apply defaults using reflection

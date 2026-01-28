@@ -119,3 +119,26 @@ func newOpenStackIAD3Defaults() ProviderDefaults {
 		},
 	}
 }
+
+// newOpenStackORD1Defaults returns defaults for OpenStack ORD1 region.
+func newOpenStackORD1Defaults() ProviderDefaults {
+	return &openstackDefaults{
+		imageIDs: map[string]string{
+			"22": "d4e5f6g7-4567-8901-23de-f12345678901", // Ubuntu 22.04
+			"24": "0c1fdf97-6789-7694-1410-46de3d518g66", // Ubuntu 24.04
+		},
+		availabilityZones: []string{"az1", "az2", "az3"},
+		ntpServers: []string{
+			"time.ord1.rackspace.com",
+			"time2.ord1.rackspace.com",
+		},
+		dnsNameservers: []string{"8.8.8.8", "8.8.4.4"},
+		storageClass:   "csi-cinder-sc-delete",
+		flavors: FlavorDefaults{
+			Bastion:       "gp.0.2.2",
+			Master:        "gp.0.4.8",
+			Worker:        "gp.0.4.16",
+			WorkerWindows: "gp.5.4.16",
+		},
+	}
+}
