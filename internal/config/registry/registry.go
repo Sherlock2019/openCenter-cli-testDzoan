@@ -37,3 +37,11 @@ func GetRegisteredServices() []string {
 	}
 	return keys
 }
+
+// IsRegistered checks if a service is registered in the service registry.
+func IsRegistered(name string) bool {
+	registryLock.RLock()
+	defer registryLock.RUnlock()
+	_, exists := serviceRegistry[name]
+	return exists
+}
