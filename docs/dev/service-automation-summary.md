@@ -95,10 +95,10 @@ services:
   cert-manager:
     enabled: true                         # Default: true
     namespace: cert-manager               # Default: cert-manager
-    email: mpk-support@rackspace.com      # Default: mpk-support@rackspace.com
-    region: us-east-1                     # Default: "" (must be configured for Route53)
+    email: ""                             # Default: opencenter.cluster.admin_email
+    region: ""                            # Default: opencenter.meta.region (for Route53)
     letsencrypt_server: https://acme-v02.api.letsencrypt.org/directory  # Default: production
-    dns_zones:                            # Default: [cluster_fqdn]
+    dns_zones:                            # Default: [opencenter.cluster.cluster_fqdn]
       - "*.example.com"
   
   # Gateway - Listener Configuration
@@ -111,12 +111,12 @@ services:
       - name: keycloak-https
         port: 443
         protocol: HTTPS
-        hostname: auth.{cluster_fqdn}     # Default: auth.{cluster_fqdn}
+        hostname: ""                      # Default: auth.{opencenter.cluster.cluster_fqdn}
         tls_secret_name: keycloak-tls     # Default: {service}-tls
       - name: grafana-https
         port: 443
         protocol: HTTPS
-        hostname: grafana.{cluster_fqdn}  # Default: grafana.{cluster_fqdn}
+        hostname: ""                      # Default: grafana.{opencenter.cluster.cluster_fqdn}
         tls_secret_name: grafana-tls
   
   # VSphere CSI - Storage Classes
@@ -134,7 +134,7 @@ services:
   harbor:
     enabled: false                        # Default: false
     namespace: harbor                     # Default: harbor
-    hostname: harbor.{cluster_fqdn}       # Default: harbor.{cluster_fqdn}
+    hostname: ""                          # Default: harbor.{opencenter.cluster.cluster_fqdn}
     storage_type: filesystem              # Default: filesystem
     registry_volume_size: 100             # Default: 100 (GB)
     database_type: internal               # Default: internal
@@ -143,7 +143,7 @@ services:
   longhorn:
     enabled: false                        # Default: false
     namespace: longhorn-system            # Default: longhorn-system
-    hostname: longhorn.{cluster_fqdn}     # Default: longhorn.{cluster_fqdn}
+    hostname: ""                          # Default: longhorn.{opencenter.cluster.cluster_fqdn}
     default_replica_count: 3              # Default: 3
     default_data_path: /var/lib/longhorn  # Default: /var/lib/longhorn
     storage_over_provisioning_percentage: 200  # Default: 200
@@ -153,7 +153,7 @@ services:
   loki:
     enabled: true                         # Default: true
     namespace: observability              # Default: observability
-    hostname: loki.{cluster_fqdn}         # Default: loki.{cluster_fqdn}
+    hostname: ""                          # Default: loki.{opencenter.cluster.cluster_fqdn}
     loki_storage_type: swift              # Default: swift
     loki_volume_size: 50                  # Default: 50 (GB)
     swift_auth_version: 3                 # Default: 3
@@ -162,7 +162,7 @@ services:
   tempo:
     enabled: true                         # Default: true
     namespace: observability              # Default: observability
-    hostname: tempo.{cluster_fqdn}        # Default: tempo.{cluster_fqdn}
+    hostname: ""                          # Default: tempo.{opencenter.cluster.cluster_fqdn}
     storage_type: swift                   # Default: swift
     volume_size: 50                       # Default: 50 (GB)
   
@@ -170,7 +170,7 @@ services:
   kube-prometheus-stack:
     enabled: true                         # Default: true
     namespace: observability              # Default: observability
-    hostname: prometheus.{cluster_fqdn}   # Default: prometheus.{cluster_fqdn}
+    hostname: ""                          # Default: prometheus.{opencenter.cluster.cluster_fqdn}
     grafana_volume_size: 10               # Default: 10 (GB)
     prometheus_volume_size: 50            # Default: 50 (GB)
     alertmanager_volume_size: 10          # Default: 10 (GB)
@@ -179,21 +179,21 @@ services:
   keycloak:
     enabled: true                         # Default: true
     namespace: keycloak                   # Default: keycloak
-    hostname: auth.{cluster_fqdn}         # Default: auth.{cluster_fqdn}
-    keycloak_realm: opencenter            # Default: opencenter
+    hostname: ""                          # Default: auth.{opencenter.cluster.cluster_fqdn}
+    keycloak_realm: ""                    # Default: opencenter.meta.organization
     keycloak_client_id: opencenter        # Default: opencenter
   
   # Headlamp - Kubernetes Dashboard (Already Partially Defined)
   headlamp:
     enabled: true                         # Default: true
     namespace: headlamp                   # Default: headlamp
-    hostname: headlamp.{cluster_fqdn}     # Default: headlamp.{cluster_fqdn}
+    hostname: ""                          # Default: headlamp.{opencenter.cluster.cluster_fqdn}
   
   # Velero - Backup and Restore (Already Partially Defined)
   velero:
     enabled: false                        # Default: false
     namespace: velero                     # Default: velero
-    velero_region: us-east-1              # Default: "" (must be configured)
+    velero_region: ""                     # Default: opencenter.meta.region
   
   # OpenTelemetry Kube Stack
   opentelemetry-kube-stack:
@@ -203,7 +203,7 @@ services:
     collector_replicas: 1                 # Default: 1
 ```
 
-### Default Value Resolution Strategy
+### Variable Substitution Strategy
 
 **Priority Order:**
 1. User-specified value in cluster config
@@ -211,12 +211,89 @@ services:
 3. Provider-specific default (OpenStack/AWS/vSphere)
 4. Global default value
 
-**Variable Substitution:**
-- `{cluster_name}` → `opencenter.cluster.cluster_name`
-- `{cluster_fqdn}` → `opencenter.cluster.cluster_fqdn`
-- `{organization}` → `opencenter.meta.organization`
-- `{env}` → `opencenter.meta.env`
-- `{region}` → `opencenter.meta.region`
+**Variable Substitution Patterns (v2 Schema):**
+
+| Variable | v2 Schema Path | Example Value |
+|----------|----------------|---------------|
+| `{cluster_name}` | `opencenter.meta.name` | `prod-k8s-cluster` |
+| `{cluster_fqdn}` | `opencenter.cluster.cluster_fqdn` | `prod.acme-corp.com` |
+| `{base_domain}` | `opencenter.cluster.base_domain` | `acme-corp.com` |
+| `{organization}` | `opencenter.meta.organization` | `acme-corp` |
+| `{env}` | `opencenter.meta.env` | `production` |
+| `{region}` | `opencenter.meta.region` | `sjc3` |
+| `{admin_email}` | `opencenter.cluster.admin_email` | `ops@acme-corp.com` |
+| `{provider}` | `opencenter.infrastructure.provider` | `openstack` |
+| `{k8s_version}` | `opencenter.cluster.kubernetes.version` | `1.31.4` |
+| `{api_port}` | `opencenter.cluster.kubernetes.api_port` | `6443` |
+| `{vrrp_ip}` | `opencenter.infrastructure.networking.vrrp_ip` | `10.2.128.5` |
+
+**Reference Syntax (v2):**
+
+Templates can use Go template syntax with v2 schema paths:
+
+```yaml
+# Example: Gateway hostname using cluster FQDN
+hostname: "{{ .OpenCenter.Cluster.ClusterFQDN }}"
+# Resolves to: prod.acme-corp.com
+
+# Example: Service hostname with subdomain
+hostname: "grafana.{{ .OpenCenter.Cluster.ClusterFQDN }}"
+# Resolves to: grafana.prod.acme-corp.com
+
+# Example: Keycloak issuer URL
+issuer: "https://auth.{{ .OpenCenter.Cluster.ClusterFQDN }}/realms/{{ .OpenCenter.Meta.Organization }}"
+# Resolves to: https://auth.prod.acme-corp.com/realms/acme-corp
+
+# Example: Cert-manager email
+email: "{{ .OpenCenter.Cluster.AdminEmail }}"
+# Resolves to: ops@acme-corp.com
+
+# Example: API server endpoint
+api_endpoint: "{{ .OpenCenter.Infrastructure.Networking.VrrpIP }}:{{ .OpenCenter.Cluster.Kubernetes.APIPort }}"
+# Resolves to: 10.2.128.5:6443
+```
+
+**Template Context Structure (v2):**
+
+```go
+type TemplateContext struct {
+    OpenCenter struct {
+        Meta struct {
+            Name         string  // opencenter.meta.name
+            Organization string  // opencenter.meta.organization
+            Env          string  // opencenter.meta.env
+            Region       string  // opencenter.meta.region
+            Status       string  // opencenter.meta.status
+        }
+        Cluster struct {
+            ClusterName  string  // opencenter.cluster.cluster_name
+            BaseDomain   string  // opencenter.cluster.base_domain
+            ClusterFQDN  string  // opencenter.cluster.cluster_fqdn
+            AdminEmail   string  // opencenter.cluster.admin_email
+            Kubernetes struct {
+                Version  string  // opencenter.cluster.kubernetes.version
+                APIPort  int     // opencenter.cluster.kubernetes.api_port
+            }
+        }
+        Infrastructure struct {
+            Provider string  // opencenter.infrastructure.provider
+            Networking struct {
+                VrrpIP      string  // opencenter.infrastructure.networking.vrrp_ip
+                DNSZoneName string  // opencenter.infrastructure.networking.dns_zone_name
+            }
+        }
+        Services map[string]interface{}  // opencenter.services.*
+        GitOps struct {
+            GitDir            string  // opencenter.gitops.git_dir
+            GitURL            string  // opencenter.gitops.git_url
+            GitOpsBaseRepo    string  // opencenter.gitops.git_ops_base_repo
+            GitOpsBaseRelease string  // opencenter.gitops.git_ops_base_release
+            GitOpsBranch      string  // opencenter.gitops.git_ops_branch
+        }
+    }
+    Secrets map[string]interface{}  // Secrets from SOPS
+}
+```
 
 ## Quick Wins (Immediate Implementation)
 
