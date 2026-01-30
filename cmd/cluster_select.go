@@ -764,10 +764,52 @@ Use --activate to automatically activate the cluster environment (sets environme
 
 			// Display output based on flags
 			if showExportOnly {
-				// Only show export commands for shell evaluation
-				for _, command := range output.ExportCommands {
-					fmt.Fprintf(cmd.OutOrStdout(), "%s\n", command)
+				// Load cluster configuration to extract credentials
+				cfg, err := config.Load(name)
+				if err != nil {
+					return fmt.Errorf("failed to load cluster configuration: %w", err)
 				}
+
+				// Detect shell (or use override)
+				shell := shellOverride
+				if shell == "" {
+					shell = detectShell()
+				}
+
+				// Create credentials extractor
+				extractor := credentials.NewExtractor(cfg)
+
+				var exportOutput strings.Builder
+
+				// Export cloud provider credentials with shell-specific syntax
+				awsCreds, awsErr := extractor.ExtractAWS()
+				osCreds, osErr := extractor.ExtractOpenStack()
+
+				hasAWS := awsErr == nil && !awsCreds.IsEmpty()
+				hasOS := osErr == nil && !osCreds.IsEmpty()
+
+				if hasAWS {
+					exportOutput.WriteString(awsCreds.ToEnvVarsForShell(shell))
+				}
+				if hasOS {
+					if hasAWS {
+						exportOutput.WriteString("\n")
+					}
+					exportOutput.WriteString(osCreds.ToEnvVarsForShell(shell))
+				}
+
+				// Add cluster-specific environment variables
+				if hasAWS || hasOS {
+					exportOutput.WriteString("\n")
+				}
+
+				// Add export commands from output (KUBECONFIG, PATH, etc.)
+				for _, command := range output.ExportCommands {
+					exportOutput.WriteString(fmt.Sprintf("%s\n", command))
+				}
+
+				// Output everything
+				fmt.Fprint(cmd.OutOrStdout(), exportOutput.String())
 			} else {
 				// Show full enhanced output
 				scope := "session"
