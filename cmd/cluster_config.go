@@ -42,6 +42,7 @@ including exporting effective configurations with applied defaults.`,
 
 	// Add subcommands
 	cmd.AddCommand(newClusterConfigExportEffectiveCmd())
+	cmd.AddCommand(newClusterConfigUpdateCmd())
 
 	return cmd
 }
