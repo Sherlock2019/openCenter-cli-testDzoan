@@ -473,7 +473,6 @@ func newClusterSelectCmd() *cobra.Command {
 	var clearActive bool
 	var clearPersistent bool
 	var persistentSelection bool
-	var activateEnv bool
 
 	cmd := &cobra.Command{
 		Use:   "select [name]",
@@ -494,8 +493,7 @@ For deployed clusters, environment setup commands are generated to configure
 KUBECONFIG, ANSIBLE_INVENTORY, virtual environment, and PATH variables.
 
 Use --clear to deactivate the current session cluster.
-Use --clear-persistent to remove the persistent cluster selection.
-Use --activate to automatically activate the cluster environment (sets environment variables).`,
+Use --clear-persistent to remove the persistent cluster selection.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Handle --clear-persistent flag to remove persistent cluster selection
@@ -653,113 +651,10 @@ Use --activate to automatically activate the cluster environment (sets environme
 					}
 
 					// Output for shell to evaluate (export command)
-					if !showExportOnly && !activateEnv {
+					if !showExportOnly {
 						fmt.Fprintf(cmd.OutOrStdout(), "export OPENCENTER_CLUSTER=%s\n", name)
 					}
 				}
-			}
-
-			// Handle --activate flag to automatically activate environment
-			if activateEnv {
-				// Load cluster configuration
-				cfg, err := config.Load(name)
-				if err != nil {
-					return fmt.Errorf("failed to load cluster configuration: %w", err)
-				}
-
-				// Get cluster paths
-				configManager, err := config.NewConfigManager("")
-				if err != nil {
-					return fmt.Errorf("failed to create config manager: %w", err)
-				}
-				pathResolver := config.NewPathResolver(configManager)
-
-				// Parse cluster identifier to get organization and cluster name
-				organization, actualClusterName, err := config.ParseClusterIdentifier(name)
-				if err != nil {
-					return fmt.Errorf("invalid cluster identifier: %w", err)
-				}
-
-				// Use organization from config if available
-				if cfg.OpenCenter.Meta.Organization != "" {
-					organization = cfg.OpenCenter.Meta.Organization
-				}
-
-				// Resolve cluster paths
-				paths := pathResolver.ResolveClusterPaths(actualClusterName, organization)
-
-				// Detect shell (or use override)
-				shell := shellOverride
-				if shell == "" {
-					shell = detectShell()
-				}
-
-				// Create credentials extractor
-				extractor := credentials.NewExtractor(cfg)
-
-				var activateOutput strings.Builder
-
-				// Export cloud provider credentials with shell-specific syntax
-				awsCreds, awsErr := extractor.ExtractAWS()
-				osCreds, osErr := extractor.ExtractOpenStack()
-
-				hasAWS := awsErr == nil && !awsCreds.IsEmpty()
-				hasOS := osErr == nil && !osCreds.IsEmpty()
-
-				if hasAWS {
-					activateOutput.WriteString(awsCreds.ToEnvVarsForShell(shell))
-				}
-				if hasOS {
-					if hasAWS {
-						activateOutput.WriteString("\n")
-					}
-					activateOutput.WriteString(osCreds.ToEnvVarsForShell(shell))
-				}
-
-				// Add cluster-specific environment variables with shell-aware syntax
-				if hasAWS || hasOS {
-					activateOutput.WriteString("\n")
-				}
-
-				// Generate shell-specific export commands
-				switch shell {
-				case "fish":
-					activateOutput.WriteString(fmt.Sprintf("set -gx BIN %s\n", paths.BinPath))
-					activateOutput.WriteString(fmt.Sprintf("set -gx PATH %s $PATH\n", paths.BinPath))
-					activateOutput.WriteString(fmt.Sprintf("set -gx KUBECONFIG %s\n", paths.KubeconfigPath))
-					activateOutput.WriteString(fmt.Sprintf("set -gx OPENCENTER_ACTIVE_CLUSTER %s\n", name))
-				case "powershell":
-					activateOutput.WriteString(fmt.Sprintf("$env:BIN = '%s'\n", paths.BinPath))
-					activateOutput.WriteString(fmt.Sprintf("$env:PATH = '%s;' + $env:PATH\n", paths.BinPath))
-					activateOutput.WriteString(fmt.Sprintf("$env:KUBECONFIG = '%s'\n", paths.KubeconfigPath))
-					activateOutput.WriteString(fmt.Sprintf("$env:OPENCENTER_ACTIVE_CLUSTER = '%s'\n", name))
-				default:
-					// Bash/Zsh syntax
-					activateOutput.WriteString(fmt.Sprintf("export BIN=%s\n", paths.BinPath))
-					activateOutput.WriteString("export PATH=${BIN}:${PATH}\n")
-					activateOutput.WriteString(fmt.Sprintf("export KUBECONFIG=%s\n", paths.KubeconfigPath))
-					activateOutput.WriteString(fmt.Sprintf("export OPENCENTER_ACTIVE_CLUSTER=%s\n", name))
-				}
-
-				if showExportOnly {
-					// Only show activation commands for shell evaluation
-					fmt.Fprint(cmd.OutOrStdout(), activateOutput.String())
-				} else {
-					fmt.Fprintf(cmd.OutOrStdout(), "Active cluster set to %s\n\n", name)
-					displayClusterSelectOutput(output, cmd)
-					fmt.Fprintf(cmd.OutOrStdout(), "\nCluster environment activated\n")
-					fmt.Fprintf(cmd.OutOrStdout(), "\nTo apply these settings to your shell, run:\n")
-					// Provide shell-specific instructions
-					switch shell {
-					case "fish":
-						fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster select %s --activate --export-only | source\n", name)
-					case "powershell":
-						fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster select %s --activate --export-only | Invoke-Expression\n", name)
-					default:
-						fmt.Fprintf(cmd.OutOrStdout(), "  eval $(opencenter cluster select %s --activate --export-only)\n", name)
-					}
-				}
-				return nil
 			}
 
 			// Display output based on flags
@@ -821,9 +716,17 @@ Use --activate to automatically activate the cluster environment (sets environme
 				fmt.Fprintf(cmd.OutOrStdout(), "Active cluster set to %s (%s)\n\n", name, scope)
 				displayClusterSelectOutput(output, cmd)
 
-				// Inform user about activation
-				fmt.Fprintf(cmd.OutOrStdout(), "\nTo activate the cluster environment with credentials, run:\n")
-				fmt.Fprintf(cmd.OutOrStdout(), "  eval $(opencenter cluster select %s --activate --export-only)\n", name)
+				// Inform user about exporting environment
+				fmt.Fprintf(cmd.OutOrStdout(), "\nTo export cluster environment variables, run:\n")
+				// Provide shell-specific instructions
+				switch output.Shell {
+				case "fish":
+					fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster select %s --export-only | source\n", name)
+				case "powershell":
+					fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster select %s --export-only | Invoke-Expression\n", name)
+				default:
+					fmt.Fprintf(cmd.OutOrStdout(), "  eval $(opencenter cluster select %s --export-only)\n", name)
+				}
 			}
 
 			return nil
@@ -844,9 +747,6 @@ Use --activate to automatically activate the cluster environment (sets environme
 
 	// Add flag for persistent selection (affects all terminals)
 	cmd.Flags().BoolVar(&persistentSelection, "persistent", false, "Set persistent cluster selection (affects all terminals)")
-
-	// Add flag to activate cluster environment
-	cmd.Flags().BoolVar(&activateEnv, "activate", false, "Activate cluster environment (set credentials and paths)")
 
 	return cmd
 }
