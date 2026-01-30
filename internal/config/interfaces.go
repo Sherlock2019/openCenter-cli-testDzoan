@@ -180,7 +180,7 @@ type OrganizationClusterPaths struct {
 	SOPSKeyPath     string `json:"sops_key_path"`    // ~/.config/opencenter/clusters/<organization>/secrets/age/keys/<cluster>.txt
 	SOPSConfigPath  string `json:"sops_config_path"` // ~/.config/opencenter/clusters/<organization>/.sops.yaml
 	KubeconfigPath  string `json:"kubeconfig_path"`  // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/kubeconfig.yaml
-	InventoryPath   string `json:"inventory_path"`   // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/inventory/
+	InventoryPath   string `json:"inventory_path"`   // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/inventory/inventory.yaml
 	VenvPath        string `json:"venv_path"`        // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/venv/
 	BinPath         string `json:"bin_path"`         // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/.bin/
 }

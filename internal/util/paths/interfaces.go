@@ -72,7 +72,7 @@ type ClusterPaths struct {
 	SOPSKeyPath     string // ~/.config/opencenter/clusters/<organization>/secrets/age/keys/<cluster>.txt
 	SOPSConfigPath  string // ~/.config/opencenter/clusters/<organization>/.sops.yaml
 	KubeconfigPath  string // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/kubeconfig.yaml
-	InventoryPath   string // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/inventory/
+	InventoryPath   string // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/inventory/inventory.yaml
 	VenvPath        string // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/venv/
 	BinPath         string // ~/.config/opencenter/clusters/<organization>/infrastructure/clusters/<cluster>/.bin/
 }

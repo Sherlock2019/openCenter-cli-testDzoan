@@ -96,7 +96,7 @@ func (pr *PathResolverImpl) ResolveClusterPaths(ctx context.Context, clusterName
 	if clusterName != "" {
 		sopsKeyPath = filepath.Join(secretsDir, "age", "keys", clusterName+"-key.txt")
 		kubeconfigPath = filepath.Join(clusterDir, "kubeconfig.yaml")
-		inventoryPath = filepath.Join(clusterDir, "inventory")
+		inventoryPath = filepath.Join(clusterDir, "inventory", "inventory.yaml")
 		venvPath = filepath.Join(clusterDir, "venv")
 		binPath = filepath.Join(clusterDir, ".bin")
 	}
