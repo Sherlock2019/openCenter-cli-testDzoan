@@ -246,8 +246,18 @@ func TestSpecificServiceRendering(t *testing.T) {
 			serviceName: "keycloak",
 			expectedFields: []string{
 				"enabled", "hostname", "keycloak_realm", "keycloak_client_id", "keycloak_frontend_url",
+				"start_optimized", "cache_enabled", "cache_stack",
+				"resource_requests_cpu", "resource_requests_memory", "resource_limits_cpu", "resource_limits_memory",
+				"instances", "min_replicas", "max_replicas",
+				"database_host", "database_port", "database_name", "database_user",
+				"db_pool_min_size", "db_pool_initial_size", "db_pool_max_size",
+				"metrics_enabled", "event_metrics_enabled", "health_enabled", "log_level", "log_format",
+				"tls_secret_name", "tls_enabled",
+				"realm_import_enabled", "realm_groups", "realm_admin_email",
+				"backup_enabled", "backup_schedule",
+				"smtp_host", "smtp_port", "smtp_from", "smtp_starttls",
 			},
-			minFieldCount: 14,
+			minFieldCount: 35,
 		},
 	}
 

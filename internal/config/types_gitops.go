@@ -16,6 +16,7 @@ type GitOpsConfig struct {
 	GitOpsBaseRepo    string `yaml:"gitops_base_repo,omitempty" json:"gitops_base_repo,omitempty" jsonschema:"description=URL of the GitOps base repository" validate:"required,url"`
 	GitOpsBaseRelease string `yaml:"gitops_base_release,omitempty" json:"gitops_base_release,omitempty" jsonschema:"description=Release tag of the GitOps base repository" validate:"required"`
 	GitOpsBranch      string `yaml:"gitops_branch,omitempty" json:"gitops_branch,omitempty" jsonschema:"description=Branch of the GitOps base repository,default=main" validate:"required"`
+	SecretName        string `yaml:"secret_name,omitempty" json:"secret_name,omitempty" jsonschema:"description=Name of the GitOps secret for repository access,default=opencenter-base"`
 }
 
 // GitOpsFlux holds optional FluxCD settings for reconciliation behavior.

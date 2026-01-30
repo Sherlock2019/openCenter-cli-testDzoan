@@ -211,6 +211,7 @@ func TestKeycloakPlugin(t *testing.T) {
 			Realm:       "master",
 			FrontendURL: "https://keycloak.example.com",
 			ClientID:    "my-client",
+			Instances:   3,
 		}
 
 		err := plugin.Validate(cfg)
@@ -223,11 +224,56 @@ func TestKeycloakPlugin(t *testing.T) {
 				Enabled: true,
 			},
 			FrontendURL: "invalid-url",
+			Instances:   3,
 		}
 
 		err := plugin.Validate(cfg)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "valid HTTP(S) URL")
+	})
+
+	t.Run("Validate production mode requires HA", func(t *testing.T) {
+		cfg := &services.KeycloakConfig{
+			BaseConfig: services.BaseConfig{
+				Enabled: true,
+			},
+			StartOptimized: true,
+			Instances:      1,
+		}
+
+		err := plugin.Validate(cfg)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "at least 2 instances")
+	})
+
+	t.Run("Validate autoscaling configuration", func(t *testing.T) {
+		cfg := &services.KeycloakConfig{
+			BaseConfig: services.BaseConfig{
+				Enabled: true,
+			},
+			Instances:   3,
+			MinReplicas: 5,
+			MaxReplicas: 3,
+		}
+
+		err := plugin.Validate(cfg)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot exceed max_replicas")
+	})
+
+	t.Run("Validate DB pool configuration", func(t *testing.T) {
+		cfg := &services.KeycloakConfig{
+			BaseConfig: services.BaseConfig{
+				Enabled: true,
+			},
+			Instances:     3,
+			DBPoolMinSize: 50,
+			DBPoolMaxSize: 30,
+		}
+
+		err := plugin.Validate(cfg)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot exceed db_pool_max_size")
 	})
 }
 

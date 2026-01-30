@@ -90,6 +90,7 @@ services:
         addresses:
           - 172.23.0.6-172.23.0.8
         auto_assign: true                 # Default: true
+    # NOTE: When enabled, MetalLB must be included in FluxCD kustomization.yaml.tpl
   
   # Cert-Manager - Enhanced Configuration
   cert-manager:
@@ -98,6 +99,7 @@ services:
     email: ""                             # Default: opencenter.cluster.admin_email
     region: ""                            # Default: opencenter.meta.region (for Route53)
     letsencrypt_server: https://acme-v02.api.letsencrypt.org/directory  # Default: production
+    create_cluster_issuer: true           # Default: true (NEW - make external issuer optional)
     dns_zones:                            # Default: [opencenter.cluster.cluster_fqdn]
       - "*.example.com"
   
@@ -306,6 +308,7 @@ type TemplateContext struct {
    - Files to modify: `types_services.go`, `metallb/ipaddresspool.yaml`
    - Effort: 1 hour
    - Impact: Eliminates manual IP configuration
+   - **Note**: Ensure MetalLB is included in FluxCD kustomization when enabled
 
 3. **Add OIDC Config Section**
    - Files to modify: 3 SecurityPolicy templates
@@ -316,6 +319,7 @@ type TemplateContext struct {
    - Files to modify: `types_services.go`, `letsencrypt-issuer.yaml.tpl`
    - Effort: 30 minutes
    - Impact: Fixes Route53 DNS validation
+   - **Note**: Make external ClusterIssuer creation optional (some services may not need it)
 
 ## Implementation Approach
 

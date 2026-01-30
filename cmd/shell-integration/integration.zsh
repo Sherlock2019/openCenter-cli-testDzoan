@@ -40,6 +40,21 @@ opencenter_current_cluster_short() {
 
 # Wrapper for 'opencenter cluster select' that evaluates the output
 opencenter() {
+    # Check if this is 'cluster select' with --export-only flag
+    local has_export_only=0
+    for arg in "$@"; do
+        if [[ "$arg" == "--export-only" ]]; then
+            has_export_only=1
+            break
+        fi
+    done
+    
+    # If --export-only is present, pass through without interception
+    if [[ $has_export_only -eq 1 ]]; then
+        command opencenter "$@"
+        return $?
+    fi
+    
     if [[ "$1" == "cluster" && "$2" == "select" && -n "$OPENCENTER_SESSION_FILE" ]]; then
         # Capture the output and evaluate it to set environment variable
         local output

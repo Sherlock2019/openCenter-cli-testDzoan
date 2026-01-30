@@ -8,45 +8,97 @@ metadata:
   namespace: keycloak
 spec:
   # Deployment configuration
-  startOptimized: false # Start in  mode (not optimized for production)
-  #startOptimized: true                             # RECOMMENDED: Enable for production performance
-  instances: 3 # High availability with 3 replicas
-  # RECOMMENDED: Add resource limits for production
+  startOptimized: {{ .OpenCenter.Services.keycloak.StartOptimized | default true }}
+  instances: {{ .OpenCenter.Services.keycloak.Instances | default 3 }}
+  
+  # Resource limits for production
   resources:
     requests:
-      memory: "1Gi"
-      cpu: "500m"
+      memory: {{ .OpenCenter.Services.keycloak.ResourceRequestsMemory | default "1250M" }}
+      cpu: {{ .OpenCenter.Services.keycloak.ResourceRequestsCPU | default "2" }}
     limits:
-      memory: "2Gi"
-      cpu: "1000m"
+      memory: {{ .OpenCenter.Services.keycloak.ResourceLimitsMemory | default "2250M" }}
+      cpu: {{ .OpenCenter.Services.keycloak.ResourceLimitsCPU | default "6" }}
 
   # Database configuration (PostgreSQL)
   db:
-    vendor: postgres # Use PostgreSQL as backend database
+    vendor: postgres
     usernameSecret:
-      name: keycloak.postgres-cluster.credentials.postgresql.acid.zalan.do # DB username from secret
+      name: keycloak.postgres-cluster.credentials.postgresql.acid.zalan.do
       key: username
     passwordSecret:
-      name: keycloak.postgres-cluster.credentials.postgresql.acid.zalan.do # DB password from secret
+      name: keycloak.postgres-cluster.credentials.postgresql.acid.zalan.do
       key: password
-    url: jdbc:postgresql://postgres-cluster.keycloak.svc.cluster.local:5432/keycloak # JDBC connection URL
+    url: jdbc:postgresql://postgres-cluster.keycloak.svc.cluster.local:5432/keycloak
+    poolMinSize: {{ .OpenCenter.Services.keycloak.DBPoolMinSize | default 30 }}
+    poolInitialSize: {{ .OpenCenter.Services.keycloak.DBPoolInitialSize | default 30 }}
+    poolMaxSize: {{ .OpenCenter.Services.keycloak.DBPoolMaxSize | default 30 }}
 
   # HTTP configuration
   http:
     httpEnabled: true
+    {{- if .OpenCenter.Services.keycloak.TLSEnabled | default true }}
+    tlsSecret: {{ .OpenCenter.Services.keycloak.TLSSecretName | default "keycloak-tls-secret" }}
+    {{- end }}
+  
   hostname:
-    hostname: https://{{ .OpenCenter.Services.keycloak.Hostname | default (printf "auth.%s" .OpenCenter.Cluster.ClusterFQDN) }}
+    hostname: {{ .OpenCenter.Services.keycloak.Hostname | default (printf "auth.%s" .OpenCenter.Cluster.ClusterFQDN) }}
     strict: false
     backchannelDynamic: false
+  
   proxy:
     headers: xforwarded
+  
   additionalOptions:
     - name: proxy
       value: "edge"
     - name: hostname-url
       value: "https://{{ .OpenCenter.Services.keycloak.Hostname | default (printf "auth.%s" .OpenCenter.Cluster.ClusterFQDN) }}"
-    - name: metrics-enabled # Enable Prometheus metrics
+    {{- if .OpenCenter.Services.keycloak.MetricsEnabled | default true }}
+    - name: metrics-enabled
       value: "true"
-    - name: spi-connections-http-client-default-connection-timeout-millis # HTTP client timeout
-      value: "60000" # 60 second timeout
+    {{- end }}
+    {{- if .OpenCenter.Services.keycloak.EventMetricsEnabled | default true }}
+    - name: event-metrics-user-enabled
+      value: "true"
+    {{- end }}
+    {{- if .OpenCenter.Services.keycloak.HealthEnabled | default true }}
+    - name: health-enabled
+      value: "true"
+    {{- end }}
+    - name: log-level
+      value: {{ .OpenCenter.Services.keycloak.LogLevel | default "INFO" | upper }}
+    - name: log-console-output
+      value: {{ .OpenCenter.Services.keycloak.LogFormat | default "json" }}
+    {{- if .OpenCenter.Services.keycloak.CacheEnabled | default true }}
+    - name: cache
+      value: {{ .OpenCenter.Services.keycloak.CacheStack | default "ispn" }}
+    {{- end }}
+    - name: spi-connections-http-client-default-connection-timeout-millis
+      value: "60000"
+  
+  # Pod topology spread for multi-AZ distribution
+  unsupported:
+    podTemplate:
+      spec:
+        topologySpreadConstraints:
+          - maxSkew: 1
+            topologyKey: "topology.kubernetes.io/zone"
+            whenUnsatisfiable: "ScheduleAnyway"
+            labelSelector:
+              matchLabels:
+                app: "keycloak"
+                app.kubernetes.io/managed-by: "keycloak-operator"
+                app.kubernetes.io/instance: "keycloak"
+                app.kubernetes.io/component: "server"
+          - maxSkew: 1
+            topologyKey: "kubernetes.io/hostname"
+            whenUnsatisfiable: "DoNotSchedule"
+            labelSelector:
+              matchLabels:
+                app: "keycloak"
+                app.kubernetes.io/managed-by: "keycloak-operator"
+                app.kubernetes.io/instance: "keycloak"
+                app.kubernetes.io/component: "server"
+
 

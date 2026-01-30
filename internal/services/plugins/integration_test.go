@@ -250,6 +250,7 @@ func TestBuiltInServicesWithRealConfigs(t *testing.T) {
 			Realm:       "kubernetes",
 			FrontendURL: "https://keycloak.example.com",
 			ClientID:    "kubernetes-client",
+			Instances:   3,
 		}
 
 		err = keycloakService.Plugin.Validate(config)
