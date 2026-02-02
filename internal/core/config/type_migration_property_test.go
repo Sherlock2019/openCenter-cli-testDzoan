@@ -21,8 +21,8 @@ import (
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
 
-	coreconfig "github.com/rackerlabs/opencenter-cli/internal/core/config"
 	internalconfig "github.com/rackerlabs/opencenter-cli/internal/config"
+	coreconfig "github.com/rackerlabs/opencenter-cli/internal/core/config"
 )
 
 // TestProperty_TypeMigrationPreservesBehavior verifies that moving types to

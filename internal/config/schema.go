@@ -61,6 +61,121 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 		"additionalProperties": false,
 	}
 
+	// Loki specific schema
+	lokiSchema := map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"enabled": map[string]any{
+				"type":        "boolean",
+				"description": "Enable or disable Loki logging service",
+				"default":     false,
+			},
+			"status": map[string]any{
+				"type":        "string",
+				"description": "Service deployment status",
+				"enum":        []string{"pending", "running", "success", "failed"},
+			},
+			"release": map[string]any{
+				"type":        "string",
+				"description": "Release version or tag for Loki (mutually exclusive with branch)",
+				"pattern":     "^[a-zA-Z0-9._-]+$",
+			},
+			"branch": map[string]any{
+				"type":        "string",
+				"description": "Git branch for Loki (mutually exclusive with release)",
+				"pattern":     "^[a-zA-Z0-9/_-]+$",
+			},
+			"uri": map[string]any{
+				"type":        "string",
+				"description": "Git repository URI for Loki",
+				"pattern":     "^(https?://|git@|ssh://)",
+			},
+			"loki_storage_type": map[string]any{
+				"type":        "string",
+				"description": "Loki storage backend type",
+				"enum":        []string{"s3", "swift"},
+				"default":     "swift",
+			},
+			"loki_bucket_name": map[string]any{
+				"type":        "string",
+				"description": "Loki storage bucket/container name",
+				"minLength":   1,
+			},
+			"loki_volume_size": map[string]any{
+				"type":        "integer",
+				"description": "Loki persistent volume size in GB",
+				"minimum":     1,
+				"default":     10,
+			},
+			"loki_storage_class": map[string]any{
+				"type":        "string",
+				"description": "Loki storage class for persistent volumes",
+			},
+			"swift_auth_url": map[string]any{
+				"type":        "string",
+				"description": "Swift Keystone V3 authentication URL (must end in /v3)",
+				"format":      "uri",
+				"pattern":     "^https?://.*",
+			},
+			"swift_region": map[string]any{
+				"type":        "string",
+				"description": "Swift region name",
+			},
+			"swift_auth_version": map[string]any{
+				"type":        "integer",
+				"description": "Swift authentication version",
+				"default":     3,
+				"enum":        []int{2, 3},
+			},
+			"swift_application_credential_id": map[string]any{
+				"type":        "string",
+				"description": "Swift application credential ID (UUID)",
+				"pattern":     "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+			},
+			"swift_container_name": map[string]any{
+				"type":        "string",
+				"description": "Swift container name for Loki logs",
+			},
+			"swift_user_domain_name": map[string]any{
+				"type":        "string",
+				"description": "Swift user domain name",
+			},
+			"swift_domain_name": map[string]any{
+				"type":        "string",
+				"description": "Swift domain name",
+			},
+			"swift_username": map[string]any{
+				"type":        "string",
+				"description": "Swift username (deprecated: use application credentials)",
+			},
+			"swift_project_name": map[string]any{
+				"type":        "string",
+				"description": "Swift project name (deprecated: use application credentials)",
+			},
+			"loki_s3_endpoint": map[string]any{
+				"type":        "string",
+				"description": "S3 endpoint URL for Loki storage",
+				"format":      "uri",
+			},
+			"loki_s3_region": map[string]any{
+				"type":        "string",
+				"description": "S3 region for Loki storage",
+				"pattern":     "^[a-z]{2}-[a-z]+-[0-9]{1}$",
+			},
+			"loki_s3_force_path_style": map[string]any{
+				"type":        "boolean",
+				"description": "Force S3 path style for Loki storage",
+				"default":     false,
+			},
+			"loki_s3_insecure": map[string]any{
+				"type":        "boolean",
+				"description": "Allow insecure S3 connections for Loki",
+				"default":     false,
+			},
+		},
+		"additionalProperties": false,
+	}
+
 	// Cert-manager specific schema
 	certManagerSchema := map[string]any{
 		"type": "object",
@@ -195,6 +310,54 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 				"type":        "string",
 				"description": "S3 region for backup storage",
 				"minLength":   1,
+			},
+		},
+		"additionalProperties": false,
+	}
+
+	// Velero specific schema
+	veleroSchema := map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"enabled": map[string]any{
+				"type":        "boolean",
+				"description": "Enable or disable Velero backup service",
+				"default":     false,
+			},
+			"status": map[string]any{
+				"type":        "string",
+				"description": "Service deployment status",
+				"enum":        []string{"pending", "running", "success", "failed"},
+			},
+			"release": map[string]any{
+				"type":        "string",
+				"description": "Release version or tag for Velero (mutually exclusive with branch)",
+				"pattern":     "^[a-zA-Z0-9._-]+$",
+			},
+			"branch": map[string]any{
+				"type":        "string",
+				"description": "Git branch for Velero (mutually exclusive with release)",
+				"pattern":     "^[a-zA-Z0-9/_-]+$",
+			},
+			"uri": map[string]any{
+				"type":        "string",
+				"description": "Git repository URI for Velero",
+				"pattern":     "^(https?://|git@|ssh://)",
+			},
+			"velero_backup_bucket": map[string]any{
+				"type":        "string",
+				"description": "Velero backup bucket name",
+				"minLength":   1,
+			},
+			"velero_region": map[string]any{
+				"type":        "string",
+				"description": "Velero backup region",
+			},
+			"storage_type": map[string]any{
+				"type":        "string",
+				"description": "Velero storage backend type",
+				"enum":        []string{"s3", "swift", "gcs", "azure"},
+				"default":     "s3",
 			},
 		},
 		"additionalProperties": false,
@@ -861,7 +1024,7 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 			"keycloak":              baseServiceSchema,
 			"kube-prometheus-stack": baseServiceSchema,
 			"kyverno":               baseServiceSchema,
-			"loki":                  baseServiceSchema, // TODO: Create specific loki schema when needed
+			"loki":                  lokiSchema,
 			"olm":                   baseServiceSchema,
 			"opencenter_release":    baseServiceSchema,
 			"openstack-ccm":         baseServiceSchema,
@@ -869,7 +1032,7 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 			"postgres-operator":     baseServiceSchema,
 			"rbac-manager":          baseServiceSchema,
 			"sources":               baseServiceSchema,
-			"velero":                baseServiceSchema, // TODO: Create specific velero schema when needed
+			"velero":                veleroSchema,
 			"vsphere-csi":           baseServiceSchema,
 			"weave-gitops":          baseServiceSchema,
 		},

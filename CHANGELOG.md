@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+#### Deprecated Configuration Functions (v2.0.0 Breaking Changes)
+- **LegacyConfigLoader**: Removed from `internal/config/loader.go`
+  - Use `internal/core/config.ConfigManager` instead
+  - Migration: Replace `config.NewConfigLoader()` with `config.NewConfigManager()`
+  
+- **LoadConfigWithVersionDetection**: Removed from `internal/config/version_detector.go`
+  - Use `ConfigManager.Load()` instead
+  - Migration: Replace `LoadConfigWithVersionDetection(path)` with `configManager.Load(path, config.LoadOptions{})`
+  
+- **config.ResolveConfigDir()**: Removed from public API in `internal/config/`
+  - Now internal implementation only
+  - Use `internal/core/config.ResolveConfigDir()` for external usage
+  - Migration: Import `internal/core/config` and use `coreconfig.ResolveConfigDir()`
+  
+- **config.ExpandPath()**: Removed from `internal/config/cli_config.go`
+  - Use `internal/core/paths.ExpandPath()` instead
+  - Migration: Import `internal/core/paths` and use `paths.ExpandPath(path)`
+
+#### Legacy Service Fields (v2.0.0 Breaking Changes)
+- **ServiceCfg deprecated fields**: Removed generic `Email`, `Region`, `S3Host`, `S3Region`, `AlertManagerBaseUrl`, and `HTTPRouteFQDN` fields
+  - Services now use service-specific configuration fields
+  - See [Legacy Service Fields Migration Guide](docs/dev/legacy-service-fields-migration.md) for migration instructions
+  
+- **VSphereCSIConfig deprecated fields**: Removed `DataStore`, `DataStoreURL`, `DeleteDataStoreUUID`, `RetainDataStoreName`, and `RetainDataStoreUUID`
+  - Use `StorageClasses` array instead for more flexible storage class configuration
+  - Supports multiple storage classes with different reclaim policies
+  
+- **LokiConfig deprecated fields**: Removed `SwiftUsername` and `SwiftProjectName`
+  - Use `SwiftApplicationCredentialID` with `SwiftApplicationCredentialSecret` instead
+  - Application credentials are more secure and recommended by OpenStack
+
 ## [1.1.0] - 2026-02-01
 
 ### Added
@@ -75,8 +108,8 @@ The following features are deprecated and will be removed in v2.0.0 (2 releases 
 - `OpenStackCredentials.ToEnvVars()` → Use `ToEnvVarsForShell("bash")`
 
 #### GitOps
-- `renderTemplate()` in `internal/gitops/copy.go` → Use `renderTemplateAtomic()`
-- `copyFile()` in `internal/gitops/copy.go` → Use `copyFileAtomic()`
+- `renderTemplate()` in `internal/gitops/copy.go` → REMOVED (public functions now use atomic operations internally)
+- `copyFile()` in `internal/gitops/copy.go` → REMOVED (public functions now use atomic operations internally)
 
 #### Service Configuration Fields
 - `BaseConfig.Email` → Use service-specific configuration

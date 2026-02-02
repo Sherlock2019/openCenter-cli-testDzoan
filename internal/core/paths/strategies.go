@@ -161,8 +161,9 @@ func (s *OrgBasedStrategy) Resolve(ctx context.Context, clusterName, organizatio
 	}, nil
 }
 
-// expandPath expands environment variables and tilde in a path.
-func expandPath(path string) string {
+// ExpandPath expands environment variables and tilde in a path.
+// This is a public utility function that can be used by other packages.
+func ExpandPath(path string) string {
 	// Expand tilde
 	if strings.HasPrefix(path, "~/") {
 		homeDir, err := os.UserHomeDir()
@@ -175,4 +176,9 @@ func expandPath(path string) string {
 	path = os.ExpandEnv(path)
 
 	return path
+}
+
+// expandPath is an internal alias for ExpandPath for backward compatibility
+func expandPath(path string) string {
+	return ExpandPath(path)
 }

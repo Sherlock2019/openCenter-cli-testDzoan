@@ -860,56 +860,56 @@ func TestClusterDirectoryPath_SKIP(t *testing.T) {
 func TestClusterSecretsPath_SKIP(t *testing.T) {
 	t.Skip("Temporarily skipped - deprecated function")
 	/*
-	}
-
-	func testClusterSecretsPath_disabled(t *testing.T) {
-		os.Setenv("OPENCENTER_CONFIG_DIR", dir)
-		defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
-
-		tests := []struct {
-			name        string
-			clusterName string
-			expectError bool
-		}{
-			{
-				name:        "valid cluster name",
-				clusterName: "test-cluster",
-				expectError: false,
-			},
-			{
-				name:        "invalid cluster name",
-				clusterName: "test/cluster",
-				expectError: true,
-			},
-			{
-				name:        "empty cluster name",
-				clusterName: "",
-				expectError: true,
-			},
 		}
 
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				path, err := ClusterSecretsPath(tt.clusterName)
+		func testClusterSecretsPath_disabled(t *testing.T) {
+			os.Setenv("OPENCENTER_CONFIG_DIR", dir)
+			defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
 
-				if tt.expectError {
-					if err == nil {
-						t.Errorf("expected error for cluster name %q, but got none", tt.clusterName)
+			tests := []struct {
+				name        string
+				clusterName string
+				expectError bool
+			}{
+				{
+					name:        "valid cluster name",
+					clusterName: "test-cluster",
+					expectError: false,
+				},
+				{
+					name:        "invalid cluster name",
+					clusterName: "test/cluster",
+					expectError: true,
+				},
+				{
+					name:        "empty cluster name",
+					clusterName: "",
+					expectError: true,
+				},
+			}
+
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					path, err := ClusterSecretsPath(tt.clusterName)
+
+					if tt.expectError {
+						if err == nil {
+							t.Errorf("expected error for cluster name %q, but got none", tt.clusterName)
+						}
+						return
 					}
-					return
-				}
 
-				if err != nil {
-					t.Errorf("expected no error for cluster name %q, but got: %v", tt.clusterName, err)
-					return
-				}
+					if err != nil {
+						t.Errorf("expected no error for cluster name %q, but got: %v", tt.clusterName, err)
+						return
+					}
 
-				expected := filepath.Join(dir, "clusters", tt.clusterName, "secrets", "age", "keys")
-				if path != expected {
-					t.Errorf("expected path %s, got %s", expected, path)
-				}
-			})
-		}
+					expected := filepath.Join(dir, "clusters", tt.clusterName, "secrets", "age", "keys")
+					if path != expected {
+						t.Errorf("expected path %s, got %s", expected, path)
+					}
+				})
+			}
 	*/
 }
 
@@ -1591,11 +1591,10 @@ func TestValidateServiceSpecificRequirements(t *testing.T) {
 					BaseConfig: services.BaseConfig{
 						Enabled: true,
 					},
-					SwiftAuthURL:     "",
-					SwiftUsername:    "user",
-					SwiftProjectName: "project",
+					SwiftAuthURL:                 "",
+					SwiftApplicationCredentialID: "test-app-cred-id",
 				}
-				cfg.Secrets.Loki.SwiftPassword = "password"
+				cfg.Secrets.Loki.SwiftApplicationCredentialSecret = "test-secret"
 				return cfg
 			},
 			expectedField: "opencenter.services.loki.swift_auth_url",
@@ -1610,14 +1609,13 @@ func TestValidateServiceSpecificRequirements(t *testing.T) {
 					BaseConfig: services.BaseConfig{
 						Enabled: true,
 					},
-					SwiftAuthURL:     "https://keystone.api.example.com/v3/",
-					SwiftUsername:    "user",
-					SwiftProjectName: "project",
+					SwiftAuthURL:                 "https://keystone.api.example.com/v3/",
+					SwiftApplicationCredentialID: "test-app-cred-id",
 				}
-				cfg.Secrets.Loki.SwiftPassword = ""
+				cfg.Secrets.Loki.SwiftApplicationCredentialSecret = ""
 				return cfg
 			},
-			expectedField: "secrets.loki.swift_password",
+			expectedField: "secrets.loki",
 			expectError:   true,
 		},
 		{

@@ -49,15 +49,15 @@ func Load(name string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Convert to core config type (they're the same via type alias)
 	cfg := Config(oldCfg)
-	
+
 	// Validate schema version for v2-only support
 	if cfg.SchemaVersion != "2.0" {
 		// Get the config path for error message
 		configPath, _ := internalconfig.ConfigPath(name)
-		
+
 		// Return V1ConfigError for v1 configs, UnsupportedVersionError for others
 		if cfg.SchemaVersion == "" || cfg.SchemaVersion == "1.0" {
 			return nil, NewV1ConfigError(configPath)
@@ -67,7 +67,7 @@ func Load(name string) (*Config, error) {
 			Path:    configPath,
 		}
 	}
-	
+
 	return &cfg, nil
 }
 

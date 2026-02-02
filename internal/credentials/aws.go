@@ -36,12 +36,6 @@ func (c *AWSCredentials) IsEmpty() bool {
 	return c.AccessKeyID == "" && c.Profile == ""
 }
 
-// ToEnvVars converts AWS credentials to environment variable export statements
-// Deprecated: Use ToEnvVarsForShell instead
-func (c *AWSCredentials) ToEnvVars() string {
-	return c.ToEnvVarsForShell("bash")
-}
-
 // ToEnvVarsForShell converts AWS credentials to shell-specific environment variable export statements
 func (c *AWSCredentials) ToEnvVarsForShell(shell string) string {
 	var output strings.Builder

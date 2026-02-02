@@ -71,46 +71,4 @@ func DetectSchemaVersionFromBytes(data []byte) (*SchemaVersionInfo, error) {
 	return nil, fmt.Errorf("unsupported schema version: %s (only 2.0 is supported)", info.Version)
 }
 
-// LoadConfigWithVersionDetection loads a configuration file with automatic version detection.
-// It routes to the appropriate parser based on the detected schema version.
-// Requirements: 13.1, 13.2, 13.3
-//
-// Deprecated: Use internal/core/config.ConfigManager.Load() which handles version detection automatically.
-// This function will be removed in v2.0.0.
-// Migration: Replace LoadConfigWithVersionDetection(filePath) with configManager.Load(filePath, LoadOptions{})
-func LoadConfigWithVersionDetection(filePath string) (interface{}, *SchemaVersionInfo, error) {
-	logDeprecationWarning(
-		"config.LoadConfigWithVersionDetection()",
-		"internal/core/config.ConfigManager.Load()",
-		"v2.0.0",
-	)
-	// Detect schema version
-	versionInfo, err := DetectSchemaVersionFromFile(filePath)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to detect schema version: %w", err)
-	}
 
-	// Read file data
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read file: %w", err)
-	}
-
-	// Route to appropriate parser based on version
-	if versionInfo.IsV1 {
-		// Parse as v1 configuration
-		var v1Config Config
-		if err := yaml.Unmarshal(data, &v1Config); err != nil {
-			return nil, nil, fmt.Errorf("failed to parse v1 configuration: %w", err)
-		}
-		return &v1Config, versionInfo, nil
-	}
-
-	if versionInfo.IsV2 {
-		// Parse as v2 configuration
-		// Note: This would use the v2 package when fully implemented
-		return nil, nil, fmt.Errorf("v2 configuration parsing not yet implemented")
-	}
-
-	return nil, nil, fmt.Errorf("unknown schema version: %s", versionInfo.Version)
-}

@@ -2,10 +2,19 @@ package validator
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/rackerlabs/opencenter-cli/internal/talos"
 )
+
+// hasOpenStackCredentials checks if OpenStack credentials are available in environment.
+func hasOpenStackCredentials() bool {
+	return os.Getenv("OS_AUTH_URL") != "" &&
+		os.Getenv("OS_USERNAME") != "" &&
+		os.Getenv("OS_PASSWORD") != "" &&
+		os.Getenv("OS_PROJECT_ID") != ""
+}
 
 func TestCheckResourceAvailability(t *testing.T) {
 	validator := &DefaultValidator{logger: &mockLogger{}}
@@ -63,7 +72,16 @@ func TestCheckResourceAvailability(t *testing.T) {
 }
 
 func TestGetQuotaLimits(t *testing.T) {
-	validator := &DefaultValidator{logger: &mockLogger{}}
+	validator := &DefaultValidator{
+		logger:    &mockLogger{},
+		projectID: "test-project-id",
+		region:    "RegionOne",
+	}
+
+	// Skip test if OpenStack credentials are not available
+	if !hasOpenStackCredentials() {
+		t.Skip("Skipping test: OpenStack credentials not available")
+	}
 
 	limits, err := validator.getQuotaLimits(context.Background())
 	if err != nil {
@@ -89,7 +107,16 @@ func TestGetQuotaLimits(t *testing.T) {
 }
 
 func TestGetQuotaUsage(t *testing.T) {
-	validator := &DefaultValidator{logger: &mockLogger{}}
+	validator := &DefaultValidator{
+		logger:    &mockLogger{},
+		projectID: "test-project-id",
+		region:    "RegionOne",
+	}
+
+	// Skip test if OpenStack credentials are not available
+	if !hasOpenStackCredentials() {
+		t.Skip("Skipping test: OpenStack credentials not available")
+	}
 
 	usage, err := validator.getQuotaUsage(context.Background())
 	if err != nil {
@@ -161,7 +188,16 @@ func TestCalculateAvailable(t *testing.T) {
 }
 
 func TestValidateQuotasImpl_Sufficient(t *testing.T) {
-	validator := &DefaultValidator{logger: &mockLogger{}}
+	validator := &DefaultValidator{
+		logger:    &mockLogger{},
+		projectID: "test-project-id",
+		region:    "RegionOne",
+	}
+
+	// Skip test if OpenStack credentials are not available
+	if !hasOpenStackCredentials() {
+		t.Skip("Skipping test: OpenStack credentials not available")
+	}
 
 	// Request minimal resources that should be available
 	required := talos.ResourceRequirements{
@@ -184,7 +220,16 @@ func TestValidateQuotasImpl_Sufficient(t *testing.T) {
 }
 
 func TestValidateQuotasImpl_Insufficient(t *testing.T) {
-	validator := &DefaultValidator{logger: &mockLogger{}}
+	validator := &DefaultValidator{
+		logger:    &mockLogger{},
+		projectID: "test-project-id",
+		region:    "RegionOne",
+	}
+
+	// Skip test if OpenStack credentials are not available
+	if !hasOpenStackCredentials() {
+		t.Skip("Skipping test: OpenStack credentials not available")
+	}
 
 	// Request excessive resources that should exceed quota
 	required := talos.ResourceRequirements{
@@ -217,5 +262,126 @@ func TestValidateQuotasImpl_Insufficient(t *testing.T) {
 
 	if talosErr.Remediation == nil {
 		t.Error("Error should include remediation")
+	}
+}
+
+// TestGetQuotaLimits_ErrorHandling tests error handling when credentials are missing.
+func TestGetQuotaLimits_ErrorHandling(t *testing.T) {
+	// Save current environment
+	savedAuthURL := os.Getenv("OS_AUTH_URL")
+	savedUsername := os.Getenv("OS_USERNAME")
+	savedPassword := os.Getenv("OS_PASSWORD")
+	savedProjectID := os.Getenv("OS_PROJECT_ID")
+
+	// Clear environment variables
+	os.Unsetenv("OS_AUTH_URL")
+	os.Unsetenv("OS_USERNAME")
+	os.Unsetenv("OS_PASSWORD")
+	os.Unsetenv("OS_PROJECT_ID")
+
+	// Restore environment after test
+	defer func() {
+		if savedAuthURL != "" {
+			os.Setenv("OS_AUTH_URL", savedAuthURL)
+		}
+		if savedUsername != "" {
+			os.Setenv("OS_USERNAME", savedUsername)
+		}
+		if savedPassword != "" {
+			os.Setenv("OS_PASSWORD", savedPassword)
+		}
+		if savedProjectID != "" {
+			os.Setenv("OS_PROJECT_ID", savedProjectID)
+		}
+	}()
+
+	validator := &DefaultValidator{
+		logger:    &mockLogger{},
+		projectID: "",
+		region:    "RegionOne",
+	}
+
+	_, err := validator.getQuotaLimits(context.Background())
+	if err == nil {
+		t.Error("getQuotaLimits should return error when credentials are missing")
+	}
+}
+
+// TestGetQuotaUsage_ErrorHandling tests error handling when credentials are missing.
+func TestGetQuotaUsage_ErrorHandling(t *testing.T) {
+	// Save current environment
+	savedAuthURL := os.Getenv("OS_AUTH_URL")
+	savedUsername := os.Getenv("OS_USERNAME")
+	savedPassword := os.Getenv("OS_PASSWORD")
+	savedProjectID := os.Getenv("OS_PROJECT_ID")
+
+	// Clear environment variables
+	os.Unsetenv("OS_AUTH_URL")
+	os.Unsetenv("OS_USERNAME")
+	os.Unsetenv("OS_PASSWORD")
+	os.Unsetenv("OS_PROJECT_ID")
+
+	// Restore environment after test
+	defer func() {
+		if savedAuthURL != "" {
+			os.Setenv("OS_AUTH_URL", savedAuthURL)
+		}
+		if savedUsername != "" {
+			os.Setenv("OS_USERNAME", savedUsername)
+		}
+		if savedPassword != "" {
+			os.Setenv("OS_PASSWORD", savedPassword)
+		}
+		if savedProjectID != "" {
+			os.Setenv("OS_PROJECT_ID", savedProjectID)
+		}
+	}()
+
+	validator := &DefaultValidator{
+		logger:    &mockLogger{},
+		projectID: "",
+		region:    "RegionOne",
+	}
+
+	_, err := validator.getQuotaUsage(context.Background())
+	if err == nil {
+		t.Error("getQuotaUsage should return error when credentials are missing")
+	}
+}
+
+// TestQuotaCache tests the caching mechanism.
+func TestQuotaCache(t *testing.T) {
+	// Skip test if OpenStack credentials are not available
+	if !hasOpenStackCredentials() {
+		t.Skip("Skipping test: OpenStack credentials not available")
+	}
+
+	validator := &DefaultValidator{
+		logger:    &mockLogger{},
+		projectID: "test-project-id",
+		region:    "RegionOne",
+	}
+
+	// Clear cache
+	cache.mu.Lock()
+	cache.limits = nil
+	cache.usage = nil
+	cache.mu.Unlock()
+
+	// First call should fetch from API
+	limits1, err := validator.getQuotaLimits(context.Background())
+	if err != nil {
+		t.Fatalf("First getQuotaLimits call failed: %v", err)
+	}
+
+	// Second call should use cache
+	limits2, err := validator.getQuotaLimits(context.Background())
+	if err != nil {
+		t.Fatalf("Second getQuotaLimits call failed: %v", err)
+	}
+
+	// Verify both calls return the same data
+	if limits1.Instances != limits2.Instances {
+		t.Error("Cached limits should match original limits")
 	}
 }

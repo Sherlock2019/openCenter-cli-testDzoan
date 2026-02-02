@@ -46,7 +46,7 @@ func TestClusterSetupIntegration(t *testing.T) {
 	// Initialize test cluster
 	clusterName := "test-setup-cluster"
 	organization := "test-org"
-	
+
 	if err := initializeTestCluster(t, clusterName, organization); err != nil {
 		t.Fatalf("failed to initialize test cluster: %v", err)
 	}
@@ -54,7 +54,7 @@ func TestClusterSetupIntegration(t *testing.T) {
 	// Create dependencies
 	pathResolver := paths.NewPathResolver(filepath.Join(dir, "clusters"))
 	validationEngine := validation.NewValidationEngine()
-	
+
 	// Register validators
 	if err := validationEngine.Register(validators.NewClusterNameValidator()); err != nil {
 		t.Fatalf("failed to register cluster name validator: %v", err)
@@ -65,10 +65,10 @@ func TestClusterSetupIntegration(t *testing.T) {
 
 	// Run setup
 	opts := cluster.SetupOptions{
-		ClusterName:  clusterName,
-		Organization: organization,
-		Force:        false,
-		DryRun:       false,
+		ClusterName:    clusterName,
+		Organization:   organization,
+		Force:          false,
+		DryRun:         false,
 		SkipValidation: true,
 	}
 
@@ -152,7 +152,7 @@ func TestClusterSetupServiceIntegration(t *testing.T) {
 	// Initialize test cluster
 	clusterName := "test-service-cluster"
 	organization := "test-org"
-	
+
 	if err := initializeTestCluster(t, clusterName, organization); err != nil {
 		t.Fatalf("failed to initialize test cluster: %v", err)
 	}
@@ -160,7 +160,7 @@ func TestClusterSetupServiceIntegration(t *testing.T) {
 	// Create dependencies
 	pathResolver := paths.NewPathResolver(filepath.Join(dir, "clusters"))
 	validationEngine := validation.NewValidationEngine()
-	
+
 	// Register validators
 	if err := validationEngine.Register(validators.NewClusterNameValidator()); err != nil {
 		t.Fatalf("failed to register cluster name validator: %v", err)
@@ -171,10 +171,10 @@ func TestClusterSetupServiceIntegration(t *testing.T) {
 
 	// Run setup
 	opts := cluster.SetupOptions{
-		ClusterName:  clusterName,
-		Organization: organization,
-		Force:        false,
-		DryRun:       false,
+		ClusterName:    clusterName,
+		Organization:   organization,
+		Force:          false,
+		DryRun:         false,
 		SkipValidation: true,
 	}
 
@@ -211,7 +211,7 @@ func TestClusterSetupForceOverwrite(t *testing.T) {
 	// Initialize test cluster
 	clusterName := "test-force-cluster"
 	organization := "test-org"
-	
+
 	if err := initializeTestCluster(t, clusterName, organization); err != nil {
 		t.Fatalf("failed to initialize test cluster: %v", err)
 	}
@@ -219,7 +219,7 @@ func TestClusterSetupForceOverwrite(t *testing.T) {
 	// Create dependencies
 	pathResolver := paths.NewPathResolver(filepath.Join(dir, "clusters"))
 	validationEngine := validation.NewValidationEngine()
-	
+
 	// Register validators
 	if err := validationEngine.Register(validators.NewClusterNameValidator()); err != nil {
 		t.Fatalf("failed to register cluster name validator: %v", err)
@@ -230,10 +230,10 @@ func TestClusterSetupForceOverwrite(t *testing.T) {
 
 	// Run setup first time
 	opts := cluster.SetupOptions{
-		ClusterName:  clusterName,
-		Organization: organization,
-		Force:        false,
-		DryRun:       false,
+		ClusterName:    clusterName,
+		Organization:   organization,
+		Force:          false,
+		DryRun:         false,
 		SkipValidation: true,
 	}
 
@@ -272,7 +272,7 @@ func TestClusterSetupDryRun(t *testing.T) {
 	// Initialize test cluster
 	clusterName := "test-dryrun-cluster"
 	organization := "test-org"
-	
+
 	if err := initializeTestCluster(t, clusterName, organization); err != nil {
 		t.Fatalf("failed to initialize test cluster: %v", err)
 	}
@@ -280,7 +280,7 @@ func TestClusterSetupDryRun(t *testing.T) {
 	// Create dependencies
 	pathResolver := paths.NewPathResolver(filepath.Join(dir, "clusters"))
 	validationEngine := validation.NewValidationEngine()
-	
+
 	// Register validators
 	if err := validationEngine.Register(validators.NewClusterNameValidator()); err != nil {
 		t.Fatalf("failed to register cluster name validator: %v", err)
@@ -291,10 +291,10 @@ func TestClusterSetupDryRun(t *testing.T) {
 
 	// Run setup with dry-run flag
 	opts := cluster.SetupOptions{
-		ClusterName:  clusterName,
-		Organization: organization,
-		Force:        false,
-		DryRun:       true,
+		ClusterName:    clusterName,
+		Organization:   organization,
+		Force:          false,
+		DryRun:         true,
 		SkipValidation: true,
 	}
 
@@ -329,7 +329,7 @@ func TestClusterSetupSkipValidation(t *testing.T) {
 	// Initialize test cluster
 	clusterName := "test-skipval-cluster"
 	organization := "test-org"
-	
+
 	if err := initializeTestCluster(t, clusterName, organization); err != nil {
 		t.Fatalf("failed to initialize test cluster: %v", err)
 	}
@@ -337,7 +337,7 @@ func TestClusterSetupSkipValidation(t *testing.T) {
 	// Create dependencies
 	pathResolver := paths.NewPathResolver(filepath.Join(dir, "clusters"))
 	validationEngine := validation.NewValidationEngine()
-	
+
 	// Register validators
 	if err := validationEngine.Register(validators.NewClusterNameValidator()); err != nil {
 		t.Fatalf("failed to register cluster name validator: %v", err)

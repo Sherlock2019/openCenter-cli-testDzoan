@@ -22,14 +22,10 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
-
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
 )
 
 // InputValidator validates and sanitizes user-controlled input to prevent injection attacks
 type InputValidator interface {
-	ValidateClusterName(name string) error
-	ValidateOrganizationName(org string) error
 	ValidatePath(path string) error
 	ValidateURL(urlStr string) error
 	ValidateEnvironmentVariable(name, value string) error
@@ -86,90 +82,6 @@ func (v *DefaultInputValidator) logRejectedInput(inputType, reason string) {
 		ctx := context.Background()
 		_ = v.auditLogger.LogInputRejected(ctx, v.actor, inputType, reason)
 	}
-}
-
-// ValidateClusterName validates a cluster name against security requirements
-// Requirements: 1.5, 1.6, 6.1
-//
-// Deprecated: Use internal/core/validation.ValidationEngine with "cluster-name" validator instead.
-// This method will be removed in v2.0.0.
-// Migration: Replace validator.ValidateClusterName(name) with validationEngine.Validate(ctx, "cluster-name", name)
-func (v *DefaultInputValidator) ValidateClusterName(name string) error {
-	// Delegate to the centralized ValidationEngine for consistency
-	ctx := context.Background()
-	validator := validators.NewClusterNameValidator()
-
-	result, err := validator.Validate(ctx, name)
-	if err != nil {
-		v.logRejectedInput("cluster_name", fmt.Sprintf("validation error: %v", err))
-		return &ValidationError{
-			Field:   "cluster_name",
-			Value:   name,
-			Message: fmt.Sprintf("validation error: %v", err),
-		}
-	}
-
-	if !result.Valid {
-		// Log rejection
-		if len(result.Errors) > 0 {
-			v.logRejectedInput("cluster_name", result.Errors[0].Message)
-		}
-
-		// Return the first error as ValidationError
-		if len(result.Errors) > 0 {
-			return &ValidationError{
-				Field:   "cluster_name",
-				Value:   name,
-				Message: result.Errors[0].Message,
-			}
-		}
-		return &ValidationError{
-			Field:   "cluster_name",
-			Value:   name,
-			Message: "cluster name validation failed",
-		}
-	}
-
-	return nil
-}
-
-// ValidateOrganizationName validates an organization name against security requirements
-// Requirements: 6.2
-//
-// Deprecated: Use internal/core/validation.ValidationEngine with "organization-name" validator instead.
-// This method will be removed in v2.0.0.
-// Migration: Replace validator.ValidateOrganizationName(org) with validationEngine.Validate(ctx, "organization-name", org)
-func (v *DefaultInputValidator) ValidateOrganizationName(org string) error {
-	// Delegate to the centralized ValidationEngine for consistency
-	ctx := context.Background()
-	validator := validators.NewOrganizationNameValidator()
-
-	result, err := validator.Validate(ctx, org)
-	if err != nil {
-		return &ValidationError{
-			Field:   "organization_name",
-			Value:   org,
-			Message: fmt.Sprintf("validation error: %v", err),
-		}
-	}
-
-	if !result.Valid {
-		// Return the first error as ValidationError
-		if len(result.Errors) > 0 {
-			return &ValidationError{
-				Field:   "organization_name",
-				Value:   org,
-				Message: result.Errors[0].Message,
-			}
-		}
-		return &ValidationError{
-			Field:   "organization_name",
-			Value:   org,
-			Message: "organization name validation failed",
-		}
-	}
-
-	return nil
 }
 
 // ValidatePath validates a file path to prevent path traversal attacks

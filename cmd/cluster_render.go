@@ -38,6 +38,7 @@ func newClusterRenderCmd() *cobra.Command {
 		force       bool
 		all         bool
 		infra       bool
+		services    bool
 		serviceName string
 	)
 
@@ -52,6 +53,7 @@ It handles organization-based directory structures and creates backups before ov
 Modes:
 - No args: Checks if services already rendered, exits with instructions
 - --all: Renders all services and infrastructure (requires --force if already rendered)
+- --services: Renders all services only, no infrastructure (requires --force if already rendered)
 - --infra: Renders infrastructure templates only (creates backups)
 - <service>: Renders specific service (requires --force if already rendered)
 
@@ -84,6 +86,10 @@ Unlike 'cluster setup', this command:
 				return renderInfrastructureOnly(cfg, cmd)
 			}
 
+			if services {
+				return renderServicesOnly(cfg, force, cmd)
+			}
+
 			if serviceName != "" {
 				return renderSingleService(cfg, serviceName, force, cmd)
 			}
@@ -99,6 +105,7 @@ Unlike 'cluster setup', this command:
 
 	cmd.Flags().BoolVar(&force, "force", false, "Force overwrite existing files (creates backups)")
 	cmd.Flags().BoolVar(&all, "all", false, "Render all services and infrastructure")
+	cmd.Flags().BoolVar(&services, "services", false, "Render all services only (no infrastructure)")
 	cmd.Flags().BoolVar(&infra, "infra", false, "Render infrastructure templates only")
 
 	return cmd
@@ -112,8 +119,10 @@ func checkRenderStatus(cfg config.Config, cmd *cobra.Command) error {
 
 	if _, err := os.Stat(kustomizationPath); err == nil {
 		fmt.Fprintf(cmd.OutOrStdout(), "Services have already been rendered for cluster '%s'.\n\n", clusterName)
-		fmt.Fprintf(cmd.OutOrStdout(), "To render all services (with backups), use:\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "To render all services and infrastructure (with backups), use:\n")
 		fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster render %s --all --force\n\n", clusterName)
+		fmt.Fprintf(cmd.OutOrStdout(), "To render all services only (with backups), use:\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster render %s --services --force\n\n", clusterName)
 		fmt.Fprintf(cmd.OutOrStdout(), "To render a specific service, use:\n")
 		fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster render %s <service-name> --force\n\n", clusterName)
 		fmt.Fprintf(cmd.OutOrStdout(), "To render infrastructure only, use:\n")
@@ -174,6 +183,40 @@ func renderAllServices(cfg config.Config, force bool, cmd *cobra.Command) error 
 	}
 
 	fmt.Fprintln(cmd.OutOrStdout(), "✓ All services and infrastructure rendered successfully")
+	return nil
+}
+
+// renderServicesOnly renders all cluster services without infrastructure
+func renderServicesOnly(cfg config.Config, force bool, cmd *cobra.Command) error {
+	clusterName := cfg.ClusterName()
+	gitOpsDir := cfg.GitOps().GitDir
+	kustomizationPath := filepath.Join(gitOpsDir, "applications", "overlays", clusterName, "kustomization.yaml")
+
+	// Check if already rendered and force not specified
+	if _, err := os.Stat(kustomizationPath); err == nil && !force {
+		return fmt.Errorf("services already rendered for cluster '%s', use --force to overwrite (creates backups)", clusterName)
+	}
+
+	// Create backups if force is specified and files exist
+	if force {
+		if err := backupApplicationsDirectory(cfg, cmd); err != nil {
+			return fmt.Errorf("failed to create backups: %w", err)
+		}
+	}
+
+	fmt.Fprintf(cmd.OutOrStdout(), "Rendering all services (no infrastructure) for cluster: %s\n", clusterName)
+
+	// Copy base GitOps structure
+	if err := gitops.CopyBase(cfg, true); err != nil {
+		return fmt.Errorf("failed to copy base GitOps structure: %w", err)
+	}
+
+	// Render cluster-specific applications
+	if err := gitops.RenderClusterApps(cfg); err != nil {
+		return fmt.Errorf("failed to render cluster apps: %w", err)
+	}
+
+	fmt.Fprintln(cmd.OutOrStdout(), "✓ All services rendered successfully (infrastructure skipped)")
 	return nil
 }
 

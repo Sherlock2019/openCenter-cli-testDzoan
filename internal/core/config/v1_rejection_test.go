@@ -165,8 +165,8 @@ opencenter:
 			expected: false,
 		},
 		{
-			name: "invalid yaml",
-			yaml: `invalid: [yaml: structure`,
+			name:     "invalid yaml",
+			yaml:     `invalid: [yaml: structure`,
 			expected: false,
 		},
 	}

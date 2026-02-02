@@ -156,7 +156,7 @@ func TestAWSCredentialsToEnvVars(t *testing.T) {
 		SessionToken:    "test-session-token",
 	}
 
-	envVars := creds.ToEnvVars()
+	envVars := creds.ToEnvVarsForShell("bash")
 
 	expectedVars := []string{
 		"export AWS_ACCESS_KEY_ID=\"AKIATEST123\"",
@@ -182,7 +182,7 @@ func TestOpenStackCredentialsToEnvVars(t *testing.T) {
 		Domain:                      "Default",
 	}
 
-	envVars := creds.ToEnvVars()
+	envVars := creds.ToEnvVarsForShell("bash")
 
 	expectedVars := []string{
 		"export OS_AUTH_URL=\"https://keystone.example.com/v3\"",

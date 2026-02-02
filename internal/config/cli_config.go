@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 
+	corePaths "github.com/rackerlabs/opencenter-cli/internal/core/paths"
 	"gopkg.in/yaml.v3"
 )
 
@@ -172,7 +173,7 @@ func NewConfigManager(configPath string) (*ConfigManager, error) {
 	}
 
 	// Expand environment variables and tilde
-	configPath = ExpandPath(configPath)
+	configPath = corePaths.ExpandPath(configPath)
 
 	cm := &ConfigManager{
 		configPath: configPath,
@@ -387,9 +388,9 @@ func (cm *ConfigManager) mergeWithDefaults(config *CLIConfig) *CLIConfig {
 
 // expandConfigPaths expands environment variables and tilde in configuration paths.
 func (cm *ConfigManager) expandConfigPaths() {
-	cm.config.Paths.ConfigDir = ExpandPath(cm.config.Paths.ConfigDir)
-	cm.config.Paths.ClustersDir = ExpandPath(cm.config.Paths.ClustersDir)
-	cm.config.Paths.PluginsDir = ExpandPath(cm.config.Paths.PluginsDir)
+	cm.config.Paths.ConfigDir = corePaths.ExpandPath(cm.config.Paths.ConfigDir)
+	cm.config.Paths.ClustersDir = corePaths.ExpandPath(cm.config.Paths.ClustersDir)
+	cm.config.Paths.PluginsDir = corePaths.ExpandPath(cm.config.Paths.PluginsDir)
 }
 
 // Save saves the current configuration to the file system.
@@ -1265,7 +1266,7 @@ func (cv *ConfigValidator) validatePathsWithResult(paths *PathsConfig, result *V
 		}
 	} else {
 		// Validate that the path is accessible
-		expandedPath := ExpandPath(paths.ConfigDir)
+		expandedPath := corePaths.ExpandPath(paths.ConfigDir)
 		if err := cv.validateDirectoryPath(expandedPath); err != nil {
 			if cv.autoRepair {
 				// Try to create the directory
@@ -1318,7 +1319,7 @@ func (cv *ConfigValidator) validatePathsWithResult(paths *PathsConfig, result *V
 		}
 	} else {
 		// Validate that the path is accessible
-		expandedPath := ExpandPath(paths.ClustersDir)
+		expandedPath := corePaths.ExpandPath(paths.ClustersDir)
 		if err := cv.validateDirectoryPath(expandedPath); err != nil {
 			if cv.autoRepair {
 				// Try to create the directory
@@ -1371,7 +1372,7 @@ func (cv *ConfigValidator) validatePathsWithResult(paths *PathsConfig, result *V
 		}
 	} else {
 		// Validate that the path is accessible
-		expandedPath := ExpandPath(paths.PluginsDir)
+		expandedPath := corePaths.ExpandPath(paths.PluginsDir)
 		if err := cv.validateDirectoryPath(expandedPath); err != nil {
 			if cv.autoRepair {
 				// Try to create the directory
@@ -1456,9 +1457,9 @@ func (cv *ConfigValidator) validateDefaultsWithResult(defaults *DefaultsConfig, 
 // validateDependenciesWithResult validates system dependencies and requirements.
 func (cv *ConfigValidator) validateDependenciesWithResult(config *CLIConfig, result *ValidationResult) {
 	// Check if required directories are accessible
-	expandedConfigDir := ExpandPath(config.Paths.ConfigDir)
-	expandedClustersDir := ExpandPath(config.Paths.ClustersDir)
-	expandedPluginsDir := ExpandPath(config.Paths.PluginsDir)
+	expandedConfigDir := corePaths.ExpandPath(config.Paths.ConfigDir)
+	expandedClustersDir := corePaths.ExpandPath(config.Paths.ClustersDir)
+	expandedPluginsDir := corePaths.ExpandPath(config.Paths.PluginsDir)
 
 	// Check disk space for config directory
 	if err := cv.checkDiskSpace(expandedConfigDir); err != nil {
@@ -1532,7 +1533,7 @@ func (cv *ConfigValidator) validateDirectoryPath(path string) error {
 // validateFilePath validates that a file path is accessible for writing.
 func (cv *ConfigValidator) validateFilePath(path string) error {
 	// Expand the path
-	expandedPath := ExpandPath(path)
+	expandedPath := corePaths.ExpandPath(path)
 
 	// Check if the directory exists or can be created
 	dir := filepath.Dir(expandedPath)
@@ -1570,35 +1571,6 @@ func (cv *ConfigValidator) checkDiskSpace(path string) error {
 	}
 
 	return nil
-}
-
-// ExpandPath expands environment variables and tilde in a path.
-//
-// Deprecated: Use internal/core/paths.PathResolver.ExpandPath() instead.
-// This function will be removed in v2.0.0.
-// Migration: Replace ExpandPath(path) with pathResolver.ExpandPath(path)
-func ExpandPath(path string) string {
-	logDeprecationWarning(
-		"config.ExpandPath()",
-		"internal/core/paths.PathResolver.ExpandPath()",
-		"v2.0.0",
-	)
-
-	// Expand environment variables
-	path = os.ExpandEnv(path)
-
-	// Expand tilde
-	if strings.HasPrefix(path, "~/") {
-		if home, err := os.UserHomeDir(); err == nil {
-			path = filepath.Join(home, path[2:])
-		}
-	} else if path == "~" {
-		if home, err := os.UserHomeDir(); err == nil {
-			path = home
-		}
-	}
-
-	return path
 }
 
 // convertToInt converts various types to int.

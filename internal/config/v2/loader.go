@@ -133,15 +133,11 @@ func (cl *ConfigLoader) normalize(cfg *Config) error {
 	return nil
 }
 
-// resolveReferences resolves ${path.to.value} references in the configuration.
-// Requirements: 6.3
-// Note: Reference resolution is already implemented and tested in phase 4 (task 6.1-6.5).
-// For now, we skip it in the v2 loader to avoid coupling issues.
-// This will be integrated properly when the resolver is refactored to work with generic structs.
+// resolveReferences resolves ${ref:path}, ${env:VAR}, and ${file:path} references in the configuration.
+// Requirements: 6.3, 4.2.9
 func (cl *ConfigLoader) resolveReferences(cfg *Config) error {
-	// TODO: Integrate reference resolver from phase 4
-	// The resolver needs to be refactored to work with interface{} instead of *config.Config
-	return nil
+	resolver := NewReferenceResolver()
+	return resolver.Resolve(cfg)
 }
 
 // applyDefaults applies provider-region defaults without overwriting explicit values.

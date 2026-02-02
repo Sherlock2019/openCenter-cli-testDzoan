@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	corePaths "github.com/rackerlabs/opencenter-cli/internal/core/paths"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -106,7 +107,7 @@ func (lm *LoggerManager) getOutputWriter() (io.Writer, error) {
 // getFileWriter creates a file writer with rotation support
 func (lm *LoggerManager) getFileWriter(filePath string) (io.Writer, error) {
 	// Expand the path
-	expandedPath := ExpandPath(filePath)
+	expandedPath := corePaths.ExpandPath(filePath)
 
 	// Ensure the directory exists
 	dir := filepath.Dir(expandedPath)
@@ -208,7 +209,7 @@ func ValidateLoggingConfig(config *LoggingConfig) error {
 	validOutputs := []string{"stdout", "stderr"}
 	if !contains(validOutputs, strings.ToLower(config.Output)) && config.Output != "" {
 		// If it's not a standard output, validate as file path
-		expandedPath := ExpandPath(config.Output)
+		expandedPath := corePaths.ExpandPath(config.Output)
 		dir := filepath.Dir(expandedPath)
 
 		// Check if directory exists or can be created

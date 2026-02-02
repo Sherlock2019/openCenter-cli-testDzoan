@@ -96,10 +96,10 @@ func TestCloudProviderFactory_GetProvider_ErrorMessage(t *testing.T) {
 
 func TestCloudProviderFactory_MultipleProviders(t *testing.T) {
 	factory := NewCloudProviderFactory()
-	
+
 	openstackProvider := &mockProvider{name: "openstack"}
 	awsProvider := &mockProvider{name: "aws"}
-	
+
 	factory.RegisterProvider("openstack", openstackProvider)
 	factory.RegisterProvider("aws", awsProvider)
 

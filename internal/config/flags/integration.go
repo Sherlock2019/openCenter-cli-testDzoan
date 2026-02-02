@@ -441,8 +441,12 @@ func (c *CLIIntegration) applyJSONFlag(jsonFlag JSONFlag, configStruct interface
 		return fmt.Errorf("failed to merge JSON flag into configuration map: %w", err)
 	}
 
-	// TODO: Apply to struct in future implementation
-	// For now, we focus on map-based configuration
+	// Apply to struct if provided
+	if configStruct != nil {
+		if err := c.applyToStruct(configStruct, jsonFlag.Path, jsonFlag.Value); err != nil {
+			return fmt.Errorf("failed to apply JSON flag to struct: %w", err)
+		}
+	}
 
 	return nil
 }
@@ -457,8 +461,12 @@ func (c *CLIIntegration) applyYAMLFlag(yamlFlag YAMLFlag, configStruct interface
 		return fmt.Errorf("failed to merge YAML flag into configuration map: %w", err)
 	}
 
-	// TODO: Apply to struct in future implementation
-	// For now, we focus on map-based configuration
+	// Apply to struct if provided
+	if configStruct != nil {
+		if err := c.applyToStruct(configStruct, yamlFlag.Path, yamlFlag.Value); err != nil {
+			return fmt.Errorf("failed to apply YAML flag to struct: %w", err)
+		}
+	}
 
 	return nil
 }
@@ -483,8 +491,8 @@ func (c *CLIIntegration) applyTemplateVariables(templateVars map[string]string, 
 		configMap[key] = value
 	}
 
-	// TODO: Apply to struct in future implementation
-	// For now, we focus on map-based configuration
+	// Apply to struct if provided (template variables are already processed in the map)
+	// No direct struct application needed for template variables
 
 	return nil
 }
@@ -499,8 +507,13 @@ func (c *CLIIntegration) applyArrayOperation(arrayOp ArrayOperationFlag, configS
 		return fmt.Errorf("failed to apply array operation to configuration map: %w", err)
 	}
 
-	// TODO: Apply to struct in future implementation
-	// For now, we focus on map-based configuration
+	// Apply to struct if provided
+	if configStruct != nil {
+		// For array operations, we need to get the current array value and apply the operation
+		if err := c.applyArrayOperationToStruct(configStruct, &arrayOp); err != nil {
+			return fmt.Errorf("failed to apply array operation to struct: %w", err)
+		}
+	}
 
 	return nil
 }
@@ -515,8 +528,12 @@ func (c *CLIIntegration) applyMapOperation(mapOp MapFlag, configStruct interface
 		return fmt.Errorf("failed to apply map operation to configuration map: %w", err)
 	}
 
-	// TODO: Apply to struct in future implementation
-	// For now, we focus on map-based configuration
+	// Apply to struct if provided
+	if configStruct != nil {
+		if err := c.applyMapOperationToStruct(configStruct, &mapOp); err != nil {
+			return fmt.Errorf("failed to apply map operation to struct: %w", err)
+		}
+	}
 
 	return nil
 }
@@ -578,8 +595,8 @@ func (c *CLIIntegration) applyConfigFileFlags(configFileFlags []*ConfigFileFlag,
 		configMap[key] = value
 	}
 
-	// TODO: Apply to struct in future implementation
-	// For now, we focus on map-based configuration
+	// Apply to struct if provided (merged data is already in the map)
+	// No direct struct application needed for config file merging
 
 	return nil
 }
@@ -878,4 +895,463 @@ func (c *CLIIntegration) convertStringValue(value string) interface{} {
 		return i
 	}
 	return value
+}
+
+// applyToStruct applies a value to a struct field using a dot-notation path
+func (c *CLIIntegration) applyToStruct(configStruct interface{}, path string, value interface{}) error {
+	if configStruct == nil {
+		return nil
+	}
+
+	// Convert flag name to field path
+	fieldPath := c.flagNameToFieldPath(path)
+
+	// Navigate to the target field
+	field, err := c.navigateToField(configStruct, fieldPath)
+	if err != nil {
+		return fmt.Errorf("failed to navigate to field '%s': %w", fieldPath, err)
+	}
+
+	// Set the field value with type conversion
+	if err := c.setFieldValueTyped(field, value); err != nil {
+		return fmt.Errorf("failed to set field '%s': %w", fieldPath, err)
+	}
+
+	return nil
+}
+
+// flagNameToFieldPath converts a flag name to a struct field path
+// Example: "infrastructure.cluster.name" -> "Infrastructure.Cluster.Name"
+// Example: "nestedvalue" -> "NestedValue" (handles camelCase)
+func (c *CLIIntegration) flagNameToFieldPath(flagName string) string {
+	parts := strings.Split(flagName, ".")
+	for i, part := range parts {
+		// Capitalize first letter of each part
+		if len(part) > 0 {
+			// Handle camelCase by capitalizing each word
+			parts[i] = toCamelCase(part)
+		}
+	}
+	return strings.Join(parts, ".")
+}
+
+// toCamelCase converts a string to CamelCase (PascalCase)
+// Examples: "name" -> "Name", "nestedvalue" -> "NestedValue", "nested_value" -> "NestedValue"
+func toCamelCase(s string) string {
+	// Split by underscore or dash
+	words := strings.FieldsFunc(s, func(r rune) bool {
+		return r == '_' || r == '-'
+	})
+	
+	if len(words) == 0 {
+		return strings.ToUpper(s[:1]) + s[1:]
+	}
+	
+	// Capitalize each word
+	for i, word := range words {
+		if len(word) > 0 {
+			words[i] = strings.ToUpper(word[:1]) + word[1:]
+		}
+	}
+	
+	return strings.Join(words, "")
+}
+
+// navigateToField navigates through a struct to find the target field
+func (c *CLIIntegration) navigateToField(obj interface{}, path string) (reflect.Value, error) {
+	v := reflect.ValueOf(obj)
+	
+	// Dereference pointer if needed
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return reflect.Value{}, fmt.Errorf("nil pointer")
+		}
+		v = v.Elem()
+	}
+
+	parts := strings.Split(path, ".")
+	
+	for i, part := range parts {
+		// Check if current value is a map
+		if v.Kind() == reflect.Map {
+			if v.Type().Key().Kind() != reflect.String {
+				return reflect.Value{}, fmt.Errorf("map key type must be string, got %s", v.Type().Key().Kind())
+			}
+
+			// If this is the last part, we'll return a special value that indicates map access
+			if i == len(parts)-1 {
+				// For maps, we need to handle setting differently
+				// Return the map itself and let the caller handle the key
+				return v, nil
+			}
+
+			// Navigate into the map
+			mapKey := reflect.ValueOf(part)
+			mapValue := v.MapIndex(mapKey)
+			
+			if !mapValue.IsValid() {
+				// Create new value for this key
+				mapValueType := v.Type().Elem()
+				if mapValueType.Kind() == reflect.Interface {
+					// For interface{}, create a map for nested navigation
+					newMap := make(map[string]interface{})
+					v.SetMapIndex(mapKey, reflect.ValueOf(newMap))
+					v = reflect.ValueOf(newMap)
+				} else if mapValueType.Kind() == reflect.Struct {
+					newValue := reflect.New(mapValueType).Elem()
+					v.SetMapIndex(mapKey, newValue)
+					v = newValue
+				} else if mapValueType.Kind() == reflect.Map {
+					newValue := reflect.MakeMap(mapValueType)
+					v.SetMapIndex(mapKey, newValue)
+					v = newValue
+				} else {
+					return reflect.Value{}, fmt.Errorf("cannot navigate into map value of type %s", mapValueType.Kind())
+				}
+			} else {
+				// Handle interface values
+				if mapValue.Kind() == reflect.Interface && !mapValue.IsNil() {
+					mapValue = mapValue.Elem()
+				}
+				v = mapValue
+			}
+			continue
+		}
+
+		// Find the field in the struct
+		field := c.findField(v, part)
+		if !field.IsValid() {
+			return reflect.Value{}, fmt.Errorf("field '%s' not found in struct '%s'", part, v.Type().Name())
+		}
+
+		// If this is the last part, return the field
+		if i == len(parts)-1 {
+			return field, nil
+		}
+
+		// Navigate deeper
+		if field.Kind() == reflect.Struct {
+			v = field
+		} else if field.Kind() == reflect.Ptr {
+			if field.IsNil() {
+				// Initialize nil pointer
+				field.Set(reflect.New(field.Type().Elem()))
+			}
+			v = field.Elem()
+		} else if field.Kind() == reflect.Map {
+			if field.IsNil() {
+				field.Set(reflect.MakeMap(field.Type()))
+			}
+			v = field
+		} else {
+			return reflect.Value{}, fmt.Errorf("cannot navigate through field '%s' of type %s", part, field.Kind())
+		}
+	}
+
+	return v, nil
+}
+
+// setFieldValueTyped sets a field value with proper type conversion
+func (c *CLIIntegration) setFieldValueTyped(field reflect.Value, value interface{}) error {
+	if !field.IsValid() {
+		return fmt.Errorf("invalid field")
+	}
+
+	if !field.CanSet() {
+		return fmt.Errorf("cannot set field")
+	}
+
+	// Get the value as a reflect.Value
+	valueReflect := reflect.ValueOf(value)
+
+	// Handle different field types
+	switch field.Kind() {
+	case reflect.String:
+		return c.setStringField(field, value)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return c.setIntField(field, value)
+	case reflect.Bool:
+		return c.setBoolField(field, value)
+	case reflect.Slice:
+		return c.setSliceField(field, value)
+	case reflect.Map:
+		return c.setMapFieldValue(field, value)
+	case reflect.Interface:
+		// For interface{} fields, set the value directly
+		field.Set(valueReflect)
+		return nil
+	case reflect.Ptr:
+		// Handle pointer fields
+		if field.IsNil() {
+			field.Set(reflect.New(field.Type().Elem()))
+		}
+		return c.setFieldValueTyped(field.Elem(), value)
+	default:
+		return fmt.Errorf("unsupported field type: %s", field.Kind())
+	}
+}
+
+// setStringField sets a string field from various value types
+func (c *CLIIntegration) setStringField(field reflect.Value, value interface{}) error {
+	switch v := value.(type) {
+	case string:
+		field.SetString(v)
+	case int, int8, int16, int32, int64:
+		field.SetString(fmt.Sprintf("%d", v))
+	case float32, float64:
+		field.SetString(fmt.Sprintf("%f", v))
+	case bool:
+		field.SetString(fmt.Sprintf("%t", v))
+	default:
+		field.SetString(fmt.Sprintf("%v", v))
+	}
+	return nil
+}
+
+// setIntField sets an integer field from various value types
+func (c *CLIIntegration) setIntField(field reflect.Value, value interface{}) error {
+	switch v := value.(type) {
+	case int:
+		field.SetInt(int64(v))
+	case int8:
+		field.SetInt(int64(v))
+	case int16:
+		field.SetInt(int64(v))
+	case int32:
+		field.SetInt(int64(v))
+	case int64:
+		field.SetInt(v)
+	case float32:
+		field.SetInt(int64(v))
+	case float64:
+		field.SetInt(int64(v))
+	case string:
+		i, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return fmt.Errorf("cannot convert string '%s' to int: %w", v, err)
+		}
+		field.SetInt(i)
+	default:
+		return fmt.Errorf("cannot convert %T to int", value)
+	}
+	return nil
+}
+
+// setBoolField sets a boolean field from various value types
+func (c *CLIIntegration) setBoolField(field reflect.Value, value interface{}) error {
+	switch v := value.(type) {
+	case bool:
+		field.SetBool(v)
+	case string:
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return fmt.Errorf("cannot convert string '%s' to bool: %w", v, err)
+		}
+		field.SetBool(b)
+	case int, int8, int16, int32, int64:
+		field.SetBool(reflect.ValueOf(v).Int() != 0)
+	default:
+		return fmt.Errorf("cannot convert %T to bool", value)
+	}
+	return nil
+}
+
+// setSliceField sets a slice field from various value types
+func (c *CLIIntegration) setSliceField(field reflect.Value, value interface{}) error {
+	valueReflect := reflect.ValueOf(value)
+
+	// If value is already a slice, convert it
+	if valueReflect.Kind() == reflect.Slice {
+		// Create a new slice of the correct type
+		newSlice := reflect.MakeSlice(field.Type(), valueReflect.Len(), valueReflect.Len())
+		
+		// Copy elements with type conversion
+		for i := 0; i < valueReflect.Len(); i++ {
+			elem := valueReflect.Index(i)
+			newElem := newSlice.Index(i)
+			
+			if err := c.setFieldValueTyped(newElem, elem.Interface()); err != nil {
+				return fmt.Errorf("failed to set slice element %d: %w", i, err)
+			}
+		}
+		
+		field.Set(newSlice)
+		return nil
+	}
+
+	// If value is a single item, create a slice with one element
+	newSlice := reflect.MakeSlice(field.Type(), 1, 1)
+	if err := c.setFieldValueTyped(newSlice.Index(0), value); err != nil {
+		return fmt.Errorf("failed to set slice element: %w", err)
+	}
+	field.Set(newSlice)
+	return nil
+}
+
+// setMapFieldValue sets a map field from various value types
+func (c *CLIIntegration) setMapFieldValue(field reflect.Value, value interface{}) error {
+	valueReflect := reflect.ValueOf(value)
+
+	// If value is already a map, convert it
+	if valueReflect.Kind() == reflect.Map {
+		// Create a new map of the correct type
+		newMap := reflect.MakeMap(field.Type())
+		
+		// Copy key-value pairs with type conversion
+		iter := valueReflect.MapRange()
+		for iter.Next() {
+			key := iter.Key()
+			val := iter.Value()
+			
+			// Convert key
+			newKey := reflect.New(field.Type().Key()).Elem()
+			if err := c.setFieldValueTyped(newKey, key.Interface()); err != nil {
+				return fmt.Errorf("failed to convert map key: %w", err)
+			}
+			
+			// Convert value
+			newVal := reflect.New(field.Type().Elem()).Elem()
+			if err := c.setFieldValueTyped(newVal, val.Interface()); err != nil {
+				return fmt.Errorf("failed to convert map value: %w", err)
+			}
+			
+			newMap.SetMapIndex(newKey, newVal)
+		}
+		
+		field.Set(newMap)
+		return nil
+	}
+
+	return fmt.Errorf("cannot convert %T to map", value)
+}
+
+// applyArrayOperationToStruct applies an array operation to a struct field
+func (c *CLIIntegration) applyArrayOperationToStruct(configStruct interface{}, arrayOp *ArrayOperationFlag) error {
+	// Navigate to the array field
+	field, err := c.navigateToField(configStruct, c.flagNameToFieldPath(arrayOp.Path))
+	if err != nil {
+		return err
+	}
+
+	if field.Kind() != reflect.Slice {
+		return fmt.Errorf("field '%s' is not a slice", arrayOp.Path)
+	}
+
+	// Apply the operation based on the operation type
+	switch arrayOp.Operation {
+	case "append":
+		// Append the value to the slice
+		newElem := reflect.New(field.Type().Elem()).Elem()
+		if err := c.setFieldValueTyped(newElem, arrayOp.Value); err != nil {
+			return err
+		}
+		field.Set(reflect.Append(field, newElem))
+
+	case "insert":
+		// Insert at the specified index
+		if arrayOp.Index < 0 || arrayOp.Index > field.Len() {
+			return fmt.Errorf("index %d out of range for slice of length %d", arrayOp.Index, field.Len())
+		}
+		
+		newElem := reflect.New(field.Type().Elem()).Elem()
+		if err := c.setFieldValueTyped(newElem, arrayOp.Value); err != nil {
+			return err
+		}
+		
+		// Create new slice with room for one more element
+		newSlice := reflect.MakeSlice(field.Type(), field.Len()+1, field.Len()+1)
+		
+		// Copy elements before insertion point
+		reflect.Copy(newSlice, field.Slice(0, arrayOp.Index))
+		
+		// Set the new element
+		newSlice.Index(arrayOp.Index).Set(newElem)
+		
+		// Copy elements after insertion point
+		if arrayOp.Index < field.Len() {
+			reflect.Copy(newSlice.Slice(arrayOp.Index+1, newSlice.Len()), field.Slice(arrayOp.Index, field.Len()))
+		}
+		
+		field.Set(newSlice)
+
+	case "remove":
+		// Remove the element at the specified index
+		if arrayOp.Index < 0 || arrayOp.Index >= field.Len() {
+			return fmt.Errorf("index %d out of range for slice of length %d", arrayOp.Index, field.Len())
+		}
+		
+		// Create new slice without the element
+		newSlice := reflect.MakeSlice(field.Type(), field.Len()-1, field.Len()-1)
+		
+		// Copy elements before removal point
+		reflect.Copy(newSlice, field.Slice(0, arrayOp.Index))
+		
+		// Copy elements after removal point
+		if arrayOp.Index < field.Len()-1 {
+			reflect.Copy(newSlice.Slice(arrayOp.Index, newSlice.Len()), field.Slice(arrayOp.Index+1, field.Len()))
+		}
+		
+		field.Set(newSlice)
+
+	default:
+		return fmt.Errorf("unsupported array operation: %s", arrayOp.Operation)
+	}
+
+	return nil
+}
+
+// applyMapOperationToStruct applies a map operation to a struct field
+func (c *CLIIntegration) applyMapOperationToStruct(configStruct interface{}, mapOp *MapFlag) error {
+	// Navigate to the map field
+	field, err := c.navigateToField(configStruct, c.flagNameToFieldPath(mapOp.Path))
+	if err != nil {
+		return err
+	}
+
+	if field.Kind() != reflect.Map {
+		return fmt.Errorf("field '%s' is not a map", mapOp.Path)
+	}
+
+	// Ensure map is initialized
+	if field.IsNil() {
+		field.Set(reflect.MakeMap(field.Type()))
+	}
+
+	// Apply the operation based on the operation type
+	switch mapOp.Operation {
+	case "set":
+		// Set a single key-value pair
+		key := reflect.ValueOf(mapOp.Key)
+		val := reflect.New(field.Type().Elem()).Elem()
+		if err := c.setFieldValueTyped(val, mapOp.Value); err != nil {
+			return err
+		}
+		field.SetMapIndex(key, val)
+
+	case "merge":
+		// Merge a map into the existing map
+		valueMap, ok := mapOp.Value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("merge operation requires a map value")
+		}
+		
+		for k, v := range valueMap {
+			key := reflect.ValueOf(k)
+			val := reflect.New(field.Type().Elem()).Elem()
+			if err := c.setFieldValueTyped(val, v); err != nil {
+				return fmt.Errorf("failed to set map value for key '%s': %w", k, err)
+			}
+			field.SetMapIndex(key, val)
+		}
+
+	case "remove":
+		// Remove a key from the map
+		key := reflect.ValueOf(mapOp.Key)
+		field.SetMapIndex(key, reflect.Value{})
+
+	default:
+		return fmt.Errorf("unsupported map operation: %s", mapOp.Operation)
+	}
+
+	return nil
 }

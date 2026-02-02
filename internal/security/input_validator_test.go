@@ -17,13 +17,19 @@ limitations under the License.
 package security
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
+	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
 )
 
 func TestValidateClusterName(t *testing.T) {
-	validator := NewDefaultInputValidator()
+	engine := validation.NewValidationEngine()
+	engine.MustRegister(validators.NewClusterNameValidator())
+	ctx := context.Background()
 
 	tests := []struct {
 		name      string
@@ -119,16 +125,20 @@ func TestValidateClusterName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validator.ValidateClusterName(tt.input)
+			result, err := engine.Validate(ctx, "cluster-name", tt.input)
+			if err != nil {
+				t.Fatalf("Validation engine error: %v", err)
+			}
+			
 			if tt.wantError {
-				if err == nil {
+				if result.Valid {
 					t.Errorf("ValidateClusterName() expected error but got none")
-				} else if tt.errorMsg != "" && !strings.Contains(err.Error(), tt.errorMsg) {
-					t.Errorf("ValidateClusterName() error = %v, want error containing %q", err, tt.errorMsg)
+				} else if tt.errorMsg != "" && len(result.Errors) > 0 && !strings.Contains(result.Errors[0].Message, tt.errorMsg) {
+					t.Errorf("ValidateClusterName() error = %v, want error containing %q", result.Errors[0].Message, tt.errorMsg)
 				}
 			} else {
-				if err != nil {
-					t.Errorf("ValidateClusterName() unexpected error = %v", err)
+				if !result.Valid {
+					t.Errorf("ValidateClusterName() unexpected error = %v", result.Errors)
 				}
 			}
 		})
@@ -136,7 +146,9 @@ func TestValidateClusterName(t *testing.T) {
 }
 
 func TestValidateOrganizationName(t *testing.T) {
-	validator := NewDefaultInputValidator()
+	engine := validation.NewValidationEngine()
+	engine.MustRegister(validators.NewOrganizationNameValidator())
+	ctx := context.Background()
 
 	tests := []struct {
 		name      string
@@ -179,16 +191,20 @@ func TestValidateOrganizationName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validator.ValidateOrganizationName(tt.input)
+			result, err := engine.Validate(ctx, "organization-name", tt.input)
+			if err != nil {
+				t.Fatalf("Validation engine error: %v", err)
+			}
+			
 			if tt.wantError {
-				if err == nil {
+				if result.Valid {
 					t.Errorf("ValidateOrganizationName() expected error but got none")
-				} else if tt.errorMsg != "" && !strings.Contains(err.Error(), tt.errorMsg) {
-					t.Errorf("ValidateOrganizationName() error = %v, want error containing %q", err, tt.errorMsg)
+				} else if tt.errorMsg != "" && len(result.Errors) > 0 && !strings.Contains(result.Errors[0].Message, tt.errorMsg) {
+					t.Errorf("ValidateOrganizationName() error = %v, want error containing %q", result.Errors[0].Message, tt.errorMsg)
 				}
 			} else {
-				if err != nil {
-					t.Errorf("ValidateOrganizationName() unexpected error = %v", err)
+				if !result.Valid {
+					t.Errorf("ValidateOrganizationName() unexpected error = %v", result.Errors)
 				}
 			}
 		})
@@ -649,9 +665,12 @@ func TestIsValidationError(t *testing.T) {
 
 // Benchmark tests
 func BenchmarkValidateClusterName(b *testing.B) {
-	validator := NewDefaultInputValidator()
+	engine := validation.NewValidationEngine()
+	engine.MustRegister(validators.NewClusterNameValidator())
+	ctx := context.Background()
+	
 	for i := 0; i < b.N; i++ {
-		_ = validator.ValidateClusterName("my-cluster-123")
+		_, _ = engine.Validate(ctx, "cluster-name", "my-cluster-123")
 	}
 }
 

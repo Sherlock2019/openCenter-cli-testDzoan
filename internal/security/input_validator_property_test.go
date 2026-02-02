@@ -17,12 +17,15 @@ limitations under the License.
 package security
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	"github.com/leanovate/gopter"
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
+	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
+	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
 )
 
 // Feature: security-and-operational-remediation, Property 1: Input Validation Rejects Invalid Patterns
@@ -36,14 +39,18 @@ func TestProperty_InputValidationRejectsInvalidPatterns(t *testing.T) {
 	properties := gopter.NewProperties(parameters)
 
 	validator := NewDefaultInputValidator()
+	engine := validation.NewValidationEngine()
+	engine.MustRegister(validators.NewClusterNameValidator())
+	engine.MustRegister(validators.NewOrganizationNameValidator())
+	ctx := context.Background()
 
 	// Property 1.1: Cluster names with path traversal are rejected
 	properties.Property("cluster names with path traversal are rejected", prop.ForAll(
 		func(name string) bool {
 			// If name contains path traversal sequences, it must be rejected
 			if strings.Contains(name, "..") {
-				err := validator.ValidateClusterName(name)
-				return err != nil && IsValidationError(err)
+				result, err := engine.Validate(ctx, "cluster-name", name)
+				return err == nil && !result.Valid
 			}
 			return true // Names without ".." may pass or fail based on other rules
 		},
@@ -55,8 +62,8 @@ func TestProperty_InputValidationRejectsInvalidPatterns(t *testing.T) {
 		func(name string) bool {
 			// If name contains path separators, it must be rejected
 			if strings.Contains(name, "/") || strings.Contains(name, "\\") {
-				err := validator.ValidateClusterName(name)
-				return err != nil && IsValidationError(err)
+				result, err := engine.Validate(ctx, "cluster-name", name)
+				return err == nil && !result.Valid
 			}
 			return true // Names without separators may pass or fail based on other rules
 		},
@@ -68,8 +75,8 @@ func TestProperty_InputValidationRejectsInvalidPatterns(t *testing.T) {
 		func(org string) bool {
 			// If org contains path traversal sequences, it must be rejected
 			if strings.Contains(org, "..") {
-				err := validator.ValidateOrganizationName(org)
-				return err != nil && IsValidationError(err)
+				result, err := engine.Validate(ctx, "organization-name", org)
+				return err == nil && !result.Valid
 			}
 			return true // Orgs without ".." may pass or fail based on other rules
 		},
@@ -81,8 +88,8 @@ func TestProperty_InputValidationRejectsInvalidPatterns(t *testing.T) {
 		func(org string) bool {
 			// If org contains path separators, it must be rejected
 			if strings.Contains(org, "/") || strings.Contains(org, "\\") {
-				err := validator.ValidateOrganizationName(org)
-				return err != nil && IsValidationError(err)
+				result, err := engine.Validate(ctx, "organization-name", org)
+				return err == nil && !result.Valid
 			}
 			return true // Orgs without separators may pass or fail based on other rules
 		},
@@ -202,8 +209,8 @@ func TestProperty_InputValidationRejectsInvalidPatterns(t *testing.T) {
 
 			// Ensure it starts with alphanumeric and contains only valid chars
 			validName := genValidClusterName(name)
-			err := validator.ValidateClusterName(validName)
-			return err == nil
+			result, err := engine.Validate(ctx, "cluster-name", validName)
+			return err == nil && result.Valid
 		},
 		gen.AlphaString(),
 	))
@@ -218,8 +225,8 @@ func TestProperty_InputValidationRejectsInvalidPatterns(t *testing.T) {
 
 			// Ensure it starts with alphanumeric and contains only valid chars
 			validOrg := genValidClusterName(org)
-			err := validator.ValidateOrganizationName(validOrg)
-			return err == nil
+			result, err := engine.Validate(ctx, "organization-name", validOrg)
+			return err == nil && result.Valid
 		},
 		gen.AlphaString(),
 	))

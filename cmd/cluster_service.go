@@ -352,12 +352,11 @@ func validateService(serviceName string, serviceCfg any, secretsCfg *config.Secr
 			}
 
 			if storageType == "swift" {
-				// Check for application credentials (recommended) or legacy credentials
+				// Check for application credentials
 				hasAppCreds := cfg.SwiftApplicationCredentialID != "" && secretsCfg.Loki.SwiftApplicationCredentialSecret != ""
-				hasLegacyCreds := cfg.SwiftUsername != "" && secretsCfg.Loki.SwiftPassword != ""
 
-				if !hasAppCreds && !hasLegacyCreds {
-					return fmt.Errorf("missing required Swift credentials for service 'loki'.\nRecommended: --param=\"swift_application_credential_id=your-app-cred-id\" --secret=\"swift_application_credential_secret=your-secret\"\nOr legacy: --param=\"swift_username=your-username\" --secret=\"swift_password=your-password\"")
+				if !hasAppCreds {
+					return fmt.Errorf("missing required Swift credentials for service 'loki'.\nRequired: --param=\"swift_application_credential_id=your-app-cred-id\" --secret=\"swift_application_credential_secret=your-secret\"")
 				}
 			} else if storageType == "s3" {
 				// S3 credentials are optional (can use IAM roles), but if provided, both must be set

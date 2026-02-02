@@ -149,7 +149,7 @@ func setupSetupContainer(container di.Container) error {
 		}
 		baseDir = filepath.Join(home, ".config", "opencenter")
 	}
-	
+
 	pathResolver, err := di.ProvidePathResolver(baseDir)
 	if err != nil {
 		return err

@@ -68,6 +68,50 @@ func IsGitOpsInitialized(gitDir string) (bool, error) {
 	return false, nil
 }
 
+// copyWorkspaceToTarget copies all files from workspace to target directory.
+// This is used to finalize atomic operations by moving files from the workspace
+// to the final destination.
+func copyWorkspaceToTarget(workspaceDir, targetDir string) error {
+	return filepath.Walk(workspaceDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		
+		// Skip directories
+		if info.IsDir() {
+			return nil
+		}
+		
+		// Get relative path
+		relPath, err := filepath.Rel(workspaceDir, path)
+		if err != nil {
+			return err
+		}
+		
+		// Skip temp directory
+		if strings.HasPrefix(relPath, ".tmp") {
+			return nil
+		}
+		
+		// Create destination path
+		dstPath := filepath.Join(targetDir, relPath)
+		
+		// Ensure destination directory exists
+		if err := os.MkdirAll(filepath.Dir(dstPath), 0o755); err != nil {
+			return err
+		}
+		
+		// Read source file
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		
+		// Write to destination
+		return os.WriteFile(dstPath, data, info.Mode())
+	})
+}
+
 // CopyBase copies or renders embedded files from gitops-base-dir into the target directory
 // specified by cfg.GitOps().GitDir.
 //
@@ -92,82 +136,23 @@ func CopyBase(cfg config.Config, render bool) error {
 	if target == "" {
 		return fmt.Errorf("opencenter.gitops.git_dir must be set")
 	}
-	// Create target directory if missing
-	if err := os.MkdirAll(target, 0o755); err != nil {
-		return err
-	}
-	// Walk embedded files
-	err := fs.WalkDir(Files, "gitops-base-dir", func(path string, d fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if d.IsDir() {
-			return nil
-		}
-		rel, err := filepath.Rel("gitops-base-dir", path)
-		if err != nil {
-			return err
-		}
-		dst := filepath.Join(target, rel)
-		name := d.Name()
-		isTpl := strings.HasSuffix(name, ".tpl")
-		isTmpl := strings.HasSuffix(name, ".tmpl")
-		if isTpl || isTmpl {
-			shouldRender := render || isTpl
-			if shouldRender {
-				if isTpl {
-					dst = strings.TrimSuffix(dst, ".tpl")
-				} else {
-					dst = strings.TrimSuffix(dst, ".tmpl")
-				}
-				return renderTemplate(path, dst, cfg)
-			}
-			return copyFile(path, dst)
-		}
-		// Copy file as-is
-		return copyFile(path, dst)
-	})
-	return err
-}
-
-// renderTemplate reads the embedded template file at path, executes
-// it using the provided configuration, and writes the result to dst.
-// It handles special cases where template files contain non-Go template syntax.
-//
-// Deprecated: Use renderTemplateAtomic with a workspace for atomic file operations.
-func renderTemplate(path, dst string, cfg config.Config) error {
-	data, err := Files.ReadFile(path)
+	
+	// Use atomic version with temporary workspace
+	tempDir := os.TempDir()
+	manager := NewWorkspaceManager(tempDir)
+	workspace, err := manager.CreateWorkspace(context.Background(), cfg)
 	if err != nil {
+		return fmt.Errorf("creating workspace: %w", err)
+	}
+	defer manager.CleanupWorkspace(context.Background(), workspace)
+	
+	// Copy to workspace atomically
+	if err := CopyBaseAtomic(cfg, render, workspace); err != nil {
 		return err
 	}
-
-	// Handle special cases for files that contain conflicting template syntax
-	content := string(data)
-	filename := filepath.Base(path)
-
-	// For Makefile.tpl, escape Helm template syntax to prevent Go template parsing conflicts
-	if filename == "Makefile.tpl" {
-		// Replace Helm template syntax with escaped version for Go template processing
-		content = strings.ReplaceAll(content, `--template="{{.Version}}"`, `--template="{{"{{"}}.Version{{"}}"}}"`)
-	}
-
-	t, err := template.New(filename).Funcs(sprig.TxtFuncMap()).Parse(content)
-	if err != nil {
-		return fmt.Errorf("failed to parse template %s: %w", path, err)
-	}
-	// Ensure directory exists
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return err
-	}
-	f, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	if err := t.Execute(f, cfg); err != nil {
-		return fmt.Errorf("failed to execute template %s: %w", path, err)
-	}
-	return nil
+	
+	// Copy from workspace to target
+	return copyWorkspaceToTarget(workspace.RootDir, target)
 }
 
 // renderTemplateAtomic reads the embedded template file at path, executes
@@ -211,22 +196,6 @@ func renderTemplateAtomic(path, dst string, cfg config.Config, workspace *GitOps
 	return writer.WriteFileString(relPath, buf.String(), 0o644)
 }
 
-// copyFile copies an embedded file from src to dst without
-// interpretation. The dst file is created with default permissions.
-//
-// Deprecated: Use copyFileAtomic with a workspace for atomic file operations.
-func copyFile(src, dst string) error {
-	data, err := Files.ReadFile(src)
-	if err != nil {
-		return err
-	}
-	// Ensure directory
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return err
-	}
-	return os.WriteFile(dst, data, 0o644)
-}
-
 // copyFileAtomic copies an embedded file from src to dst atomically within a workspace.
 // The file is written atomically to prevent partial writes.
 func copyFileAtomic(src, dst string, workspace *GitOpsWorkspace) error {
@@ -264,11 +233,14 @@ func shouldSkipFile(relPath string, cfg config.Config) bool {
 				extractedServiceName = strings.TrimSuffix(extractedServiceName, ".yaml")
 				extractedServiceName = strings.TrimSuffix(extractedServiceName, ".yaml.tpl")
 
-				// Check if this service is disabled
+				// Check if this service exists and is enabled
 				if service, exists := cfg.OpenCenter.Services[extractedServiceName]; exists {
 					if IsServiceDisabled(service) {
 						return true
 					}
+				} else {
+					// Service not in config - skip it
+					return true
 				}
 			}
 		} else {
@@ -277,6 +249,9 @@ func shouldSkipFile(relPath string, cfg config.Config) bool {
 				if IsServiceDisabled(service) {
 					return true
 				}
+			} else {
+				// Service not in config - skip it
+				return true
 			}
 		}
 	}
@@ -294,11 +269,14 @@ func shouldSkipFile(relPath string, cfg config.Config) bool {
 				extractedServiceName = strings.TrimSuffix(extractedServiceName, ".yaml")
 				extractedServiceName = strings.TrimSuffix(extractedServiceName, ".yaml.tpl")
 
-				// Check if this managed service is disabled
+				// Check if this managed service exists and is enabled
 				if service, exists := cfg.OpenCenter.ManagedService[extractedServiceName]; exists {
 					if IsServiceDisabled(service) {
 						return true
 					}
+				} else {
+					// Managed service not in config - skip it
+					return true
 				}
 			}
 		} else {
@@ -307,6 +285,9 @@ func shouldSkipFile(relPath string, cfg config.Config) bool {
 				if IsServiceDisabled(service) {
 					return true
 				}
+			} else {
+				// Managed service not in config - skip it
+				return true
 			}
 		}
 	}
@@ -342,44 +323,91 @@ func RenderClusterApps(cfg config.Config) error {
 		return err
 	}
 
-	// Walk embedded cluster-apps-base files
-	return fs.WalkDir(Files, "templates/cluster-apps-base", func(path string, d fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if d.IsDir() {
-			return nil
-		}
+	// Clean up disabled services before rendering
+	if err := cleanupDisabledServices(target, cfg); err != nil {
+		return fmt.Errorf("failed to cleanup disabled services: %w", err)
+	}
 
-		rel, err := filepath.Rel("templates/cluster-apps-base", path)
+	// Create a temporary workspace for atomic operations
+	tempDir := os.TempDir()
+	manager := NewWorkspaceManager(tempDir)
+	workspace, err := manager.CreateWorkspace(context.Background(), cfg)
+	if err != nil {
+		return fmt.Errorf("creating workspace: %w", err)
+	}
+	defer manager.CleanupWorkspace(context.Background(), workspace)
+	
+	// Use atomic version
+	if err := RenderClusterAppsAtomic(cfg, workspace); err != nil {
+		return err
+	}
+	
+	// Copy files from workspace to target
+	return copyWorkspaceToTarget(workspace.RootDir, target)
+}
+
+// cleanupDisabledServices removes service directories that are not enabled in the configuration.
+// This ensures that when services are disabled or removed from config, their directories are cleaned up.
+func cleanupDisabledServices(targetDir string, cfg config.Config) error {
+	// Clean up regular services
+	servicesDir := filepath.Join(targetDir, "services")
+	if _, err := os.Stat(servicesDir); err == nil {
+		entries, err := os.ReadDir(servicesDir)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to read services directory: %w", err)
 		}
 
-		// Skip files for disabled services
-		if shouldSkipFile(rel, cfg) {
-			return nil
-		}
-
-		// Replace cluster-name and cluster_name placeholders in filename
-		relWithClusterName := strings.ReplaceAll(rel, "cluster-name", clusterName)
-		relWithClusterName = strings.ReplaceAll(relWithClusterName, "cluster_name", clusterName)
-
-		dst := filepath.Join(target, relWithClusterName)
-
-		// If template file, process and strip template extension
-		if strings.HasSuffix(d.Name(), ".tmpl") || strings.HasSuffix(d.Name(), ".tpl") {
-			if strings.HasSuffix(d.Name(), ".tmpl") {
-				dst = strings.TrimSuffix(dst, ".tmpl")
-			} else {
-				dst = strings.TrimSuffix(dst, ".tpl")
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
 			}
-			return renderTemplate(path, dst, cfg)
+
+			serviceName := entry.Name()
+			// Skip special directories
+			if serviceName == "sources" || serviceName == "." || serviceName == ".." {
+				continue
+			}
+
+			// Check if service should be removed
+			if service, exists := cfg.OpenCenter.Services[serviceName]; !exists || IsServiceDisabled(service) {
+				serviceDir := filepath.Join(servicesDir, serviceName)
+				if err := os.RemoveAll(serviceDir); err != nil {
+					return fmt.Errorf("failed to remove disabled service directory %s: %w", serviceName, err)
+				}
+			}
+		}
+	}
+
+	// Clean up managed services
+	managedServicesDir := filepath.Join(targetDir, "managed-services")
+	if _, err := os.Stat(managedServicesDir); err == nil {
+		entries, err := os.ReadDir(managedServicesDir)
+		if err != nil {
+			return fmt.Errorf("failed to read managed-services directory: %w", err)
 		}
 
-		// Copy file as-is
-		return copyFile(path, dst)
-	})
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+
+			serviceName := entry.Name()
+			// Skip special directories
+			if serviceName == "sources" || serviceName == "." || serviceName == ".." {
+				continue
+			}
+
+			// Check if managed service should be removed
+			if service, exists := cfg.OpenCenter.ManagedService[serviceName]; !exists || IsServiceDisabled(service) {
+				serviceDir := filepath.Join(managedServicesDir, serviceName)
+				if err := os.RemoveAll(serviceDir); err != nil {
+					return fmt.Errorf("failed to remove disabled managed service directory %s: %w", serviceName, err)
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 // RenderInfrastructureCluster renders infrastructure-cluster-template to infrastructure/clusters/<cluster-name>/
@@ -410,68 +438,22 @@ func RenderInfrastructureCluster(cfg config.Config) error {
 		return err
 	}
 
-	// Determine which main.tf template to use based on provider
-	provider := cfg.OpenCenter.Infrastructure.Provider
-	if provider == "" {
-		provider = "openstack" // default
+	// Create a temporary workspace for atomic operations
+	tempDir := os.TempDir()
+	manager := NewWorkspaceManager(tempDir)
+	workspace, err := manager.CreateWorkspace(context.Background(), cfg)
+	if err != nil {
+		return fmt.Errorf("creating workspace: %w", err)
 	}
-
-	// Map provider to template file
-	var mainTfTemplate string
-	switch provider {
-	case "baremetal":
-		mainTfTemplate = "main-baremetal.tf.tpl"
-	default:
-		// openstack and all other providers use main-default.tf.tpl
-		mainTfTemplate = "main-default.tf.tpl"
+	defer manager.CleanupWorkspace(context.Background(), workspace)
+	
+	// Use atomic version
+	if err := RenderInfrastructureClusterAtomic(cfg, workspace); err != nil {
+		return err
 	}
-
-	// Walk embedded infrastructure-cluster-template files
-	return fs.WalkDir(Files, "templates/infrastructure-cluster-template", func(path string, d fs.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if d.IsDir() {
-			return nil
-		}
-
-		rel, err := filepath.Rel("templates/infrastructure-cluster-template", path)
-		if err != nil {
-			return err
-		}
-
-		filename := d.Name()
-
-		// Skip provider-specific main.tf templates that don't match current provider
-		if filename == "main-baremetal.tf.tpl" || filename == "main-default.tf.tpl" {
-			if filename != mainTfTemplate {
-				// Skip this template, it's not for the current provider
-				return nil
-			}
-			// This is the correct template for the provider, render it as main.tf
-			dst := filepath.Join(target, "main.tf")
-			return renderTemplate(path, dst, cfg)
-		}
-
-		// Replace cluster-name and cluster_name placeholders in filename
-		relWithClusterName := strings.ReplaceAll(rel, "cluster-name", clusterName)
-		relWithClusterName = strings.ReplaceAll(relWithClusterName, "cluster_name", clusterName)
-
-		dst := filepath.Join(target, relWithClusterName)
-
-		// If template file, process and strip template extension
-		if strings.HasSuffix(d.Name(), ".tmpl") || strings.HasSuffix(d.Name(), ".tpl") {
-			if strings.HasSuffix(d.Name(), ".tmpl") {
-				dst = strings.TrimSuffix(dst, ".tmpl")
-			} else {
-				dst = strings.TrimSuffix(dst, ".tpl")
-			}
-			return renderTemplate(path, dst, cfg)
-		}
-
-		// Copy file as-is
-		return copyFile(path, dst)
-	})
+	
+	// Copy files from workspace to target
+	return copyWorkspaceToTarget(workspace.RootDir, target)
 }
 
 // RenderSingleService renders only the specified service to the cluster apps directory.
@@ -506,8 +488,17 @@ func RenderSingleService(cfg config.Config, serviceName string, isManaged bool) 
 		servicePrefix = "managed-services"
 	}
 
+	// Create a temporary workspace for atomic operations
+	tempDir := os.TempDir()
+	manager := NewWorkspaceManager(tempDir)
+	workspace, err := manager.CreateWorkspace(context.Background(), cfg)
+	if err != nil {
+		return fmt.Errorf("creating workspace: %w", err)
+	}
+	defer manager.CleanupWorkspace(context.Background(), workspace)
+
 	// Walk embedded cluster-apps-base files and only process the specified service
-	return fs.WalkDir(Files, "templates/cluster-apps-base", func(path string, d fs.DirEntry, walkErr error) error {
+	err = fs.WalkDir(Files, "templates/cluster-apps-base", func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
@@ -558,7 +549,7 @@ func RenderSingleService(cfg config.Config, serviceName string, isManaged bool) 
 		relWithClusterName := strings.ReplaceAll(rel, "cluster-name", clusterName)
 		relWithClusterName = strings.ReplaceAll(relWithClusterName, "cluster_name", clusterName)
 
-		dst := filepath.Join(target, relWithClusterName)
+		dst := filepath.Join(workspace.RootDir, relWithClusterName)
 
 		// If template file, process and strip template extension
 		if strings.HasSuffix(d.Name(), ".tmpl") || strings.HasSuffix(d.Name(), ".tpl") {
@@ -567,12 +558,19 @@ func RenderSingleService(cfg config.Config, serviceName string, isManaged bool) 
 			} else {
 				dst = strings.TrimSuffix(dst, ".tpl")
 			}
-			return renderTemplate(path, dst, cfg)
+			return renderTemplateAtomic(path, dst, cfg, workspace)
 		}
 
 		// Copy file as-is
-		return copyFile(path, dst)
+		return copyFileAtomic(path, dst, workspace)
 	})
+	
+	if err != nil {
+		return err
+	}
+	
+	// Copy files from workspace to target
+	return copyWorkspaceToTarget(workspace.RootDir, target)
 }
 
 // IsServiceDisabled checks if a service configuration has Enabled set to false.

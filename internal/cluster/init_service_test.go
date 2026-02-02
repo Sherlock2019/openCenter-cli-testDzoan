@@ -11,6 +11,22 @@ import (
 	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
 )
 
+// setupValidationEngine creates a validation engine with required validators
+func setupValidationEngine(t *testing.T) *validation.ValidationEngine {
+	t.Helper()
+	engine := validation.NewValidationEngine()
+	
+	if err := engine.Register(validators.NewClusterNameValidator()); err != nil {
+		t.Fatalf("Failed to register cluster validator: %v", err)
+	}
+	
+	if err := engine.Register(validators.NewOrganizationNameValidator()); err != nil {
+		t.Fatalf("Failed to register organization validator: %v", err)
+	}
+	
+	return engine
+}
+
 func TestInitService_Initialize(t *testing.T) {
 	// Create temporary directory for test
 	tmpDir := t.TempDir()
@@ -18,12 +34,8 @@ func TestInitService_Initialize(t *testing.T) {
 	// Create path resolver with test directory
 	pathResolver := paths.NewPathResolver(tmpDir)
 
-	// Create validation engine with cluster name validator
-	validationEngine := validation.NewValidationEngine()
-	clusterValidator := validators.NewClusterNameValidator()
-	if err := validationEngine.Register(clusterValidator); err != nil {
-		t.Fatalf("Failed to register cluster validator: %v", err)
-	}
+	// Create validation engine with validators
+	validationEngine := setupValidationEngine(t)
 
 	// Create config manager
 	configManager, err := config.NewConfigManager("")
@@ -126,12 +138,8 @@ func TestInitService_validateClusterName(t *testing.T) {
 	// Create path resolver
 	pathResolver := paths.NewPathResolver(tmpDir)
 
-	// Create validation engine with cluster name validator
-	validationEngine := validation.NewValidationEngine()
-	clusterValidator := validators.NewClusterNameValidator()
-	if err := validationEngine.Register(clusterValidator); err != nil {
-		t.Fatalf("Failed to register cluster validator: %v", err)
-	}
+	// Create validation engine with validators
+	validationEngine := setupValidationEngine(t)
 
 	// Create config manager
 	configManager, err := config.NewConfigManager("")
@@ -204,7 +212,7 @@ func TestInitService_createDefaultConfig(t *testing.T) {
 	pathResolver := paths.NewPathResolver(tmpDir)
 
 	// Create validation engine
-	validationEngine := validation.NewValidationEngine()
+	validationEngine := setupValidationEngine(t)
 
 	// Create init service
 	configManager, _ := config.NewConfigManager("")
@@ -286,7 +294,7 @@ func TestInitService_generateKeys(t *testing.T) {
 	pathResolver := paths.NewPathResolver(tmpDir)
 
 	// Create validation engine
-	validationEngine := validation.NewValidationEngine()
+	validationEngine := setupValidationEngine(t)
 
 	// Create init service
 	configManager, _ := config.NewConfigManager("")
@@ -362,7 +370,7 @@ func TestInitService_initGitRepo(t *testing.T) {
 	pathResolver := paths.NewPathResolver(tmpDir)
 
 	// Create validation engine
-	validationEngine := validation.NewValidationEngine()
+	validationEngine := setupValidationEngine(t)
 
 	// Create init service
 	configManager, _ := config.NewConfigManager("")
@@ -401,11 +409,7 @@ func TestInitService_initGitRepo(t *testing.T) {
 func TestInitService_Initialize_WithKeyGeneration(t *testing.T) {
 	tmpDir := t.TempDir()
 	pathResolver := paths.NewPathResolver(tmpDir)
-	validationEngine := validation.NewValidationEngine()
-	clusterValidator := validators.NewClusterNameValidator()
-	if err := validationEngine.Register(clusterValidator); err != nil {
-		t.Fatalf("Failed to register cluster validator: %v", err)
-	}
+	validationEngine := setupValidationEngine(t)
 
 	configManager, _ := config.NewConfigManager("")
 	initService := NewInitService(pathResolver, validationEngine, configManager)
@@ -444,11 +448,7 @@ func TestInitService_Initialize_WithKeyGeneration(t *testing.T) {
 func TestInitService_Initialize_WithGitInit(t *testing.T) {
 	tmpDir := t.TempDir()
 	pathResolver := paths.NewPathResolver(tmpDir)
-	validationEngine := validation.NewValidationEngine()
-	clusterValidator := validators.NewClusterNameValidator()
-	if err := validationEngine.Register(clusterValidator); err != nil {
-		t.Fatalf("Failed to register cluster validator: %v", err)
-	}
+	validationEngine := setupValidationEngine(t)
 
 	configManager, _ := config.NewConfigManager("")
 	initService := NewInitService(pathResolver, validationEngine, configManager)
@@ -484,11 +484,7 @@ func TestInitService_Initialize_WithGitInit(t *testing.T) {
 func TestInitService_Initialize_DifferentProviders(t *testing.T) {
 	tmpDir := t.TempDir()
 	pathResolver := paths.NewPathResolver(tmpDir)
-	validationEngine := validation.NewValidationEngine()
-	clusterValidator := validators.NewClusterNameValidator()
-	if err := validationEngine.Register(clusterValidator); err != nil {
-		t.Fatalf("Failed to register cluster validator: %v", err)
-	}
+	validationEngine := setupValidationEngine(t)
 
 	configManager, _ := config.NewConfigManager("")
 	initService := NewInitService(pathResolver, validationEngine, configManager)
@@ -526,7 +522,7 @@ func TestInitService_Initialize_DifferentProviders(t *testing.T) {
 func TestInitService_generateSOPSKey(t *testing.T) {
 	tmpDir := t.TempDir()
 	pathResolver := paths.NewPathResolver(tmpDir)
-	validationEngine := validation.NewValidationEngine()
+	validationEngine := setupValidationEngine(t)
 	configManager, _ := config.NewConfigManager("")
 	initService := NewInitService(pathResolver, validationEngine, configManager)
 
@@ -563,7 +559,7 @@ func TestInitService_generateSOPSKey(t *testing.T) {
 func TestInitService_generateSSHKey(t *testing.T) {
 	tmpDir := t.TempDir()
 	pathResolver := paths.NewPathResolver(tmpDir)
-	validationEngine := validation.NewValidationEngine()
+	validationEngine := setupValidationEngine(t)
 	configManager, _ := config.NewConfigManager("")
 	initService := NewInitService(pathResolver, validationEngine, configManager)
 
@@ -622,7 +618,7 @@ func TestInitService_generateSSHKey(t *testing.T) {
 func TestInitService_createDefaultConfig_EmptyOrganization(t *testing.T) {
 	tmpDir := t.TempDir()
 	pathResolver := paths.NewPathResolver(tmpDir)
-	validationEngine := validation.NewValidationEngine()
+	validationEngine := setupValidationEngine(t)
 	configManager, _ := config.NewConfigManager("")
 	initService := NewInitService(pathResolver, validationEngine, configManager)
 
@@ -646,7 +642,7 @@ func TestInitService_createDefaultConfig_EmptyOrganization(t *testing.T) {
 func TestInitService_NewInitService(t *testing.T) {
 	tmpDir := t.TempDir()
 	pathResolver := paths.NewPathResolver(tmpDir)
-	validationEngine := validation.NewValidationEngine()
+	validationEngine := setupValidationEngine(t)
 
 	configManager, _ := config.NewConfigManager("")
 	service := NewInitService(pathResolver, validationEngine, configManager)

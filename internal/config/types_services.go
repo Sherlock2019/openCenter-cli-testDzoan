@@ -33,17 +33,6 @@ type ServiceCfg struct {
 	GitOpsSourceRelease string `yaml:"gitops_source_release,omitempty" json:"gitops_source_release,omitempty" jsonschema:"description=GitOps source release tag"`
 	GitOpsSourceBranch  string `yaml:"gitops_source_branch,omitempty" json:"gitops_source_branch,omitempty" jsonschema:"description=GitOps source branch"`
 
-	// Legacy fields - kept for backward compatibility but should be avoided in new services
-	// TODO: Remove these fields and migrate to service-specific configuration types
-	Email    string `yaml:"email,omitempty" json:"email,omitempty" jsonschema:"description=Email address (deprecated: use service-specific config)"`
-	Region   string `yaml:"region,omitempty" json:"region,omitempty" jsonschema:"description=Cloud region (deprecated: use service-specific config)"`
-	S3Host   string `yaml:"s3_host,omitempty" json:"s3_host,omitempty" jsonschema:"description=S3 host (deprecated: use service-specific config)"`
-	S3Region string `yaml:"s3_region,omitempty" json:"s3_region,omitempty" jsonschema:"description=S3 region (deprecated: use service-specific config)"`
-
-	// Alert-proxy specific fields (deprecated: should be in alert-proxy specific config)
-	AlertManagerBaseUrl string `yaml:"alert_manager_base_url,omitempty" json:"alert_manager_base_url,omitempty" jsonschema:"description=Alert manager base URL (deprecated)"`
-	HTTPRouteFQDN       string `yaml:"http_route_fqdn,omitempty" json:"http_route_fqdn,omitempty" jsonschema:"description=HTTPRoute FQDN (deprecated)"`
-
 	// Cert-manager fields (deprecated: should be in cert-manager specific config)
 	LetsEncryptServer string `yaml:"letsencrypt_server,omitempty" json:"letsencrypt_server,omitempty" jsonschema:"description=LetsEncrypt ACME server URL (deprecated)"`
 

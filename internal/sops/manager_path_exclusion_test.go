@@ -30,16 +30,16 @@ import (
 // but Go's regexp package does not. The actual pattern validation happens in SOPS.
 func TestSOPSConfigInfrastructurePathExclusions(t *testing.T) {
 	clusterName := "test-cluster"
-	
+
 	// This is the pattern used in the SOPS configuration for infrastructure files
 	// Pattern: ^infrastructure/clusters/<cluster-name>/(?!(?:venv|kubespray|\.terraform|\.bin)/)(.*)
 	//
 	// The negative lookahead (?!...) ensures paths starting with venv/, kubespray/, .terraform/, or .bin/
 	// are NOT matched, effectively excluding those directories from encryption.
 	expectedPattern := `^infrastructure\/clusters\/` + clusterName + `\/(?!(?:venv|kubespray|\.terraform|\.bin)\/)(.*)`
-	
+
 	t.Logf("Expected SOPS pattern: %s", expectedPattern)
-	
+
 	// Document paths that SHOULD be encrypted (would match the pattern)
 	shouldMatch := []string{
 		"infrastructure/clusters/" + clusterName + "/main.tf",
@@ -59,18 +59,18 @@ func TestSOPSConfigInfrastructurePathExclusions(t *testing.T) {
 		"infrastructure/clusters/" + clusterName + "/venv/bin/activate",
 		"infrastructure/clusters/" + clusterName + "/venv/pyvenv.cfg",
 		"infrastructure/clusters/" + clusterName + "/venv/",
-		
+
 		// kubespray directory and contents
 		"infrastructure/clusters/" + clusterName + "/kubespray/inventory/sample/hosts.yaml",
 		"infrastructure/clusters/" + clusterName + "/kubespray/roles/kubernetes/node/tasks/main.yml",
 		"infrastructure/clusters/" + clusterName + "/kubespray/",
-		
+
 		// .terraform directory and contents
 		"infrastructure/clusters/" + clusterName + "/.terraform/providers/registry.terraform.io/hashicorp/aws/5.0.0/darwin_arm64/terraform-provider-aws_v5.0.0",
 		"infrastructure/clusters/" + clusterName + "/.terraform/terraform.tfstate",
 		"infrastructure/clusters/" + clusterName + "/.terraform/modules/modules.json",
 		"infrastructure/clusters/" + clusterName + "/.terraform/",
-		
+
 		// .bin directory and contents
 		"infrastructure/clusters/" + clusterName + "/.bin/terraform",
 		"infrastructure/clusters/" + clusterName + "/.bin/tofu",
@@ -87,7 +87,7 @@ func TestSOPSConfigInfrastructurePathExclusions(t *testing.T) {
 	for _, path := range shouldNotMatch {
 		t.Logf("  ✗ %s", path)
 	}
-	
+
 	// Verify the pattern structure is correct
 	if !strings.Contains(expectedPattern, "(?!(?:venv|") {
 		t.Error("Pattern missing venv exclusion")
@@ -120,9 +120,9 @@ func TestSOPSConfigInfrastructurePathExclusionsMultipleClusters(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.clusterName, func(t *testing.T) {
 			expectedPattern := `^infrastructure\/clusters\/` + tc.clusterName + `\/(?!(?:venv|kubespray|\.terraform|\.bin)\/)(.*)`
-			
+
 			t.Logf("Expected SOPS pattern for %s: %s", tc.clusterName, expectedPattern)
-			
+
 			// Verify pattern structure
 			if !strings.Contains(expectedPattern, tc.clusterName) {
 				t.Errorf("Pattern missing cluster name: %s", tc.clusterName)
@@ -151,9 +151,9 @@ func TestSOPSConfigSSHPublicKeyExclusion(t *testing.T) {
 	// Pattern: secrets/ssh/(?!.*\.pub$).*
 	// This matches files in secrets/ssh/ that do NOT end with .pub
 	expectedPattern := `secrets/ssh/(?!.*\.pub$).*`
-	
+
 	t.Logf("Expected SOPS pattern: %s", expectedPattern)
-	
+
 	// Document SSH private keys that SHOULD be encrypted
 	shouldMatch := []string{
 		"secrets/ssh/id_rsa",
@@ -179,7 +179,7 @@ func TestSOPSConfigSSHPublicKeyExclusion(t *testing.T) {
 	for _, path := range shouldNotMatch {
 		t.Logf("  ✗ %s", path)
 	}
-	
+
 	// Verify pattern structure
 	if !strings.Contains(expectedPattern, "secrets/ssh/") {
 		t.Error("Pattern missing secrets/ssh/ prefix")

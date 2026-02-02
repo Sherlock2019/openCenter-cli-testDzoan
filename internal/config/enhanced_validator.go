@@ -856,15 +856,6 @@ func (v *EnhancedConfigValidator) validateServiceSecrets(config *Config, aggrega
 					"Or configure a different storage backend",
 				))
 			}
-
-			if config.Secrets.Loki.SwiftPassword == "" {
-				aggregator.AddError(errors.CreateValidationError(
-					"secrets.loki.swift_password",
-					"loki requires Swift password when using Swift storage",
-					"Set secrets.loki.swift_password",
-					"Or use Swift application credentials",
-				))
-			}
 		}
 	}
 

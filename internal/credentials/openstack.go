@@ -54,12 +54,6 @@ func (c *OpenStackCredentials) IsEmpty() bool {
 	return !hasAppCreds && !hasUserPass
 }
 
-// ToEnvVars converts OpenStack credentials to environment variable export statements
-// Deprecated: Use ToEnvVarsForShell instead
-func (c *OpenStackCredentials) ToEnvVars() string {
-	return c.ToEnvVarsForShell("bash")
-}
-
 // ToEnvVarsForShell converts OpenStack credentials to shell-specific environment variable export statements
 func (c *OpenStackCredentials) ToEnvVarsForShell(shell string) string {
 	var output strings.Builder

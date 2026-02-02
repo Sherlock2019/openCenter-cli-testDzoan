@@ -1090,7 +1090,7 @@ func executeSOPSSecretsList(ctx context.Context, keyFile, searchPath string, dry
 					if !shouldEncrypt {
 						shouldEncrypt = shouldFileBeEncrypted(path)
 					}
-					
+
 					if shouldEncrypt {
 						unencryptedFiles = append(unencryptedFiles, path)
 					}
@@ -1207,7 +1207,7 @@ func executeSOPSSecretsEncrypt(ctx context.Context, keyFile, searchPath string, 
 				if !shouldEncrypt {
 					shouldEncrypt = shouldFileBeEncrypted(path)
 				}
-				
+
 				if shouldEncrypt {
 					filesToEncrypt = append(filesToEncrypt, path)
 				}
@@ -1496,7 +1496,7 @@ func (m *SOPSPathMatcher) ShouldSkipPath(path string) bool {
 			if err != nil {
 				continue
 			}
-			
+
 			// If the pattern contains negative lookahead
 			if strings.Contains(rule.original.PathRegex, "(?!") {
 				// Extract the base pattern before the negative lookahead
@@ -1519,16 +1519,16 @@ func (m *SOPSPathMatcher) ShouldSkipPath(path string) bool {
 func extractBasePattern(pattern string) string {
 	// Extract pattern like "infrastructure/clusters/test-cluster/" from
 	// "^infrastructure\/clusters\/test-cluster\/(?!(?:venv|kubespray|\.terraform|\.bin)\/)(.*)"
-	
+
 	// Remove anchors and escape sequences
 	pattern = strings.TrimPrefix(pattern, "^")
 	pattern = strings.ReplaceAll(pattern, "\\/", "/")
-	
+
 	// Find the negative lookahead position
 	if idx := strings.Index(pattern, "(?!"); idx > 0 {
 		return pattern[:idx]
 	}
-	
+
 	return ""
 }
 

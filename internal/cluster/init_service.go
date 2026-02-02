@@ -171,19 +171,15 @@ func (s *InitService) validateClusterName(ctx context.Context, name string) erro
 
 // validateOrganization validates the organization name
 func (s *InitService) validateOrganization(ctx context.Context, organization string) error {
-	// Use a simple validation for now - can be enhanced with validation engine
-	if organization == "" {
-		return fmt.Errorf("organization name cannot be empty")
+	result, err := s.validationEngine.Validate(ctx, "organization-name", organization)
+	if err != nil {
+		return err
 	}
-	if len(organization) > 63 {
-		return fmt.Errorf("organization name too long (max 63 characters)")
+
+	if !result.Valid {
+		return fmt.Errorf("validation failed: %v", result.Errors)
 	}
-	// Check for valid characters (alphanumeric, hyphens, underscores)
-	for _, c := range organization {
-		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
-			return fmt.Errorf("organization name contains invalid character: %c", c)
-		}
-	}
+
 	return nil
 }
 
@@ -372,7 +368,7 @@ func (s *InitService) validateConfig(cfg *config.Config) error {
 func (s *InitService) createDirectories(ctx context.Context, clusterPaths *paths.ClusterPaths, organization string) error {
 	// Extract cluster name from the cluster directory path
 	clusterName := filepath.Base(clusterPaths.ClusterDir)
-	
+
 	// Use PathResolver to create all necessary directories
 	if err := s.pathResolver.CreateClusterDirectories(ctx, clusterName, organization); err != nil {
 		return fmt.Errorf("creating cluster directories: %w", err)

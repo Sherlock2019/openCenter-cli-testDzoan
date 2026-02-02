@@ -12,7 +12,10 @@ import (
 // DefaultValidator implements the Validator interface.
 type DefaultValidator struct {
 	// OpenStack clients will be added here as we implement specific validators
-	logger Logger
+	logger    Logger
+	cfg       *config.Config
+	projectID string
+	region    string
 }
 
 // Logger defines logging interface for the validator.
@@ -27,6 +30,16 @@ type Logger interface {
 func NewValidator(logger Logger) talos.Validator {
 	return &DefaultValidator{
 		logger: logger,
+	}
+}
+
+// NewValidatorWithConfig creates a new validator instance with configuration.
+func NewValidatorWithConfig(logger Logger, cfg *config.Config, projectID, region string) talos.Validator {
+	return &DefaultValidator{
+		logger:    logger,
+		cfg:       cfg,
+		projectID: projectID,
+		region:    region,
 	}
 }
 

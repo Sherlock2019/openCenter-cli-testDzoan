@@ -23,6 +23,8 @@ import (
 	"runtime"
 	"strings"
 
+	corePaths "github.com/rackerlabs/opencenter-cli/internal/core/paths"
+
 	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
 	"gopkg.in/yaml.v3"
 )
@@ -32,19 +34,8 @@ import (
 // standard config directory (e.g., ~/.config/opencenter on Linux).
 // The directory is created if it does not exist.
 //
-// Deprecated: Use internal/core/paths.PathResolver instead. This function will be removed in v2.0.0.
-// Migration: Replace ResolveConfigDir() with pathResolver.ResolveClusterPaths(clusterName, organization).
-//
-// Outputs:
-//   - string: The absolute path to the configuration directory.
-//   - error: An error if one occurred.
+// This is the internal implementation used by internal/core/config.
 func ResolveConfigDir() (string, error) {
-	logDeprecationWarning(
-		"config.ResolveConfigDir()",
-		"internal/core/paths.PathResolver",
-		"v2.0.0",
-	)
-
 	var err error
 	dir := os.Getenv("OPENCENTER_CONFIG_DIR")
 	if dir == "" {
@@ -108,20 +99,39 @@ func ParseClusterIdentifier(identifier string) (organization string, clusterName
 		organization = parts[0]
 		clusterName = parts[1]
 
-		// Validate both parts
-		if err := ValidateClusterName(organization); err != nil {
-			return "", "", fmt.Errorf("invalid organization name: %w", err)
+		// Validate both parts using ValidationEngine
+		ctx := context.Background()
+		validator := validators.NewClusterNameValidator()
+		
+		result, err := validator.Validate(ctx, organization)
+		if err != nil {
+			return "", "", fmt.Errorf("organization name validation failed: %w", err)
 		}
-		if err := ValidateClusterName(clusterName); err != nil {
-			return "", "", fmt.Errorf("invalid cluster name: %w", err)
+		if !result.Valid {
+			return "", "", fmt.Errorf("invalid organization name: %s", result.Errors[0].Message)
+		}
+		
+		result, err = validator.Validate(ctx, clusterName)
+		if err != nil {
+			return "", "", fmt.Errorf("cluster name validation failed: %w", err)
+		}
+		if !result.Valid {
+			return "", "", fmt.Errorf("invalid cluster name: %s", result.Errors[0].Message)
 		}
 
 		return organization, clusterName, nil
 	}
 
 	// Just cluster name, use default organization
-	if err := ValidateClusterName(identifier); err != nil {
-		return "", "", err
+	ctx := context.Background()
+	validator := validators.NewClusterNameValidator()
+	
+	result, err := validator.Validate(ctx, identifier)
+	if err != nil {
+		return "", "", fmt.Errorf("cluster name validation failed: %w", err)
+	}
+	if !result.Valid {
+		return "", "", fmt.Errorf("invalid cluster name: %s", result.Errors[0].Message)
 	}
 
 	return "opencenter", identifier, nil
@@ -208,7 +218,7 @@ func ConfigPath(name string) (string, error) {
 		if clustersDir == "" {
 			clustersDir = filepath.Join(configDir, "clusters")
 		}
-		clustersDir = ExpandPath(clustersDir)
+		clustersDir = corePaths.ExpandPath(clustersDir)
 	} else {
 		clustersDir = filepath.Join(configDir, "clusters")
 	}
@@ -754,7 +764,7 @@ func List() ([]string, error) {
 	}
 
 	// Expand environment variables and tilde in clustersDir
-	clustersDir = ExpandPath(clustersDir)
+	clustersDir = corePaths.ExpandPath(clustersDir)
 	Debugf("List: expanded clustersDir: %s", clustersDir)
 
 	var names []string

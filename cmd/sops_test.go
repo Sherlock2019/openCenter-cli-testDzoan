@@ -276,11 +276,11 @@ func TestSOPSPathMatcher(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name           string
-		path           string
-		shouldEncrypt  bool
-		shouldSkip     bool
-		description    string
+		name          string
+		path          string
+		shouldEncrypt bool
+		shouldSkip    bool
+		description   string
 	}{
 		// Infrastructure paths that SHOULD be encrypted
 		{

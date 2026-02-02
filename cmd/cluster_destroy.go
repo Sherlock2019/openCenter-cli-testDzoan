@@ -24,6 +24,7 @@ import (
 	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
 	"github.com/rackerlabs/opencenter-cli/internal/resilience"
+	"github.com/rackerlabs/opencenter-cli/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -89,13 +90,26 @@ If no cluster name is provided, the active cluster will be destroyed.`,
 
 			// Confirmation prompt unless --force is used
 			if !force {
-				// For now, skip confirmation in non-interactive mode (tests)
-				// TODO: Implement proper confirmation prompt that works with test framework
-				fmt.Fprintf(cmd.OutOrStdout(), "WARNING: This will permanently destroy cluster %q", clusterName)
+				// Create appropriate prompter based on environment
+				testMode := os.Getenv("OPENCENTER_TEST_MODE") != ""
+				prompter := ui.GetPrompter(os.Stdin, cmd.OutOrStdout(), testMode)
+
+				// Build confirmation message
+				message := fmt.Sprintf("WARNING: This will permanently destroy cluster %q", clusterName)
 				if organization != "" && organization != "opencenter" {
-					fmt.Fprintf(cmd.OutOrStdout(), " in organization %q", organization)
+					message += fmt.Sprintf(" in organization %q", organization)
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), ".\n")
+				message += ". Are you sure?"
+
+				// Prompt for confirmation
+				confirmed, err := prompter.Confirm(ctx, message)
+				if err != nil {
+					return fmt.Errorf("confirmation prompt failed: %w", err)
+				}
+				if !confirmed {
+					fmt.Fprintf(cmd.OutOrStdout(), "Destroy operation cancelled.\n")
+					return nil
+				}
 			}
 
 			// Update cluster status to "destroyed" before removal (skip for flat configs)

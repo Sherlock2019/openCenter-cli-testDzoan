@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	corePaths "github.com/rackerlabs/opencenter-cli/internal/core/paths"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
@@ -47,28 +48,6 @@ func TestDefaultCLIConfig(t *testing.T) {
 
 	if config.Defaults.Provider != "openstack" {
 		t.Errorf("Expected default provider 'openstack', got '%s'", config.Defaults.Provider)
-	}
-}
-
-func TestExpandPath(t *testing.T) {
-	// Test tilde expansion
-	home, _ := os.UserHomeDir()
-
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"~/test", filepath.Join(home, "test")},
-		{"~", home},
-		{"/absolute/path", "/absolute/path"},
-		{"relative/path", "relative/path"},
-	}
-
-	for _, test := range tests {
-		result := ExpandPath(test.input)
-		if result != test.expected {
-			t.Errorf("ExpandPath(%s) = %s, expected %s", test.input, result, test.expected)
-		}
 	}
 }
 
@@ -1118,7 +1097,7 @@ func TestPathValidationEdgeCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test direct path validation using ExpandPath and basic checks
-			expandedPath := ExpandPath(tt.path)
+			expandedPath := corePaths.ExpandPath(tt.path)
 
 			var hasError bool
 			var errorMsg string

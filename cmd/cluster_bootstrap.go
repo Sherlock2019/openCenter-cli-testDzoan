@@ -46,8 +46,8 @@ v1 configurations will be rejected with migration instructions.
 
 The bootstrap process is resumable - if a step fails, you can fix the issue
 and re-run bootstrap to continue from where it left off.`,
-		Args:  cobra.MaximumNArgs(1),
-		RunE:  runClusterBootstrap,
+		Args: cobra.MaximumNArgs(1),
+		RunE: runClusterBootstrap,
 	}
 
 	cmd.Flags().Bool("dry-run", false, "show planned actions without executing")
@@ -140,7 +140,7 @@ func setupBootstrapContainer(container di.Container) error {
 		}
 		baseDir = filepath.Join(home, ".config", "opencenter")
 	}
-	
+
 	pathResolver, err := di.ProvidePathResolver(baseDir)
 	if err != nil {
 		return err

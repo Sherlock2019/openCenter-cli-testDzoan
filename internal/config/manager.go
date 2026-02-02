@@ -20,6 +20,9 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
+	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
 )
 
 // ConfigurationManager implements the ConfigManagerInterface with caching and validation.
@@ -75,8 +78,18 @@ func NewEnhancedConfigurationManager(
 
 // LoadConfig loads a cluster configuration by name with caching support.
 func (cm *ConfigurationManager) LoadConfig(ctx context.Context, clusterName string) (*Config, error) {
-	if err := ValidateClusterName(clusterName); err != nil {
-		return nil, fmt.Errorf("invalid cluster name: %w", err)
+	// Validate cluster name using ValidationEngine
+	engine := validation.DefaultEngine()
+	if !engine.Has("cluster-name") {
+		engine.MustRegister(validators.NewClusterNameValidator())
+	}
+	
+	result, err := engine.Validate(ctx, "cluster-name", clusterName)
+	if err != nil {
+		return nil, fmt.Errorf("cluster name validation failed: %w", err)
+	}
+	if !result.Valid {
+		return nil, fmt.Errorf("invalid cluster name: %s", result.Errors[0].Message)
 	}
 
 	// Check cache first if enabled
@@ -235,8 +248,18 @@ func (cm *ConfigurationManager) ListConfigs(ctx context.Context) ([]string, erro
 
 // DeleteConfig removes a cluster configuration.
 func (cm *ConfigurationManager) DeleteConfig(ctx context.Context, clusterName string) error {
-	if err := ValidateClusterName(clusterName); err != nil {
-		return fmt.Errorf("invalid cluster name: %w", err)
+	// Validate cluster name using ValidationEngine
+	engine := validation.DefaultEngine()
+	if !engine.Has("cluster-name") {
+		engine.MustRegister(validators.NewClusterNameValidator())
+	}
+	
+	result, err := engine.Validate(ctx, "cluster-name", clusterName)
+	if err != nil {
+		return fmt.Errorf("cluster name validation failed: %w", err)
+	}
+	if !result.Valid {
+		return fmt.Errorf("invalid cluster name: %s", result.Errors[0].Message)
 	}
 
 	// Get the configuration file path
@@ -268,8 +291,18 @@ func (cm *ConfigurationManager) DeleteConfig(ctx context.Context, clusterName st
 
 // GetConfigPath returns the path to a cluster's configuration file.
 func (cm *ConfigurationManager) GetConfigPath(ctx context.Context, clusterName string) (string, error) {
-	if err := ValidateClusterName(clusterName); err != nil {
-		return "", fmt.Errorf("invalid cluster name: %w", err)
+	// Validate cluster name using ValidationEngine
+	engine := validation.DefaultEngine()
+	if !engine.Has("cluster-name") {
+		engine.MustRegister(validators.NewClusterNameValidator())
+	}
+	
+	result, err := engine.Validate(ctx, "cluster-name", clusterName)
+	if err != nil {
+		return "", fmt.Errorf("cluster name validation failed: %w", err)
+	}
+	if !result.Valid {
+		return "", fmt.Errorf("invalid cluster name: %s", result.Errors[0].Message)
 	}
 
 	// Try organization-aware path resolution first
@@ -287,8 +320,18 @@ func (cm *ConfigurationManager) GetConfigPath(ctx context.Context, clusterName s
 // SetActiveConfig sets the active cluster configuration.
 func (cm *ConfigurationManager) SetActiveConfig(ctx context.Context, clusterName string) error {
 	if clusterName != "" {
-		if err := ValidateClusterName(clusterName); err != nil {
-			return fmt.Errorf("invalid cluster name: %w", err)
+		// Validate cluster name using ValidationEngine
+		engine := validation.DefaultEngine()
+		if !engine.Has("cluster-name") {
+			engine.MustRegister(validators.NewClusterNameValidator())
+		}
+		
+		result, err := engine.Validate(ctx, "cluster-name", clusterName)
+		if err != nil {
+			return fmt.Errorf("cluster name validation failed: %w", err)
+		}
+		if !result.Valid {
+			return fmt.Errorf("invalid cluster name: %s", result.Errors[0].Message)
 		}
 
 		// Verify the cluster configuration exists

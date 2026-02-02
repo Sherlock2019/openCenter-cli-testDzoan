@@ -22,9 +22,6 @@ type LokiConfig struct {
 	SwiftContainerName           string `yaml:"swift_container_name" json:"swift_container_name,omitempty" jsonschema:"description=Swift container name for Loki logs"`
 	SwiftUserDomainName          string `yaml:"swift_user_domain_name" json:"swift_user_domain_name,omitempty" jsonschema:"description=Swift user domain name"`
 	SwiftDomainName              string `yaml:"swift_domain_name" json:"swift_domain_name,omitempty" jsonschema:"description=Swift domain name"`
-	// Deprecated Swift fields (mapped to standard ones where possible or kept for compatibility)
-	SwiftUsername    string `yaml:"swift_username" json:"swift_username,omitempty" jsonschema:"description=Swift username (deprecated)"`
-	SwiftProjectName string `yaml:"swift_project_name" json:"swift_project_name,omitempty" jsonschema:"description=Swift project name (deprecated)"`
 
 	// S3 storage fields
 	S3Endpoint       string `yaml:"loki_s3_endpoint" json:"loki_s3_endpoint,omitempty" jsonschema:"description=S3 endpoint URL"`

@@ -363,7 +363,7 @@ If no cluster name is provided, uses the currently active cluster.`,
 			}()
 
 			fmt.Fprintln(cmd.OutOrStdout(), "Drift detection scheduled. Press Ctrl+C to stop.")
-			
+
 			// Block until interrupted
 			select {}
 		},

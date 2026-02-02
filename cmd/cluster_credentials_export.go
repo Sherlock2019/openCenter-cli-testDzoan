@@ -151,7 +151,7 @@ func exportAWSCredentials(cmd *cobra.Command, extractor *credentials.Extractor, 
 
 	switch format {
 	case "env":
-		output := awsCreds.ToEnvVars()
+		output := awsCreds.ToEnvVarsForShell("bash")
 		fmt.Fprint(cmd.OutOrStdout(), output)
 	case "json":
 		jsonData, err := json.MarshalIndent(awsCreds.ToMap(), "", "  ")
@@ -182,7 +182,7 @@ func exportOpenStackCredentials(cmd *cobra.Command, extractor *credentials.Extra
 
 	switch format {
 	case "env":
-		output := osCreds.ToEnvVars()
+		output := osCreds.ToEnvVarsForShell("bash")
 		fmt.Fprint(cmd.OutOrStdout(), output)
 	case "json":
 		jsonData, err := json.MarshalIndent(osCreds.ToMap(), "", "  ")
@@ -221,13 +221,13 @@ func exportAllCredentials(cmd *cobra.Command, extractor *credentials.Extractor, 
 	case "env":
 		var output strings.Builder
 		if hasAWS {
-			output.WriteString(awsCreds.ToEnvVars())
+			output.WriteString(awsCreds.ToEnvVarsForShell("bash"))
 		}
 		if hasOS {
 			if hasAWS {
 				output.WriteString("\n")
 			}
-			output.WriteString(osCreds.ToEnvVars())
+			output.WriteString(osCreds.ToEnvVarsForShell("bash"))
 		}
 		fmt.Fprint(cmd.OutOrStdout(), output.String())
 	case "json":

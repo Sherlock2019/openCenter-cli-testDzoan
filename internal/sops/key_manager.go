@@ -681,7 +681,6 @@ creation_rules:
 		}
 	}
 
-
 	m.logger.Info("Successfully generated SOPS configuration", "cluster", cluster, "key_count", len(ageKeys))
 	return config, nil
 }

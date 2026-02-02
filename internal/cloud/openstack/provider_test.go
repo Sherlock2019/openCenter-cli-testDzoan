@@ -80,7 +80,7 @@ func TestProvider_DetectDrift_MissingServer(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, report)
 	assert.Len(t, report.Drifts, 1)
-	
+
 	drift := report.Drifts[0]
 	assert.Equal(t, "server", drift.ResourceType)
 	assert.Equal(t, "test-server", drift.ResourceName)
@@ -114,7 +114,7 @@ func TestProvider_DetectDrift_ExtraServer(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, report)
 	assert.Len(t, report.Drifts, 1)
-	
+
 	drift := report.Drifts[0]
 	assert.Equal(t, "server", drift.ResourceType)
 	assert.Equal(t, "unexpected-server", drift.ResourceName)
@@ -155,7 +155,7 @@ func TestProvider_DetectDrift_FlavorMismatch(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, report)
 	assert.Len(t, report.Drifts, 1)
-	
+
 	drift := report.Drifts[0]
 	assert.Equal(t, "server", drift.ResourceType)
 	assert.Equal(t, "test-server", drift.ResourceName)
@@ -196,7 +196,7 @@ func TestProvider_DetectDrift_ServerNotActive(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, report)
 	assert.Len(t, report.Drifts, 1)
-	
+
 	drift := report.Drifts[0]
 	assert.Equal(t, "server", drift.ResourceType)
 	assert.Equal(t, "status", drift.Field)
@@ -244,7 +244,7 @@ func TestProvider_DetectDrift_TagMismatch(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, report)
 	assert.Len(t, report.Drifts, 1)
-	
+
 	drift := report.Drifts[0]
 	assert.Equal(t, "server", drift.ResourceType)
 	assert.Equal(t, "tags.cluster", drift.Field)
@@ -276,7 +276,7 @@ func TestProvider_DetectDrift_NetworkMissing(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, report)
 	assert.Len(t, report.Drifts, 1)
-	
+
 	drift := report.Drifts[0]
 	assert.Equal(t, "network", drift.ResourceType)
 	assert.Equal(t, "test-network", drift.ResourceName)
