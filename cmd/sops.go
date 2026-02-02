@@ -297,6 +297,11 @@ func executeSOPSRotateKey(ctx context.Context, keyFile, searchPath string, dryRu
 				return err
 			}
 
+			// Skip excluded directories
+			if info.IsDir() && shouldSkipDirectory(path) {
+				return filepath.SkipDir
+			}
+
 			if !info.IsDir() && (strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")) {
 				if isEncrypted, err := encryptor.IsFileEncrypted(path); err == nil && isEncrypted {
 					fmt.Printf("  📄 Would re-encrypt: %s\n", path)
@@ -348,6 +353,11 @@ func executeSOPSRotateKey(ctx context.Context, keyFile, searchPath string, dryRu
 	err = filepath.Walk(searchPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
+		}
+
+		// Skip excluded directories
+		if info.IsDir() && shouldSkipDirectory(path) {
+			return filepath.SkipDir
 		}
 
 		if !info.IsDir() && (strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")) {
@@ -1046,6 +1056,11 @@ func executeSOPSSecretsList(ctx context.Context, keyFile, searchPath string, dry
 			return err
 		}
 
+		// Skip excluded directories
+		if info.IsDir() && shouldSkipDirectory(path) {
+			return filepath.SkipDir
+		}
+
 		if !info.IsDir() && (strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")) {
 			if isEncrypted, err := encryptor.IsFileEncrypted(path); err == nil {
 				if isEncrypted {
@@ -1126,6 +1141,11 @@ func executeSOPSSecretsEncrypt(ctx context.Context, keyFile, searchPath string, 
 	err = filepath.Walk(searchPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
+		}
+
+		// Skip excluded directories
+		if info.IsDir() && shouldSkipDirectory(path) {
+			return filepath.SkipDir
 		}
 
 		if !info.IsDir() && (strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")) {
@@ -1218,6 +1238,11 @@ func executeSOPSSecretsDecrypt(ctx context.Context, keyFile, searchPath string, 
 			return err
 		}
 
+		// Skip excluded directories
+		if info.IsDir() && shouldSkipDirectory(path) {
+			return filepath.SkipDir
+		}
+
 		if !info.IsDir() && (strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")) {
 			if isEncrypted, err := encryptor.IsFileEncrypted(path); err == nil && isEncrypted {
 				filesToDecrypt = append(filesToDecrypt, path)
@@ -1280,6 +1305,39 @@ func executeSOPSSecretsDecrypt(ctx context.Context, keyFile, searchPath string, 
 	fmt.Printf("\n🎉 Decryption completed: %d/%d files processed successfully\n", successCount, len(filesToDecrypt))
 
 	return nil
+}
+
+// shouldSkipDirectory determines if a directory should be skipped during file walking
+func shouldSkipDirectory(dirPath string) bool {
+	// List of directory patterns to exclude from encryption
+	excludedDirs := []string{
+		"venv",
+		".venv",
+		".terraform",
+		".bin",
+		"node_modules",
+		".git",
+		"__pycache__",
+		".pytest_cache",
+		".mypy_cache",
+		".tox",
+		"vendor",
+		"target",
+		"build",
+		"dist",
+	}
+
+	// Get the directory name
+	dirName := filepath.Base(dirPath)
+
+	// Check if directory name matches any excluded pattern
+	for _, excluded := range excludedDirs {
+		if dirName == excluded {
+			return true
+		}
+	}
+
+	return false
 }
 
 // shouldFileBeEncrypted determines if a file should be encrypted based on patterns
