@@ -316,7 +316,7 @@ func (w *world) createCluster(name string) error {
 	orig := os.Getenv("OPENCENTER_CONFIG_DIR")
 	os.Setenv("OPENCENTER_CONFIG_DIR", w.configDir)
 	defer os.Setenv("OPENCENTER_CONFIG_DIR", orig)
-	
+
 	// Use ConfigurationManager for save
 	mgr, err := config.NewConfigurationManager()
 	if err != nil {
@@ -346,7 +346,7 @@ func (w *world) setConfigValue(path, value string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Use ConfigurationManager for load
 	mgr, err := config.NewConfigurationManager()
 	if err != nil {
@@ -357,7 +357,7 @@ func (w *world) setConfigValue(path, value string) error {
 		return err
 	}
 	cfg := *loadedCfg
-	
+
 	// Navigate to property path and set value. This simplistic
 	// implementation uses reflection via map[string]interface{} by
 	// serialising to YAML/JSON; for BDD tests it is sufficient.
@@ -720,7 +720,7 @@ func (w *world) theGitopsDirectoryIsAGitRepository() error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Use ConfigurationManager for load
 	mgr, err := config.NewConfigurationManager()
 	if err != nil {
@@ -731,7 +731,7 @@ func (w *world) theGitopsDirectoryIsAGitRepository() error {
 		return err
 	}
 	cfg := *loadedCfg
-	
+
 	dir := w.replaceTmp(cfg.GitOps().GitDir)
 	if dir == "" {
 		return fmt.Errorf("opencenter.gitops.git_dir not set for active cluster")

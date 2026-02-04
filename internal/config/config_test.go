@@ -255,7 +255,7 @@ func TestSaveWithEmptyClusterName(t *testing.T) {
 	if err == nil {
 		t.Error("expected error when saving config with empty cluster name")
 	}
-	if err.Error() != "cluster_name must not be empty" {
+	if !strings.Contains(err.Error(), "cluster name cannot be empty") {
 		t.Errorf("unexpected error message: %s", err.Error())
 	}
 }
@@ -391,8 +391,12 @@ func TestValidateExtended(t *testing.T) {
 			}
 
 			for i, expectedErr := range tt.expectErrs {
-				if i >= len(errs) || errs[i] != expectedErr {
-					t.Errorf("expected error %q, got %q", expectedErr, errs[i])
+				if i >= len(errs) {
+					t.Errorf("expected error %q, but got no error at index %d", expectedErr, i)
+					continue
+				}
+				if !strings.Contains(errs[i].Error(), expectedErr) {
+					t.Errorf("expected error containing %q, got %q", expectedErr, errs[i].Error())
 				}
 			}
 		})
@@ -996,13 +1000,13 @@ func TestValidateServiceReleaseAndBranch(t *testing.T) {
 			for _, expectedErr := range tt.expectErrs {
 				found := false
 				for _, err := range errs {
-					if err == expectedErr {
+					if strings.Contains(err.Error(), expectedErr) {
 						found = true
 						break
 					}
 				}
 				if !found {
-					t.Errorf("expected error %q not found in: %v", expectedErr, errs)
+					t.Errorf("expected error containing %q not found in: %v", expectedErr, errs)
 				}
 			}
 		})
@@ -1309,7 +1313,7 @@ func TestValidateMissingRequiredFields(t *testing.T) {
 			for _, expectedErr := range tt.expectErrs {
 				found := false
 				for _, err := range errs {
-					if strings.Contains(err, expectedErr) {
+					if strings.Contains(err.Error(), expectedErr) {
 						found = true
 						break
 					}

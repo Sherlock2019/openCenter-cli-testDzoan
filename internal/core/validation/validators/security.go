@@ -128,7 +128,7 @@ func (v *SecurityValidator) validateShellInput(result *validation.ValidationResu
 		// Log security violation for audit trail
 		v.logSecurityViolation(context.Background(), "shell_input",
 			"path traversal attempt detected")
-		
+
 		result.AddError("shell_input",
 			"path traversal detected",
 			"Remove '..' from the path",
@@ -141,9 +141,9 @@ func (v *SecurityValidator) validateShellInput(result *validation.ValidationResu
 	for _, char := range dangerousChars {
 		if strings.Contains(input, char) {
 			// Log security violation for audit trail
-			v.logSecurityViolation(context.Background(), "shell_input", 
+			v.logSecurityViolation(context.Background(), "shell_input",
 				fmt.Sprintf("dangerous shell metacharacter detected: %s", char))
-			
+
 			result.AddError("shell_input",
 				fmt.Sprintf("input contains dangerous shell metacharacter: %s", char),
 				"Remove shell metacharacters from the input",
@@ -158,7 +158,7 @@ func (v *SecurityValidator) validateShellInput(result *validation.ValidationResu
 			// Log security violation for audit trail
 			v.logSecurityViolation(context.Background(), "shell_input",
 				"dangerous pattern detected (command substitution or shell expansion)")
-			
+
 			result.AddError("shell_input",
 				fmt.Sprintf("input contains dangerous pattern: %s", pattern.String()),
 				"Remove command substitution and shell expansion patterns",
@@ -226,7 +226,7 @@ func (v *SecurityValidator) validateEnvironmentVariable(result *validation.Valid
 			// Log security violation for audit trail
 			v.logSecurityViolation(context.Background(), "environment_variable",
 				fmt.Sprintf("shell metacharacter in environment variable value: %s", metachar))
-			
+
 			result.AddError("environment_variable",
 				fmt.Sprintf("environment variable value contains shell metacharacter: %s", metachar),
 				"Remove shell metacharacters from the value",
@@ -267,7 +267,7 @@ func (v *SecurityValidator) validateEditor(result *validation.ValidationResult, 
 			// Log security violation for audit trail
 			v.logSecurityViolation(context.Background(), "editor",
 				fmt.Sprintf("shell metacharacter in editor value: %s", metachar))
-			
+
 			result.AddError("editor",
 				fmt.Sprintf("editor value contains shell metacharacter: %s", metachar),
 				"Remove shell metacharacters from the editor value",
@@ -316,7 +316,7 @@ func (v *SecurityValidator) validateCommand(result *validation.ValidationResult,
 			// Log security violation for audit trail
 			v.logSecurityViolation(context.Background(), "command",
 				"dangerous pattern detected in command (command substitution or shell expansion)")
-			
+
 			result.AddError("command",
 				fmt.Sprintf("command contains dangerous pattern: %s", pattern.String()),
 				"Remove command substitution and shell expansion patterns",
@@ -340,7 +340,7 @@ func (v *SecurityValidator) validateCommand(result *validation.ValidationResult,
 			// Log security violation for audit trail
 			v.logSecurityViolation(context.Background(), "command",
 				fmt.Sprintf("dangerous command detected: %s", dangerous))
-			
+
 			result.AddError("command",
 				fmt.Sprintf("command contains dangerous operation: %s", dangerous),
 				"This command could cause data loss or security issues",
@@ -398,7 +398,7 @@ func (v *SecurityValidator) validateSecret(result *validation.ValidationResult, 
 			// Log security violation for audit trail
 			v.logSecurityViolation(context.Background(), "secret",
 				fmt.Sprintf("plaintext %s detected", name))
-			
+
 			result.AddError("secret",
 				fmt.Sprintf("value appears to contain a plaintext %s", name),
 				"Never store secrets in plaintext",

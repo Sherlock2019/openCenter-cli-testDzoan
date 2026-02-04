@@ -44,7 +44,7 @@ func ExampleSOPSKeyValidator() {
 	}
 
 	// Create validator
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
 	validator := validators.NewSOPSKeyValidator(fileSystem)
 
@@ -71,7 +71,7 @@ func ExampleSOPSKeyValidator() {
 // ExampleSOPSKeyValidator_missingFile demonstrates validation of a missing key file.
 func ExampleSOPSKeyValidator_missingFile() {
 	// Create validator
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
 	validator := validators.NewSOPSKeyValidator(fileSystem)
 
@@ -123,7 +123,7 @@ func ExampleSOPSKeyValidator_invalidFormat() {
 	}
 
 	// Create validator
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
 	validator := validators.NewSOPSKeyValidator(fileSystem)
 
@@ -165,7 +165,7 @@ func ExampleSOPSKeyValidator_insecurePermissions() {
 	}
 
 	// Create validator
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
 	validator := validators.NewSOPSKeyValidator(fileSystem)
 
@@ -215,7 +215,7 @@ func ExampleSOPSKeyValidator_withEngine() {
 	engine := validation.NewValidationEngine()
 
 	// Register SOPS key validator
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
 	validator := validators.NewSOPSKeyValidator(fileSystem)
 	if err := engine.Register(validator); err != nil {

@@ -113,19 +113,19 @@ func commented() {
 
 	// Check Load pattern detection
 	if len(report.FilesUsingLegacyLoad) != 2 {
-		t.Errorf("expected 2 files with Load, got %d: %v", 
+		t.Errorf("expected 2 files with Load, got %d: %v",
 			len(report.FilesUsingLegacyLoad), report.FilesUsingLegacyLoad)
 	}
 
 	// Check Save pattern detection
 	if len(report.FilesUsingLegacySave) != 2 {
-		t.Errorf("expected 2 files with Save, got %d: %v", 
+		t.Errorf("expected 2 files with Save, got %d: %v",
 			len(report.FilesUsingLegacySave), report.FilesUsingLegacySave)
 	}
 
 	// Check Validate pattern detection
 	if len(report.FilesUsingLegacyValidate) != 2 {
-		t.Errorf("expected 2 files with Validate, got %d: %v", 
+		t.Errorf("expected 2 files with Validate, got %d: %v",
 			len(report.FilesUsingLegacyValidate), report.FilesUsingLegacyValidate)
 	}
 

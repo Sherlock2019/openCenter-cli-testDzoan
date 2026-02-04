@@ -63,7 +63,7 @@ func TestConfigurationManager_LoadNonExistent(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create manager with test directory
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
 	pathResolver := paths.NewPathResolver(tmpDir)
 	validator := validation.NewValidationEngine()
@@ -130,7 +130,7 @@ func TestConfigurationManager_DeleteNonExistent(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create manager with test directory
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
 	pathResolver := paths.NewPathResolver(tmpDir)
 	validator := validation.NewValidationEngine()
@@ -154,7 +154,7 @@ func TestConfigurationManager_ListEmpty(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create manager with test directory
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
 	pathResolver := paths.NewPathResolver(tmpDir)
 	validator := validation.NewValidationEngine()
@@ -218,7 +218,7 @@ func TestConfigurationManager_ListWithOrganization(t *testing.T) {
 	}
 
 	// Create manager with test directory
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
 	pathResolver := paths.NewPathResolver(tmpDir)
 	validator := validation.NewValidationEngine()
@@ -285,7 +285,7 @@ func TestConfigurationManager_DeleteWithBackup(t *testing.T) {
 	}
 
 	// Create manager with test directory
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
 	pathResolver := paths.NewPathResolver(tmpDir)
 	validator := validation.NewValidationEngine()
@@ -364,7 +364,7 @@ func TestConfigurationManager_ListMultipleOrganizations(t *testing.T) {
 	}
 
 	// Create manager with test directory
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
 	pathResolver := paths.NewPathResolver(tmpDir)
 	validator := validation.NewValidationEngine()

@@ -20,6 +20,8 @@ func RegisterBuiltInServices(registry svc.ServiceRegistry) error {
 
 		// Networking services
 		{plugin: NewCalicoPlugin(), dependencies: []string{}},
+		{plugin: NewCiliumPlugin(), dependencies: []string{}},
+		{plugin: NewKubeOVNPlugin(), dependencies: []string{}},
 
 		// Security services
 		{plugin: NewCertManagerPlugin(), dependencies: []string{}},
@@ -29,6 +31,7 @@ func RegisterBuiltInServices(registry svc.ServiceRegistry) error {
 
 		// Storage services
 		{plugin: NewDefaultServicePlugin("external-snapshotter", svc.ServiceTypeStorage), dependencies: []string{}},
+		{plugin: NewHarborPlugin(), dependencies: []string{"cert-manager"}},
 		{plugin: NewDefaultServicePlugin("openstack-csi", svc.ServiceTypeStorage), dependencies: []string{}},
 		{plugin: NewVSphereCSIPlugin(), dependencies: []string{}},
 		{plugin: NewVeleroPlugin(), dependencies: []string{}},
@@ -40,6 +43,7 @@ func RegisterBuiltInServices(registry svc.ServiceRegistry) error {
 
 		// Logging services
 		{plugin: NewLokiPlugin(), dependencies: []string{}},
+		{plugin: NewTempoPlugin(), dependencies: []string{}},
 
 		// Dashboard services
 		{plugin: NewHeadlampPlugin(), dependencies: []string{}},
@@ -76,7 +80,7 @@ func RegisterBuiltInServices(registry svc.ServiceRegistry) error {
 
 	// Register service-specific validators with the ValidationEngine
 	engine := registry.GetValidationEngine()
-	
+
 	// Register cert-manager validator (only if not already registered)
 	if !engine.Has("service:cert-manager") {
 		certManagerValidator := NewCertManagerValidator()
@@ -84,7 +88,7 @@ func RegisterBuiltInServices(registry svc.ServiceRegistry) error {
 			return fmt.Errorf("failed to register cert-manager validator: %w", err)
 		}
 	}
-	
+
 	// Register keycloak validator (only if not already registered)
 	if !engine.Has("service:keycloak") {
 		keycloakValidator := NewKeycloakValidator()
@@ -102,13 +106,16 @@ func GetBuiltInServiceNames() []string {
 		"alert-proxy",
 		"calico",
 		"cert-manager",
+		"cilium",
 		"etcd-backup",
 		"external-snapshotter",
 		"fluxcd",
 		"gateway",
 		"gateway-api",
+		"harbor",
 		"headlamp",
 		"keycloak",
+		"kube-ovn",
 		"kube-prometheus-stack",
 		"kyverno",
 		"loki",
@@ -118,6 +125,7 @@ func GetBuiltInServiceNames() []string {
 		"postgres-operator",
 		"rbac-manager",
 		"sources",
+		"tempo",
 		"velero",
 		"vsphere-csi",
 		"weave-gitops",

@@ -27,7 +27,7 @@
 // # Usage Example
 //
 //	// Create validation engine
-//	errorHandler := errors.NewDefaultErrorHandler()
+//	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 //	engine := validation.NewValidationEngine(errorHandler)
 //
 //	// Register validators

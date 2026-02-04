@@ -26,19 +26,27 @@ import (
 
 	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/rackerlabs/opencenter-cli/internal/util/crypto"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
 )
 
 // GitIntegrator handles Git operations with SOPS-encrypted files
 type GitIntegrator struct {
-	repoPath  string
-	encryptor Encryptor
+	repoPath   string
+	encryptor  Encryptor
+	fileSystem fs.FileSystem
 }
 
 // NewGitIntegrator creates a new Git integrator
 func NewGitIntegrator(repoPath string, encryptor Encryptor) *GitIntegrator {
+	// Create FileSystem instance
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fileSystem := fs.NewDefaultFileSystem(errorHandler)
+
 	return &GitIntegrator{
-		repoPath:  repoPath,
-		encryptor: encryptor,
+		repoPath:   repoPath,
+		encryptor:  encryptor,
+		fileSystem: fileSystem,
 	}
 }
 
@@ -369,7 +377,7 @@ Thumbs.db
 		}
 	} else {
 		// Create new .gitignore
-		if err := os.WriteFile(gitignorePath, []byte(gitignoreContent), 0o644); err != nil {
+		if err := g.fileSystem.WriteFile(gitignorePath, []byte(gitignoreContent), 0o644); err != nil {
 			return fmt.Errorf("failed to create .gitignore: %w", err)
 		}
 	}
@@ -393,7 +401,7 @@ secrets/*.yml binary
 
 	gitattributesPath := filepath.Join(g.repoPath, ".gitattributes")
 
-	if err := os.WriteFile(gitattributesPath, []byte(gitattributesContent), 0o644); err != nil {
+	if err := g.fileSystem.WriteFile(gitattributesPath, []byte(gitattributesContent), 0o644); err != nil {
 		return fmt.Errorf("failed to create .gitattributes: %w", err)
 	}
 
@@ -523,7 +531,7 @@ func (g *GitIntegrator) loadAgeKeyFromFile(keyFilePath string) (*AgeKeyPair, err
 	}
 
 	// Read the private key file
-	privateKeyData, err := os.ReadFile(keyFilePath)
+	privateKeyData, err := g.fileSystem.ReadFile(keyFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read age key file: %w", err)
 	}

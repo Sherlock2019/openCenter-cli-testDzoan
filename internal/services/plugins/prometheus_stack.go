@@ -9,32 +9,69 @@ import (
 )
 
 // PrometheusStackPlugin implements the ServicePlugin interface for kube-prometheus-stack
-type PrometheusStackPlugin struct{}
+// using composition with BaseServicePlugin
+type PrometheusStackPlugin struct {
+	*svc.BaseServicePlugin
+}
 
 // NewPrometheusStackPlugin creates a new PrometheusStackPlugin
 func NewPrometheusStackPlugin() svc.ServicePlugin {
-	return &PrometheusStackPlugin{}
+	// Create base plugin with metadata
+	base := svc.NewBasePlugin(svc.PluginMetadata{
+		Name:        "kube-prometheus-stack",
+		Version:     "1.0.0",
+		Description: "Complete monitoring stack with Prometheus, Grafana, and Alertmanager",
+		Type:        svc.ServiceTypeMonitoring,
+		Author:      "opencenter",
+		License:     "Apache-2.0",
+	})
+
+	plugin := &PrometheusStackPlugin{
+		BaseServicePlugin: base,
+	}
+
+	// Inject service-specific validation logic
+	base.SetValidator(plugin.validate)
+
+	// Inject service-specific rendering logic
+	base.SetRenderer(plugin.render)
+
+	// Inject service-specific status logic
+	base.SetStatusFunc(plugin.status)
+
+	return plugin
 }
 
-// Name returns the service name
-func (p *PrometheusStackPlugin) Name() string {
-	return "kube-prometheus-stack"
+// validate implements kube-prometheus-stack specific validation
+func (p *PrometheusStackPlugin) validate(config interface{}) error {
+	cfg, ok := config.(*services.PrometheusStackConfig)
+	if !ok {
+		return fmt.Errorf("invalid config type for kube-prometheus-stack: expected *PrometheusStackConfig")
+	}
+
+	// Basic validation
+	if cfg.GrafanaVolumeSize < 0 {
+		return fmt.Errorf("grafana_volume_size must be non-negative")
+	}
+	if cfg.PrometheusVolumeSize < 0 {
+		return fmt.Errorf("prometheus_volume_size must be non-negative")
+	}
+	if cfg.AlertmanagerVolumeSize < 0 {
+		return fmt.Errorf("alertmanager_volume_size must be non-negative")
+	}
+
+	return nil
 }
 
-// Type returns the service type
-func (p *PrometheusStackPlugin) Type() svc.ServiceType {
-	return svc.ServiceTypeMonitoring
-}
-
-// Render renders the service templates to the workspace
-func (p *PrometheusStackPlugin) Render(ctx context.Context, config interface{}, workspace interface{}) error {
+// render implements kube-prometheus-stack specific rendering
+func (p *PrometheusStackPlugin) render(ctx context.Context, config interface{}, workspace interface{}) error {
 	// Template rendering will be handled by the template system
 	// This is a placeholder for future implementation
 	return nil
 }
 
-// Status returns the current status of the service
-func (p *PrometheusStackPlugin) Status(config interface{}) svc.ServiceStatus {
+// status implements kube-prometheus-stack specific status logic
+func (p *PrometheusStackPlugin) status(config interface{}) svc.ServiceStatus {
 	cfg, ok := config.(*services.PrometheusStackConfig)
 	if !ok {
 		return svc.ServiceStatus{

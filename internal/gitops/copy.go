@@ -26,6 +26,8 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	utilfs "github.com/rackerlabs/opencenter-cli/internal/util/fs"
 )
 
 // IsGitOpsInitialized checks if a GitOps directory has already been initialized
@@ -72,43 +74,47 @@ func IsGitOpsInitialized(gitDir string) (bool, error) {
 // This is used to finalize atomic operations by moving files from the workspace
 // to the final destination.
 func copyWorkspaceToTarget(workspaceDir, targetDir string) error {
+	// Create FileSystem instance for file operations
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fileSystem := utilfs.NewDefaultFileSystem(errorHandler)
+
 	return filepath.Walk(workspaceDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		
+
 		// Skip directories
 		if info.IsDir() {
 			return nil
 		}
-		
+
 		// Get relative path
 		relPath, err := filepath.Rel(workspaceDir, path)
 		if err != nil {
 			return err
 		}
-		
+
 		// Skip temp directory
 		if strings.HasPrefix(relPath, ".tmp") {
 			return nil
 		}
-		
+
 		// Create destination path
 		dstPath := filepath.Join(targetDir, relPath)
-		
+
 		// Ensure destination directory exists
 		if err := os.MkdirAll(filepath.Dir(dstPath), 0o755); err != nil {
 			return err
 		}
-		
-		// Read source file
-		data, err := os.ReadFile(path)
+
+		// Read source file using FileSystem wrapper
+		data, err := fileSystem.ReadFile(path)
 		if err != nil {
 			return err
 		}
-		
-		// Write to destination (overwrites existing files)
-		return os.WriteFile(dstPath, data, info.Mode())
+
+		// Write to destination using FileSystem wrapper (overwrites existing files)
+		return fileSystem.WriteFile(dstPath, data, info.Mode())
 	})
 }
 
@@ -136,7 +142,7 @@ func CopyBase(cfg config.Config, render bool) error {
 	if target == "" {
 		return fmt.Errorf("opencenter.gitops.git_dir must be set")
 	}
-	
+
 	// Use atomic version with temporary workspace
 	tempDir := os.TempDir()
 	manager := NewWorkspaceManager(tempDir)
@@ -145,12 +151,12 @@ func CopyBase(cfg config.Config, render bool) error {
 		return fmt.Errorf("creating workspace: %w", err)
 	}
 	defer manager.CleanupWorkspace(context.Background(), workspace)
-	
+
 	// Copy to workspace atomically
 	if err := CopyBaseAtomic(cfg, render, workspace); err != nil {
 		return err
 	}
-	
+
 	// Copy from workspace to target
 	return copyWorkspaceToTarget(workspace.RootDir, target)
 }
@@ -336,12 +342,12 @@ func RenderClusterApps(cfg config.Config) error {
 		return fmt.Errorf("creating workspace: %w", err)
 	}
 	defer manager.CleanupWorkspace(context.Background(), workspace)
-	
+
 	// Use atomic version
 	if err := RenderClusterAppsAtomic(cfg, workspace); err != nil {
 		return err
 	}
-	
+
 	// Copy files from workspace to target
 	return copyWorkspaceToTarget(workspace.RootDir, target)
 }
@@ -446,12 +452,12 @@ func RenderInfrastructureCluster(cfg config.Config) error {
 		return fmt.Errorf("creating workspace: %w", err)
 	}
 	defer manager.CleanupWorkspace(context.Background(), workspace)
-	
+
 	// Use atomic version
 	if err := RenderInfrastructureClusterAtomic(cfg, workspace); err != nil {
 		return err
 	}
-	
+
 	// Copy files from workspace to target
 	return copyWorkspaceToTarget(workspace.RootDir, target)
 }
@@ -564,11 +570,11 @@ func RenderSingleService(cfg config.Config, serviceName string, isManaged bool) 
 		// Copy file as-is
 		return copyFileAtomic(path, dst, workspace)
 	})
-	
+
 	if err != nil {
 		return err
 	}
-	
+
 	// Copy files from workspace to target
 	return copyWorkspaceToTarget(workspace.RootDir, target)
 }

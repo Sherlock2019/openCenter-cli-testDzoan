@@ -64,6 +64,8 @@ build/
 # 
 applications/overlays
 
+# Go test binaries
+*.test
 
 # openCenter repo specific
 /bin/
@@ -78,3 +80,5 @@ testdata/
 tests/features/steps/tmp/
 .mygitignore
 .vscode/
+
+*.test

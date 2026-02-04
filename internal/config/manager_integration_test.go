@@ -77,7 +77,7 @@ secrets:
 	}
 
 	// Create manager with test directory
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
 	pathResolver := paths.NewPathResolver(tmpDir)
 	validator := validation.NewValidationEngine()

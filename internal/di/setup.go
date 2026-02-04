@@ -35,7 +35,7 @@ func SetupContainer(baseDir string) (Container, error) {
 	// Register ErrorHandler as singleton (no dependencies)
 	// Requirements: 5.3
 	if err := container.Singleton("ErrorHandler", func() (errors.ErrorHandler, error) {
-		return errors.NewDefaultErrorHandler(), nil
+		return errors.NewDefaultErrorHandlerWithoutMasking(), nil
 	}); err != nil {
 		return nil, fmt.Errorf("registering ErrorHandler: %w", err)
 	}

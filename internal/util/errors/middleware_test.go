@@ -90,7 +90,7 @@ func TestErrorMiddleware_Handle(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := &MockLogger{}
-			middleware := NewErrorMiddleware(logger)
+			middleware := NewErrorMiddlewareWithoutMasking(logger)
 			ctx := context.Background()
 
 			err := middleware.Handle(ctx, tt.operation, tt.fn)
@@ -142,7 +142,7 @@ func TestErrorMiddleware_HandleError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := &MockLogger{}
-			middleware := NewErrorMiddleware(logger)
+			middleware := NewErrorMiddlewareWithoutMasking(logger)
 			ctx := context.Background()
 
 			result := middleware.HandleError(ctx, tt.operation, tt.err)
@@ -178,7 +178,7 @@ func TestErrorMiddleware_HandleError(t *testing.T) {
 
 func TestErrorMiddleware_WrapCommand(t *testing.T) {
 	logger := &MockLogger{}
-	middleware := NewErrorMiddleware(logger)
+	middleware := NewErrorMiddlewareWithoutMasking(logger)
 
 	t.Run("successful command", func(t *testing.T) {
 		wrapped := middleware.WrapCommand("test_op", func(ctx context.Context) error {
@@ -205,7 +205,7 @@ func TestErrorMiddleware_WrapCommand(t *testing.T) {
 
 func TestErrorMiddleware_WrapCommandWithArgs(t *testing.T) {
 	logger := &MockLogger{}
-	middleware := NewErrorMiddleware(logger)
+	middleware := NewErrorMiddlewareWithoutMasking(logger)
 
 	t.Run("successful command with args", func(t *testing.T) {
 		wrapped := middleware.WrapCommandWithArgs("test_op", func(ctx context.Context, args []string) error {
@@ -235,7 +235,7 @@ func TestErrorMiddleware_WrapCommandWithArgs(t *testing.T) {
 
 func TestErrorMiddleware_HandleValidationErrors(t *testing.T) {
 	logger := &MockLogger{}
-	middleware := NewErrorMiddleware(logger)
+	middleware := NewErrorMiddlewareWithoutMasking(logger)
 	ctx := context.Background()
 
 	t.Run("no errors", func(t *testing.T) {
@@ -293,7 +293,7 @@ func TestErrorMiddleware_HandleValidationErrors(t *testing.T) {
 
 func TestErrorMiddleware_IsRetryable(t *testing.T) {
 	logger := &MockLogger{}
-	middleware := NewErrorMiddleware(logger)
+	middleware := NewErrorMiddlewareWithoutMasking(logger)
 
 	tests := []struct {
 		name string
@@ -334,7 +334,7 @@ func TestErrorMiddleware_IsRetryable(t *testing.T) {
 
 func TestErrorMiddleware_GetSuggestions(t *testing.T) {
 	logger := &MockLogger{}
-	middleware := NewErrorMiddleware(logger)
+	middleware := NewErrorMiddlewareWithoutMasking(logger)
 
 	t.Run("error with suggestions", func(t *testing.T) {
 		err := fmt.Errorf("permission denied")
@@ -355,7 +355,7 @@ func TestErrorMiddleware_GetSuggestions(t *testing.T) {
 
 func TestErrorMiddleware_ContextPropagation(t *testing.T) {
 	logger := &MockLogger{}
-	middleware := NewErrorMiddleware(logger)
+	middleware := NewErrorMiddlewareWithoutMasking(logger)
 
 	t.Run("correlation ID propagation", func(t *testing.T) {
 		ctx := context.WithValue(context.Background(), "correlation_id", "test-123")

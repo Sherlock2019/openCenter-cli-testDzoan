@@ -52,7 +52,7 @@ func TestApplyToStruct_IntField(t *testing.T) {
 	require.NoError(t, err)
 
 	config := &TestStructConfig{}
-	
+
 	// Test with int value
 	err = integration.applyToStruct(config, "count", 42)
 	require.NoError(t, err)
@@ -69,7 +69,7 @@ func TestApplyToStruct_BoolField(t *testing.T) {
 	require.NoError(t, err)
 
 	config := &TestStructConfig{}
-	
+
 	// Test with bool value
 	err = integration.applyToStruct(config, "enabled", true)
 	require.NoError(t, err)
@@ -86,7 +86,7 @@ func TestApplyToStruct_SliceField(t *testing.T) {
 	require.NoError(t, err)
 
 	config := &TestStructConfig{}
-	
+
 	// Test with slice value
 	tags := []string{"prod", "us-east"}
 	err = integration.applyToStruct(config, "tags", tags)
@@ -105,7 +105,7 @@ func TestApplyToStruct_MapField(t *testing.T) {
 	require.NoError(t, err)
 
 	config := &TestStructConfig{}
-	
+
 	// Test with map value
 	metadata := map[string]string{
 		"env":    "production",
@@ -130,7 +130,7 @@ func TestApplyToStruct_NestedPointerField(t *testing.T) {
 	require.NoError(t, err)
 
 	config := &TestStructConfig{}
-	
+
 	// Test setting nested field through pointer (should initialize nil pointer)
 	err = integration.applyToStruct(config, "nested.host", "localhost")
 	require.NoError(t, err)
@@ -148,7 +148,7 @@ func TestApplyToStruct_NestedValueField(t *testing.T) {
 	require.NoError(t, err)
 
 	config := &TestStructConfig{}
-	
+
 	// Test setting nested field through value struct (use underscore to match camelCase conversion)
 	err = integration.applyToStruct(config, "nested_value.host", "example.com")
 	require.NoError(t, err)
@@ -471,10 +471,10 @@ func TestApplyToStruct_Integration(t *testing.T) {
 	// Directly test applyToStruct with various values
 	err = integration.applyToStruct(config, "name", "test-cluster")
 	require.NoError(t, err)
-	
+
 	err = integration.applyToStruct(config, "count", 42)
 	require.NoError(t, err)
-	
+
 	err = integration.applyToStruct(config, "enabled", true)
 	require.NoError(t, err)
 

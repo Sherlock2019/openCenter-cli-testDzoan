@@ -107,7 +107,7 @@ func (w *DefaultErrorWrapper) WrapErrorWithType(err error, errorType ErrorType, 
 	}
 
 	// Add type-specific suggestions
-	handler := NewDefaultErrorHandler()
+	handler := NewDefaultErrorHandlerWithoutMasking()
 	typeSuggestions := handler.suggestionMap[errorType]
 	structuredErr.Suggestions = append(structuredErr.Suggestions, typeSuggestions...)
 
@@ -168,7 +168,7 @@ func WrapWithSuggestions(err error, suggestions ...string) error {
 		return structuredErr
 	}
 
-	handler := NewDefaultErrorHandler()
+	handler := NewDefaultErrorHandlerWithoutMasking()
 	structuredErr := handler.HandleError(err)
 	structuredErr.Suggestions = append(structuredErr.Suggestions, suggestions...)
 
@@ -191,7 +191,7 @@ func WrapWithContext(err error, context map[string]interface{}) error {
 		return structuredErr
 	}
 
-	handler := NewDefaultErrorHandler()
+	handler := NewDefaultErrorHandlerWithoutMasking()
 	structuredErr := handler.HandleError(err)
 	structuredErr.Context = context
 
@@ -255,7 +255,7 @@ func WrapWithFileContext(err error, filePath string, lineNumber int) error {
 		return structuredErr
 	}
 
-	handler := NewDefaultErrorHandler()
+	handler := NewDefaultErrorHandlerWithoutMasking()
 	structuredErr := handler.HandleError(err)
 	structuredErr.FilePath = filePath
 	structuredErr.LineNumber = lineNumber
@@ -276,7 +276,7 @@ func WrapWithFileContextAndColumn(err error, filePath string, lineNumber, column
 		return structuredErr
 	}
 
-	handler := NewDefaultErrorHandler()
+	handler := NewDefaultErrorHandlerWithoutMasking()
 	structuredErr := handler.HandleError(err)
 	structuredErr.FilePath = filePath
 	structuredErr.LineNumber = lineNumber
@@ -296,7 +296,7 @@ func WrapWithOperation(err error, operation string) error {
 		return structuredErr
 	}
 
-	handler := NewDefaultErrorHandler()
+	handler := NewDefaultErrorHandlerWithoutMasking()
 	structuredErr := handler.HandleError(err)
 	structuredErr.Operation = operation
 
@@ -317,7 +317,7 @@ func WrapWithFullContext(err error, filePath string, lineNumber, columnNumber in
 		return structuredErr
 	}
 
-	handler := NewDefaultErrorHandler()
+	handler := NewDefaultErrorHandlerWithoutMasking()
 	structuredErr := handler.HandleError(err)
 	structuredErr.FilePath = filePath
 	structuredErr.LineNumber = lineNumber

@@ -129,7 +129,7 @@ func TestValidateClusterName(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Validation engine error: %v", err)
 			}
-			
+
 			if tt.wantError {
 				if result.Valid {
 					t.Errorf("ValidateClusterName() expected error but got none")
@@ -195,7 +195,7 @@ func TestValidateOrganizationName(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Validation engine error: %v", err)
 			}
-			
+
 			if tt.wantError {
 				if result.Valid {
 					t.Errorf("ValidateOrganizationName() expected error but got none")
@@ -668,7 +668,7 @@ func BenchmarkValidateClusterName(b *testing.B) {
 	engine := validation.NewValidationEngine()
 	engine.MustRegister(validators.NewClusterNameValidator())
 	ctx := context.Background()
-	
+
 	for i := 0; i < b.N; i++ {
 		_, _ = engine.Validate(ctx, "cluster-name", "my-cluster-123")
 	}

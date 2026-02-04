@@ -108,7 +108,7 @@ func TestCreateTempDir_EmptyMap(t *testing.T) {
 
 func TestCreateTempDir_SpecialCharacters(t *testing.T) {
 	files := map[string]string{
-		"file-with-dash.txt":      "content1",
+		"file-with-dash.txt":       "content1",
 		"file_with_underscore.txt": "content2",
 		"file.with.dots.txt":       "content3",
 	}

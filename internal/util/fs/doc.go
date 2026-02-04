@@ -31,7 +31,7 @@ limitations under the License.
 //
 // Basic file operations:
 //
-//	errorHandler := errors.NewDefaultErrorHandler()
+//	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 //	fs := fs.NewDefaultFileSystem(errorHandler)
 //
 //	// Read a file

@@ -22,12 +22,73 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
 	corePaths "github.com/rackerlabs/opencenter-cli/internal/core/paths"
 
 	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
 	"gopkg.in/yaml.v3"
 )
+
+// globalManager is a singleton ConfigurationManager for backward compatibility
+var (
+	globalManager     *ConfigurationManager
+	globalManagerOnce sync.Once
+	globalManagerErr  error
+)
+
+// getGlobalManager returns the singleton ConfigurationManager instance
+func getGlobalManager() (*ConfigurationManager, error) {
+	globalManagerOnce.Do(func() {
+		globalManager, globalManagerErr = NewConfigurationManager()
+	})
+	return globalManager, globalManagerErr
+}
+
+// Save saves a configuration to disk.
+// Deprecated: Use ConfigurationManager.Save() instead.
+// This function is provided for backward compatibility with existing tests.
+func Save(cfg Config) error {
+	manager, err := getGlobalManager()
+	if err != nil {
+		return fmt.Errorf("failed to get configuration manager: %w", err)
+	}
+	return manager.Save(context.Background(), &cfg)
+}
+
+// Load loads a configuration from disk.
+// Deprecated: Use ConfigurationManager.Load() instead.
+// This function is provided for backward compatibility with existing tests.
+func Load(name string) (Config, error) {
+	manager, err := getGlobalManager()
+	if err != nil {
+		return Config{}, fmt.Errorf("failed to get configuration manager: %w", err)
+	}
+	cfg, err := manager.Load(context.Background(), name)
+	if err != nil {
+		return Config{}, err
+	}
+	if cfg == nil {
+		return Config{}, fmt.Errorf("configuration not found: %s", name)
+	}
+	return *cfg, nil
+}
+
+// Validate validates a configuration.
+// Deprecated: Use ConfigurationManager.Validate() instead.
+// This function is provided for backward compatibility with existing tests.
+// Returns a slice of errors for compatibility with old API (empty slice means valid).
+func Validate(cfg Config) []error {
+	manager, err := getGlobalManager()
+	if err != nil {
+		return []error{fmt.Errorf("failed to get configuration manager: %w", err)}
+	}
+	err = manager.Validate(context.Background(), &cfg)
+	if err != nil {
+		return []error{err}
+	}
+	return []error{}
+}
 
 // ResolveConfigDir resolves the configuration directory based on the OPENCENTER_CONFIG_DIR
 // environment variable. If the variable is not set, it falls back to the user's
@@ -102,7 +163,7 @@ func ParseClusterIdentifier(identifier string) (organization string, clusterName
 		// Validate both parts using ValidationEngine
 		ctx := context.Background()
 		validator := validators.NewClusterNameValidator()
-		
+
 		result, err := validator.Validate(ctx, organization)
 		if err != nil {
 			return "", "", fmt.Errorf("organization name validation failed: %w", err)
@@ -110,7 +171,7 @@ func ParseClusterIdentifier(identifier string) (organization string, clusterName
 		if !result.Valid {
 			return "", "", fmt.Errorf("invalid organization name: %s", result.Errors[0].Message)
 		}
-		
+
 		result, err = validator.Validate(ctx, clusterName)
 		if err != nil {
 			return "", "", fmt.Errorf("cluster name validation failed: %w", err)
@@ -125,7 +186,7 @@ func ParseClusterIdentifier(identifier string) (organization string, clusterName
 	// Just cluster name, use default organization
 	ctx := context.Background()
 	validator := validators.NewClusterNameValidator()
-	
+
 	result, err := validator.Validate(ctx, identifier)
 	if err != nil {
 		return "", "", fmt.Errorf("cluster name validation failed: %w", err)
@@ -136,8 +197,6 @@ func ParseClusterIdentifier(identifier string) (organization string, clusterName
 
 	return "opencenter", identifier, nil
 }
-
-
 
 // ConfigPath returns the absolute path to a cluster's configuration file.
 // It implements a fallback strategy to support both organization-based and legacy structures.
@@ -252,6 +311,7 @@ func ConfigPath(name string) (string, error) {
 // Metadata Preservation:
 //   - If the configuration file contains metadata (created_at, created_by, tags, annotations),
 //     it will be preserved when loading.
+//
 // GenerateCompleteConfig generates a complete configuration by merging schema defaults
 // with the actual cluster configuration. The opencenter values take precedence over
 // schema defaults.

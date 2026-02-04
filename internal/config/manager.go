@@ -43,13 +43,13 @@ import (
 //	if err != nil {
 //	    return err
 //	}
-//	
+//
 //	// Load configuration with caching
 //	config, err := manager.Load(ctx, "my-cluster")
 //	if err != nil {
 //	    return err
 //	}
-//	
+//
 //	// Save with validation and atomic writes
 //	err = manager.Save(ctx, config)
 type ConfigurationManager struct {
@@ -82,7 +82,7 @@ type ConfigurationManager struct {
 //	}
 func NewConfigurationManager() (*ConfigurationManager, error) {
 	// Create FileSystem with error handler
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
 
 	// Create PathResolver with default base directory

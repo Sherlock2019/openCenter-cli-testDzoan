@@ -167,7 +167,7 @@ func TestValidationCache_CleanExpired(t *testing.T) {
 	cache := NewValidationCache(100 * time.Millisecond)
 
 	result := NewValidationResult()
-	
+
 	// Add entries with different TTLs
 	cache.Set("validator1", "data1", result, 50*time.Millisecond)  // Expires soon
 	cache.Set("validator2", "data2", result, 500*time.Millisecond) // Expires later
@@ -197,7 +197,7 @@ func TestValidationCache_Stats(t *testing.T) {
 	cache := NewValidationCache(100 * time.Millisecond)
 
 	result := NewValidationResult()
-	
+
 	// Add entries
 	cache.Set("validator1", "data1", result, 50*time.Millisecond)
 	cache.Set("validator2", "data2", result, 500*time.Millisecond)

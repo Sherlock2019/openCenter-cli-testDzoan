@@ -225,9 +225,9 @@ func TestProviderValidator_OpenStack(t *testing.T) {
 			config: map[string]interface{}{
 				"provider": "openstack",
 				"config": map[string]interface{}{
-					"auth_url":    "https://openstack.example.com:5000/v3",
-					"region":      "RegionOne",
-					"user_name":   "test-user",
+					"auth_url":      "https://openstack.example.com:5000/v3",
+					"region":        "RegionOne",
+					"user_name":     "test-user",
 					"user_password": "test-password",
 				},
 			},

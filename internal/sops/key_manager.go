@@ -32,7 +32,9 @@ import (
 
 	"filippo.io/age"
 	"github.com/rackerlabs/opencenter-cli/internal/util/crypto"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
 	"github.com/rackerlabs/opencenter-cli/internal/util/files"
+	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
 	"github.com/zalando/go-keyring"
 	"golang.org/x/crypto/argon2"
 )
@@ -64,6 +66,7 @@ type EnhancedKeyManager struct {
 	fallbackToFile bool
 	auditLogger    interface{} // Will be *security.AuditLogger but using interface to avoid circular import
 	actor          string
+	fileSystem     fs.FileSystem
 }
 
 // NewEnhancedKeyManager creates a new enhanced key manager with OS keyring support
@@ -75,6 +78,10 @@ func NewEnhancedKeyManager(keyDir string, logger *slog.Logger) *EnhancedKeyManag
 		logger = slog.Default()
 	}
 
+	// Create FileSystem instance
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fileSystem := fs.NewDefaultFileSystem(errorHandler)
+
 	return &EnhancedKeyManager{
 		keyDir:         keyDir,
 		logger:         logger,
@@ -82,6 +89,7 @@ func NewEnhancedKeyManager(keyDir string, logger *slog.Logger) *EnhancedKeyManag
 		keyringService: KeyringService,
 		fallbackToFile: true,
 		actor:          "system",
+		fileSystem:     fileSystem,
 	}
 }
 
@@ -461,7 +469,7 @@ func (m *EnhancedKeyManager) storeKeyInFile(cluster string, key *crypto.AgeKeyPa
 func (m *EnhancedKeyManager) retrieveKeyFromFile(cluster string) (*crypto.AgeKeyPair, error) {
 	// Load private key
 	privateKeyPath := filepath.Join(m.keyDir, fmt.Sprintf("%s.txt", cluster))
-	privateKeyData, err := os.ReadFile(privateKeyPath)
+	privateKeyData, err := m.fileSystem.ReadFile(privateKeyPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read private key: %w", err)
 	}
@@ -474,7 +482,7 @@ func (m *EnhancedKeyManager) retrieveKeyFromFile(cluster string) (*crypto.AgeKey
 
 	// Load public key
 	publicKeyPath := filepath.Join(m.keyDir, fmt.Sprintf("%s.pub", cluster))
-	publicKeyData, err := os.ReadFile(publicKeyPath)
+	publicKeyData, err := m.fileSystem.ReadFile(publicKeyPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read public key: %w", err)
 	}

@@ -302,9 +302,9 @@ func TestValidationResult_ToError_MultipleErrors(t *testing.T) {
 
 	// Verify suggestions are present
 	expectedSuggestions := map[string]bool{
-		"Provide a cluster name":      true,
-		"Use us-east-1 or us-west-2":  true,
-		"Use format: 10.0.0.0/16":     true,
+		"Provide a cluster name":     true,
+		"Use us-east-1 or us-west-2": true,
+		"Use format: 10.0.0.0/16":    true,
 	}
 
 	for _, suggestion := range structErr.Suggestions {
@@ -349,7 +349,7 @@ func TestValidationResult_ToError_DuplicateSuggestions(t *testing.T) {
 
 func TestValidationResult_ToError_WithContext(t *testing.T) {
 	result := NewValidationResult()
-	
+
 	// Add error with context
 	issue := &ValidationIssue{
 		Severity: SeverityError,
@@ -389,7 +389,7 @@ func TestValidationResult_ToError_WithContext(t *testing.T) {
 
 func TestValidationResult_ToError_ErrorWithoutField(t *testing.T) {
 	result := NewValidationResult()
-	
+
 	// Add error without field
 	issue := &ValidationIssue{
 		Severity: SeverityError,
@@ -430,4 +430,3 @@ func TestStructuredError_Error(t *testing.T) {
 		t.Errorf("Expected %q, got %q", expected, err.Error())
 	}
 }
-

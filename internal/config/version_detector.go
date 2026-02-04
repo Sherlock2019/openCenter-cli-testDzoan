@@ -70,5 +70,3 @@ func DetectSchemaVersionFromBytes(data []byte) (*SchemaVersionInfo, error) {
 	// Unsupported version
 	return nil, fmt.Errorf("unsupported schema version: %s (only 2.0 is supported)", info.Version)
 }
-
-

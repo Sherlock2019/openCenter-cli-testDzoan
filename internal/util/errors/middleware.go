@@ -20,15 +20,13 @@ import (
 	"context"
 	"fmt"
 	"runtime/debug"
-
-	"github.com/rackerlabs/opencenter-cli/internal/security"
 )
 
 // ErrorMiddleware provides consistent error handling across all commands
 // Requirements: 21.5
 type ErrorMiddleware struct {
 	handler *DefaultErrorHandler
-	masker  security.CredentialMasker
+	masker  CredentialMasker
 	logger  Logger
 }
 
@@ -40,11 +38,24 @@ type Logger interface {
 	Debug(msg string, keysAndValues ...interface{})
 }
 
-// NewErrorMiddleware creates a new error middleware
-func NewErrorMiddleware(logger Logger) *ErrorMiddleware {
+// NewErrorMiddleware creates a new error middleware with the provided credential masker.
+// If you don't have a credential masker available, use NewErrorMiddlewareWithoutMasking instead.
+func NewErrorMiddleware(logger Logger, masker CredentialMasker) *ErrorMiddleware {
 	return &ErrorMiddleware{
-		handler: NewDefaultErrorHandler(),
-		masker:  security.NewDefaultCredentialMasker(),
+		handler: NewDefaultErrorHandler(masker),
+		masker:  masker,
+		logger:  logger,
+	}
+}
+
+// NewErrorMiddlewareWithoutMasking creates a new error middleware without credential masking.
+// This is useful in contexts where the security package cannot be imported due to import cycles.
+// For production use, prefer NewErrorMiddleware with a proper CredentialMasker.
+func NewErrorMiddlewareWithoutMasking(logger Logger) *ErrorMiddleware {
+	masker := &noOpMasker{}
+	return &ErrorMiddleware{
+		handler: NewDefaultErrorHandler(masker),
+		masker:  masker,
 		logger:  logger,
 	}
 }

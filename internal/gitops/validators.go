@@ -16,7 +16,6 @@ package gitops
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -25,6 +24,8 @@ import (
 
 	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
 	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
 )
 
 // ManifestValidator validates generated GitOps manifests for common issues
@@ -33,6 +34,7 @@ type ManifestValidator struct {
 	errors           []string
 	validationEngine *validation.ValidationEngine
 	fileValidator    *validators.FileValidator
+	fileSystem       fs.FileSystem
 }
 
 // NewManifestValidator creates a new manifest validator
@@ -41,11 +43,16 @@ func NewManifestValidator(gitDir string) *ManifestValidator {
 	fileValidator := validators.NewFileValidator()
 	engine.MustRegister(fileValidator)
 
+	// Create FileSystem instance
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fileSystem := fs.NewDefaultFileSystem(errorHandler)
+
 	return &ManifestValidator{
 		gitDir:           gitDir,
 		errors:           []string{},
 		validationEngine: engine,
 		fileValidator:    fileValidator,
+		fileSystem:       fileSystem,
 	}
 }
 
@@ -108,7 +115,7 @@ func (v *ManifestValidator) validateFluxCDKustomization(file string) {
 	// Use ValidationEngine for basic file validation
 	v.validateFile(file, "read")
 
-	data, err := os.ReadFile(file)
+	data, err := v.fileSystem.ReadFile(file)
 	if err != nil {
 		v.errors = append(v.errors, fmt.Sprintf("%s: failed to read: %v", file, err))
 		return
@@ -174,7 +181,7 @@ func (v *ManifestValidator) validateGitRepository(file string) {
 	// Use ValidationEngine for basic file validation
 	v.validateFile(file, "read")
 
-	data, err := os.ReadFile(file)
+	data, err := v.fileSystem.ReadFile(file)
 	if err != nil {
 		v.errors = append(v.errors, fmt.Sprintf("%s: failed to read: %v", file, err))
 		return
@@ -228,7 +235,7 @@ func (v *ManifestValidator) validateCertManager() {
 		// Use ValidationEngine for basic file validation
 		v.validateFile(file, "read")
 
-		data, err := os.ReadFile(file)
+		data, err := v.fileSystem.ReadFile(file)
 		if err != nil {
 			continue
 		}
@@ -261,7 +268,7 @@ func (v *ManifestValidator) validateCertManager() {
 		// Use ValidationEngine for basic file validation
 		v.validateFile(file, "read")
 
-		data, err := os.ReadFile(file)
+		data, err := v.fileSystem.ReadFile(file)
 		if err != nil {
 			continue
 		}
@@ -284,7 +291,7 @@ func (v *ManifestValidator) validateCertManager() {
 		// Use ValidationEngine for basic file validation
 		v.validateFile(file, "read")
 
-		data, err := os.ReadFile(file)
+		data, err := v.fileSystem.ReadFile(file)
 		if err != nil {
 			continue
 		}
@@ -310,7 +317,7 @@ func (v *ManifestValidator) validateGateway() {
 		// Use ValidationEngine for basic file validation
 		v.validateFile(file, "read")
 
-		data, err := os.ReadFile(file)
+		data, err := v.fileSystem.ReadFile(file)
 		if err != nil {
 			continue
 		}
@@ -343,7 +350,7 @@ func (v *ManifestValidator) validateGateway() {
 		// Use ValidationEngine for basic file validation
 		v.validateFile(file, "read")
 
-		data, err := os.ReadFile(file)
+		data, err := v.fileSystem.ReadFile(file)
 		if err != nil {
 			continue
 		}
@@ -371,7 +378,7 @@ func (v *ManifestValidator) validateVSphereCSI() {
 		// Use ValidationEngine for basic file validation
 		v.validateFile(file, "read")
 
-		data, err := os.ReadFile(file)
+		data, err := v.fileSystem.ReadFile(file)
 		if err != nil {
 			continue
 		}
@@ -424,7 +431,7 @@ func (v *ManifestValidator) validateMetalLB() {
 		// Use ValidationEngine for basic file validation
 		v.validateFile(file, "read")
 
-		data, err := os.ReadFile(file)
+		data, err := v.fileSystem.ReadFile(file)
 		if err != nil {
 			continue
 		}
@@ -464,7 +471,7 @@ func (v *ManifestValidator) validateHeadlamp() {
 		// Use ValidationEngine for basic file validation
 		v.validateFile(file, "read")
 
-		data, err := os.ReadFile(file)
+		data, err := v.fileSystem.ReadFile(file)
 		if err != nil {
 			continue
 		}

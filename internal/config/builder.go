@@ -129,7 +129,7 @@ func NewConfigBuilder(clusterName string) ConfigBuilder {
 		errors:          []ValidationError{},
 		validators:      []BuilderValidator{},
 		errorAggregator: errors.NewValidationAggregator(),
-		errorHandler:    errors.NewDefaultErrorHandler(),
+		errorHandler:    errors.NewDefaultErrorHandlerWithoutMasking(),
 	}
 }
 
@@ -140,7 +140,7 @@ func NewConfigBuilderFromConfig(config Config) ConfigBuilder {
 		errors:          []ValidationError{},
 		validators:      []BuilderValidator{},
 		errorAggregator: errors.NewValidationAggregator(),
-		errorHandler:    errors.NewDefaultErrorHandler(),
+		errorHandler:    errors.NewDefaultErrorHandlerWithoutMasking(),
 	}
 }
 

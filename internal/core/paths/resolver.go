@@ -153,9 +153,11 @@ func (r *PathResolver) Resolve(ctx context.Context, clusterName, organization st
 	}
 
 	// Use default organization if not specified
+	r.mu.RLock()
 	if organization == "" {
 		organization = r.options.Organization
 	}
+	r.mu.RUnlock()
 
 	// Validate organization name
 	if err := r.validateClusterName(organization); err != nil {
@@ -170,7 +172,10 @@ func (r *PathResolver) Resolve(ctx context.Context, clusterName, organization st
 	}
 
 	// Use organization-based strategy (slow path)
+	r.mu.RLock()
 	strategy := r.strategies[0]
+	r.mu.RUnlock()
+	
 	canResolve, err := strategy.CanResolve(ctx, clusterName, organization)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check if cluster exists: %w", err)
@@ -240,10 +245,14 @@ func (r *PathResolver) ResolveWithFallback(ctx context.Context, clusterName stri
 	}
 
 	// Search for cluster in all organization directories
-	entries, err := os.ReadDir(r.baseDir)
+	r.mu.RLock()
+	baseDir := r.baseDir
+	r.mu.RUnlock()
+	
+	entries, err := os.ReadDir(baseDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("clusters directory does not exist: %s", r.baseDir)
+			return nil, fmt.Errorf("clusters directory does not exist: %s", baseDir)
 		}
 		return nil, fmt.Errorf("failed to read clusters directory: %w", err)
 	}
@@ -254,7 +263,7 @@ func (r *PathResolver) ResolveWithFallback(ctx context.Context, clusterName stri
 		}
 
 		orgName := entry.Name()
-		clusterDir := filepath.Join(r.baseDir, orgName, "infrastructure", "clusters", clusterName)
+		clusterDir := filepath.Join(baseDir, orgName, "infrastructure", "clusters", clusterName)
 		if _, err := os.Stat(clusterDir); err == nil {
 			// Found the cluster, resolve with this organization
 			paths, err := r.Resolve(ctx, clusterName, orgName)
@@ -327,7 +336,10 @@ func (r *PathResolver) DetectStructureType(ctx context.Context, clusterName stri
 	}
 
 	// Check if cluster exists in organization structure
+	r.mu.RLock()
 	strategy := r.strategies[0]
+	r.mu.RUnlock()
+	
 	canResolve, err := strategy.CanResolve(ctx, clusterName, "")
 	if err != nil {
 		return StructureTypeUnknown, err
@@ -348,7 +360,11 @@ func (r *PathResolver) GetOrganization(ctx context.Context, clusterName string) 
 	}
 
 	// Check if cluster exists in organization structure
-	entries, err := os.ReadDir(r.baseDir)
+	r.mu.RLock()
+	baseDir := r.baseDir
+	r.mu.RUnlock()
+	
+	entries, err := os.ReadDir(baseDir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", nil
@@ -362,7 +378,7 @@ func (r *PathResolver) GetOrganization(ctx context.Context, clusterName string) 
 		}
 
 		orgName := entry.Name()
-		clusterDir := filepath.Join(r.baseDir, orgName, "infrastructure", "clusters", clusterName)
+		clusterDir := filepath.Join(baseDir, orgName, "infrastructure", "clusters", clusterName)
 		if _, err := os.Stat(clusterDir); err == nil {
 			return orgName, nil
 		}
@@ -402,16 +418,22 @@ func (r *PathResolver) CreateClusterDirectories(ctx context.Context, clusterName
 		return fmt.Errorf("invalid cluster name: %w", err)
 	}
 
+	r.mu.RLock()
 	if organization == "" {
 		organization = r.options.Organization
 	}
+	r.mu.RUnlock()
 
 	if err := r.validateClusterName(organization); err != nil {
 		return fmt.Errorf("invalid organization name: %w", err)
 	}
 
 	// Resolve paths using organization-based strategy
+	r.mu.RLock()
 	strategy := r.strategies[0]
+	validatePaths := r.options.ValidatePaths
+	r.mu.RUnlock()
+	
 	paths, err := strategy.Resolve(ctx, clusterName, organization)
 	if err != nil {
 		return fmt.Errorf("failed to resolve paths: %w", err)
@@ -429,6 +451,8 @@ func (r *PathResolver) CreateClusterDirectories(ctx context.Context, clusterName
 		paths.SecretsDir,
 		filepath.Join(paths.SecretsDir, "age"),
 		filepath.Dir(paths.SOPSKeyPath), // age/keys directory
+		filepath.Join(paths.SecretsDir, "ssh"), // ssh directory
+		filepath.Dir(paths.SSHKeyPath), // ssh key parent directory
 		paths.InventoryPath,
 		paths.VenvPath,
 		paths.BinPath,
@@ -447,7 +471,7 @@ func (r *PathResolver) CreateClusterDirectories(ctx context.Context, clusterName
 		}
 
 		// Validate permissions if requested
-		if r.options.ValidatePaths {
+		if validatePaths {
 			if err := r.validateDirectoryPermissions(dir); err != nil {
 				return fmt.Errorf("directory %s has insufficient permissions: %w", dir, err)
 			}

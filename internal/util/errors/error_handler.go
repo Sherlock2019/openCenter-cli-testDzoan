@@ -20,24 +20,44 @@ import (
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/rackerlabs/opencenter-cli/internal/security"
 )
+
+// CredentialMasker defines the interface for masking sensitive data in error messages.
+// This interface is defined here to avoid import cycles with the security package.
+type CredentialMasker interface {
+	MaskString(input string) string
+}
+
+// noOpMasker is a simple credential masker that doesn't mask anything.
+// It's used as a default when no masker is provided.
+type noOpMasker struct{}
+
+func (n *noOpMasker) MaskString(input string) string {
+	return input
+}
 
 // DefaultErrorHandler implements ErrorHandler interface
 type DefaultErrorHandler struct {
 	suggestionMap map[ErrorType][]string
-	masker        security.CredentialMasker
+	masker        CredentialMasker
 }
 
-// NewDefaultErrorHandler creates a new default error handler
-func NewDefaultErrorHandler() *DefaultErrorHandler {
+// NewDefaultErrorHandler creates a new default error handler with the provided credential masker.
+// If you don't have a credential masker available, use NewDefaultErrorHandlerWithoutMasking instead.
+func NewDefaultErrorHandler(masker CredentialMasker) *DefaultErrorHandler {
 	handler := &DefaultErrorHandler{
 		suggestionMap: make(map[ErrorType][]string),
-		masker:        security.NewDefaultCredentialMasker(),
+		masker:        masker,
 	}
 	handler.initializeSuggestions()
 	return handler
+}
+
+// NewDefaultErrorHandlerWithoutMasking creates a new default error handler without credential masking.
+// This is useful in contexts where the security package cannot be imported due to import cycles.
+// For production use, prefer NewDefaultErrorHandler with a proper CredentialMasker.
+func NewDefaultErrorHandlerWithoutMasking() *DefaultErrorHandler {
+	return NewDefaultErrorHandler(&noOpMasker{})
 }
 
 // HandleError converts an error to a structured error

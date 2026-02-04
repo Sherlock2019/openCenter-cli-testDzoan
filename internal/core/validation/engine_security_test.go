@@ -222,11 +222,11 @@ func TestSecurityValidatorCannotBeBypassed(t *testing.T) {
 
 	t.Run("multiple security validators all run", func(t *testing.T) {
 		engine := NewValidationEngine()
-		
+
 		// Register multiple security validators
 		secValidator1 := newMockSecurityValidator()
 		secValidator2 := newMockSecurityValidatorWithName("security-2")
-		
+
 		engine.MustRegisterSecurityValidator(secValidator1)
 		engine.MustRegisterSecurityValidator(secValidator2)
 		engine.MustRegister(newMockValidator("test-validator", true))

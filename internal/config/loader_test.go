@@ -28,7 +28,7 @@ import (
 
 // TestConfigIOHandler_NewConfigIOHandler tests loader creation
 func TestConfigIOHandler_NewConfigIOHandler(t *testing.T) {
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := utilfs.NewDefaultFileSystem(errorHandler)
 	loader := NewConfigIOHandler(fileSystem)
 
@@ -42,7 +42,7 @@ func TestConfigIOHandler_NewConfigIOHandler(t *testing.T) {
 
 // TestConfigIOHandler_MarshalConfig tests marshaling a config to YAML
 func TestConfigIOHandler_MarshalConfig(t *testing.T) {
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := utilfs.NewDefaultFileSystem(errorHandler)
 	loader := NewConfigIOHandler(fileSystem)
 
@@ -106,7 +106,7 @@ func TestConfigIOHandler_MarshalConfig(t *testing.T) {
 
 // TestConfigIOHandler_UnmarshalConfig tests unmarshaling YAML to a config
 func TestConfigIOHandler_UnmarshalConfig(t *testing.T) {
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := utilfs.NewDefaultFileSystem(errorHandler)
 	loader := NewConfigIOHandler(fileSystem)
 
@@ -172,7 +172,7 @@ invalid: yaml: content:
 
 // TestConfigIOHandler_LoadFromBytes tests loading config from byte data
 func TestConfigIOHandler_LoadFromBytes(t *testing.T) {
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := utilfs.NewDefaultFileSystem(errorHandler)
 	loader := NewConfigIOHandler(fileSystem)
 	ctx := context.Background()
@@ -251,7 +251,7 @@ opencenter:
 
 // TestConfigIOHandler_SaveToFile tests saving config to a file
 func TestConfigIOHandler_SaveToFile(t *testing.T) {
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := utilfs.NewDefaultFileSystem(errorHandler)
 	loader := NewConfigIOHandler(fileSystem)
 	ctx := context.Background()
@@ -343,7 +343,7 @@ func TestConfigIOHandler_SaveToFile(t *testing.T) {
 
 // TestConfigIOHandler_LoadFromFile tests loading config from a file
 func TestConfigIOHandler_LoadFromFile(t *testing.T) {
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := utilfs.NewDefaultFileSystem(errorHandler)
 	loader := NewConfigIOHandler(fileSystem)
 	ctx := context.Background()
@@ -432,7 +432,7 @@ opencenter:
 
 // TestConfigIOHandler_RoundTrip tests marshaling and unmarshaling preserves data
 func TestConfigIOHandler_RoundTrip(t *testing.T) {
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := utilfs.NewDefaultFileSystem(errorHandler)
 	loader := NewConfigIOHandler(fileSystem)
 
@@ -479,7 +479,7 @@ func TestConfigIOHandler_RoundTrip(t *testing.T) {
 
 // TestConfigIOHandler_SaveAndLoad tests the complete save and load cycle
 func TestConfigIOHandler_SaveAndLoad(t *testing.T) {
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := utilfs.NewDefaultFileSystem(errorHandler)
 	loader := NewConfigIOHandler(fileSystem)
 	ctx := context.Background()
@@ -524,7 +524,7 @@ func TestConfigIOHandler_SaveAndLoad(t *testing.T) {
 
 // TestConfigIOHandler_EnvironmentVariableExpansion tests that environment variables are expanded
 func TestConfigIOHandler_EnvironmentVariableExpansion(t *testing.T) {
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := utilfs.NewDefaultFileSystem(errorHandler)
 	loader := NewConfigIOHandler(fileSystem)
 	ctx := context.Background()
@@ -554,7 +554,7 @@ opencenter:
 
 // TestConfigIOHandler_AtomicWrite tests that SaveToFile uses atomic writes
 func TestConfigIOHandler_AtomicWrite(t *testing.T) {
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := utilfs.NewDefaultFileSystem(errorHandler)
 	loader := NewConfigIOHandler(fileSystem)
 	ctx := context.Background()

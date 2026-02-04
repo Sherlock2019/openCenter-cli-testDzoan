@@ -63,7 +63,8 @@ func TestRegisterRealGitOpsTemplates(t *testing.T) {
 
 	// Verify specific expected templates exist
 	expectedTemplates := []string{
-		"main.tf",
+		"main-default.tf",
+		"main-baremetal.tf",
 		"variables.tf",
 		"Makefile",
 	}

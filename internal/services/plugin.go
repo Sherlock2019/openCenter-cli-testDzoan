@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -96,7 +98,11 @@ type ServiceLifecycle struct {
 
 // LoadManifest loads a service plugin manifest from a file
 func LoadManifest(path string) (*ServicePluginManifest, error) {
-	data, err := os.ReadFile(path)
+	// Create FileSystem instance for file operations
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fileSystem := fs.NewDefaultFileSystem(errorHandler)
+
+	data, err := fileSystem.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read manifest file %s: %w", path, err)
 	}

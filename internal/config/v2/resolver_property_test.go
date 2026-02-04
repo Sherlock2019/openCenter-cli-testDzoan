@@ -240,8 +240,7 @@ func TestProperty_ReferenceResolutionCorrectness(t *testing.T) {
 
 // containsReferencePattern checks if a string contains reference patterns
 func containsReferencePattern(s string) bool {
-	return len(s) > 6 && (
-		(s[0:6] == "${env:" || s[0:6] == "${ref:" || s[0:7] == "${file:"))
+	return len(s) > 6 && (s[0:6] == "${env:" || s[0:6] == "${ref:" || s[0:7] == "${file:")
 }
 
 // TestProperty_CircularReferenceDetection verifies circular reference detection.

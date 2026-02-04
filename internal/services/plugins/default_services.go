@@ -32,6 +32,13 @@ func (p *DefaultServicePlugin) Type() svc.ServiceType {
 	return p.serviceType
 }
 
+// Validate validates the service configuration
+func (p *DefaultServicePlugin) Validate(config interface{}) error {
+	// Validation is handled by validators
+	// This method is here to satisfy the ServicePlugin interface
+	return nil
+}
+
 // Render renders the service templates to the workspace
 func (p *DefaultServicePlugin) Render(ctx context.Context, config interface{}, workspace interface{}) error {
 	// Template rendering will be handled by the template system
@@ -67,56 +74,6 @@ func (p *DefaultServicePlugin) Status(config interface{}) svc.ServiceStatus {
 	}
 }
 
-// CalicoPlugin implements the ServicePlugin interface for Calico
-type CalicoPlugin struct{}
-
-func NewCalicoPlugin() svc.ServicePlugin {
-	return &CalicoPlugin{}
-}
-
-func (p *CalicoPlugin) Name() string {
-	return "calico"
-}
-
-func (p *CalicoPlugin) Type() svc.ServiceType {
-	return svc.ServiceTypeNetworking
-}
-
-func (p *CalicoPlugin) Render(ctx context.Context, config interface{}, workspace interface{}) error {
-	return nil
-}
-
-func (p *CalicoPlugin) Status(config interface{}) svc.ServiceStatus {
-	cfg, ok := config.(*services.CalicoConfig)
-	if !ok {
-		return svc.ServiceStatus{
-			State:   "failed",
-			Message: "Invalid configuration type",
-		}
-	}
-
-	if !cfg.IsEnabled() {
-		return svc.ServiceStatus{
-			State:   "disabled",
-			Message: "Service is disabled",
-		}
-	}
-
-	// Get status from config, default to "pending" if not set
-	state := cfg.GetStatus()
-	if state == "" {
-		state = "pending"
-	}
-
-	return svc.ServiceStatus{
-		State:   state,
-		Message: "Calico networking service",
-		Details: map[string]interface{}{
-			"kube_api_server": cfg.KubeAPIServer,
-		},
-	}
-}
-
 // HeadlampPlugin implements the ServicePlugin interface for Headlamp
 type HeadlampPlugin struct{}
 
@@ -130,6 +87,12 @@ func (p *HeadlampPlugin) Name() string {
 
 func (p *HeadlampPlugin) Type() svc.ServiceType {
 	return svc.ServiceTypeCore
+}
+
+func (p *HeadlampPlugin) Validate(config interface{}) error {
+	// Validation is handled by validators
+	// This method is here to satisfy the ServicePlugin interface
+	return nil
 }
 
 func (p *HeadlampPlugin) Render(ctx context.Context, config interface{}, workspace interface{}) error {
@@ -183,6 +146,12 @@ func (p *WeaveGitOpsPlugin) Type() svc.ServiceType {
 	return svc.ServiceTypeGitOps
 }
 
+func (p *WeaveGitOpsPlugin) Validate(config interface{}) error {
+	// Validation is handled by validators
+	// This method is here to satisfy the ServicePlugin interface
+	return nil
+}
+
 func (p *WeaveGitOpsPlugin) Render(ctx context.Context, config interface{}, workspace interface{}) error {
 	return nil
 }
@@ -230,6 +199,12 @@ func (p *AlertProxyPlugin) Type() svc.ServiceType {
 	return svc.ServiceTypeMonitoring
 }
 
+func (p *AlertProxyPlugin) Validate(config interface{}) error {
+	// Validation is handled by validators
+	// This method is here to satisfy the ServicePlugin interface
+	return nil
+}
+
 func (p *AlertProxyPlugin) Render(ctx context.Context, config interface{}, workspace interface{}) error {
 	return nil
 }
@@ -267,25 +242,52 @@ func (p *AlertProxyPlugin) Status(config interface{}) svc.ServiceStatus {
 }
 
 // EtcdBackupPlugin implements the ServicePlugin interface for Etcd Backup
-type EtcdBackupPlugin struct{}
+// using composition with BaseServicePlugin
+type EtcdBackupPlugin struct {
+	*svc.BaseServicePlugin
+}
 
 func NewEtcdBackupPlugin() svc.ServicePlugin {
-	return &EtcdBackupPlugin{}
+	// Create base plugin with metadata
+	base := svc.NewBasePlugin(svc.PluginMetadata{
+		Name:        "etcd-backup",
+		Version:     "1.0.0",
+		Description: "Automated etcd backup and restore",
+		Type:        svc.ServiceTypeStorage,
+		Author:      "opencenter",
+		License:     "Apache-2.0",
+	})
+
+	plugin := &EtcdBackupPlugin{
+		BaseServicePlugin: base,
+	}
+
+	// Inject service-specific validation logic
+	base.SetValidator(plugin.validate)
+
+	// Inject service-specific rendering logic
+	base.SetRenderer(plugin.render)
+
+	// Inject service-specific status logic
+	base.SetStatusFunc(plugin.status)
+
+	return plugin
 }
 
-func (p *EtcdBackupPlugin) Name() string {
-	return "etcd-backup"
-}
-
-func (p *EtcdBackupPlugin) Type() svc.ServiceType {
-	return svc.ServiceTypeStorage
-}
-
-func (p *EtcdBackupPlugin) Render(ctx context.Context, config interface{}, workspace interface{}) error {
+// validate implements etcd-backup specific validation
+func (p *EtcdBackupPlugin) validate(config interface{}) error {
+	// Validation is handled by validators
+	// This method is here to satisfy the ServicePlugin interface
 	return nil
 }
 
-func (p *EtcdBackupPlugin) Status(config interface{}) svc.ServiceStatus {
+// render implements etcd-backup specific rendering
+func (p *EtcdBackupPlugin) render(ctx context.Context, config interface{}, workspace interface{}) error {
+	return nil
+}
+
+// status implements etcd-backup specific status logic
+func (p *EtcdBackupPlugin) status(config interface{}) svc.ServiceStatus {
 	cfg, ok := config.(*services.EtcdBackupConfig)
 	if !ok {
 		return svc.ServiceStatus{
@@ -318,25 +320,52 @@ func (p *EtcdBackupPlugin) Status(config interface{}) svc.ServiceStatus {
 }
 
 // VSphereCSIPlugin implements the ServicePlugin interface for vSphere CSI
-type VSphereCSIPlugin struct{}
+// using composition with BaseServicePlugin
+type VSphereCSIPlugin struct {
+	*svc.BaseServicePlugin
+}
 
 func NewVSphereCSIPlugin() svc.ServicePlugin {
-	return &VSphereCSIPlugin{}
+	// Create base plugin with metadata
+	base := svc.NewBasePlugin(svc.PluginMetadata{
+		Name:        "vsphere-csi",
+		Version:     "1.0.0",
+		Description: "VMware vSphere Container Storage Interface driver",
+		Type:        svc.ServiceTypeStorage,
+		Author:      "opencenter",
+		License:     "Apache-2.0",
+	})
+
+	plugin := &VSphereCSIPlugin{
+		BaseServicePlugin: base,
+	}
+
+	// Inject service-specific validation logic
+	base.SetValidator(plugin.validate)
+
+	// Inject service-specific rendering logic
+	base.SetRenderer(plugin.render)
+
+	// Inject service-specific status logic
+	base.SetStatusFunc(plugin.status)
+
+	return plugin
 }
 
-func (p *VSphereCSIPlugin) Name() string {
-	return "vsphere-csi"
-}
-
-func (p *VSphereCSIPlugin) Type() svc.ServiceType {
-	return svc.ServiceTypeStorage
-}
-
-func (p *VSphereCSIPlugin) Render(ctx context.Context, config interface{}, workspace interface{}) error {
+// validate implements vsphere-csi specific validation
+func (p *VSphereCSIPlugin) validate(config interface{}) error {
+	// Validation is handled by validators
+	// This method is here to satisfy the ServicePlugin interface
 	return nil
 }
 
-func (p *VSphereCSIPlugin) Status(config interface{}) svc.ServiceStatus {
+// render implements vsphere-csi specific rendering
+func (p *VSphereCSIPlugin) render(ctx context.Context, config interface{}, workspace interface{}) error {
+	return nil
+}
+
+// status implements vsphere-csi specific status logic
+func (p *VSphereCSIPlugin) status(config interface{}) svc.ServiceStatus {
 	cfg, ok := config.(*services.VSphereCSIConfig)
 	if !ok {
 		return svc.ServiceStatus{

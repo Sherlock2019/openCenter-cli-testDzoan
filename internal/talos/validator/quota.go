@@ -49,8 +49,8 @@ type quotaCache struct {
 
 // Global quota cache with 5 minute TTL
 var (
-	cache     = &quotaCache{}
-	cacheTTL  = 5 * time.Minute
+	cache    = &quotaCache{}
+	cacheTTL = 5 * time.Minute
 )
 
 // ValidateQuotasImpl verifies tenant resource quotas.

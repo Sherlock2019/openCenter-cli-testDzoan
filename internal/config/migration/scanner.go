@@ -76,8 +76,8 @@ func (ms *MigrationScanner) Scan() (*MigrationReport, error) {
 		// Skip directories
 		if info.IsDir() {
 			// Skip vendor, .git, and other non-source directories
-			if info.Name() == "vendor" || info.Name() == ".git" || 
-			   info.Name() == "node_modules" || info.Name() == "bin" {
+			if info.Name() == "vendor" || info.Name() == ".git" ||
+				info.Name() == "node_modules" || info.Name() == "bin" {
 				return filepath.SkipDir
 			}
 			return nil

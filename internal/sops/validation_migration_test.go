@@ -41,7 +41,7 @@ func TestSOPSValidationMigration_ValidKey(t *testing.T) {
 	// Create SOPS manager
 	keyManager := crypto.NewDefaultKeyManager(tmpDir)
 	encryptor := NewDefaultEncryptor([]string{}, []string{})
-	
+
 	manager := NewDefaultSOPSManager(keyManager, encryptor, nil)
 
 	// Create test config
@@ -66,7 +66,7 @@ func TestSOPSValidationMigration_MissingKey(t *testing.T) {
 	// Create SOPS manager
 	keyManager := crypto.NewDefaultKeyManager(tmpDir)
 	encryptor := NewDefaultEncryptor([]string{}, []string{})
-	
+
 	manager := NewDefaultSOPSManager(keyManager, encryptor, nil)
 
 	// Create test config with non-existent key
@@ -104,7 +104,7 @@ func TestSOPSValidationMigration_InvalidKeyFormat(t *testing.T) {
 	// Create SOPS manager
 	keyManager := crypto.NewDefaultKeyManager(tmpDir)
 	encryptor := NewDefaultEncryptor([]string{}, []string{})
-	
+
 	manager := NewDefaultSOPSManager(keyManager, encryptor, nil)
 
 	// Create test config
@@ -136,7 +136,7 @@ func TestSOPSValidationMigration_InsecurePermissions(t *testing.T) {
 	// Create SOPS manager
 	keyManager := crypto.NewDefaultKeyManager(tmpDir)
 	encryptor := NewDefaultEncryptor([]string{}, []string{})
-	
+
 	manager := NewDefaultSOPSManager(keyManager, encryptor, nil)
 
 	// Create test config
@@ -160,7 +160,7 @@ func TestSOPSValidationMigration_ValidationEngineRegistered(t *testing.T) {
 	tmpDir := t.TempDir()
 	keyManager := crypto.NewDefaultKeyManager(tmpDir)
 	encryptor := NewDefaultEncryptor([]string{}, []string{})
-	
+
 	manager := NewDefaultSOPSManager(keyManager, encryptor, nil)
 
 	// Check that the validation engine has the sops-key validator registered
@@ -184,7 +184,7 @@ func TestSOPSValidationMigration_DirectValidation(t *testing.T) {
 	// Create SOPS manager
 	keyManager := crypto.NewDefaultKeyManager(tmpDir)
 	encryptor := NewDefaultEncryptor([]string{}, []string{})
-	
+
 	manager := NewDefaultSOPSManager(keyManager, encryptor, nil)
 
 	// Validate directly using ValidationEngine
@@ -209,7 +209,7 @@ func TestSOPSValidationMigration_SecurityChecksPreserved(t *testing.T) {
 	// Create SOPS manager
 	keyManager := crypto.NewDefaultKeyManager(tmpDir)
 	encryptor := NewDefaultEncryptor([]string{}, []string{})
-	
+
 	manager := NewDefaultSOPSManager(keyManager, encryptor, nil)
 
 	testCases := []struct {

@@ -47,7 +47,7 @@ type CloudProviderValidator interface {
 // NewEnhancedConfigValidator creates a new enhanced configuration validator.
 func NewEnhancedConfigValidator(autoRepair bool) *EnhancedConfigValidator {
 	validator := &EnhancedConfigValidator{
-		errorHandler:          errors.NewDefaultErrorHandler(),
+		errorHandler:          errors.NewDefaultErrorHandlerWithoutMasking(),
 		errorWrapper:          errors.NewDefaultErrorWrapper(),
 		autoRepair:            autoRepair,
 		cloudValidators:       make(map[string]CloudProviderValidator),

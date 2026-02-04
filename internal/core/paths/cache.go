@@ -75,27 +75,41 @@ func DefaultPathCache() *PathCache {
 // Returns nil if the entry is not found or has expired.
 func (c *PathCache) Get(clusterName, organization string) *ClusterPaths {
 	c.mu.RLock()
-	defer c.mu.RUnlock()
-
+	
 	key := c.makeKey(clusterName, organization)
 	entry, exists := c.entries[key]
 
 	if !exists {
+		c.mu.RUnlock()
+		// Update miss counter with write lock
+		c.mu.Lock()
 		c.misses++
+		c.mu.Unlock()
 		return nil
 	}
 
 	// Fast path: check expiration without allocating time.Now()
 	// Only check expiration if TTL is set (non-zero)
 	if c.ttl > 0 && time.Since(entry.Timestamp) > c.ttl {
+		c.mu.RUnlock()
+		// Update miss counter with write lock
+		c.mu.Lock()
 		c.misses++
+		c.mu.Unlock()
 		// Don't delete here to avoid write lock upgrade
 		// Cleanup will happen on next Set or explicit Clear
 		return nil
 	}
 
+	paths := entry.Paths
+	c.mu.RUnlock()
+	
+	// Update hit counter with write lock
+	c.mu.Lock()
 	c.hits++
-	return entry.Paths
+	c.mu.Unlock()
+	
+	return paths
 }
 
 // Set stores a path resolution result in the cache.

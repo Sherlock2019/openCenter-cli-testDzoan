@@ -229,14 +229,14 @@ func TestGitOpsValidator_InvalidGitURL(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name:        "http scheme (insecure)",
-			gitURL:      "http://github.com/org/repo.git",
-			expectWarn:  true,
+			name:       "http scheme (insecure)",
+			gitURL:     "http://github.com/org/repo.git",
+			expectWarn: true,
 		},
 		{
-			name:        "missing .git suffix",
-			gitURL:      "https://github.com/org/repo",
-			expectWarn:  true,
+			name:       "missing .git suffix",
+			gitURL:     "https://github.com/org/repo",
+			expectWarn: true,
 		},
 		{
 			name:   "valid https URL",
@@ -252,7 +252,7 @@ func TestGitOpsValidator_InvalidGitURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a temporary directory that doesn't exist to avoid structure validation
 			tmpDir := filepath.Join(t.TempDir(), "nonexistent")
-			
+
 			value := map[string]interface{}{
 				"git_dir": tmpDir,
 				"git_url": tt.gitURL,
@@ -266,13 +266,13 @@ func TestGitOpsValidator_InvalidGitURL(t *testing.T) {
 			// Filter out warnings about non-existent directory
 			var relevantErrors []*validation.ValidationIssue
 			var relevantWarnings []*validation.ValidationIssue
-			
+
 			for _, e := range result.Errors {
 				if e.Field != "gitops.git_dir" {
 					relevantErrors = append(relevantErrors, e)
 				}
 			}
-			
+
 			for _, w := range result.Warnings {
 				if w.Field != "gitops.git_dir" {
 					relevantWarnings = append(relevantWarnings, w)

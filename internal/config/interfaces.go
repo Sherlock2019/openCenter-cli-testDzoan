@@ -65,24 +65,6 @@ type ConfigManagerInterface interface {
 	ValidateConfig(ctx context.Context, config *Config) *ConfigValidationResult
 }
 
-// ConfigLoaderInterface defines the interface for loading configurations from various sources.
-type ConfigLoaderInterface interface {
-	// LoadFromFile loads configuration from a file path
-	LoadFromFile(ctx context.Context, filePath string) (*Config, error)
-
-	// LoadFromBytes loads configuration from byte data
-	LoadFromBytes(ctx context.Context, data []byte, clusterName string) (*Config, error)
-
-	// LoadDefault creates a default configuration for a cluster
-	LoadDefault(ctx context.Context, clusterName string) (*Config, error)
-
-	// GenerateCompleteConfig generates a complete configuration with defaults merged
-	GenerateCompleteConfig(ctx context.Context, clusterName string) (*Config, error)
-
-	// LoadFromPath loads configuration using organization-aware path resolution
-	LoadFromPath(ctx context.Context, clusterName string) (*Config, error)
-}
-
 // ConfigValidatorInterface defines the interface for configuration validation.
 type ConfigValidatorInterface interface {
 	// Validate performs comprehensive validation on a configuration
@@ -99,46 +81,6 @@ type ConfigValidatorInterface interface {
 
 	// ValidateCloudProvider validates cloud provider specific configuration
 	ValidateCloudProvider(ctx context.Context, config *Config) *ConfigValidationResult
-}
-
-// PathResolverInterface defines the interface for path resolution operations.
-type PathResolverInterface interface {
-	// ResolveClusterPaths resolves all paths for a cluster
-	ResolveClusterPaths(ctx context.Context, clusterName, organization string) (*OrganizationClusterPaths, error)
-
-	// CreateClusterDirectories creates all necessary directories for a cluster
-	CreateClusterDirectories(ctx context.Context, clusterName, organization string) error
-
-	// CreateOrganizationStructure creates the organization directory structure
-	CreateOrganizationStructure(ctx context.Context, organization string) error
-
-	// ValidatePath validates that a path is safe and accessible
-	ValidatePath(ctx context.Context, path string) error
-
-	// IsLegacyCluster checks if a cluster uses legacy structure
-	IsLegacyCluster(ctx context.Context, clusterName string) (bool, error)
-
-	// GetClusterOrganization determines the organization for a cluster
-	GetClusterOrganization(ctx context.Context, clusterName string) (string, error)
-}
-
-// ConfigCacheInterface defines the interface for configuration caching.
-// This is an internal interface used by ConfigurationManager.
-type ConfigCacheInterface interface {
-	// Get retrieves a cached configuration
-	Get(ctx context.Context, key string) (*Config, bool)
-
-	// Set stores a configuration in cache
-	Set(ctx context.Context, key string, config *Config) error
-
-	// Delete removes a configuration from cache
-	Delete(ctx context.Context, key string) error
-
-	// Clear clears all cached configurations
-	Clear(ctx context.Context) error
-
-	// InvalidateCluster invalidates all cache entries for a cluster
-	InvalidateCluster(ctx context.Context, clusterName string) error
 }
 
 // ConfigValidationResult represents the result of configuration validation.

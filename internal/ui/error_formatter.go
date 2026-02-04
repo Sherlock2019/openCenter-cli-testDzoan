@@ -68,7 +68,7 @@ type DefaultErrorFormatter struct {
 // Requirements: 15.1, 15.2, 15.3
 func NewDefaultErrorFormatter() *DefaultErrorFormatter {
 	formatter := &DefaultErrorFormatter{
-		errorHandler:  errors.NewDefaultErrorHandler(),
+		errorHandler:  errors.NewDefaultErrorHandlerWithoutMasking(),
 		masker:        security.NewDefaultCredentialMasker(),
 		errorRegistry: make(map[string]ErrorInfo),
 	}

@@ -276,4 +276,3 @@ func TestConfigCache_SetWithoutExpiration(t *testing.T) {
 		t.Error("expected non-nil config for non-expiring entry")
 	}
 }
-

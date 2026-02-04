@@ -470,17 +470,17 @@ func TestSecurityValidator_AuditLogging(t *testing.T) {
 
 	// Mock audit logger
 	var loggedViolations []struct {
-		actor      string
-		inputType  string
-		reason     string
+		actor     string
+		inputType string
+		reason    string
 	}
 
 	mockLogger := &mockAuditLogger{
 		logFunc: func(ctx context.Context, actor, inputType, reason string) error {
 			loggedViolations = append(loggedViolations, struct {
-				actor      string
-				inputType  string
-				reason     string
+				actor     string
+				inputType string
+				reason    string
 			}{actor, inputType, reason})
 			return nil
 		},

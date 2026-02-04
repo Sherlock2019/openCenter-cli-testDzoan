@@ -47,10 +47,10 @@ type InitResult struct {
 
 // InitService handles cluster initialization business logic
 type InitService struct {
-	pathResolver        *paths.PathResolver
-	validationEngine    *validation.ValidationEngine
-	configManager       *config.ConfigManager
-	configurationMgr    *config.ConfigurationManager
+	pathResolver     *paths.PathResolver
+	validationEngine *validation.ValidationEngine
+	configManager    *config.ConfigManager
+	configurationMgr *config.ConfigurationManager
 }
 
 // NewInitService creates a new InitService
@@ -74,7 +74,7 @@ func NewInitServiceWithConfigMgr(
 		// Try to create one, but don't fail if it doesn't work
 		configurationMgr, _ = config.NewConfigurationManager()
 	}
-	
+
 	return &InitService{
 		pathResolver:     pathResolver,
 		validationEngine: validationEngine,
@@ -413,7 +413,7 @@ func (s *InitService) saveConfig(ctx context.Context, cfg *config.Config, config
 	if s.configurationMgr != nil {
 		return s.configurationMgr.Save(ctx, cfg)
 	}
-	
+
 	// Fallback to direct file write
 	data, err := yaml.Marshal(cfg)
 	if err != nil {

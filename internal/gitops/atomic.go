@@ -17,6 +17,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
 )
 
 // AtomicWriter provides atomic file write operations to prevent partial writes.
@@ -25,12 +28,17 @@ import (
 type AtomicWriter struct {
 	workspace    *GitOpsWorkspace
 	dryRunWriter *DryRunAtomicWriter // nil if not in dry-run mode
+	fileSystem   fs.FileSystem
 }
 
 // NewAtomicWriter creates a new atomic writer for the given workspace.
 // If the workspace is in dry-run mode, it returns a dry-run writer that records
 // operations without making filesystem changes.
 func NewAtomicWriter(workspace *GitOpsWorkspace) *AtomicWriter {
+	// Create FileSystem instance
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fileSystem := fs.NewDefaultFileSystem(errorHandler)
+
 	// Check if workspace is in dry-run mode
 	if isDryRun, ok := workspace.GetMetadata("is_dryrun"); ok && isDryRun.(bool) {
 		// Get the dry-run workspace from metadata
@@ -41,13 +49,15 @@ func NewAtomicWriter(workspace *GitOpsWorkspace) *AtomicWriter {
 				return &AtomicWriter{
 					workspace:    workspace,
 					dryRunWriter: NewDryRunAtomicWriter(drw, ""),
+					fileSystem:   fileSystem,
 				}
 			}
 		}
 	}
 
 	return &AtomicWriter{
-		workspace: workspace,
+		workspace:  workspace,
+		fileSystem: fileSystem,
 	}
 }
 
@@ -131,8 +141,8 @@ func (aw *AtomicWriter) WriteFileString(relativePath string, content string, per
 // CopyFile copies a file atomically within the workspace.
 // The source file is read and then written atomically to the destination.
 func (aw *AtomicWriter) CopyFile(srcPath, destRelativePath string, perm os.FileMode) error {
-	// Read source file
-	data, err := os.ReadFile(srcPath)
+	// Read source file using FileSystem wrapper
+	data, err := aw.fileSystem.ReadFile(srcPath)
 	if err != nil {
 		return fmt.Errorf("failed to read source file: %w", err)
 	}

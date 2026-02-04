@@ -31,7 +31,7 @@ type DefaultErrorAggregator struct {
 func NewDefaultErrorAggregator() *DefaultErrorAggregator {
 	return &DefaultErrorAggregator{
 		errors:  make([]error, 0),
-		handler: NewDefaultErrorHandler(),
+		handler: NewDefaultErrorHandlerWithoutMasking(),
 	}
 }
 
@@ -233,7 +233,7 @@ type MultiFieldAggregator struct {
 func NewMultiFieldAggregator() *MultiFieldAggregator {
 	return &MultiFieldAggregator{
 		fieldErrors: make(map[string]*DefaultErrorAggregator),
-		handler:     NewDefaultErrorHandler(),
+		handler:     NewDefaultErrorHandlerWithoutMasking(),
 	}
 }
 

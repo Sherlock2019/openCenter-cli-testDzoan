@@ -15,15 +15,15 @@ import (
 func setupValidationEngine(t *testing.T) *validation.ValidationEngine {
 	t.Helper()
 	engine := validation.NewValidationEngine()
-	
+
 	if err := engine.Register(validators.NewClusterNameValidator()); err != nil {
 		t.Fatalf("Failed to register cluster validator: %v", err)
 	}
-	
+
 	if err := engine.Register(validators.NewOrganizationNameValidator()); err != nil {
 		t.Fatalf("Failed to register organization validator: %v", err)
 	}
-	
+
 	return engine
 }
 

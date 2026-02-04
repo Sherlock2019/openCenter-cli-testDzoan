@@ -46,10 +46,10 @@ type ServiceConfig interface {
 //	validator := validators.NewServiceValidator("loki")
 //	result, err := validator.Validate(ctx, serviceConfig)
 type ServiceValidator struct {
-	serviceName       string
+	serviceName        string
 	extensionValidator validation.Validator
-	namespacePattern  *regexp.Regexp
-	namePattern       *regexp.Regexp
+	namespacePattern   *regexp.Regexp
+	namePattern        *regexp.Regexp
 }
 
 // NewServiceValidator creates a new service validator.

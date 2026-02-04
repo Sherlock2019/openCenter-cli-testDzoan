@@ -58,7 +58,7 @@ func NewSetupServiceWithConfigMgr(
 		// Try to create one, but don't fail if it doesn't work
 		configurationMgr, _ = config.NewConfigurationManager()
 	}
-	
+
 	return &SetupService{
 		pathResolver:     pathResolver,
 		validationEngine: validationEngine,

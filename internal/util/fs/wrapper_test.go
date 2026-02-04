@@ -25,7 +25,7 @@ import (
 )
 
 func TestDefaultFileSystem_ReadFile(t *testing.T) {
-	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandler())
+	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandlerWithoutMasking())
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
 	testData := []byte("test content")
@@ -47,7 +47,7 @@ func TestDefaultFileSystem_ReadFile(t *testing.T) {
 }
 
 func TestDefaultFileSystem_WriteFile(t *testing.T) {
-	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandler())
+	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandlerWithoutMasking())
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
 	testData := []byte("test content")
@@ -69,7 +69,7 @@ func TestDefaultFileSystem_WriteFile(t *testing.T) {
 }
 
 func TestDefaultFileSystem_WriteFileAtomic(t *testing.T) {
-	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandler())
+	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandlerWithoutMasking())
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
 	testData := []byte("test content")
@@ -101,7 +101,7 @@ func TestDefaultFileSystem_WriteFileAtomic(t *testing.T) {
 }
 
 func TestDefaultFileSystem_Exists(t *testing.T) {
-	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandler())
+	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandlerWithoutMasking())
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
 
@@ -122,7 +122,7 @@ func TestDefaultFileSystem_Exists(t *testing.T) {
 }
 
 func TestDefaultFileSystem_MkdirAll(t *testing.T) {
-	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandler())
+	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandlerWithoutMasking())
 	tmpDir := t.TempDir()
 	testDir := filepath.Join(tmpDir, "a", "b", "c")
 
@@ -143,7 +143,7 @@ func TestDefaultFileSystem_MkdirAll(t *testing.T) {
 }
 
 func TestDefaultFileSystem_Remove(t *testing.T) {
-	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandler())
+	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandlerWithoutMasking())
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
 
@@ -164,7 +164,7 @@ func TestDefaultFileSystem_Remove(t *testing.T) {
 }
 
 func TestDefaultFileSystem_Stat(t *testing.T) {
-	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandler())
+	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandlerWithoutMasking())
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
 	testData := []byte("test content")
@@ -190,7 +190,7 @@ func TestDefaultFileSystem_Stat(t *testing.T) {
 }
 
 func TestDefaultFileSystem_ReadFile_Error(t *testing.T) {
-	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandler())
+	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandlerWithoutMasking())
 	tmpDir := t.TempDir()
 	nonExistentFile := filepath.Join(tmpDir, "nonexistent.txt")
 
@@ -207,15 +207,15 @@ func TestDefaultFileSystem_ReadFile_Error(t *testing.T) {
 }
 
 func TestDefaultFileSystem_WriteFileAtomic_CleanupOnFailure(t *testing.T) {
-	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandler())
+	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandlerWithoutMasking())
 	tmpDir := t.TempDir()
-	
+
 	// Create a read-only directory to force rename failure
 	readOnlyDir := filepath.Join(tmpDir, "readonly")
 	if err := os.Mkdir(readOnlyDir, 0555); err != nil {
 		t.Fatalf("failed to create read-only directory: %v", err)
 	}
-	
+
 	testFile := filepath.Join(readOnlyDir, "test.txt")
 	testData := []byte("test content")
 

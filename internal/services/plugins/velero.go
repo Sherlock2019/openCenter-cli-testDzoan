@@ -9,31 +9,62 @@ import (
 )
 
 // VeleroPlugin implements the ServicePlugin interface for Velero
-type VeleroPlugin struct{}
+// using composition with BaseServicePlugin
+type VeleroPlugin struct {
+	*svc.BaseServicePlugin
+}
 
 // NewVeleroPlugin creates a new VeleroPlugin
 func NewVeleroPlugin() svc.ServicePlugin {
-	return &VeleroPlugin{}
+	// Create base plugin with metadata
+	base := svc.NewBasePlugin(svc.PluginMetadata{
+		Name:        "velero",
+		Version:     "1.0.0",
+		Description: "Backup and disaster recovery for Kubernetes",
+		Type:        svc.ServiceTypeStorage,
+		Author:      "opencenter",
+		License:     "Apache-2.0",
+	})
+
+	plugin := &VeleroPlugin{
+		BaseServicePlugin: base,
+	}
+
+	// Inject service-specific validation logic
+	base.SetValidator(plugin.validate)
+
+	// Inject service-specific rendering logic
+	base.SetRenderer(plugin.render)
+
+	// Inject service-specific status logic
+	base.SetStatusFunc(plugin.status)
+
+	return plugin
 }
 
-// Name returns the service name
-func (p *VeleroPlugin) Name() string {
-	return "velero"
+// validate implements velero specific validation
+func (p *VeleroPlugin) validate(config interface{}) error {
+	cfg, ok := config.(*services.VeleroConfig)
+	if !ok {
+		return fmt.Errorf("invalid config type for velero: expected *VeleroConfig")
+	}
+
+	// Basic validation
+	if cfg.IsEnabled() && cfg.BackupBucket == "" {
+		return fmt.Errorf("velero_backup_bucket is required when velero is enabled")
+	}
+
+	return nil
 }
 
-// Type returns the service type
-func (p *VeleroPlugin) Type() svc.ServiceType {
-	return svc.ServiceTypeStorage
-}
-
-// Render renders the service templates to the workspace
-func (p *VeleroPlugin) Render(ctx context.Context, config interface{}, workspace interface{}) error {
+// render implements velero specific rendering
+func (p *VeleroPlugin) render(ctx context.Context, config interface{}, workspace interface{}) error {
 	// Template rendering will be handled by the template system
 	return nil
 }
 
-// Status returns the current status of the service
-func (p *VeleroPlugin) Status(config interface{}) svc.ServiceStatus {
+// status implements velero specific status logic
+func (p *VeleroPlugin) status(config interface{}) svc.ServiceStatus {
 	cfg, ok := config.(*services.VeleroConfig)
 	if !ok {
 		return svc.ServiceStatus{

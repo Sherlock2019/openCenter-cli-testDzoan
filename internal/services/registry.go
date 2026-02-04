@@ -149,7 +149,7 @@ func (r *DefaultServiceRegistry) RegisterService(service ServiceDefinition) erro
 	}
 
 	r.services[service.Name] = service
-	
+
 	// Register service validator with the validation engine
 	// Only register if not already registered
 	serviceValidator := validators.NewServiceValidator(service.Name)
@@ -158,7 +158,7 @@ func (r *DefaultServiceRegistry) RegisterService(service ServiceDefinition) erro
 			return fmt.Errorf("failed to register validator for service %s: %w", service.Name, err)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -426,18 +426,18 @@ func (r *DefaultServiceRegistry) ValidateService(ctx context.Context, serviceNam
 	r.mu.RLock()
 	_, exists := r.services[serviceName]
 	r.mu.RUnlock()
-	
+
 	if !exists {
 		return nil, fmt.Errorf("service %s not found", serviceName)
 	}
-	
+
 	// Use ValidationEngine to validate the service
 	validatorName := fmt.Sprintf("service:%s", serviceName)
 	result, err := r.validationEngine.Validate(ctx, validatorName, config)
 	if err != nil {
 		return nil, fmt.Errorf("validation failed for service %s: %w", serviceName, err)
 	}
-	
+
 	return result, nil
 }
 

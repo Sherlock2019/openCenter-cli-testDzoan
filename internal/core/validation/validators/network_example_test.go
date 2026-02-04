@@ -65,8 +65,8 @@ func ExampleNetworkValidator_invalidConfiguration() {
 
 	// Create invalid configuration (overlapping CIDRs)
 	networkConfig := &validators.NetworkConfig{
-		SubnetPods:     "10.96.1.0/24",  // Overlaps with service CIDR
-		SubnetServices: "10.96.0.0/12",  // Contains pod CIDR
+		SubnetPods:     "10.96.1.0/24", // Overlaps with service CIDR
+		SubnetServices: "10.96.0.0/12", // Contains pod CIDR
 		DNSNameservers: []string{"invalid-ip"},
 	}
 

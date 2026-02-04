@@ -26,19 +26,26 @@ import (
 	"sync"
 
 	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
 )
 
 // DefaultEncryptor implements Encryptor interface
 type DefaultEncryptor struct {
-	ageKeys []string
-	pgpKeys []string
+	ageKeys    []string
+	pgpKeys    []string
+	fileSystem fs.FileSystem
 }
 
 // NewDefaultEncryptor creates a new SOPS encryptor
 func NewDefaultEncryptor(ageKeys, pgpKeys []string) *DefaultEncryptor {
+	// Create FileSystem instance
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fileSystem := fs.NewDefaultFileSystem(errorHandler)
+
 	return &DefaultEncryptor{
-		ageKeys: ageKeys,
-		pgpKeys: pgpKeys,
+		ageKeys:    ageKeys,
+		pgpKeys:    pgpKeys,
+		fileSystem: fileSystem,
 	}
 }
 
@@ -291,7 +298,7 @@ func (e *DefaultEncryptor) DecryptFile(ctx context.Context, filePath string, out
 
 // IsFileEncrypted checks if a file is encrypted with SOPS
 func (e *DefaultEncryptor) IsFileEncrypted(filePath string) (bool, error) {
-	content, err := os.ReadFile(filePath)
+	content, err := e.fileSystem.ReadFile(filePath)
 	if err != nil {
 		return false, fmt.Errorf("failed to read file: %w", err)
 	}
@@ -347,7 +354,7 @@ func (e *DefaultEncryptor) RotateKeys(ctx context.Context, filePath string, newA
 
 // GetEncryptedContent returns the encrypted content of a file without decrypting
 func (e *DefaultEncryptor) GetEncryptedContent(filePath string) (string, error) {
-	content, err := os.ReadFile(filePath)
+	content, err := e.fileSystem.ReadFile(filePath)
 	if err != nil {
 		return "", &errors.StructuredError{
 			Type:    errors.FileError,

@@ -40,7 +40,7 @@ limitations under the License.
 //	    configPath := testing.CreateTempConfig(t, configContent)
 //	    // configPath points to a temporary config.yaml file
 //	    // The file and directory are automatically cleaned up after the test
-//	
+//
 //	    config, err := LoadConfig(configPath)
 //	    testing.AssertNoError(t, err, "failed to load config")
 //	    testing.AssertEqual(t, config.Cluster.Name, "test-cluster", "cluster name")
@@ -57,7 +57,7 @@ limitations under the License.
 //	    tmpDir := testing.CreateTempDir(t, files)
 //	    // tmpDir contains the specified directory structure
 //	    // All files and directories are automatically cleaned up after the test
-//	
+//
 //	    err := GenerateGitOps(tmpDir)
 //	    testing.AssertNoError(t, err, "failed to generate GitOps")
 //	    testing.AssertFileExists(t, filepath.Join(tmpDir, "infrastructure/main.tf"))
@@ -67,19 +67,19 @@ limitations under the License.
 //
 //	func TestValidation(t *testing.T) {
 //	    config := &Config{Name: "test"}
-//	
+//
 //	    // Assert no error
 //	    err := ValidateConfig(config)
 //	    testing.AssertNoError(t, err, "config validation failed")
-//	
+//
 //	    // Assert error is returned
 //	    invalidConfig := &Config{}
 //	    err = ValidateConfig(invalidConfig)
 //	    testing.AssertError(t, err, "expected validation error for empty config")
-//	
+//
 //	    // Assert equality
 //	    testing.AssertEqual(t, config.Name, "test", "config name")
-//	
+//
 //	    // Assert file existence
 //	    testing.AssertFileExists(t, "/path/to/file")
 //	    testing.AssertFileNotExists(t, "/path/to/deleted/file")

@@ -36,7 +36,7 @@ limitations under the License.
 //
 //	// Register service with no dependencies
 //	container.Singleton("ErrorHandler", func() (errors.ErrorHandler, error) {
-//	    return errors.NewDefaultErrorHandler(), nil
+//	    return errors.NewDefaultErrorHandlerWithoutMasking(), nil
 //	})
 //
 //	// Register service with dependencies (automatically injected)
@@ -204,7 +204,7 @@ limitations under the License.
 //
 //	    // Register minimal services for testing
 //	    container.Singleton("ErrorHandler", func() (errors.ErrorHandler, error) {
-//	        return errors.NewDefaultErrorHandler(), nil
+//	        return errors.NewDefaultErrorHandlerWithoutMasking(), nil
 //	    })
 //
 //	    container.Singleton("FileSystem", func(eh errors.ErrorHandler) (fs.FileSystem, error) {

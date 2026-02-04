@@ -157,6 +157,7 @@ this is not valid yaml: [
 		t.Error("Expected error for invalid YAML")
 	}
 }
+
 // Helper functions
 
 func createTestV1ConfigForWarnings() Config {

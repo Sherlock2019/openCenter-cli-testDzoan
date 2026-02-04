@@ -1077,7 +1077,6 @@ func TestConditionalConfigurationRealWorldScenario(t *testing.T) {
 	})
 }
 
-
 // TestConfigurationManagerNewBuilder tests creating a builder from ConfigurationManager.
 func TestConfigurationManagerNewBuilder(t *testing.T) {
 	manager, err := NewConfigurationManager()

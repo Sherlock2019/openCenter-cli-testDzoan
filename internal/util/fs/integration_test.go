@@ -27,7 +27,7 @@ import (
 // TestFileSystemIntegration tests the FileSystem wrapper with ErrorHandler integration
 func TestFileSystemIntegration(t *testing.T) {
 	// Create FileSystem with ErrorHandler
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fs := NewDefaultFileSystem(errorHandler)
 
 	tmpDir := t.TempDir()

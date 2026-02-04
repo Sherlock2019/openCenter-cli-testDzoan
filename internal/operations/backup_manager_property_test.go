@@ -120,7 +120,10 @@ func TestProperty_BackupCompleteness(t *testing.T) {
 
 			return true
 		},
-		gen.RegexMatch("[a-z][a-z0-9-]{0,30}"),
+		gen.RegexMatch("[a-z][a-z0-9-]{0,29}[a-z0-9]").SuchThat(func(s string) bool {
+			// Ensure cluster name is valid (no trailing hyphens)
+			return len(s) >= 1 && len(s) <= 63 && s[len(s)-1] != '-'
+		}),
 	))
 
 	properties.TestingRun(t, gopter.ConsoleReporter(false))
@@ -250,7 +253,10 @@ func TestProperty_BackupRestorationRoundTrip(t *testing.T) {
 
 			return true
 		},
-		gen.RegexMatch("[a-z][a-z0-9-]{0,30}"),
+		gen.RegexMatch("[a-z][a-z0-9-]{0,29}[a-z0-9]").SuchThat(func(s string) bool {
+			// Ensure cluster name is valid (no trailing hyphens)
+			return len(s) >= 1 && len(s) <= 63 && s[len(s)-1] != '-'
+		}),
 		gen.AnyString().SuchThat(func(s string) bool { return len(s) > 0 && len(s) < 1000 }),
 		gen.RegexMatch("[a-zA-Z0-9]{8,32}"),
 	))
@@ -335,7 +341,10 @@ func TestProperty_BackupEncryption(t *testing.T) {
 
 			return true
 		},
-		gen.RegexMatch("[a-z][a-z0-9-]{0,30}"),
+		gen.RegexMatch("[a-z][a-z0-9-]{0,29}[a-z0-9]").SuchThat(func(s string) bool {
+			// Ensure cluster name is valid (no trailing hyphens)
+			return len(s) >= 1 && len(s) <= 63 && s[len(s)-1] != '-'
+		}),
 		gen.RegexMatch("[a-zA-Z0-9]{8,32}"),
 	))
 
@@ -415,7 +424,10 @@ func TestProperty_BackupIntegrity(t *testing.T) {
 
 			return true
 		},
-		gen.RegexMatch("[a-z][a-z0-9-]{0,30}"),
+		gen.RegexMatch("[a-z][a-z0-9-]{0,29}[a-z0-9]").SuchThat(func(s string) bool {
+			// Ensure cluster name is valid (no trailing hyphens)
+			return len(s) >= 1 && len(s) <= 63 && s[len(s)-1] != '-'
+		}),
 	))
 
 	properties.TestingRun(t, gopter.ConsoleReporter(false))

@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -34,8 +33,24 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	utilfs "github.com/rackerlabs/opencenter-cli/internal/util/fs"
 	"github.com/rackerlabs/opencenter-cli/internal/util/metrics"
 )
+
+// FileSystemReader provides an interface for reading files.
+// This allows for dependency injection and testing.
+type FileSystemReader interface {
+	ReadFile(path string) ([]byte, error)
+}
+
+// defaultFileSystemReader implements FileSystemReader using the util/fs package.
+type defaultFileSystemReader struct {
+	fs utilfs.FileSystem
+}
+
+func (r *defaultFileSystemReader) ReadFile(path string) ([]byte, error) {
+	return r.fs.ReadFile(path)
+}
 
 // TemplateEngine provides a unified interface for template rendering operations.
 // It abstracts template processing to support multiple template formats and
@@ -98,17 +113,24 @@ type GoTemplateEngine struct {
 	rootTemplate *template.Template      // Root template for named template collections
 	sandbox      *DefaultTemplateSandbox // Optional sandbox for secure rendering
 	sandboxed    bool                    // Whether sandboxing is enabled
+	fileSystem   FileSystemReader        // File system abstraction for reading files
 }
 
 // NewGoTemplateEngine creates a new Go template engine with default settings.
 // Caching is enabled by default for optimal performance.
 // Sprig functions are automatically registered for enhanced template capabilities.
 func NewGoTemplateEngine() *GoTemplateEngine {
+	// Create default file system reader
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fs := utilfs.NewDefaultFileSystem(errorHandler)
+	fileSystemReader := &defaultFileSystemReader{fs: fs}
+
 	engine := &GoTemplateEngine{
 		funcMap:      make(template.FuncMap),
 		cache:        make(map[string]*template.Template),
 		cacheEnabled: true,
 		sandboxed:    false,
+		fileSystem:   fileSystemReader,
 	}
 
 	// Register Sprig functions by default for compatibility with existing templates
@@ -233,13 +255,13 @@ func (e *GoTemplateEngine) readTemplateContent(templatePath string) ([]byte, err
 		content, err := fs.ReadFile(fsys, templatePath)
 		if err != nil {
 			// If not found in embedded FS, try regular file system
-			return os.ReadFile(templatePath)
+			return e.fileSystem.ReadFile(templatePath)
 		}
 		return content, nil
 	}
 
 	// Try regular file system
-	return os.ReadFile(templatePath)
+	return e.fileSystem.ReadFile(templatePath)
 }
 
 // RenderString renders a template string with the given data.
@@ -406,7 +428,7 @@ func (e *GoTemplateEngine) LoadFromFile(path string) error {
 	defer e.mu.Unlock()
 
 	// Read file content
-	content, err := os.ReadFile(path)
+	content, err := e.fileSystem.ReadFile(path)
 	if err != nil {
 		return wrapTemplateError(err, path)
 	}
@@ -465,14 +487,14 @@ func (e *GoTemplateEngine) getTemplate(templatePath string) (*template.Template,
 		content, err = fs.ReadFile(e.fsys, templatePath)
 		if err != nil {
 			// If not found in embedded FS, try regular file system
-			content, err = os.ReadFile(templatePath)
+			content, err = e.fileSystem.ReadFile(templatePath)
 			if err != nil {
 				return nil, err
 			}
 		}
 	} else {
 		// Try regular file system
-		content, err = os.ReadFile(templatePath)
+		content, err = e.fileSystem.ReadFile(templatePath)
 		if err != nil {
 			return nil, err
 		}
@@ -677,7 +699,11 @@ func wrapTemplateError(err error, templatePath string) error {
 // extractTemplateContext reads the template file and extracts lines around the error location.
 // It returns contextRadius lines before and after the error line for debugging context.
 func extractTemplateContext(templatePath string, errorLine, contextRadius int) []string {
-	content, err := os.ReadFile(templatePath)
+	// Use default file system for error reporting
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fs := utilfs.NewDefaultFileSystem(errorHandler)
+	
+	content, err := fs.ReadFile(templatePath)
 	if err != nil {
 		return nil
 	}

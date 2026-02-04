@@ -57,7 +57,7 @@ func setupBenchmarkManager(b *testing.B) (*ConfigurationManager, string, func())
 	}
 
 	// Create manager
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
 	pathResolver := paths.NewPathResolver(tmpDir)
 	validator := validation.NewValidationEngine()

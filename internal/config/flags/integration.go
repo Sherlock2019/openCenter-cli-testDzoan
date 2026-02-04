@@ -942,25 +942,25 @@ func toCamelCase(s string) string {
 	words := strings.FieldsFunc(s, func(r rune) bool {
 		return r == '_' || r == '-'
 	})
-	
+
 	if len(words) == 0 {
 		return strings.ToUpper(s[:1]) + s[1:]
 	}
-	
+
 	// Capitalize each word
 	for i, word := range words {
 		if len(word) > 0 {
 			words[i] = strings.ToUpper(word[:1]) + word[1:]
 		}
 	}
-	
+
 	return strings.Join(words, "")
 }
 
 // navigateToField navigates through a struct to find the target field
 func (c *CLIIntegration) navigateToField(obj interface{}, path string) (reflect.Value, error) {
 	v := reflect.ValueOf(obj)
-	
+
 	// Dereference pointer if needed
 	if v.Kind() == reflect.Ptr {
 		if v.IsNil() {
@@ -970,7 +970,7 @@ func (c *CLIIntegration) navigateToField(obj interface{}, path string) (reflect.
 	}
 
 	parts := strings.Split(path, ".")
-	
+
 	for i, part := range parts {
 		// Check if current value is a map
 		if v.Kind() == reflect.Map {
@@ -988,7 +988,7 @@ func (c *CLIIntegration) navigateToField(obj interface{}, path string) (reflect.
 			// Navigate into the map
 			mapKey := reflect.ValueOf(part)
 			mapValue := v.MapIndex(mapKey)
-			
+
 			if !mapValue.IsValid() {
 				// Create new value for this key
 				mapValueType := v.Type().Elem()
@@ -1164,17 +1164,17 @@ func (c *CLIIntegration) setSliceField(field reflect.Value, value interface{}) e
 	if valueReflect.Kind() == reflect.Slice {
 		// Create a new slice of the correct type
 		newSlice := reflect.MakeSlice(field.Type(), valueReflect.Len(), valueReflect.Len())
-		
+
 		// Copy elements with type conversion
 		for i := 0; i < valueReflect.Len(); i++ {
 			elem := valueReflect.Index(i)
 			newElem := newSlice.Index(i)
-			
+
 			if err := c.setFieldValueTyped(newElem, elem.Interface()); err != nil {
 				return fmt.Errorf("failed to set slice element %d: %w", i, err)
 			}
 		}
-		
+
 		field.Set(newSlice)
 		return nil
 	}
@@ -1196,28 +1196,28 @@ func (c *CLIIntegration) setMapFieldValue(field reflect.Value, value interface{}
 	if valueReflect.Kind() == reflect.Map {
 		// Create a new map of the correct type
 		newMap := reflect.MakeMap(field.Type())
-		
+
 		// Copy key-value pairs with type conversion
 		iter := valueReflect.MapRange()
 		for iter.Next() {
 			key := iter.Key()
 			val := iter.Value()
-			
+
 			// Convert key
 			newKey := reflect.New(field.Type().Key()).Elem()
 			if err := c.setFieldValueTyped(newKey, key.Interface()); err != nil {
 				return fmt.Errorf("failed to convert map key: %w", err)
 			}
-			
+
 			// Convert value
 			newVal := reflect.New(field.Type().Elem()).Elem()
 			if err := c.setFieldValueTyped(newVal, val.Interface()); err != nil {
 				return fmt.Errorf("failed to convert map value: %w", err)
 			}
-			
+
 			newMap.SetMapIndex(newKey, newVal)
 		}
-		
+
 		field.Set(newMap)
 		return nil
 	}
@@ -1252,26 +1252,26 @@ func (c *CLIIntegration) applyArrayOperationToStruct(configStruct interface{}, a
 		if arrayOp.Index < 0 || arrayOp.Index > field.Len() {
 			return fmt.Errorf("index %d out of range for slice of length %d", arrayOp.Index, field.Len())
 		}
-		
+
 		newElem := reflect.New(field.Type().Elem()).Elem()
 		if err := c.setFieldValueTyped(newElem, arrayOp.Value); err != nil {
 			return err
 		}
-		
+
 		// Create new slice with room for one more element
 		newSlice := reflect.MakeSlice(field.Type(), field.Len()+1, field.Len()+1)
-		
+
 		// Copy elements before insertion point
 		reflect.Copy(newSlice, field.Slice(0, arrayOp.Index))
-		
+
 		// Set the new element
 		newSlice.Index(arrayOp.Index).Set(newElem)
-		
+
 		// Copy elements after insertion point
 		if arrayOp.Index < field.Len() {
 			reflect.Copy(newSlice.Slice(arrayOp.Index+1, newSlice.Len()), field.Slice(arrayOp.Index, field.Len()))
 		}
-		
+
 		field.Set(newSlice)
 
 	case "remove":
@@ -1279,18 +1279,18 @@ func (c *CLIIntegration) applyArrayOperationToStruct(configStruct interface{}, a
 		if arrayOp.Index < 0 || arrayOp.Index >= field.Len() {
 			return fmt.Errorf("index %d out of range for slice of length %d", arrayOp.Index, field.Len())
 		}
-		
+
 		// Create new slice without the element
 		newSlice := reflect.MakeSlice(field.Type(), field.Len()-1, field.Len()-1)
-		
+
 		// Copy elements before removal point
 		reflect.Copy(newSlice, field.Slice(0, arrayOp.Index))
-		
+
 		// Copy elements after removal point
 		if arrayOp.Index < field.Len()-1 {
 			reflect.Copy(newSlice.Slice(arrayOp.Index, newSlice.Len()), field.Slice(arrayOp.Index+1, field.Len()))
 		}
-		
+
 		field.Set(newSlice)
 
 	default:
@@ -1334,7 +1334,7 @@ func (c *CLIIntegration) applyMapOperationToStruct(configStruct interface{}, map
 		if !ok {
 			return fmt.Errorf("merge operation requires a map value")
 		}
-		
+
 		for k, v := range valueMap {
 			key := reflect.ValueOf(k)
 			val := reflect.New(field.Type().Elem()).Elem()

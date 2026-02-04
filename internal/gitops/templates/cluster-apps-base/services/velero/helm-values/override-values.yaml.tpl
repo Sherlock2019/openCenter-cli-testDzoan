@@ -7,12 +7,12 @@ configuration:
   defaultSnapshotMoveData: false
   defaultVolumesToFsBackup: false
   backupStorageLocation:
-    - name: {{ .OpenCenter.OpenStack.Region }}
+    - name: {{ .OpenCenter.Infrastructure.Cloud.OpenStack.Region }}
       provider: community.openstack.org/openstack
       default: true
-      bucket: {{ .OpenCenter.Cluster.Name }}-velero
+      bucket: {{ .OpenCenter.Meta.Name }}-velero
       config:
-        region: {{ .OpenCenter.OpenStack.Region }}
+        region: {{ .OpenCenter.Infrastructure.Cloud.OpenStack.Region }}
   volumeSnapshotLocation: []
 initContainers:
   - name: velero-plugin-openstack

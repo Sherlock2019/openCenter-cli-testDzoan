@@ -10,32 +10,68 @@ import (
 )
 
 // CertManagerPlugin implements the ServicePlugin interface for cert-manager
-type CertManagerPlugin struct{}
+// using composition with BaseServicePlugin
+type CertManagerPlugin struct {
+	*svc.BaseServicePlugin
+}
 
 // NewCertManagerPlugin creates a new CertManagerPlugin
 func NewCertManagerPlugin() svc.ServicePlugin {
-	return &CertManagerPlugin{}
+	// Create base plugin with metadata
+	base := svc.NewBasePlugin(svc.PluginMetadata{
+		Name:        "cert-manager",
+		Version:     "1.0.0",
+		Description: "Certificate management for Kubernetes",
+		Type:        svc.ServiceTypeSecurity,
+		Author:      "opencenter",
+		License:     "Apache-2.0",
+	})
+
+	plugin := &CertManagerPlugin{
+		BaseServicePlugin: base,
+	}
+
+	// Inject service-specific validation logic
+	base.SetValidator(plugin.validate)
+
+	// Inject service-specific rendering logic
+	base.SetRenderer(plugin.render)
+
+	// Inject service-specific status logic
+	base.SetStatusFunc(plugin.status)
+
+	return plugin
 }
 
-// Name returns the service name
-func (p *CertManagerPlugin) Name() string {
-	return "cert-manager"
+// validate implements cert-manager specific validation
+func (p *CertManagerPlugin) validate(config interface{}) error {
+	cfg, ok := config.(*services.CertManagerConfig)
+	if !ok {
+		return fmt.Errorf("invalid config type for cert-manager: expected *CertManagerConfig")
+	}
+
+	// Basic validation
+	if cfg.IsEnabled() {
+		if cfg.LetsEncryptServer != "" && !strings.HasPrefix(cfg.LetsEncryptServer, "https://") {
+			return fmt.Errorf("letsencrypt_server must be an HTTPS URL")
+		}
+		if cfg.Email != "" && !strings.Contains(cfg.Email, "@") {
+			return fmt.Errorf("email must be a valid email address")
+		}
+	}
+
+	return nil
 }
 
-// Type returns the service type
-func (p *CertManagerPlugin) Type() svc.ServiceType {
-	return svc.ServiceTypeSecurity
-}
-
-// Render renders the service templates to the workspace
-func (p *CertManagerPlugin) Render(ctx context.Context, config interface{}, workspace interface{}) error {
+// render implements cert-manager specific rendering
+func (p *CertManagerPlugin) render(ctx context.Context, config interface{}, workspace interface{}) error {
 	// Template rendering will be handled by the template system
 	// This is a placeholder for future implementation
 	return nil
 }
 
-// Status returns the current status of the service
-func (p *CertManagerPlugin) Status(config interface{}) svc.ServiceStatus {
+// status implements cert-manager specific status logic
+func (p *CertManagerPlugin) status(config interface{}) svc.ServiceStatus {
 	cfg, ok := config.(*services.CertManagerConfig)
 	if !ok {
 		return svc.ServiceStatus{

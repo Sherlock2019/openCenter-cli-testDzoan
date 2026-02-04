@@ -37,6 +37,7 @@ type DefaultSOPSManager struct {
 	encryptor        Encryptor
 	validationEngine *validation.ValidationEngine
 	logger           *slog.Logger
+	fileSystem       fs.FileSystem
 }
 
 // NewDefaultSOPSManager creates a new SOPS manager with dependency injection
@@ -45,11 +46,16 @@ func NewDefaultSOPSManager(keyManager crypto.KeyManager, encryptor Encryptor, lo
 		logger = slog.Default()
 	}
 
+	// Create FileSystem instance
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fileSystem := fs.NewDefaultFileSystem(errorHandler)
+
 	manager := &DefaultSOPSManager{
 		keyManager:       keyManager,
 		encryptor:        encryptor,
 		validationEngine: validation.NewValidationEngine(),
 		logger:           logger,
+		fileSystem:       fileSystem,
 	}
 
 	// Register SOPS validators with the validation engine
@@ -62,7 +68,7 @@ func NewDefaultSOPSManager(keyManager crypto.KeyManager, encryptor Encryptor, lo
 func (m *DefaultSOPSManager) registerValidators() {
 	// Create a FileSystem instance for the SOPSKeyValidator
 	// We'll use a simple error handler that doesn't require dependencies
-	errorHandler := errors.NewDefaultErrorHandler()
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
 
 	// Register the SOPSKeyValidator
@@ -244,7 +250,7 @@ func (m *DefaultSOPSManager) CreateSOPSConfig(overlayPath string, cfg *config.Co
 	}
 
 	configPath := filepath.Join(overlayPath, ".sops.yaml")
-	if err := os.WriteFile(configPath, []byte(sopsConfig), 0o644); err != nil {
+	if err := m.fileSystem.WriteFile(configPath, []byte(sopsConfig), 0o644); err != nil {
 		return &errors.StructuredError{
 			Type:    errors.FileError,
 			Field:   ".sops.yaml",
@@ -511,7 +517,7 @@ func (m *DefaultSOPSManager) loadAgeKeyFromFile(keyFilePath string) (*crypto.Age
 	}
 
 	// Read the private key file
-	privateKeyData, err := os.ReadFile(keyFilePath)
+	privateKeyData, err := m.fileSystem.ReadFile(keyFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read age key file: %w", err)
 	}
@@ -538,7 +544,7 @@ func (m *DefaultSOPSManager) createSampleEncryptedSecretsForTemplate(ctx context
 	for filename, content := range sampleSecrets {
 		// Create temporary unencrypted file
 		tempFile := filepath.Join(samplesDir, filename+".tmp")
-		if err := os.WriteFile(tempFile, []byte(content), 0o644); err != nil {
+		if err := m.fileSystem.WriteFile(tempFile, []byte(content), 0o644); err != nil {
 			return fmt.Errorf("failed to write temp file %s: %w", tempFile, err)
 		}
 
