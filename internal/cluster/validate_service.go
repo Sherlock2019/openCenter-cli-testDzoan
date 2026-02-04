@@ -47,6 +47,7 @@ type ValidateService struct {
 	validationEngine      *validation.ValidationEngine
 	connectivityValidator *config.ConnectivityValidator
 	configManager         *config.ConfigManager
+	configurationMgr      *config.ConfigurationManager
 }
 
 // NewValidateService creates a new ValidateService
@@ -55,11 +56,28 @@ func NewValidateService(
 	validationEngine *validation.ValidationEngine,
 	configManager *config.ConfigManager,
 ) *ValidateService {
+	return NewValidateServiceWithConfigMgr(pathResolver, validationEngine, configManager, nil)
+}
+
+// NewValidateServiceWithConfigMgr creates a new ValidateService with optional ConfigurationManager
+func NewValidateServiceWithConfigMgr(
+	pathResolver *paths.PathResolver,
+	validationEngine *validation.ValidationEngine,
+	configManager *config.ConfigManager,
+	configurationMgr *config.ConfigurationManager,
+) *ValidateService {
+	// Create ConfigurationManager if not provided
+	if configurationMgr == nil {
+		// Try to create one, but don't fail if it doesn't work
+		configurationMgr, _ = config.NewConfigurationManager()
+	}
+	
 	return &ValidateService{
 		pathResolver:          pathResolver,
 		validationEngine:      validationEngine,
 		connectivityValidator: config.NewConnectivityValidator(10 * time.Second),
 		configManager:         configManager,
+		configurationMgr:      configurationMgr,
 	}
 }
 

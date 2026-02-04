@@ -71,7 +71,7 @@ This is useful for:
 			}
 
 			// Load cluster configuration
-			cfg, err := config.Load(clusterName)
+			cfg, err := loadConfig(cmd.Context(), clusterName)
 			if err != nil {
 				return fmt.Errorf("failed to load cluster configuration: %w", err)
 			}

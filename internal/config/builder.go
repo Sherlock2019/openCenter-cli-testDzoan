@@ -14,6 +14,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -102,9 +103,13 @@ type ConfigBuilder interface {
 	WithTag(key, value string) ConfigBuilder
 	WithAnnotation(key, value string) ConfigBuilder
 
+	// Defaults
+	WithDefaults() ConfigBuilder
+
 	// Build and validation
 	Build() (Config, error)
 	Validate() []ValidationError
+	Save(ctx context.Context) error
 }
 
 // FluentConfigBuilder implements ConfigBuilder with a fluent API pattern.
@@ -114,6 +119,7 @@ type FluentConfigBuilder struct {
 	validators      []BuilderValidator
 	errorAggregator *errors.ValidationAggregator
 	errorHandler    errors.ErrorHandler
+	manager         *ConfigurationManager // Reference to manager for validation and saving
 }
 
 // NewConfigBuilder creates a new FluentConfigBuilder with default values.
@@ -531,6 +537,65 @@ func (b *FluentConfigBuilder) WithAnnotation(key, value string) ConfigBuilder {
 	}
 	b.config.Metadata.Annotations[key] = value
 	return b
+}
+
+// WithDefaults applies provider-specific default values to the configuration.
+//
+// This method applies defaults based on the current provider setting:
+//   - CLI configuration defaults (from ~/.config/opencenter/config.yaml)
+//   - Organization-based defaults (S3 bucket naming, etc.)
+//   - Provider-specific defaults (OpenStack, AWS, etc.)
+//
+// The method should be called after setting the provider with WithProvider().
+//
+// Example:
+//
+//	builder := manager.NewBuilder("my-cluster").
+//	    WithProvider("openstack").
+//	    WithOrganization("my-org").
+//	    WithDefaults().  // Apply defaults for OpenStack
+//	    WithRegion("us-west-2")  // Override specific values
+func (b *FluentConfigBuilder) WithDefaults() ConfigBuilder {
+	// Apply all default layers
+	ApplyDefaults(&b.config)
+	return b
+}
+
+// Save builds the configuration, validates it, and saves it using the ConfigurationManager.
+//
+// This is a convenience method that combines Build() and manager.Save() in one call.
+// The configuration is validated before saving, and any validation errors are returned.
+//
+// Parameters:
+//   - ctx: Context for cancellation and timeouts
+//
+// Returns:
+//   - error: Build, validation, or save error
+//
+// Example:
+//
+//	err := builder.
+//	    WithProvider("openstack").
+//	    WithOrganization("my-org").
+//	    WithDefaults().
+//	    Save(ctx)
+//	if err != nil {
+//	    return fmt.Errorf("failed to save config: %w", err)
+//	}
+func (b *FluentConfigBuilder) Save(ctx context.Context) error {
+	// Build the configuration (includes validation)
+	config, err := b.Build()
+	if err != nil {
+		return err
+	}
+
+	// Check if manager is available
+	if b.manager == nil {
+		return fmt.Errorf("cannot save: builder not created from ConfigurationManager")
+	}
+
+	// Save using the manager
+	return b.manager.Save(ctx, &config)
 }
 
 // Build constructs the final configuration and validates it.

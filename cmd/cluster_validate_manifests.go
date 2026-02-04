@@ -18,7 +18,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/rackerlabs/opencenter-cli/internal/gitops"
 )
 
@@ -60,7 +59,7 @@ func runClusterValidateManifests(cmd *cobra.Command, args []string) error {
 	}
 
 	// Load configuration
-	cfg, err := config.Load(name)
+	cfg, err := loadConfig(cmd.Context(), name)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}

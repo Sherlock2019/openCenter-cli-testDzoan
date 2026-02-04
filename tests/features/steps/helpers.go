@@ -316,7 +316,13 @@ func (w *world) createCluster(name string) error {
 	orig := os.Getenv("OPENCENTER_CONFIG_DIR")
 	os.Setenv("OPENCENTER_CONFIG_DIR", w.configDir)
 	defer os.Setenv("OPENCENTER_CONFIG_DIR", orig)
-	return config.Save(cfg)
+	
+	// Use ConfigurationManager for save
+	mgr, err := config.NewConfigurationManager()
+	if err != nil {
+		return fmt.Errorf("failed to create config manager: %w", err)
+	}
+	return mgr.Save(context.Background(), &cfg)
 }
 
 // setActiveCluster writes the active marker file for the given
@@ -340,10 +346,18 @@ func (w *world) setConfigValue(path, value string) error {
 	if err != nil {
 		return err
 	}
-	cfg, err := config.Load(active)
+	
+	// Use ConfigurationManager for load
+	mgr, err := config.NewConfigurationManager()
+	if err != nil {
+		return fmt.Errorf("failed to create config manager: %w", err)
+	}
+	loadedCfg, err := mgr.Load(context.Background(), active)
 	if err != nil {
 		return err
 	}
+	cfg := *loadedCfg
+	
 	// Navigate to property path and set value. This simplistic
 	// implementation uses reflection via map[string]interface{} by
 	// serialising to YAML/JSON; for BDD tests it is sufficient.
@@ -358,7 +372,7 @@ func (w *world) setConfigValue(path, value string) error {
 	var newCfg config.Config
 	_ = yaml.Unmarshal(b, &newCfg)
 	newCfg.OpenCenter.Cluster.ClusterName = active
-	return config.Save(newCfg)
+	return mgr.Save(context.Background(), &newCfg)
 }
 
 // setNested assigns value into nested map given path parts. For now
@@ -706,10 +720,18 @@ func (w *world) theGitopsDirectoryIsAGitRepository() error {
 	if err != nil {
 		return err
 	}
-	cfg, err := config.Load(active)
+	
+	// Use ConfigurationManager for load
+	mgr, err := config.NewConfigurationManager()
+	if err != nil {
+		return fmt.Errorf("failed to create config manager: %w", err)
+	}
+	loadedCfg, err := mgr.Load(context.Background(), active)
 	if err != nil {
 		return err
 	}
+	cfg := *loadedCfg
+	
 	dir := w.replaceTmp(cfg.GitOps().GitDir)
 	if dir == "" {
 		return fmt.Errorf("opencenter.gitops.git_dir not set for active cluster")

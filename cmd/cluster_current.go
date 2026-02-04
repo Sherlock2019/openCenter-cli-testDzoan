@@ -18,7 +18,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -40,7 +39,7 @@ Use --quiet to output only the cluster name without source information.`,
   # Show only cluster name (for scripting)
   opencenter cluster current --quiet`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			name, err := config.GetActive()
+			name, err := getActiveCluster()
 			if err != nil {
 				return err
 			}

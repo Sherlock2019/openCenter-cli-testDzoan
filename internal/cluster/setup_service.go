@@ -36,6 +36,7 @@ type SetupResult struct {
 type SetupService struct {
 	pathResolver     *paths.PathResolver
 	validationEngine *validation.ValidationEngine
+	configurationMgr *config.ConfigurationManager
 }
 
 // NewSetupService creates a new SetupService
@@ -43,9 +44,25 @@ func NewSetupService(
 	pathResolver *paths.PathResolver,
 	validationEngine *validation.ValidationEngine,
 ) *SetupService {
+	return NewSetupServiceWithConfigMgr(pathResolver, validationEngine, nil)
+}
+
+// NewSetupServiceWithConfigMgr creates a new SetupService with optional ConfigurationManager
+func NewSetupServiceWithConfigMgr(
+	pathResolver *paths.PathResolver,
+	validationEngine *validation.ValidationEngine,
+	configurationMgr *config.ConfigurationManager,
+) *SetupService {
+	// Create ConfigurationManager if not provided
+	if configurationMgr == nil {
+		// Try to create one, but don't fail if it doesn't work
+		configurationMgr, _ = config.NewConfigurationManager()
+	}
+	
 	return &SetupService{
 		pathResolver:     pathResolver,
 		validationEngine: validationEngine,
+		configurationMgr: configurationMgr,
 	}
 }
 
@@ -57,10 +74,25 @@ func (s *SetupService) Setup(ctx context.Context, opts SetupOptions) (*SetupResu
 		return nil, fmt.Errorf("resolving cluster paths: %w", err)
 	}
 
-	// Load configuration
-	cfg, err := config.Load(opts.ClusterName)
-	if err != nil {
-		return nil, fmt.Errorf("loading configuration: %w", err)
+	// Load configuration using ConfigurationManager
+	var cfg config.Config
+	if s.configurationMgr != nil {
+		loadedCfg, err := s.configurationMgr.Load(ctx, opts.ClusterName)
+		if err != nil {
+			return nil, fmt.Errorf("loading configuration: %w", err)
+		}
+		cfg = *loadedCfg
+	} else {
+		// Fallback: create temporary manager
+		tempMgr, err := config.NewConfigurationManager()
+		if err != nil {
+			return nil, fmt.Errorf("creating configuration manager: %w", err)
+		}
+		loadedCfg, err := tempMgr.Load(ctx, opts.ClusterName)
+		if err != nil {
+			return nil, fmt.Errorf("loading configuration: %w", err)
+		}
+		cfg = *loadedCfg
 	}
 
 	// Check schema version - only v2 is supported

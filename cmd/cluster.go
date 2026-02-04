@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
 	"github.com/spf13/cobra"
 )
@@ -152,7 +151,7 @@ func resolveClusterName(args []string, requireActive bool) (string, error) {
 	}
 
 	// No argument provided, try to use active cluster
-	activeName, err := config.GetActive()
+	activeName, err := getActiveCluster()
 	if err != nil {
 		return "", fmt.Errorf("failed to get active cluster: %w", err)
 	}
@@ -209,7 +208,7 @@ func resolveClusterNameFromFlag(flagValue string, requireActive bool) (string, e
 	}
 
 	// No flag provided, try to use active cluster
-	activeName, err := config.GetActive()
+	activeName, err := getActiveCluster()
 	if err != nil {
 		return "", fmt.Errorf("failed to get active cluster: %w", err)
 	}

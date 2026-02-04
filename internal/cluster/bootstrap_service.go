@@ -73,6 +73,7 @@ type BootstrapResult struct {
 type BootstrapService struct {
 	pathResolver     *paths.PathResolver
 	validationEngine *validation.ValidationEngine
+	configurationMgr *config.ConfigurationManager
 }
 
 // NewBootstrapService creates a new BootstrapService
@@ -80,9 +81,25 @@ func NewBootstrapService(
 	pathResolver *paths.PathResolver,
 	validationEngine *validation.ValidationEngine,
 ) *BootstrapService {
+	return NewBootstrapServiceWithConfigMgr(pathResolver, validationEngine, nil)
+}
+
+// NewBootstrapServiceWithConfigMgr creates a new BootstrapService with optional ConfigurationManager
+func NewBootstrapServiceWithConfigMgr(
+	pathResolver *paths.PathResolver,
+	validationEngine *validation.ValidationEngine,
+	configurationMgr *config.ConfigurationManager,
+) *BootstrapService {
+	// Create ConfigurationManager if not provided
+	if configurationMgr == nil {
+		// Try to create one, but don't fail if it doesn't work
+		configurationMgr, _ = config.NewConfigurationManager()
+	}
+	
 	return &BootstrapService{
 		pathResolver:     pathResolver,
 		validationEngine: validationEngine,
+		configurationMgr: configurationMgr,
 	}
 }
 
@@ -116,10 +133,25 @@ func (s *BootstrapService) Bootstrap(ctx context.Context, opts BootstrapOptions)
 		return nil, fmt.Errorf("resolving cluster paths: %w", err)
 	}
 
-	// Load configuration
-	cfg, err := config.Load(opts.ClusterName)
-	if err != nil {
-		return nil, fmt.Errorf("loading configuration: %w", err)
+	// Load configuration using ConfigurationManager
+	var cfg config.Config
+	if s.configurationMgr != nil {
+		loadedCfg, err := s.configurationMgr.Load(ctx, opts.ClusterName)
+		if err != nil {
+			return nil, fmt.Errorf("loading configuration: %w", err)
+		}
+		cfg = *loadedCfg
+	} else {
+		// Fallback: create temporary manager
+		tempMgr, err := config.NewConfigurationManager()
+		if err != nil {
+			return nil, fmt.Errorf("creating configuration manager: %w", err)
+		}
+		loadedCfg, err := tempMgr.Load(ctx, opts.ClusterName)
+		if err != nil {
+			return nil, fmt.Errorf("loading configuration: %w", err)
+		}
+		cfg = *loadedCfg
 	}
 
 	// Check schema version - only v2 is supported

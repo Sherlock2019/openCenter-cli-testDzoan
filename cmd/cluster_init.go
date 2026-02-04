@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/rackerlabs/opencenter-cli/internal/cluster"
-	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
 	"github.com/rackerlabs/opencenter-cli/internal/di"
 	"github.com/rackerlabs/opencenter-cli/internal/util"
@@ -169,7 +168,7 @@ func parseInitOptions(cmd *cobra.Command, args []string) (cluster.InitOptions, e
 		opts.ClusterName = name
 		opts.ConfigFile = configFile
 	} else {
-		activeName, err := config.GetActive()
+		activeName, err := getActiveCluster()
 		if err != nil || activeName == "" {
 			return opts, fmt.Errorf("no cluster name provided and no active cluster set")
 		}

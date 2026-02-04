@@ -137,7 +137,7 @@ If no cluster name is provided, the active cluster will be destroyed.`,
 				if pathErr == nil && filepath.Dir(configPath) != configDir {
 					// Not a flat config, safe to update status
 					cfg.OpenCenter.Meta.Status = "destroyed"
-					if err := config.Save(cfg); err != nil {
+					if err := saveConfig(cmd.Context(), cfg); err != nil {
 						// Log warning but continue with destroy
 						fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
 					}

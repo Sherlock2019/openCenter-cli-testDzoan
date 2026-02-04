@@ -1076,3 +1076,164 @@ func TestConditionalConfigurationRealWorldScenario(t *testing.T) {
 		}
 	})
 }
+
+
+// TestConfigurationManagerNewBuilder tests creating a builder from ConfigurationManager.
+func TestConfigurationManagerNewBuilder(t *testing.T) {
+	manager, err := NewConfigurationManager()
+	if err != nil {
+		t.Fatalf("Failed to create ConfigurationManager: %v", err)
+	}
+
+	builder := manager.NewBuilder("test-cluster")
+	if builder == nil {
+		t.Fatal("NewBuilder should return a non-nil builder")
+	}
+
+	// Verify the builder has manager reference
+	fluentBuilder, ok := builder.(*FluentConfigBuilder)
+	if !ok {
+		t.Fatal("Builder should be a FluentConfigBuilder")
+	}
+
+	if fluentBuilder.manager == nil {
+		t.Error("Builder should have manager reference")
+	}
+
+	// Verify we can build a configuration
+	config, err := builder.
+		WithOrganization("test-org").
+		WithProvider("openstack").
+		WithSubnetNodes("10.0.0.0/24").
+		WithSubnetPods("10.244.0.0/16").
+		WithSubnetServices("10.96.0.0/12").
+		WithOpenStackConfig(SimplifiedOpenStackCloud{
+			AuthURL:    "https://identity.example.com/v3",
+			Region:     "us-east-1",
+			TenantName: "test-tenant",
+		}).
+		Build()
+
+	if err != nil {
+		t.Fatalf("Build() failed: %v", err)
+	}
+
+	if config.OpenCenter.Meta.Name != "test-cluster" {
+		t.Errorf("Expected cluster name 'test-cluster', got '%s'", config.OpenCenter.Meta.Name)
+	}
+}
+
+// TestConfigurationManagerBuildFrom tests creating a builder from existing config.
+func TestConfigurationManagerBuildFrom(t *testing.T) {
+	manager, err := NewConfigurationManager()
+	if err != nil {
+		t.Fatalf("Failed to create ConfigurationManager: %v", err)
+	}
+
+	// Create an initial configuration
+	originalConfig := defaultConfig("original-cluster")
+	originalConfig.OpenCenter.Meta.Organization = "original-org"
+	originalConfig.OpenCenter.Infrastructure.Provider = "openstack"
+	originalConfig.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://identity.example.com/v3"
+	originalConfig.OpenCenter.Infrastructure.Cloud.OpenStack.Region = "us-east-1"
+	originalConfig.OpenCenter.Cluster.Kubernetes.Networking.SubnetNodes = "10.0.0.0/24"
+	originalConfig.OpenCenter.Cluster.Kubernetes.Networking.SubnetPods = "10.244.0.0/16"
+	originalConfig.OpenCenter.Cluster.Kubernetes.Networking.SubnetServices = "10.96.0.0/12"
+
+	// Create builder from existing config
+	builder := manager.BuildFrom(&originalConfig)
+	if builder == nil {
+		t.Fatal("BuildFrom should return a non-nil builder")
+	}
+
+	// Verify the builder has manager reference
+	fluentBuilder, ok := builder.(*FluentConfigBuilder)
+	if !ok {
+		t.Fatal("Builder should be a FluentConfigBuilder")
+	}
+
+	if fluentBuilder.manager == nil {
+		t.Error("Builder should have manager reference")
+	}
+
+	// Modify and build
+	newConfig, err := builder.
+		WithClusterName("modified-cluster").
+		WithOrganization("modified-org").
+		Build()
+
+	if err != nil {
+		t.Fatalf("Build() failed: %v", err)
+	}
+
+	if newConfig.OpenCenter.Meta.Name != "modified-cluster" {
+		t.Errorf("Expected cluster name 'modified-cluster', got '%s'", newConfig.OpenCenter.Meta.Name)
+	}
+
+	if newConfig.OpenCenter.Meta.Organization != "modified-org" {
+		t.Errorf("Expected organization 'modified-org', got '%s'", newConfig.OpenCenter.Meta.Organization)
+	}
+}
+
+// TestBuilderWithDefaults tests applying provider-specific defaults.
+func TestBuilderWithDefaults(t *testing.T) {
+	builder := NewConfigBuilder("test-cluster").
+		WithOrganization("test-org").
+		WithProvider("openstack").
+		WithDefaults()
+
+	// Access the internal config
+	fluentBuilder, ok := builder.(*FluentConfigBuilder)
+	if !ok {
+		t.Fatal("Builder should be a FluentConfigBuilder")
+	}
+
+	// Verify defaults were applied
+	// Organization defaults should set S3 bucket to organization name
+	if fluentBuilder.config.OpenTofu.Backend.S3.Bucket != "" {
+		// If bucket was set, it should be lowercase organization name
+		expectedBucket := strings.ToLower("test-org")
+		if fluentBuilder.config.OpenTofu.Backend.S3.Bucket != expectedBucket {
+			t.Errorf("Expected S3 bucket '%s', got '%s'", expectedBucket, fluentBuilder.config.OpenTofu.Backend.S3.Bucket)
+		}
+	}
+
+	// Verify we can still override defaults
+	builder = builder.WithRegion("us-west-2")
+	if fluentBuilder.config.OpenCenter.Meta.Region != "us-west-2" {
+		t.Errorf("Expected region 'us-west-2', got '%s'", fluentBuilder.config.OpenCenter.Meta.Region)
+	}
+}
+
+// TestBuilderWithDefaultsMethodChaining tests that WithDefaults supports method chaining.
+func TestBuilderWithDefaultsMethodChaining(t *testing.T) {
+	builder := NewConfigBuilder("test-cluster").
+		WithOrganization("test-org").
+		WithProvider("openstack").
+		WithDefaults().
+		WithRegion("us-east-1").
+		WithMasterCount(3).
+		WithWorkerCount(5)
+
+	if builder == nil {
+		t.Fatal("Builder should not be nil after method chaining with WithDefaults")
+	}
+
+	// Verify the configuration
+	fluentBuilder, ok := builder.(*FluentConfigBuilder)
+	if !ok {
+		t.Fatal("Builder should be a FluentConfigBuilder")
+	}
+
+	if fluentBuilder.config.OpenCenter.Meta.Region != "us-east-1" {
+		t.Errorf("Expected region 'us-east-1', got '%s'", fluentBuilder.config.OpenCenter.Meta.Region)
+	}
+
+	if fluentBuilder.config.OpenCenter.Cluster.Kubernetes.MasterCount != 3 {
+		t.Errorf("Expected master count 3, got %d", fluentBuilder.config.OpenCenter.Cluster.Kubernetes.MasterCount)
+	}
+
+	if fluentBuilder.config.OpenCenter.Cluster.Kubernetes.WorkerCount != 5 {
+		t.Errorf("Expected worker count 5, got %d", fluentBuilder.config.OpenCenter.Cluster.Kubernetes.WorkerCount)
+	}
+}

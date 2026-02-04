@@ -133,7 +133,7 @@ func (m model) View() string {
 
 // loadClusterMetadata loads cluster metadata from the configuration file.
 // The clusterName parameter can be in "cluster" or "organization/cluster" format.
-func loadClusterMetadata(clusterName string) (ClusterMetadata, error) {
+func loadClusterMetadata(ctx context.Context, clusterName string) (ClusterMetadata, error) {
 	// Parse the cluster identifier to extract organization and cluster name
 	organization, actualClusterName, err := config.ParseClusterIdentifier(clusterName)
 	if err != nil {
@@ -141,7 +141,7 @@ func loadClusterMetadata(clusterName string) (ClusterMetadata, error) {
 	}
 
 	// Load cluster configuration (Load function now handles organization/cluster format)
-	cfg, err := config.Load(clusterName)
+	cfg, err := loadConfig(ctx, clusterName)
 	if err != nil {
 		return ClusterMetadata{}, fmt.Errorf("failed to load cluster configuration: %w", err)
 	}
@@ -205,7 +205,7 @@ func generateClusterSelectOutput(clusterName string, shellOverride string) (Clus
 	}
 
 	// Load cluster metadata
-	metadata, err := loadClusterMetadata(clusterName)
+	metadata, err := loadClusterMetadata(ctx, clusterName)
 	if err != nil {
 		return ClusterSelectOutput{}, err
 	}
@@ -671,7 +671,7 @@ Use --clear-persistent to remove the persistent cluster selection.`,
 			// Display output based on flags
 			if showExportOnly {
 				// Load cluster configuration to extract credentials
-				cfg, err := config.Load(name)
+				cfg, err := loadConfig(cmd.Context(), name)
 				if err != nil {
 					return fmt.Errorf("failed to load cluster configuration: %w", err)
 				}

@@ -133,7 +133,7 @@ If no cluster name is provided, exports the currently active cluster.`,
 // Requirements: 15.7, 15.8
 func exportV1EffectiveConfig(cmd *cobra.Command, name, outputPath string) error {
 	// Load configuration (this applies defaults during loading)
-	cfg, err := config.Load(name)
+	cfg, err := loadConfig(cmd.Context(), name)
 	if err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}

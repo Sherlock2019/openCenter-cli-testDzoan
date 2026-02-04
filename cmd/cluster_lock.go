@@ -62,8 +62,9 @@ Examples:
 				return fmt.Errorf("lock reason is required. Use --reason flag to specify why the cluster is being locked")
 			}
 
+			ctx := cmd.Context()
 			// Load the cluster configuration
-			cfg, err := config.Load(clusterName)
+			cfg, err := loadConfig(ctx, clusterName)
 			if err != nil {
 				return fmt.Errorf("failed to load cluster configuration: %w", err)
 			}
@@ -78,6 +79,9 @@ Examples:
 			cfg.OpenCenter.Meta.LockReason = reason
 
 			// Save the configuration
+			if err := saveConfig(ctx, cfg); err != nil {
+				return fmt.Errorf("failed to save configuration: %w", err)
+			}
 			configPath, err := config.ConfigPath(clusterName)
 			if err != nil {
 				return fmt.Errorf("failed to get config path: %w", err)
@@ -144,8 +148,9 @@ Examples:
 				return fmt.Errorf("unlock reason is required. Use --reason flag to specify why the cluster is being unlocked")
 			}
 
+			ctx := cmd.Context()
 			// Load the cluster configuration
-			cfg, err := config.Load(clusterName)
+			cfg, err := loadConfig(ctx, clusterName)
 			if err != nil {
 				return fmt.Errorf("failed to load cluster configuration: %w", err)
 			}
@@ -159,6 +164,13 @@ Examples:
 			previousReason := cfg.OpenCenter.Meta.LockReason
 
 			// Unlock the cluster
+			cfg.OpenCenter.Meta.Locked = false
+			cfg.OpenCenter.Meta.LockReason = ""
+
+			// Save the configuration
+			if err := saveConfig(ctx, cfg); err != nil {
+				return fmt.Errorf("failed to save configuration: %w", err)
+			}
 			cfg.OpenCenter.Meta.Locked = false
 			cfg.OpenCenter.Meta.LockReason = ""
 

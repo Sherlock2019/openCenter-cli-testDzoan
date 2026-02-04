@@ -14,14 +14,20 @@
 package config
 
 import (
+	"context"
 	"fmt"
 )
 
 // UpdateStatus updates the cluster's stage and status in the configuration file.
 // It loads the configuration, updates the values, and saves it back.
 func UpdateStatus(clusterName, stage, status string) error {
-	// Use Load to support both legacy and organization-based paths
-	cfg, err := Load(clusterName)
+	// Use ConfigurationManager for load/save
+	mgr, err := NewConfigurationManager()
+	if err != nil {
+		return fmt.Errorf("failed to create configuration manager: %w", err)
+	}
+
+	cfg, err := mgr.Load(context.Background(), clusterName)
 	if err != nil {
 		return fmt.Errorf("failed to load cluster configuration for status update: %w", err)
 	}
@@ -29,7 +35,7 @@ func UpdateStatus(clusterName, stage, status string) error {
 	cfg.OpenCenter.Meta.Stage = stage
 	cfg.OpenCenter.Meta.Status = status
 
-	if err := Save(cfg); err != nil {
+	if err := mgr.Save(context.Background(), cfg); err != nil {
 		return fmt.Errorf("failed to save cluster configuration with new status: %w", err)
 	}
 

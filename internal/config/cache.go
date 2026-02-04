@@ -21,7 +21,100 @@ import (
 	"time"
 )
 
+// cacheEntry represents a cached configuration with metadata.
+type cacheEntry struct {
+	config    *Config
+	loadedAt  time.Time
+	expiresAt time.Time
+}
+
+// ConfigCache provides thread-safe caching of configurations.
+// It stores loaded configurations in memory to avoid repeated disk reads.
+type ConfigCache struct {
+	entries map[string]*cacheEntry
+	mu      sync.RWMutex
+}
+
+// NewConfigCache creates a new ConfigCache instance.
+func NewConfigCache() *ConfigCache {
+	return &ConfigCache{
+		entries: make(map[string]*cacheEntry),
+	}
+}
+
+// Get retrieves a configuration from cache.
+// Returns the cached config and true if found and not expired, nil and false otherwise.
+func (cc *ConfigCache) Get(ctx context.Context, name string) (*Config, bool) {
+	cc.mu.RLock()
+	defer cc.mu.RUnlock()
+
+	entry, exists := cc.entries[name]
+	if !exists {
+		return nil, false
+	}
+
+	// Check if entry has expired
+	if !entry.expiresAt.IsZero() && time.Now().After(entry.expiresAt) {
+		return nil, false
+	}
+
+	return entry.config, true
+}
+
+// Set stores a configuration in cache with optional expiration.
+// If expiration is zero, the entry never expires.
+func (cc *ConfigCache) Set(ctx context.Context, name string, config *Config) {
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
+
+	cc.entries[name] = &cacheEntry{
+		config:    config,
+		loadedAt:  time.Now(),
+		expiresAt: time.Time{}, // No expiration by default
+	}
+}
+
+// SetWithExpiration stores a configuration in cache with a specific expiration time.
+func (cc *ConfigCache) SetWithExpiration(ctx context.Context, name string, config *Config, expiresAt time.Time) {
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
+
+	cc.entries[name] = &cacheEntry{
+		config:    config,
+		loadedAt:  time.Now(),
+		expiresAt: expiresAt,
+	}
+}
+
+// Invalidate removes a specific entry from cache.
+func (cc *ConfigCache) Invalidate(ctx context.Context, name string) {
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
+
+	delete(cc.entries, name)
+}
+
+// Clear removes all entries from cache.
+func (cc *ConfigCache) Clear(ctx context.Context) {
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
+
+	cc.entries = make(map[string]*cacheEntry)
+}
+
+// Size returns the number of cached entries.
+func (cc *ConfigCache) Size() int {
+	cc.mu.RLock()
+	defer cc.mu.RUnlock()
+
+	return len(cc.entries)
+}
+
+// Legacy implementation below for backward compatibility
+// This will be removed in a future version
+
 // CacheEntry represents a cached configuration with metadata.
+// Deprecated: Use ConfigCache instead.
 type CacheEntry struct {
 	Config    *Config
 	Timestamp time.Time
@@ -29,6 +122,7 @@ type CacheEntry struct {
 }
 
 // IsExpired checks if the cache entry has expired.
+// Deprecated: Use ConfigCache instead.
 func (ce *CacheEntry) IsExpired() bool {
 	if ce.TTL <= 0 {
 		return false // No expiration
@@ -37,6 +131,7 @@ func (ce *CacheEntry) IsExpired() bool {
 }
 
 // InMemoryConfigCache implements the ConfigCacheInterface using in-memory storage.
+// Deprecated: Use ConfigCache instead.
 type InMemoryConfigCache struct {
 	cache map[string]*CacheEntry
 	mu    sync.RWMutex
@@ -47,6 +142,7 @@ type InMemoryConfigCache struct {
 }
 
 // NewInMemoryConfigCache creates a new in-memory configuration cache.
+// Deprecated: Use NewConfigCache instead.
 func NewInMemoryConfigCache(defaultTTL time.Duration, maxSize int) *InMemoryConfigCache {
 	if defaultTTL <= 0 {
 		defaultTTL = 5 * time.Minute

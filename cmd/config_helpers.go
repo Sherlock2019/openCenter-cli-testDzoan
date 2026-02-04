@@ -14,13 +14,14 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/rackerlabs/opencenter-cli/internal/config"
 )
 
 // loadConfigV2Only loads a cluster configuration and rejects v1 configs.
-// This is a wrapper around config.Load that enforces v2-only support.
+// This is a wrapper around the new ConfigurationManager that enforces v2-only support.
 //
 // Parameters:
 //   - clusterName: The cluster name to load
@@ -29,7 +30,8 @@ import (
 //   - config.Config: The loaded configuration
 //   - error: An error if the config cannot be loaded or is v1
 func loadConfigV2Only(clusterName string) (config.Config, error) {
-	cfg, err := config.Load(clusterName)
+	ctx := context.Background()
+	cfg, err := loadConfig(ctx, clusterName)
 	if err != nil {
 		return cfg, err
 	}

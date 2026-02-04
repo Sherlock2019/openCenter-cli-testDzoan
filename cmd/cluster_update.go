@@ -185,15 +185,17 @@ func newClusterUpdateCmd() *cobra.Command {
 			// Optional strict validation
 			strict, _ := cmd.Flags().GetBool("strict")
 			if strict {
-				if errs := config.Validate(cfg); len(errs) > 0 {
-					for _, e := range errs {
-						fmt.Fprintln(cmd.ErrOrStderr(), e)
-					}
+				manager, err := getConfigManager()
+				if err != nil {
+					return fmt.Errorf("failed to get config manager: %w", err)
+				}
+				if err := manager.Validate(cmd.Context(), &cfg); err != nil {
+					fmt.Fprintln(cmd.ErrOrStderr(), err)
 					return fmt.Errorf("validation failed")
 				}
 			}
 
-			if err := config.Save(cfg); err != nil {
+			if err := saveConfig(cmd.Context(), cfg); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Updated cluster configuration %s\n", name)

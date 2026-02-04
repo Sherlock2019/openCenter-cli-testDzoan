@@ -39,9 +39,10 @@ func newClusterListCmd() *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List configured clusters",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
 			config.Debug("cluster list: starting cluster list operation")
 
-			names, err := config.List()
+			names, err := listClusters(ctx)
 			if err != nil {
 				config.Debugf("cluster list: failed to list clusters: %v", err)
 				return failf("failed to list clusters: %v", err)
@@ -53,7 +54,7 @@ func newClusterListCmd() *cobra.Command {
 			}
 
 			// Get active cluster to show indicator
-			activeCluster, err := config.GetActive()
+			activeCluster, err := getActiveCluster()
 			if err != nil {
 				config.Debugf("cluster list: failed to get active cluster: %v", err)
 				// Continue without active indicator if we can't get it

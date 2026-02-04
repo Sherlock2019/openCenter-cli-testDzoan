@@ -28,12 +28,13 @@ func newClusterPreflightCmd() *cobra.Command {
 		Short: "Run preflight checks for tools and provider requirements",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
 			// Resolve cluster name from args or active cluster
 			name, err := resolveClusterName(args, true)
 			if err != nil {
 				return err
 			}
-			cfg, err := config.Load(name)
+			cfg, err := loadConfig(ctx, name)
 			if err != nil {
 				return err
 			}

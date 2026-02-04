@@ -109,7 +109,7 @@ The exported credentials can be used with:
 			}
 
 			// Load cluster configuration
-			cfg, err := config.Load(name)
+			cfg, err := loadConfig(cmd.Context(), name)
 			if err != nil {
 				return fmt.Errorf("failed to load cluster configuration: %w", err)
 			}

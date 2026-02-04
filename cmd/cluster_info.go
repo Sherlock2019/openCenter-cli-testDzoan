@@ -45,7 +45,8 @@ func newClusterInfoCmd() *cobra.Command {
 				isActiveCluster = true
 			}
 
-			cfg, err := config.Load(name)
+			ctx := cmd.Context()
+			cfg, err := loadConfig(ctx, name)
 			if err != nil {
 				return err
 			}
@@ -60,11 +61,12 @@ func newClusterInfoCmd() *cobra.Command {
 			// Handle --validate flag
 			validate, _ := cmd.Flags().GetBool("validate")
 			if validate {
-				errs := config.Validate(cfg)
-				if len(errs) > 0 {
-					for _, e := range errs {
-						fmt.Fprintln(cmd.ErrOrStderr(), e)
-					}
+				manager, err := getConfigManager()
+				if err != nil {
+					return fmt.Errorf("failed to get config manager: %w", err)
+				}
+				if err := manager.Validate(ctx, &cfg); err != nil {
+					fmt.Fprintln(cmd.ErrOrStderr(), err)
 					return fmt.Errorf("validation failed")
 				}
 				fmt.Fprintln(cmd.OutOrStdout(), "Validation successful.")

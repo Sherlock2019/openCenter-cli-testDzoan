@@ -404,7 +404,7 @@ func applySetFlagOverrides(cliConfig *config.CLIConfig, setFlags []string) error
 
 // displayActiveCluster displays the current active cluster and exits.
 func displayActiveCluster(cmd *cobra.Command) error {
-	activeCluster, err := config.GetActive()
+	activeCluster, err := getActiveCluster()
 	if err != nil {
 		return fmt.Errorf("failed to get active cluster: %w", err)
 	}

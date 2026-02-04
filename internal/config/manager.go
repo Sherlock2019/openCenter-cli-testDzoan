@@ -19,475 +19,593 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"time"
 
+	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
 	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
 )
 
-// ConfigurationManager implements the ConfigManagerInterface with caching and validation.
+// ConfigurationManager provides unified configuration management.
+// It orchestrates all configuration operations including loading, saving,
+// validation, listing, and deletion with caching and atomic operations.
+//
+// The manager integrates with:
+//   - ConfigCache: Thread-safe in-memory caching
+//   - ConfigIOHandler: Low-level I/O operations
+//   - ValidationEngine: Configuration validation (Phase 2)
+//   - PathResolver: Path resolution (Phase 1)
+//   - FileSystem: Atomic file operations (Phase 1)
+//
+// Example usage:
+//
+//	manager, err := NewConfigurationManager()
+//	if err != nil {
+//	    return err
+//	}
+//	
+//	// Load configuration with caching
+//	config, err := manager.Load(ctx, "my-cluster")
+//	if err != nil {
+//	    return err
+//	}
+//	
+//	// Save with validation and atomic writes
+//	err = manager.Save(ctx, config)
 type ConfigurationManager struct {
-	loader           ConfigLoaderInterface
-	validator        ConfigValidatorInterface
-	pathResolver     PathResolverInterface
-	cache            ConfigCacheInterface
-	validationEngine *validation.ValidationEngine
-
-	// Configuration options
-	enableCache  bool
-	cacheTimeout time.Duration
-
-	// Thread safety
-	mu sync.RWMutex
+	loader       *ConfigIOHandler
+	validator    *validation.ValidationEngine
+	cache        *ConfigCache
+	pathResolver *paths.PathResolver
+	fileSystem   fs.FileSystem
+	mu           sync.RWMutex
 }
 
-// NewConfigurationManager creates a new configuration manager with the specified components.
-func NewConfigurationManager(
-	loader ConfigLoaderInterface,
-	validator ConfigValidatorInterface,
-	pathResolver PathResolverInterface,
-	cache ConfigCacheInterface,
-) *ConfigurationManager {
-	engine := validation.NewValidationEngine()
-	
-	// Register core validators
-	engine.MustRegister(validators.NewClusterNameValidator())
-	engine.MustRegister(validators.NewNetworkValidator())
-	engine.MustRegister(validators.NewConfigValidator())
-	engine.MustRegister(validators.NewSecurityValidator())
-	
+// NewConfigurationManager creates a new ConfigurationManager with all dependencies.
+//
+// The manager is initialized with:
+//   - ConfigIOHandler for file I/O
+//   - ValidationEngine from Phase 2
+//   - ConfigCache for in-memory caching
+//   - PathResolver from Phase 1
+//   - DefaultFileSystem from Phase 1
+//
+// Returns:
+//   - *ConfigurationManager: New manager instance
+//   - error: Initialization error (nil on success)
+//
+// Example:
+//
+//	manager, err := NewConfigurationManager()
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+func NewConfigurationManager() (*ConfigurationManager, error) {
+	// Create FileSystem with error handler
+	errorHandler := errors.NewDefaultErrorHandler()
+	fileSystem := fs.NewDefaultFileSystem(errorHandler)
+
+	// Create PathResolver with default base directory
+	baseDir := filepath.Join(os.Getenv("HOME"), ".config", "opencenter", "clusters")
+	pathResolver := paths.NewPathResolver(baseDir)
+
+	// Create ValidationEngine
+	validator := validation.NewValidationEngine()
+
 	return &ConfigurationManager{
-		loader:           loader,
-		validator:        validator,
-		pathResolver:     pathResolver,
-		cache:            cache,
-		validationEngine: engine,
-		enableCache:      true,
-		cacheTimeout:     5 * time.Minute,
+		loader:       NewConfigIOHandler(fileSystem),
+		validator:    validator,
+		cache:        NewConfigCache(),
+		pathResolver: pathResolver,
+		fileSystem:   fileSystem,
+	}, nil
+}
+
+// NewConfigurationManagerWithDeps creates a ConfigurationManager with custom dependencies.
+//
+// This constructor is useful for testing or when custom components are needed.
+//
+// Parameters:
+//   - loader: ConfigIOHandler for file I/O
+//   - validator: ValidationEngine for validation
+//   - cache: ConfigCache for caching
+//   - pathResolver: PathResolver for path resolution
+//   - fileSystem: FileSystem for file operations
+//
+// Returns:
+//   - *ConfigurationManager: New manager instance
+func NewConfigurationManagerWithDeps(
+	loader *ConfigIOHandler,
+	validator *validation.ValidationEngine,
+	cache *ConfigCache,
+	pathResolver *paths.PathResolver,
+	fileSystem fs.FileSystem,
+) *ConfigurationManager {
+	return &ConfigurationManager{
+		loader:       loader,
+		validator:    validator,
+		cache:        cache,
+		pathResolver: pathResolver,
+		fileSystem:   fileSystem,
 	}
 }
 
-// NewEnhancedConfigurationManager creates a new configuration manager with enhanced validation.
-func NewEnhancedConfigurationManager(
-	loader ConfigLoaderInterface,
-	pathResolver PathResolverInterface,
-	cache ConfigCacheInterface,
-	autoRepair bool,
-) *ConfigurationManager {
-	enhancedValidator := NewEnhancedConfigValidator(autoRepair)
-	engine := validation.NewValidationEngine()
-	
-	// Register core validators
-	engine.MustRegister(validators.NewClusterNameValidator())
-	engine.MustRegister(validators.NewNetworkValidator())
-	engine.MustRegister(validators.NewConfigValidator())
-	engine.MustRegister(validators.NewSecurityValidator())
-
-	return &ConfigurationManager{
-		loader:           loader,
-		validator:        enhancedValidator,
-		pathResolver:     pathResolver,
-		cache:            cache,
-		validationEngine: engine,
-		enableCache:      true,
-		cacheTimeout:     5 * time.Minute,
+// Load loads a configuration from disk or cache.
+//
+// The load process follows these steps:
+//  1. Check cache for existing configuration (fast path)
+//  2. Resolve configuration file path using PathResolver
+//  3. Read and parse configuration file
+//  4. Validate configuration using ValidationEngine
+//  5. Store in cache for future loads
+//
+// Parameters:
+//   - ctx: Context for cancellation and timeouts
+//   - name: Cluster name to load
+//
+// Returns:
+//   - *Config: Loaded and validated configuration
+//   - error: Load, parse, or validation error
+//
+// Example:
+//
+//	config, err := manager.Load(ctx, "prod-cluster")
+//	if err != nil {
+//	    return fmt.Errorf("failed to load config: %w", err)
+//	}
+func (cm *ConfigurationManager) Load(ctx context.Context, name string) (*Config, error) {
+	if name == "" {
+		return nil, errors.WrapWithOperation(
+			fmt.Errorf("cluster name cannot be empty"),
+			"load",
+		)
 	}
-}
 
-// LoadConfig loads a cluster configuration by name with caching support.
-func (cm *ConfigurationManager) LoadConfig(ctx context.Context, clusterName string) (*Config, error) {
-	// Validate cluster name using ValidationEngine
-	result, err := cm.validationEngine.Validate(ctx, "cluster-name", clusterName)
+	// Check cache first (fast path)
+	if cached, found := cm.cache.Get(ctx, name); found {
+		return cached, nil
+	}
+
+	// Resolve configuration path
+	clusterPaths, err := cm.pathResolver.ResolveWithFallback(ctx, name)
 	if err != nil {
-		return nil, fmt.Errorf("cluster name validation failed: %w", err)
+		return nil, errors.WrapWithOperation(
+			NewPathError(name, "", err),
+			"load",
+		)
 	}
+
+	configPath := clusterPaths.ConfigPath
+
+	// Check if file exists
+	if !cm.fileSystem.Exists(configPath) {
+		return nil, errors.WrapWithOperation(
+			NewFileError("read", configPath, fmt.Errorf("configuration file not found")),
+			"load",
+		)
+	}
+
+	// Load configuration from file
+	config, err := cm.loader.LoadFromFile(ctx, configPath)
+	if err != nil {
+		// Check if it's a parse error - wrap with appropriate context
+		return nil, errors.WrapWithOperation(
+			NewParseError(configPath, 0, 0, err),
+			"load",
+		)
+	}
+
+	// Validate configuration
+	result, err := cm.validator.Validate(ctx, "config", config)
+	if err != nil {
+		return nil, errors.WrapWithOperation(
+			NewValidationError("", "validation engine error", err),
+			"load",
+		)
+	}
+
 	if !result.Valid {
-		return nil, fmt.Errorf("invalid cluster name: %s", result.Errors[0].Message)
+		// Convert validation result to error
+		return nil, errors.WrapWithOperation(
+			result.ToError(),
+			"load",
+		)
 	}
 
-	// Check cache first if enabled
-	if cm.enableCache {
-		if cached, found := cm.cache.Get(ctx, clusterName); found {
-			return cached, nil
-		}
-	}
-
-	// Load configuration using the loader
-	config, err := cm.loader.LoadFromFile(ctx, "")
-	if err != nil {
-		// Try to resolve the config path and load directly
-		configPath, pathErr := cm.GetConfigPath(ctx, clusterName)
-		if pathErr != nil {
-			return nil, fmt.Errorf("failed to resolve config path for cluster '%s': %w", clusterName, pathErr)
-		}
-
-		config, err = cm.loader.LoadFromFile(ctx, configPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load config for cluster '%s': %w", clusterName, err)
-		}
-	}
-
-	// Validate the loaded configuration
-	if result := cm.validator.Validate(ctx, config); !result.Valid {
-		// Log validation errors but don't fail loading
-		for _, validationErr := range result.Errors {
-			fmt.Printf("Warning: Configuration validation error: %s\n", validationErr.Error())
-		}
-	}
-
-	// Cache the loaded configuration if caching is enabled
-	if cm.enableCache {
-		if cacheErr := cm.cache.Set(ctx, clusterName, config); cacheErr != nil {
-			// Log cache error but don't fail loading
-			fmt.Printf("Warning: Failed to cache configuration for cluster '%s': %v\n", clusterName, cacheErr)
-		}
-	}
+	// Cache the loaded configuration
+	cm.cache.Set(ctx, name, config)
 
 	return config, nil
 }
 
-// SaveConfig saves a cluster configuration with validation.
-func (cm *ConfigurationManager) SaveConfig(ctx context.Context, config *Config) error {
+// Save saves a configuration to disk atomically.
+//
+// The save process follows these steps:
+//  1. Validate configuration using ValidationEngine
+//  2. Resolve configuration file path
+//  3. Create backup of existing file (if exists)
+//  4. Write configuration atomically using FileSystem
+//  5. Invalidate cache entry for this cluster
+//
+// Parameters:
+//   - ctx: Context for cancellation and timeouts
+//   - config: Configuration to save
+//
+// Returns:
+//   - error: Validation, path resolution, or write error
+//
+// Example:
+//
+//	err := manager.Save(ctx, config)
+//	if err != nil {
+//	    return fmt.Errorf("failed to save config: %w", err)
+//	}
+func (cm *ConfigurationManager) Save(ctx context.Context, config *Config) error {
 	if config == nil {
-		return fmt.Errorf("config cannot be nil")
+		return errors.WrapWithOperation(
+			fmt.Errorf("configuration cannot be nil"),
+			"save",
+		)
 	}
 
 	clusterName := config.ClusterName()
 	if clusterName == "" {
-		return fmt.Errorf("cluster name cannot be empty")
+		return errors.WrapWithOperation(
+			NewValidationError("cluster_name", "cluster name cannot be empty", nil),
+			"save",
+		)
 	}
 
 	// Validate configuration before saving
-	if result := cm.validator.Validate(ctx, config); !result.Valid {
-		return fmt.Errorf("configuration validation failed: %v", result.Errors)
+	result, err := cm.validator.Validate(ctx, "config", config)
+	if err != nil {
+		return errors.WrapWithOperation(
+			NewValidationError("", "validation engine error", err),
+			"save",
+		)
 	}
 
-	// Save the configuration using the existing Save function
-	// Save handles determining the correct path and creating directories
-	if err := Save(*config); err != nil {
-		return fmt.Errorf("failed to save configuration: %w", err)
+	if !result.Valid {
+		return errors.WrapWithOperation(
+			result.ToError(),
+			"save",
+		)
 	}
 
-	// Invalidate cache for this cluster
-	if cm.enableCache {
-		if cacheErr := cm.cache.InvalidateCluster(ctx, clusterName); cacheErr != nil {
-			// Log cache error but don't fail saving
-			fmt.Printf("Warning: Failed to invalidate cache for cluster '%s': %v\n", clusterName, cacheErr)
+	// Resolve configuration path
+	organization := config.OpenCenter.Meta.Organization
+	clusterPaths, err := cm.pathResolver.Resolve(ctx, clusterName, organization)
+	if err != nil {
+		return errors.WrapWithOperation(
+			NewPathError(clusterName, organization, err),
+			"save",
+		)
+	}
+
+	configPath := clusterPaths.ConfigPath
+
+	// Create backup if file exists
+	if cm.fileSystem.Exists(configPath) {
+		backupPath := configPath + ".backup"
+		data, err := cm.fileSystem.ReadFile(configPath)
+		if err != nil {
+			return errors.WrapWithOperation(
+				NewFileError("read", configPath, err),
+				"save",
+			)
 		}
+
+		if err := cm.fileSystem.WriteFile(backupPath, data, 0600); err != nil {
+			return errors.WrapWithOperation(
+				NewFileError("write", backupPath, err),
+				"save",
+			)
+		}
+	}
+
+	// Save configuration atomically
+	if err := cm.loader.SaveToFile(ctx, configPath, config); err != nil {
+		return errors.WrapWithOperation(
+			NewFileError("write", configPath, err),
+			"save",
+		)
+	}
+
+	// Invalidate cache entry
+	cm.cache.Invalidate(ctx, clusterName)
+
+	return nil
+}
+
+// Validate validates a configuration without saving.
+//
+// This method is useful for checking configuration validity before
+// attempting to save or for validating configurations from other sources.
+//
+// Parameters:
+//   - ctx: Context for cancellation and timeouts
+//   - config: Configuration to validate
+//
+// Returns:
+//   - error: Validation error (nil if valid)
+//
+// Example:
+//
+//	err := manager.Validate(ctx, config)
+//	if err != nil {
+//	    fmt.Println("Configuration is invalid:", err)
+//	}
+func (cm *ConfigurationManager) Validate(ctx context.Context, config *Config) error {
+	if config == nil {
+		return NewValidationError("", "configuration cannot be nil", nil)
+	}
+
+	result, err := cm.validator.Validate(ctx, "config", config)
+	if err != nil {
+		return NewValidationError("", "validation engine error", err)
+	}
+
+	if !result.Valid {
+		return result.ToError()
 	}
 
 	return nil
 }
 
-// ValidateConfig validates a cluster configuration.
-func (cm *ConfigurationManager) ValidateConfig(ctx context.Context, config *Config) *ConfigValidationResult {
-	if config == nil {
-		return &ConfigValidationResult{
-			Valid: false,
-			Errors: []*ConfigValidationError{
-				{
-					Type:    "validation",
-					Field:   "config",
-					Message: "configuration cannot be nil",
-				},
-			},
-		}
-	}
-
-	return cm.validator.Validate(ctx, config)
+// List returns all cluster names in the configuration directory.
+//
+// The method scans the base directory for organization subdirectories
+// and returns all cluster names found.
+//
+// Parameters:
+//   - ctx: Context for cancellation and timeouts
+//
+// Returns:
+//   - []string: List of cluster names (empty if none found)
+//   - error: Directory read error
+//
+// Example:
+//
+//	clusters, err := manager.List(ctx)
+//	if err != nil {
+//	    return err
+//	}
+//	for _, cluster := range clusters {
+//	    fmt.Println(cluster)
+//	}
+func (cm *ConfigurationManager) List(ctx context.Context) ([]string, error) {
+	return cm.ListWithOrganization(ctx, "")
 }
 
-// ValidateConfigComprehensive performs comprehensive validation using the enhanced validator.
-func (cm *ConfigurationManager) ValidateConfigComprehensive(ctx context.Context, config *Config) *ConfigValidationResult {
-	if config == nil {
-		return &ConfigValidationResult{
-			Valid: false,
-			Errors: []*ConfigValidationError{
-				{
-					Type:    "validation",
-					Field:   "config",
-					Message: "configuration cannot be nil",
-				},
-			},
-		}
+// ListWithOrganization returns cluster names filtered by organization.
+//
+// If organization is empty, returns clusters from all organizations.
+//
+// Parameters:
+//   - ctx: Context for cancellation and timeouts
+//   - organization: Organization name to filter by (empty for all)
+//
+// Returns:
+//   - []string: List of cluster names
+//   - error: Directory read error
+//
+// Example:
+//
+//	clusters, err := manager.ListWithOrganization(ctx, "my-org")
+func (cm *ConfigurationManager) ListWithOrganization(ctx context.Context, organization string) ([]string, error) {
+	baseDir := cm.pathResolver.GetBaseDir()
+
+	// Check if base directory exists
+	if !cm.fileSystem.Exists(baseDir) {
+		return []string{}, nil
 	}
 
-	// Use enhanced validator if available
-	if enhancedValidator, ok := cm.validator.(*EnhancedConfigValidator); ok {
-		result := enhancedValidator.ValidateComprehensive(ctx, config)
+	var clusters []string
 
-		// Convert structured errors to config validation errors
-		configResult := &ConfigValidationResult{
-			Valid:    result.Valid,
-			Errors:   []*ConfigValidationError{},
-			Warnings: []*ConfigValidationError{},
+	// If organization is specified, only scan that organization
+	if organization != "" {
+		orgDir := filepath.Join(baseDir, organization, "infrastructure", "clusters")
+		if cm.fileSystem.Exists(orgDir) {
+			entries, err := os.ReadDir(orgDir)
+			if err != nil {
+				return nil, NewFileError("read", orgDir, err)
+			}
+
+			for _, entry := range entries {
+				if entry.IsDir() {
+					clusters = append(clusters, entry.Name())
+				}
+			}
 		}
-
-		for _, err := range result.Errors {
-			configResult.Errors = append(configResult.Errors, &ConfigValidationError{
-				Type:        string(err.Type),
-				Field:       err.Field,
-				Message:     err.Message,
-				Suggestions: err.Suggestions,
-			})
-		}
-
-		for _, warning := range result.Warnings {
-			configResult.Warnings = append(configResult.Warnings, &ConfigValidationError{
-				Type:        string(warning.Type),
-				Field:       warning.Field,
-				Message:     warning.Message,
-				Suggestions: warning.Suggestions,
-			})
-		}
-
-		return configResult
+		return clusters, nil
 	}
 
-	// Fall back to regular validation
-	return cm.validator.Validate(ctx, config)
-}
-
-// ListConfigs returns a list of available cluster configurations.
-func (cm *ConfigurationManager) ListConfigs(ctx context.Context) ([]string, error) {
-	// Use the existing List function
-	clusters, err := List()
+	// Scan all organizations
+	entries, err := os.ReadDir(baseDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list configurations: %w", err)
+		return nil, NewFileError("read", baseDir, err)
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		orgName := entry.Name()
+		orgClustersDir := filepath.Join(baseDir, orgName, "infrastructure", "clusters")
+
+		if cm.fileSystem.Exists(orgClustersDir) {
+			clusterEntries, err := os.ReadDir(orgClustersDir)
+			if err != nil {
+				continue // Skip organizations we can't read
+			}
+
+			for _, clusterEntry := range clusterEntries {
+				if clusterEntry.IsDir() {
+					clusters = append(clusters, clusterEntry.Name())
+				}
+			}
+		}
 	}
 
 	return clusters, nil
 }
 
-// DeleteConfig removes a cluster configuration.
-func (cm *ConfigurationManager) DeleteConfig(ctx context.Context, clusterName string) error {
-	// Validate cluster name using ValidationEngine
-	result, err := cm.validationEngine.Validate(ctx, "cluster-name", clusterName)
-	if err != nil {
-		return fmt.Errorf("cluster name validation failed: %w", err)
-	}
-	if !result.Valid {
-		return fmt.Errorf("invalid cluster name: %s", result.Errors[0].Message)
+// Delete removes a configuration file.
+//
+// The delete process:
+//  1. Resolve configuration file path
+//  2. Create backup of the file
+//  3. Remove the configuration file
+//  4. Invalidate cache entry
+//
+// Parameters:
+//   - ctx: Context for cancellation and timeouts
+//   - name: Cluster name to delete
+//
+// Returns:
+//   - error: Path resolution, backup, or deletion error
+//
+// Example:
+//
+//	err := manager.Delete(ctx, "old-cluster")
+//	if err != nil {
+//	    return fmt.Errorf("failed to delete: %w", err)
+//	}
+func (cm *ConfigurationManager) Delete(ctx context.Context, name string) error {
+	if name == "" {
+		return errors.WrapWithOperation(
+			fmt.Errorf("cluster name cannot be empty"),
+			"delete",
+		)
 	}
 
-	// Get the configuration file path
-	configPath, err := cm.GetConfigPath(ctx, clusterName)
+	// Resolve configuration path
+	clusterPaths, err := cm.pathResolver.ResolveWithFallback(ctx, name)
 	if err != nil {
-		return fmt.Errorf("failed to resolve config path: %w", err)
+		return errors.WrapWithOperation(
+			NewPathError(name, "", err),
+			"delete",
+		)
 	}
 
-	// Check if the configuration file exists
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return fmt.Errorf("configuration for cluster '%s' does not exist", clusterName)
+	configPath := clusterPaths.ConfigPath
+
+	// Check if file exists
+	if !cm.fileSystem.Exists(configPath) {
+		return errors.WrapWithOperation(
+			NewFileError("delete", configPath, fmt.Errorf("configuration file not found")),
+			"delete",
+		)
+	}
+
+	// Create backup before deletion
+	backupPath := configPath + ".deleted"
+	data, err := cm.fileSystem.ReadFile(configPath)
+	if err != nil {
+		return errors.WrapWithOperation(
+			NewFileError("read", configPath, err),
+			"delete",
+		)
+	}
+
+	if err := cm.fileSystem.WriteFile(backupPath, data, 0600); err != nil {
+		return errors.WrapWithOperation(
+			NewFileError("write", backupPath, err),
+			"delete",
+		)
 	}
 
 	// Remove the configuration file
-	if err := os.Remove(configPath); err != nil {
-		return fmt.Errorf("failed to delete configuration file '%s': %w", configPath, err)
+	if err := cm.fileSystem.Remove(configPath); err != nil {
+		return errors.WrapWithOperation(
+			NewFileError("delete", configPath, err),
+			"delete",
+		)
 	}
 
-	// Invalidate cache for this cluster
-	if cm.enableCache {
-		if cacheErr := cm.cache.InvalidateCluster(ctx, clusterName); cacheErr != nil {
-			// Log cache error but don't fail deletion
-			fmt.Printf("Warning: Failed to invalidate cache for cluster '%s': %v\n", clusterName, cacheErr)
-		}
-	}
+	// Invalidate cache entry
+	cm.cache.Invalidate(ctx, name)
 
 	return nil
 }
 
-// GetConfigPath returns the path to a cluster's configuration file.
-func (cm *ConfigurationManager) GetConfigPath(ctx context.Context, clusterName string) (string, error) {
-	// Validate cluster name using ValidationEngine
-	result, err := cm.validationEngine.Validate(ctx, "cluster-name", clusterName)
-	if err != nil {
-		return "", fmt.Errorf("cluster name validation failed: %w", err)
-	}
-	if !result.Valid {
-		return "", fmt.Errorf("invalid cluster name: %s", result.Errors[0].Message)
-	}
-
-	// Try organization-aware path resolution first
-	if paths, err := cm.pathResolver.ResolveClusterPaths(ctx, clusterName, ""); err == nil {
-		orgConfigPath := filepath.Join(paths.ClusterDir, "."+clusterName+"-config.yaml")
-		if _, err := os.Stat(orgConfigPath); err == nil {
-			return orgConfigPath, nil
-		}
-	}
-
-	// Fall back to the existing ConfigPath function
-	return ConfigPath(clusterName)
-}
-
-// SetActiveConfig sets the active cluster configuration.
-func (cm *ConfigurationManager) SetActiveConfig(ctx context.Context, clusterName string) error {
-	if clusterName != "" {
-		// Validate cluster name using ValidationEngine
-		result, err := cm.validationEngine.Validate(ctx, "cluster-name", clusterName)
-		if err != nil {
-			return fmt.Errorf("cluster name validation failed: %w", err)
-		}
-		if !result.Valid {
-			return fmt.Errorf("invalid cluster name: %s", result.Errors[0].Message)
-		}
-
-		// Verify the cluster configuration exists
-		if _, err := cm.LoadConfig(ctx, clusterName); err != nil {
-			return fmt.Errorf("cluster '%s' configuration not found: %w", clusterName, err)
-		}
-	}
-
-	// Use the existing SetActive function
-	return SetActive(clusterName)
-}
-
-// GetActiveConfig returns the name of the active cluster configuration.
-func (cm *ConfigurationManager) GetActiveConfig(ctx context.Context) (string, error) {
-	// Use the existing GetActive function
-	return GetActive()
-}
-
-// GetValidationEngine returns the ValidationEngine instance.
-func (cm *ConfigurationManager) GetValidationEngine() *validation.ValidationEngine {
-	return cm.validationEngine
-}
-
-// ValidateConfigWithEngine validates a configuration using the ValidationEngine.
-// This method uses the new unified validation system.
-func (cm *ConfigurationManager) ValidateConfigWithEngine(ctx context.Context, config *Config) *ConfigValidationResult {
-	if config == nil {
-		return &ConfigValidationResult{
-			Valid: false,
-			Errors: []*ConfigValidationError{
-				{
-					Type:    "validation",
-					Field:   "config",
-					Message: "configuration cannot be nil",
-				},
-			},
-		}
-	}
-
-	result := &ConfigValidationResult{
-		Valid:    true,
-		Errors:   []*ConfigValidationError{},
-		Warnings: []*ConfigValidationError{},
-	}
-
-	// Validate cluster name
-	clusterName := config.ClusterName()
-	if clusterName != "" {
-		nameResult, err := cm.validationEngine.Validate(ctx, "cluster-name", clusterName)
-		if err != nil {
-			result.Valid = false
-			result.Errors = append(result.Errors, &ConfigValidationError{
-				Type:    "validation",
-				Field:   "opencenter.cluster.cluster_name",
-				Message: fmt.Sprintf("cluster name validation failed: %v", err),
-			})
-		} else if !nameResult.Valid {
-			result.Valid = false
-			for _, issue := range nameResult.Errors {
-				result.Errors = append(result.Errors, &ConfigValidationError{
-					Type:        "validation",
-					Field:       "opencenter.cluster.cluster_name",
-					Message:     issue.Message,
-					Suggestions: issue.Suggestions,
-				})
-			}
-		}
-	}
-
-	return result
-}
-
-// SetCacheEnabled enables or disables configuration caching.
-func (cm *ConfigurationManager) SetCacheEnabled(enabled bool) {
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
-	cm.enableCache = enabled
-}
-
-// SetCacheTimeout sets the cache timeout duration.
-func (cm *ConfigurationManager) SetCacheTimeout(timeout time.Duration) {
-	cm.mu.Lock()
-	defer cm.mu.Unlock()
-	cm.cacheTimeout = timeout
-}
-
-// ClearCache clears all cached configurations.
+// ClearCache removes all cached configurations.
+//
+// Example:
+//
+//	manager.ClearCache(ctx)
 func (cm *ConfigurationManager) ClearCache(ctx context.Context) error {
-	if !cm.enableCache {
-		return nil
-	}
-
-	return cm.cache.Clear(ctx)
+	cm.cache.Clear(ctx)
+	return nil
 }
 
-// GetValidationSummary returns a human-readable summary of validation results for a cluster.
-func (cm *ConfigurationManager) GetValidationSummary(ctx context.Context, clusterName string) (string, error) {
-	config, err := cm.LoadConfig(ctx, clusterName)
-	if err != nil {
-		return "", fmt.Errorf("failed to load configuration: %w", err)
-	}
-
-	result := cm.ValidateConfig(ctx, config)
-	return cm.formatValidationSummary(result), nil
+// InvalidateCluster removes a specific cluster from cache.
+//
+// Parameters:
+//   - ctx: Context for cancellation
+//   - name: Cluster name to invalidate
+//
+// Example:
+//
+//	manager.InvalidateCluster(ctx, "my-cluster")
+func (cm *ConfigurationManager) InvalidateCluster(ctx context.Context, name string) error {
+	cm.cache.Invalidate(ctx, name)
+	return nil
 }
 
-// formatValidationSummary formats a validation result into a human-readable summary.
-func (cm *ConfigurationManager) formatValidationSummary(result *ConfigValidationResult) string {
-	if result.Valid {
-		return "✓ Configuration is valid"
-	}
-
-	summary := "✗ Configuration has issues\n"
-
-	if len(result.Errors) > 0 {
-		summary += fmt.Sprintf("\nErrors (%d):\n", len(result.Errors))
-		for _, err := range result.Errors {
-			summary += fmt.Sprintf("  - %s\n", err.Error())
-		}
-	}
-
-	if len(result.Warnings) > 0 {
-		summary += fmt.Sprintf("\nWarnings (%d):\n", len(result.Warnings))
-		for _, warning := range result.Warnings {
-			summary += fmt.Sprintf("  - %s\n", warning.Error())
-		}
-	}
-
-	if len(result.Repaired) > 0 {
-		summary += fmt.Sprintf("\nAuto-repaired (%d):\n", len(result.Repaired))
-		for _, repaired := range result.Repaired {
-			summary += fmt.Sprintf("  - %s\n", repaired.Error())
-		}
-	}
-
-	return summary
+// NewBuilder creates a new ConfigBuilder for building configurations.
+//
+// The builder provides a fluent API for constructing cluster configurations
+// with method chaining and validation. The builder integrates with the
+// ConfigurationManager for validation and saving.
+//
+// Parameters:
+//   - name: Cluster name for the new configuration
+//
+// Returns:
+//   - ConfigBuilder: New builder instance with default values
+//
+// Example:
+//
+//	builder := manager.NewBuilder("my-cluster")
+//	config, err := builder.
+//	    WithProvider("openstack").
+//	    WithOrganization("my-org").
+//	    WithRegion("us-east-1").
+//	    Build()
+func (cm *ConfigurationManager) NewBuilder(name string) ConfigBuilder {
+	builder := NewConfigBuilder(name).(*FluentConfigBuilder)
+	// Inject manager reference for validation and saving
+	builder.manager = cm
+	return builder
 }
 
-// GetClusterPaths returns all paths for a cluster.
-func (cm *ConfigurationManager) GetClusterPaths(ctx context.Context, clusterName string) (*OrganizationClusterPaths, error) {
-	if cm.pathResolver == nil {
-		return nil, fmt.Errorf("path resolver not available")
+// BuildFrom creates a ConfigBuilder from an existing configuration.
+//
+// This method is useful for modifying existing configurations using
+// the fluent builder API.
+//
+// Parameters:
+//   - config: Existing configuration to build from
+//
+// Returns:
+//   - ConfigBuilder: Builder instance initialized with the config
+//
+// Example:
+//
+//	config, _ := manager.Load(ctx, "my-cluster")
+//	builder := manager.BuildFrom(config)
+//	updated, err := builder.
+//	    WithWorkerCount(5).
+//	    Build()
+func (cm *ConfigurationManager) BuildFrom(config *Config) ConfigBuilder {
+	if config == nil {
+		// Return builder with empty config
+		return cm.NewBuilder("")
 	}
-
-	// Try to determine organization
-	organization, err := cm.pathResolver.GetClusterOrganization(ctx, clusterName)
-	if err != nil {
-		organization = "opencenter" // Default organization
-	}
-
-	return cm.pathResolver.ResolveClusterPaths(ctx, clusterName, organization)
-}
-
-// CreateClusterDirectories creates all necessary directories for a cluster.
-func (cm *ConfigurationManager) CreateClusterDirectories(ctx context.Context, clusterName, organization string) error {
-	if cm.pathResolver == nil {
-		return fmt.Errorf("path resolver not available")
-	}
-
-	return cm.pathResolver.CreateClusterDirectories(ctx, clusterName, organization)
+	builder := NewConfigBuilderFromConfig(*config).(*FluentConfigBuilder)
+	// Inject manager reference for validation and saving
+	builder.manager = cm
+	return builder
 }

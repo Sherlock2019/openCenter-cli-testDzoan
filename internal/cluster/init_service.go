@@ -47,9 +47,10 @@ type InitResult struct {
 
 // InitService handles cluster initialization business logic
 type InitService struct {
-	pathResolver     *paths.PathResolver
-	validationEngine *validation.ValidationEngine
-	configManager    *config.ConfigManager
+	pathResolver        *paths.PathResolver
+	validationEngine    *validation.ValidationEngine
+	configManager       *config.ConfigManager
+	configurationMgr    *config.ConfigurationManager
 }
 
 // NewInitService creates a new InitService
@@ -58,10 +59,27 @@ func NewInitService(
 	validationEngine *validation.ValidationEngine,
 	configManager *config.ConfigManager,
 ) *InitService {
+	return NewInitServiceWithConfigMgr(pathResolver, validationEngine, configManager, nil)
+}
+
+// NewInitServiceWithConfigMgr creates a new InitService with optional ConfigurationManager
+func NewInitServiceWithConfigMgr(
+	pathResolver *paths.PathResolver,
+	validationEngine *validation.ValidationEngine,
+	configManager *config.ConfigManager,
+	configurationMgr *config.ConfigurationManager,
+) *InitService {
+	// Create ConfigurationManager if not provided
+	if configurationMgr == nil {
+		// Try to create one, but don't fail if it doesn't work
+		configurationMgr, _ = config.NewConfigurationManager()
+	}
+	
 	return &InitService{
 		pathResolver:     pathResolver,
 		validationEngine: validationEngine,
 		configManager:    configManager,
+		configurationMgr: configurationMgr,
 	}
 }
 
@@ -137,7 +155,7 @@ func (s *InitService) Initialize(ctx context.Context, opts InitOptions) (*InitRe
 	}
 
 	// Save configuration
-	if err := s.saveConfig(cfg, clusterPaths.ConfigPath); err != nil {
+	if err := s.saveConfig(ctx, cfg, clusterPaths.ConfigPath); err != nil {
 		return nil, fmt.Errorf("saving config: %w", err)
 	}
 
@@ -358,8 +376,20 @@ func (s *InitService) updateConfigPaths(cfg *config.Config, configMap map[string
 
 // validateConfig validates the configuration
 func (s *InitService) validateConfig(cfg *config.Config) error {
-	if errs := config.Validate(*cfg); len(errs) > 0 {
-		return fmt.Errorf("validation errors: %v", errs)
+	// Use ConfigurationManager for validation if available
+	if s.configurationMgr != nil {
+		if err := s.configurationMgr.Validate(context.Background(), cfg); err != nil {
+			return fmt.Errorf("validation failed: %w", err)
+		}
+	} else {
+		// Fallback: create temporary manager
+		tempMgr, err := config.NewConfigurationManager()
+		if err != nil {
+			return fmt.Errorf("creating configuration manager: %w", err)
+		}
+		if err := tempMgr.Validate(context.Background(), cfg); err != nil {
+			return fmt.Errorf("validation failed: %w", err)
+		}
 	}
 	return nil
 }
@@ -377,8 +407,14 @@ func (s *InitService) createDirectories(ctx context.Context, clusterPaths *paths
 	return nil
 }
 
-// saveConfig saves the configuration to disk
-func (s *InitService) saveConfig(cfg *config.Config, configPath string) error {
+// saveConfig saves the configuration to disk using ConfigurationManager
+func (s *InitService) saveConfig(ctx context.Context, cfg *config.Config, configPath string) error {
+	// Use ConfigurationManager if available
+	if s.configurationMgr != nil {
+		return s.configurationMgr.Save(ctx, cfg)
+	}
+	
+	// Fallback to direct file write
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("marshaling config: %w", err)

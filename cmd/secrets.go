@@ -23,7 +23,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/rackerlabs/opencenter-cli/internal/barbican"
-	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
@@ -60,7 +59,7 @@ func newSecretsLoginCmd() *cobra.Command {
 		Short: "Create or refresh a Keystone token",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clusterName, _ := cmd.Flags().GetString("cluster")
-			cfg, err := config.Load(clusterName)
+			cfg, err := loadConfig(cmd.Context(), clusterName)
 			if err != nil {
 				return err
 			}
@@ -116,7 +115,7 @@ func newSecretsListCmd() *cobra.Command {
 		Short: "List secrets associated with the current cluster",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clusterName, _ := cmd.Flags().GetString("cluster")
-			cfg, err := config.Load(clusterName)
+			cfg, err := loadConfig(cmd.Context(), clusterName)
 			if err != nil {
 				return err
 			}
@@ -165,7 +164,7 @@ func newSecretsDescribeCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 			clusterName, _ := cmd.Flags().GetString("cluster")
-			cfg, err := config.Load(clusterName)
+			cfg, err := loadConfig(cmd.Context(), clusterName)
 			if err != nil {
 				return err
 			}
@@ -209,7 +208,7 @@ func newSecretsGetCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 			clusterName, _ := cmd.Flags().GetString("cluster")
-			cfg, err := config.Load(clusterName)
+			cfg, err := loadConfig(cmd.Context(), clusterName)
 			if err != nil {
 				return err
 			}
@@ -280,7 +279,7 @@ func newSecretsPutCmd() *cobra.Command {
 			}
 
 			clusterName, _ := cmd.Flags().GetString("cluster")
-			cfg, err := config.Load(clusterName)
+			cfg, err := loadConfig(cmd.Context(), clusterName)
 			if err != nil {
 				return err
 			}
@@ -335,7 +334,7 @@ func newSecretsDeleteCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 			clusterName, _ := cmd.Flags().GetString("cluster")
-			cfg, err := config.Load(clusterName)
+			cfg, err := loadConfig(cmd.Context(), clusterName)
 			if err != nil {
 				return err
 			}
@@ -367,7 +366,7 @@ func newSecretsSyncCmd() *cobra.Command {
 		Short: "Materialize a filtered subset of Barbican secrets onto disk",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clusterName, _ := cmd.Flags().GetString("cluster")
-			cfg, err := config.Load(clusterName)
+			cfg, err := loadConfig(cmd.Context(), clusterName)
 			if err != nil {
 				return err
 			}

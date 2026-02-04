@@ -53,7 +53,8 @@ using 'opencenter cluster select' to set one.`,
   # Quiet output (just the cluster name)
   opencenter cluster status --quiet`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			activeCluster, err := config.GetActive()
+			ctx := cmd.Context()
+			activeCluster, err := getActiveCluster()
 			if err != nil {
 				return fmt.Errorf("failed to get active cluster: %w", err)
 			}
@@ -67,7 +68,7 @@ using 'opencenter cluster select' to set one.`,
 				fmt.Fprintf(cmd.OutOrStdout(), "No active cluster set\n\n")
 
 				// Show available clusters
-				clusters, listErr := config.List()
+				clusters, listErr := listClusters(ctx)
 				if listErr == nil && len(clusters) > 0 {
 					fmt.Fprintf(cmd.OutOrStdout(), "Available clusters:\n")
 					for _, cluster := range clusters {
@@ -87,7 +88,7 @@ using 'opencenter cluster select' to set one.`,
 			}
 
 			// Load cluster configuration to get detailed information
-			cfg, err := config.Load(activeCluster)
+			cfg, err := loadConfig(ctx, activeCluster)
 			if err != nil {
 				// If we can't load the config, still show basic info
 				fmt.Fprintf(cmd.OutOrStdout(), "Active cluster: %s\n", activeCluster)

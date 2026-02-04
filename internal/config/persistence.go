@@ -252,76 +252,6 @@ func ConfigPath(name string) (string, error) {
 // Metadata Preservation:
 //   - If the configuration file contains metadata (created_at, created_by, tags, annotations),
 //     it will be preserved when loading.
-//   - If metadata is missing (for backward compatibility with old configs), new metadata
-//     will be initialized with current timestamps.
-//
-// Inputs:
-//   - name: The name of the cluster (can be "cluster" or "organization/cluster").
-//
-// Outputs:
-//   - Config: The loaded configuration.
-//   - error: An error if the file does not exist or cannot be parsed.
-//
-// Deprecated: This function uses the legacy loading mechanism. New code should use
-// internal/core/config.ConfigManager for better version handling and caching.
-// This function will be removed in v2.0.0.
-func Load(name string) (Config, error) {
-	logDeprecationWarning(
-		"config.Load()",
-		"internal/core/config.ConfigManager",
-		"v2.0.0",
-	)
-
-	// Parse the cluster identifier - ConfigPath will handle validation
-	_, clusterName, err := ParseClusterIdentifier(name)
-	if err != nil {
-		return Config{}, fmt.Errorf("invalid cluster identifier: %w", err)
-	}
-
-	path, err := ConfigPath(name)
-	if err != nil {
-		return Config{}, fmt.Errorf("failed to resolve configuration path for cluster '%s': %w", name, err)
-	}
-
-	data, readErr := os.ReadFile(path)
-	if readErr != nil {
-		return Config{}, fmt.Errorf("failed to read cluster configuration file '%s': %w", path, readErr)
-	}
-
-	// Expand environment variables in the raw YAML data
-	// This allows users to use ${VAR} or $VAR in their config file to reference secrets
-	// stored in environment variables, avoiding plaintext secrets in the file.
-	expandedData := []byte(os.ExpandEnv(string(data)))
-
-	// Unmarshal YAML then overlay onto default config (use actual cluster name, not full identifier)
-	cfg := defaultConfig(clusterName)
-	if unmarshalErr := yaml.Unmarshal(expandedData, &cfg); unmarshalErr != nil {
-		return Config{}, fmt.Errorf("failed to parse YAML configuration from '%s': %w", path, unmarshalErr)
-	}
-
-	// Detect schema version mismatch and log warning
-	if needsMigration, configVersion, _ := DetectSchemaMigrationNeeded(cfg); needsMigration {
-		if configVersion == "" {
-			fmt.Fprintf(os.Stderr, "Warning: Configuration file '%s' does not have a schema version. Current schema version is %s. Consider running migration.\n", path, SchemaVersion)
-		} else {
-			fmt.Fprintf(os.Stderr, "Warning: Configuration file '%s' has schema version %s but current version is %s. Migration may be needed.\n", path, configVersion, SchemaVersion)
-		}
-	}
-
-	// Apply organization-based defaults if not explicitly set
-	applyOrganizationDefaults(&cfg)
-
-	// Apply CLI defaults if available
-	applyCLIDefaults(&cfg)
-
-	// Initialize metadata if it's missing (for backward compatibility with old configs)
-	if cfg.Metadata.CreatedAt.IsZero() {
-		cfg.Metadata = NewConfigMetadata()
-	}
-
-	return cfg, nil
-}
-
 // GenerateCompleteConfig generates a complete configuration by merging schema defaults
 // with the actual cluster configuration. The opencenter values take precedence over
 // schema defaults.
@@ -522,41 +452,6 @@ func SaveDebugConfig(clusterName, gitDir string) error {
 // Migration: Replace Save(cfg) with configManager.Save(path, config)
 //
 // Inputs:
-//   - cfg: The configuration to save.
-//
-// Outputs:
-//   - error: An error if the configuration cannot be saved.
-func Save(cfg Config) error {
-	logDeprecationWarning(
-		"config.Save()",
-		"internal/core/config.ConfigManager.Save()",
-		"v2.0.0",
-	)
-	return saveConfig(cfg, false)
-}
-
-// SaveWithOmitEmpty writes the configuration to a YAML file, omitting empty fields.
-// The file is saved with 0600 permissions to protect sensitive data.
-// This is useful for cleaning up configurations by removing fields with zero values.
-//
-// Deprecated: Use internal/core/config.ConfigManager.Save() with save options instead.
-// This function will be removed in v2.0.0.
-// Migration: Replace SaveWithOmitEmpty(cfg) with configManager.Save(path, config, SaveOptions{OmitEmpty: true})
-//
-// Inputs:
-//   - cfg: The configuration to save.
-//
-// Outputs:
-//   - error: An error if the configuration cannot be saved.
-func SaveWithOmitEmpty(cfg Config) error {
-	logDeprecationWarning(
-		"config.SaveWithOmitEmpty()",
-		"internal/core/config.ConfigManager.Save() with save options",
-		"v2.0.0",
-	)
-	return saveConfig(cfg, true)
-}
-
 // saveConfig is the internal implementation for saving configurations.
 // It preserves the CreatedAt timestamp and CreatedBy field from the original
 // configuration while updating the UpdatedAt timestamp to the current time.

@@ -146,7 +146,7 @@ Examples:
 				}
 			}
 			// Save the updated configuration
-			if err := config.Save(cfg); err != nil {
+			if err := saveConfig(cmd.Context(), cfg); err != nil {
 				return fmt.Errorf("failed to save updated configuration: %w", err)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully enabled service '%s' in cluster '%s'.\n", serviceName, clusterName)
@@ -240,7 +240,7 @@ Examples:
 				fmt.Fprintf(cmd.OutOrStdout(), "Disabling service '%s' in cluster '%s'...\n", serviceName, clusterName)
 			}
 			// Save the updated configuration
-			if err := config.Save(cfg); err != nil {
+			if err := saveConfig(cmd.Context(), cfg); err != nil {
 				return fmt.Errorf("failed to save updated configuration: %w", err)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Successfully disabled service '%s' in cluster '%s'.\n", serviceName, clusterName)
