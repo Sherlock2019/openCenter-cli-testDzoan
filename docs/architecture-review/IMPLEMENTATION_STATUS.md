@@ -1817,10 +1817,26 @@ type ClusterPaths struct {
 
 | Metric | Baseline | Current | Target | Status |
 |--------|----------|---------|--------|--------|
-| Total Lines of Code | ~70,000 | 🔍 TBD | ~59,500 | 🔍 |
-| Code Duplication | 15-20% | 🔍 TBD | <5% | 🔍 |
-| Test Coverage | 75% | 🔍 TBD | 80% | 🔍 |
+| Total Lines of Code | ~70,000 (est.) | 126,593 (Go) | ~59,500 | 🔍 Need baseline |
+| Code Duplication | 15-20% (est.) | 🔍 TBD | <5% | 🔍 |
+| Test Coverage | 75% (est.) | 🔍 TBD | 80% | 🔍 |
 | Build Time | 🔍 TBD | 🔍 TBD | <45s | 🔍 |
+
+**Current LOC Breakdown** (as of February 6, 2026):
+- Go code: 126,593 lines
+- Markdown docs: 4,504 lines
+- YAML configs: 686 lines
+- Total files: 647 (580 Go files)
+
+**Known Reductions**:
+- Plugin boilerplate: ~700-1,120 lines eliminated (Phase 4)
+- Estimated from 14 plugins × 50-80 lines per plugin
+
+**Note**: Baseline measurements from before refactoring are not available. To calculate actual LOC reduction, we would need to:
+1. Check out code from before Phase 1 started
+2. Run `cloc internal/` on that version
+3. Compare with current measurements
+4. Account for new features added during refactoring
 
 ### Phase Completion
 
@@ -1852,73 +1868,125 @@ type ClusterPaths struct {
 
 ## Next Steps
 
-### Phase 1 Completion Tasks (High Priority)
+**For detailed prioritized action plan, see [MISSING_REQUIREMENTS.md](./MISSING_REQUIREMENTS.md)**
 
-1. **Fix Test Failures**
+### Summary of Missing Work
+
+**Total Missing Requirements**: 10 across all phases  
+**Total Estimated Effort**: 63-87 hours (~2 weeks for complete implementation)
+
+**Priority Breakdown**:
+- **P1 Critical (2 items)**: 6-10 hours - Blocks phase completion
+- **P2 High (3 items)**: 28-36 hours - Quality and adoption blockers
+- **P3 Medium (3 items)**: 9-13 hours - Documentation and metrics
+- **P4 Low (2 items)**: 20-28 hours - Optional improvements
+
+### Immediate Actions (This Week)
+
+**Priority 1: Critical Issues** - 6-10 hours total
+
+1. **Fix Error Handling Tests (P1.1)** - 2-4 hours
    - Fix `internal/util/errors/errors_test.go` compilation errors
    - Update test calls to match new `NewDefaultErrorHandler` signature
    - Verify all error handling tests pass
+   - **Blocks**: Phase 1 completion verification
 
-2. **Improve Test Coverage**
+2. **Increase FileSystem Coverage (P1.2)** - 4-6 hours
    - Add tests to increase FileSystem coverage from 77.4% to >95%
    - Focus on error paths and edge cases
    - Add benchmark tests for FileSystem performance verification
+   - **Blocks**: Phase 1 completion
 
-3. **Complete Documentation**
-   - Create ADR for orphaned code removal decision
-   - Add migration guides for FileSystem and StructuredError adoption
-   - Update architecture documentation with Phase 1 completion notes
+### Short-Term Actions (Next 2 Weeks)
 
-4. **Optional: Test Helper Migration**
-   - Migrate existing tests to use consolidated helpers (368 instances)
-   - Remove duplicate test helper implementations
-   - Standardize test setup patterns
+**Priority 2: High Impact** - 28-36 hours total
 
-### Phase 2 Verification (Completed)
+3. **Complete File Operations Migration (P2.1)** - 12-16 hours
+   - Migrate 66 remaining direct `os.ReadFile`/`os.WriteFile` calls
+   - Update cluster services, Talos generator, validators
+   - Add proper error wrapping and atomic writes
+   - **Blocks**: Phase 4 completion
 
-5. **✅ Phase 2 Complete - All Requirements Verified**
-   - ✅ ValidationEngine implementation verified (91.1% coverage)
-   - ✅ All validators implemented and tested (78.1% coverage)
-   - ✅ ValidationResult structure complete
-   - ✅ Config, SOPS, and service validation migrated
-   - ✅ Security validation implemented and enforced
-   - ✅ Performance targets exceeded (0.45ms vs 1ms target)
-   - ✅ Comprehensive documentation and examples
-   - ✅ Migration strategy executed successfully
-
-### Phase 3 Completion Tasks (Current Priority)
-
-6. **✅ Phase 3 Mostly Complete - 92% Verified**
-   - ✅ ConfigurationManager fully implemented (11/12 requirements)
-   - ✅ Atomic operations with backup support
-   - ✅ Thread-safe caching with TTL
-   - ✅ Full integration with Phase 1 & 2
-   - ✅ Fluent builder with 40+ methods
-   - ✅ Migration scanner implemented
-   - ⚠️ Missing: Migration guide and documentation
-
-7. **Complete Phase 3 Documentation** (High Priority)
+4. **Create Phase 3 Migration Guide (P2.2)** - 6-8 hours
    - Create migration guide with before/after code examples
    - Document migration checklist for 45+ files
    - Add deprecation warnings to legacy functions
    - Update architecture documentation
+   - **Blocks**: Developer adoption of ConfigurationManager
 
-8. **Enhance Migration Tooling** (Medium Priority)
-   - Add automated refactoring to migration scanner
-   - Integrate with CI/CD for migration tracking
-   - Add compilation validation
+5. **Improve Services Test Coverage (P2.3)** - 10-12 hours
+   - Increase services package coverage from 7.9% to >85%
+   - Add tests for 14 migrated plugins
+   - Create test template for service plugins
+   - **Blocks**: Phase 4 completion
 
-9. **Fix Phase 3 Test Issues** (Medium Priority)
-   - Fix validation engine integration test failures
-   - Ensure all ConfigurationManager tests pass
+### Medium-Term Actions (Next Month)
 
-### Phase 4 Verification (Next Priority)
+**Priority 3: Documentation & Metrics** - 9-13 hours total
 
-10. **Scan Phase 4 Components**
-    - Verify BaseServicePlugin implementation
-    - Check service plugin migrations
-    - Verify path resolution unification
-    - Calculate LOC reduction metrics
+6. **Create ADR for Orphaned Code Removal (P3.1)** - 2-3 hours
+   - Document decision to remove `internal/core/config/`
+   - Update architecture documentation
+   - **Blocks**: Phase 1 documentation completion
+
+7. **Calculate Comprehensive Metrics (P3.2)** - 4-6 hours
+   - Calculate total LOC reduction
+   - Measure code duplication percentage
+   - Measure build time comparison
+   - Generate comprehensive metrics report
+   - **Blocks**: Phase 4 metrics verification
+
+8. **Add FileSystem Performance Benchmarks (P3.3)** - 3-4 hours
+   - Create benchmark tests for FileSystem operations
+   - Verify <5% performance overhead target
+   - Document results
+   - **Blocks**: Phase 1 performance verification
+
+### Optional Improvements (As Time Permits)
+
+**Priority 4: Nice to Have** - 20-28 hours total
+
+9. **Test Helper Migration (P4.1)** - 8-12 hours (optional)
+   - Migrate 368 instances of raw `t.TempDir()` to consolidated helpers
+   - Remove duplicate test helper implementations
+   - Standardize test setup patterns
+   - **Impact**: Improves consistency but not critical
+
+10. **Enhanced Migration Tooling (P4.2)** - 12-16 hours (optional)
+    - Add automated refactoring to migration scanner
+    - Add compilation validation
+    - Integrate with CI/CD for migration tracking
+    - **Impact**: Reduces manual migration work
+
+### Phase 2 Status (Completed)
+
+**✅ Phase 2 Complete - All Requirements Verified**
+- ✅ ValidationEngine implementation verified (91.1% coverage)
+- ✅ All validators implemented and tested (78.1% coverage)
+- ✅ ValidationResult structure complete
+- ✅ Config, SOPS, and service validation migrated
+- ✅ Security validation implemented and enforced
+- ✅ Performance targets exceeded (0.45ms vs 1ms target)
+- ✅ Comprehensive documentation and examples
+- ✅ Migration strategy executed successfully
+
+### Completion Timeline
+
+**Week 1** (6-10 hours):
+- Complete P1 critical issues
+- Unblocks Phase 1 completion
+
+**Weeks 2-3** (28-36 hours):
+- Complete P2 high-priority items
+- Achieves 95%+ completion across all phases
+
+**Week 4** (9-13 hours):
+- Complete P3 documentation and metrics
+- Achieves 100% completion of required work
+
+**Optional** (20-28 hours):
+- P4 improvements as time permits
+- Enhances consistency and automation
 
 ## Verification Notes
 
