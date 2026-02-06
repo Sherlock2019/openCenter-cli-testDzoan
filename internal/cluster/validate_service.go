@@ -14,6 +14,7 @@ import (
 	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
 	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
 	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
 )
 
 // ValidateOptions contains options for cluster validation
@@ -48,6 +49,7 @@ type ValidateService struct {
 	connectivityValidator *config.ConnectivityValidator
 	configManager         *config.ConfigManager
 	configurationMgr      *config.ConfigurationManager
+	fileSystem            fs.FileSystem
 }
 
 // NewValidateService creates a new ValidateService
@@ -56,7 +58,7 @@ func NewValidateService(
 	validationEngine *validation.ValidationEngine,
 	configManager *config.ConfigManager,
 ) *ValidateService {
-	return NewValidateServiceWithConfigMgr(pathResolver, validationEngine, configManager, nil)
+	return NewValidateServiceWithConfigMgr(pathResolver, validationEngine, configManager, nil, nil)
 }
 
 // NewValidateServiceWithConfigMgr creates a new ValidateService with optional ConfigurationManager
@@ -65,11 +67,18 @@ func NewValidateServiceWithConfigMgr(
 	validationEngine *validation.ValidationEngine,
 	configManager *config.ConfigManager,
 	configurationMgr *config.ConfigurationManager,
+	fileSystem fs.FileSystem,
 ) *ValidateService {
 	// Create ConfigurationManager if not provided
 	if configurationMgr == nil {
 		// Try to create one, but don't fail if it doesn't work
 		configurationMgr, _ = config.NewConfigurationManager()
+	}
+
+	// Create FileSystem if not provided
+	if fileSystem == nil {
+		errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+		fileSystem = fs.NewDefaultFileSystem(errorHandler)
 	}
 
 	return &ValidateService{
@@ -78,6 +87,7 @@ func NewValidateServiceWithConfigMgr(
 		connectivityValidator: config.NewConnectivityValidator(10 * time.Second),
 		configManager:         configManager,
 		configurationMgr:      configurationMgr,
+		fileSystem:            fileSystem,
 	}
 }
 
@@ -191,7 +201,7 @@ func (s *ValidateService) validateV2Config(ctx context.Context, configPath strin
 			result.Warnings = append(result.Warnings, fmt.Sprintf("failed to export effective config: %v", err))
 		} else {
 			debugPath := filepath.Join(outputDir, ".opencenter-v2.yaml")
-			if err := os.WriteFile(debugPath, effectiveConfig, 0600); err != nil {
+			if err := s.fileSystem.WriteFile(debugPath, effectiveConfig, 0600); err != nil {
 				result.Warnings = append(result.Warnings, fmt.Sprintf("failed to save debug config: %v", err))
 			} else {
 				result.DebugConfigPath = debugPath

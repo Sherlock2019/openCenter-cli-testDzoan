@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -13,6 +14,8 @@ import (
 	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
 	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
 )
 
 const (
@@ -74,6 +77,7 @@ type BootstrapService struct {
 	pathResolver     *paths.PathResolver
 	validationEngine *validation.ValidationEngine
 	configurationMgr *config.ConfigurationManager
+	fileSystem       fs.FileSystem
 }
 
 // NewBootstrapService creates a new BootstrapService
@@ -81,7 +85,7 @@ func NewBootstrapService(
 	pathResolver *paths.PathResolver,
 	validationEngine *validation.ValidationEngine,
 ) *BootstrapService {
-	return NewBootstrapServiceWithConfigMgr(pathResolver, validationEngine, nil)
+	return NewBootstrapServiceWithConfigMgr(pathResolver, validationEngine, nil, nil)
 }
 
 // NewBootstrapServiceWithConfigMgr creates a new BootstrapService with optional ConfigurationManager
@@ -89,6 +93,7 @@ func NewBootstrapServiceWithConfigMgr(
 	pathResolver *paths.PathResolver,
 	validationEngine *validation.ValidationEngine,
 	configurationMgr *config.ConfigurationManager,
+	fileSystem fs.FileSystem,
 ) *BootstrapService {
 	// Create ConfigurationManager if not provided
 	if configurationMgr == nil {
@@ -96,10 +101,17 @@ func NewBootstrapServiceWithConfigMgr(
 		configurationMgr, _ = config.NewConfigurationManager()
 	}
 
+	// Create FileSystem if not provided
+	if fileSystem == nil {
+		errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+		fileSystem = fs.NewDefaultFileSystem(errorHandler)
+	}
+
 	return &BootstrapService{
 		pathResolver:     pathResolver,
 		validationEngine: validationEngine,
 		configurationMgr: configurationMgr,
+		fileSystem:       fileSystem,
 	}
 }
 
@@ -597,9 +609,10 @@ func (s *BootstrapService) loadBootstrapState(path string) (*bootstrapState, boo
 		return s.newBootstrapState(), false, nil
 	}
 
-	data, err := os.ReadFile(path)
+	data, err := s.fileSystem.ReadFile(path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		// Unwrap to check for os.IsNotExist
+		if os.IsNotExist(stderrors.Unwrap(err)) {
 			return s.newBootstrapState(), true, nil
 		}
 		return nil, true, fmt.Errorf("reading bootstrap state: %w", err)
@@ -635,7 +648,7 @@ func (s *BootstrapService) saveBootstrapState(path string, state *bootstrapState
 		return fmt.Errorf("serializing bootstrap state: %w", err)
 	}
 
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := s.fileSystem.WriteFile(path, data, 0o644); err != nil {
 		return fmt.Errorf("writing bootstrap state: %w", err)
 	}
 

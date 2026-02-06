@@ -12,6 +12,8 @@ import (
 	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
 	"github.com/rackerlabs/opencenter-cli/internal/sops"
 	"github.com/rackerlabs/opencenter-cli/internal/util/crypto"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -51,6 +53,7 @@ type InitService struct {
 	validationEngine *validation.ValidationEngine
 	configManager    *config.ConfigManager
 	configurationMgr *config.ConfigurationManager
+	fileSystem       fs.FileSystem
 }
 
 // NewInitService creates a new InitService
@@ -59,7 +62,7 @@ func NewInitService(
 	validationEngine *validation.ValidationEngine,
 	configManager *config.ConfigManager,
 ) *InitService {
-	return NewInitServiceWithConfigMgr(pathResolver, validationEngine, configManager, nil)
+	return NewInitServiceWithConfigMgr(pathResolver, validationEngine, configManager, nil, nil)
 }
 
 // NewInitServiceWithConfigMgr creates a new InitService with optional ConfigurationManager
@@ -68,6 +71,7 @@ func NewInitServiceWithConfigMgr(
 	validationEngine *validation.ValidationEngine,
 	configManager *config.ConfigManager,
 	configurationMgr *config.ConfigurationManager,
+	fileSystem fs.FileSystem,
 ) *InitService {
 	// Create ConfigurationManager if not provided
 	if configurationMgr == nil {
@@ -75,11 +79,18 @@ func NewInitServiceWithConfigMgr(
 		configurationMgr, _ = config.NewConfigurationManager()
 	}
 
+	// Create FileSystem if not provided
+	if fileSystem == nil {
+		errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+		fileSystem = fs.NewDefaultFileSystem(errorHandler)
+	}
+
 	return &InitService{
 		pathResolver:     pathResolver,
 		validationEngine: validationEngine,
 		configManager:    configManager,
 		configurationMgr: configurationMgr,
+		fileSystem:       fileSystem,
 	}
 }
 
@@ -219,7 +230,7 @@ func (s *InitService) loadOrCreateConfig(opts InitOptions) (*config.Config, map[
 
 	if opts.ConfigFile != "" {
 		// Load from file
-		data, err := os.ReadFile(opts.ConfigFile)
+		data, err := s.fileSystem.ReadFile(opts.ConfigFile)
 		if err != nil {
 			return nil, nil, fmt.Errorf("reading config file: %w", err)
 		}
@@ -420,7 +431,7 @@ func (s *InitService) saveConfig(ctx context.Context, cfg *config.Config, config
 		return fmt.Errorf("marshaling config: %w", err)
 	}
 
-	if err := os.WriteFile(configPath, data, 0o600); err != nil {
+	if err := s.fileSystem.WriteFileAtomic(configPath, data, 0o600); err != nil {
 		return fmt.Errorf("writing config file: %w", err)
 	}
 
@@ -547,13 +558,13 @@ func (s *InitService) generateSSHKey(clusterPaths *paths.ClusterPaths, cfg *conf
 	}
 
 	// Write private key with restrictive permissions
-	if err := os.WriteFile(clusterPaths.SSHKeyPath, keyPair.PrivateKey, 0o600); err != nil {
+	if err := s.fileSystem.WriteFileAtomic(clusterPaths.SSHKeyPath, keyPair.PrivateKey, 0o600); err != nil {
 		return fmt.Errorf("writing SSH private key: %w", err)
 	}
 
 	// Write public key
 	pubKeyPath := clusterPaths.SSHKeyPath + ".pub"
-	if err := os.WriteFile(pubKeyPath, keyPair.PublicKey, 0o644); err != nil {
+	if err := s.fileSystem.WriteFile(pubKeyPath, keyPair.PublicKey, 0o644); err != nil {
 		return fmt.Errorf("writing SSH public key: %w", err)
 	}
 

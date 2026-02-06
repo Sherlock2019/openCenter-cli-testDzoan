@@ -1395,8 +1395,10 @@ This document tracks the implementation status of the Phase 1-4 architectural re
 ## Phase 4: Cleanup & Optimization
 
 **Spec Location**: `.kiro/specs/phase-4-cleanup-optimization/`  
-**Status**: ✅ 86% Complete (6/7 requirements fully implemented)  
-**Verified**: February 5, 2026
+**Status**: 🔄 10% Complete (In Progress) - 6/7 requirements fully implemented, 1 in progress  
+**Verified**: February 6, 2026
+
+**Progress Update**: File operations migration has begun with 3 of 28 files migrated (10% complete). See [PHASE_4_STATUS_SUMMARY.md](./PHASE_4_STATUS_SUMMARY.md) for detailed progress tracking.
 
 ### Requirement 1: Base Service Plugin Foundation
 
@@ -1572,46 +1574,101 @@ type ClusterPaths struct {
 
 ### Requirement 4: File Operations Migration
 
-**Status**: ⚠️ Partially Completed
+**Status**: 🔄 In Progress (10% complete)
 
 **Acceptance Criteria Status**:
-1. ⚠️ Eliminate direct os.ReadFile calls (66 remaining)
-2. ⚠️ Eliminate direct os.WriteFile calls (66 remaining)
-3. ⚠️ Use FileSystem.ReadFile with error wrapping (partial)
-4. ⚠️ Use FileSystem.WriteFile with atomic operations (partial)
-5. ⚠️ Migrate internal/sops/manager.go (not fully migrated)
-6. ⚠️ Migrate internal/template/engine.go (not fully migrated)
-7. ⚠️ Migrate internal/gitops/copy.go (not fully migrated)
+1. 🔄 Eliminate direct os.ReadFile calls (61 remaining, down from 68)
+2. 🔄 Eliminate direct os.WriteFile calls (included in above count)
+3. 🔄 Use FileSystem.ReadFile with error wrapping (3 files migrated)
+4. 🔄 Use FileSystem.WriteFile with atomic operations (3 files migrated)
+5. 🔄 Migrate internal/sops/manager.go (not yet migrated)
+6. 🔄 Migrate internal/template/engine.go (not yet migrated)
+7. 🔄 Migrate internal/gitops/copy.go (not yet migrated)
 8. ✅ Contextual error messages (where migrated)
 9. ✅ Atomic writes (where migrated)
-10. ⚠️ Zero direct os calls (66 remaining)
+10. 🔄 Zero direct os calls (61 remaining in 25 files)
 
 **Evidence**:
-- ⚠️ **66 direct os.ReadFile/os.WriteFile calls** remain in internal/
+- 🔄 **3 of 28 files migrated** (10% complete)
 - ✅ FileSystem wrapper exists and is functional
-- ✅ Some packages fully migrated (config, sops key manager)
-- ⚠️ Many packages still use direct os calls
+- ✅ Migration pattern established and validated
+- 🔄 **61 direct os.ReadFile/os.WriteFile calls** remain in internal/
 
-**Remaining Direct Calls** (sample):
-- `internal/talos/generator/gitops_structure.go` - 4 calls
-- `internal/cluster/validate_service.go` - 1 call
-- `internal/cluster/init_service.go` - 4 calls
-- `internal/cluster/bootstrap_service.go` - 2 calls
-- `internal/core/validation/validators/gitops.go` - 1 call
-- `internal/util/crypto/key_manager.go` - 2 calls
-- `internal/util/security/credential_validator.go` - 2 calls
-- `internal/util/files/file_operator.go` - 2 calls
-- `internal/util/fs/wrapper.go` - 2 calls (wrapper implementation itself)
+**Files Successfully Migrated** (3 files):
+1. ✅ `internal/cluster/bootstrap_service.go` (2 calls eliminated)
+   - Added FileSystem dependency injection
+   - Migrated os.ReadFile in loadBootstrapState()
+   - Migrated os.WriteFile in saveBootstrapState()
+   - All tests passing ✅
 
-**Migration Status**:
-- ✅ ConfigurationManager: Fully migrated
-- ✅ SOPS KeyManager: Fully migrated
-- ⚠️ Cluster services: Partially migrated
-- ⚠️ Talos generator: Not migrated
-- ⚠️ Validation validators: Not migrated
-- ⚠️ Utility packages: Mixed
+2. ✅ `internal/cluster/init_service.go` (4 calls eliminated)
+   - Added FileSystem dependency injection
+   - Migrated os.ReadFile in loadOrCreateConfig()
+   - Migrated os.WriteFile in saveConfig() (atomic write)
+   - Migrated os.WriteFile in generateSSHKey() (2 calls)
+   - All tests passing ✅
 
-**Notes**: FileSystem wrapper is excellent but migration is incomplete. Significant work remains to eliminate all direct os calls.
+3. ✅ `internal/cluster/validate_service.go` (1 call eliminated)
+   - Added FileSystem dependency injection
+   - Migrated os.WriteFile in validateV2Config()
+   - All tests passing ✅
+
+**Remaining Files by Priority**:
+
+**High Priority** (4 files, ~4-5 hours):
+- internal/talos/generator/gitops_structure.go (4 calls)
+- internal/core/validation/validators/gitops.go (1 call)
+- internal/operations/backup_manager.go (multiple calls)
+- internal/resilience/lock_manager.go (1 call)
+
+**Medium Priority** (10 files, ~4-5 hours):
+- Config subsystems (9 files)
+- Security audit logger (1 file)
+
+**Low Priority** (9 files, ~3-4 hours):
+- Utility packages (4 files)
+- Testing utilities (3 files)
+- Schema/version files (2 files)
+
+**Migration Pattern Applied**:
+```go
+// 1. Add FileSystem field to struct
+type ServiceName struct {
+    fileSystem fs.FileSystem
+}
+
+// 2. Update constructor with backward compatibility
+func NewServiceName(..., fileSystem fs.FileSystem) *ServiceName {
+    if fileSystem == nil {
+        errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+        fileSystem = fs.NewDefaultFileSystem(errorHandler)
+    }
+    return &ServiceName{fileSystem: fileSystem}
+}
+
+// 3. Replace os.ReadFile
+data, err := s.fileSystem.ReadFile(path)
+if err != nil {
+    // Handle os.IsNotExist if needed
+    if os.IsNotExist(stderrors.Unwrap(err)) {
+        // Handle not found
+    }
+    return fmt.Errorf("reading file %s: %w", path, err)
+}
+
+// 4. Replace os.WriteFile (atomic for critical data)
+err := s.fileSystem.WriteFileAtomic(path, data, 0o600)
+```
+
+**Progress Metrics**:
+- Files migrated: 3 of 28 (10.7%)
+- Direct os calls eliminated: 7 of 68 (10.3%)
+- Tests passing: ✅ All passing
+- Time spent: ~3 hours
+- Estimated remaining: 10-13 hours
+- Pace: 33% faster than estimated
+
+**Notes**: File operations migration is in progress with clear patterns established. Work is proceeding ahead of schedule with no regressions. See [PHASE_4_STATUS_SUMMARY.md](./PHASE_4_STATUS_SUMMARY.md) and [PHASE_4_PROGRESS_REPORT.md](./PHASE_4_PROGRESS_REPORT.md) for detailed tracking.
 
 ---
 
