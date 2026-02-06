@@ -98,13 +98,7 @@ Eliminate all direct `os.ReadFile` and `os.WriteFile` calls in production code (
 
 ### Migration Strategy
 
-#### Phase 1: High Priority Files (7 files, ~3-4 hours)
-
-**Cluster Services** (4 files):
-- `internal/cluster/bootstrap_service.go` (2 calls)
-- `internal/cluster/init_service.go` (4 calls)
-- `internal/cluster/validate_service.go` (1 call)
-- `internal/talos/generator/gitops_structure.go` (4 calls)
+#### Phase 1: High Priority Files (3 files, ~3-4 hours)
 
 **Core Validators** (1 file):
 - `internal/core/validation/validators/gitops.go` (1 call)
@@ -129,7 +123,10 @@ Eliminate all direct `os.ReadFile` and `os.WriteFile` calls in production code (
 **Other** (1 file):
 - `internal/security/audit_logger.go`
 
-#### Phase 3: Low Priority Files (9 files, ~3-4 hours)
+#### Phase 3: Low Priority Files (10 files, ~4-5 hours)
+
+**Talos Generator** (1 file):
+- `internal/talos/generator/gitops_structure.go` (4 calls)
 
 **Utility Packages** (4 files):
 - `internal/util/crypto/key_manager.go` (2 calls)
@@ -288,19 +285,13 @@ Create comprehensive metrics report including:
 ### Day 1: File Operations Migration - High Priority (3-4 hours)
 
 **Morning Session** (2 hours):
-1. Migrate cluster services (4 files)
-   - bootstrap_service.go
-   - init_service.go
-   - validate_service.go
-   - talos/generator/gitops_structure.go
-
-**Afternoon Session** (1-2 hours):
-2. Migrate core validators and operations (3 files)
+1. Migrate core validators and operations (3 files)
    - core/validation/validators/gitops.go
    - operations/backup_manager.go
    - resilience/lock_manager.go
 
-3. Run tests to verify no regressions
+**Afternoon Session** (1-2 hours):
+2. Run tests to verify no regressions
 
 ### Day 2: File Operations Migration - Medium Priority (4-5 hours)
 
@@ -312,19 +303,22 @@ Create comprehensive metrics report including:
 2. Migrate security audit logger
 3. Run tests to verify no regressions
 
-### Day 3: File Operations Migration - Low Priority (3-4 hours)
+### Day 3: File Operations Migration - Low Priority (4-5 hours)
 
-**Morning Session** (2 hours):
-1. Migrate utility packages (4 files)
+**Morning Session** (2-3 hours):
+1. Migrate talos generator (1 file)
+   - talos/generator/gitops_structure.go (complex, 4 calls)
+
+2. Migrate utility packages (4 files)
    - util/crypto/key_manager.go
    - util/files/file_operator.go
    - util/security/credential_validator.go
    - barbican/token.go
 
-**Afternoon Session** (1-2 hours):
-2. Migrate testing utilities (3 files)
-3. Migrate schema/version files (2 files)
-4. Run full test suite
+**Afternoon Session** (2 hours):
+3. Migrate testing utilities (3 files)
+4. Migrate schema/version files (2 files)
+5. Run full test suite
 
 ### Day 4: Test Coverage Improvement (4-5 hours)
 
@@ -405,11 +399,7 @@ Create comprehensive metrics report including:
 
 ### File Operations Migration Progress
 
-**High Priority** (7 files):
-- [ ] internal/cluster/bootstrap_service.go
-- [ ] internal/cluster/init_service.go
-- [ ] internal/cluster/validate_service.go
-- [ ] internal/talos/generator/gitops_structure.go
+**High Priority** (3 files):
 - [ ] internal/core/validation/validators/gitops.go
 - [ ] internal/operations/backup_manager.go
 - [ ] internal/resilience/lock_manager.go
@@ -426,7 +416,8 @@ Create comprehensive metrics report including:
 - [ ] internal/config/v2/resolver.go
 - [ ] internal/security/audit_logger.go
 
-**Low Priority** (9 files):
+**Low Priority** (10 files):
+- [ ] internal/talos/generator/gitops_structure.go
 - [ ] internal/util/crypto/key_manager.go
 - [ ] internal/util/files/file_operator.go
 - [ ] internal/util/security/credential_validator.go

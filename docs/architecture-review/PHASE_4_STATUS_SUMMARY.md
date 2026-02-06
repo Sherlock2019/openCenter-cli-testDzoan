@@ -23,9 +23,9 @@ Phase 4 completion work has begun with comprehensive planning and initial file m
 3. ✅ internal/cluster/validate_service.go (1 call)
 
 **Remaining Work**:
-- High Priority: 4 files (~4-5 hours)
+- High Priority: 3 files (~3-4 hours)
 - Medium Priority: 10 files (~4-5 hours)
-- Low Priority: 9 files (~3-4 hours)
+- Low Priority: 10 files (~4-5 hours)
 
 ### Requirement 6: Code Quality Metrics
 
@@ -98,23 +98,18 @@ if err != nil {
 
 ## Remaining Files by Priority
 
-### High Priority (4 files, ~4-5 hours)
+### High Priority (3 files, ~3-4 hours)
 
-1. **internal/talos/generator/gitops_structure.go** (4 calls)
-   - Complex file with multiple write operations
-   - Creates GitOps directory structure
-   - Estimated: 1-2 hours
-
-2. **internal/core/validation/validators/gitops.go** (1 call)
+1. **internal/core/validation/validators/gitops.go** (1 call)
    - Validator needs FileSystem injection
    - Estimated: 30 minutes
 
-3. **internal/operations/backup_manager.go** (multiple calls)
+2. **internal/operations/backup_manager.go** (multiple calls)
    - Critical backup operations
    - Needs careful atomic write handling
    - Estimated: 2-3 hours
 
-4. **internal/resilience/lock_manager.go** (1 call)
+3. **internal/resilience/lock_manager.go** (1 call)
    - Lock file management
    - Estimated: 30 minutes
 
@@ -134,7 +129,13 @@ if err != nil {
 **Security** (1 file):
 - internal/security/audit_logger.go
 
-### Low Priority (9 files, ~3-4 hours)
+### Low Priority (10 files, ~4-5 hours)
+
+**Talos Generator** (1 file):
+- internal/talos/generator/gitops_structure.go (4 calls)
+  - Complex file with multiple write operations
+  - Creates GitOps directory structure
+  - Estimated: 1-2 hours
 
 **Utility Packages** (4 files):
 - internal/util/crypto/key_manager.go (2 calls)
@@ -172,8 +173,7 @@ if err != nil {
 
 ### Immediate (Next Session)
 
-1. **Complete High Priority Files** (4 files, ~4-5 hours)
-   - Talos generator (complex, 4 calls)
+1. **Complete High Priority Files** (3 files, ~3-4 hours)
    - GitOps validator (simple, 1 call)
    - Backup manager (critical, multiple calls)
    - Lock manager (simple, 1 call)
@@ -188,7 +188,8 @@ if err != nil {
    - Config subsystems (9 files)
    - Security audit logger (1 file)
 
-4. **Complete Low Priority Files** (9 files, ~3-4 hours)
+4. **Complete Low Priority Files** (10 files, ~4-5 hours)
+   - Talos generator (1 file, complex)
    - Utility packages (4 files)
    - Testing utilities (3 files)
    - Schema/version files (2 files)

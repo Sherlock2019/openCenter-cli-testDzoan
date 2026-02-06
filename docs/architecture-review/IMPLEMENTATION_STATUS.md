@@ -1615,8 +1615,7 @@ type ClusterPaths struct {
 
 **Remaining Files by Priority**:
 
-**High Priority** (4 files, ~4-5 hours):
-- internal/talos/generator/gitops_structure.go (4 calls)
+**High Priority** (3 files, ~3-4 hours):
 - internal/core/validation/validators/gitops.go (1 call)
 - internal/operations/backup_manager.go (multiple calls)
 - internal/resilience/lock_manager.go (1 call)
@@ -1625,7 +1624,8 @@ type ClusterPaths struct {
 - Config subsystems (9 files)
 - Security audit logger (1 file)
 
-**Low Priority** (9 files, ~3-4 hours):
+**Low Priority** (10 files, ~4-5 hours):
+- Talos generator (1 file - complex, 4 calls)
 - Utility packages (4 files)
 - Testing utilities (3 files)
 - Schema/version files (2 files)

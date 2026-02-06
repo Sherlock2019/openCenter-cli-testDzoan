@@ -123,22 +123,18 @@ ok      github.com/rackerlabs/opencenter-cli/internal/cluster   0.732s
 
 ## Remaining Work
 
-### High Priority Files (4 remaining)
+### High Priority Files (3 remaining)
 
-1. **internal/talos/generator/gitops_structure.go** (4 calls)
-   - Complex file with multiple write operations
-   - Estimated effort: 1-2 hours
-
-2. **internal/core/validation/validators/gitops.go** (1 call)
+1. **internal/core/validation/validators/gitops.go** (1 call)
    - Validator needs FileSystem injection
    - Estimated effort: 30 minutes
 
-3. **internal/operations/backup_manager.go** (multiple calls)
+2. **internal/operations/backup_manager.go** (multiple calls)
    - Critical backup operations
    - Needs careful atomic write handling
    - Estimated effort: 2-3 hours
 
-4. **internal/resilience/lock_manager.go** (1 call)
+3. **internal/resilience/lock_manager.go** (1 call)
    - Lock file management
    - Estimated effort: 30 minutes
 
@@ -155,7 +151,13 @@ Config subsystems and security components:
 
 **Estimated effort**: 4-5 hours total
 
-### Low Priority Files (9 remaining)
+### Low Priority Files (10 remaining)
+
+**Talos Generator** (1 file):
+- internal/talos/generator/gitops_structure.go (4 calls)
+  - Complex file with multiple write operations
+  - Creates GitOps directory structure
+  - Estimated effort: 1-2 hours
 
 Utility packages, testing utilities, and schema files:
 - internal/util/crypto/key_manager.go
@@ -168,7 +170,7 @@ Utility packages, testing utilities, and schema files:
 - internal/config/schema_generator.go
 - internal/config/version_detector.go
 
-**Estimated effort**: 3-4 hours total
+**Estimated effort**: 4-5 hours total
 
 ### Excluded Files (3 files)
 
