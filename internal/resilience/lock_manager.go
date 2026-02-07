@@ -2,12 +2,16 @@ package resilience
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
 )
 
 // LockManager manages distributed locks to prevent concurrent operations
@@ -187,9 +191,10 @@ func generateOwnerID() (string, error) {
 
 // fileLockBackend implements lockBackend using file-based locking with flock()
 type fileLockBackend struct {
-	lockDir string
-	mu      sync.Mutex
-	locks   map[string]*fileLock
+	lockDir    string
+	fileSystem fs.FileSystem
+	mu         sync.Mutex
+	locks      map[string]*fileLock
 }
 
 // fileLock represents a file-based lock
@@ -210,9 +215,14 @@ func newFileLockBackend(lockDir string) (*fileLockBackend, error) {
 		return nil, fmt.Errorf("failed to create lock directory: %w", err)
 	}
 
+	// Create FileSystem with error handler
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fileSystem := fs.NewDefaultFileSystem(errorHandler)
+
 	return &fileLockBackend{
-		lockDir: lockDir,
-		locks:   make(map[string]*fileLock),
+		lockDir:    lockDir,
+		fileSystem: fileSystem,
+		locks:      make(map[string]*fileLock),
 	}, nil
 }
 
@@ -358,9 +368,13 @@ func (fb *fileLockBackend) getLockInfo(resource string) (*LockState, error) {
 		return nil, nil // No lock exists
 	}
 
-	// Read lock file content
-	content, err := os.ReadFile(lockPath)
+	// Read lock file content using FileSystem
+	content, err := fb.fileSystem.ReadFile(lockPath)
 	if err != nil {
+		// Handle not found case
+		if os.IsNotExist(stderrors.Unwrap(err)) {
+			return nil, nil // No lock exists
+		}
 		return nil, fmt.Errorf("failed to read lock file: %w", err)
 	}
 

@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	stderrors "errors"
 	"fmt"
 	"io"
 	"os"
@@ -18,6 +19,8 @@ import (
 	"golang.org/x/crypto/argon2"
 
 	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
 )
 
 // BackupManager handles backup and restoration of cluster configurations
@@ -75,6 +78,7 @@ type backupManager struct {
 	pathResolver *paths.PathResolver
 	backupDir    string
 	currentUser  string
+	fileSystem   fs.FileSystem
 }
 
 // NewBackupManager creates a new backup manager
@@ -97,10 +101,15 @@ func NewBackupManager(pathResolver *paths.PathResolver, backupDir string) (Backu
 		currentUser = "unknown"
 	}
 
+	// Create FileSystem with error handler
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fileSystem := fs.NewDefaultFileSystem(errorHandler)
+
 	return &backupManager{
 		pathResolver: pathResolver,
 		backupDir:    backupDir,
 		currentUser:  currentUser,
+		fileSystem:   fileSystem,
 	}, nil
 }
 
@@ -275,18 +284,18 @@ func (bm *backupManager) collectBackupContents(cluster string) (*BackupContents,
 		return nil, fmt.Errorf("failed to resolve cluster paths: %w", err)
 	}
 
-	// Read config file
-	if data, err := os.ReadFile(clusterPaths.ConfigPath); err == nil {
+	// Read config file using FileSystem
+	if data, err := bm.fileSystem.ReadFile(clusterPaths.ConfigPath); err == nil {
 		contents.ConfigFile = data
 	}
 
-	// Read Age keys
-	if data, err := os.ReadFile(clusterPaths.SOPSKeyPath); err == nil {
+	// Read Age keys using FileSystem
+	if data, err := bm.fileSystem.ReadFile(clusterPaths.SOPSKeyPath); err == nil {
 		contents.AgeKeys = data
 	}
 
-	// Read SSH keys
-	if data, err := os.ReadFile(clusterPaths.SSHKeyPath); err == nil {
+	// Read SSH keys using FileSystem
+	if data, err := bm.fileSystem.ReadFile(clusterPaths.SSHKeyPath); err == nil {
 		contents.SSHKeys = data
 	}
 
@@ -295,9 +304,9 @@ func (bm *backupManager) collectBackupContents(cluster string) (*BackupContents,
 		contents.GitOpsState = data
 	}
 
-	// Read Terraform state
+	// Read Terraform state using FileSystem
 	tfStatePath := filepath.Join(clusterPaths.ClusterDir, "terraform.tfstate")
-	if data, err := os.ReadFile(tfStatePath); err == nil {
+	if data, err := bm.fileSystem.ReadFile(tfStatePath); err == nil {
 		contents.TerraformState = data
 	}
 
@@ -470,9 +479,9 @@ func (bm *backupManager) calculateChecksum(filePath string) (string, error) {
 
 	checksum := hex.EncodeToString(hash.Sum(nil))
 
-	// Save checksum to file
+	// Save checksum to file using FileSystem (atomic write for integrity)
 	checksumPath := filePath + ".sha256"
-	if err := os.WriteFile(checksumPath, []byte(checksum), 0600); err != nil {
+	if err := bm.fileSystem.WriteFileAtomic(checksumPath, []byte(checksum), 0600); err != nil {
 		return "", err
 	}
 
@@ -487,12 +496,15 @@ func (bm *backupManager) verifyChecksum(filePath, backupID string) error {
 		return err
 	}
 
-	// Read stored checksum
+	// Read stored checksum using FileSystem
 	checksumPath := filepath.Join(bm.backupDir, backupID+".sha256")
-	storedChecksum, err := os.ReadFile(checksumPath)
+	storedChecksum, err := bm.fileSystem.ReadFile(checksumPath)
 	if err != nil {
 		// If checksum file doesn't exist, skip verification
-		return nil
+		if os.IsNotExist(stderrors.Unwrap(err)) {
+			return nil
+		}
+		return fmt.Errorf("failed to read checksum file: %w", err)
 	}
 
 	if currentChecksum != string(storedChecksum) {
@@ -504,8 +516,8 @@ func (bm *backupManager) verifyChecksum(filePath, backupID string) error {
 
 // encryptFile encrypts a file using AES-256-GCM with Argon2 key derivation
 func (bm *backupManager) encryptFile(inputPath, outputPath, passphrase string) error {
-	// Read input file
-	plaintext, err := os.ReadFile(inputPath)
+	// Read input file using FileSystem
+	plaintext, err := bm.fileSystem.ReadFile(inputPath)
 	if err != nil {
 		return err
 	}
@@ -539,9 +551,9 @@ func (bm *backupManager) encryptFile(inputPath, outputPath, passphrase string) e
 	// Encrypt
 	ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
 
-	// Write output: salt + ciphertext
+	// Write output: salt + ciphertext using FileSystem (atomic write for security)
 	output := append(salt, ciphertext...)
-	if err := os.WriteFile(outputPath, output, 0600); err != nil {
+	if err := bm.fileSystem.WriteFileAtomic(outputPath, output, 0600); err != nil {
 		return err
 	}
 
@@ -550,8 +562,8 @@ func (bm *backupManager) encryptFile(inputPath, outputPath, passphrase string) e
 
 // decryptFile decrypts a file using AES-256-GCM with Argon2 key derivation
 func (bm *backupManager) decryptFile(inputPath, outputPath, passphrase string) error {
-	// Read input file
-	input, err := os.ReadFile(inputPath)
+	// Read input file using FileSystem
+	input, err := bm.fileSystem.ReadFile(inputPath)
 	if err != nil {
 		return err
 	}
@@ -591,8 +603,8 @@ func (bm *backupManager) decryptFile(inputPath, outputPath, passphrase string) e
 		return fmt.Errorf("decryption failed: %w", err)
 	}
 
-	// Write output
-	if err := os.WriteFile(outputPath, plaintext, 0600); err != nil {
+	// Write output using FileSystem (atomic write for security)
+	if err := bm.fileSystem.WriteFileAtomic(outputPath, plaintext, 0600); err != nil {
 		return err
 	}
 

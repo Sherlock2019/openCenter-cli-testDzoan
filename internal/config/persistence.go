@@ -21,12 +21,15 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	stderrors "errors"
 	"strings"
 	"sync"
 
 	corePaths "github.com/rackerlabs/opencenter-cli/internal/core/paths"
 
 	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
+	utilErrors "github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	utilFs "github.com/rackerlabs/opencenter-cli/internal/util/fs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -35,7 +38,18 @@ var (
 	globalManager     *ConfigurationManager
 	globalManagerOnce sync.Once
 	globalManagerErr  error
+	globalFileSystem  utilFs.FileSystem
+	fileSystemOnce    sync.Once
 )
+
+// getGlobalFileSystem returns a singleton FileSystem instance
+func getGlobalFileSystem() utilFs.FileSystem {
+	fileSystemOnce.Do(func() {
+		errorHandler := utilErrors.NewDefaultErrorHandlerWithoutMasking()
+		globalFileSystem = utilFs.NewDefaultFileSystem(errorHandler)
+	})
+	return globalFileSystem
+}
 
 // getGlobalManager returns the singleton ConfigurationManager instance
 func getGlobalManager() (*ConfigurationManager, error) {
@@ -343,7 +357,10 @@ func GenerateCompleteConfig(name string) (Config, error) {
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to get config path: %w", err)
 	}
-	actualYAML, err := os.ReadFile(path)
+	
+	// Use global FileSystem for reading
+	fileSystem := getGlobalFileSystem()
+	actualYAML, err := fileSystem.ReadFile(path)
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to read cluster config: %w", err)
 	}
@@ -433,7 +450,10 @@ func GenerateCompleteConfigYAML(name string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get config path: %w", err)
 	}
-	actualYAML, err := os.ReadFile(path)
+	
+	// Use global FileSystem for reading
+	fileSystem := getGlobalFileSystem()
+	actualYAML, err := fileSystem.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read cluster config: %w", err)
 	}
@@ -496,8 +516,9 @@ func SaveDebugConfig(clusterName, gitDir string) error {
 		return fmt.Errorf("failed to generate complete config: %w", err)
 	}
 
-	// Write the debug config file with 0600 permissions
-	if err := os.WriteFile(debugPath, data, 0o600); err != nil {
+	// Write the debug config file with 0600 permissions using FileSystem
+	fileSystem := getGlobalFileSystem()
+	if err := fileSystem.WriteFileAtomic(debugPath, data, 0o600); err != nil {
 		return fmt.Errorf("failed to write debug config to %s: %w", debugPath, err)
 	}
 
@@ -565,8 +586,10 @@ func saveConfig(cfg Config, omitEmpty bool) error {
 	if marshalErr != nil {
 		return marshalErr
 	}
-	// Write with 0600 permissions
-	if writeErr := os.WriteFile(path, data, 0o600); writeErr != nil {
+	
+	// Write with 0600 permissions using FileSystem (atomic write for config)
+	fileSystem := getGlobalFileSystem()
+	if writeErr := fileSystem.WriteFileAtomic(path, data, 0o600); writeErr != nil {
 		return writeErr
 	}
 	return nil
@@ -887,7 +910,10 @@ func SetActive(name string) error {
 	if name == "" {
 		return os.Remove(path)
 	}
-	return os.WriteFile(path, []byte(name), 0o600)
+	
+	// Use FileSystem for writing active cluster marker (atomic write)
+	fileSystem := getGlobalFileSystem()
+	return fileSystem.WriteFileAtomic(path, []byte(name), 0o600)
 }
 
 // GetActive reads the active cluster name with precedence:
@@ -915,7 +941,8 @@ func GetActive() (string, error) {
 
 	// Priority 2: Check session file (shell integration)
 	if sessionFile := os.Getenv("OPENCENTER_SESSION_FILE"); sessionFile != "" {
-		if data, err := os.ReadFile(sessionFile); err == nil && len(data) > 0 {
+		fileSystem := getGlobalFileSystem()
+		if data, err := fileSystem.ReadFile(sessionFile); err == nil && len(data) > 0 {
 			return strings.TrimSpace(string(data)), nil
 		}
 	}
@@ -925,9 +952,11 @@ func GetActive() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	data, readErr := os.ReadFile(path)
+	
+	fileSystem := getGlobalFileSystem()
+	data, readErr := fileSystem.ReadFile(path)
 	if readErr != nil {
-		if errors.Is(readErr, fs.ErrNotExist) {
+		if os.IsNotExist(stderrors.Unwrap(readErr)) {
 			return "", nil
 		}
 		return "", readErr

@@ -29,6 +29,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
 )
 
 const (
@@ -57,6 +60,7 @@ type AuditLogger struct {
 	logPath     string
 	signingKey  []byte
 	masker      *DefaultCredentialMasker
+	fileSystem  fs.FileSystem
 	mu          sync.Mutex
 	file        *os.File
 	enabled     bool
@@ -81,10 +85,15 @@ func NewAuditLogger(config AuditLoggerConfig) (*AuditLogger, error) {
 		}
 	}
 
+	// Create FileSystem with error handler
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fileSystem := fs.NewDefaultFileSystem(errorHandler)
+
 	logger := &AuditLogger{
 		logPath:    config.LogPath,
 		signingKey: signingKey,
 		masker:     NewDefaultCredentialMasker(),
+		fileSystem: fileSystem,
 		enabled:    config.Enabled,
 	}
 
@@ -278,8 +287,8 @@ func (l *AuditLogger) QueryEvents(ctx context.Context, filter EventFilter) ([]Au
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	// Read log file
-	content, err := os.ReadFile(l.logPath)
+	// Read log file using FileSystem
+	content, err := l.fileSystem.ReadFile(l.logPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read audit log: %w", err)
 	}
@@ -329,7 +338,8 @@ func (l *AuditLogger) VerifyIntegrity() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	content, err := os.ReadFile(l.logPath)
+	// Read log file using FileSystem
+	content, err := l.fileSystem.ReadFile(l.logPath)
 	if err != nil {
 		return fmt.Errorf("failed to read audit log: %w", err)
 	}

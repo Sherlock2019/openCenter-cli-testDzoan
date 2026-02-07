@@ -22,6 +22,8 @@ import (
 	"strings"
 
 	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
 )
 
 // GitOpsValidator validates GitOps repository structure and configuration.
@@ -36,10 +38,21 @@ import (
 type GitOpsValidator struct {
 	requiredDirs  []string
 	requiredFiles []string
+	fileSystem    fs.FileSystem
 }
 
 // NewGitOpsValidator creates a new GitOps validator.
 func NewGitOpsValidator() *GitOpsValidator {
+	return NewGitOpsValidatorWithFileSystem(nil)
+}
+
+// NewGitOpsValidatorWithFileSystem creates a new GitOps validator with a custom FileSystem.
+func NewGitOpsValidatorWithFileSystem(fileSystem fs.FileSystem) *GitOpsValidator {
+	if fileSystem == nil {
+		errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+		fileSystem = fs.NewDefaultFileSystem(errorHandler)
+	}
+
 	return &GitOpsValidator{
 		requiredDirs: []string{
 			"applications",
@@ -52,6 +65,7 @@ func NewGitOpsValidator() *GitOpsValidator {
 			"applications/base/kustomization.yaml",
 			"infrastructure/clusters/kustomization.yaml",
 		},
+		fileSystem: fileSystem,
 	}
 }
 
@@ -176,7 +190,7 @@ func (v *GitOpsValidator) validateRepositoryStructure(result *validation.Validat
 
 // validateKustomizationFile validates a kustomization.yaml file.
 func (v *GitOpsValidator) validateKustomizationFile(result *validation.ValidationResult, filePath string) {
-	content, err := os.ReadFile(filePath)
+	content, err := v.fileSystem.ReadFile(filePath)
 	if err != nil {
 		result.AddWarning("gitops.kustomization",
 			fmt.Sprintf("cannot read kustomization file: %s", filePath),

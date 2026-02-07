@@ -21,6 +21,8 @@ import (
 	"strings"
 
 	corePaths "github.com/rackerlabs/opencenter-cli/internal/core/paths"
+	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -77,6 +79,7 @@ type ConfigManager struct {
 	config     *CLIConfig
 	defaults   *CLIConfig
 	validator  *ConfigValidator
+	fileSystem fs.FileSystem
 }
 
 // ConfigValidator validates configuration values and structure.
@@ -175,10 +178,15 @@ func NewConfigManager(configPath string) (*ConfigManager, error) {
 	// Expand environment variables and tilde
 	configPath = corePaths.ExpandPath(configPath)
 
+	// Create FileSystem with error handler
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fileSystem := fs.NewDefaultFileSystem(errorHandler)
+
 	cm := &ConfigManager{
 		configPath: configPath,
 		defaults:   DefaultCLIConfig(),
 		validator:  &ConfigValidator{autoRepair: true},
+		fileSystem: fileSystem,
 	}
 
 	// Load configuration
@@ -256,8 +264,8 @@ func (cm *ConfigManager) Load() error {
 		}
 	}
 
-	// Read configuration file
-	data, err := os.ReadFile(cm.configPath)
+	// Read configuration file using FileSystem
+	data, err := cm.fileSystem.ReadFile(cm.configPath)
 	if err != nil {
 		return &ConfigError{
 			Type:    "path",
@@ -316,7 +324,8 @@ func (cm *ConfigManager) createDefaultConfig() error {
 		return fmt.Errorf("failed to marshal default configuration: %w", err)
 	}
 
-	if err := os.WriteFile(cm.configPath, data, 0600); err != nil {
+	// Use atomic write for configuration file
+	if err := cm.fileSystem.WriteFileAtomic(cm.configPath, data, 0600); err != nil {
 		return &ConfigError{
 			Type:    "permission",
 			Field:   "configFile",
@@ -400,7 +409,8 @@ func (cm *ConfigManager) Save() error {
 		return fmt.Errorf("failed to marshal configuration: %w", err)
 	}
 
-	if err := os.WriteFile(cm.configPath, data, 0600); err != nil {
+	// Use atomic write for configuration file
+	if err := cm.fileSystem.WriteFileAtomic(cm.configPath, data, 0600); err != nil {
 		return &ConfigError{
 			Type:    "permission",
 			Field:   "configFile",
