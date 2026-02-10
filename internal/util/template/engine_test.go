@@ -274,8 +274,16 @@ func TestCreateTemplateEngine(t *testing.T) {
 		t.Error("Expected renderer to be available")
 	}
 
-	if engine.GetValidator() == nil {
-		t.Error("Expected validator to be available")
+	if engine.GetBasicValidator() == nil {
+		t.Error("Expected basic validator to be available")
+	}
+	
+	if engine.GetDataValidator() == nil {
+		t.Error("Expected data validator to be available")
+	}
+	
+	if engine.GetAdvancedValidator() == nil {
+		t.Error("Expected advanced validator to be available")
 	}
 
 	// Test that engine is properly initialized

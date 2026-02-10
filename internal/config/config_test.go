@@ -14,6 +14,7 @@
 package config
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -21,7 +22,7 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/Masterminds/sprig/v3"
+	sprig "github.com/Masterminds/sprig/v3"
 	"github.com/rackerlabs/opencenter-cli/internal/config/services"
 )
 
@@ -114,7 +115,12 @@ func TestListEmptyDirectory(t *testing.T) {
 	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
 	defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
 
-	names, err := List()
+	manager, err := NewConfigurationManager()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	names, err := manager.List(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,8 +135,13 @@ func TestActiveClusterOperations(t *testing.T) {
 	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
 	defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
 
+	manager, err := NewConfigurationManager()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// Test getting active when no active cluster is set
-	active, err := GetActive()
+	active, err := manager.GetActive()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,12 +150,12 @@ func TestActiveClusterOperations(t *testing.T) {
 	}
 
 	// Test setting active cluster
-	if err := SetActive("test-cluster"); err != nil {
+	if err := manager.SetActive("test-cluster"); err != nil {
 		t.Fatal(err)
 	}
 
 	// Test getting active cluster
-	active, err = GetActive()
+	active, err = manager.GetActive()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,76 +164,16 @@ func TestActiveClusterOperations(t *testing.T) {
 	}
 
 	// Test clearing active cluster
-	if err := SetActive(""); err != nil {
+	if err := manager.SetActive(""); err != nil {
 		t.Fatal(err)
 	}
 
-	active, err = GetActive()
+	active, err = manager.GetActive()
 	if err != nil {
 		t.Fatal(err)
 	}
 	if active != "" {
 		t.Errorf("expected empty active cluster after clearing, got %s", active)
-	}
-}
-
-
-
-
-
-
-func TestSortStrings(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    []string
-		expected []string
-	}{
-		{
-			name:     "already sorted",
-			input:    []string{"a", "b", "c"},
-			expected: []string{"a", "b", "c"},
-		},
-		{
-			name:     "reverse order",
-			input:    []string{"c", "b", "a"},
-			expected: []string{"a", "b", "c"},
-		},
-		{
-			name:     "random order",
-			input:    []string{"b", "a", "d", "c"},
-			expected: []string{"a", "b", "c", "d"},
-		},
-		{
-			name:     "single element",
-			input:    []string{"a"},
-			expected: []string{"a"},
-		},
-		{
-			name:     "empty slice",
-			input:    []string{},
-			expected: []string{},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Make a copy to avoid modifying the test data
-			input := make([]string, len(tt.input))
-			copy(input, tt.input)
-
-			sortStrings(input)
-
-			if len(input) != len(tt.expected) {
-				t.Errorf("expected length %d, got %d", len(tt.expected), len(input))
-				return
-			}
-
-			for i, expected := range tt.expected {
-				if input[i] != expected {
-					t.Errorf("at position %d: expected %s, got %s", i, expected, input[i])
-				}
-			}
-		})
 	}
 }
 

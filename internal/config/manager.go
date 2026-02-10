@@ -15,9 +15,11 @@ package config
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
@@ -764,4 +766,85 @@ func (cm *ConfigurationManager) BuildFrom(config *Config) ConfigBuilder {
 	// Inject manager reference for validation and saving
 	builder.manager = cm
 	return builder
+}
+
+// GetActive returns the active cluster name with precedence:
+// 1. OPENCENTER_CLUSTER environment variable (session-scoped)
+// 2. Session file (if shell integration is active)
+// 3. Persistent selection from marker file
+//
+// Returns:
+//   - string: The active cluster name (empty string if none set)
+//   - error: File read error
+//
+// Example:
+//
+//	active, err := manager.GetActive()
+//	if err != nil {
+//	    return err
+//	}
+//	if active == "" {
+//	    fmt.Println("No active cluster")
+//	}
+func (cm *ConfigurationManager) GetActive() (string, error) {
+	// Priority 1: Check environment variable (highest priority)
+	if cluster := os.Getenv("OPENCENTER_CLUSTER"); cluster != "" {
+		return strings.TrimSpace(cluster), nil
+	}
+
+	// Priority 2: Check session file (shell integration)
+	if sessionFile := os.Getenv("OPENCENTER_SESSION_FILE"); sessionFile != "" {
+		if data, err := cm.fileSystem.ReadFile(sessionFile); err == nil && len(data) > 0 {
+			return strings.TrimSpace(string(data)), nil
+		}
+	}
+
+	// Priority 3: Fall back to persistent selection
+	path, err := cm.activeClusterPath()
+	if err != nil {
+		return "", err
+	}
+
+	data, readErr := cm.fileSystem.ReadFile(path)
+	if readErr != nil {
+		if os.IsNotExist(stderrors.Unwrap(readErr)) {
+			return "", nil
+		}
+		return "", readErr
+	}
+	return strings.TrimSpace(string(data)), nil
+}
+
+// SetActive writes the given cluster name into the active marker file.
+// If the name is empty, the marker file is removed.
+//
+// Parameters:
+//   - name: The name of the cluster to set as active (empty to clear)
+//
+// Returns:
+//   - error: File write error
+//
+// Example:
+//
+//	// Set active cluster
+//	err := manager.SetActive("my-cluster")
+//
+//	// Clear active cluster
+//	err := manager.SetActive("")
+func (cm *ConfigurationManager) SetActive(name string) error {
+	path, err := cm.activeClusterPath()
+	if err != nil {
+		return err
+	}
+	if name == "" {
+		return cm.fileSystem.Remove(path)
+	}
+
+	return cm.fileSystem.WriteFileAtomic(path, []byte(name), 0o600)
+}
+
+// activeClusterPath returns the path to the active cluster marker file.
+func (cm *ConfigurationManager) activeClusterPath() (string, error) {
+	baseDir := cm.pathResolver.GetBaseDir()
+	return filepath.Join(baseDir, ".active"), nil
 }

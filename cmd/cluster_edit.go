@@ -18,7 +18,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
 	"github.com/rackerlabs/opencenter-cli/internal/security"
 	"github.com/spf13/cobra"
@@ -86,7 +85,7 @@ Examples:
 				}
 			} else {
 				// Use currently selected cluster
-				active, err := config.GetActive()
+				active, err := getActiveCluster()
 				if err != nil {
 					return fmt.Errorf("failed to get active cluster: %w", err)
 				}

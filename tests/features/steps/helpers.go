@@ -53,6 +53,27 @@ type world struct {
 	cwd           string
 }
 
+// Helper functions for ConfigurationManager operations in tests
+func getConfigManagerForTest() (*config.ConfigurationManager, error) {
+	return config.NewConfigurationManager()
+}
+
+func setActiveClusterForTest(name string) error {
+	mgr, err := getConfigManagerForTest()
+	if err != nil {
+		return err
+	}
+	return mgr.SetActive(name)
+}
+
+func getActiveClusterForTest() (string, error) {
+	mgr, err := getConfigManagerForTest()
+	if err != nil {
+		return "", err
+	}
+	return mgr.GetActive()
+}
+
 var compiledBinary string
 
 // buildBinary builds the opencenter binary once per test suite. The
@@ -331,7 +352,7 @@ func (w *world) setActiveCluster(name string) error {
 	orig := os.Getenv("OPENCENTER_CONFIG_DIR")
 	os.Setenv("OPENCENTER_CONFIG_DIR", w.configDir)
 	defer os.Setenv("OPENCENTER_CONFIG_DIR", orig)
-	return config.SetActive(name)
+	return setActiveClusterForTest(name)
 }
 
 // setConfigValue updates a YAML value at a dotted path and saves
@@ -342,7 +363,7 @@ func (w *world) setConfigValue(path, value string) error {
 	orig := os.Getenv("OPENCENTER_CONFIG_DIR")
 	os.Setenv("OPENCENTER_CONFIG_DIR", w.configDir)
 	defer os.Setenv("OPENCENTER_CONFIG_DIR", orig)
-	active, err := config.GetActive()
+	active, err := getActiveClusterForTest()
 	if err != nil {
 		return err
 	}
@@ -644,7 +665,7 @@ func (w *world) theActiveClusterShouldBe(name string) error {
 	os.Setenv("OPENCENTER_CONFIG_DIR", w.configDir)
 	defer os.Setenv("OPENCENTER_CONFIG_DIR", orig)
 
-	active, err := config.GetActive()
+	active, err := getActiveClusterForTest()
 	if err != nil {
 		return err
 	}
@@ -716,7 +737,7 @@ func (w *world) theGitopsDirectoryIsAGitRepository() error {
 	orig := os.Getenv("OPENCENTER_CONFIG_DIR")
 	os.Setenv("OPENCENTER_CONFIG_DIR", w.configDir)
 	defer os.Setenv("OPENCENTER_CONFIG_DIR", orig)
-	active, err := config.GetActive()
+	active, err := getActiveClusterForTest()
 	if err != nil {
 		return err
 	}
@@ -912,8 +933,8 @@ func (w *world) iChooseFromThePrompt(choice string) error {
 		}
 
 		// Also try to use the config package's SetActive function
-		if err := config.SetActive(choice); err != nil {
-			// Don't fail if config.SetActive fails, as we've already written the file
+		if err := setActiveClusterForTest(choice); err != nil {
+			// Don't fail if setActiveClusterForTest fails, as we've already written the file
 			// This is just a backup to ensure compatibility
 		}
 

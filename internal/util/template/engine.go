@@ -27,7 +27,9 @@ import (
 // DefaultTemplateEngine implements TemplateEngine interface with dependency injection
 type DefaultTemplateEngine struct {
 	renderer             TemplateRenderer
-	validator            TemplateValidator
+	basicValidator       BasicTemplateValidator
+	dataValidator        TemplateDataValidator
+	advancedValidator    AdvancedTemplateValidator
 	networkPluginHandler NetworkPluginHandler
 	templates            *template.Template
 	funcMap              template.FuncMap
@@ -37,22 +39,38 @@ type DefaultTemplateEngine struct {
 
 // NewDefaultTemplateEngine creates a new default template engine with dependency injection
 func NewDefaultTemplateEngine() *DefaultTemplateEngine {
+	validator := NewDefaultTemplateValidator()
 	return &DefaultTemplateEngine{
 		renderer:             NewDefaultTemplateRenderer(),
-		validator:            NewDefaultTemplateValidator(),
+		basicValidator:       validator,
+		dataValidator:        validator,
+		advancedValidator:    validator,
 		networkPluginHandler: NewDefaultNetworkPluginHandler(),
 		funcMap:              make(template.FuncMap),
 	}
 }
 
 // NewTemplateEngineWithDependencies creates a template engine with injected dependencies
-func NewTemplateEngineWithDependencies(renderer TemplateRenderer, validator TemplateValidator, networkHandler NetworkPluginHandler) *DefaultTemplateEngine {
-	return &DefaultTemplateEngine{
+// The validator parameter can be any type that implements the three validator interfaces
+func NewTemplateEngineWithDependencies(renderer TemplateRenderer, validator interface{}, networkHandler NetworkPluginHandler) *DefaultTemplateEngine {
+	engine := &DefaultTemplateEngine{
 		renderer:             renderer,
-		validator:            validator,
 		networkPluginHandler: networkHandler,
 		funcMap:              make(template.FuncMap),
 	}
+	
+	// Extract validator interfaces
+	if basic, ok := validator.(BasicTemplateValidator); ok {
+		engine.basicValidator = basic
+	}
+	if data, ok := validator.(TemplateDataValidator); ok {
+		engine.dataValidator = data
+	}
+	if advanced, ok := validator.(AdvancedTemplateValidator); ok {
+		engine.advancedValidator = advanced
+	}
+	
+	return engine
 }
 
 // Init initializes the template engine
@@ -82,7 +100,7 @@ func (e *DefaultTemplateEngine) initializeDependencies() error {
 	}
 
 	// Initialize validator
-	if defaultValidator, ok := e.validator.(*DefaultTemplateValidator); ok {
+	if defaultValidator, ok := e.basicValidator.(*DefaultTemplateValidator); ok {
 		if err := defaultValidator.Init(e.templates); err != nil {
 			return fmt.Errorf("failed to initialize validator: %w", err)
 		}
@@ -215,7 +233,7 @@ func (e *DefaultTemplateEngine) ValidateTemplate(templateName string) error {
 	if e.templates == nil {
 		return fmt.Errorf("template engine not initialized")
 	}
-	return e.validator.ValidateTemplate(templateName)
+	return e.basicValidator.ValidateTemplate(templateName)
 }
 
 // ValidateTemplateData validates that data contains required fields for a template
@@ -223,7 +241,7 @@ func (e *DefaultTemplateEngine) ValidateTemplateData(templateName string, data i
 	if e.templates == nil {
 		return fmt.Errorf("template engine not initialized")
 	}
-	return e.validator.ValidateTemplateData(templateName, data)
+	return e.dataValidator.ValidateTemplateData(templateName, data)
 }
 
 // ValidateTemplateWithDataAndResult performs comprehensive validation of template with data
@@ -232,7 +250,7 @@ func (e *DefaultTemplateEngine) ValidateTemplateWithDataAndResult(templateName s
 		return nil, NewInitializationError("template engine", fmt.Errorf("template engine not initialized"))
 	}
 
-	result := e.validator.ValidateTemplateWithData(templateName, data)
+	result := e.advancedValidator.ValidateTemplateWithData(templateName, data)
 	if !result.Valid {
 		return result, fmt.Errorf("template validation failed with %d errors", len(result.Errors))
 	}
@@ -245,7 +263,7 @@ func (e *DefaultTemplateEngine) ValidateTemplateSyntaxEngine(templateName string
 	if e.templates == nil {
 		return NewInitializationError("template engine", fmt.Errorf("template engine not initialized"))
 	}
-	return e.validator.ValidateTemplateSyntax(templateName)
+	return e.basicValidator.ValidateTemplateSyntax(templateName)
 }
 
 // ValidateVariableSubstitutionEngine validates variable substitution for a template
@@ -253,7 +271,7 @@ func (e *DefaultTemplateEngine) ValidateVariableSubstitutionEngine(templateName 
 	if e.templates == nil {
 		return NewInitializationError("template engine", fmt.Errorf("template engine not initialized"))
 	}
-	return e.validator.ValidateVariableSubstitution(templateName, data)
+	return e.dataValidator.ValidateVariableSubstitution(templateName, data)
 }
 
 // ExtractTemplateVariablesEngine extracts variables from a template
@@ -261,12 +279,12 @@ func (e *DefaultTemplateEngine) ExtractTemplateVariablesEngine(templateName stri
 	if e.templates == nil {
 		return nil, NewInitializationError("template engine", fmt.Errorf("template engine not initialized"))
 	}
-	return e.validator.ExtractTemplateVariables(templateName)
+	return e.advancedValidator.ExtractTemplateVariables(templateName)
 }
 
 // ValidateNetworkPluginConfig validates network plugin configuration
 func (e *DefaultTemplateEngine) ValidateNetworkPluginConfig(pluginType string, config map[string]interface{}) error {
-	return e.validator.ValidateNetworkPluginConfig(pluginType, config)
+	return e.advancedValidator.ValidateNetworkPluginConfig(pluginType, config)
 }
 
 // ValidateTemplateWithData performs comprehensive validation of template with data (interface method)
@@ -279,7 +297,7 @@ func (e *DefaultTemplateEngine) ValidateTemplateWithData(templateName string, da
 		return result
 	}
 
-	return e.validator.ValidateTemplateWithData(templateName, data)
+	return e.advancedValidator.ValidateTemplateWithData(templateName, data)
 }
 
 // ValidateTemplateSyntax validates template syntax (interface method)
@@ -287,7 +305,7 @@ func (e *DefaultTemplateEngine) ValidateTemplateSyntax(templateName string) erro
 	if e.templates == nil {
 		return NewInitializationError("template engine", fmt.Errorf("template engine not initialized"))
 	}
-	return e.validator.ValidateTemplateSyntax(templateName)
+	return e.basicValidator.ValidateTemplateSyntax(templateName)
 }
 
 // ValidateVariableSubstitution validates variable substitution for a template (interface method)
@@ -295,7 +313,7 @@ func (e *DefaultTemplateEngine) ValidateVariableSubstitution(templateName string
 	if e.templates == nil {
 		return NewInitializationError("template engine", fmt.Errorf("template engine not initialized"))
 	}
-	return e.validator.ValidateVariableSubstitution(templateName, data)
+	return e.dataValidator.ValidateVariableSubstitution(templateName, data)
 }
 
 // ExtractTemplateVariables extracts variables from a template (interface method)
@@ -303,7 +321,7 @@ func (e *DefaultTemplateEngine) ExtractTemplateVariables(templateName string) ([
 	if e.templates == nil {
 		return nil, NewInitializationError("template engine", fmt.Errorf("template engine not initialized"))
 	}
-	return e.validator.ExtractTemplateVariables(templateName)
+	return e.advancedValidator.ExtractTemplateVariables(templateName)
 }
 
 // ValidateTemplateExists validates that a template exists
@@ -311,12 +329,12 @@ func (e *DefaultTemplateEngine) ValidateTemplateExists(templateName string) erro
 	if e.templates == nil {
 		return fmt.Errorf("template engine not initialized")
 	}
-	return e.validator.ValidateTemplateExists(templateName)
+	return e.basicValidator.ValidateTemplateExists(templateName)
 }
 
 // ValidateRequiredFields validates that data contains all required fields
 func (e *DefaultTemplateEngine) ValidateRequiredFields(data interface{}, requiredFields []string) error {
-	err := e.validator.ValidateRequiredFields(data, requiredFields)
+	err := e.dataValidator.ValidateRequiredFields(data, requiredFields)
 	if err != nil {
 		return NewDataValidationError("", "required_fields", err)
 	}
@@ -374,9 +392,26 @@ func (e *DefaultTemplateEngine) GetRenderer() TemplateRenderer {
 	return e.renderer
 }
 
-// GetValidator returns the template validator for dependency injection
-func (e *DefaultTemplateEngine) GetValidator() TemplateValidator {
-	return e.validator
+// GetBasicValidator returns the basic template validator for dependency injection
+func (e *DefaultTemplateEngine) GetBasicValidator() BasicTemplateValidator {
+	return e.basicValidator
+}
+
+// GetDataValidator returns the template data validator for dependency injection
+func (e *DefaultTemplateEngine) GetDataValidator() TemplateDataValidator {
+	return e.dataValidator
+}
+
+// GetAdvancedValidator returns the advanced template validator for dependency injection
+func (e *DefaultTemplateEngine) GetAdvancedValidator() AdvancedTemplateValidator {
+	return e.advancedValidator
+}
+
+// GetValidator returns the template validator for backward compatibility
+// Deprecated: Use GetBasicValidator, GetDataValidator, or GetAdvancedValidator instead
+func (e *DefaultTemplateEngine) GetValidator() interface{} {
+	// Return the basic validator which typically implements all three interfaces
+	return e.basicValidator
 }
 
 // GetNetworkPluginHandler returns the network plugin handler for dependency injection

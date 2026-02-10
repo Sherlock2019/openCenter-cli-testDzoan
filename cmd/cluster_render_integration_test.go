@@ -41,7 +41,7 @@ func TestRenderClusterTemplatesIntegration(t *testing.T) {
 	cmd.SetContext(context.Background())
 
 	// Test rendering all services
-	if err := renderAllServices(cfg, false, cmd); err != nil {
+	if err := renderAllServices(cfg, false, false, cmd); err != nil {
 		t.Fatalf("renderAllServices failed: %v\nStdout: %s\nStderr: %s",
 			err, stdout.String(), stderr.String())
 	}

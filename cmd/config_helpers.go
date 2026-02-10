@@ -16,12 +16,127 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
+	"sync"
 
 	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/di"
 )
 
+var (
+	// Global configuration manager instance (lazy-initialized)
+	globalConfigManager *config.ConfigurationManager
+	configManagerOnce   sync.Once
+	configManagerErr    error
+)
+
+// getConfigManager returns the global ConfigurationManager instance.
+// It initializes the manager on first call and reuses it for subsequent calls.
+func getConfigManager() (*config.ConfigurationManager, error) {
+	configManagerOnce.Do(func() {
+		globalConfigManager, configManagerErr = config.NewConfigurationManager()
+	})
+	return globalConfigManager, configManagerErr
+}
+
+// loadConfig loads a cluster configuration using the ConfigurationManager.
+func loadConfig(ctx context.Context, name string) (config.Config, error) {
+	manager, err := getConfigManager()
+	if err != nil {
+		return config.Config{}, err
+	}
+
+	cfg, err := manager.Load(ctx, name)
+	if err != nil {
+		return config.Config{}, err
+	}
+
+	return *cfg, nil
+}
+
+// saveConfig saves a cluster configuration using the ConfigurationManager.
+func saveConfig(ctx context.Context, cfg config.Config) error {
+	manager, err := getConfigManager()
+	if err != nil {
+		return err
+	}
+
+	return manager.Save(ctx, &cfg)
+}
+
+// listClusters lists all cluster configurations using the ConfigurationManager.
+func listClusters(ctx context.Context) ([]string, error) {
+	manager, err := getConfigManager()
+	if err != nil {
+		return nil, err
+	}
+
+	return manager.List(ctx)
+}
+
+// getActiveCluster returns the active cluster name using ConfigurationManager.
+func getActiveCluster() (string, error) {
+	manager, err := getConfigManager()
+	if err != nil {
+		return "", err
+	}
+
+	return manager.GetActive()
+}
+
+// setActiveCluster sets the active cluster name using ConfigurationManager.
+func setActiveCluster(name string) error {
+	manager, err := getConfigManager()
+	if err != nil {
+		return err
+	}
+
+	return manager.SetActive(name)
+}
+
+// getConfigPath returns the configuration file path for a cluster.
+func getConfigPath(ctx context.Context, name, organization string) (string, error) {
+	manager, err := getConfigManager()
+	if err != nil {
+		return "", err
+	}
+	
+	// Load the config to get the organization if not provided
+	if organization == "" {
+		cfg, err := manager.Load(ctx, name)
+		if err != nil {
+			return "", err
+		}
+		organization = cfg.OpenCenter.Meta.Organization
+	}
+	
+	// Get base directory (same logic as root.go)
+	baseDir := os.Getenv("OPENCENTER_CONFIG_DIR")
+	if baseDir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("failed to get user home directory: %w", err)
+		}
+		baseDir = filepath.Join(home, ".config", "opencenter", "clusters")
+	}
+	
+	// Get the path resolver
+	pathResolver, err := di.ProvidePathResolver(baseDir)
+	if err != nil {
+		return "", err
+	}
+	
+	clusterPaths, err := pathResolver.Resolve(ctx, name, organization)
+	if err != nil {
+		return "", err
+	}
+	
+	return clusterPaths.ConfigPath, nil
+}
+
 // loadConfigV2Only loads a cluster configuration and rejects v1 configs.
-// This is a wrapper around the new ConfigurationManager that enforces v2-only support.
+// This is a wrapper around loadConfig that enforces v2-only support.
 //
 // Parameters:
 //   - clusterName: The cluster name to load

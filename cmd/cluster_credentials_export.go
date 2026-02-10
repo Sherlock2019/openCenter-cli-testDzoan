@@ -20,7 +20,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/rackerlabs/opencenter-cli/internal/credentials"
 )
 
@@ -77,7 +76,7 @@ The exported credentials can be used with:
 				name = args[0]
 			} else {
 				// No name provided, try to use active cluster
-				activeName, err := config.GetActive()
+				activeName, err := getActiveCluster()
 				if err != nil {
 					return fmt.Errorf("failed to get active cluster: %w", err)
 				}

@@ -22,7 +22,9 @@ limitations under the License.
 //
 // Key interfaces:
 //   - TemplateRenderer: Renders templates with data
-//   - TemplateValidator: Validates templates and template data
+//   - BasicTemplateValidator: Validates basic template structure
+//   - TemplateDataValidator: Validates template data
+//   - AdvancedTemplateValidator: Advanced template analysis
 //   - TemplateEngine: Combines rendering and validation capabilities
 //   - NetworkPluginHandler: Handles network plugin-specific template logic
 //

@@ -341,40 +341,6 @@ func generateExportCommands(clusterPaths *paths.ClusterPaths, shell string) []st
 	return commands
 }
 
-// validateClusterExists validates that the specified cluster exists in the organization structure.
-// The clusterName parameter can be in "cluster" or "organization/cluster" format.
-func validateClusterExists(ctx context.Context, clusterName string) error {
-	// Try to load the config to check if it exists
-	_, err := loadConfig(ctx, clusterName)
-	if err != nil {
-		// Get list of available clusters for helpful error message
-		availableClusters, listErr := listClusters(ctx)
-
-		// Build error message with organization-based structure reference
-		var errMsg strings.Builder
-		errMsg.WriteString(fmt.Sprintf("cluster configuration directory '%s' not found in clusters subdirectory", clusterName))
-
-		// Add helpful suggestions
-		if listErr == nil && len(availableClusters) > 0 {
-			errMsg.WriteString("\n\nAvailable clusters:")
-			for _, cluster := range availableClusters {
-				errMsg.WriteString(fmt.Sprintf("\n  - %s", cluster))
-			}
-			errMsg.WriteString("\n\nUse 'opencenter cluster list' to see all available clusters")
-		} else {
-			errMsg.WriteString("\n\nUse 'opencenter cluster list' to see available clusters")
-		}
-
-		// Add hint about organization format
-		if !strings.Contains(clusterName, "/") {
-			errMsg.WriteString("\n\nNote: If your cluster is in an organization, use the format: organization/cluster")
-		}
-
-		return errors.New(errMsg.String())
-	}
-
-	return nil
-}
 
 // displayClusterSelectOutput displays the enhanced cluster select output.
 func displayClusterSelectOutput(output ClusterSelectOutput, cmd *cobra.Command) {
@@ -479,9 +445,11 @@ Use --clear to deactivate the current session cluster.
 Use --clear-persistent to remove the persistent cluster selection.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			
 			// Handle --clear-persistent flag to remove persistent cluster selection
 			if clearPersistent {
-				if err := config.SetActive(""); err != nil {
+				if err := setActiveCluster(""); err != nil {
 					return fmt.Errorf("failed to clear persistent cluster: %w", err)
 				}
 				fmt.Fprintf(cmd.OutOrStdout(), "Persistent cluster selection cleared\n")
@@ -509,7 +477,7 @@ Use --clear-persistent to remove the persistent cluster selection.`,
 				deactivateOutput.WriteString("unset OPENCENTER_ACTIVE_CLUSTER\n")
 
 				// Clear active cluster
-				if err := config.SetActive(""); err != nil {
+				if err := setActiveCluster(""); err != nil {
 					return fmt.Errorf("failed to clear active cluster: %w", err)
 				}
 
@@ -531,7 +499,7 @@ Use --clear-persistent to remove the persistent cluster selection.`,
 
 			// If name not provided and --export-only is used, try to get active cluster
 			if name == "" && showExportOnly {
-				activeCluster, err := config.GetActive()
+				activeCluster, err := getActiveCluster()
 				if err != nil {
 					return fmt.Errorf("no cluster specified and failed to get active cluster: %w", err)
 				}
@@ -543,7 +511,7 @@ Use --clear-persistent to remove the persistent cluster selection.`,
 
 			// If name not provided, prompt with interactive selection
 			if name == "" {
-				names, err := config.List()
+				names, err := listClusters(ctx)
 				if err != nil {
 					return err
 				}
@@ -612,7 +580,7 @@ Use --clear-persistent to remove the persistent cluster selection.`,
 			// Handle session-scoped vs persistent selection
 			if persistentSelection {
 				// Set persistent cluster (affects all terminals)
-				if err := config.SetActive(name); err != nil {
+				if err := setActiveCluster(name); err != nil {
 					return fmt.Errorf("failed to set active cluster: %w", err)
 				}
 			} else {
@@ -624,7 +592,7 @@ Use --clear-persistent to remove the persistent cluster selection.`,
 					fmt.Fprintf(os.Stderr, "💡 To enable session-scoped selection, run: eval \"$(opencenter shell-init)\"\n")
 					fmt.Fprintf(os.Stderr, "💡 Or use --persistent flag to suppress this warning.\n\n")
 
-					if err := config.SetActive(name); err != nil {
+					if err := setActiveCluster(name); err != nil {
 						return fmt.Errorf("failed to set active cluster: %w", err)
 					}
 				} else {

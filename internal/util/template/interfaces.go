@@ -51,19 +51,12 @@ type AdvancedTemplateValidator interface {
 	ValidateNetworkPluginConfig(pluginType string, config map[string]interface{}) error
 }
 
-// TemplateValidator interface combining all validation capabilities
-// Deprecated: Use specific validator interfaces (BasicTemplateValidator, TemplateDataValidator, AdvancedTemplateValidator)
-// This interface is maintained for backward compatibility and will be removed in v2.0.0
-type TemplateValidator interface {
-	BasicTemplateValidator
-	TemplateDataValidator
-	AdvancedTemplateValidator
-}
-
 // TemplateEngine interface combining rendering and validation with dependency injection
 type TemplateEngine interface {
 	TemplateRenderer
-	TemplateValidator
+	BasicTemplateValidator
+	TemplateDataValidator
+	AdvancedTemplateValidator
 
 	// Initialization methods
 	Init() error
@@ -85,7 +78,9 @@ type TemplateEngine interface {
 
 	// Component access for dependency injection
 	GetRenderer() TemplateRenderer
-	GetValidator() TemplateValidator
+	GetBasicValidator() BasicTemplateValidator
+	GetDataValidator() TemplateDataValidator
+	GetAdvancedValidator() AdvancedTemplateValidator
 	GetNetworkPluginHandler() NetworkPluginHandler
 }
 

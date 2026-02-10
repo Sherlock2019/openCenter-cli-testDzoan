@@ -15,17 +15,18 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
-
-	"github.com/rackerlabs/opencenter-cli/internal/config"
 )
 
 // TestClusterInfoAndSelectExportConsistency verifies that 'cluster info --export-only'
 // and 'cluster select --export-only' produce identical export commands.
 func TestClusterInfoAndSelectExportConsistency(t *testing.T) {
+	ctx := context.Background()
+	
 	// Get first available cluster for testing
-	availableClusters, err := config.List()
+	availableClusters, err := listClusters(ctx)
 	if err != nil || len(availableClusters) == 0 {
 		t.Skip("No clusters available for testing")
 		return

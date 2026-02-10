@@ -62,8 +62,9 @@ func TestGetContainer_WrongType(t *testing.T) {
 
 // TestExecuteWithContext tests that ExecuteWithContext works with a container
 func TestExecuteWithContext(t *testing.T) {
-	// Create a test container
-	container, err := di.SetupContainer()
+	// Create a test container with temp directory
+	tempDir := t.TempDir()
+	container, err := di.SetupContainer(tempDir)
 	if err != nil {
 		t.Fatalf("SetupContainer() failed: %v", err)
 	}

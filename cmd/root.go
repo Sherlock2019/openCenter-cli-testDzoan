@@ -22,7 +22,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/rackerlabs/opencenter-cli/internal/config"
@@ -161,17 +160,6 @@ Support: https://github.com/rackerlabs/opencenter-cli/issues`,
 	},
 }
 
-// Execute runs the root command and returns any error. This is the main
-// entrypoint for the opencenter CLI. It is called by main.main().
-//
-// Inputs:
-//   - version: The version string for the application.
-//
-// Outputs:
-//   - error: An error if one occurred during execution.
-func Execute(version string) error {
-	return ExecuteWithContext(context.Background(), version)
-}
 
 // ExecuteWithContext runs the root command with a context containing the DI container.
 //
@@ -258,166 +246,9 @@ func parseGlobalFlags(cmd *cobra.Command) (*GlobalFlags, error) {
 	}, nil
 }
 
-// initializeGlobalConfig initializes the configuration manager and applies overrides.
-// It returns the initialized config manager instead of storing it globally.
-func initializeGlobalConfig(cmd *cobra.Command) (*config.ConfigManager, error) {
-	// Handle legacy config-dir flag
-	if cfgDir, _ := cmd.Flags().GetString("config-dir"); cfgDir != "" {
-		// Set environment variable so that config.ResolveConfigDir picks it up
-		if err := os.Setenv("OPENCENTER_CONFIG_DIR", cfgDir); err != nil {
-			return nil, err
-		}
-	}
 
-	// Parse global flags
-	globalFlags, err := parseGlobalFlags(cmd)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse global flags: %w", err)
-	}
 
-	// Handle --show-active flag early, before other initialization
-	if globalFlags.ShowActive {
-		if err := displayActiveCluster(cmd); err != nil {
-			return nil, err
-		}
-		// Return nil to indicate early exit
-		return nil, nil
-	}
 
-	// Initialize configuration manager
-	var configPath string
-	if globalFlags.Config != "" {
-		configPath = globalFlags.Config
-	}
-
-	configManager, err := config.NewConfigManager(configPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize configuration: %w", err)
-	}
-
-	// Apply global flag overrides
-	if err := applyGlobalFlagOverrides(configManager, globalFlags); err != nil {
-		return nil, fmt.Errorf("failed to apply global flag overrides: %w", err)
-	}
-
-	// Log that configuration has been initialized
-	config.Debug("Configuration initialized successfully")
-	config.WithFields(logrus.Fields{
-		"config_path": configManager.GetConfigPath(),
-		"log_level":   configManager.GetConfig().Logging.Level,
-		"log_format":  configManager.GetConfig().Logging.Format,
-		"log_output":  configManager.GetConfig().Logging.Output,
-	}).Debug("Configuration details")
-
-	return configManager, nil
-}
-
-// applyGlobalFlagOverrides applies global flag overrides to the configuration.
-func applyGlobalFlagOverrides(configManager *config.ConfigManager, globalFlags *GlobalFlags) error {
-	cliConfig := configManager.GetConfig()
-
-	// Create a copy to apply overrides
-	overriddenConfig := *cliConfig
-
-	// Apply log level override
-	if globalFlags.LogLevel != "warn" || globalFlags.Verbose {
-		config.Debugf("Overriding log level from '%s' to '%s'", overriddenConfig.Logging.Level, globalFlags.LogLevel)
-		overriddenConfig.Logging.Level = globalFlags.LogLevel
-	}
-
-	// Apply dry-run override
-	if globalFlags.DryRun {
-		config.Debug("Enabling dry-run mode via global flag")
-		overriddenConfig.Behavior.DryRun = true
-	}
-
-	// Apply verbose override
-	if globalFlags.Verbose {
-		config.Debug("Enabling verbose mode via global flag")
-		overriddenConfig.Behavior.Verbose = true
-	}
-
-	// Apply --set flag overrides
-	if err := applySetFlagOverrides(&overriddenConfig, globalFlags.Set); err != nil {
-		return fmt.Errorf("failed to apply --set overrides: %w", err)
-	}
-
-	// Update the configuration manager with overridden config
-	// Note: We don't save these overrides to file, they're runtime-only
-	if err := configManager.LoadWithConfig(&overriddenConfig); err != nil {
-		return fmt.Errorf("failed to load overridden configuration: %w", err)
-	}
-
-	return nil
-}
-
-// applySetFlagOverrides applies --set flag overrides to the configuration.
-func applySetFlagOverrides(cliConfig *config.CLIConfig, setFlags []string) error {
-	// Create a temporary config manager to use its SetValue method
-	tempManager, err := config.NewConfigManagerWithConfig(cliConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create temporary config manager: %w", err)
-	}
-
-	for _, setFlag := range setFlags {
-		parts := strings.SplitN(setFlag, "=", 2)
-		if len(parts) != 2 {
-			return fmt.Errorf("invalid --set format '%s', expected key=value", setFlag)
-		}
-
-		key := parts[0]
-		value := parts[1]
-
-		// Parse the value (try to detect type)
-		var parsedValue interface{}
-		if value == "true" {
-			parsedValue = true
-		} else if value == "false" {
-			parsedValue = false
-		} else {
-			// Try to parse as number
-			if intVal, err := fmt.Sscanf(value, "%d", new(int)); err == nil && intVal == 1 {
-				var num int
-				fmt.Sscanf(value, "%d", &num)
-				parsedValue = num
-			} else {
-				// Treat as string
-				parsedValue = value
-			}
-		}
-
-		// Apply the override using the configuration manager's dot notation
-		if err := tempManager.SetValue(key, parsedValue); err != nil {
-			return fmt.Errorf("failed to set configuration value '%s=%s': %w", key, value, err)
-		}
-
-		config.WithFields(logrus.Fields{
-			"key":   key,
-			"value": parsedValue,
-		}).Debug("Applied --set flag override")
-	}
-
-	// Get the updated configuration back
-	*cliConfig = *tempManager.GetConfig()
-	return nil
-}
-
-// displayActiveCluster displays the current active cluster and exits.
-func displayActiveCluster(cmd *cobra.Command) error {
-	activeCluster, err := getActiveCluster()
-	if err != nil {
-		return fmt.Errorf("failed to get active cluster: %w", err)
-	}
-
-	if activeCluster == "" {
-		fmt.Fprintf(cmd.OutOrStdout(), "No active cluster set\n")
-		fmt.Fprintf(cmd.OutOrStdout(), "Use 'opencenter cluster select <name>' to set an active cluster\n")
-	} else {
-		fmt.Fprintf(cmd.OutOrStdout(), "Active cluster: %s\n", activeCluster)
-	}
-
-	return nil
-}
 
 // GetRootCmd returns the root cobra command.
 func GetRootCmd() *cobra.Command {

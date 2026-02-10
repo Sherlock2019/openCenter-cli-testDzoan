@@ -234,9 +234,9 @@ If no cluster name is provided, the active cluster will be destroyed.`,
 			fmt.Fprintf(cmd.OutOrStdout(), "Removed config file: %s\n", configPath)
 
 			// Remove from active cluster if it was active
-			activeCluster, err := config.GetActive()
+			activeCluster, err := getActiveCluster()
 			if err == nil && activeCluster == name {
-				if err := config.SetActive(""); err != nil {
+				if err := setActiveCluster(""); err != nil {
 					// Log warning but don't fail
 					fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to clear active cluster: %v\n", err)
 				} else {

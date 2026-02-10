@@ -58,7 +58,7 @@ func setupServiceTestEnv(t *testing.T, clusterName string) (string, func()) {
 	}
 
 	// Set active cluster
-	if err := config.SetActive(clusterName); err != nil {
+	if err := setActiveCluster(clusterName); err != nil {
 		cleanup()
 		t.Fatalf("failed to set active cluster: %v", err)
 	}

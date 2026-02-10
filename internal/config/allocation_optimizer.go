@@ -164,10 +164,3 @@ type AllocationStats struct {
 	MapsInPool         int
 }
 
-// GetStats returns statistics about the allocation optimizer.
-// Note: This is approximate as sync.Pool doesn't expose exact counts.
-func (ao *AllocationOptimizer) GetStats() AllocationStats {
-	// sync.Pool doesn't provide exact statistics, so we return zeros
-	// This is a placeholder for future monitoring integration
-	return AllocationStats{}
-}
