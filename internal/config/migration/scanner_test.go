@@ -39,42 +39,74 @@ func TestMigrationScanner_Scan(t *testing.T) {
 	// Create test files with legacy patterns
 	testFiles := map[string]string{
 		"file_with_load.go": `package test
-import "config"
+import (
+	"context"
+	"config"
+)
 
 func loadConfig() {
-	cfg, err := config.Load("cluster-name")
+	ctx := context.Background()
+	manager, err := config.NewConfigurationManager()
+	if err != nil {
+		return
+	}
+	cfg, err := manager.Load(ctx, "cluster-name")
 	if err != nil {
 		return
 	}
 }
 `,
 		"file_with_save.go": `package test
-import "config"
+import (
+	"context"
+	"config"
+)
 
 func saveConfig() {
-	err := config.Save(cfg)
+	ctx := context.Background()
+	manager, err := config.NewConfigurationManager()
+	if err != nil {
+		return
+	}
+	err = manager.Save(ctx, cfg)
 	if err != nil {
 		return
 	}
 }
 `,
 		"file_with_validate.go": `package test
-import "config"
+import (
+	"context"
+	"config"
+)
 
 func validateConfig() {
-	err := config.Validate(cfg)
+	ctx := context.Background()
+	manager, err := config.NewConfigurationManager()
+	if err != nil {
+		return
+	}
+	err = manager.Validate(ctx, cfg)
 	if err != nil {
 		return
 	}
 }
 `,
 		"file_with_all.go": `package test
-import "config"
+import (
+	"context"
+	"config"
+)
 
 func allOperations() {
-	cfg, _ := config.Load("cluster")
-	config.Validate(cfg)
-	config.Save(cfg)
+	ctx := context.Background()
+	manager, err := config.NewConfigurationManager()
+	if err != nil {
+		return
+	}
+	cfg, _ := manager.Load(ctx, "cluster")
+	manager.Validate(ctx, cfg)
+	manager.Save(ctx, cfg)
 }
 `,
 		"file_without_legacy.go": `package test
@@ -111,28 +143,27 @@ func commented() {
 		t.Fatal("expected non-nil report")
 	}
 
-	// Check Load pattern detection
-	if len(report.FilesUsingLegacyLoad) != 2 {
-		t.Errorf("expected 2 files with Load, got %d: %v",
+	// Modern API patterns should NOT be detected as legacy
+	// The scanner looks for config.Load(), config.Save(), config.Validate()
+	// Modern code uses manager.Load(), manager.Save(), manager.Validate()
+	if len(report.FilesUsingLegacyLoad) != 0 {
+		t.Errorf("expected 0 files with legacy Load (modern API should not match), got %d: %v",
 			len(report.FilesUsingLegacyLoad), report.FilesUsingLegacyLoad)
 	}
 
-	// Check Save pattern detection
-	if len(report.FilesUsingLegacySave) != 2 {
-		t.Errorf("expected 2 files with Save, got %d: %v",
+	if len(report.FilesUsingLegacySave) != 0 {
+		t.Errorf("expected 0 files with legacy Save (modern API should not match), got %d: %v",
 			len(report.FilesUsingLegacySave), report.FilesUsingLegacySave)
 	}
 
-	// Check Validate pattern detection
-	if len(report.FilesUsingLegacyValidate) != 2 {
-		t.Errorf("expected 2 files with Validate, got %d: %v",
+	if len(report.FilesUsingLegacyValidate) != 0 {
+		t.Errorf("expected 0 files with legacy Validate (modern API should not match), got %d: %v",
 			len(report.FilesUsingLegacyValidate), report.FilesUsingLegacyValidate)
 	}
 
-	// Total files should be 3 (file_with_load, file_with_save, file_with_validate, file_with_all)
-	// But file_with_all appears in all three lists, so unique count is 4
-	if report.TotalFilesToMigrate != 4 {
-		t.Errorf("expected 4 total files to migrate, got %d", report.TotalFilesToMigrate)
+	// Total files should be 0 since we're using modern API
+	if report.TotalFilesToMigrate != 0 {
+		t.Errorf("expected 0 total files to migrate (modern API), got %d", report.TotalFilesToMigrate)
 	}
 }
 

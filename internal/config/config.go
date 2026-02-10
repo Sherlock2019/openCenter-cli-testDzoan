@@ -15,78 +15,8 @@ package config
 
 import (
 	"encoding/json"
-
-	"github.com/rackerlabs/opencenter-cli/internal/config/services"
 )
 
-// Types are now defined in types.go
-
-// Default functions are now in defaults.go
-
-// I/O functions are now in persistence.go
-
-// validateServiceSecretsSimple validates service-specific secrets configuration.
-// This function checks that required secrets are present when corresponding services are enabled.
-//
-// Deprecated: This function will be migrated to use internal/core/validation.ValidationEngine in v2.0.0.
-// For now, it remains as an internal helper for the main Validate function.
-func validateServiceSecretsSimple(cfg Config) []string {
-	var errs []string
-
-	isEnabled := func(name string) bool {
-		svc, exists := cfg.OpenCenter.Services[name]
-		if !exists {
-			return false
-		}
-		if svcConf, ok := svc.(services.ServiceConfig); ok {
-			return svcConf.IsEnabled()
-		}
-		return false
-	}
-
-	// Validate cert-manager secrets
-	if isEnabled("cert-manager") {
-		accessKey, secretKey := cfg.GetCertManagerAWSCredentials()
-		if accessKey == "" {
-			errs = append(errs, "AWS credentials required for cert-manager: either set secrets.cert_manager.aws_access_key or secrets.global.aws.application.access_key or secrets.global.aws.infrastructure.access_key")
-		}
-		if secretKey == "" {
-			errs = append(errs, "AWS credentials required for cert-manager: either set secrets.cert_manager.aws_secret_access_key or secrets.global.aws.application.secret_access_key or secrets.global.aws.infrastructure.secret_access_key")
-		}
-	}
-
-	// Validate loki secrets
-	if isEnabled("loki") {
-		// Check for Swift credentials (legacy)
-		if cfg.Secrets.Loki.SwiftPassword == "" {
-			// If no Swift password, check for S3 credentials (with fallback)
-			accessKey, secretKey := cfg.GetLokiS3Credentials()
-			if accessKey == "" || secretKey == "" {
-				errs = append(errs, "Loki requires either Swift password (secrets.loki.swift_password) or S3 credentials (secrets.loki.s3_access_key_id/secrets.loki.s3_secret_access_key or secrets.global.aws.application.access_key/secret_access_key or secrets.global.aws.infrastructure.access_key/secret_access_key)")
-			}
-		}
-	}
-
-	// Validate tempo secrets
-	if isEnabled("tempo") {
-		accessKey, secretKey := cfg.GetTempoS3Credentials()
-		if accessKey == "" {
-			errs = append(errs, "S3 credentials required for Tempo: either set secrets.tempo.access_key or secrets.global.aws.application.access_key or secrets.global.aws.infrastructure.access_key")
-		}
-		if secretKey == "" {
-			errs = append(errs, "S3 credentials required for Tempo: either set secrets.tempo.secret_key or secrets.global.aws.application.secret_access_key or secrets.global.aws.infrastructure.secret_access_key")
-		}
-	}
-
-	// Validate keycloak secrets
-	if isEnabled("keycloak") {
-		if cfg.Secrets.Keycloak.AdminPassword == "" {
-			errs = append(errs, "secrets.keycloak.admin_password is required when keycloak is enabled")
-		}
-	}
-
-	return errs
-}
 
 // ToJSON marshals the configuration to JSON. This is used for generating
 // the JSON schema and for other tools that consume JSON.

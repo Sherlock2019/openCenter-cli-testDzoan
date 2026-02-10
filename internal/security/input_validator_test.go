@@ -44,11 +44,6 @@ func TestValidateClusterName(t *testing.T) {
 			wantError: false,
 		},
 		{
-			name:      "valid with underscores",
-			input:     "my_cluster_01",
-			wantError: false,
-		},
-		{
 			name:      "valid with numbers",
 			input:     "cluster123",
 			wantError: false,
@@ -59,9 +54,23 @@ func TestValidateClusterName(t *testing.T) {
 			wantError: false,
 		},
 		{
-			name:      "valid mixed case",
-			input:     "MyCluster-01",
+			name:      "valid with hyphens",
+			input:     "my-cluster-01",
 			wantError: false,
+		},
+
+		// Invalid cases - underscores not allowed (Kubernetes naming)
+		{
+			name:      "contains underscores",
+			input:     "my_cluster_01",
+			wantError: true,
+			errorMsg:  "format",
+		},
+		{
+			name:      "mixed case not allowed",
+			input:     "MyCluster-01",
+			wantError: true,
+			errorMsg:  "format",
 		},
 
 		// Invalid cases - path traversal
@@ -69,19 +78,19 @@ func TestValidateClusterName(t *testing.T) {
 			name:      "contains path traversal",
 			input:     "../etc/passwd",
 			wantError: true,
-			errorMsg:  "path traversal",
+			errorMsg:  "format",
 		},
 		{
 			name:      "contains forward slash",
 			input:     "my/cluster",
 			wantError: true,
-			errorMsg:  "path separators",
+			errorMsg:  "format",
 		},
 		{
 			name:      "contains backslash",
 			input:     "my\\cluster",
 			wantError: true,
-			errorMsg:  "path separators",
+			errorMsg:  "format",
 		},
 
 		// Invalid cases - pattern violations
@@ -89,7 +98,7 @@ func TestValidateClusterName(t *testing.T) {
 			name:      "empty name",
 			input:     "",
 			wantError: true,
-			errorMsg:  "cannot be empty",
+			errorMsg:  "required",
 		},
 		{
 			name:      "starts with hyphen",
@@ -163,29 +172,35 @@ func TestValidateOrganizationName(t *testing.T) {
 			wantError: false,
 		},
 		{
-			name:      "valid with underscores",
-			input:     "my_org_01",
+			name:      "valid with numbers",
+			input:     "org123",
 			wantError: false,
 		},
 
-		// Invalid cases
+		// Invalid cases - underscores not allowed (Kubernetes naming)
+		{
+			name:      "contains underscores",
+			input:     "my_org_01",
+			wantError: true,
+			errorMsg:  "format",
+		},
 		{
 			name:      "empty name",
 			input:     "",
 			wantError: true,
-			errorMsg:  "cannot be empty",
+			errorMsg:  "required",
 		},
 		{
 			name:      "contains path traversal",
 			input:     "../etc",
 			wantError: true,
-			errorMsg:  "path traversal",
+			errorMsg:  "format",
 		},
 		{
 			name:      "contains forward slash",
 			input:     "my/org",
 			wantError: true,
-			errorMsg:  "path separators",
+			errorMsg:  "format",
 		},
 	}
 

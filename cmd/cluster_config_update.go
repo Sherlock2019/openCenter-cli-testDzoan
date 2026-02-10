@@ -19,8 +19,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 // newClusterConfigUpdateCmd creates the "cluster config update" command.
@@ -100,10 +100,21 @@ If no cluster name is provided, updates the currently active cluster.`,
 				return fmt.Errorf("failed to read existing configuration: %w", err)
 			}
 
-			// Generate complete configuration with all defaults (as YAML)
-			completeData, err := config.GenerateCompleteConfigYAML(name)
+			// Load configuration using ConfigurationManager (this will merge with defaults)
+			manager, err := getConfigManager()
 			if err != nil {
-				return fmt.Errorf("failed to generate complete configuration: %w", err)
+				return fmt.Errorf("failed to get configuration manager: %w", err)
+			}
+			
+			completeCfg, err := manager.Load(ctx, name)
+			if err != nil {
+				return fmt.Errorf("failed to load configuration: %w", err)
+			}
+
+			// Marshal the complete configuration to YAML
+			completeData, err := yaml.Marshal(completeCfg)
+			if err != nil {
+				return fmt.Errorf("failed to marshal configuration: %w", err)
 			}
 
 			// Check if there are any changes
