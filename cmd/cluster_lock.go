@@ -15,11 +15,8 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 // newClusterLockCmd creates the command for locking a cluster.
@@ -80,19 +77,6 @@ Examples:
 
 			// Save the configuration
 			if err := saveConfig(ctx, cfg); err != nil {
-				return fmt.Errorf("failed to save configuration: %w", err)
-			}
-			configPath, err := config.ConfigPath(clusterName)
-			if err != nil {
-				return fmt.Errorf("failed to get config path: %w", err)
-			}
-
-			data, err := yaml.Marshal(&cfg)
-			if err != nil {
-				return fmt.Errorf("failed to marshal configuration: %w", err)
-			}
-
-			if err := os.WriteFile(configPath, data, 0600); err != nil {
 				return fmt.Errorf("failed to save configuration: %w", err)
 			}
 
@@ -169,23 +153,6 @@ Examples:
 
 			// Save the configuration
 			if err := saveConfig(ctx, cfg); err != nil {
-				return fmt.Errorf("failed to save configuration: %w", err)
-			}
-			cfg.OpenCenter.Meta.Locked = false
-			cfg.OpenCenter.Meta.LockReason = ""
-
-			// Save the configuration
-			configPath, err := config.ConfigPath(clusterName)
-			if err != nil {
-				return fmt.Errorf("failed to get config path: %w", err)
-			}
-
-			data, err := yaml.Marshal(&cfg)
-			if err != nil {
-				return fmt.Errorf("failed to marshal configuration: %w", err)
-			}
-
-			if err := os.WriteFile(configPath, data, 0600); err != nil {
 				return fmt.Errorf("failed to save configuration: %w", err)
 			}
 

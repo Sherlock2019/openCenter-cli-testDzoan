@@ -14,7 +14,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -57,7 +56,7 @@ Examples:
   opencenter cluster edit myorg/my-cluster`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
+			ctx := cmd.Context()
 
 			// Initialize security components
 			clusterValidator := validators.NewClusterNameValidator()
@@ -100,7 +99,13 @@ Examples:
 			}
 
 			// Get the configuration file path
-			configPath, err := config.ConfigPath(clusterName)
+			// Load config to get organization
+			cfg, err := loadConfig(ctx, clusterName)
+			if err != nil {
+				return fmt.Errorf("failed to load configuration for cluster '%s': %w", clusterName, err)
+			}
+			
+			configPath, err := getConfigPath(ctx, clusterName, cfg.OpenCenter.Meta.Organization)
 			if err != nil {
 				return fmt.Errorf("failed to get config path for cluster '%s': %w", clusterName, err)
 			}

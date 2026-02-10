@@ -343,40 +343,12 @@ func generateExportCommands(clusterPaths *paths.ClusterPaths, shell string) []st
 
 // validateClusterExists validates that the specified cluster exists in the organization structure.
 // The clusterName parameter can be in "cluster" or "organization/cluster" format.
-func validateClusterExists(clusterName string) error {
-	// Check if cluster configuration exists
-	// ConfigPath now handles organization/cluster format
-	path, err := config.ConfigPath(clusterName)
+func validateClusterExists(ctx context.Context, clusterName string) error {
+	// Try to load the config to check if it exists
+	_, err := loadConfig(ctx, clusterName)
 	if err != nil {
 		// Get list of available clusters for helpful error message
-		availableClusters, listErr := config.List()
-
-		// Build error message with organization-based structure reference
-		var errMsg strings.Builder
-		errMsg.WriteString(fmt.Sprintf("cluster configuration directory '%s' not found in clusters subdirectory", clusterName))
-
-		// Add helpful suggestions
-		if listErr == nil && len(availableClusters) > 0 {
-			errMsg.WriteString("\n\nAvailable clusters:")
-			for _, cluster := range availableClusters {
-				errMsg.WriteString(fmt.Sprintf("\n  - %s", cluster))
-			}
-			errMsg.WriteString("\n\nUse 'opencenter cluster list' to see all available clusters")
-		} else {
-			errMsg.WriteString("\n\nUse 'opencenter cluster list' to see available clusters")
-		}
-
-		// Add hint about organization format
-		if !strings.Contains(clusterName, "/") {
-			errMsg.WriteString("\n\nNote: If your cluster is in an organization, use the format: organization/cluster")
-		}
-
-		return errors.New(errMsg.String())
-	}
-
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		// Get list of available clusters for helpful error message
-		availableClusters, listErr := config.List()
+		availableClusters, listErr := listClusters(ctx)
 
 		// Build error message with organization-based structure reference
 		var errMsg strings.Builder

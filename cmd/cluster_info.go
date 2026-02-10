@@ -23,7 +23,6 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/rackerlabs/opencenter-cli/internal/resilience"
 	"github.com/spf13/cobra"
 )
@@ -74,7 +73,7 @@ func newClusterInfoCmd() *cobra.Command {
 			}
 
 			// Get the full path to the config file
-			configPath, err := config.ConfigPath(name)
+			configPath, err := getConfigPath(ctx, name, cfg.OpenCenter.Meta.Organization)
 			if err != nil {
 				return fmt.Errorf("failed to resolve config path: %w", err)
 			}

@@ -65,7 +65,7 @@ If no cluster name is provided, the active cluster will be destroyed.`,
 				return fmt.Errorf("failed to create lock manager: %w", err)
 			}
 
-			ctx := context.Background()
+			ctx := cmd.Context()
 			lock, err := lockMgr.AcquireWithMetadata(ctx, name, 1*time.Hour, map[string]string{
 				"operation": "destroy",
 				"command":   "cluster destroy",
@@ -133,11 +133,11 @@ If no cluster name is provided, the active cluster will be destroyed.`,
 			}
 
 			if configDir != "" {
-				configPath, pathErr := config.ConfigPath(name)
+				configPath, pathErr := getConfigPath(ctx, name, cfg.OpenCenter.Meta.Organization)
 				if pathErr == nil && filepath.Dir(configPath) != configDir {
 					// Not a flat config, safe to update status
 					cfg.OpenCenter.Meta.Status = "destroyed"
-					if err := saveConfig(cmd.Context(), cfg); err != nil {
+					if err := saveConfig(ctx, cfg); err != nil {
 						// Log warning but continue with destroy
 						fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
 					}
@@ -154,7 +154,7 @@ If no cluster name is provided, the active cluster will be destroyed.`,
 			}
 
 			// Get the config file path
-			configPath, err := config.ConfigPath(name)
+			configPath, err := getConfigPath(ctx, name, cfg.OpenCenter.Meta.Organization)
 			if err != nil {
 				return fmt.Errorf("failed to resolve config path: %w", err)
 			}

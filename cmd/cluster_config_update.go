@@ -75,8 +75,16 @@ If no cluster name is provided, updates the currently active cluster.`,
 				return err
 			}
 
+			ctx := cmd.Context()
+			
+			// Load config to get organization
+			cfg, err := loadConfig(ctx, name)
+			if err != nil {
+				return fmt.Errorf("failed to load configuration: %w", err)
+			}
+
 			// Get configuration file path
-			configPath, err := config.ConfigPath(name)
+			configPath, err := getConfigPath(ctx, name, cfg.OpenCenter.Meta.Organization)
 			if err != nil {
 				return fmt.Errorf("failed to resolve configuration path: %w", err)
 			}

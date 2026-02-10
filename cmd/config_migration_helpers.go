@@ -15,9 +15,13 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/rackerlabs/opencenter-cli/internal/di"
 )
 
 var (
@@ -77,4 +81,45 @@ func listClusters(ctx context.Context) ([]string, error) {
 // a simple file read operation that doesn't need the full manager.
 func getActiveCluster() (string, error) {
 	return config.GetActive()
+}
+
+// getConfigPath returns the configuration file path for a cluster.
+// This replaces the deprecated config.ConfigPath() function.
+func getConfigPath(ctx context.Context, name, organization string) (string, error) {
+	manager, err := getConfigManager()
+	if err != nil {
+		return "", err
+	}
+	
+	// Load the config to get the organization if not provided
+	if organization == "" {
+		cfg, err := manager.Load(ctx, name)
+		if err != nil {
+			return "", err
+		}
+		organization = cfg.OpenCenter.Meta.Organization
+	}
+	
+	// Get base directory (same logic as root.go)
+	baseDir := os.Getenv("OPENCENTER_CONFIG_DIR")
+	if baseDir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("failed to get user home directory: %w", err)
+		}
+		baseDir = filepath.Join(home, ".config", "opencenter", "clusters")
+	}
+	
+	// Get the path resolver
+	pathResolver, err := di.ProvidePathResolver(baseDir)
+	if err != nil {
+		return "", err
+	}
+	
+	clusterPaths, err := pathResolver.Resolve(ctx, name, organization)
+	if err != nil {
+		return "", err
+	}
+	
+	return clusterPaths.ConfigPath, nil
 }
