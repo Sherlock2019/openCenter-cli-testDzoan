@@ -128,8 +128,9 @@ secrets:
 			t.Errorf("Expected 1 cluster, got %d", len(clusters))
 		}
 
-		if len(clusters) > 0 && clusters[0] != clusterName {
-			t.Errorf("Expected cluster %s, got %s", clusterName, clusters[0])
+		expectedClusterName := orgName + "/" + clusterName
+		if len(clusters) > 0 && clusters[0] != expectedClusterName {
+			t.Errorf("Expected cluster %s, got %s", expectedClusterName, clusters[0])
 		}
 	})
 

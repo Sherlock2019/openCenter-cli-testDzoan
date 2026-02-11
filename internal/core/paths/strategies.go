@@ -156,7 +156,7 @@ func (s *OrgBasedStrategy) Resolve(ctx context.Context, clusterName, organizatio
 		InventoryPath:   filepath.Join(clusterDir, "inventory"),
 		VenvPath:        filepath.Join(clusterDir, "venv"),
 		BinPath:         filepath.Join(clusterDir, ".bin"),
-		ConfigPath:      filepath.Join(clusterDir, "."+clusterName+"-config.yaml"),
+		ConfigPath:      filepath.Join(orgDir, "."+clusterName+"-config.yaml"),
 		SSHKeyPath:      filepath.Join(secretsDir, "ssh", clusterName),
 	}, nil
 }

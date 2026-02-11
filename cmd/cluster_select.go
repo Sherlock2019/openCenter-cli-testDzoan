@@ -199,9 +199,20 @@ func generateClusterSelectOutput(clusterName string, shellOverride string) (Clus
 
 	// Validate that cluster exists first
 	ctx := context.Background()
-	clusterPaths, err := pathResolver.ResolveWithFallback(ctx, actualClusterName)
-	if err != nil {
-		return ClusterSelectOutput{}, fmt.Errorf("cluster not found: %w", err)
+	var clusterPaths *paths.ClusterPaths
+	
+	// If organization was explicitly provided in the identifier, use Resolve
+	// Otherwise use ResolveWithFallback to search all organizations
+	if strings.Contains(clusterName, "/") {
+		clusterPaths, err = pathResolver.Resolve(ctx, actualClusterName, organization)
+		if err != nil {
+			return ClusterSelectOutput{}, fmt.Errorf("cluster not found: %w", err)
+		}
+	} else {
+		clusterPaths, err = pathResolver.ResolveWithFallback(ctx, actualClusterName)
+		if err != nil {
+			return ClusterSelectOutput{}, fmt.Errorf("cluster not found: %w", err)
+		}
 	}
 
 	// Load cluster metadata

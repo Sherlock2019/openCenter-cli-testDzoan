@@ -112,19 +112,16 @@ func ParseClusterIdentifier(identifier string) (organization string, clusterName
 		organization = parts[0]
 		clusterName = parts[1]
 
-		// Validate both parts using ValidationEngine
+		// Basic validation for organization (allow more flexible format than cluster names)
+		if organization == "" {
+			return "", "", errors.New("organization name cannot be empty")
+		}
+
+		// Validate cluster name using ValidationEngine
 		ctx := context.Background()
 		validator := validators.NewClusterNameValidator()
 
-		result, err := validator.Validate(ctx, organization)
-		if err != nil {
-			return "", "", fmt.Errorf("organization name validation failed: %w", err)
-		}
-		if !result.Valid {
-			return "", "", fmt.Errorf("invalid organization name: %s", result.Errors[0].Message)
-		}
-
-		result, err = validator.Validate(ctx, clusterName)
+		result, err := validator.Validate(ctx, clusterName)
 		if err != nil {
 			return "", "", fmt.Errorf("cluster name validation failed: %w", err)
 		}

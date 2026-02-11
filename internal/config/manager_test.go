@@ -239,8 +239,8 @@ func TestConfigurationManager_ListWithOrganization(t *testing.T) {
 		t.Errorf("Expected 1 cluster, got %d", len(clusters))
 	}
 
-	if len(clusters) > 0 && clusters[0] != "test-cluster" {
-		t.Errorf("Expected cluster name 'test-cluster', got %s", clusters[0])
+	if len(clusters) > 0 && clusters[0] != "test-org/test-cluster" {
+		t.Errorf("Expected cluster name 'test-org/test-cluster', got %s", clusters[0])
 	}
 
 	// List with organization filter
@@ -384,6 +384,22 @@ func TestConfigurationManager_ListMultipleOrganizations(t *testing.T) {
 	// Should have 6 total clusters
 	if len(clusters) != 6 {
 		t.Errorf("Expected 6 clusters, got %d", len(clusters))
+	}
+
+	// Verify clusters are in organization/cluster format
+	expectedClusters := map[string]bool{
+		"org1/cluster1": true,
+		"org1/cluster2": true,
+		"org2/cluster3": true,
+		"org3/cluster4": true,
+		"org3/cluster5": true,
+		"org3/cluster6": true,
+	}
+
+	for _, cluster := range clusters {
+		if !expectedClusters[cluster] {
+			t.Errorf("Unexpected cluster in list: %s", cluster)
+		}
 	}
 
 	// List org1 clusters

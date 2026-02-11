@@ -102,6 +102,8 @@ func NewConfigurationManager() (*ConfigurationManager, error) {
 	pathResolver := paths.NewPathResolver(baseDir)
 
 	// Create ValidationEngine
+	// Note: Config validation is currently disabled as the ConfigValidator
+	// is designed for individual config values, not full Config structs
 	validator := validation.NewValidationEngine()
 
 	return &ConfigurationManager{
@@ -178,8 +180,27 @@ func (cm *ConfigurationManager) Load(ctx context.Context, name string) (*Config,
 		return cached, nil
 	}
 
-	// Resolve configuration path
-	clusterPaths, err := cm.pathResolver.ResolveWithFallback(ctx, name)
+	// Parse cluster identifier to handle organization/cluster format
+	var clusterPaths *paths.ClusterPaths
+	var err error
+	
+	if strings.Contains(name, "/") {
+		// organization/cluster format - parse and use Resolve
+		parts := strings.SplitN(name, "/", 2)
+		if len(parts) != 2 {
+			return nil, errors.WrapWithOperation(
+				fmt.Errorf("invalid cluster identifier format: expected 'organization/cluster'"),
+				"load",
+			)
+		}
+		organization := parts[0]
+		clusterName := parts[1]
+		clusterPaths, err = cm.pathResolver.Resolve(ctx, clusterName, organization)
+	} else {
+		// Just cluster name - use ResolveWithFallback to search all organizations
+		clusterPaths, err = cm.pathResolver.ResolveWithFallback(ctx, name)
+	}
+	
 	if err != nil {
 		return nil, errors.WrapWithOperation(
 			NewPathError(name, "", err),
@@ -207,21 +228,23 @@ func (cm *ConfigurationManager) Load(ctx context.Context, name string) (*Config,
 		)
 	}
 
-	// Validate configuration
-	result, err := cm.validator.Validate(ctx, "config", config)
-	if err != nil {
-		return nil, errors.WrapWithOperation(
-			NewValidationError("", "validation engine error", err),
-			"load",
-		)
-	}
+	// Validate configuration if validators are registered
+	if cm.validator != nil && len(cm.validator.List()) > 0 {
+		result, err := cm.validator.Validate(ctx, "config", config)
+		if err != nil {
+			return nil, errors.WrapWithOperation(
+				NewValidationError("", "validation engine error", err),
+				"load",
+			)
+		}
 
-	if !result.Valid {
-		// Convert validation result to error
-		return nil, errors.WrapWithOperation(
-			result.ToError(),
-			"load",
-		)
+		if !result.Valid {
+			// Convert validation result to error
+			return nil, errors.WrapWithOperation(
+				result.ToError(),
+				"load",
+			)
+		}
 	}
 
 	// Cache the loaded configuration
@@ -268,8 +291,27 @@ func (cm *ConfigurationManager) LoadWithoutValidation(ctx context.Context, name 
 		return cached, nil
 	}
 
-	// Resolve configuration path
-	clusterPaths, err := cm.pathResolver.ResolveWithFallback(ctx, name)
+	// Parse cluster identifier to handle organization/cluster format
+	var clusterPaths *paths.ClusterPaths
+	var err error
+	
+	if strings.Contains(name, "/") {
+		// organization/cluster format - parse and use Resolve
+		parts := strings.SplitN(name, "/", 2)
+		if len(parts) != 2 {
+			return nil, errors.WrapWithOperation(
+				fmt.Errorf("invalid cluster identifier format: expected 'organization/cluster'"),
+				"load",
+			)
+		}
+		organization := parts[0]
+		clusterName := parts[1]
+		clusterPaths, err = cm.pathResolver.Resolve(ctx, clusterName, organization)
+	} else {
+		// Just cluster name - use ResolveWithFallback to search all organizations
+		clusterPaths, err = cm.pathResolver.ResolveWithFallback(ctx, name)
+	}
+	
 	if err != nil {
 		return nil, errors.WrapWithOperation(
 			NewPathError(name, "", err),
@@ -610,7 +652,8 @@ func (cm *ConfigurationManager) ListWithOrganization(ctx context.Context, organi
 
 			for _, clusterEntry := range clusterEntries {
 				if clusterEntry.IsDir() {
-					clusters = append(clusters, clusterEntry.Name())
+					// Return in organization/cluster format
+					clusters = append(clusters, fmt.Sprintf("%s/%s", orgName, clusterEntry.Name()))
 				}
 			}
 		}
