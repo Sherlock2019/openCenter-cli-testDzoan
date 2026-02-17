@@ -306,7 +306,7 @@ func defaultConfig(name string) Config {
 				},
 				"cert-manager": &services.CertManagerConfig{
 					BaseConfig: services.BaseConfig{
-						Enabled: false, // Disabled by default - requires AWS credentials
+						Enabled: true, // Enabled by default for OpenStack provider
 					},
 					Email:             "mpk-support@rackspace.com",
 					Region:            "us-east-1",
@@ -325,7 +325,7 @@ func defaultConfig(name string) Config {
 				"gateway-api":          &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
 				"headlamp": &services.HeadlampConfig{
 					BaseConfig: services.BaseConfig{
-						Enabled:  false, // Disabled by default - requires OIDC client secret
+						Enabled:  true, // Enabled by default for OpenStack provider
 						Hostname: fmt.Sprintf("dashboard.%s.%s.k8s.opencenter.cloud", name, region),
 					},
 					OIDCIssuerURL: fmt.Sprintf("https://auth.%s.%s.k8s.opencenter.cloud/realms/opencenter", name, region),
@@ -333,7 +333,7 @@ func defaultConfig(name string) Config {
 				},
 				"keycloak": &services.KeycloakConfig{
 					BaseConfig: services.BaseConfig{
-						Enabled:  false, // Disabled by default - requires admin password and client secret
+						Enabled:  true, // Enabled by default for OpenStack provider
 						Hostname: fmt.Sprintf("auth.%s.%s.k8s.opencenter.cloud", name, region),
 					},
 					Realm:       "opencenter",
@@ -342,7 +342,7 @@ func defaultConfig(name string) Config {
 				},
 				"kube-prometheus-stack": &services.PrometheusStackConfig{
 					BaseConfig: services.BaseConfig{
-						Enabled: false, // Disabled by default - requires Grafana admin password
+						Enabled: true, // Enabled by default for OpenStack provider
 					},
 					PrometheusVolumeSize:     50,
 					PrometheusStorageClass:   "csi-cinder-sc-delete",
@@ -354,7 +354,7 @@ func defaultConfig(name string) Config {
 				"kyverno": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
 				"loki": &services.LokiConfig{
 					BaseConfig: services.BaseConfig{
-						Enabled: false,
+						Enabled: true, // Enabled by default for OpenStack provider
 					},
 					VolumeSize:      20,
 					StorageClass:    "csi-cinder-sc-delete",
@@ -371,7 +371,7 @@ func defaultConfig(name string) Config {
 				"sources":           &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
 				"tempo": &services.TempoConfig{
 					BaseConfig: services.BaseConfig{
-						Enabled: false, // Disabled by default - requires storage credentials
+						Enabled: true, // Enabled by default for OpenStack provider
 					},
 					StorageType:      "s3",
 					BucketName:       fmt.Sprintf("%s-tempo", name),
@@ -384,7 +384,7 @@ func defaultConfig(name string) Config {
 				},
 				"velero": &services.VeleroConfig{
 					BaseConfig: services.BaseConfig{
-						Enabled: false, // Disabled by default - may require cloud credentials
+						Enabled: true, // Enabled by default for OpenStack provider
 					},
 					BackupBucket: fmt.Sprintf("%s-backups", name),
 					Region:       "us-east-1",
