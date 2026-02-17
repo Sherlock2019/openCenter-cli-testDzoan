@@ -56,6 +56,9 @@ func ProvideValidationEngine() (*validation.ValidationEngine, error) {
 	if err := engine.Register(validators.NewClusterNameValidator()); err != nil {
 		return nil, err
 	}
+	if err := engine.Register(validators.NewOrganizationNameValidator()); err != nil {
+		return nil, err
+	}
 	if err := engine.Register(validators.NewConfigValidator()); err != nil {
 		return nil, err
 	}

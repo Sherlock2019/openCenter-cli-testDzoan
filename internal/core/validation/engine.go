@@ -271,7 +271,9 @@ func (e *ValidationEngine) Validate(ctx context.Context, name string, value inte
 	// Now run the requested validator
 	validator := e.registry.Get(name)
 	if validator == nil {
-		return nil, fmt.Errorf("validator %q not found", name)
+		// Debug: List all registered validators
+		registeredValidators := e.registry.List()
+		return nil, fmt.Errorf("validator %q not found (registered validators: %v)", name, registeredValidators)
 	}
 
 	result, err := validator.Validate(ctx, value)

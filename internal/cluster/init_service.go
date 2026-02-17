@@ -75,8 +75,18 @@ func NewInitServiceWithConfigMgr(
 ) *InitService {
 	// Create ConfigurationManager if not provided
 	if configurationMgr == nil {
-		// Try to create one, but don't fail if it doesn't work
-		configurationMgr, _ = config.NewConfigurationManager()
+		// Create ConfigurationManager with the provided validation engine
+		errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+		fs := fs.NewDefaultFileSystem(errorHandler)
+		
+		// Use the pathResolver's base directory
+		configurationMgr = config.NewConfigurationManagerWithDeps(
+			config.NewConfigIOHandler(fs),
+			validationEngine, // Use the validation engine from DI
+			config.NewConfigCache(),
+			pathResolver,
+			fs,
+		)
 	}
 
 	// Create FileSystem if not provided
