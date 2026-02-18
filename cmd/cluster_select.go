@@ -390,22 +390,11 @@ func displayClusterSelectOutput(output ClusterSelectOutput, cmd *cobra.Command) 
 
 	// Display export commands if available
 	if len(output.ExportCommands) > 0 {
-		fmt.Fprintf(cmd.OutOrStdout(), "Environment Setup Commands (%s):\n", output.Shell)
-		for _, command := range output.ExportCommands {
-			fmt.Fprintf(cmd.OutOrStdout(), "  %s\n", command)
-		}
+		fmt.Fprintf(cmd.OutOrStdout(), "Available Environment Variables (%s):\n", output.Shell)
+		fmt.Fprintf(cmd.OutOrStdout(), "  • Cloud credentials (AWS/OpenStack)\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "  • KUBECONFIG, ANSIBLE_INVENTORY, SOPS_AGE_KEY_FILE\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "  • Virtual environment and PATH\n")
 		fmt.Fprintf(cmd.OutOrStdout(), "\n")
-		fmt.Fprintf(cmd.OutOrStdout(), "To configure your shell environment, run:\n")
-
-		// Provide shell-specific instructions
-		switch output.Shell {
-		case "fish":
-			fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster select %s --export-only | source\n", output.Metadata.Name)
-		case "powershell":
-			fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster select %s --export-only | Invoke-Expression\n", output.Metadata.Name)
-		default:
-			fmt.Fprintf(cmd.OutOrStdout(), "  eval \"$(opencenter cluster select %s --export-only)\"\n", output.Metadata.Name)
-		}
 	} else {
 		fmt.Fprintf(cmd.OutOrStdout(), "Environment Setup:\n")
 		fmt.Fprintf(cmd.OutOrStdout(), "  No environment setup commands available (cluster status: %s)\n", output.Metadata.Status)
@@ -687,16 +676,18 @@ Use --clear-persistent to remove the persistent cluster selection.`,
 				fmt.Fprintf(cmd.OutOrStdout(), "Active cluster set to %s (%s)\n\n", name, scope)
 				displayClusterSelectOutput(output, cmd)
 
-				// Inform user about exporting environment
-				fmt.Fprintf(cmd.OutOrStdout(), "\nTo export cluster environment variables, run:\n")
-				// Provide shell-specific instructions
-				switch output.Shell {
-				case "fish":
-					fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster select %s --export-only | source\n", name)
-				case "powershell":
-					fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster select %s --export-only | Invoke-Expression\n", name)
-				default:
-					fmt.Fprintf(cmd.OutOrStdout(), "  eval $(opencenter cluster select %s --export-only)\n", name)
+				// Inform user about exporting environment (only if commands are available)
+				if len(output.ExportCommands) > 0 {
+					fmt.Fprintf(cmd.OutOrStdout(), "\nTo export ALL cluster environment (credentials + paths), run:\n")
+					// Provide shell-specific instructions
+					switch output.Shell {
+					case "fish":
+						fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster select %s --export-only | source\n", name)
+					case "powershell":
+						fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster select %s --export-only | Invoke-Expression\n", name)
+					default:
+						fmt.Fprintf(cmd.OutOrStdout(), "  eval $(opencenter cluster select %s --export-only)\n", name)
+					}
 				}
 			}
 
