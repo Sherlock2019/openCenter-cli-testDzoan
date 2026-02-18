@@ -302,6 +302,9 @@ func generateExportCommands(clusterPaths *paths.ClusterPaths, shell string) []st
 		if _, err := os.Stat(clusterPaths.InventoryPath); err == nil {
 			commands = append(commands, fmt.Sprintf("set -gx ANSIBLE_INVENTORY %s", clusterPaths.InventoryPath))
 		}
+		if _, err := os.Stat(clusterPaths.SOPSKeyPath); err == nil {
+			commands = append(commands, fmt.Sprintf("set -gx SOPS_AGE_KEY_FILE %s", clusterPaths.SOPSKeyPath))
+		}
 		if _, err := os.Stat(clusterPaths.VenvPath); err == nil {
 			activateScript := filepath.Join(clusterPaths.VenvPath, "bin", "activate.fish")
 			if _, err := os.Stat(activateScript); err == nil {
@@ -320,6 +323,9 @@ func generateExportCommands(clusterPaths *paths.ClusterPaths, shell string) []st
 		if _, err := os.Stat(clusterPaths.InventoryPath); err == nil {
 			commands = append(commands, fmt.Sprintf("$env:ANSIBLE_INVENTORY = '%s'", clusterPaths.InventoryPath))
 		}
+		if _, err := os.Stat(clusterPaths.SOPSKeyPath); err == nil {
+			commands = append(commands, fmt.Sprintf("$env:SOPS_AGE_KEY_FILE = '%s'", clusterPaths.SOPSKeyPath))
+		}
 		if _, err := os.Stat(clusterPaths.VenvPath); err == nil {
 			activateScript := filepath.Join(clusterPaths.VenvPath, "Scripts", "Activate.ps1")
 			if _, err := os.Stat(activateScript); err == nil {
@@ -337,6 +343,9 @@ func generateExportCommands(clusterPaths *paths.ClusterPaths, shell string) []st
 		}
 		if _, err := os.Stat(clusterPaths.InventoryPath); err == nil {
 			commands = append(commands, fmt.Sprintf("export ANSIBLE_INVENTORY=%s", clusterPaths.InventoryPath))
+		}
+		if _, err := os.Stat(clusterPaths.SOPSKeyPath); err == nil {
+			commands = append(commands, fmt.Sprintf("export SOPS_AGE_KEY_FILE=%s", clusterPaths.SOPSKeyPath))
 		}
 		if _, err := os.Stat(clusterPaths.VenvPath); err == nil {
 			activateScript := filepath.Join(clusterPaths.VenvPath, "bin", "activate")

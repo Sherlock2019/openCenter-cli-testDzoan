@@ -59,6 +59,16 @@ func newSecretsLoginCmd() *cobra.Command {
 		Short: "Create or refresh a Keystone token",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clusterName, _ := cmd.Flags().GetString("cluster")
+			if clusterName == "" {
+				activeCluster, err := getActiveCluster()
+				if err != nil {
+					return fmt.Errorf("no cluster specified and failed to get active cluster: %w", err)
+				}
+				if activeCluster == "" {
+					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster select' to set an active cluster")
+				}
+				clusterName = activeCluster
+			}
 			cfg, err := loadConfig(cmd.Context(), clusterName)
 			if err != nil {
 				return err
@@ -115,6 +125,16 @@ func newSecretsListCmd() *cobra.Command {
 		Short: "List secrets associated with the current cluster",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clusterName, _ := cmd.Flags().GetString("cluster")
+			if clusterName == "" {
+				activeCluster, err := getActiveCluster()
+				if err != nil {
+					return fmt.Errorf("no cluster specified and failed to get active cluster: %w", err)
+				}
+				if activeCluster == "" {
+					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster select' to set an active cluster")
+				}
+				clusterName = activeCluster
+			}
 			cfg, err := loadConfig(cmd.Context(), clusterName)
 			if err != nil {
 				return err
@@ -164,6 +184,16 @@ func newSecretsDescribeCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 			clusterName, _ := cmd.Flags().GetString("cluster")
+			if clusterName == "" {
+				activeCluster, err := getActiveCluster()
+				if err != nil {
+					return fmt.Errorf("no cluster specified and failed to get active cluster: %w", err)
+				}
+				if activeCluster == "" {
+					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster select' to set an active cluster")
+				}
+				clusterName = activeCluster
+			}
 			cfg, err := loadConfig(cmd.Context(), clusterName)
 			if err != nil {
 				return err
@@ -208,6 +238,16 @@ func newSecretsGetCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 			clusterName, _ := cmd.Flags().GetString("cluster")
+			if clusterName == "" {
+				activeCluster, err := getActiveCluster()
+				if err != nil {
+					return fmt.Errorf("no cluster specified and failed to get active cluster: %w", err)
+				}
+				if activeCluster == "" {
+					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster select' to set an active cluster")
+				}
+				clusterName = activeCluster
+			}
 			cfg, err := loadConfig(cmd.Context(), clusterName)
 			if err != nil {
 				return err
@@ -279,6 +319,16 @@ func newSecretsPutCmd() *cobra.Command {
 			}
 
 			clusterName, _ := cmd.Flags().GetString("cluster")
+			if clusterName == "" {
+				activeCluster, err := getActiveCluster()
+				if err != nil {
+					return fmt.Errorf("no cluster specified and failed to get active cluster: %w", err)
+				}
+				if activeCluster == "" {
+					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster select' to set an active cluster")
+				}
+				clusterName = activeCluster
+			}
 			cfg, err := loadConfig(cmd.Context(), clusterName)
 			if err != nil {
 				return err
@@ -334,6 +384,16 @@ func newSecretsDeleteCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 			clusterName, _ := cmd.Flags().GetString("cluster")
+			if clusterName == "" {
+				activeCluster, err := getActiveCluster()
+				if err != nil {
+					return fmt.Errorf("no cluster specified and failed to get active cluster: %w", err)
+				}
+				if activeCluster == "" {
+					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster select' to set an active cluster")
+				}
+				clusterName = activeCluster
+			}
 			cfg, err := loadConfig(cmd.Context(), clusterName)
 			if err != nil {
 				return err
@@ -366,6 +426,16 @@ func newSecretsSyncCmd() *cobra.Command {
 		Short: "Materialize a filtered subset of Barbican secrets onto disk",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clusterName, _ := cmd.Flags().GetString("cluster")
+			if clusterName == "" {
+				activeCluster, err := getActiveCluster()
+				if err != nil {
+					return fmt.Errorf("no cluster specified and failed to get active cluster: %w", err)
+				}
+				if activeCluster == "" {
+					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster select' to set an active cluster")
+				}
+				clusterName = activeCluster
+			}
 			cfg, err := loadConfig(cmd.Context(), clusterName)
 			if err != nil {
 				return err
