@@ -77,7 +77,7 @@ func defaultConfig(name string) Config {
 				Organization: "opencenter",
 			},
 			Secrets: OpenCenterSecrets{
-				Backend: "barbican",
+				Backend: "sops",
 				Barbican: BarbicanConfig{
 					AuthURL:           barbicanAuthURL,
 					ProjectID:         "",

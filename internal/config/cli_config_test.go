@@ -719,7 +719,7 @@ behavior:
   dryRun: false
 defaults:
   provider: openstack
-  region: "{{ .OpenCenter.Cluster.ClusterRegion }}"
+  region: "sjc3"
   environment: dev
 `
 
@@ -792,7 +792,7 @@ behavior:
   dryRun: false
 defaults:
   provider: openstack
-  region: "{{ .OpenCenter.Cluster.ClusterRegion }}"
+  region: "sjc3"
   environment: dev
 `
 

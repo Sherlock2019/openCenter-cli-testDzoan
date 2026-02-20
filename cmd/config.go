@@ -223,7 +223,7 @@ Default values:
   - behavior.autoConfirm: false
   - behavior.dryRun: false
   - defaults.provider: openstack
-  - defaults.region: {{ .OpenCenter.Cluster.ClusterRegion }}
+  - defaults.region: sjc3
   - defaults.environment: dev`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Create config manager

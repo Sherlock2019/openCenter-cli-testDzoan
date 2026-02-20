@@ -225,7 +225,7 @@ func DefaultCLIConfig() *CLIConfig {
 		},
 		Defaults: DefaultsConfig{
 			Provider:    "openstack",
-			Region:      "{{ .OpenCenter.Cluster.ClusterRegion }}",
+			Region:      "sjc3",
 			Environment: "dev",
 		},
 	}
