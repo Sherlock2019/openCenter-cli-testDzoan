@@ -46,8 +46,14 @@ If no cluster name is provided, validates the currently active cluster.`,
   # Validate specific cluster
   opencenter cluster validate my-cluster
 
+  # Validate with organization/cluster-name format
+  opencenter cluster validate my-org/my-cluster
+
   # Validate with connectivity checks
   opencenter cluster validate my-cluster --check-connectivity
+
+  # Output as JSON (for CI/CD pipelines)
+  opencenter cluster validate my-cluster --json
 
   # Validate and generate debug config
   opencenter cluster validate my-cluster --generate-debug-config`,
@@ -65,9 +71,10 @@ If no cluster name is provided, validates the currently active cluster.`,
 			// Check if a configuration file was provided via --config flag
 			configFile, _ := cmd.Flags().GetString("config")
 
-			// Resolve cluster name and organization from args or active cluster
+			// Resolve cluster name, organization, and provider from args or active cluster
 			var clusterName string
 			var organization string
+			var provider string
 			var err error
 			if configFile == "" {
 				// Determine identifier from args or active cluster
@@ -81,15 +88,14 @@ If no cluster name is provided, validates the currently active cluster.`,
 						return fmt.Errorf("no cluster name provided and no active cluster set")
 					}
 				}
-				
+
 				// Use loadConfigWithIdentifier to support organization/cluster-name format
 				var cfg config.Config
 				cfg, clusterName, organization, err = loadConfigWithIdentifier(cmd.Context(), identifier)
 				if err != nil {
 					return err
 				}
-				// Use the cluster name and organization from the loaded config
-				_ = cfg // cfg is loaded but we only need the names for validation
+				provider = cfg.OpenCenter.Infrastructure.Provider
 			} else {
 				// Get organization from global flag if using --config
 				organization, _ = cmd.Flags().GetString("organization")
@@ -101,6 +107,12 @@ If no cluster name is provided, validates the currently active cluster.`,
 			generateDebug, _ := cmd.Flags().GetBool("generate-debug-config")
 			outputDir, _ := cmd.Flags().GetString("output-dir")
 			verbose, _ := cmd.Flags().GetBool("verbose")
+			jsonOutput, _ := cmd.Flags().GetBool("json")
+
+			outputFormat := "text"
+			if jsonOutput {
+				outputFormat = "json"
+			}
 
 			// Build validation options
 			opts := cluster.ValidateOptions{
@@ -112,6 +124,8 @@ If no cluster name is provided, validates the currently active cluster.`,
 				GenerateDebugConfig: generateDebug,
 				OutputDir:           outputDir,
 				Verbose:             verbose,
+				OutputFormat:        outputFormat,
+				Provider:            provider,
 			}
 
 			// Perform validation
@@ -121,15 +135,23 @@ If no cluster name is provided, validates the currently active cluster.`,
 			}
 
 			// Format and display result
-			output := validateService.FormatResult(result)
-			fmt.Fprint(cmd.OutOrStdout(), output)
+			if outputFormat == "json" {
+				jsonStr, err := validateService.FormatResultJSON(result, provider)
+				if err != nil {
+					return fmt.Errorf("formatting JSON output: %w", err)
+				}
+				fmt.Fprint(cmd.OutOrStdout(), jsonStr)
+			} else {
+				output := validateService.FormatResultGrouped(result, provider)
+				fmt.Fprint(cmd.OutOrStdout(), output)
+			}
 
-			// Show debug config path if generated
-			if result.DebugConfigPath != "" {
+			// Show debug config path if generated (text mode only)
+			if outputFormat != "json" && result.DebugConfigPath != "" {
 				fmt.Fprintf(cmd.OutOrStdout(), "\nDebug config saved to: %s\n", result.DebugConfigPath)
 			}
 
-			// Return error if validation failed, but silence usage since we already showed the validation output
+			// Return error if validation failed, but silence usage
 			if !result.Valid {
 				cmd.SilenceUsage = true
 				return fmt.Errorf("validation failed")
@@ -144,6 +166,7 @@ If no cluster name is provided, validates the currently active cluster.`,
 	cmd.Flags().Bool("generate-debug-config", false, "generate complete config for debugging")
 	cmd.Flags().String("output-dir", "", "directory to save debug config (defaults to current directory)")
 	cmd.Flags().BoolP("verbose", "v", false, "verbose output")
+	cmd.Flags().Bool("json", false, "output validation results as JSON (for CI/CD pipelines)")
 
 	return cmd
 }

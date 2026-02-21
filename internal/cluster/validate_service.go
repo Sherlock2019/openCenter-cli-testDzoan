@@ -27,6 +27,8 @@ type ValidateOptions struct {
 	GenerateDebugConfig bool
 	OutputDir           string
 	Verbose             bool
+	OutputFormat        string // "text" (default) or "json"
+	Provider            string // Active provider for filtering irrelevant errors
 }
 
 // ValidationResult contains the result of cluster validation
