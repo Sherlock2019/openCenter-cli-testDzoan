@@ -17,6 +17,7 @@ import (
 	"fmt"
 
 	"github.com/rackerlabs/opencenter-cli/internal/cluster"
+	"github.com/rackerlabs/opencenter-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -64,18 +65,35 @@ If no cluster name is provided, validates the currently active cluster.`,
 			// Check if a configuration file was provided via --config flag
 			configFile, _ := cmd.Flags().GetString("config")
 
-			// Resolve cluster name from args or active cluster
+			// Resolve cluster name and organization from args or active cluster
 			var clusterName string
+			var organization string
 			var err error
 			if configFile == "" {
-				clusterName, err = resolveClusterName(args, true)
+				// Determine identifier from args or active cluster
+				var identifier string
+				if len(args) > 0 {
+					identifier = args[0]
+				} else {
+					// No args provided, use active cluster
+					identifier, err = getActiveCluster()
+					if err != nil || identifier == "" {
+						return fmt.Errorf("no cluster name provided and no active cluster set")
+					}
+				}
+				
+				// Use loadConfigWithIdentifier to support organization/cluster-name format
+				var cfg config.Config
+				cfg, clusterName, organization, err = loadConfigWithIdentifier(cmd.Context(), identifier)
 				if err != nil {
 					return err
 				}
+				// Use the cluster name and organization from the loaded config
+				_ = cfg // cfg is loaded but we only need the names for validation
+			} else {
+				// Get organization from global flag if using --config
+				organization, _ = cmd.Flags().GetString("organization")
 			}
-
-			// Get organization from global flag
-			organization, _ := cmd.Flags().GetString("organization")
 
 			// Get validation options from flags
 			checkConnectivity, _ := cmd.Flags().GetBool("check-connectivity")
