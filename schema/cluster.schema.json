@@ -658,7 +658,7 @@
               "type": "string"
             },
             "gitops_base_repo": {
-              "default": "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git",
+              "default": "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git",
               "description": "URL of the GitOps base repository",
               "pattern": "^(https?://|git@|ssh://)",
               "type": "string"

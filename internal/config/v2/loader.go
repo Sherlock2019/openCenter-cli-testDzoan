@@ -18,9 +18,9 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config/defaults"
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
-	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 )
 
 // ConfigLoader implements the v2 configuration loading pipeline.

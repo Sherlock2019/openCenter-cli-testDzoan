@@ -50,7 +50,7 @@ package validators
 
 import (
     "context"
-    "github.com/rackerlabs/opencenter-cli/internal/core/validation"
+    "github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 )
 
 type MyValidator struct {

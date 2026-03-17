@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config/services"
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
 )
 
 // CertManagerValidator validates cert-manager service configuration

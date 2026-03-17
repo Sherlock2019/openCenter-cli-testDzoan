@@ -22,11 +22,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/cluster"
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
-	"github.com/rackerlabs/opencenter-cli/internal/di"
-	"github.com/rackerlabs/opencenter-cli/internal/util"
+	"github.com/opencenter-cloud/opencenter-cli/internal/cluster"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
+	"github.com/opencenter-cloud/opencenter-cli/internal/di"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )

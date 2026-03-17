@@ -24,11 +24,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
-	"github.com/rackerlabs/opencenter-cli/internal/di"
-	"github.com/rackerlabs/opencenter-cli/internal/plugins"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/di"
+	"github.com/opencenter-cloud/opencenter-cli/internal/plugins"
 )
 
 // ContainerKey is the context key for the DI container
@@ -128,7 +128,7 @@ Key Features:
   • Organization-based multi-tenancy support
 
 Documentation: https://docs.opencenter.cloud
-Support: https://github.com/rackerlabs/opencenter-cli/issues`,
+Support: https://github.com/opencenter-cloud/opencenter-cli/issues`,
 	Example: `  # Initialize a new cluster configuration
   opencenter cluster init my-cluster
 

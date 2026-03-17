@@ -16,8 +16,8 @@ package v2
 import (
 	"testing"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/config/defaults"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
 )
 
 // Test VRRP IP relocation from cluster.networking to infrastructure.networking
@@ -372,7 +372,7 @@ func createTestV1Config() config.Config {
 			GitOps: config.GitOpsConfig{
 				GitURL:            "git@github.com:example/cluster.git",
 				GitBranch:         "main",
-				GitOpsBaseRepo:    "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git",
+				GitOpsBaseRepo:    "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git",
 				GitOpsBaseRelease: "v0.1.0",
 			},
 		},

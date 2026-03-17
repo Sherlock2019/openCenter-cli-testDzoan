@@ -158,7 +158,7 @@ if [ -z "$1" ]; then
 fi
 
 VERSION="$1"
-PUBLISH_TARGET="${2:-rackerlabs/opencenter-cli}"
+PUBLISH_TARGET="${2:-opencenter-cloud/opencenter-cli}"
 
 # Strip 'v' prefix if present for consistency
 VERSION="${VERSION#v}"
@@ -258,7 +258,7 @@ if [ -z "$1" ]; then
 fi
 
 VERSION="$1"
-PUBLISH_TARGET="${2:-rackerlabs/opencenter-cli}"
+PUBLISH_TARGET="${2:-opencenter-cloud/opencenter-cli}"
 
 # Strip 'v' prefix if present for consistency
 VERSION="${VERSION#v}"

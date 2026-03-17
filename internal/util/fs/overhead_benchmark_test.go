@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 )
 
 // BenchmarkReadFile_Direct benchmarks direct os.ReadFile for comparison

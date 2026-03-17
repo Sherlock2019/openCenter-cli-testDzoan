@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config/services"
-	svc "github.com/rackerlabs/opencenter-cli/internal/services"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
+	svc "github.com/opencenter-cloud/opencenter-cli/internal/services"
 )
 
 func TestKubeOVNPlugin_Metadata(t *testing.T) {

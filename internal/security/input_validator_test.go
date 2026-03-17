@@ -22,8 +22,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
 )
 
 func TestValidateClusterName(t *testing.T) {

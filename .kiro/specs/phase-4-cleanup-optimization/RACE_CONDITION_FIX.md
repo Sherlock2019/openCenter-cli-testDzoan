@@ -78,7 +78,7 @@ All 8 concurrent tests now pass with race detection enabled:
 
 ```bash
 $ go test -race ./internal/core/paths/...
-ok      github.com/rackerlabs/opencenter-cli/internal/core/paths        (cached)
+ok      github.com/opencenter-cloud/opencenter-cli/internal/core/paths        (cached)
 ```
 
 **Tests verified**:

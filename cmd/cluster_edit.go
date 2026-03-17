@@ -18,8 +18,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
-	"github.com/rackerlabs/opencenter-cli/internal/security"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
+	"github.com/opencenter-cloud/opencenter-cli/internal/security"
 	"github.com/spf13/cobra"
 )
 

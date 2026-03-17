@@ -17,7 +17,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 )
 
 // MockTemplateEngine provides a mock implementation of template.TemplateEngine for testing.

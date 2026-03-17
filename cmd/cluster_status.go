@@ -22,8 +22,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 )
 
 // newClusterStatusCmd creates the "cluster status" command.

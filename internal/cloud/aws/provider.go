@@ -17,8 +17,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rackerlabs/opencenter-cli/internal/cloud"
-	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/cloud"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 )
 
 // Provider implements the CloudProvider interface for AWS.

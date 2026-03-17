@@ -20,10 +20,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/sops"
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
-	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
-	"github.com/rackerlabs/opencenter-cli/internal/util/security"
+	"github.com/opencenter-cloud/opencenter-cli/internal/sops"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/security"
 )
 
 // SOPSIntegration handles SOPS integration for encrypted configuration files

@@ -16,12 +16,12 @@ package di
 import (
 	"github.com/sirupsen/logrus"
 
-	"github.com/rackerlabs/opencenter-cli/internal/cluster"
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
-	"github.com/rackerlabs/opencenter-cli/internal/ui"
+	"github.com/opencenter-cloud/opencenter-cli/internal/cluster"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
+	"github.com/opencenter-cloud/opencenter-cli/internal/ui"
 )
 
 // ProvideLogger creates a new logger instance.

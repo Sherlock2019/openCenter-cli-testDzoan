@@ -342,7 +342,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 15m
-  url: ssh://git@github.com/rackerlabs/openCenter-gitops-base.git
+  url: ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git
   ref:
     branch: main`,
 			wantErrors: 0,
@@ -356,7 +356,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 15m
-  url: ssh://git@github.com/rackerlabs/opencenter-gitops-base.git
+  url: ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git
   ref:
     branch: main`,
 			wantErrors:  1,
@@ -371,7 +371,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 5m
-  url: ssh://git@github.com/rackerlabs/openCenter-gitops-base.git
+  url: ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git
   ref:
     branch: main`,
 			wantErrors:  1,
@@ -386,7 +386,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 15m
-  url: ssh://git@github.com/rackerlabs/openCenter-gitops-base.git
+  url: ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git
   ref:
     tag: v0.1.0`,
 			wantErrors:  1,

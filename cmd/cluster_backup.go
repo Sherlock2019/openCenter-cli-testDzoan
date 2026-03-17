@@ -21,8 +21,8 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
-	"github.com/rackerlabs/opencenter-cli/internal/operations"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
+	"github.com/opencenter-cloud/opencenter-cli/internal/operations"
 	"github.com/spf13/cobra"
 )
 

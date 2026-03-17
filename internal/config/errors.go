@@ -16,7 +16,7 @@ package config
 import (
 	"fmt"
 
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 )
 
 // Configuration-specific error creation functions.

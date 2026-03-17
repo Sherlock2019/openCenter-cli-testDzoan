@@ -154,7 +154,7 @@ All new configurations use schema version 2.0.
 |-------|---------|-------------|
 | `opencenter.gitops.git_dir` | `"./testdata/test-git-repo-<name>"` | Git directory |
 | `opencenter.gitops.git_branch` | `"main"` | Git branch |
-| `opencenter.gitops.gitops_base_repo` | `"ssh://git@github.com/rackerlabs/opencenter-gitops-base.git"` | Base repo |
+| `opencenter.gitops.gitops_base_repo` | `"ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git"` | Base repo |
 | `opencenter.gitops.gitops_branch` | `"main"` | Base repo branch |
 | `opencenter.gitops.flux.interval` | `"15m"` | Flux reconciliation |
 | `opencenter.gitops.flux.prune` | `true` | Prune resources |

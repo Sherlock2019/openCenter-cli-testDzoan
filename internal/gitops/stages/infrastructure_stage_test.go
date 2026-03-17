@@ -19,9 +19,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/gitops"
-	"github.com/rackerlabs/opencenter-cli/internal/template"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/gitops"
+	"github.com/opencenter-cloud/opencenter-cli/internal/template"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

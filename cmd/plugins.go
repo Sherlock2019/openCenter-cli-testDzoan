@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/plugins"
+	"github.com/opencenter-cloud/opencenter-cli/internal/plugins"
 	"github.com/spf13/cobra"
 )
 

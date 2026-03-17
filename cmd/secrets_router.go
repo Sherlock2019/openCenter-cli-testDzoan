@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 )
 
 // resolveBackend reads the secrets.backend field from the active cluster config

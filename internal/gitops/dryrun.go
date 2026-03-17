@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 )
 
 // DryRunWorkspace is a workspace that tracks operations without making filesystem changes.

@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config/migration"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/migration"
 )
 
 func main() {

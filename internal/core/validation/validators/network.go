@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 )
 
 // NetworkConfig represents network configuration for validation.

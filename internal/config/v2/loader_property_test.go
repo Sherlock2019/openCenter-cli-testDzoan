@@ -21,7 +21,7 @@ import (
 	"github.com/leanovate/gopter/prop"
 	"gopkg.in/yaml.v3"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config/defaults"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
 )
 
 // Feature: v2-cluster-config-schema, Property 9: Configuration Parse-Serialize Round-Trip

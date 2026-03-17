@@ -31,10 +31,10 @@ import (
 	"time"
 
 	"filippo.io/age"
-	"github.com/rackerlabs/opencenter-cli/internal/util/crypto"
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
-	"github.com/rackerlabs/opencenter-cli/internal/util/files"
-	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/crypto"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/files"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 	"github.com/zalando/go-keyring"
 	"golang.org/x/crypto/argon2"
 )

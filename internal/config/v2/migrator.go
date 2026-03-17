@@ -17,8 +17,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/config/defaults"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
 )
 
 // Migrator defines the interface for v1 to v2 configuration migration.

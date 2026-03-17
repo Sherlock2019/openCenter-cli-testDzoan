@@ -103,7 +103,7 @@ jobs:
       
       - name: Install openCenter CLI
         run: |
-          curl -L https://github.com/rackerlabs/openCenter-cli/releases/download/${OPENCENTER_VERSION}/opencenter-linux-amd64 -o /usr/local/bin/opencenter
+          curl -L https://github.com/opencenter-cloud/openCenter-cli/releases/download/${OPENCENTER_VERSION}/opencenter-linux-amd64 -o /usr/local/bin/opencenter
           chmod +x /usr/local/bin/opencenter
           opencenter version
       
@@ -136,7 +136,7 @@ jobs:
       
       - name: Install openCenter CLI
         run: |
-          curl -L https://github.com/rackerlabs/openCenter-cli/releases/download/${OPENCENTER_VERSION}/opencenter-linux-amd64 -o /usr/local/bin/opencenter
+          curl -L https://github.com/opencenter-cloud/openCenter-cli/releases/download/${OPENCENTER_VERSION}/opencenter-linux-amd64 -o /usr/local/bin/opencenter
           chmod +x /usr/local/bin/opencenter
       
       - name: Setup infrastructure credentials
@@ -169,7 +169,7 @@ jobs:
       
       - name: Install openCenter CLI
         run: |
-          curl -L https://github.com/rackerlabs/openCenter-cli/releases/download/${OPENCENTER_VERSION}/opencenter-linux-amd64 -o /usr/local/bin/opencenter
+          curl -L https://github.com/opencenter-cloud/openCenter-cli/releases/download/${OPENCENTER_VERSION}/opencenter-linux-amd64 -o /usr/local/bin/opencenter
           chmod +x /usr/local/bin/opencenter
       
       - name: Deploy to staging
@@ -198,7 +198,7 @@ jobs:
       
       - name: Install openCenter CLI
         run: |
-          curl -L https://github.com/rackerlabs/openCenter-cli/releases/download/${OPENCENTER_VERSION}/opencenter-linux-amd64 -o /usr/local/bin/opencenter
+          curl -L https://github.com/opencenter-cloud/openCenter-cli/releases/download/${OPENCENTER_VERSION}/opencenter-linux-amd64 -o /usr/local/bin/opencenter
           chmod +x /usr/local/bin/opencenter
       
       - name: Deploy to production
@@ -259,7 +259,7 @@ variables:
   OPENCENTER_VERSION: "v1.0.0"
 
 .install_opencenter: &install_opencenter
-  - curl -L https://github.com/rackerlabs/openCenter-cli/releases/download/${OPENCENTER_VERSION}/opencenter-linux-amd64 -o /usr/local/bin/opencenter
+  - curl -L https://github.com/opencenter-cloud/openCenter-cli/releases/download/${OPENCENTER_VERSION}/opencenter-linux-amd64 -o /usr/local/bin/opencenter
   - chmod +x /usr/local/bin/opencenter
   - opencenter version
 
@@ -382,7 +382,7 @@ pipeline {
         stage('Install openCenter') {
             steps {
                 sh '''
-                    curl -L https://github.com/rackerlabs/openCenter-cli/releases/download/${OPENCENTER_VERSION}/opencenter-linux-amd64 -o ${OPENCENTER_BIN}
+                    curl -L https://github.com/opencenter-cloud/openCenter-cli/releases/download/${OPENCENTER_VERSION}/opencenter-linux-amd64 -o ${OPENCENTER_BIN}
                     chmod +x ${OPENCENTER_BIN}
                     ${OPENCENTER_BIN} version
                 '''
@@ -542,7 +542,7 @@ jobs:
       
       - name: Install openCenter CLI
         run: |
-          curl -L https://github.com/rackerlabs/openCenter-cli/releases/download/v1.0.0/opencenter-linux-amd64 -o /usr/local/bin/opencenter
+          curl -L https://github.com/opencenter-cloud/openCenter-cli/releases/download/v1.0.0/opencenter-linux-amd64 -o /usr/local/bin/opencenter
           chmod +x /usr/local/bin/opencenter
       
       - name: Create ephemeral cluster
@@ -621,7 +621,7 @@ kubectl get pods -A
 # Ensure openCenter CLI is installed in pipeline
 - name: Install openCenter CLI
   run: |
-    curl -L https://github.com/rackerlabs/openCenter-cli/releases/download/v1.0.0/opencenter-linux-amd64 -o /usr/local/bin/opencenter
+    curl -L https://github.com/opencenter-cloud/openCenter-cli/releases/download/v1.0.0/opencenter-linux-amd64 -o /usr/local/bin/opencenter
     chmod +x /usr/local/bin/opencenter
     opencenter version
 ```

@@ -19,7 +19,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 )
 
 // ConfigStructureValidator validates that configuration uses v2 field structure only.

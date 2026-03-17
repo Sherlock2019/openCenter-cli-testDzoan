@@ -10,7 +10,7 @@ import (
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 )
 
 // Feature: security-and-operational-remediation, Property 14: Backup Completeness

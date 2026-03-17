@@ -17,7 +17,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 )
 
 // OpenTofuValidator validates OpenTofu backend configuration.

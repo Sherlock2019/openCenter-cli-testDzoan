@@ -19,8 +19,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config/defaults"
-	v2 "github.com/rackerlabs/opencenter-cli/internal/config/v2"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -141,7 +141,7 @@ opencenter:
     git_url: https://github.com/test/test-repo.git
     git_branch: main
     git_dir: ./gitops
-    gitops_base_repo: https://github.com/rackerlabs/opencenter-gitops-base.git
+    gitops_base_repo: https://github.com/opencenter-cloud/opencenter-gitops-base.git
     gitops_base_release: v0.1.0
     gitops_branch: main
     flux:
@@ -373,7 +373,7 @@ opencenter:
     git_url: https://github.com/test/test-repo.git
     git_branch: main
     git_dir: ./gitops
-    gitops_base_repo: https://github.com/rackerlabs/opencenter-gitops-base.git
+    gitops_base_repo: https://github.com/opencenter-cloud/opencenter-gitops-base.git
     gitops_base_release: v0.1.0
     gitops_branch: main
     flux:

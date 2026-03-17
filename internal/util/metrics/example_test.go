@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rackerlabs/opencenter-cli/internal/util/metrics"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/metrics"
 )
 
 // ExampleMetricsCollector demonstrates basic metrics collection usage.

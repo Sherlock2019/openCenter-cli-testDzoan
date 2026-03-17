@@ -114,7 +114,7 @@ locals {
 
 # Kubespray module for Kubernetes deployment on pre-provisioned VMware VMs
 module "kubespray-cluster" {
-  source = "{{ .Deployment.Kubespray.Modules.KubesprayCluster.Source | default "github.com/rackerlabs/openCenter-gitops-base.git//iac/provider/kubespray?ref=main" }}"
+  source = "{{ .Deployment.Kubespray.Modules.KubesprayCluster.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/provider/kubespray?ref=main" }}"
   
   # Bastion and cluster identification
   address_bastion                         = local.address_bastion
@@ -177,7 +177,7 @@ module "kubespray-cluster" {
 {{- if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled }}
 # Calico CNI module for VMware networking
 module "calico" {
-  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Modules.Calico.Source | default "github.com/rackerlabs/openCenter-gitops-base.git//iac/cni/calico?ref=main" }}"
+  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Modules.Calico.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/calico?ref=main" }}"
   
   # Calico configuration
   calico_interface_autodetect      = local.calico_interface_autodetect
@@ -207,7 +207,7 @@ module "calico" {
 {{- if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled }}
 # Cilium CNI module for VMware networking
 module "cilium" {
-  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Modules.Cilium.Source | default "github.com/rackerlabs/openCenter-gitops-base.git//iac/cni/cilium?ref=main" }}"
+  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Modules.Cilium.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/cilium?ref=main" }}"
   
   # Cluster configuration
   cluster_name                     = local.cluster_name
@@ -229,7 +229,7 @@ module "cilium" {
 {{- if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Enabled }}
 # Kube-OVN CNI module for VMware networking
 module "kube-ovn" {
-  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Modules.KubeOVN.Source | default "github.com/rackerlabs/openCenter-gitops-base.git//iac/cni/kube-ovn?ref=main" }}"
+  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Modules.KubeOVN.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/kube-ovn?ref=main" }}"
   
   # Cluster configuration
   cluster_name                     = local.cluster_name

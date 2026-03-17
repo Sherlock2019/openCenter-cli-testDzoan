@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rackerlabs/opencenter-cli/internal/sops"
+	"github.com/opencenter-cloud/opencenter-cli/internal/sops"
 	"gopkg.in/yaml.v3"
 )
 

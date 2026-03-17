@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
-	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 )
 
 // SOPSKeyValidator validates SOPS encryption keys.

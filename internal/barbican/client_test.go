@@ -21,7 +21,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 )
 
 var server *httptest.Server

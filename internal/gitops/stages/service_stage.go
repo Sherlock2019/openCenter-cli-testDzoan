@@ -19,10 +19,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/gitops"
-	"github.com/rackerlabs/opencenter-cli/internal/services"
-	"github.com/rackerlabs/opencenter-cli/internal/template"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/gitops"
+	"github.com/opencenter-cloud/opencenter-cli/internal/services"
+	"github.com/opencenter-cloud/opencenter-cli/internal/template"
 )
 
 // ServiceStage generates service-specific templates for enabled services.

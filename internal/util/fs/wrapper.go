@@ -22,7 +22,7 @@ import (
 	"io/fs"
 	"os"
 
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 )
 
 // FileSystem provides safe file operations with consistent error handling

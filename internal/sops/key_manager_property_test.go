@@ -26,7 +26,7 @@ import (
 	"github.com/leanovate/gopter"
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
-	"github.com/rackerlabs/opencenter-cli/internal/util/crypto"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/crypto"
 )
 
 // Feature: security-and-operational-remediation, Property 7: OS Keyring Storage for Age Keys

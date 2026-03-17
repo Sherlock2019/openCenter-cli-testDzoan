@@ -25,8 +25,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/resilience"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/resilience"
 	"github.com/spf13/cobra"
 )
 

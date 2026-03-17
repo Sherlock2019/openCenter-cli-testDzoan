@@ -18,7 +18,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/rackerlabs/opencenter-cli/internal/gitops"
+	"github.com/opencenter-cloud/opencenter-cli/internal/gitops"
 )
 
 func newClusterValidateManifestsCmd() *cobra.Command {

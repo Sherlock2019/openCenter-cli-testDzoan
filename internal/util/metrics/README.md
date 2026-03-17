@@ -26,7 +26,7 @@ The package tracks the following metric types:
 ### Basic Metrics Collection
 
 ```go
-import "github.com/rackerlabs/opencenter-cli/internal/util/metrics"
+import "github.com/opencenter-cloud/opencenter-cli/internal/util/metrics"
 
 // Create a metrics collector
 collector := metrics.NewMetricsCollector()

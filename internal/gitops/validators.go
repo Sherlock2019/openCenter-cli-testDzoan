@@ -22,10 +22,10 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
-	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 )
 
 // ManifestValidator validates generated GitOps manifests for common issues

@@ -20,8 +20,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/cmd"
-	"github.com/rackerlabs/opencenter-cli/internal/plugins"
+	"github.com/opencenter-cloud/opencenter-cli/cmd"
+	"github.com/opencenter-cloud/opencenter-cli/internal/plugins"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 )

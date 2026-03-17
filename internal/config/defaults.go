@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config/services"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
 )
 
 // getDefaultSSHKeys returns SSH keys from CLI defaults or an empty string array as fallback.
@@ -141,7 +141,7 @@ func defaultConfig(name string) Config {
 						},
 						Modules: OpenStackModulesConfig{
 							OpenstackNova: OpenstackNovaModuleConfig{
-								Source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main",
+								Source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main",
 							},
 						},
 					},
@@ -212,7 +212,7 @@ func defaultConfig(name string) Config {
 							NATOutgoing:               true,
 							Modules: CalicoModulesConfig{
 								Calico: CalicoModuleConfig{
-									Source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/cni/calico?ref=main",
+									Source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cni/calico?ref=main",
 								},
 							},
 						},
@@ -222,7 +222,7 @@ func defaultConfig(name string) Config {
 							KubeProxyReplacement: true,
 							Modules: CiliumModulesConfig{
 								Cilium: CiliumModuleConfig{
-									Source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/cni/cilium?ref=main",
+									Source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cni/cilium?ref=main",
 								},
 							},
 						},
@@ -231,14 +231,14 @@ func defaultConfig(name string) Config {
 							CiliumIntegration: true,
 							Modules: KubeOVNModulesConfig{
 								KubeOVN: KubeOVNModuleConfig{
-									Source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/cni/kube-ovn?ref=main",
+									Source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cni/kube-ovn?ref=main",
 								},
 							},
 						},
 					},
 					Modules: KubernetesModulesConfig{
 						KubesprayCluster: KubesprayClusterModuleConfig{
-							Source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/provider/kubespray?ref=main",
+							Source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/provider/kubespray?ref=main",
 						},
 					},
 					OIDC: OIDCConfig{
@@ -266,7 +266,7 @@ func defaultConfig(name string) Config {
 				GitSSHKey:         "",
 				GitSSHPub:         "",
 				GitBranch:         "main",
-				GitOpsBaseRepo:    "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git",
+				GitOpsBaseRepo:    "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git",
 				GitOpsBaseRelease: "",
 				GitOpsBranch:      "main",
 				Flux: GitOpsFlux{
@@ -287,9 +287,9 @@ func defaultConfig(name string) Config {
 				"alert-proxy": &services.AlertProxyConfig{
 					BaseConfig: services.BaseConfig{
 						Enabled:             false, // Disabled by default - requires device ID, service token, and account number
-						ImageRepository:     "ghcr.io/rackerlabs/alert-proxy",
+						ImageRepository:     "ghcr.io/opencenter-cloud/alert-proxy",
 						ImageTag:            "latest",
-						GitOpsSourceRepo:    "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git",
+						GitOpsSourceRepo:    "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git",
 						GitOpsSourceRelease: "v0.1.0",
 						GitOpsSourceBranch:  "main",
 					},

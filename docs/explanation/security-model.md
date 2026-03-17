@@ -472,7 +472,7 @@ kube_oidc_groups_claim: "groups"
 
 ```go
 // go.mod
-module github.com/rackerlabs/opencenter-cli
+module github.com/opencenter-cloud/opencenter-cli
 
 go 1.25.2
 

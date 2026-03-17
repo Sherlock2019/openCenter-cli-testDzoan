@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 )
 
 // TestWorkspaceIsolatedEnvironment verifies that workspace provides an isolated

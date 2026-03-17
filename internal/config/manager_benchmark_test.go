@@ -22,10 +22,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
-	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 	"gopkg.in/yaml.v3"
 )
 
@@ -107,7 +107,7 @@ func createSampleConfig(name string) *Config {
 			},
 			GitOps: GitOpsConfig{
 				GitDir:            "/tmp/gitops",
-				GitOpsBaseRepo:    "https://github.com/rackerlabs/openCenter-gitops-base.git",
+				GitOpsBaseRepo:    "https://github.com/opencenter-cloud/openCenter-gitops-base.git",
 				GitOpsBaseRelease: "v0.1.0",
 				GitOpsBranch:      "main",
 			},

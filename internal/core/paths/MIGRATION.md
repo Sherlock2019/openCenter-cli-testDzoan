@@ -94,7 +94,7 @@ Import the paths package:
 
 ```go
 import (
-    "github.com/rackerlabs/opencenter-cli/internal/core/paths"
+    "github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 )
 ```
 

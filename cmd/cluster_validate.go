@@ -16,8 +16,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/rackerlabs/opencenter-cli/internal/cluster"
-	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/cluster"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/spf13/cobra"
 )
 

@@ -147,7 +147,7 @@ go test ./internal/config/v2/... -v -run Property
 package main
 
 import (
-    "github.com/rackerlabs/opencenter-cli/internal/config/v2"
+    "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 func main() {

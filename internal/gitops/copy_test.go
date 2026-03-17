@@ -20,9 +20,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/config/services"
-	"github.com/rackerlabs/opencenter-cli/internal/provision"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
+	"github.com/opencenter-cloud/opencenter-cli/internal/provision"
 )
 
 func TestMain(m *testing.M) {

@@ -435,7 +435,7 @@ func (r *ValidationResult) ToError() error {
 	}
 
 	// Import the errors package type
-	// Note: We need to import "github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	// Note: We need to import "github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 	// to use StructuredError
 
 	// Single error case - return it directly with proper structure

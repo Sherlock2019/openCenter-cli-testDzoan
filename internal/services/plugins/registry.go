@@ -3,7 +3,7 @@ package plugins
 import (
 	"fmt"
 
-	svc "github.com/rackerlabs/opencenter-cli/internal/services"
+	svc "github.com/opencenter-cloud/opencenter-cli/internal/services"
 )
 
 // RegisterBuiltInServices registers all built-in service plugins with the registry

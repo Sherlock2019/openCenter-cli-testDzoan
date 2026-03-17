@@ -24,7 +24,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/rackerlabs/opencenter-cli/internal/security"
+	"github.com/opencenter-cloud/opencenter-cli/internal/security"
 )
 
 // Logger provides structured logging with credential masking

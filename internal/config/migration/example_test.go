@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config/migration"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/migration"
 )
 
 // ExampleMigrationScanner demonstrates how to use the migration scanner

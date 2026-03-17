@@ -217,7 +217,7 @@ import (
     "fmt"
     "sync"
     
-    "github.com/rackerlabs/opencenter-cli/internal/util/errors"
+    "github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 )
 
 // ValidationEngine manages validator registration and execution
@@ -338,8 +338,8 @@ import (
     "regexp"
     "strings"
     
-    "github.com/rackerlabs/opencenter-cli/internal/core/validation"
-    "github.com/rackerlabs/opencenter-cli/internal/util/errors"
+    "github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
+    "github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 )
 
 type ClusterNameValidator struct {
@@ -444,9 +444,9 @@ import (
     "fmt"
     "net"
     
-    "github.com/rackerlabs/opencenter-cli/internal/config"
-    "github.com/rackerlabs/opencenter-cli/internal/core/validation"
-    "github.com/rackerlabs/opencenter-cli/internal/util/errors"
+    "github.com/opencenter-cloud/opencenter-cli/internal/config"
+    "github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
+    "github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 )
 
 type NetworkValidator struct {
@@ -565,9 +565,9 @@ import (
     "os"
     "strings"
     
-    "github.com/rackerlabs/opencenter-cli/internal/core/validation"
-    "github.com/rackerlabs/opencenter-cli/internal/util/errors"
-    "github.com/rackerlabs/opencenter-cli/internal/util/fs"
+    "github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
+    "github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
+    "github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 )
 
 type SOPSKeyValidator struct {
@@ -678,8 +678,8 @@ import (
     "context"
     "strings"
     
-    "github.com/rackerlabs/opencenter-cli/internal/core/validation"
-    "github.com/rackerlabs/opencenter-cli/internal/util/errors"
+    "github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
+    "github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 )
 
 type SecurityValidator struct {
@@ -752,7 +752,7 @@ import (
     "fmt"
     "strings"
     
-    "github.com/rackerlabs/opencenter-cli/internal/util/errors"
+    "github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 )
 
 // ValidationResult contains the outcome of validation

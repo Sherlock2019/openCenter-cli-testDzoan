@@ -332,17 +332,17 @@ This project is licensed under the Apache 2.0 License. See [LICENSE](LICENSE) fo
 ## Support
 
 - **Documentation:** [docs/](docs/)
-- **Issues:** [GitHub Issues](https://github.com/rackerlabs/openCenter-cli/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/rackerlabs/openCenter-cli/discussions)
+- **Issues:** [GitHub Issues](https://github.com/opencenter-cloud/openCenter-cli/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/opencenter-cloud/openCenter-cli/discussions)
 
 ## Related Projects
 
 openCenter CLI is part of the openCenter ecosystem:
 
-- **[openCenter-gitops-base](https://github.com/rackerlabs/openCenter-gitops-base)** - Platform services library with security-hardened Helm values
-- **[openCenter-customer-app-example](https://github.com/rackerlabs/openCenter-customer-app-example)** - Reference application deployment patterns
-- **[openCenter-AirGap](https://github.com/rackerlabs/openCenter-AirGap)** - Air-gapped deployment packaging
-- **[opencenter-windows](https://github.com/rackerlabs/opencenter-windows)** - Windows worker node support
+- **[openCenter-gitops-base](https://github.com/opencenter-cloud/openCenter-gitops-base)** - Platform services library with security-hardened Helm values
+- **[openCenter-customer-app-example](https://github.com/opencenter-cloud/openCenter-customer-app-example)** - Reference application deployment patterns
+- **[openCenter-AirGap](https://github.com/opencenter-cloud/openCenter-AirGap)** - Air-gapped deployment packaging
+- **[opencenter-windows](https://github.com/opencenter-cloud/opencenter-windows)** - Windows worker node support
 
 See [Ecosystem Architecture](../docs/ecosystem.md) for how these repositories work together.
 

@@ -20,7 +20,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 )
 
 // ProviderValidator validates cloud provider configurations.

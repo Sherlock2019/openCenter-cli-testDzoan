@@ -690,7 +690,7 @@ opencenter:
   managed_service:
     alert-proxy:
       enabled: true
-      image_repository: "ghcr.io/rackerlabs/alert-proxy"
+      image_repository: "ghcr.io/opencenter-cloud/alert-proxy"
       image_tag: "latest"
       alertmanager_base_url: "http://alertmanager:9093"
       httproute_fqdn: "https://alerts.<org>.<cluster>.<region>.k8s.opencenter.cloud"

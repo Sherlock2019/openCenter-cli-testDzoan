@@ -19,7 +19,7 @@ import (
 	"net"
 	"regexp"
 
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 )
 
 // AWSValidator validates AWS-specific configuration.

@@ -13,7 +13,7 @@
 
 package cmd
 
-import "github.com/rackerlabs/opencenter-cli/internal/config"
+import "github.com/opencenter-cloud/opencenter-cli/internal/config"
 
 // minimalTestConfig returns a minimal Config for testing.
 // This is a helper function for cmd package tests.

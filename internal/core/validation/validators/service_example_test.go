@@ -17,8 +17,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
 )
 
 // Example_serviceValidator demonstrates basic service validation.

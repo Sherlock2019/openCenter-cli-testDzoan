@@ -175,9 +175,9 @@ For contributors and developers:
 ## External Resources
 
 - [Diátaxis Framework](https://diataxis.fr/) - Documentation framework we follow
-- [GitHub Repository](https://github.com/rackerlabs/openCenter-cli)
-- [Issue Tracker](https://github.com/rackerlabs/openCenter-cli/issues)
-- [Discussions](https://github.com/rackerlabs/openCenter-cli/discussions)
+- [GitHub Repository](https://github.com/opencenter-cloud/openCenter-cli)
+- [Issue Tracker](https://github.com/opencenter-cloud/openCenter-cli/issues)
+- [Discussions](https://github.com/opencenter-cloud/openCenter-cli/discussions)
 
 ---
 

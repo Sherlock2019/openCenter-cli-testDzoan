@@ -24,8 +24,8 @@ import (
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/keymanager/v1/secrets"
 	"github.com/gophercloud/gophercloud/pagination"
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/resilience"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/resilience"
 )
 
 // Client is a wrapper around the Barbican client from gophercloud.

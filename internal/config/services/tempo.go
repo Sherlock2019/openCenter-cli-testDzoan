@@ -1,6 +1,6 @@
 package services
 
-import "github.com/rackerlabs/opencenter-cli/internal/config/registry"
+import "github.com/opencenter-cloud/opencenter-cli/internal/config/registry"
 
 // TempoConfig extends BaseConfig with Tempo-specific configuration
 type TempoConfig struct {

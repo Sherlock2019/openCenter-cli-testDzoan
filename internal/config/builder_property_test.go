@@ -20,7 +20,7 @@ import (
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config/services"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
 )
 
 // TestProperty_BuilderMethodChaining validates that all builder methods return the builder

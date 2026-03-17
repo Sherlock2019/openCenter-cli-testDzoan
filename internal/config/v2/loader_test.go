@@ -17,7 +17,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config/defaults"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
 )
 
 // TestConfigLoader_LoadFromBytes_ValidConfig tests loading a valid v2 configuration.

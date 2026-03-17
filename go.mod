@@ -1,4 +1,4 @@
-module github.com/rackerlabs/opencenter-cli
+module github.com/opencenter-cloud/opencenter-cli
 
 go 1.25.2
 
@@ -83,4 +83,4 @@ require (
 	golang.org/x/text v0.33.0 // indirect
 )
 
-replace github.com/rackerlabs/openCenter-cli => .
+replace github.com/opencenter-cloud/openCenter-cli => .

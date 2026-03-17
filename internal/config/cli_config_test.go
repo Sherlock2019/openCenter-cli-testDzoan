@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	corePaths "github.com/rackerlabs/opencenter-cli/internal/core/paths"
+	corePaths "github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )

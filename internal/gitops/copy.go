@@ -24,10 +24,10 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
-	utilfs "github.com/rackerlabs/opencenter-cli/internal/util/fs"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
+	utilfs "github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 )
 
 // IsGitOpsInitialized checks if a GitOps directory has already been initialized

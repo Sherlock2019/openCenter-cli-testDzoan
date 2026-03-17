@@ -188,7 +188,7 @@ diff -r gitops-new/ gitops-legacy/
 ### Check if New Engine is Enabled
 
 ```go
-import "github.com/rackerlabs/opencenter-cli/internal/template"
+import "github.com/opencenter-cloud/opencenter-cli/internal/template"
 
 if template.UseNewTemplateEngine() {
     // New engine is active

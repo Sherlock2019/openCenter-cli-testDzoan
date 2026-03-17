@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rackerlabs/opencenter-cli/internal/sops"
-	"github.com/rackerlabs/opencenter-cli/internal/util/crypto"
+	"github.com/opencenter-cloud/opencenter-cli/internal/sops"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/crypto"
 )
 
 // executeSOPSGenerateKey generates a new Age key pair

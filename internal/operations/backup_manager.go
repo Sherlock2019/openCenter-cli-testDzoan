@@ -18,9 +18,9 @@ import (
 
 	"golang.org/x/crypto/argon2"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
-	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 )
 
 // BackupManager handles backup and restoration of cluster configurations
@@ -269,7 +269,7 @@ func (bm *backupManager) DeleteBackup(backupID string) error {
 }
 
 // ScheduleBackups schedules periodic backups (placeholder for future implementation)
-// Issue: https://github.com/rackerlabs/opencenter-cli/issues/XXX - Implement backup scheduling
+// Issue: https://github.com/opencenter-cloud/opencenter-cli/issues/XXX - Implement backup scheduling
 func (bm *backupManager) ScheduleBackups(schedule string, retention time.Duration) error {
 	return fmt.Errorf("backup scheduling not yet implemented")
 }
@@ -612,7 +612,7 @@ func (bm *backupManager) decryptFile(inputPath, outputPath, passphrase string) e
 }
 
 // archiveDirectory creates a tar archive of a directory
-// Issue: https://github.com/rackerlabs/opencenter-cli/issues/XXX - Implement directory archiving for backups
+// Issue: https://github.com/opencenter-cloud/opencenter-cli/issues/XXX - Implement directory archiving for backups
 func (bm *backupManager) archiveDirectory(dirPath string) ([]byte, error) {
 	return nil, nil
 }

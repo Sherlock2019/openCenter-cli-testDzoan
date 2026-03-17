@@ -18,8 +18,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
-	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 )
 
 // AtomicWriter provides atomic file write operations to prevent partial writes.

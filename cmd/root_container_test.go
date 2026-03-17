@@ -19,10 +19,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/rackerlabs/opencenter-cli/internal/cluster"
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/cluster"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 )
 
 // TestInitializeContainer verifies that the DI container is properly initialized

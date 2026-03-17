@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/rackerlabs/opencenter-cli/internal/cloud"
-	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/cloud"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 )
 
 func TestNewProvider(t *testing.T) {

@@ -118,12 +118,12 @@ Add `wait: true` to kustomizations that:
 
 ```yaml
 # CORRECT
-url: ssh://git@github.com/rackerlabs/openCenter-gitops-base.git
+url: ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git
                                         ^
                                   (capital C)
 
 # WRONG
-url: ssh://git@github.com/rackerlabs/opencenter-gitops-base.git
+url: ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git
 ```
 
 ### Reference Type
@@ -150,7 +150,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 15m
-  url: ssh://git@github.com/rackerlabs/openCenter-gitops-base.git
+  url: ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git
   ref:
     branch: main
   secretRef:
@@ -169,7 +169,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 15m
-  url: ssh://git@github.com/rackerlabs/openCenter-gitops-base.git
+  url: ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git
   ref:
     branch: main
   secretRef:

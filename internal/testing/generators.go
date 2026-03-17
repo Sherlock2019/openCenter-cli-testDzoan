@@ -18,7 +18,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 )
 
 // ConfigGenerator provides methods for generating realistic test configurations

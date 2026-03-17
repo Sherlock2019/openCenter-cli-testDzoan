@@ -23,7 +23,7 @@ import (
 	"text/template"
 
 	sprig "github.com/Masterminds/sprig/v3"
-	"github.com/rackerlabs/opencenter-cli/internal/config/services"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
 )
 
 // Helper to populate required infrastructure fields for validation
@@ -325,8 +325,8 @@ func TestDefaultConfigNewFields(t *testing.T) {
 
 	// Test GitOpsConfig new fields
 	t.Run("GitOpsConfig fields", func(t *testing.T) {
-		if cfg.OpenCenter.GitOps.GitOpsBaseRepo != "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git" {
-			t.Errorf("expected GitOpsBaseRepo 'ssh://git@github.com/rackerlabs/opencenter-gitops-base.git', got %s", cfg.OpenCenter.GitOps.GitOpsBaseRepo)
+		if cfg.OpenCenter.GitOps.GitOpsBaseRepo != "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git" {
+			t.Errorf("expected GitOpsBaseRepo 'ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git', got %s", cfg.OpenCenter.GitOps.GitOpsBaseRepo)
 		}
 
 		if cfg.OpenCenter.GitOps.GitOpsBaseRelease != "v0.1.0" {
@@ -470,7 +470,7 @@ func TestDefaultConfigMatchesSpecifications(t *testing.T) {
 		{
 			name:     "GitOpsBaseRepo default",
 			getValue: func(c Config) any { return c.OpenCenter.GitOps.GitOpsBaseRepo },
-			expected: "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git",
+			expected: "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git",
 		},
 		{
 			name:     "GitOpsBaseRelease default",

@@ -938,7 +938,7 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 				"type":        "string",
 				"description": "URL of the GitOps base repository",
 				"pattern":     "^(https?://|git@|ssh://)",
-				"default":     "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git",
+				"default":     "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git",
 			},
 			"gitops_base_release": map[string]any{
 				"type":        "string",

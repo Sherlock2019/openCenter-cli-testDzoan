@@ -23,10 +23,10 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/rackerlabs/opencenter-cli/internal/cloud"
-	"github.com/rackerlabs/opencenter-cli/internal/cloud/aws"
-	"github.com/rackerlabs/opencenter-cli/internal/cloud/openstack"
-	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/cloud"
+	"github.com/opencenter-cloud/opencenter-cli/internal/cloud/aws"
+	"github.com/opencenter-cloud/opencenter-cli/internal/cloud/openstack"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 )
 
 // newClusterDriftCmd creates the parent drift command

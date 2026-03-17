@@ -161,7 +161,7 @@ $ go test ./internal/template/... -v -run TestRegisterRealGitOpsTemplates
     embedded_integration_test.go:40: Registered 137 templates from gitops.Files
 --- PASS: TestRegisterRealGitOpsTemplates (0.00s)
 PASS
-ok      github.com/rackerlabs/opencenter-cli/internal/template  1.230s
+ok      github.com/opencenter-cloud/opencenter-cli/internal/template  1.230s
 ```
 
 ---

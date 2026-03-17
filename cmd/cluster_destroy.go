@@ -21,10 +21,10 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/core/paths"
-	"github.com/rackerlabs/opencenter-cli/internal/resilience"
-	"github.com/rackerlabs/opencenter-cli/internal/ui"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
+	"github.com/opencenter-cloud/opencenter-cli/internal/resilience"
+	"github.com/opencenter-cloud/opencenter-cli/internal/ui"
 	"github.com/spf13/cobra"
 )
 

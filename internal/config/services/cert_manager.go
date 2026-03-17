@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/rackerlabs/opencenter-cli/internal/config/registry"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/registry"
 )
 
 // CertManagerConfig extends BaseConfig with cert-manager configuration

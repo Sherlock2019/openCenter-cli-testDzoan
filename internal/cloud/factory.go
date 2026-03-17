@@ -17,7 +17,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 )
 
 // CloudProvider defines the interface for cloud provider operations needed for drift detection.

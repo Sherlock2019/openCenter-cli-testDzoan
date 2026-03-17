@@ -18,7 +18,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 )
 
 func TestServiceValidator_Name(t *testing.T) {

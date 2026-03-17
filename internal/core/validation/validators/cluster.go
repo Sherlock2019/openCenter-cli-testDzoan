@@ -19,7 +19,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 )
 
 // ClusterNameValidator validates cluster names according to Kubernetes naming conventions.

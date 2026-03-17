@@ -17,7 +17,7 @@ import (
 	"context"
 	"testing"
 
-	testing_framework "github.com/rackerlabs/opencenter-cli/internal/testing"
+	testing_framework "github.com/opencenter-cloud/opencenter-cli/internal/testing"
 )
 
 // ExampleTestFramework demonstrates how to use the test framework in your tests.

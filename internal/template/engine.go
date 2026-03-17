@@ -32,9 +32,9 @@ import (
 	"time"
 
 	"github.com/Masterminds/sprig/v3"
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
-	utilfs "github.com/rackerlabs/opencenter-cli/internal/util/fs"
-	"github.com/rackerlabs/opencenter-cli/internal/util/metrics"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
+	utilfs "github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/metrics"
 )
 
 // FileSystemReader provides an interface for reading files.

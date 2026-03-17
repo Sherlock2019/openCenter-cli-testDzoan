@@ -19,7 +19,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/rackerlabs/opencenter-cli/internal/credentials"
+	"github.com/opencenter-cloud/opencenter-cli/internal/credentials"
 )
 
 // newClusterCredentialsUnsetCmd creates the "cluster credentials unset" command.

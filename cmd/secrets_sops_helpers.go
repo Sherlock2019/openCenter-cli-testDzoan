@@ -11,8 +11,8 @@ import (
 	"github.com/dlclark/regexp2"
 	"gopkg.in/yaml.v3"
 
-	"github.com/rackerlabs/opencenter-cli/internal/sops"
-	"github.com/rackerlabs/opencenter-cli/internal/util/crypto"
+	"github.com/opencenter-cloud/opencenter-cli/internal/sops"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/crypto"
 )
 
 // SOPSConfig represents the structure of .sops.yaml

@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/security"
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/security"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 )
 
 // Severity represents the severity level of an error

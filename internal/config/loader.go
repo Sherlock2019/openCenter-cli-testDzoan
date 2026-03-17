@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 	"gopkg.in/yaml.v3"
 )
 

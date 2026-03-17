@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rackerlabs/opencenter-cli/internal/cluster"
-	"github.com/rackerlabs/opencenter-cli/internal/di"
+	"github.com/opencenter-cloud/opencenter-cli/internal/cluster"
+	"github.com/opencenter-cloud/opencenter-cli/internal/di"
 )
 
 // TestClusterInitCPUProfile runs CPU profiling on cluster initialization

@@ -170,7 +170,7 @@ This triggers CI to build and test the release.
 ```bash
 # Create release with binaries
 gh release create v1.2.0 \
-  --repo rackerlabs/openCenter-cli \
+  --repo opencenter-cloud/openCenter-cli \
   --title "opencenter 1.2.0" \
   --notes-file bin/release/RELEASE_NOTES_1.2.0.md \
   bin/release/opencenter-*
@@ -179,7 +179,7 @@ gh release create v1.2.0 \
 For pre-releases:
 ```bash
 gh release create v1.2.0-rc1 \
-  --repo rackerlabs/openCenter-cli \
+  --repo opencenter-cloud/openCenter-cli \
   --title "opencenter 1.2.0-rc1" \
   --notes-file bin/release/RELEASE_NOTES_1.2.0-rc1.md \
   --prerelease \
@@ -188,7 +188,7 @@ gh release create v1.2.0-rc1 \
 
 ### Using GitHub Web UI
 
-1. Navigate to https://github.com/rackerlabs/openCenter-cli/releases/new
+1. Navigate to https://github.com/opencenter-cloud/openCenter-cli/releases/new
 2. Select tag: `v1.2.0`
 3. Set title: `opencenter 1.2.0`
 4. Paste release notes from `bin/release/RELEASE_NOTES_1.2.0.md`
@@ -202,7 +202,7 @@ gh release create v1.2.0-rc1 \
 
 ```bash
 # Download binary
-curl -L https://github.com/rackerlabs/openCenter-cli/releases/download/v1.2.0/opencenter-1.2.0-linux-amd64 -o opencenter
+curl -L https://github.com/opencenter-cloud/openCenter-cli/releases/download/v1.2.0/opencenter-1.2.0-linux-amd64 -o opencenter
 
 # Make executable
 chmod +x opencenter
@@ -233,14 +233,14 @@ Download the latest release:
 
 **Linux (x86_64)**
 ```bash
-curl -L https://github.com/rackerlabs/openCenter-cli/releases/download/v1.2.0/opencenter-1.2.0-linux-amd64 -o opencenter
+curl -L https://github.com/opencenter-cloud/openCenter-cli/releases/download/v1.2.0/opencenter-1.2.0-linux-amd64 -o opencenter
 chmod +x opencenter
 sudo mv opencenter /usr/local/bin/
 ```
 
 **macOS (Apple Silicon)**
 ```bash
-curl -L https://github.com/rackerlabs/openCenter-cli/releases/download/v1.2.0/opencenter-1.2.0-darwin-arm64 -o opencenter
+curl -L https://github.com/opencenter-cloud/openCenter-cli/releases/download/v1.2.0/opencenter-1.2.0-darwin-arm64 -o opencenter
 chmod +x opencenter
 sudo mv opencenter /usr/local/bin/
 ```

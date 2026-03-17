@@ -22,11 +22,11 @@ security → validators → util/fs → util/errors → security
 ### Error Message
 
 ```
-package github.com/rackerlabs/opencenter-cli/internal/security
-imports github.com/rackerlabs/opencenter-cli/internal/core/validation/validators
-imports github.com/rackerlabs/opencenter-cli/internal/util/fs
-imports github.com/rackerlabs/opencenter-cli/internal/util/errors
-imports github.com/rackerlabs/opencenter-cli/internal/security: import cycle not allowed in test
+package github.com/opencenter-cloud/opencenter-cli/internal/security
+imports github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators
+imports github.com/opencenter-cloud/opencenter-cli/internal/util/fs
+imports github.com/opencenter-cloud/opencenter-cli/internal/util/errors
+imports github.com/opencenter-cloud/opencenter-cli/internal/security: import cycle not allowed in test
 ```
 
 ## Solution
@@ -46,7 +46,7 @@ Applied the **Dependency Inversion Principle**: Instead of the errors package de
 **Before**:
 ```go
 import (
-    "github.com/rackerlabs/opencenter-cli/internal/security"
+    "github.com/opencenter-cloud/opencenter-cli/internal/security"
 )
 
 type DefaultErrorHandler struct {
@@ -153,7 +153,7 @@ $ go build ./internal/security/...
 ### Test Verification
 ```bash
 $ go test ./internal/security/...
-ok      github.com/rackerlabs/opencenter-cli/internal/security
+ok      github.com/opencenter-cloud/opencenter-cli/internal/security
 ```
 
 All property-based tests now run:

@@ -17,9 +17,9 @@ import (
 	"context"
 	"os"
 
-	"github.com/rackerlabs/opencenter-cli/cmd"
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/di"
+	"github.com/opencenter-cloud/opencenter-cli/cmd"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/di"
 )
 
 // Build information variables set at compile time via ldflags

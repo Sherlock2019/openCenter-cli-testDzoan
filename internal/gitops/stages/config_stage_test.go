@@ -22,9 +22,9 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/gitops"
-	tmpl "github.com/rackerlabs/opencenter-cli/internal/template"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/gitops"
+	tmpl "github.com/opencenter-cloud/opencenter-cli/internal/template"
 )
 
 // mockTemplateEngine is a simple mock for testing

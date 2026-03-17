@@ -20,8 +20,8 @@ import (
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/config/defaults"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
 )
 
 // Property 10: Migration Field Relocation
@@ -378,7 +378,7 @@ func createMinimalV1Config() config.Config {
 			GitOps: config.GitOpsConfig{
 				GitURL:            "git@github.com:example/cluster.git",
 				GitBranch:         "main",
-				GitOpsBaseRepo:    "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git",
+				GitOpsBaseRepo:    "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git",
 				GitOpsBaseRelease: "v0.1.0",
 			},
 		},

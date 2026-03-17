@@ -16,7 +16,7 @@ package config_test
 import (
 	"fmt"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 )
 
 // ExampleConfigBuilder demonstrates the fluent API for building cluster configurations.

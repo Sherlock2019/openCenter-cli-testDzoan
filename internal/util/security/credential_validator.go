@@ -23,8 +23,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
-	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 )
 
 // DefaultCredentialValidator implements CredentialValidator interface

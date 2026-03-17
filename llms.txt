@@ -42,12 +42,12 @@ Download pre-built binaries for your platform:
 
 ```bash
 # Linux (x86_64)
-curl -L https://github.com/rackerlabs/opencenter-cli/releases/download/v0.0.1/opencenter-0.0.1-linux-amd64 -o opencenter
+curl -L https://github.com/opencenter-cloud/opencenter-cli/releases/download/v0.0.1/opencenter-0.0.1-linux-amd64 -o opencenter
 chmod +x opencenter
 sudo mv opencenter /usr/local/bin/
 
 # macOS (Apple Silicon)
-curl -L https://github.com/rackerlabs/opencenter-cli/releases/download/v0.0.1/opencenter-0.0.1-darwin-arm64 -o opencenter
+curl -L https://github.com/opencenter-cloud/opencenter-cli/releases/download/v0.0.1/opencenter-0.0.1-darwin-arm64 -o opencenter
 chmod +x opencenter
 sudo mv opencenter /usr/local/bin/
 ```

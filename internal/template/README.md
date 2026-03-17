@@ -59,7 +59,7 @@ See [FEATURE_FLAG.md](./FEATURE_FLAG.md) for detailed documentation.
 ### Basic Template Rendering
 
 ```go
-import "github.com/rackerlabs/opencenter-cli/internal/template"
+import "github.com/opencenter-cloud/opencenter-cli/internal/template"
 
 // Using legacy compatibility layer (respects feature flag)
 err := template.RenderTemplateToFile(fsys, "template.yaml", outputPath, data)

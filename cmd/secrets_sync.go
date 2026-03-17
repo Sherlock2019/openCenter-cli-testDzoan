@@ -21,7 +21,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rackerlabs/opencenter-cli/internal/secrets"
+	"github.com/opencenter-cloud/opencenter-cli/internal/secrets"
 	"github.com/spf13/cobra"
 )
 

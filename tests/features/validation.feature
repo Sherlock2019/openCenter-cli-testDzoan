@@ -288,7 +288,7 @@ Feature: Configuration validation rules
               calico_nat_outgoing: true
           modules:
               openstack-nova:
-                  source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main"
+                  source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main"
                   availability_zone: "local.availability_zone"
                   application_credential_id: "local.application_credential_id"
                   application_credential_secret: "local.application_credential_secret"
@@ -341,7 +341,7 @@ Feature: Configuration validation rules
                   worker_node_bfv_source_type: "local.worker_node_bfv_source_type"
                   worker_node_bfv_volume_type: "local.worker_node_bfv_volume_type"
               kubespray-cluster:
-                  source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/provider/kubespray?ref=main"
+                  source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/provider/kubespray?ref=main"
                   address_bastion: "module.openstack-nova.bastion_floating_ip"
                   cluster_name: "local.cluster_name"
                   cni_iface: "local.cni_iface"
@@ -369,7 +369,7 @@ Feature: Configuration validation rules
                   windows_nodes: "module.openstack-nova.windows_nodes"
                   use_octavia: "local.use_octavia"
               calico:
-                  source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/cni/calico?ref=main"
+                  source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cni/calico?ref=main"
                   calico_interface_autodetect: "local.calico_interface_autodetect"
                   calico_encapsulation_type: "local.calico_encapsulation_type"
                   calico_nat_outgoing: "local.calico_nat_outgoing"

@@ -138,7 +138,7 @@ opencenter:
             provider: "physnet1"
         modules:
           openstack_nova:
-            source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main"
+            source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main"
 ```
 
 **Required Fields:**
@@ -285,20 +285,20 @@ opencenter:
           nat_outgoing: true
           modules:
             calico:
-              source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/cni/calico?ref=main"
+              source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cni/calico?ref=main"
         cilium:
           enabled: false
           operator_enabled: true
           kube_proxy_replacement: true
           modules:
             cilium:
-              source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/cni/cilium?ref=main"
+              source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cni/cilium?ref=main"
         kube-ovn:
           enabled: false
           cilium_integration: true
           modules:
             kube_ovn:
-              source: "github.com/rackerlabs/opencenter-gitops-base.git//iac/cni/kube-ovn?ref=main"
+              source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cni/kube-ovn?ref=main"
 ```
 
 **Validation:**
@@ -353,7 +353,7 @@ opencenter:
     git_ssh_key: ""
     git_ssh_pub: ""
     git_branch: "main"
-    gitops_base_repo: "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git"
+    gitops_base_repo: "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git"
     gitops_base_release: ""
     gitops_branch: "main"
     flux:

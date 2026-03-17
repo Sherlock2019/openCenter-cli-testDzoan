@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config/registry"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/registry"
 	"gopkg.in/yaml.v3"
 )
 

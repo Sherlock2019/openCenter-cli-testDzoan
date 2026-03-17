@@ -21,8 +21,8 @@ import (
 	"strings"
 	"testing"
 
-	testhelpers "github.com/rackerlabs/opencenter-cli/internal/testing"
-	"github.com/rackerlabs/opencenter-cli/internal/util/crypto"
+	testhelpers "github.com/opencenter-cloud/opencenter-cli/internal/testing"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/crypto"
 )
 
 // **Property 9: Multi-Key SOPS Configuration**

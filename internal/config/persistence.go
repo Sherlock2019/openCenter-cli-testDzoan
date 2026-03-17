@@ -23,7 +23,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation/validators"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
 )
 
 // globalManager is a singleton ConfigurationManager for backward compatibility

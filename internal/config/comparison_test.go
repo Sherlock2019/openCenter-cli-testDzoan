@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config/services"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
 )
 
 func TestCompareConfigs_NoChanges(t *testing.T) {

@@ -107,7 +107,7 @@ locals {
 }
 
 module "kubespray-cluster" {
-  source = "{{ .Deployment.Kubespray.Modules.KubesprayCluster.Source | default "github.com/rackerlabs/openCenter-gitops-base.git//iac/provider/kubespray?ref=main" }}"
+  source = "{{ .Deployment.Kubespray.Modules.KubesprayCluster.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/provider/kubespray?ref=main" }}"
   address_bastion                         = local.address_bastion
   cluster_name                            = local.cluster_name
   cni_iface                               = local.cni_iface
@@ -149,7 +149,7 @@ module "kubespray-cluster" {
 }
 {{- if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled }}
 module "calico" {
-  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Modules.Calico.Source | default "github.com/rackerlabs/openCenter-gitops-base.git//iac/cni/calico?ref=main" }}"
+  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Modules.Calico.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/calico?ref=main" }}"
   calico_interface_autodetect      = local.calico_interface_autodetect
   calico_encapsulation_type        = local.calico_encapsulation_type
   calico_nat_outgoing              = local.calico_nat_outgoing
@@ -168,7 +168,7 @@ module "calico" {
 
 {{- if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled }}
 module "cilium" {
-  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Modules.Cilium.Source | default "github.com/rackerlabs/openCenter-gitops-base.git//iac/cni/cilium?ref=main" }}"
+  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Modules.Cilium.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/cilium?ref=main" }}"
   cluster_name                     = local.cluster_name
   deploy_cluster                   = local.deploy_cluster
   k8s_internal_ip                  = local.vrrp_ip
@@ -183,7 +183,7 @@ module "cilium" {
 
 {{- if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Enabled }}
 module "kube-ovn" {
-  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Modules.KubeOVN.Source | default "github.com/rackerlabs/openCenter-gitops-base.git//iac/cni/kube-ovn?ref=main" }}"
+  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Modules.KubeOVN.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/kube-ovn?ref=main" }}"
   cluster_name                     = local.cluster_name
   deploy_cluster                   = local.deploy_cluster
   k8s_internal_ip                  = local.vrrp_ip

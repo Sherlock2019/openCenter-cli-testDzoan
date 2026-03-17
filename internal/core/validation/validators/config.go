@@ -21,7 +21,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 )
 
 // ConfigValidator validates configuration values.

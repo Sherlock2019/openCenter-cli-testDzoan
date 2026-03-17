@@ -20,8 +20,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
-	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 )
 
 // ReferenceResolver resolves ${ref:path.to.value}, ${env:VAR}, and ${file:path} references

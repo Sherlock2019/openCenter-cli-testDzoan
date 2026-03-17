@@ -22,8 +22,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
-	utilfs "github.com/rackerlabs/opencenter-cli/internal/util/fs"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
+	utilfs "github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 )
 
 // TestConfigIOHandler_NewConfigIOHandler tests loader creation

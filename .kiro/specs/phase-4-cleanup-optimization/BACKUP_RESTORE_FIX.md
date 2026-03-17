@@ -113,7 +113,7 @@ $ go test ./internal/operations/... -run "TestProperty_Backup" -v
 --- PASS: TestProperty_BackupIntegrity (0.26s)
 
 PASS
-ok      github.com/rackerlabs/opencenter-cli/internal/operations        4.889s
+ok      github.com/opencenter-cloud/opencenter-cli/internal/operations        4.889s
 ```
 
 ### Functionality Verified

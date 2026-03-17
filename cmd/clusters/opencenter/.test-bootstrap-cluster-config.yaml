@@ -50,7 +50,7 @@ opencenter:
                         - 0.0.0.0/0
                 modules:
                     openstack_nova:
-                        source: github.com/rackerlabs/opencenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main
+                        source: github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main
         ssh_user: ubuntu
         os_version: "24"
         server_group_affinity:
@@ -95,20 +95,20 @@ opencenter:
                     nat_outgoing: true
                     modules:
                         calico:
-                            source: github.com/rackerlabs/opencenter-gitops-base.git//iac/cni/calico?ref=main
+                            source: github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cni/calico?ref=main
                 cilium:
                     enabled: false
                     operator_enabled: true
                     kubeProxyReplacement: true
                     modules:
                         cilium:
-                            source: github.com/rackerlabs/opencenter-gitops-base.git//iac/cni/cilium?ref=main
+                            source: github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cni/cilium?ref=main
                 kube-ovn:
                     enabled: false
                     cilium_integration: true
                     modules:
                         kube_ovn:
-                            source: github.com/rackerlabs/opencenter-gitops-base.git//iac/cni/kube-ovn?ref=main
+                            source: github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cni/kube-ovn?ref=main
             storage_plugin: {}
             oidc:
                 enabled: false
@@ -148,7 +148,7 @@ opencenter:
                 vlan: {}
             modules:
                 kubespray_cluster:
-                    source: github.com/rackerlabs/opencenter-gitops-base.git//iac/provider/kubespray?ref=main
+                    source: github.com/opencenter-cloud/opencenter-gitops-base.git//iac/provider/kubespray?ref=main
             additional_server_pools_worker: []
             additional_server_pools_worker_windows: []
         networking:
@@ -179,7 +179,7 @@ opencenter:
         flux:
             interval: 15m
             prune: true
-        gitops_base_repo: ssh://git@github.com/rackerlabs/opencenter-gitops-base.git
+        gitops_base_repo: ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git
         gitops_base_release: v0.1.0
         gitops_branch: main
     storage:
@@ -193,12 +193,12 @@ opencenter:
             enabled: false
             namespace: ""
             hostname: ""
-            image_repository: ghcr.io/rackerlabs/alert-proxy
+            image_repository: ghcr.io/opencenter-cloud/alert-proxy
             image_tag: latest
             release: ""
             branch: ""
             uri: ""
-            gitops_source_repo: ssh://git@github.com/rackerlabs/opencenter-gitops-base.git
+            gitops_source_repo: ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git
             gitops_source_release: v0.1.0
             gitops_source_branch: main
             alert_manager_base_url: ""

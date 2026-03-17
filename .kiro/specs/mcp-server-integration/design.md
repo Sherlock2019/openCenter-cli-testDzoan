@@ -62,10 +62,10 @@ import (
     "context"
     
     "github.com/mark3labs/mcp-go/server"
-    "github.com/rackerlabs/opencenter-cli/internal/config"
-    "github.com/rackerlabs/opencenter-cli/internal/gitops"
-    "github.com/rackerlabs/opencenter-cli/internal/services"
-    "github.com/rackerlabs/opencenter-cli/internal/template"
+    "github.com/opencenter-cloud/opencenter-cli/internal/config"
+    "github.com/opencenter-cloud/opencenter-cli/internal/gitops"
+    "github.com/opencenter-cloud/opencenter-cli/internal/services"
+    "github.com/opencenter-cloud/opencenter-cli/internal/template"
 )
 
 // Server defines the MCP server interface for opencenter
@@ -247,8 +247,8 @@ import (
     "context"
     
     "github.com/mark3labs/mcp-go/mcp"
-    "github.com/rackerlabs/opencenter-cli/internal/config"
-    "github.com/rackerlabs/opencenter-cli/internal/mcp"
+    "github.com/opencenter-cloud/opencenter-cli/internal/config"
+    "github.com/opencenter-cloud/opencenter-cli/internal/mcp"
 )
 
 // ClusterInitTool implements cluster initialization via MCP
@@ -310,8 +310,8 @@ import (
     "context"
     
     "github.com/mark3labs/mcp-go/mcp"
-    "github.com/rackerlabs/opencenter-cli/internal/config"
-    mcpinternal "github.com/rackerlabs/opencenter-cli/internal/mcp"
+    "github.com/opencenter-cloud/opencenter-cli/internal/config"
+    mcpinternal "github.com/opencenter-cloud/opencenter-cli/internal/mcp"
 )
 
 // ConfigResource provides access to cluster configurations
@@ -354,7 +354,7 @@ import (
     "context"
     
     "github.com/mark3labs/mcp-go/mcp"
-    mcpinternal "github.com/rackerlabs/opencenter-cli/internal/mcp"
+    mcpinternal "github.com/opencenter-cloud/opencenter-cli/internal/mcp"
 )
 
 // InitializationPrompt provides guidance for cluster initialization
@@ -823,7 +823,7 @@ package cmd
 
 import (
     "github.com/spf13/cobra"
-    "github.com/rackerlabs/opencenter-cli/internal/mcp"
+    "github.com/opencenter-cloud/opencenter-cli/internal/mcp"
 )
 
 func newMCPServerCmd() *cobra.Command {

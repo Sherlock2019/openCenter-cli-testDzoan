@@ -19,7 +19,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config/services"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
 )
 
 func TestCertManagerValidator(t *testing.T) {

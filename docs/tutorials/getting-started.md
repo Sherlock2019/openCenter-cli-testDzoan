@@ -61,7 +61,7 @@ Clone the repository and build the CLI:
 
 ```bash
 # Clone repository
-git clone https://github.com/rackerlabs/openCenter-cli.git
+git clone https://github.com/opencenter-cloud/openCenter-cli.git
 cd openCenter-cli
 
 # Install project tools

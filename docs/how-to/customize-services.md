@@ -451,9 +451,9 @@ opencenter:
   managed_service:
     alert-proxy:
       enabled: true
-      image_repository: "ghcr.io/rackerlabs/alert-proxy"
+      image_repository: "ghcr.io/opencenter-cloud/alert-proxy"
       image_tag: "latest"
-      gitops_source_repo: "ssh://git@github.com/rackerlabs/opencenter-gitops-base.git"
+      gitops_source_repo: "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git"
       gitops_source_release: "v0.1.0"
       gitops_source_branch: "main"
       alertmanager_base_url: "http://alertmanager:9093"

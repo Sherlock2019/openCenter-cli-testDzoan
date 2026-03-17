@@ -242,7 +242,7 @@ locals {
 
 {{- if ne (.OpenCenter.Infrastructure.Provider | default "openstack") "baremetal" }}
 module "openstack-nova" {
-  source = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.Modules.OpenstackNova.Source | default "github.com/rackerlabs/openCenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main" }}"
+  source = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.Modules.OpenstackNova.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main" }}"
   # source = "../../../gitclones/openCenter-gitops-base/iac/cloud/openstack/openstack-nova"
   availability_zone             = local.availability_zone
   additional_block_devices_worker      = local.additional_block_devices_worker
@@ -316,7 +316,7 @@ module "openstack-nova" {
 {{- end }}
 
 module "kubespray-cluster" {
-  source = "{{ .OpenCenter.Cluster.Kubernetes.Modules.KubesprayCluster.Source | default "github.com/rackerlabs/openCenter-gitops-base.git//iac/provider/kubespray?ref=main" }}"
+  source = "{{ .OpenCenter.Cluster.Kubernetes.Modules.KubesprayCluster.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/provider/kubespray?ref=main" }}"
 {{- if eq (.OpenCenter.Infrastructure.Provider | default "openstack") "baremetal" }}
   address_bastion                         = local.address_bastion
 {{- else }}
@@ -392,7 +392,7 @@ module "kubespray-cluster" {
 
 {{- if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled }}
 module "calico" {
-  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Modules.Calico.Source | default "github.com/rackerlabs/openCenter-gitops-base.git//iac/cni/calico?ref=main" }}"
+  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Modules.Calico.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/calico?ref=main" }}"
 
   calico_interface_autodetect      = local.calico_interface_autodetect
   calico_encapsulation_type        = local.calico_encapsulation_type
@@ -416,7 +416,7 @@ module "calico" {
 
 {{- if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled }}
 module "cilium" {
-  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Modules.Cilium.Source | default "github.com/rackerlabs/openCenter-gitops-base.git//iac/cni/cilium?ref=main" }}"
+  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Modules.Cilium.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/cilium?ref=main" }}"
 
   cluster_name                     = local.cluster_name
   deploy_cluster                   = local.deploy_cluster
@@ -432,7 +432,7 @@ module "cilium" {
 
 {{- if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Enabled }}
 module "kube-ovn" {
-  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Modules.KubeOVN.Source | default "github.com/rackerlabs/openCenter-gitops-base.git//iac/cni/kube-ovn?ref=main" }}"
+  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Modules.KubeOVN.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/kube-ovn?ref=main" }}"
 
   cluster_name                     = local.cluster_name
   deploy_cluster                   = local.deploy_cluster

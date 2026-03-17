@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config/services"
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
-	"github.com/rackerlabs/opencenter-cli/internal/util/metrics"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/metrics"
 )
 
 // ConfigBuilder provides a fluent interface for constructing cluster configurations.

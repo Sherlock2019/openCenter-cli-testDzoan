@@ -20,7 +20,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/rackerlabs/opencenter-cli/internal/credentials"
+	"github.com/opencenter-cloud/opencenter-cli/internal/credentials"
 )
 
 // newClusterCredentialsExportCmd creates the "cluster credentials export" command.

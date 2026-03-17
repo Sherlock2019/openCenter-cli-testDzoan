@@ -27,10 +27,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/rackerlabs/opencenter-cli/internal/config"
-	"github.com/rackerlabs/opencenter-cli/internal/gitops"
-	"github.com/rackerlabs/opencenter-cli/internal/template"
-	testingpkg "github.com/rackerlabs/opencenter-cli/internal/testing"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/gitops"
+	"github.com/opencenter-cloud/opencenter-cli/internal/template"
+	testingpkg "github.com/opencenter-cloud/opencenter-cli/internal/testing"
 )
 
 // BenchmarkTemplateRendering_New benchmarks the new template engine implementation.

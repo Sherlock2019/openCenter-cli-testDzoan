@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 )
 
 // ConnectivityValidator provides pre-flight connectivity checks for cloud providers.

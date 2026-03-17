@@ -690,7 +690,7 @@ When reporting issues, include:
 - Diagnostic information (above)
 - Steps to reproduce
 
-GitHub Issues: https://github.com/rackerlabs/openCenter-cli/issues
+GitHub Issues: https://github.com/opencenter-cloud/openCenter-cli/issues
 
 ## Next Steps
 

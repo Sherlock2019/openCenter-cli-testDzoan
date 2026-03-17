@@ -21,7 +21,7 @@ Before contributing, you need:
 
 1. Fork the repository on GitHub:
    ```bash
-   # Navigate to https://github.com/rackerlabs/openCenter-cli
+   # Navigate to https://github.com/opencenter-cloud/openCenter-cli
    # Click "Fork" button
    ```
 
@@ -33,7 +33,7 @@ Before contributing, you need:
 
 3. Add upstream remote:
    ```bash
-   git remote add upstream git@github.com:rackerlabs/openCenter-cli.git
+   git remote add upstream git@github.com:opencenter-cloud/openCenter-cli.git
    ```
 
 4. Install development tools:
@@ -87,7 +87,7 @@ Follow the coding standards defined in `.kiro/steering/tech.md`:
        "github.com/spf13/cobra"
        "gopkg.in/yaml.v3"
        
-       "github.com/rackerlabs/opencenter-cli/internal/config"
+       "github.com/opencenter-cloud/opencenter-cli/internal/config"
    )
    ```
 
@@ -220,7 +220,7 @@ pre-provisioned VMware VMs.
    ```
 
 2. Create pull request on GitHub:
-   - Navigate to https://github.com/rackerlabs/openCenter-cli
+   - Navigate to https://github.com/opencenter-cloud/openCenter-cli
    - Click "New Pull Request"
    - Select your fork and branch
    - Fill in PR template

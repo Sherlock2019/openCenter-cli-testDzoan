@@ -23,8 +23,8 @@ import (
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/networks"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/subnets"
 
-	"github.com/rackerlabs/opencenter-cli/internal/cloud"
-	"github.com/rackerlabs/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/cloud"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 )
 
 // Provider implements the CloudProvider interface for OpenStack.

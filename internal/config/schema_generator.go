@@ -19,8 +19,8 @@ import (
 	"reflect"
 
 	"github.com/invopop/jsonschema"
-	"github.com/rackerlabs/opencenter-cli/internal/util/errors"
-	"github.com/rackerlabs/opencenter-cli/internal/util/fs"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 )
 
 // SchemaGenerator generates JSON schemas from Go struct definitions

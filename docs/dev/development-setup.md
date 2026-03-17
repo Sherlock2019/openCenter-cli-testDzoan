@@ -58,7 +58,7 @@ mkdir -p ~/workspace
 cd ~/workspace
 
 # Clone repository
-git clone git@github.com:rackerlabs/openCenter-cli.git
+git clone git@github.com:opencenter-cloud/openCenter-cli.git
 cd openCenter-cli
 ```
 
@@ -66,7 +66,7 @@ If you're contributing, fork first and clone your fork:
 ```bash
 git clone git@github.com:YOUR-USERNAME/openCenter-cli.git
 cd openCenter-cli
-git remote add upstream git@github.com:rackerlabs/openCenter-cli.git
+git remote add upstream git@github.com:opencenter-cloud/openCenter-cli.git
 ```
 
 ## Step 3: Install Development Tools

@@ -116,8 +116,8 @@ Conceptual explanations and background:
 
 ## Getting Help
 
-- **GitHub Issues:** [Report bugs or request features](https://github.com/rackerlabs/openCenter-cli/issues)
-- **Documentation Issues:** Found a problem in the docs? [Open an issue](https://github.com/rackerlabs/openCenter-cli/issues/new)
+- **GitHub Issues:** [Report bugs or request features](https://github.com/opencenter-cloud/openCenter-cli/issues)
+- **Documentation Issues:** Found a problem in the docs? [Open an issue](https://github.com/opencenter-cloud/openCenter-cli/issues/new)
 
 ## Documentation Framework
 

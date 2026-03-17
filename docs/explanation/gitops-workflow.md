@@ -110,7 +110,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 15m
-  url: ssh://git@github.com/rackerlabs/opencenter-gitops-base.git
+  url: ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git
   ref:
     tag: v1.0.0
   secretRef:

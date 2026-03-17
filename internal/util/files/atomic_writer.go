@@ -22,7 +22,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rackerlabs/opencenter-cli/internal/resilience"
+	"github.com/opencenter-cloud/opencenter-cli/internal/resilience"
 )
 
 // DefaultAtomicFileWriter implements AtomicFileWriter interface

@@ -142,7 +142,7 @@ import (
     "io/fs"
     "os"
     
-    "github.com/rackerlabs/opencenter-cli/internal/util/errors"
+    "github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 )
 
 // FileSystem provides safe file operations with consistent error handling
@@ -546,9 +546,9 @@ package di
 import (
     "fmt"
     
-    "github.com/rackerlabs/opencenter-cli/internal/util/errors"
-    "github.com/rackerlabs/opencenter-cli/internal/util/fs"
-    "github.com/rackerlabs/opencenter-cli/internal/util/paths"
+    "github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
+    "github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
+    "github.com/opencenter-cloud/opencenter-cli/internal/util/paths"
 )
 
 // Container manages service lifecycle and dependencies
