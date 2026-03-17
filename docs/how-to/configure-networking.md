@@ -1,3 +1,13 @@
+---
+id: configure-networking
+title: "Configure Networking"
+sidebar_label: Configure Networking
+description: How to configure CNI plugins, load balancers, and network policies for your cluster.
+doc_type: how-to
+audience: "network engineers, operators"
+tags: [networking, cni, calico, load-balancer, vrrp]
+---
+
 # Configure Networking
 
 **Purpose:** For network engineers, shows how to configure CNI plugins, load balancers, and network policies, covering network topology through security.

@@ -1,3 +1,13 @@
+---
+id: file-locations
+title: "File Locations"
+sidebar_label: File Locations
+description: Complete reference of configuration and data file locations used by openCenter CLI.
+doc_type: reference
+audience: "all users"
+tags: [files, paths, locations, configuration]
+---
+
 # File Locations
 
 **Purpose:** For all users, provides complete reference of configuration and data file locations used by openCenter CLI.

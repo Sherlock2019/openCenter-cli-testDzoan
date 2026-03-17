@@ -1,3 +1,13 @@
+---
+id: customize-services
+title: "Customize Services"
+sidebar_label: Customize Services
+description: How to enable, disable, and configure platform services for your cluster.
+doc_type: how-to
+audience: "platform engineers, operators"
+tags: [services, configuration, helm, platform]
+---
+
 # Customize Services
 
 **Purpose:** For platform engineers, shows how to enable, disable, and configure platform services, covering service selection through custom values.

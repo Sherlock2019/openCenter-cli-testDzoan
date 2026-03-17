@@ -1,3 +1,13 @@
+---
+id: vmware-quick-start
+title: "VMware Provider Quick Start"
+sidebar_label: VMware Quick Start
+description: Quick reference for deploying openCenter clusters on VMware vSphere.
+doc_type: how-to
+audience: "platform engineers, operators"
+tags: [vmware, vsphere, quick-start, deployment]
+---
+
 # VMware Provider Quick Start
 
 Quick reference for deploying openCenter clusters on VMware vSphere.

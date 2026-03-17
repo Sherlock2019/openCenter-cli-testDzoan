@@ -1,3 +1,13 @@
+---
+id: multi-cluster-setup
+title: "Manage Multiple Clusters with Organizations"
+sidebar_label: Multi-Cluster Setup
+description: How to manage multiple Kubernetes clusters using organization-based structure.
+doc_type: tutorial
+audience: "platform teams, operators"
+tags: [multi-cluster, organizations, management, tutorial]
+---
+
 # Manage Multiple Clusters with Organizations
 
 **Purpose:** For platform teams, shows how to manage multiple Kubernetes clusters using organization-based structure, covering organization setup through cluster management.

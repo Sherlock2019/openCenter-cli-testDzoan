@@ -1,3 +1,13 @@
+---
+id: vmware-terraform-template
+title: "VMware Terraform Template"
+sidebar_label: VMware Template
+description: Reference for the VMware-specific Terraform template used to generate cluster infrastructure.
+doc_type: reference
+audience: "platform engineers, operators"
+tags: [vmware, terraform, template, infrastructure]
+---
+
 # VMware Terraform Template
 
 Documentation for the VMware-specific Terraform template (`main-vmware.tf.tpl`).

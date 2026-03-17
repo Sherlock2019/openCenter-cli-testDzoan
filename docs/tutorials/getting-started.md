@@ -1,3 +1,13 @@
+---
+id: getting-started
+title: "Getting Started with openCenter"
+sidebar_label: Getting Started
+description: Create your first Kubernetes cluster using openCenter from installation through deployment.
+doc_type: tutorial
+audience: "new users, platform engineers"
+tags: [getting-started, tutorial, installation, first-cluster]
+---
+
 # Getting Started with openCenter
 
 **Purpose:** For new users, shows how to create your first Kubernetes cluster using openCenter, covering installation through deployment.

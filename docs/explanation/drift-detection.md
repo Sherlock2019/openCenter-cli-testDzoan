@@ -1,3 +1,13 @@
+---
+id: drift-detection
+title: "Infrastructure Drift Detection"
+sidebar_label: Drift Detection
+description: How openCenter detects and remediates differences between desired and actual infrastructure state.
+doc_type: explanation
+audience: "platform operators, architects"
+tags: [drift, terraform, infrastructure, reconciliation]
+---
+
 # Infrastructure Drift Detection
 
 **Purpose:** For platform operators, explains how drift detection works, covering the complete workflow from Terraform state to drift remediation.

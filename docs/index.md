@@ -1,3 +1,13 @@
+---
+id: index
+title: "openCenter CLI Documentation"
+sidebar_label: Home
+description: Documentation hub for the openCenter CLI cluster lifecycle management tool.
+doc_type: reference
+audience: "all users"
+tags: [opencenter, cli, documentation, home]
+---
+
 # openCenter CLI Documentation
 
 Welcome to the openCenter CLI documentation. openCenter is a command-line tool that transforms a single declarative YAML configuration into a production-ready Kubernetes cluster with GitOps management.

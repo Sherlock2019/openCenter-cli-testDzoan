@@ -1,3 +1,13 @@
+---
+id: nav
+title: "Documentation Navigation"
+sidebar_label: Navigation
+description: Navigation guide to find the right openCenter documentation for your needs.
+doc_type: reference
+audience: "all users"
+tags: [navigation, guide, documentation]
+---
+
 # openCenter CLI Documentation Navigation
 
 This navigation guide helps you find the right documentation for your needs.

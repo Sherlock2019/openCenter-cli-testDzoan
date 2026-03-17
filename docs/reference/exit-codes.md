@@ -1,3 +1,13 @@
+---
+id: exit-codes
+title: "Exit Codes"
+sidebar_label: Exit Codes
+description: Complete reference of CLI exit codes for error handling in scripts and CI/CD pipelines.
+doc_type: reference
+audience: "developers, devops engineers"
+tags: [exit-codes, errors, automation, ci-cd]
+---
+
 # Exit Codes
 
 **Purpose:** For automation users, provides complete reference of CLI exit codes for error handling in scripts and CI/CD pipelines.

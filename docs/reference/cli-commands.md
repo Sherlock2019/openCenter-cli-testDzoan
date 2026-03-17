@@ -1,3 +1,13 @@
+---
+id: cli-commands
+title: "CLI Commands Reference"
+sidebar_label: CLI Commands
+description: Complete reference of all openCenter CLI commands, flags, and options.
+doc_type: reference
+audience: "all users"
+tags: [cli, commands, flags, reference]
+---
+
 # CLI Commands Reference
 
 **Purpose:** Complete reference of all openCenter CLI commands, flags, and options for quick lookup.

@@ -1,3 +1,13 @@
+---
+id: backup-and-restore
+title: "Backup and Restore"
+sidebar_label: Backup & Restore
+description: How to configure etcd backups and disaster recovery using Velero.
+doc_type: how-to
+audience: "operators, platform engineers"
+tags: [backup, restore, velero, etcd, disaster-recovery]
+---
+
 # Backup and Restore
 
 **Purpose:** For operators, shows how to configure etcd backups and disaster recovery using Velero for complete cluster backup and restore capabilities.

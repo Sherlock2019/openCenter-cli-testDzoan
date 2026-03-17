@@ -1,3 +1,13 @@
+---
+id: providers-reference
+title: "Infrastructure Providers Reference"
+sidebar_label: Providers
+description: Complete reference of supported infrastructure providers, requirements, and configuration.
+doc_type: reference
+audience: "platform engineers, operators"
+tags: [providers, openstack, vmware, kind, aws]
+---
+
 # Infrastructure Providers Reference
 
 **Purpose:** Complete reference of supported infrastructure providers, requirements, and configuration for quick lookup.

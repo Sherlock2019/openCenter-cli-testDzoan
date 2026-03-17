@@ -1,3 +1,13 @@
+---
+id: validate-configuration
+title: "Validate Configuration"
+sidebar_label: Validate Config
+description: How to validate cluster configuration before deployment to catch errors early.
+doc_type: how-to
+audience: "all users"
+tags: [validation, configuration, schema, errors]
+---
+
 # Validate Configuration
 
 **Purpose:** For all users, shows how to validate cluster configuration before deployment, covering validation types and error resolution.

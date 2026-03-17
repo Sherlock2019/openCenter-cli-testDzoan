@@ -1,3 +1,13 @@
+---
+id: upgrade-kubernetes
+title: "Upgrade Kubernetes"
+sidebar_label: Upgrade Kubernetes
+description: How to safely upgrade Kubernetes version with minimal downtime and rollback capability.
+doc_type: how-to
+audience: "operators, platform engineers"
+tags: [kubernetes, upgrade, kubespray, version]
+---
+
 # Upgrade Kubernetes
 
 **Purpose:** For operators, shows how to safely upgrade Kubernetes version with minimal downtime and rollback capability.

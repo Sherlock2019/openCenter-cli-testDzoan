@@ -1,3 +1,13 @@
+---
+id: kind-local-development
+title: "Set Up Local Development with Kind"
+sidebar_label: Kind Local Dev
+description: Set up a local Kubernetes development environment using Kind and Docker.
+doc_type: tutorial
+audience: "developers, platform engineers"
+tags: [kind, local, development, docker]
+---
+
 # Set Up Local Development with Kind
 
 **Purpose:** For developers, shows how to set up a local Kubernetes development environment using Kind, covering prerequisites through testing.

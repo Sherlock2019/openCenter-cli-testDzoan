@@ -1,3 +1,13 @@
+---
+id: configuration-schema
+title: "Configuration Schema Reference"
+sidebar_label: Config Schema
+description: Complete reference of cluster configuration file structure, fields, and validation rules.
+doc_type: reference
+audience: "all users"
+tags: [schema, configuration, yaml, fields]
+---
+
 # Configuration Schema Reference
 
 **Purpose:** Complete reference of cluster configuration file structure, fields, and validation rules for quick lookup.

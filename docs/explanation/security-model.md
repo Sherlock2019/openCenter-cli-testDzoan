@@ -1,3 +1,13 @@
+---
+id: security-model
+title: "Security Model"
+sidebar_label: Security Model
+description: Defense-in-depth security architecture across all layers of the openCenter platform.
+doc_type: explanation
+audience: "security engineers, architects"
+tags: [security, sops, encryption, rbac, kyverno]
+---
+
 # Security Model
 
 **Purpose:** For security engineers, explains the security architecture and controls across all layers, covering threat model through compliance.

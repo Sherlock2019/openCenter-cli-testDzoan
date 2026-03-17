@@ -1,3 +1,13 @@
+---
+id: glossary
+title: "Glossary"
+sidebar_label: Glossary
+description: Definitions of terms and acronyms used throughout openCenter CLI documentation.
+doc_type: reference
+audience: "all users"
+tags: [glossary, terminology, definitions]
+---
+
 # Glossary
 
 **Purpose:** Definitions of terms used throughout openCenter CLI documentation.

@@ -1,3 +1,13 @@
+---
+id: mise-tasks
+title: "Mise Tasks"
+sidebar_label: Mise Tasks
+description: Complete reference of available mise tasks for development, testing, and building.
+doc_type: reference
+audience: "developers"
+tags: [mise, tasks, build, development]
+---
+
 # Mise Tasks
 
 **Purpose:** For developers, provides complete reference of available mise tasks for development, testing, and building.

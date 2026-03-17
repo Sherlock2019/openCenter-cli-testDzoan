@@ -1,3 +1,13 @@
+---
+id: platform-services
+title: "Platform Services Reference"
+sidebar_label: Platform Services
+description: Complete reference of available platform services, versions, and configuration options.
+doc_type: reference
+audience: "operators, platform engineers"
+tags: [services, platform, helm, monitoring, security]
+---
+
 # Platform Services Reference
 
 **Purpose:** Complete reference of available platform services, versions, and configuration options for quick lookup.

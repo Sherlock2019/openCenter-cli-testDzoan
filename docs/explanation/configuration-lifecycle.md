@@ -1,3 +1,13 @@
+---
+id: configuration-lifecycle
+title: "Configuration Lifecycle"
+sidebar_label: Config Lifecycle
+description: How cluster configuration evolves from initialization through deployment and updates.
+doc_type: explanation
+audience: "platform teams, operators"
+tags: [configuration, lifecycle, gitops, validation]
+---
+
 # Configuration Lifecycle
 
 **Purpose:** For platform teams, explains configuration management from initialization through updates, covering configuration flow through drift management.

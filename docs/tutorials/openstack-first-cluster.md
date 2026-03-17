@@ -1,3 +1,13 @@
+---
+id: openstack-first-cluster
+title: "Deploy Your First Production Cluster on OpenStack"
+sidebar_label: OpenStack Cluster
+description: Step-by-step tutorial to deploy a production-ready Kubernetes cluster on OpenStack.
+doc_type: tutorial
+audience: "platform engineers, operators"
+tags: [openstack, tutorial, deployment, production]
+---
+
 # Deploy Your First Production Cluster on OpenStack
 
 **Purpose:** For OpenStack users, shows how to deploy a production-ready Kubernetes cluster on OpenStack, covering prerequisites through validation.

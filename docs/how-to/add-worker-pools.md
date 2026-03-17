@@ -1,3 +1,13 @@
+---
+id: add-worker-pools
+title: "Add Worker Pools"
+sidebar_label: Add Worker Pools
+description: How to add additional worker node pools with custom configurations to scale cluster capacity.
+doc_type: how-to
+audience: "operators, platform engineers"
+tags: [workers, scaling, pools, nodes]
+---
+
 # Add Worker Pools
 
 **Purpose:** For operators, shows how to add additional worker node pools with custom configurations to scale cluster capacity.

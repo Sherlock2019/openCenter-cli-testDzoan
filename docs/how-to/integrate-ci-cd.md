@@ -1,3 +1,13 @@
+---
+id: integrate-ci-cd
+title: "Integrate CI/CD"
+sidebar_label: CI/CD Integration
+description: How to integrate openCenter into CI/CD pipelines for automated cluster deployment and testing.
+doc_type: how-to
+audience: "devops engineers, developers"
+tags: [ci-cd, github-actions, gitlab-ci, jenkins, automation]
+---
+
 # Integrate CI/CD
 
 **Purpose:** For DevOps engineers, shows how to integrate openCenter into CI/CD pipelines for automated cluster deployment and testing.

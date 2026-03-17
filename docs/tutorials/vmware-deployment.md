@@ -1,3 +1,13 @@
+---
+id: vmware-deployment
+title: "Deploy Kubernetes on VMware vSphere"
+sidebar_label: VMware Deployment
+description: Step-by-step tutorial to deploy Kubernetes on pre-provisioned VMware vSphere VMs.
+doc_type: tutorial
+audience: "platform engineers, operators"
+tags: [vmware, vsphere, tutorial, deployment]
+---
+
 # Deploy Kubernetes on VMware vSphere
 
 **Purpose:** For VMware users, shows how to deploy a Kubernetes cluster on pre-provisioned VMware VMs, covering prerequisites through validation.

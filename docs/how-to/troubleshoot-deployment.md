@@ -1,3 +1,13 @@
+---
+id: troubleshoot-deployment
+title: "Troubleshoot Deployment"
+sidebar_label: Troubleshoot
+description: How to diagnose and fix common deployment issues from validation errors to service failures.
+doc_type: how-to
+audience: "all users"
+tags: [troubleshooting, debugging, errors, deployment]
+---
+
 # Troubleshoot Deployment
 
 **Purpose:** For all users, shows how to diagnose and fix common deployment issues, covering validation errors through service failures.

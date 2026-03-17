@@ -1,3 +1,13 @@
+---
+id: validation-rules
+title: "Validation Rules"
+sidebar_label: Validation Rules
+description: Complete reference of configuration validation rules and constraints enforced by openCenter.
+doc_type: reference
+audience: "all users"
+tags: [validation, rules, constraints, schema]
+---
+
 # Validation Rules
 
 **Purpose:** For all users, provides complete reference of configuration validation rules and constraints enforced by openCenter.

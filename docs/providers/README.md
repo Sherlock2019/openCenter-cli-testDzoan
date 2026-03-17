@@ -1,3 +1,13 @@
+---
+id: providers-overview
+title: "Infrastructure Providers"
+sidebar_label: Providers Overview
+description: Overview of supported infrastructure providers and their capabilities.
+doc_type: reference
+audience: "platform engineers, operators"
+tags: [providers, openstack, vmware, kind, aws]
+---
+
 # Infrastructure Providers
 
 openCenter supports multiple infrastructure providers for deploying Kubernetes clusters.

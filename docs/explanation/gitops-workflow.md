@@ -1,3 +1,13 @@
+---
+id: gitops-workflow
+title: "GitOps Workflow"
+sidebar_label: GitOps Workflow
+description: How openCenter uses Git as the source of truth with FluxCD reconciliation.
+doc_type: explanation
+audience: "platform teams, operators"
+tags: [gitops, fluxcd, reconciliation, kustomize]
+---
+
 # GitOps Workflow
 
 **Purpose:** For platform teams, explains the GitOps repository structure and reconciliation process, covering repository layout through drift detection.

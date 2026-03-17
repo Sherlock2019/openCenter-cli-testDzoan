@@ -1,3 +1,13 @@
+---
+id: manage-secrets
+title: "Manage Secrets"
+sidebar_label: Manage Secrets
+description: How to encrypt, rotate, and manage secrets with SOPS and Age encryption.
+doc_type: how-to
+audience: "operators, platform engineers"
+tags: [secrets, sops, age, encryption, rotation]
+---
+
 # Manage Secrets
 
 **Purpose:** For operators, shows how to encrypt, rotate, and manage secrets with SOPS and Age encryption, covering key generation through rotation.

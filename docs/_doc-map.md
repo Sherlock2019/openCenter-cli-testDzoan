@@ -1,3 +1,13 @@
+---
+id: doc-map
+title: "Documentation Map"
+sidebar_label: Doc Map
+description: Complete inventory of openCenter CLI documentation organized by the Diataxis framework.
+doc_type: reference
+audience: "writers, maintainers, all users"
+tags: [documentation, diataxis, inventory, navigation]
+---
+
 # Documentation Map
 
 This document provides a complete inventory of openCenter CLI documentation, organized by the Diátaxis framework.

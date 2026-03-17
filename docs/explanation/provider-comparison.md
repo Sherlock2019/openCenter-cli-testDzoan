@@ -1,3 +1,13 @@
+---
+id: provider-comparison
+title: "Provider Comparison"
+sidebar_label: Provider Comparison
+description: How to choose the right infrastructure provider based on requirements and trade-offs.
+doc_type: explanation
+audience: "architects, decision makers"
+tags: [providers, openstack, vmware, kind, aws]
+---
+
 # Provider Comparison
 
 **Purpose:** For decision makers, explains how to choose the right infrastructure provider, covering provider characteristics through migration considerations.

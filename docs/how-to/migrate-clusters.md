@@ -1,3 +1,13 @@
+---
+id: migrate-clusters
+title: "Migrate Clusters"
+sidebar_label: Migrate Clusters
+description: How to migrate clusters between providers, regions, or infrastructure with minimal downtime.
+doc_type: how-to
+audience: "platform teams, operators"
+tags: [migration, velero, backup, provider]
+---
+
 # Migrate Clusters
 
 **Purpose:** For platform teams, shows how to migrate clusters between providers, regions, or infrastructure with minimal downtime.

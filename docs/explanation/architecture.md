@@ -1,3 +1,13 @@
+---
+id: architecture
+title: "Architecture"
+sidebar_label: Architecture
+description: System design, core components, and architectural decisions behind openCenter.
+doc_type: explanation
+audience: "architects, developers"
+tags: [architecture, design, components, patterns]
+---
+
 # Architecture
 
 **Purpose:** For technical users, explains the system design and architectural decisions behind openCenter, covering components through design principles.

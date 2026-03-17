@@ -1,3 +1,13 @@
+---
+id: vmware-provider-guide
+title: "VMware Provider Guide"
+sidebar_label: VMware Guide
+description: Complete guide for deploying openCenter clusters on VMware vSphere with pre-provisioned VMs.
+doc_type: how-to
+audience: "platform engineers, operators"
+tags: [vmware, vsphere, deployment, csi]
+---
+
 # VMware Provider Guide
 
 Guide for deploying openCenter clusters on VMware vSphere infrastructure with pre-provisioned VMs.

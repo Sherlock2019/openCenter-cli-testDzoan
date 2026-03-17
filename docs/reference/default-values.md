@@ -1,3 +1,13 @@
+---
+id: default-values
+title: "Default Values Reference"
+sidebar_label: Default Values
+description: Complete reference of default configuration values used when initializing clusters.
+doc_type: reference
+audience: "all users"
+tags: [defaults, configuration, values, reference]
+---
+
 # Default Values Reference
 
 **Purpose:** Complete reference of default configuration values by provider for quick lookup.

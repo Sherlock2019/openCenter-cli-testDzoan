@@ -1,3 +1,13 @@
+---
+id: environment-variables
+title: "Environment Variables"
+sidebar_label: Environment Variables
+description: Complete reference of environment variables recognized by openCenter CLI.
+doc_type: reference
+audience: "all users"
+tags: [environment, variables, configuration, cli]
+---
+
 # Environment Variables
 
 **Purpose:** For all users, provides complete reference of environment variables and configuration precedence.
