@@ -202,20 +202,20 @@ func (cm *ConfigurationManager) Load(ctx context.Context, name string) (*Config,
 	}
 	
 	if err != nil {
-		return nil, errors.WrapWithOperation(
+		return nil, NewConfigNotFoundError(name, errors.WrapWithOperation(
 			NewPathError(name, "", err),
 			"load",
-		)
+		))
 	}
 
 	configPath := clusterPaths.ConfigPath
 
 	// Check if file exists
 	if !cm.fileSystem.Exists(configPath) {
-		return nil, errors.WrapWithOperation(
+		return nil, NewConfigNotFoundError(name, errors.WrapWithOperation(
 			NewFileError("read", configPath, fmt.Errorf("configuration file not found")),
 			"load",
-		)
+		))
 	}
 
 	// Load configuration from file
@@ -313,20 +313,20 @@ func (cm *ConfigurationManager) LoadWithoutValidation(ctx context.Context, name 
 	}
 	
 	if err != nil {
-		return nil, errors.WrapWithOperation(
+		return nil, NewConfigNotFoundError(name, errors.WrapWithOperation(
 			NewPathError(name, "", err),
 			"load",
-		)
+		))
 	}
 
 	configPath := clusterPaths.ConfigPath
 
 	// Check if file exists
 	if !cm.fileSystem.Exists(configPath) {
-		return nil, errors.WrapWithOperation(
+		return nil, NewConfigNotFoundError(name, errors.WrapWithOperation(
 			NewFileError("read", configPath, fmt.Errorf("configuration file not found")),
 			"load",
-		)
+		))
 	}
 
 	// Load configuration from file

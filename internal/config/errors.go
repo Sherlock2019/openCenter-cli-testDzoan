@@ -14,6 +14,7 @@
 package config
 
 import (
+	stderrors "errors"
 	"fmt"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
@@ -513,4 +514,38 @@ func GetErrorSuggestions(err error) []string {
 		return se.Suggestions
 	}
 	return nil
+}
+
+// ConfigNotFoundError is a sentinel error type indicating that a cluster
+// configuration directory or file does not exist. Commands that encounter
+// this error should exit with code 3 so CI/CD pipelines can distinguish
+// missing-configuration failures from general errors.
+type ConfigNotFoundError struct {
+	ClusterName string
+	Err         error
+}
+
+// Error implements the error interface.
+func (e *ConfigNotFoundError) Error() string {
+	return fmt.Sprintf("cluster configuration not found: %s", e.ClusterName)
+}
+
+// Unwrap returns the underlying error for errors.Is/errors.As compatibility.
+func (e *ConfigNotFoundError) Unwrap() error {
+	return e.Err
+}
+
+// NewConfigNotFoundError creates a ConfigNotFoundError for the given cluster name.
+func NewConfigNotFoundError(clusterName string, cause error) *ConfigNotFoundError {
+	return &ConfigNotFoundError{
+		ClusterName: clusterName,
+		Err:         cause,
+	}
+}
+
+// IsConfigNotFoundError checks whether err (or any error in its chain)
+// is a ConfigNotFoundError.
+func IsConfigNotFoundError(err error) bool {
+	var target *ConfigNotFoundError
+	return stderrors.As(err, &target)
 }

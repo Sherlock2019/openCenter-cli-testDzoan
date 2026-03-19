@@ -70,6 +70,14 @@ func runClusterBootstrap(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Reject planned providers that are not yet available
+	cfg, err := loadConfigV2Only(name)
+	if err == nil {
+		if err := checkProviderAvailability(cfg.OpenCenter.Infrastructure.Provider); err != nil {
+			return err
+		}
+	}
+
 	// Acquire lock for bootstrap operation
 	lockMgr, err := resilience.NewLockManager(resilience.DefaultLockConfig)
 	if err != nil {

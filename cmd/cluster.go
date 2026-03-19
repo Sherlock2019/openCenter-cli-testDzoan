@@ -112,6 +112,7 @@ Configuration files are stored in organization-based directories:
 	cmd.AddCommand(newClusterRevokeKeyCmd())
 	cmd.AddCommand(newClusterInstallHooksCmd())
 	cmd.AddCommand(newClusterKeysCmd())
+	cmd.AddCommand(newClusterSetupCmd())
 	return cmd
 }
 

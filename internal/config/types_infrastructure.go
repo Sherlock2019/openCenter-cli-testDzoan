@@ -2,7 +2,7 @@ package config
 
 // Infrastructure represents the infrastructure configuration block.
 type Infrastructure struct {
-	Provider            string        `yaml:"provider" json:"provider" validate:"required,oneof=openstack aws gcp azure baremetal vsphere vmware"`
+	Provider            string        `yaml:"provider" json:"provider" validate:"required,oneof=openstack aws gcp azure baremetal vsphere vmware kind"`
 	Cloud               CloudConfig   `yaml:"cloud" json:"cloud" validate:"required"`
 	SSHUser             string        `yaml:"ssh_user" json:"ssh_user" validate:"required"`
 	SSHKeyPath          string        `yaml:"ssh_key_path,omitempty" json:"ssh_key_path,omitempty" jsonschema:"description=Path to SSH private key for cluster access"`

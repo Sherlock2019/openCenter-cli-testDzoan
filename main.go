@@ -15,6 +15,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 
 	"github.com/opencenter-cloud/opencenter-cli/cmd"
@@ -66,6 +68,15 @@ func main() {
 		if shutdownErr := container.Shutdown(); shutdownErr != nil {
 			os.Stderr.WriteString("Failed to shutdown container: " + shutdownErr.Error() + "\n")
 		}
+
+		// Exit code 3 for missing cluster configuration
+		var cnfErr *config.ConfigNotFoundError
+		if errors.As(err, &cnfErr) {
+			fmt.Fprintf(os.Stderr, "\nCheck available clusters with: opencenter cluster list\n")
+			fmt.Fprintf(os.Stderr, "Initialize a new cluster with: opencenter cluster init %s\n", cnfErr.ClusterName)
+			os.Exit(3)
+		}
+
 		os.Exit(1)
 	}
 

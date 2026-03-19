@@ -109,6 +109,11 @@ func runClusterInit(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Reject planned providers that are not yet available
+	if err := checkProviderAvailability(opts.Provider); err != nil {
+		return err
+	}
+
 	// Execute initialization
 	result, err := initService.Initialize(ctx, opts)
 	if err != nil {

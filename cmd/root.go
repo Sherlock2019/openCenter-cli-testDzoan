@@ -150,6 +150,14 @@ Support: https://github.com/opencenter-cloud/opencenter-cli/issues`,
 			return fmt.Errorf("failed to parse global flags: %w", err)
 		}
 
+		// OPENCENTER_LOG_LEVEL env var: used when --log-level flag is at its default.
+		// Precedence: flag > env var > default ("warn").
+		if globalFlags.LogLevel == "warn" {
+			if envLevel := os.Getenv("OPENCENTER_LOG_LEVEL"); envLevel != "" {
+				globalFlags.LogLevel = envLevel
+			}
+		}
+
 		// Apply log level if specified
 		if globalFlags.LogLevel != "" {
 			if err := config.SetLogLevel(globalFlags.LogLevel); err != nil {
@@ -168,6 +176,11 @@ Support: https://github.com/opencenter-cloud/opencenter-cli/issues`,
 			config.Debugf("  OPENCENTER_CONFIG_DIR: %s", configDir)
 		} else {
 			config.Debug("  OPENCENTER_CONFIG_DIR: (not set)")
+		}
+		if logLevelEnv := os.Getenv("OPENCENTER_LOG_LEVEL"); logLevelEnv != "" {
+			config.Debugf("  OPENCENTER_LOG_LEVEL: %s", logLevelEnv)
+		} else {
+			config.Debug("  OPENCENTER_LOG_LEVEL: (not set)")
 		}
 		if home, err := os.UserHomeDir(); err == nil {
 			config.Debugf("  HOME: %s", home)

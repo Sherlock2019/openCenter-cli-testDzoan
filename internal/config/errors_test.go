@@ -14,6 +14,7 @@
 package config
 
 import (
+	stderrors "errors"
 	"fmt"
 	"os"
 	"strings"
@@ -627,4 +628,83 @@ func TestWrapParseError(t *testing.T) {
 	if se.ColumnNumber != 15 {
 		t.Errorf("WrapParseError() column = %v, want %v", se.ColumnNumber, 15)
 	}
+}
+
+// TestConfigNotFoundError tests the ConfigNotFoundError sentinel type.
+func TestConfigNotFoundError(t *testing.T) {
+	t.Run("Error message contains cluster name", func(t *testing.T) {
+		err := NewConfigNotFoundError("my-cluster", fmt.Errorf("underlying cause"))
+		got := err.Error()
+		want := "cluster configuration not found: my-cluster"
+		if got != want {
+			t.Errorf("Error() = %q, want %q", got, want)
+		}
+	})
+
+	t.Run("Unwrap returns underlying error", func(t *testing.T) {
+		cause := fmt.Errorf("path resolution failed")
+		err := NewConfigNotFoundError("prod-cluster", cause)
+		if err.Unwrap() != cause {
+			t.Errorf("Unwrap() = %v, want %v", err.Unwrap(), cause)
+		}
+	})
+
+	t.Run("Unwrap returns nil when no cause", func(t *testing.T) {
+		err := NewConfigNotFoundError("test-cluster", nil)
+		if err.Unwrap() != nil {
+			t.Errorf("Unwrap() = %v, want nil", err.Unwrap())
+		}
+	})
+
+	t.Run("ClusterName field is set", func(t *testing.T) {
+		err := NewConfigNotFoundError("staging-cluster", nil)
+		if err.ClusterName != "staging-cluster" {
+			t.Errorf("ClusterName = %q, want %q", err.ClusterName, "staging-cluster")
+		}
+	})
+}
+
+// TestIsConfigNotFoundError tests the IsConfigNotFoundError helper.
+func TestIsConfigNotFoundError(t *testing.T) {
+	t.Run("returns true for ConfigNotFoundError", func(t *testing.T) {
+		err := NewConfigNotFoundError("my-cluster", nil)
+		if !IsConfigNotFoundError(err) {
+			t.Error("IsConfigNotFoundError() = false, want true")
+		}
+	})
+
+	t.Run("returns true for wrapped ConfigNotFoundError", func(t *testing.T) {
+		inner := NewConfigNotFoundError("my-cluster", nil)
+		wrapped := fmt.Errorf("command failed: %w", inner)
+		if !IsConfigNotFoundError(wrapped) {
+			t.Error("IsConfigNotFoundError() = false for wrapped error, want true")
+		}
+	})
+
+	t.Run("returns false for other errors", func(t *testing.T) {
+		err := fmt.Errorf("some other error")
+		if IsConfigNotFoundError(err) {
+			t.Error("IsConfigNotFoundError() = true for non-ConfigNotFoundError, want false")
+		}
+	})
+
+	t.Run("returns false for nil", func(t *testing.T) {
+		if IsConfigNotFoundError(nil) {
+			t.Error("IsConfigNotFoundError(nil) = true, want false")
+		}
+	})
+
+	t.Run("errors.As extracts ConfigNotFoundError from chain", func(t *testing.T) {
+		cause := fmt.Errorf("file not found")
+		inner := NewConfigNotFoundError("deep-cluster", cause)
+		wrapped := fmt.Errorf("load failed: %w", inner)
+
+		var cnfErr *ConfigNotFoundError
+		if !stderrors.As(wrapped, &cnfErr) {
+			t.Fatal("errors.As failed to extract ConfigNotFoundError")
+		}
+		if cnfErr.ClusterName != "deep-cluster" {
+			t.Errorf("ClusterName = %q, want %q", cnfErr.ClusterName, "deep-cluster")
+		}
+	})
 }

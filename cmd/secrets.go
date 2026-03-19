@@ -386,8 +386,13 @@ func describeBarbicanSecret(ctx context.Context, cfg *config.Config, name string
 }
 
 func describeSOPSSecret(ctx context.Context, cfg *config.Config, name string, format string) error {
-	// For SOPS backend, describe shows metadata from config
-	return fmt.Errorf("describe not yet implemented for SOPS backend")
+	return fmt.Errorf("SOPS backend does not support individual secret describe operations.\n\n" +
+		"SOPS manages secrets as encrypted YAML files, not individual key-value pairs.\n" +
+		"To inspect SOPS-encrypted secrets:\n" +
+		"  opencenter secrets decrypt    Decrypt YAML files to view secret metadata\n" +
+		"  opencenter secrets encrypt    Re-encrypt YAML files after inspection\n" +
+		"  opencenter secrets status     Show encryption status of secret files\n\n" +
+		"See: https://docs.opencenter.cloud/secrets/sops-encryption")
 }
 
 func describeFileSecret(cfg *config.Config, name string, format string) error {
@@ -474,8 +479,13 @@ func getBarbicanSecret(ctx context.Context, cfg *config.Config, name string, out
 }
 
 func getSOPSSecret(ctx context.Context, cfg *config.Config, name string, outputFile string, show bool) error {
-	// For SOPS backend, get retrieves from config
-	return fmt.Errorf("get not yet implemented for SOPS backend")
+	return fmt.Errorf("SOPS backend does not support individual secret get operations.\n\n" +
+		"SOPS manages secrets as encrypted YAML files, not individual key-value pairs.\n" +
+		"To work with SOPS secrets:\n" +
+		"  opencenter secrets decrypt    Decrypt YAML files to view secret values\n" +
+		"  opencenter secrets encrypt    Re-encrypt YAML files after editing\n" +
+		"  opencenter secrets status     Show encryption status of secret files\n\n" +
+		"See: https://docs.opencenter.cloud/secrets/sops-encryption")
 }
 
 func getFileSecret(cfg *config.Config, name string, outputFile string, show bool) error {
@@ -584,8 +594,13 @@ func setBarbicanSecret(ctx context.Context, cfg *config.Config, name string, pay
 }
 
 func setSOPSSecret(ctx context.Context, cfg *config.Config, name string, payload []byte) error {
-	// For SOPS backend, set updates config
-	return fmt.Errorf("set not yet implemented for SOPS backend")
+	return fmt.Errorf("SOPS backend does not support individual secret set operations.\n\n" +
+		"SOPS manages secrets as encrypted YAML files, not individual key-value pairs.\n" +
+		"To create or update SOPS secrets:\n" +
+		"  opencenter secrets decrypt    Decrypt YAML files for editing\n" +
+		"  opencenter secrets encrypt    Re-encrypt YAML files after changes\n" +
+		"  opencenter secrets status     Show encryption status of secret files\n\n" +
+		"See: https://docs.opencenter.cloud/secrets/sops-encryption")
 }
 
 func setFileSecret(cfg *config.Config, name string, payload []byte) error {
@@ -652,8 +667,13 @@ func deleteBarbicanSecret(ctx context.Context, cfg *config.Config, name string) 
 }
 
 func deleteSOPSSecret(ctx context.Context, cfg *config.Config, name string) error {
-	// For SOPS backend, delete removes from config
-	return fmt.Errorf("delete not yet implemented for SOPS backend")
+	return fmt.Errorf("SOPS backend does not support individual secret delete operations.\n\n" +
+		"SOPS manages secrets as encrypted YAML files, not individual key-value pairs.\n" +
+		"To remove secrets from SOPS-encrypted files:\n" +
+		"  opencenter secrets decrypt    Decrypt YAML files for editing\n" +
+		"  opencenter secrets encrypt    Re-encrypt YAML files after removing entries\n" +
+		"  opencenter secrets status     Show encryption status of secret files\n\n" +
+		"See: https://docs.opencenter.cloud/secrets/sops-encryption")
 }
 
 func deleteFileSecret(cfg *config.Config, name string) error {
