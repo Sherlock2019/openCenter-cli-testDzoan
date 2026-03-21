@@ -14,9 +14,12 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/cluster"
@@ -27,10 +30,43 @@ import (
 )
 
 // TestClusterBootstrapIntegration tests the cluster bootstrap command with DI container
-// Note: This test verifies DI container setup and option parsing.
-// Full end-to-end tests require complete path resolution migration (Phase 3).
 func TestClusterBootstrapIntegration(t *testing.T) {
-	t.Skip("Skipping full end-to-end test until path resolution migration is complete (Phase 3)")
+	dir, stateDir, clusterDir := prepareKindBootstrapFixture(t, "kind-bootstrap-int")
+
+	cmd := newClusterBootstrapCmd()
+	var stdout, stderr bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"kind-bootstrap-int"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("bootstrap command failed: %v\nstderr: %s", err, stderr.String())
+	}
+
+	kubeconfigPath := filepath.Join(clusterDir, "kubeconfig.yaml")
+	if _, err := os.Stat(kubeconfigPath); err != nil {
+		t.Fatalf("expected kubeconfig at cluster-owned path: %v", err)
+	}
+
+	kindLog, err := os.ReadFile(filepath.Join(stateDir, "kind.log"))
+	if err != nil {
+		t.Fatalf("read fake kind log: %v", err)
+	}
+	if !strings.Contains(string(kindLog), "kind create cluster --name kind-bootstrap-int --config "+filepath.Join(clusterDir, "kind-config.yaml")) {
+		t.Fatalf("expected create cluster invocation in log\nlog:\n%s", string(kindLog))
+	}
+	if !strings.Contains(string(kindLog), "kind export kubeconfig --name kind-bootstrap-int --kubeconfig "+kubeconfigPath) {
+		t.Fatalf("expected export kubeconfig invocation in log\nlog:\n%s", string(kindLog))
+	}
+
+	configPath := filepath.Join(dir, "clusters", "opencenter", ".kind-bootstrap-int-config.yaml")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	if !strings.Contains(string(data), "stage: bootstrap") || !strings.Contains(string(data), "status: success") {
+		t.Fatalf("expected bootstrap success lifecycle state\nconfig:\n%s", string(data))
+	}
 }
 
 // TestClusterBootstrapWithDIContainer tests that the DI container is properly set up
@@ -87,10 +123,6 @@ func TestClusterBootstrapServiceIntegration(t *testing.T) {
 	if err := validationEngine.Register(validators.NewClusterNameValidator()); err != nil {
 		t.Fatalf("failed to register cluster name validator: %v", err)
 	}
-	if err := validationEngine.Register(validators.NewConfigValidator()); err != nil {
-		t.Fatalf("failed to register config validator: %v", err)
-	}
-
 	// Create BootstrapService
 	bootstrapService := cluster.NewBootstrapService(pathResolver, validationEngine)
 
@@ -105,16 +137,28 @@ func TestClusterBootstrapServiceIntegration(t *testing.T) {
 		t.Fatalf("failed to create cluster directory: %v", err)
 	}
 
-	// Create a minimal config file in the cluster directory
-	configPath := filepath.Join(clusterDir, "."+clusterName+"-config.yaml")
-	configContent := `opencenter:
+	// Create a minimal config file at the org root path expected by PathResolver.
+	configPath := filepath.Join(orgDir, "."+clusterName+"-config.yaml")
+	configContent := `schema_version: "2.0"
+opencenter:
   meta:
     organization: ` + organization + `
-    schema_version: "2.0"
+    name: ` + clusterName + `
   cluster:
     cluster_name: ` + clusterName + `
   infrastructure:
     provider: kind
+    kind:
+      cluster_name: ` + clusterName + `
+      kubernetes_version: "1.30.4"
+      control_plane_count: 1
+      worker_count: 2
+      api_server_address: "127.0.0.1"
+      api_server_port: 6443
+      pod_subnet: "10.244.0.0/16"
+      service_subnet: "10.96.0.0/16"
+  gitops:
+    git_dir: ` + filepath.Join(dir, "clusters", organization) + `
 `
 	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
@@ -273,7 +317,149 @@ func TestClusterBootstrapOptions(t *testing.T) {
 }
 
 // TestClusterBootstrapWithExistingCluster tests bootstrap with an existing cluster
-// Note: This test is skipped until path resolution migration is complete (Phase 3).
 func TestClusterBootstrapWithExistingCluster(t *testing.T) {
-	t.Skip("Skipping full end-to-end test until path resolution migration is complete (Phase 3)")
+	_, stateDir, _ := prepareKindBootstrapFixture(t, "kind-existing-int")
+
+	firstRun := newClusterBootstrapCmd()
+	firstRun.SetOut(&bytes.Buffer{})
+	firstRun.SetErr(&bytes.Buffer{})
+	firstRun.SetArgs([]string{"kind-existing-int"})
+	if err := firstRun.Execute(); err != nil {
+		t.Fatalf("first bootstrap failed: %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(stateDir, "kind.log"), nil, 0o644); err != nil {
+		t.Fatalf("reset fake kind log: %v", err)
+	}
+	resetCommandStateForTests()
+
+	secondRun := newClusterBootstrapCmd()
+	var stdout, stderr bytes.Buffer
+	secondRun.SetOut(&stdout)
+	secondRun.SetErr(&stderr)
+	secondRun.SetArgs([]string{"kind-existing-int", "--restart"})
+	if err := secondRun.Execute(); err != nil {
+		t.Fatalf("second bootstrap failed: %v\nstderr: %s", err, stderr.String())
+	}
+
+	kindLog, err := os.ReadFile(filepath.Join(stateDir, "kind.log"))
+	if err != nil {
+		t.Fatalf("read fake kind log: %v", err)
+	}
+	logText := string(kindLog)
+	if strings.Contains(logText, "kind create cluster") {
+		t.Fatalf("expected rerun bootstrap to skip cluster creation\nlog:\n%s", logText)
+	}
+	if !strings.Contains(logText, "kind get clusters") {
+		t.Fatalf("expected rerun bootstrap to check for existing clusters\nlog:\n%s", logText)
+	}
+	if !strings.Contains(logText, "kind export kubeconfig") {
+		t.Fatalf("expected rerun bootstrap to export kubeconfig\nlog:\n%s", logText)
+	}
+}
+
+func TestKindLifecycleSmoke(t *testing.T) {
+	if os.Getenv("OPENCENTER_RUN_KIND_SMOKE") == "" {
+		t.Skip("set OPENCENTER_RUN_KIND_SMOKE=1 to run the real Kind lifecycle smoke test")
+	}
+	for _, bin := range []string{"kind", "kubectl", "git"} {
+		if _, err := exec.LookPath(bin); err != nil {
+			t.Skipf("%s not installed", bin)
+		}
+	}
+
+	dir := t.TempDir()
+	prepareCommandTestEnv(t, dir)
+	clusterName := "kind-smoke-int"
+
+	initCmd := newClusterInitCmd()
+	initCmd.SetOut(&bytes.Buffer{})
+	initCmd.SetErr(&bytes.Buffer{})
+	initCmd.SetArgs([]string{clusterName, "--type", "kind", "--no-keygen"})
+	if err := initCmd.Execute(); err != nil {
+		t.Fatalf("cluster init failed: %v", err)
+	}
+
+	resetCommandStateForTests()
+
+	setupCmd := newClusterSetupCmd()
+	setupCmd.SetOut(&bytes.Buffer{})
+	setupCmd.SetErr(&bytes.Buffer{})
+	setupCmd.SetArgs([]string{clusterName})
+	if err := setupCmd.Execute(); err != nil {
+		t.Fatalf("cluster setup failed: %v", err)
+	}
+
+	resetCommandStateForTests()
+
+	bootstrapCmd := newClusterBootstrapCmd()
+	bootstrapCmd.SetOut(&bytes.Buffer{})
+	bootstrapCmd.SetErr(&bytes.Buffer{})
+	bootstrapCmd.SetArgs([]string{clusterName})
+	if err := bootstrapCmd.Execute(); err != nil {
+		t.Fatalf("cluster bootstrap failed: %v", err)
+	}
+
+	resetCommandStateForTests()
+
+	statusCmd := newClusterStatusCmd()
+	var statusOut bytes.Buffer
+	statusCmd.SetOut(&statusOut)
+	statusCmd.SetErr(&bytes.Buffer{})
+	statusCmd.SetArgs([]string{clusterName})
+	if err := statusCmd.Execute(); err != nil {
+		t.Fatalf("cluster status failed: %v", err)
+	}
+	if !strings.Contains(statusOut.String(), "Kind Status:") {
+		t.Fatalf("expected kind status output\noutput:\n%s", statusOut.String())
+	}
+
+	resetCommandStateForTests()
+	t.Setenv("OPENCENTER_TEST_MODE", "1")
+
+	destroyCmd := newClusterDestroyCmd()
+	destroyCmd.SetOut(&bytes.Buffer{})
+	destroyCmd.SetErr(&bytes.Buffer{})
+	destroyCmd.SetArgs([]string{clusterName, "--force"})
+	if err := destroyCmd.Execute(); err != nil {
+		t.Fatalf("cluster destroy failed: %v", err)
+	}
+}
+
+func prepareKindBootstrapFixture(t *testing.T, clusterName string) (string, string, string) {
+	t.Helper()
+
+	dir := t.TempDir()
+	prepareCommandTestEnv(t, dir)
+
+	stateDir := t.TempDir()
+	binDir := t.TempDir()
+	t.Setenv("FAKE_KIND_STATE_DIR", stateDir)
+	installFakeGitBinary(t, binDir)
+	installFakeKindBinary(t, binDir)
+	installFakeKubectlBinary(t, binDir)
+	prependTestPath(t, binDir)
+
+	initCmd := newClusterInitCmd()
+	initCmd.SetOut(&bytes.Buffer{})
+	initCmd.SetErr(&bytes.Buffer{})
+	initCmd.SetArgs([]string{clusterName, "--type", "kind", "--no-keygen"})
+	if err := initCmd.Execute(); err != nil {
+		t.Fatalf("cluster init failed: %v", err)
+	}
+
+	resetCommandStateForTests()
+
+	setupCmd := newClusterSetupCmd()
+	setupCmd.SetOut(&bytes.Buffer{})
+	setupCmd.SetErr(&bytes.Buffer{})
+	setupCmd.SetArgs([]string{clusterName})
+	if err := setupCmd.Execute(); err != nil {
+		t.Fatalf("cluster setup failed: %v", err)
+	}
+
+	resetCommandStateForTests()
+
+	clusterDir := filepath.Join(dir, "clusters", "opencenter", "infrastructure", "clusters", clusterName)
+	return dir, stateDir, clusterDir
 }

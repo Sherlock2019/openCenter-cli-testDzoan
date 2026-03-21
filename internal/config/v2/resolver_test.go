@@ -147,16 +147,12 @@ func TestReferenceResolver_ErrorOnMissingFile(t *testing.T) {
 }
 
 func TestReferenceResolver_CircularReferenceDetection(t *testing.T) {
-	// Note: Circular reference detection for ${ref:} is implemented
-	// but requires path lookup which is not yet fully implemented.
-	// This test verifies the detection mechanism works.
-
 	cfg := &Config{
 		SchemaVersion: "2.0",
 		OpenCenter: OpenCenterConfig{
 			Meta: MetaConfig{
 				Name:         "${ref:opencenter.meta.organization}",
-				Organization: "test-org",
+				Organization: "${ref:opencenter.meta.name}",
 				Env:          "dev",
 				Region:       "ord1",
 			},
@@ -166,9 +162,8 @@ func TestReferenceResolver_CircularReferenceDetection(t *testing.T) {
 	resolver := NewReferenceResolver()
 	err := resolver.Resolve(cfg)
 
-	// Should error because path lookup is not implemented
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "cannot be resolved")
+	assert.Contains(t, err.Error(), "circular reference detected")
 }
 
 func TestReferenceResolver_MaxDepthExceeded(t *testing.T) {
@@ -273,4 +268,32 @@ func TestReferenceResolver_MultipleReferencesInSameString(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, "value1-value2", cfg.OpenCenter.Meta.Name)
+}
+
+func TestReferenceResolver_ResolveStructMapAndSliceReferences(t *testing.T) {
+	cfg := &Config{
+		SchemaVersion: "2.0",
+		OpenCenter: OpenCenterConfig{
+			Meta: MetaConfig{
+				Name:         "test-cluster",
+				Organization: "test-org",
+				Env:          "dev",
+				Region:       "ord1",
+			},
+			Services: ServiceMap{
+				"example": map[string]any{
+					"ports":    []any{"10.0.0.10"},
+					"hostname": "${ref:opencenter.meta.organization}.${ref:opencenter.services.example.ports[0]}",
+				},
+			},
+		},
+	}
+
+	resolver := NewReferenceResolver()
+	err := resolver.Resolve(cfg)
+
+	require.NoError(t, err)
+	serviceConfig, ok := cfg.OpenCenter.Services["example"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, "test-org.10.0.0.10", serviceConfig["hostname"])
 }

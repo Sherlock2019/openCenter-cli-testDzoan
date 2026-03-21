@@ -178,6 +178,57 @@ func (c *OpenStackCredentials) ToEnvVarsForShell(shell string) string {
 	return output.String()
 }
 
+// ToEnvMap converts OpenStack credentials to process environment variables.
+func (c *OpenStackCredentials) ToEnvMap() map[string]string {
+	result := map[string]string{
+		"OS_INTERFACE":            "public",
+		"OS_IDENTITY_API_VERSION": "3",
+	}
+
+	if c.AuthURL != "" {
+		result["OS_AUTH_URL"] = c.AuthURL
+	}
+	if c.Insecure {
+		result["OS_INSECURE"] = "true"
+	}
+	if c.Region != "" {
+		result["OS_REGION_NAME"] = c.Region
+	}
+	if c.ApplicationCredentialID != "" {
+		result["OS_APPLICATION_CREDENTIAL_ID"] = c.ApplicationCredentialID
+	}
+	if c.ApplicationCredentialSecret != "" {
+		result["OS_APPLICATION_CREDENTIAL_SECRET"] = c.ApplicationCredentialSecret
+	}
+	if c.Username != "" {
+		result["OS_USERNAME"] = c.Username
+	}
+	if c.Password != "" {
+		result["OS_PASSWORD"] = c.Password
+	}
+	if c.ProjectName != "" {
+		result["OS_PROJECT_NAME"] = c.ProjectName
+	} else if c.TenantName != "" {
+		result["OS_PROJECT_NAME"] = c.TenantName
+	}
+	if c.UserDomainName != "" {
+		result["OS_USER_DOMAIN_NAME"] = c.UserDomainName
+	}
+	if c.ProjectDomainName != "" {
+		result["OS_PROJECT_DOMAIN_NAME"] = c.ProjectDomainName
+	}
+	if c.Domain != "" {
+		if _, ok := result["OS_USER_DOMAIN_NAME"]; !ok {
+			result["OS_USER_DOMAIN_NAME"] = c.Domain
+		}
+		if _, ok := result["OS_PROJECT_DOMAIN_NAME"]; !ok {
+			result["OS_PROJECT_DOMAIN_NAME"] = c.Domain
+		}
+	}
+
+	return result
+}
+
 // ToMap converts OpenStack credentials to a map for JSON serialization
 func (c *OpenStackCredentials) ToMap() map[string]interface{} {
 	result := make(map[string]interface{})

@@ -24,10 +24,25 @@ import (
 	"testing"
 	"time"
 
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
+
+func writeRotationTestConfig(t *testing.T, cluster string, configData string) string {
+	t.Helper()
+
+	resolver := paths.NewPathResolver(config.ResolveClustersDir())
+	require.NoError(t, resolver.CreateClusterDirectories(context.Background(), cluster, "test-org"))
+
+	clusterPaths, err := resolver.Resolve(context.Background(), cluster, "test-org")
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(clusterPaths.ConfigPath, []byte(configData), 0o644))
+
+	return clusterPaths.ConfigPath
+}
 
 // TestRotateAgeKeyDualKeyConfiguration tests that dual-key configuration is correctly set up
 func TestRotateAgeKeyDualKeyConfiguration(t *testing.T) {
@@ -49,32 +64,23 @@ func TestRotateAgeKeyDualKeyConfiguration(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// Create test config and overlay structure
-		homeDir, err := os.UserHomeDir()
-		require.NoError(t, err)
-
-		configDir := filepath.Join(homeDir, ".config", "opencenter", "clusters", "test-org", cluster)
-		err = os.MkdirAll(configDir, 0755)
-		require.NoError(t, err)
-		defer os.RemoveAll(filepath.Join(homeDir, ".config", "opencenter", "clusters", "test-org"))
-
 		testRepoDir := filepath.Join(tmpDir, "test-repo")
 		err = os.MkdirAll(testRepoDir, 0755)
 		require.NoError(t, err)
 
 		// Create config file
-		configPath := filepath.Join(configDir, ".k8s-"+cluster+"-config.yaml")
 		configData := `schema_version: "2.0"
 opencenter:
   cluster:
     cluster_name: ` + cluster + `
+  meta:
+    organization: test-org
   gitops:
     git_dir: ` + testRepoDir + `
 secrets:
   sops_age_key_file: ~/.config/sops/age/test-key.txt
 `
-		err = os.WriteFile(configPath, []byte(configData), 0644)
-		require.NoError(t, err)
+		_ = writeRotationTestConfig(t, cluster, configData)
 
 		// Create overlay directory with .sops.yaml
 		overlayPath := filepath.Join(testRepoDir, "applications", "overlays", cluster)
@@ -232,7 +238,7 @@ func TestRotateAgeKeyArchiving(t *testing.T) {
 
 		// Try to archive a non-existent key
 		archivedPath, err := rotator.archiveKey(ctx, cluster, KeyTypeAge, "age1nonexistent")
-		
+
 		// Should not return an error, but should return empty path
 		require.NoError(t, err)
 		assert.Empty(t, archivedPath)
@@ -248,32 +254,23 @@ func TestUpdateSOPSConfigSingleKey(t *testing.T) {
 		ctx := context.Background()
 		cluster := "test-single-key"
 
-		// Create test config and overlay structure
-		homeDir, err := os.UserHomeDir()
-		require.NoError(t, err)
-
-		configDir := filepath.Join(homeDir, ".config", "opencenter", "clusters", "test-org", cluster)
-		err = os.MkdirAll(configDir, 0755)
-		require.NoError(t, err)
-		defer os.RemoveAll(filepath.Join(homeDir, ".config", "opencenter", "clusters", "test-org"))
-
 		testRepoDir := filepath.Join(tmpDir, "test-repo")
-		err = os.MkdirAll(testRepoDir, 0755)
+		err := os.MkdirAll(testRepoDir, 0755)
 		require.NoError(t, err)
 
 		// Create config file
-		configPath := filepath.Join(configDir, ".k8s-"+cluster+"-config.yaml")
 		configData := `schema_version: "2.0"
 opencenter:
   cluster:
     cluster_name: ` + cluster + `
+  meta:
+    organization: test-org
   gitops:
     git_dir: ` + testRepoDir + `
 secrets:
   sops_age_key_file: ~/.config/sops/age/test-key.txt
 `
-		err = os.WriteFile(configPath, []byte(configData), 0644)
-		require.NoError(t, err)
+		_ = writeRotationTestConfig(t, cluster, configData)
 
 		// Create overlay directory with .sops.yaml (dual-key mode)
 		overlayPath := filepath.Join(testRepoDir, "applications", "overlays", cluster)
@@ -342,32 +339,23 @@ func TestRotateAgeKeyRollback(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		// Create test config and overlay structure
-		homeDir, err := os.UserHomeDir()
-		require.NoError(t, err)
-
-		configDir := filepath.Join(homeDir, ".config", "opencenter", "clusters", "test-org", cluster)
-		err = os.MkdirAll(configDir, 0755)
-		require.NoError(t, err)
-		defer os.RemoveAll(filepath.Join(homeDir, ".config", "opencenter", "clusters", "test-org"))
-
 		testRepoDir := filepath.Join(tmpDir, "test-repo")
 		err = os.MkdirAll(testRepoDir, 0755)
 		require.NoError(t, err)
 
 		// Create config file
-		configPath := filepath.Join(configDir, ".k8s-"+cluster+"-config.yaml")
 		configData := `schema_version: "2.0"
 opencenter:
   cluster:
     cluster_name: ` + cluster + `
+  meta:
+    organization: test-org
   gitops:
     git_dir: ` + testRepoDir + `
 secrets:
   sops_age_key_file: ~/.config/sops/age/test-key.txt
 `
-		err = os.WriteFile(configPath, []byte(configData), 0644)
-		require.NoError(t, err)
+		_ = writeRotationTestConfig(t, cluster, configData)
 
 		// Create overlay directory with .sops.yaml
 		overlayPath := filepath.Join(testRepoDir, "applications", "overlays", cluster)
@@ -483,30 +471,21 @@ func TestUpdateConfigSSHKey(t *testing.T) {
 		ctx := context.Background()
 		cluster := "test-update-ssh-config"
 
-		// Create test config
-		homeDir, err := os.UserHomeDir()
-		require.NoError(t, err)
-
-		configDir := filepath.Join(homeDir, ".config", "opencenter", "clusters", "test-org", cluster)
-		err = os.MkdirAll(configDir, 0755)
-		require.NoError(t, err)
-		defer os.RemoveAll(filepath.Join(homeDir, ".config", "opencenter", "clusters", "test-org"))
-
-		configPath := filepath.Join(configDir, ".k8s-"+cluster+"-config.yaml")
 		configData := `schema_version: "2.0"
 opencenter:
   cluster:
     cluster_name: ` + cluster + `
+  meta:
+    organization: test-org
 secrets:
   ssh_private_key_file: ~/.ssh/old-key
   ssh_public_key_file: ~/.ssh/old-key.pub
 `
-		err = os.WriteFile(configPath, []byte(configData), 0644)
-		require.NoError(t, err)
+		configPath := writeRotationTestConfig(t, cluster, configData)
 
 		// Update SSH key
 		newKeyPath := "~/.config/opencenter/clusters/" + cluster + "/secrets/ssh/new-key"
-		err = rotator.updateConfigSSHKey(ctx, cluster, newKeyPath)
+		err := rotator.updateConfigSSHKey(ctx, cluster, newKeyPath)
 		require.NoError(t, err)
 
 		// Verify config was updated
@@ -536,27 +515,18 @@ secrets:
 		ctx := context.Background()
 		cluster := "test-create-secrets-section"
 
-		// Create test config without secrets section
-		homeDir, err := os.UserHomeDir()
-		require.NoError(t, err)
-
-		configDir := filepath.Join(homeDir, ".config", "opencenter", "clusters", "test-org", cluster)
-		err = os.MkdirAll(configDir, 0755)
-		require.NoError(t, err)
-		defer os.RemoveAll(filepath.Join(homeDir, ".config", "opencenter", "clusters", "test-org"))
-
-		configPath := filepath.Join(configDir, ".k8s-"+cluster+"-config.yaml")
 		configData := `schema_version: "2.0"
 opencenter:
   cluster:
     cluster_name: ` + cluster + `
+  meta:
+    organization: test-org
 `
-		err = os.WriteFile(configPath, []byte(configData), 0644)
-		require.NoError(t, err)
+		configPath := writeRotationTestConfig(t, cluster, configData)
 
 		// Update SSH key
 		newKeyPath := "~/.config/opencenter/clusters/" + cluster + "/secrets/ssh/new-key"
-		err = rotator.updateConfigSSHKey(ctx, cluster, newKeyPath)
+		err := rotator.updateConfigSSHKey(ctx, cluster, newKeyPath)
 		require.NoError(t, err)
 
 		// Verify secrets section was created

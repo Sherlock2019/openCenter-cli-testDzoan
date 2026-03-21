@@ -91,6 +91,7 @@ opencenter:
     flux_prune: true
 deployment:
   auto_deploy: true
+  method: kubespray
 opentofu:
   backend:
     type: local
@@ -372,6 +373,7 @@ opencenter:
     flux_prune: true
 deployment:
   auto_deploy: true
+  method: kubespray
 opentofu:
   backend:
     type: local

@@ -260,6 +260,34 @@ func TestGitOpsComments(t *testing.T) {
 	}
 }
 
+func TestGenerateCompleteTemplateUsesSharedOpenStackDefaults(t *testing.T) {
+	expected, err := config.NewProviderDefault("example-cluster", "openstack")
+	if err != nil {
+		t.Fatalf("NewProviderDefault() error = %v", err)
+	}
+
+	cfg := generateCompleteTemplate("openstack")
+
+	if cfg.OpenCenter.Infrastructure.Provider != expected.OpenCenter.Infrastructure.Provider {
+		t.Fatalf("expected provider %q, got %q", expected.OpenCenter.Infrastructure.Provider, cfg.OpenCenter.Infrastructure.Provider)
+	}
+	if cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Region != expected.OpenCenter.Infrastructure.Cloud.OpenStack.Region {
+		t.Fatalf("expected region %q, got %q", expected.OpenCenter.Infrastructure.Cloud.OpenStack.Region, cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Region)
+	}
+	if cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ImageID != expected.OpenCenter.Infrastructure.Cloud.OpenStack.ImageID {
+		t.Fatalf("expected image ID %q, got %q", expected.OpenCenter.Infrastructure.Cloud.OpenStack.ImageID, cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ImageID)
+	}
+	if cfg.OpenCenter.Cluster.Kubernetes.FlavorMaster != expected.OpenCenter.Cluster.Kubernetes.FlavorMaster {
+		t.Fatalf("expected master flavor %q, got %q", expected.OpenCenter.Cluster.Kubernetes.FlavorMaster, cfg.OpenCenter.Cluster.Kubernetes.FlavorMaster)
+	}
+	if cfg.OpenCenter.Storage.DefaultStorageClass != expected.OpenCenter.Storage.DefaultStorageClass {
+		t.Fatalf("expected storage class %q, got %q", expected.OpenCenter.Storage.DefaultStorageClass, cfg.OpenCenter.Storage.DefaultStorageClass)
+	}
+	if cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Cinder.Enabled != expected.OpenCenter.Cluster.Kubernetes.StoragePlugin.Cinder.Enabled {
+		t.Fatalf("expected cinder enabled %v, got %v", expected.OpenCenter.Cluster.Kubernetes.StoragePlugin.Cinder.Enabled, cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Cinder.Enabled)
+	}
+}
+
 func TestProviderSpecificComments(t *testing.T) {
 	tests := []struct {
 		name         string

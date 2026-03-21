@@ -15,26 +15,13 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
+	"github.com/opencenter-cloud/opencenter-cli/internal/security"
 	"github.com/spf13/cobra"
 )
-
-// AuditEvent represents a single audit log event
-type AuditEvent struct {
-	Timestamp   time.Time         `json:"timestamp"`
-	Actor       string            `json:"actor"`
-	EventType   string            `json:"event_type"`
-	Cluster     string            `json:"cluster"`
-	Resource    string            `json:"resource,omitempty"`
-	Details     map[string]string `json:"details,omitempty"`
-	IPAddress   string            `json:"ip_address,omitempty"`
-	Fingerprint string            `json:"fingerprint,omitempty"`
-}
 
 // newClusterAuditLogCmd creates the command for viewing audit logs.
 func newClusterAuditLogCmd() *cobra.Command {
@@ -113,23 +100,25 @@ func runClusterAuditLog(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid --since duration: %w", err)
 	}
 
-	// Get audit log path
-	auditLogPath, err := getAuditLogPath()
-	if err != nil {
-		return fmt.Errorf("failed to get audit log path: %w", err)
-	}
+	auditLogPath := security.GetDefaultAuditLogPath()
 
 	// Check if audit log exists
 	if _, err := os.Stat(auditLogPath); os.IsNotExist(err) {
 		fmt.Fprintf(cmd.OutOrStdout(), "No audit log found for cluster %s\n", clusterName)
-		fmt.Fprintln(cmd.OutOrStdout(), "\nAudit logging is currently not enabled in this CLI build.")
-		fmt.Fprintln(cmd.OutOrStdout(), "Audit events would be logged to:", auditLogPath)
+		fmt.Fprintln(cmd.OutOrStdout(), "\nAudit logging is enabled when secrets and key workflows run through the CLI.")
+		fmt.Fprintln(cmd.OutOrStdout(), "Audit events are stored at:", auditLogPath)
 		return nil
 	}
 
+	logger, err := security.NewDefaultAuditLogger()
+	if err != nil {
+		return fmt.Errorf("failed to initialize audit logger: %w", err)
+	}
+	defer logger.Close()
+
 	// Verify integrity if requested
 	if verify {
-		if err := verifyAuditLogIntegrity(ctx, auditLogPath); err != nil {
+		if err := logger.VerifyIntegrity(); err != nil {
 			fmt.Fprintf(cmd.ErrOrStderr(), "❌ Audit log integrity verification failed: %v\n", err)
 			return err
 		}
@@ -141,14 +130,14 @@ func runClusterAuditLog(cmd *cobra.Command, args []string) error {
 	}
 
 	// Read and filter audit events
-	events, err := readAuditLog(ctx, auditLogPath, clusterName, since, eventType)
+	events, err := readAuditLog(ctx, logger, clusterName, since, eventType)
 	if err != nil {
 		return fmt.Errorf("failed to read audit log: %w", err)
 	}
 
 	// Export if requested
 	if exportPath != "" {
-		if err := exportAuditLog(events, exportPath); err != nil {
+		if err := logger.ExportEventsToJSON(events, exportPath); err != nil {
 			return fmt.Errorf("failed to export audit log: %w", err)
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "Audit log exported to: %s\n", exportPath)
@@ -166,122 +155,29 @@ func parseDuration(s string) (time.Duration, error) {
 	if s == "" {
 		return 30 * 24 * time.Hour, nil // Default 30 days
 	}
-
-	// Handle common suffixes
-	if len(s) < 2 {
-		return 0, fmt.Errorf("invalid duration format: %s", s)
-	}
-
-	suffix := s[len(s)-1:]
-	valueStr := s[:len(s)-1]
-
-	var value int
-	if _, err := fmt.Sscanf(valueStr, "%d", &value); err != nil {
-		return 0, fmt.Errorf("invalid duration value: %s", s)
-	}
-
-	switch suffix {
-	case "d":
-		return time.Duration(value) * 24 * time.Hour, nil
-	case "h":
-		return time.Duration(value) * time.Hour, nil
-	case "w":
-		return time.Duration(value) * 7 * 24 * time.Hour, nil
-	case "m":
-		return time.Duration(value) * time.Minute, nil
-	default:
-		// Try parsing as standard Go duration
-		return time.ParseDuration(s)
-	}
-}
-
-// getAuditLogPath returns the path to the audit log file
-func getAuditLogPath() (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to get home directory: %w", err)
-	}
-	return filepath.Join(homeDir, ".config", "opencenter", "audit", "secrets-audit.log"), nil
-}
-
-// verifyAuditLogIntegrity verifies the cryptographic signatures in the audit log
-func verifyAuditLogIntegrity(ctx context.Context, logPath string) error {
-	// TODO: Implement actual signature verification
-	// For now, just check if the file is readable
-	data, err := os.ReadFile(logPath)
-	if err != nil {
-		return fmt.Errorf("failed to read audit log: %w", err)
-	}
-
-	if len(data) == 0 {
-		return fmt.Errorf("audit log is empty")
-	}
-
-	// In a real implementation, this would:
-	// 1. Parse each log entry
-	// 2. Verify the cryptographic signature
-	// 3. Check for tampering or missing entries
-	// 4. Validate the chain of signatures
-
-	return nil
+	return security.ParseDuration(s)
 }
 
 // readAuditLog reads and filters audit events from the log file
-func readAuditLog(ctx context.Context, logPath, cluster string, since time.Duration, eventType string) ([]AuditEvent, error) {
-	// Check if file exists
-	if _, err := os.Stat(logPath); os.IsNotExist(err) {
-		return []AuditEvent{}, nil
-	}
-
-	data, err := os.ReadFile(logPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read audit log: %w", err)
-	}
-
-	// Parse JSON lines
-	var events []AuditEvent
-	lines := string(data)
-	
-	// TODO: Implement actual log parsing
-	// For now, return empty list since we're using noOpAuditLogger
-	// In a real implementation, this would:
-	// 1. Parse each line as JSON
-	// 2. Filter by cluster
-	// 3. Filter by time range (since)
-	// 4. Filter by event type if specified
-	
-	_ = lines // Suppress unused variable warning
-
-	return events, nil
-}
-
-// exportAuditLog exports audit events to a JSON file
-func exportAuditLog(events []AuditEvent, exportPath string) error {
-	data, err := json.MarshalIndent(events, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to marshal events: %w", err)
-	}
-
-	if err := os.WriteFile(exportPath, data, 0600); err != nil {
-		return fmt.Errorf("failed to write export file: %w", err)
-	}
-
-	return nil
+func readAuditLog(ctx context.Context, logger *security.AuditLogger, cluster string, since time.Duration, eventType string) ([]security.AuditEvent, error) {
+	return logger.QueryEvents(ctx, security.EventFilter{
+		StartTime: time.Now().Add(-since),
+		EventType: eventType,
+		Resource:  cluster,
+	})
 }
 
 // displayAuditEvents formats and displays audit events
-func displayAuditEvents(cmd *cobra.Command, cluster string, events []AuditEvent, since time.Duration) {
+func displayAuditEvents(cmd *cobra.Command, cluster string, events []security.AuditEvent, since time.Duration) {
 	if len(events) == 0 {
 		fmt.Fprintf(cmd.OutOrStdout(), "No audit events found for cluster %s in the last %s\n", cluster, since)
-		fmt.Fprintln(cmd.OutOrStdout(), "\nNote: Audit logging is currently not enabled in this CLI build.")
-		fmt.Fprintln(cmd.OutOrStdout(), "When enabled, audit events will be displayed here.")
 		return
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "Audit Log for cluster %s (last %s)\n\n", cluster, since)
 
 	// Group events by type
-	eventsByType := make(map[string][]AuditEvent)
+	eventsByType := make(map[string][]security.AuditEvent)
 	for _, event := range events {
 		eventsByType[event.EventType] = append(eventsByType[event.EventType], event)
 	}
@@ -294,8 +190,8 @@ func displayAuditEvents(cmd *cobra.Command, cluster string, events []AuditEvent,
 			if event.Resource != "" {
 				fmt.Fprintf(cmd.OutOrStdout(), "    Resource: %s\n", event.Resource)
 			}
-			if event.Fingerprint != "" {
-				fmt.Fprintf(cmd.OutOrStdout(), "    Fingerprint: %s\n", event.Fingerprint)
+			if fingerprint, ok := event.Details["key_fingerprint"]; ok {
+				fmt.Fprintf(cmd.OutOrStdout(), "    Fingerprint: %v\n", fingerprint)
 			}
 			if len(event.Details) > 0 {
 				fmt.Fprintf(cmd.OutOrStdout(), "    Details: %v\n", event.Details)

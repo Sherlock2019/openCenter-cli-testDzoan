@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	kindprovider "github.com/opencenter-cloud/opencenter-cli/internal/cloud/kind"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
@@ -19,20 +20,6 @@ import (
 )
 
 const (
-	// kindClusterConfig is the default configuration for kind clusters
-	kindClusterConfig = `kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-networking:
-  disableDefaultCNI: true
-  podSubnet: "10.244.0.0/16"
-  serviceSubnet: "10.96.0.0/12"
-nodes:
-- role: control-plane
-- role: worker
-- role: worker
-- role: worker
-`
-
 	// Bootstrap step statuses
 	bootstrapStatusSuccess = "success"
 	bootstrapStatusFailed  = "failed"
@@ -78,6 +65,7 @@ type BootstrapService struct {
 	validationEngine *validation.ValidationEngine
 	configurationMgr *config.ConfigurationManager
 	fileSystem       fs.FileSystem
+	runner           lifecycleCommandRunner
 }
 
 // NewBootstrapService creates a new BootstrapService
@@ -112,6 +100,7 @@ func NewBootstrapServiceWithConfigMgr(
 		validationEngine: validationEngine,
 		configurationMgr: configurationMgr,
 		fileSystem:       fileSystem,
+		runner:           execLifecycleCommandRunner{},
 	}
 }
 
@@ -150,14 +139,14 @@ func (s *BootstrapService) Bootstrap(ctx context.Context, opts BootstrapOptions)
 	if s.configurationMgr != nil {
 		var loadedCfg *config.Config
 		var err error
-		
+
 		// Use LoadWithoutValidation if validation will be skipped anyway
 		if opts.SkipValidation {
 			loadedCfg, err = s.configurationMgr.LoadWithoutValidation(ctx, opts.ClusterName)
 		} else {
 			loadedCfg, err = s.configurationMgr.Load(ctx, opts.ClusterName)
 		}
-		
+
 		if err != nil {
 			return nil, fmt.Errorf("loading configuration: %w", err)
 		}
@@ -168,14 +157,14 @@ func (s *BootstrapService) Bootstrap(ctx context.Context, opts BootstrapOptions)
 		if err != nil {
 			return nil, fmt.Errorf("creating configuration manager: %w", err)
 		}
-		
+
 		var loadedCfg *config.Config
 		if opts.SkipValidation {
 			loadedCfg, err = tempMgr.LoadWithoutValidation(ctx, opts.ClusterName)
 		} else {
 			loadedCfg, err = tempMgr.Load(ctx, opts.ClusterName)
 		}
-		
+
 		if err != nil {
 			return nil, fmt.Errorf("loading configuration: %w", err)
 		}
@@ -199,21 +188,23 @@ See: https://docs.opencenter.io/migration/v1-to-v2`, opts.ClusterName)
 		StepsFailed:    []string{},
 	}
 
-	// Validate configuration unless skipped
 	if !opts.SkipValidation {
-		validationResult, err := s.validationEngine.Validate(ctx, "config", cfg)
-		if err != nil {
-			return nil, fmt.Errorf("validating config: %w", err)
-		}
-
-		if !validationResult.Valid {
-			return nil, fmt.Errorf("validation failed: %v", validationResult.Errors)
+		if err := s.validateBootstrapConfig(&cfg); err != nil {
+			return nil, fmt.Errorf("validation failed: %w", err)
 		}
 	}
 
 	// Set default timeout if not specified
 	if opts.Timeout == 0 {
 		opts.Timeout = defaultReadyTimeout
+	}
+	if strings.TrimSpace(opts.KubeconfigPath) == "" {
+		opts.KubeconfigPath = clusterPaths.KubeconfigPath
+	}
+	if strings.ToLower(strings.TrimSpace(cfg.OpenCenter.Infrastructure.Provider)) == "kind" &&
+		strings.TrimSpace(opts.ContainerRuntime) == "" &&
+		cfg.OpenCenter.Infrastructure.Kind != nil {
+		opts.ContainerRuntime = cfg.OpenCenter.Infrastructure.Kind.Runtime
 	}
 
 	// Provision infrastructure
@@ -234,7 +225,7 @@ See: https://docs.opencenter.io/migration/v1-to-v2`, opts.ClusterName)
 
 	// Wait for cluster to be ready
 	if !opts.DryRun {
-		endpoint, err := s.waitForReady(ctx, &cfg, opts.Timeout)
+		endpoint, err := s.waitForReady(ctx, &cfg, opts.Timeout, opts.KubeconfigPath)
 		if err != nil {
 			return result, fmt.Errorf("waiting for cluster ready: %w", err)
 		}
@@ -253,27 +244,9 @@ func (s *BootstrapService) provisionInfrastructure(ctx context.Context, cfg *con
 		provider = "openstack"
 	}
 
-	// Get cluster directory from GitOps configuration
-	gitDir := strings.TrimSpace(cfg.GitOps().GitDir)
-	if gitDir == "" {
-		return fmt.Errorf("gitops.git_dir must be configured for provider %q", provider)
-	}
-
-	clusterDir := filepath.Join(gitDir, "infrastructure", "clusters", cfg.ClusterName())
-
-	// Verify cluster directory exists
-	if _, err := os.Stat(clusterDir); err != nil {
-		return fmt.Errorf("cluster infrastructure directory not found in GitOps repository: %s", clusterDir)
-	}
-
-	// Determine log path
-	logPath := opts.LogPath
-	if logPath == "" {
-		timestamp := time.Now()
-		logFilename := fmt.Sprintf("bootstrap-%s-%d.log",
-			timestamp.Format("2006-01-02"),
-			timestamp.Unix())
-		logPath = filepath.Join(clusterDir, "logs", logFilename)
+	clusterDir, err := infrastructureClusterDir(cfg)
+	if err != nil {
+		return err
 	}
 
 	// Determine state path
@@ -293,9 +266,15 @@ func (s *BootstrapService) provisionInfrastructure(ctx context.Context, cfg *con
 	var steps []bootstrapStep
 
 	switch provider {
-	case "openstack", "aws", "gcp", "azure":
-		// Cloud provider bootstrap steps
-		env := s.buildEnvironment(opts.KubeconfigPath)
+	case "openstack":
+		providerImpl := newOpenStackBootstrapProvider(s.runner)
+		steps, err = providerImpl.BuildSteps(cfg, clusterPaths, opts)
+		if err != nil {
+			return err
+		}
+
+	case "aws", "gcp", "azure":
+		env := buildBootstrapEnvironment(opts.KubeconfigPath)
 
 		steps = []bootstrapStep{
 			{
@@ -322,23 +301,31 @@ func (s *BootstrapService) provisionInfrastructure(ctx context.Context, cfg *con
 		}
 
 	case "kind":
-		// Kind cluster bootstrap steps
-		runtime := s.resolveContainerRuntime(opts.ContainerRuntime)
-		env := s.buildKindEnvironment(runtime)
+		kindProvider := kindprovider.NewProvider()
+		runtime := kindprovider.ResolveRuntime(opts.ContainerRuntime)
+		env := kindprovider.BuildEnvironment(runtime)
+		kindConfigPath := filepath.Join(clusterPaths.ClusterDir, "kind-config.yaml")
+		kindClusterName := s.resolveKindClusterName(cfg)
 
 		steps = []bootstrapStep{
 			{
 				ID:          "kind-create",
 				Description: "Create kind cluster",
 				Run: func(ctx context.Context) error {
-					return s.runCommandWithInput(ctx, "", env, kindClusterConfig, "kind", "create", "cluster", "--name", cfg.ClusterName(), "--config=-")
+					if _, err := os.Stat(kindConfigPath); err != nil {
+						if os.IsNotExist(err) {
+							return fmt.Errorf("kind config not found at %s; run 'opencenter cluster setup %s' first", kindConfigPath, cfg.ClusterName())
+						}
+						return fmt.Errorf("stat kind config: %w", err)
+					}
+					return kindProvider.CreateCluster(ctx, kindClusterName, kindConfigPath, env)
 				},
 			},
 			{
 				ID:          "kind-export-kubeconfig",
 				Description: "Export kind kubeconfig",
 				Run: func(ctx context.Context) error {
-					return s.runCommand(ctx, "", env, "kind", "export", "kubeconfig", "--name", cfg.ClusterName())
+					return kindProvider.ExportKubeconfig(ctx, kindClusterName, opts.KubeconfigPath, env)
 				},
 			},
 		}
@@ -414,7 +401,7 @@ func (s *BootstrapService) deployCluster(ctx context.Context, cfg *config.Config
 }
 
 // waitForReady waits for the cluster to be ready and returns the endpoint
-func (s *BootstrapService) waitForReady(ctx context.Context, cfg *config.Config, timeout time.Duration) (string, error) {
+func (s *BootstrapService) waitForReady(ctx context.Context, cfg *config.Config, timeout time.Duration, kubeconfigPath string) (string, error) {
 	// Create a context with timeout
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -423,12 +410,10 @@ func (s *BootstrapService) waitForReady(ctx context.Context, cfg *config.Config,
 
 	switch provider {
 	case "kind":
-		// For kind clusters, check if the cluster is accessible
-		return s.waitForKindCluster(ctx, cfg.ClusterName())
+		return s.waitForKindCluster(ctx, kubeconfigPath)
 
 	case "openstack", "aws", "gcp", "azure":
-		// For cloud providers, check if the API server is accessible
-		return s.waitForCloudCluster(ctx, cfg)
+		return s.waitForCloudCluster(ctx, cfg, kubeconfigPath)
 
 	default:
 		return "", fmt.Errorf("unsupported provider %q", provider)
@@ -436,33 +421,12 @@ func (s *BootstrapService) waitForReady(ctx context.Context, cfg *config.Config,
 }
 
 // waitForKindCluster waits for a kind cluster to be ready
-func (s *BootstrapService) waitForKindCluster(ctx context.Context, clusterName string) (string, error) {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return "", fmt.Errorf("timeout waiting for kind cluster to be ready: %w", ctx.Err())
-
-		case <-ticker.C:
-			// Check if cluster is accessible
-			cmd := exec.CommandContext(ctx, "kubectl", "cluster-info", "--context", fmt.Sprintf("kind-%s", clusterName))
-			if err := cmd.Run(); err == nil {
-				// Cluster is ready, get the endpoint
-				cmd = exec.CommandContext(ctx, "kubectl", "config", "view", "-o", "jsonpath={.clusters[?(@.name==\"kind-"+clusterName+"\")].cluster.server}")
-				output, err := cmd.Output()
-				if err != nil {
-					return "", fmt.Errorf("getting cluster endpoint: %w", err)
-				}
-				return strings.TrimSpace(string(output)), nil
-			}
-		}
-	}
+func (s *BootstrapService) waitForKindCluster(ctx context.Context, kubeconfigPath string) (string, error) {
+	return kindprovider.NewProvider().WaitReady(ctx, kubeconfigPath)
 }
 
 // waitForCloudCluster waits for a cloud cluster to be ready
-func (s *BootstrapService) waitForCloudCluster(ctx context.Context, cfg *config.Config) (string, error) {
+func (s *BootstrapService) waitForCloudCluster(ctx context.Context, cfg *config.Config, kubeconfigPath string) (string, error) {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
@@ -473,10 +437,19 @@ func (s *BootstrapService) waitForCloudCluster(ctx context.Context, cfg *config.
 
 		case <-ticker.C:
 			// Check if cluster API is accessible
-			cmd := exec.CommandContext(ctx, "kubectl", "cluster-info")
+			args := []string{}
+			if strings.TrimSpace(kubeconfigPath) != "" {
+				args = append(args, "--kubeconfig", kubeconfigPath)
+			}
+			args = append(args, "cluster-info")
+			cmd := exec.CommandContext(ctx, "kubectl", args...)
 			if err := cmd.Run(); err == nil {
-				// Cluster is ready, get the endpoint
-				cmd = exec.CommandContext(ctx, "kubectl", "config", "view", "-o", "jsonpath={.clusters[0].cluster.server}")
+				args = []string{}
+				if strings.TrimSpace(kubeconfigPath) != "" {
+					args = append(args, "--kubeconfig", kubeconfigPath)
+				}
+				args = append(args, "config", "view", "--minify", "-o", "jsonpath={.clusters[0].cluster.server}")
+				cmd = exec.CommandContext(ctx, "kubectl", args...)
 				output, err := cmd.Output()
 				if err != nil {
 					return "", fmt.Errorf("getting cluster endpoint: %w", err)
@@ -490,49 +463,33 @@ func (s *BootstrapService) waitForCloudCluster(ctx context.Context, cfg *config.
 // Helper methods
 
 // buildEnvironment builds the environment variables for command execution
-func (s *BootstrapService) buildEnvironment(kubeconfigPath string) map[string]string {
-	env := make(map[string]string)
-
-	if kubeconfigPath != "" {
-		env["KUBECONFIG"] = kubeconfigPath
+func (s *BootstrapService) validateBootstrapConfig(cfg *config.Config) error {
+	if cfg == nil {
+		return fmt.Errorf("configuration is nil")
+	}
+	if strings.TrimSpace(cfg.ClusterName()) == "" {
+		return fmt.Errorf("cluster name must be set")
 	}
 
-	// Preserve PATH from current environment
-	if path := os.Getenv("PATH"); path != "" {
-		env["PATH"] = path
+	provider := strings.ToLower(strings.TrimSpace(cfg.OpenCenter.Infrastructure.Provider))
+	if provider == "" {
+		return fmt.Errorf("opencenter.infrastructure.provider must be set")
+	}
+	if provider == "kind" && cfg.OpenCenter.Infrastructure.Kind == nil {
+		return fmt.Errorf("opencenter.infrastructure.kind must be configured for the kind provider")
 	}
 
-	return env
+	return nil
 }
 
-// buildKindEnvironment builds the environment for kind clusters
-func (s *BootstrapService) buildKindEnvironment(runtime string) map[string]string {
-	env := make(map[string]string)
-
-	if runtime == "podman" {
-		env["KIND_EXPERIMENTAL_PROVIDER"] = "podman"
+func (s *BootstrapService) resolveKindClusterName(cfg *config.Config) string {
+	if cfg != nil && cfg.OpenCenter.Infrastructure.Kind != nil {
+		if name := strings.TrimSpace(cfg.OpenCenter.Infrastructure.Kind.ClusterNameOverride); name != "" {
+			return name
+		}
 	}
 
-	// Preserve PATH
-	if path := os.Getenv("PATH"); path != "" {
-		env["PATH"] = path
-	}
-
-	return env
-}
-
-// resolveContainerRuntime resolves the container runtime to use
-func (s *BootstrapService) resolveContainerRuntime(flagValue string) string {
-	if v := strings.TrimSpace(flagValue); v != "" {
-		return strings.ToLower(v)
-	}
-	if v := strings.TrimSpace(os.Getenv("CONTAINER_RUNTIME")); v != "" {
-		return strings.ToLower(v)
-	}
-	if v := strings.TrimSpace(os.Getenv("KIND_EXPERIMENTAL_PROVIDER")); v != "" {
-		return strings.ToLower(v)
-	}
-	return "docker"
+	return cfg.ClusterName()
 }
 
 // filterSteps filters bootstrap steps based on options
@@ -568,23 +525,8 @@ func (s *BootstrapService) filterSteps(steps []bootstrapStep, opts *BootstrapOpt
 
 // runCommand executes a command in the specified directory
 func (s *BootstrapService) runCommand(ctx context.Context, dir string, env map[string]string, name string, args ...string) error {
-	cmd := exec.CommandContext(ctx, name, args...)
-	cmd.Dir = dir
-
-	// Build environment
-	envList := os.Environ()
-	for k, v := range env {
-		envList = append(envList, fmt.Sprintf("%s=%s", k, v))
-	}
-	cmd.Env = envList
-
-	// Run command
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("command failed: %s %v: %w\nOutput: %s", name, args, err, string(output))
-	}
-
-	return nil
+	_, err := s.runner.Run(ctx, dir, env, name, args...)
+	return err
 }
 
 // runCommandWithInput executes a command with stdin input

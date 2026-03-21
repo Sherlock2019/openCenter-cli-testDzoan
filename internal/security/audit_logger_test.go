@@ -237,3 +237,54 @@ func TestAuditLogger_Disabled(t *testing.T) {
 		t.Error("Log file was created even though logger is disabled")
 	}
 }
+
+func TestAuditLogger_SigningKeyPersistence(t *testing.T) {
+	tmpDir := t.TempDir()
+	logPath := filepath.Join(tmpDir, "audit.log")
+	keyPath := filepath.Join(tmpDir, "audit.key")
+
+	logger1, err := NewAuditLogger(AuditLoggerConfig{
+		LogPath:        logPath,
+		SigningKeyPath: keyPath,
+		Enabled:        true,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create first audit logger: %v", err)
+	}
+
+	ctx := context.Background()
+	if err := logger1.LogEvent(ctx, AuditEvent{
+		EventType: "test.event",
+		Actor:     "test-user",
+		Resource:  "test-resource",
+		Action:    "test-action",
+		Result:    "success",
+	}); err != nil {
+		t.Fatalf("Failed to log event: %v", err)
+	}
+	if err := logger1.Close(); err != nil {
+		t.Fatalf("Failed to close first logger: %v", err)
+	}
+
+	logger2, err := NewAuditLogger(AuditLoggerConfig{
+		LogPath:        logPath,
+		SigningKeyPath: keyPath,
+		Enabled:        true,
+	})
+	if err != nil {
+		t.Fatalf("Failed to create second audit logger: %v", err)
+	}
+	defer logger2.Close()
+
+	if err := logger2.VerifyIntegrity(); err != nil {
+		t.Fatalf("Integrity verification failed after reopening logger: %v", err)
+	}
+
+	keyInfo, err := os.Stat(keyPath)
+	if err != nil {
+		t.Fatalf("Failed to stat signing key: %v", err)
+	}
+	if keyInfo.Mode().Perm() != 0o600 {
+		t.Fatalf("Expected signing key permissions 0600, got %o", keyInfo.Mode().Perm())
+	}
+}

@@ -16,7 +16,6 @@ import (
 	"bytes"
 	"context"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -31,6 +30,7 @@ func setupServiceTestEnv(t *testing.T, clusterName string) (string, func()) {
 	// Manually manage environment to avoid t.Setenv issues with subtests
 	oldEnv := os.Getenv("OPENCENTER_CONFIG_DIR")
 	os.Setenv("OPENCENTER_CONFIG_DIR", cfgDir)
+	resetCommandStateForTests()
 
 	cleanup := func() {
 		if oldEnv != "" {
@@ -38,19 +38,18 @@ func setupServiceTestEnv(t *testing.T, clusterName string) (string, func()) {
 		} else {
 			os.Unsetenv("OPENCENTER_CONFIG_DIR")
 		}
+		resetCommandStateForTests()
 	}
 
-	// Create cluster directory structure
-	clusterDir := filepath.Join(cfgDir, "clusters", clusterName)
-	if err := os.MkdirAll(clusterDir, 0o755); err != nil {
-		cleanup()
-		t.Fatalf("failed to create cluster directory: %v", err)
-	}
+	_, clusterPaths := createClusterDirectoriesForTest(t, cfgDir, clusterName, "opencenter")
 
-	// Create a basic config file using new API
+	// Create a basic v2 config using the org-based layout expected by PathResolver.
 	cfg := config.NewDefault(clusterName)
-	cfg.OpenCenter.GitOps.GitDir = filepath.Join(cfgDir, "gitops")
-	
+	cfg.SchemaVersion = "2.0"
+	cfg.OpenCenter.Meta.Name = clusterName
+	cfg.OpenCenter.Meta.Organization = "opencenter"
+	cfg.OpenCenter.GitOps.GitDir = clusterPaths.GitOpsDir
+
 	ctx := context.Background()
 	if err := saveConfig(ctx, cfg); err != nil {
 		cleanup()
@@ -436,8 +435,8 @@ func TestClusterServiceNoActiveCluster(t *testing.T) {
 		return
 	}
 
-	if !strings.Contains(err.Error(), "no cluster selected") {
-		t.Errorf("expected 'no cluster selected' error, got: %v", err)
+	if !strings.Contains(err.Error(), "no active cluster set") {
+		t.Errorf("expected 'no active cluster set' error, got: %v", err)
 	}
 }
 
@@ -637,7 +636,7 @@ func TestClusterServiceStatus(t *testing.T) {
 			clusterName: "",
 			setupFunc:   nil,
 			expectError: true,
-			errorMsg:    "no cluster selected",
+			errorMsg:    "no active cluster set",
 			validate:    nil,
 		},
 	}

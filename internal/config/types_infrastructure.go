@@ -3,6 +3,7 @@ package config
 // Infrastructure represents the infrastructure configuration block.
 type Infrastructure struct {
 	Provider            string        `yaml:"provider" json:"provider" validate:"required,oneof=openstack aws gcp azure baremetal vsphere vmware kind"`
+	Kind                *KindConfig   `yaml:"kind,omitempty" json:"kind,omitempty"`
 	Cloud               CloudConfig   `yaml:"cloud" json:"cloud" validate:"required"`
 	SSHUser             string        `yaml:"ssh_user" json:"ssh_user" validate:"required"`
 	SSHKeyPath          string        `yaml:"ssh_key_path,omitempty" json:"ssh_key_path,omitempty" jsonschema:"description=Path to SSH private key for cluster access"`
@@ -30,6 +31,48 @@ type CloudConfig struct {
 	AWS       SimplifiedAWSCloud       `yaml:"aws" json:"aws"`
 	OpenStack SimplifiedOpenStackCloud `yaml:"openstack" json:"openstack"`
 	VMware    VMwareCloud              `yaml:"vmware" json:"vmware"`
+}
+
+// KindConfig represents the local Kind provider runtime configuration.
+type KindConfig struct {
+	ClusterNameOverride  string             `yaml:"cluster_name,omitempty" json:"cluster_name,omitempty"`
+	KubernetesVersion    string             `yaml:"kubernetes_version,omitempty" json:"kubernetes_version,omitempty"`
+	NodeImage            string             `yaml:"node_image,omitempty" json:"node_image,omitempty"`
+	ControlPlaneCount    int                `yaml:"control_plane_count,omitempty" json:"control_plane_count,omitempty"`
+	WorkerCount          int                `yaml:"worker_count,omitempty" json:"worker_count,omitempty"`
+	APIServerAddress     string             `yaml:"api_server_address,omitempty" json:"api_server_address,omitempty"`
+	APIServerPort        int                `yaml:"api_server_port,omitempty" json:"api_server_port,omitempty"`
+	PodSubnet            string             `yaml:"pod_subnet,omitempty" json:"pod_subnet,omitempty"`
+	ServiceSubnet        string             `yaml:"service_subnet,omitempty" json:"service_subnet,omitempty"`
+	DisableDefaultCNI    bool               `yaml:"disable_default_cni,omitempty" json:"disable_default_cni,omitempty"`
+	IngressEnabled       bool               `yaml:"ingress_enabled,omitempty" json:"ingress_enabled,omitempty"`
+	Runtime              string             `yaml:"runtime,omitempty" json:"runtime,omitempty"`
+	KubeconfigPathPolicy string             `yaml:"kubeconfig_path_policy,omitempty" json:"kubeconfig_path_policy,omitempty"`
+	Registry             KindRegistryConfig `yaml:"registry,omitempty" json:"registry,omitempty"`
+	ExtraPortMappings    []KindPortMapping  `yaml:"extra_port_mappings,omitempty" json:"extra_port_mappings,omitempty"`
+	ExtraMounts          []KindMount        `yaml:"extra_mounts,omitempty" json:"extra_mounts,omitempty"`
+}
+
+// KindRegistryConfig describes the optional local registry wired into a Kind cluster.
+type KindRegistryConfig struct {
+	Enabled bool   `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+	Name    string `yaml:"name,omitempty" json:"name,omitempty"`
+	Port    int    `yaml:"port,omitempty" json:"port,omitempty"`
+}
+
+// KindPortMapping describes an extra host to node port mapping for Kind nodes.
+type KindPortMapping struct {
+	ContainerPort int    `yaml:"container_port,omitempty" json:"container_port,omitempty"`
+	HostPort      int    `yaml:"host_port,omitempty" json:"host_port,omitempty"`
+	ListenAddress string `yaml:"listen_address,omitempty" json:"listen_address,omitempty"`
+	Protocol      string `yaml:"protocol,omitempty" json:"protocol,omitempty"`
+}
+
+// KindMount describes an extra host path mount for Kind nodes.
+type KindMount struct {
+	HostPath      string `yaml:"host_path,omitempty" json:"host_path,omitempty"`
+	ContainerPath string `yaml:"container_path,omitempty" json:"container_path,omitempty"`
+	ReadOnly      bool   `yaml:"read_only,omitempty" json:"read_only,omitempty"`
 }
 
 // Cloud holds provider-specific configuration. Currently, only OpenStack is supported.

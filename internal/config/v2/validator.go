@@ -15,7 +15,9 @@ package v2
 
 import (
 	"fmt"
+	"strings"
 
+	semver "github.com/Masterminds/semver/v3"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -39,15 +41,19 @@ type defaultValidator struct {
 func NewValidator() Validator {
 	v := validator.New()
 
-	// Register custom validation tags
-	// dns1123: validates DNS-1123 subdomain names (lowercase alphanumeric, hyphens, dots)
-	v.RegisterValidation("dns1123", func(fl validator.FieldLevel) bool {
+	_ = registerSchemaValidations(v)
+
+	return &defaultValidator{
+		schemaValidator: v,
+	}
+}
+
+func registerSchemaValidations(v *validator.Validate) error {
+	if err := v.RegisterValidation("dns1123", func(fl validator.FieldLevel) bool {
 		value := fl.Field().String()
 		if value == "" {
-			return true // Empty is valid (use 'required' tag to enforce non-empty)
+			return true
 		}
-		// DNS-1123 subdomain: lowercase alphanumeric, hyphens, dots, max 253 chars
-		// Must start and end with alphanumeric
 		if len(value) > 253 {
 			return false
 		}
@@ -60,11 +66,22 @@ func NewValidator() Validator {
 			}
 		}
 		return true
-	})
-
-	return &defaultValidator{
-		schemaValidator: v,
+	}); err != nil {
+		return err
 	}
+
+	if err := v.RegisterValidation("semver", func(fl validator.FieldLevel) bool {
+		value := strings.TrimSpace(fl.Field().String())
+		if value == "" {
+			return true
+		}
+		_, err := semver.NewVersion(value)
+		return err == nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Validate performs all validation layers.

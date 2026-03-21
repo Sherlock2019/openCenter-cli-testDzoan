@@ -14,6 +14,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
@@ -24,7 +25,6 @@ import (
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
-	"github.com/opencenter-cloud/opencenter-cli/internal/di"
 	"gopkg.in/yaml.v3"
 )
 
@@ -87,53 +87,79 @@ func TestClusterSetupIntegration(t *testing.T) {
 	}
 }
 
+func TestClusterSetupIntegrationKindProvider(t *testing.T) {
+	dir := t.TempDir()
+	prepareCommandTestEnv(t, dir)
+
+	binDir := t.TempDir()
+	installFakeGitBinary(t, binDir)
+	prependTestPath(t, binDir)
+
+	initCmd := newClusterInitCmd()
+	initCmd.SetOut(&bytes.Buffer{})
+	initCmd.SetErr(&bytes.Buffer{})
+	initCmd.SetArgs([]string{"kind-setup-int", "--type", "kind", "--no-keygen"})
+	if err := initCmd.Execute(); err != nil {
+		t.Fatalf("cluster init failed: %v", err)
+	}
+
+	resetCommandStateForTests()
+
+	setupCmd := newClusterSetupCmd()
+	var stdout, stderr bytes.Buffer
+	setupCmd.SetOut(&stdout)
+	setupCmd.SetErr(&stderr)
+	setupCmd.SetArgs([]string{"kind-setup-int"})
+	if err := setupCmd.Execute(); err != nil {
+		t.Fatalf("cluster setup failed: %v\nstderr: %s", err, stderr.String())
+	}
+
+	clusterDir := filepath.Join(dir, "clusters", "opencenter", "infrastructure", "clusters", "kind-setup-int")
+	kindConfigPath := filepath.Join(clusterDir, "kind-config.yaml")
+	if _, err := os.Stat(kindConfigPath); err != nil {
+		t.Fatalf("expected kind-config.yaml to exist: %v", err)
+	}
+
+	for _, path := range []string{
+		filepath.Join(clusterDir, "main.tf"),
+		filepath.Join(clusterDir, "provider.tf"),
+	} {
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			t.Fatalf("expected %s to be absent for kind setup", path)
+		}
+	}
+}
+
 // TestClusterSetupWithDIContainer tests that the DI container is properly set up
 func TestClusterSetupWithDIContainer(t *testing.T) {
-	// Set up temporary config directory
 	dir := t.TempDir()
-
-	oldConfigDir := os.Getenv("OPENCENTER_CONFIG_DIR")
-	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
-	defer func() {
-		if oldConfigDir != "" {
-			os.Setenv("OPENCENTER_CONFIG_DIR", oldConfigDir)
-		} else {
-			os.Unsetenv("OPENCENTER_CONFIG_DIR")
-		}
-	}()
-
-	// Create DI container
-	container := di.NewContainer()
-	// TODO: Fix setupSetupContainer - function is undefined
-	_ = container
-	t.Skip("setupSetupContainer is undefined - skipping test")
-	// if err := setupSetupContainer(container); err != nil {
-	// 	t.Fatalf("failed to setup container: %v", err)
-	// }
+	prepareCommandTestEnv(t, dir)
+	resetContainerForTests()
+	container := getContainer()
 
 	// Verify all services can be resolved
 	var pathResolver *paths.PathResolver
-	if err := container.ResolveAs("path-resolver", &pathResolver); err != nil {
-		t.Errorf("failed to resolve path-resolver: %v", err)
+	if err := container.ResolveAs("PathResolver", &pathResolver); err != nil {
+		t.Errorf("failed to resolve PathResolver: %v", err)
 	}
 	if pathResolver == nil {
-		t.Error("path-resolver is nil")
+		t.Error("PathResolver is nil")
 	}
 
 	var validationEngine *validation.ValidationEngine
-	if err := container.ResolveAs("validation-engine", &validationEngine); err != nil {
-		t.Errorf("failed to resolve validation-engine: %v", err)
+	if err := container.ResolveAs("ValidationEngine", &validationEngine); err != nil {
+		t.Errorf("failed to resolve ValidationEngine: %v", err)
 	}
 	if validationEngine == nil {
-		t.Error("validation-engine is nil")
+		t.Error("ValidationEngine is nil")
 	}
 
 	var setupService *cluster.SetupService
-	if err := container.ResolveAs("setup-service", &setupService); err != nil {
-		t.Errorf("failed to resolve setup-service: %v", err)
+	if err := container.ResolveAs("SetupService", &setupService); err != nil {
+		t.Errorf("failed to resolve SetupService: %v", err)
 	}
 	if setupService == nil {
-		t.Error("setup-service is nil")
+		t.Error("SetupService is nil")
 	}
 }
 
@@ -385,6 +411,9 @@ func initializeTestCluster(t *testing.T, clusterName, organization string) error
 
 	// Register validators
 	if err := validationEngine.Register(validators.NewClusterNameValidator()); err != nil {
+		return err
+	}
+	if err := validationEngine.Register(validators.NewOrganizationNameValidator()); err != nil {
 		return err
 	}
 

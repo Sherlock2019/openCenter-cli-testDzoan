@@ -70,9 +70,10 @@ type AuditLogger struct {
 
 // AuditLoggerConfig represents configuration for audit logger
 type AuditLoggerConfig struct {
-	LogPath    string
-	SigningKey []byte
-	Enabled    bool
+	LogPath        string
+	SigningKey     []byte
+	SigningKeyPath string
+	Enabled        bool
 }
 
 // NewAuditLogger creates a new audit logger with HMAC integrity protection
@@ -80,9 +81,17 @@ func NewAuditLogger(config AuditLoggerConfig) (*AuditLogger, error) {
 	// Generate signing key if not provided
 	signingKey := config.SigningKey
 	if len(signingKey) == 0 {
-		signingKey = make([]byte, 32)
-		if _, err := rand.Read(signingKey); err != nil {
-			return nil, fmt.Errorf("failed to generate signing key: %w", err)
+		var err error
+		if config.SigningKeyPath != "" {
+			signingKey, err = loadOrCreateSigningKey(config.SigningKeyPath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to load audit signing key: %w", err)
+			}
+		} else {
+			signingKey = make([]byte, 32)
+			if _, err := rand.Read(signingKey); err != nil {
+				return nil, fmt.Errorf("failed to generate signing key: %w", err)
+			}
 		}
 	}
 
@@ -825,17 +834,54 @@ func generateEventID() string {
 	return hex.EncodeToString(b)
 }
 
+func loadOrCreateSigningKey(path string) ([]byte, error) {
+	if path == "" {
+		return nil, fmt.Errorf("signing key path cannot be empty")
+	}
+
+	if data, err := os.ReadFile(path); err == nil {
+		if len(data) != 32 {
+			return nil, fmt.Errorf("unexpected signing key length %d", len(data))
+		}
+		return data, nil
+	} else if !os.IsNotExist(err) {
+		return nil, err
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return nil, err
+	}
+
+	signingKey := make([]byte, 32)
+	if _, err := rand.Read(signingKey); err != nil {
+		return nil, err
+	}
+
+	if err := os.WriteFile(path, signingKey, 0o600); err != nil {
+		return nil, err
+	}
+
+	return signingKey, nil
+}
+
 // GetDefaultAuditLogPath returns the default audit log path
 func GetDefaultAuditLogPath() string {
 	configDir := config.GetConfigDir()
 	return filepath.Join(configDir, "audit", "audit.log")
 }
 
+// GetDefaultAuditSigningKeyPath returns the default audit signing key path.
+func GetDefaultAuditSigningKeyPath() string {
+	configDir := config.GetConfigDir()
+	return filepath.Join(configDir, "audit", "audit.key")
+}
+
 // NewDefaultAuditLogger creates an audit logger with default settings
 func NewDefaultAuditLogger() (*AuditLogger, error) {
 	config := AuditLoggerConfig{
-		LogPath: GetDefaultAuditLogPath(),
-		Enabled: true,
+		LogPath:        GetDefaultAuditLogPath(),
+		SigningKeyPath: GetDefaultAuditSigningKeyPath(),
+		Enabled:        true,
 	}
 
 	return NewAuditLogger(config)

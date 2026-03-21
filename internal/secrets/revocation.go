@@ -205,16 +205,18 @@ func (r *DefaultKeyRevoker) RevokeByUser(ctx context.Context, opts RevokeOptions
 	result.ReencryptedFiles = reencryptedFiles
 
 	// Update key status in registry
+	actor := r.getActor(ctx)
 	for _, key := range userKeys {
 		result.RevokedKeys = append(result.RevokedKeys, key.Fingerprint)
 
 		// Update key entry with revocation details
 		key.Status = KeyStatusRevoked
 		key.RevokedAt = time.Now()
-		key.RevokedBy = opts.User
+		key.RevokedBy = actor
+		key.RevokedReason = opts.Reason
 
-		if err := r.registry.UpdateKeyStatus(ctx, opts.Cluster, KeyTypeAge, KeyStatusRevoked); err != nil {
-			r.logger.Warn("Failed to update key status in registry", "fingerprint", key.Fingerprint, "error", err)
+		if err := r.registry.UpdateKey(ctx, key); err != nil {
+			r.logger.Warn("Failed to update key in registry", "fingerprint", key.Fingerprint, "error", err)
 			// Don't fail the revocation if registry update fails
 		}
 	}
@@ -227,7 +229,6 @@ func (r *DefaultKeyRevoker) RevokeByUser(ctx context.Context, opts RevokeOptions
 
 	// Log audit event
 	if r.auditLogger != nil {
-		actor := r.getActor(ctx)
 		for _, fingerprint := range result.RevokedKeys {
 			if err := r.auditLogger.LogKeyRevoked(ctx, actor, opts.Cluster, fingerprint, opts.User, len(result.ReencryptedFiles)); err != nil {
 				r.logger.Warn("Failed to log audit event", "error", err)
@@ -367,10 +368,11 @@ func (r *DefaultKeyRevoker) RevokeByFingerprint(ctx context.Context, opts Revoke
 	// Update key status in registry
 	targetKey.Status = KeyStatusRevoked
 	targetKey.RevokedAt = time.Now()
-	targetKey.RevokedBy = "admin" // TODO: Get actual user from context
+	targetKey.RevokedBy = r.getActor(ctx)
+	targetKey.RevokedReason = opts.Reason
 
-	if err := r.registry.UpdateKeyStatus(ctx, opts.Cluster, KeyTypeAge, KeyStatusRevoked); err != nil {
-		r.logger.Warn("Failed to update key status in registry", "fingerprint", opts.Fingerprint, "error", err)
+	if err := r.registry.UpdateKey(ctx, *targetKey); err != nil {
+		r.logger.Warn("Failed to update key in registry", "fingerprint", opts.Fingerprint, "error", err)
 		// Don't fail the revocation if registry update fails
 	}
 
@@ -457,8 +459,11 @@ func (r *DefaultKeyRevoker) EmergencyRevoke(ctx context.Context, cluster string,
 // This is a placeholder implementation that should be replaced with
 // actual user-key mapping logic.
 func (r *DefaultKeyRevoker) isKeyOwnedByUser(key KeyEntry, userEmail string) bool {
-	// TODO: Implement actual user-key mapping
-	// For now, we'll check if the user email is in the UsedBy list
+	if key.UserEmail != "" {
+		return key.UserEmail == userEmail
+	}
+
+	// Legacy fallback for entries populated before UserEmail tracking.
 	for _, user := range key.UsedBy {
 		if user == userEmail {
 			return true

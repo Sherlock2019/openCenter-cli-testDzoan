@@ -167,7 +167,10 @@ func initializeHookManager() (secrets.HookManager, error) {
 	logger := createSecretsLogger()
 	configLoader := createConfigLoader()
 	sopsManager := createSOPSManager(logger)
-	auditLogger := &noOpAuditLogger{}
+	auditLogger, err := createAuditLogger()
+	if err != nil {
+		return nil, err
+	}
 
 	// Create secrets manager (needed by hook manager)
 	secretsManager := secrets.NewDefaultSecretsManager(configLoader, sopsManager, auditLogger, logger)

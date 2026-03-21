@@ -29,6 +29,7 @@ import (
 // with all required services.
 // Requirements: 2.3.5.1, 2.3.5.2
 func TestInitializeContainer(t *testing.T) {
+	prepareCommandTestEnv(t, t.TempDir())
 	container := initializeContainer()
 
 	// Verify container is not nil
@@ -112,6 +113,7 @@ func TestInitializeContainer(t *testing.T) {
 // TestGetContainerSingleton verifies that getContainer returns a singleton instance.
 // Requirements: 2.3.5.1
 func TestGetContainerSingleton(t *testing.T) {
+	prepareCommandTestEnv(t, t.TempDir())
 	// Get container twice
 	container1 := getContainer()
 	container2 := getContainer()
@@ -130,6 +132,7 @@ func TestGetContainerSingleton(t *testing.T) {
 // TestContainerServicesAreSingletons verifies that services are singletons.
 // Requirements: 2.3.5.2
 func TestContainerServicesAreSingletons(t *testing.T) {
+	prepareCommandTestEnv(t, t.TempDir())
 	container := initializeContainer()
 
 	// Resolve PathResolver twice
@@ -167,6 +170,7 @@ func TestContainerServicesAreSingletons(t *testing.T) {
 // TestContainerDependencyResolution verifies that dependencies are properly resolved.
 // Requirements: 2.3.5.2
 func TestContainerDependencyResolution(t *testing.T) {
+	prepareCommandTestEnv(t, t.TempDir())
 	container := initializeContainer()
 
 	// Resolve InitService which depends on PathResolver, ValidationEngine, and ConfigManager
@@ -199,6 +203,7 @@ func TestContainerDependencyResolution(t *testing.T) {
 // TestExecuteWithContextAddsContainer verifies that ExecuteWithContext adds container to context.
 // Requirements: 2.3.5.3
 func TestExecuteWithContextAddsContainer(t *testing.T) {
+	prepareCommandTestEnv(t, t.TempDir())
 	// This test verifies the integration but doesn't actually execute commands
 	// to avoid side effects. We just verify the context setup.
 

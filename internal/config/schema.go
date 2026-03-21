@@ -378,6 +378,163 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 				"description": "Kubernetes API server IP address",
 				"format":      "ipv4",
 			},
+			"kind": map[string]any{
+				"type":        "object",
+				"description": "Kind provider configuration for local clusters",
+				"properties": map[string]any{
+					"cluster_name": map[string]any{
+						"type":        "string",
+						"description": "Override the Kind cluster name used during bootstrap",
+						"minLength":   1,
+					},
+					"kubernetes_version": map[string]any{
+						"type":        "string",
+						"description": "Kubernetes version used to derive the Kind node image",
+						"pattern":     "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+						"default":     "1.30.4",
+					},
+					"node_image": map[string]any{
+						"type":        "string",
+						"description": "Explicit Kind node image override",
+						"minLength":   1,
+					},
+					"control_plane_count": map[string]any{
+						"type":        "integer",
+						"description": "Number of Kind control-plane nodes",
+						"minimum":     1,
+						"default":     1,
+					},
+					"worker_count": map[string]any{
+						"type":        "integer",
+						"description": "Number of Kind worker nodes",
+						"minimum":     0,
+						"default":     2,
+					},
+					"api_server_address": map[string]any{
+						"type":        "string",
+						"description": "Host address the Kind API server should bind to",
+						"default":     "127.0.0.1",
+					},
+					"api_server_port": map[string]any{
+						"type":        "integer",
+						"description": "Host port exposed for the Kind API server",
+						"minimum":     1,
+						"maximum":     65535,
+						"default":     6443,
+					},
+					"pod_subnet": map[string]any{
+						"type":        "string",
+						"description": "Pod CIDR used by the Kind cluster",
+						"default":     "10.244.0.0/16",
+					},
+					"service_subnet": map[string]any{
+						"type":        "string",
+						"description": "Service CIDR used by the Kind cluster",
+						"default":     "10.96.0.0/16",
+					},
+					"disable_default_cni": map[string]any{
+						"type":        "boolean",
+						"description": "Disable Kind's default CNI installation",
+						"default":     false,
+					},
+					"ingress_enabled": map[string]any{
+						"type":        "boolean",
+						"description": "Enable the default ingress workflow for Kind",
+						"default":     true,
+					},
+					"runtime": map[string]any{
+						"type":        "string",
+						"description": "Container runtime override used for Kind operations",
+					},
+					"kubeconfig_path_policy": map[string]any{
+						"type":        "string",
+						"description": "Policy for where bootstrap should write kubeconfig output",
+						"default":     "cluster-owned",
+					},
+					"registry": map[string]any{
+						"type":        "object",
+						"description": "Optional local registry configuration for Kind",
+						"properties": map[string]any{
+							"enabled": map[string]any{
+								"type":        "boolean",
+								"description": "Enable the local registry integration",
+								"default":     false,
+							},
+							"name": map[string]any{
+								"type":        "string",
+								"description": "Local registry container name",
+								"default":     "kind-registry",
+							},
+							"port": map[string]any{
+								"type":        "integer",
+								"description": "Local registry port",
+								"minimum":     1,
+								"maximum":     65535,
+								"default":     5001,
+							},
+						},
+						"additionalProperties": false,
+					},
+					"extra_port_mappings": map[string]any{
+						"type":        "array",
+						"description": "Additional host-to-node port mappings for Kind nodes",
+						"items": map[string]any{
+							"type": "object",
+							"properties": map[string]any{
+								"container_port": map[string]any{
+									"type":        "integer",
+									"description": "Port exposed inside the Kind node",
+									"minimum":     1,
+									"maximum":     65535,
+								},
+								"host_port": map[string]any{
+									"type":        "integer",
+									"description": "Port exposed on the host",
+									"minimum":     1,
+									"maximum":     65535,
+								},
+								"listen_address": map[string]any{
+									"type":        "string",
+									"description": "Host listen address for the port mapping",
+								},
+								"protocol": map[string]any{
+									"type":        "string",
+									"description": "Transport protocol for the port mapping",
+									"enum":        []string{"TCP", "UDP", "SCTP", "tcp", "udp", "sctp"},
+									"default":     "TCP",
+								},
+							},
+							"additionalProperties": false,
+						},
+					},
+					"extra_mounts": map[string]any{
+						"type":        "array",
+						"description": "Additional host path mounts for Kind nodes",
+						"items": map[string]any{
+							"type": "object",
+							"properties": map[string]any{
+								"host_path": map[string]any{
+									"type":        "string",
+									"description": "Host path mounted into the Kind node",
+									"minLength":   1,
+								},
+								"container_path": map[string]any{
+									"type":        "string",
+									"description": "Container path mounted inside the Kind node",
+									"minLength":   1,
+								},
+								"read_only": map[string]any{
+									"type":        "boolean",
+									"description": "Mount the path as read-only",
+									"default":     false,
+								},
+							},
+							"additionalProperties": false,
+						},
+					},
+				},
+				"additionalProperties": false,
+			},
 			"cloud": map[string]any{
 				"type":        "object",
 				"description": "Cloud provider specific configuration",

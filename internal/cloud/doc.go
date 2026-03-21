@@ -20,6 +20,13 @@
 // through a factory pattern, allowing opencenter to work with OpenStack, AWS, and
 // other cloud platforms.
 //
+// This package is not the registry for lifecycle/bootstrap providers. Providers used
+// by cluster bootstrap or destroy flows may live in sibling packages and be wired
+// directly by those commands or services. Kind is the current example: it manages
+// local cluster lifecycle, but it does not implement the CloudProvider drift
+// interface and is therefore not registered in CloudProviderFactory. Baremetal and
+// Talos are also outside the drift-provider registry today.
+//
 // # Architecture
 //
 // The package is organized around three main concepts:
@@ -40,8 +47,8 @@
 //
 //	// Create factory and register providers
 //	factory := cloud.NewCloudProviderFactory()
-//	factory.RegisterProvider("openstack", openstack.NewProvider(authOpts))
-//	factory.RegisterProvider("aws", aws.NewProvider(region))
+//	factory.RegisterProvider("openstack", openstack.NewProvider(authOpts, region))
+//	factory.RegisterProvider("aws", aws.NewProvider(region, profile))
 //
 //	// Get provider for cluster
 //	provider, err := factory.GetProvider(cfg.Infrastructure.Provider)
@@ -99,7 +106,7 @@
 //
 // Provider implementations are in subpackages:
 //   - openstack: OpenStack cloud provider
-//   - aws: AWS cloud provider (basic implementation)
+//   - aws: AWS cloud provider
 //
 // Each provider implements the CloudProvider interface and handles
 // provider-specific API calls and resource types.

@@ -35,6 +35,7 @@ type ReferenceResolver struct {
 	visited          map[string]bool // For circular reference detection
 	maxDepth         int             // Maximum recursion depth
 	fileSystem       fs.FileSystem
+	root             reflect.Value
 }
 
 // NewReferenceResolver creates a new reference resolver with caching support.
@@ -68,6 +69,7 @@ func (r *ReferenceResolver) Resolve(cfg interface{}) error {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
+	r.root = v
 
 	return r.resolveValue(v, "", 0)
 }
@@ -246,6 +248,14 @@ func (r *ReferenceResolver) resolveSliceValue(v reflect.Value, path string, dept
 // Requirements: 4.2.4
 func (r *ReferenceResolver) resolveReference(str string, currentPath string) (string, error) {
 	result := str
+	addedCurrent := false
+	if currentPath != "" && !r.visited[currentPath] {
+		r.visited[currentPath] = true
+		addedCurrent = true
+	}
+	if addedCurrent {
+		defer delete(r.visited, currentPath)
+	}
 
 	// Resolve ${ref:} references
 	refMatches := r.referencePattern.FindAllStringSubmatch(result, -1)
@@ -266,10 +276,15 @@ func (r *ReferenceResolver) resolveReference(str string, currentPath string) (st
 
 			// Mark as visited
 			r.visited[refPath] = true
+			resolvedValue, err := r.lookupReferenceValue(refPath)
+			delete(r.visited, refPath)
+			if err != nil {
+				return "", err
+			}
 
-			// This is a placeholder - actual path lookup would need the root config
-			// For now, we'll return an error indicating the reference couldn't be resolved
-			return "", fmt.Errorf("reference ${ref:%s} cannot be resolved (path lookup not yet implemented)", refPath)
+			// Cache resolved reference values for repeated lookups.
+			r.cache[refPath] = resolvedValue
+			result = strings.Replace(result, match[0], fmt.Sprint(resolvedValue), 1)
 		}
 	}
 
@@ -319,4 +334,137 @@ func (r *ReferenceResolver) resolveReference(str string, currentPath string) (st
 	}
 
 	return result, nil
+}
+
+func (r *ReferenceResolver) lookupReferenceValue(refPath string) (interface{}, error) {
+	value, err := r.lookupPathValue(r.root, refPath)
+	if err != nil {
+		return nil, fmt.Errorf("reference ${ref:%s} cannot be resolved: %w", refPath, err)
+	}
+
+	value = dereferenceValue(value)
+	if !value.IsValid() {
+		return nil, fmt.Errorf("reference ${ref:%s} cannot be resolved: value is nil", refPath)
+	}
+
+	if value.Kind() == reflect.String {
+		str := value.String()
+		if r.referencePattern.MatchString(str) || r.envPattern.MatchString(str) || r.filePattern.MatchString(str) {
+			return r.resolveReference(str, refPath)
+		}
+	}
+
+	return value.Interface(), nil
+}
+
+func (r *ReferenceResolver) lookupPathValue(root reflect.Value, path string) (reflect.Value, error) {
+	current := dereferenceValue(root)
+	if !current.IsValid() {
+		return reflect.Value{}, fmt.Errorf("root configuration is nil")
+	}
+
+	segments := strings.Split(path, ".")
+	for _, segment := range segments {
+		name, indices, err := parseReferenceSegment(segment)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+
+		if name != "" {
+			current, err = resolveReferenceSegment(current, name)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+		}
+
+		for _, index := range indices {
+			current = dereferenceValue(current)
+			if !current.IsValid() {
+				return reflect.Value{}, fmt.Errorf("path %q resolved to nil before index %d", path, index)
+			}
+			if current.Kind() != reflect.Slice && current.Kind() != reflect.Array {
+				return reflect.Value{}, fmt.Errorf("segment %q is not indexable", segment)
+			}
+			if index < 0 || index >= current.Len() {
+				return reflect.Value{}, fmt.Errorf("index %d out of range for segment %q", index, segment)
+			}
+			current = current.Index(index)
+		}
+	}
+
+	return current, nil
+}
+
+func dereferenceValue(v reflect.Value) reflect.Value {
+	for v.IsValid() && (v.Kind() == reflect.Interface || v.Kind() == reflect.Ptr) {
+		if v.IsNil() {
+			return reflect.Value{}
+		}
+		v = v.Elem()
+	}
+	return v
+}
+
+func resolveReferenceSegment(v reflect.Value, segment string) (reflect.Value, error) {
+	v = dereferenceValue(v)
+	if !v.IsValid() {
+		return reflect.Value{}, fmt.Errorf("segment %q resolved to nil", segment)
+	}
+
+	switch v.Kind() {
+	case reflect.Struct:
+		t := v.Type()
+		for i := 0; i < v.NumField(); i++ {
+			fieldType := t.Field(i)
+			fieldName := fieldType.Name
+			if tag := fieldType.Tag.Get("yaml"); tag != "" {
+				parts := strings.Split(tag, ",")
+				if parts[0] != "" && parts[0] != "-" {
+					fieldName = parts[0]
+				}
+			}
+			if fieldName == segment || strings.EqualFold(fieldType.Name, segment) {
+				return v.Field(i), nil
+			}
+		}
+		return reflect.Value{}, fmt.Errorf("unknown struct field %q", segment)
+	case reflect.Map:
+		if v.Type().Key().Kind() != reflect.String {
+			return reflect.Value{}, fmt.Errorf("map segment %q requires string keys", segment)
+		}
+		resolved := v.MapIndex(reflect.ValueOf(segment))
+		if !resolved.IsValid() {
+			return reflect.Value{}, fmt.Errorf("unknown map key %q", segment)
+		}
+		return resolved, nil
+	default:
+		return reflect.Value{}, fmt.Errorf("segment %q cannot be resolved from %s", segment, v.Kind())
+	}
+}
+
+func parseReferenceSegment(segment string) (string, []int, error) {
+	name := segment
+	var indices []int
+
+	for {
+		open := strings.Index(name, "[")
+		if open == -1 {
+			break
+		}
+		close := strings.Index(name[open:], "]")
+		if close == -1 {
+			return "", nil, fmt.Errorf("invalid indexed reference segment %q", segment)
+		}
+		close += open
+
+		indexValue := name[open+1 : close]
+		var index int
+		if _, err := fmt.Sscanf(indexValue, "%d", &index); err != nil {
+			return "", nil, fmt.Errorf("invalid index %q in segment %q", indexValue, segment)
+		}
+		indices = append(indices, index)
+		name = name[:open] + name[close+1:]
+	}
+
+	return name, indices, nil
 }

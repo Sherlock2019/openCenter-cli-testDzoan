@@ -23,6 +23,7 @@ import (
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/operations"
+	"github.com/opencenter-cloud/opencenter-cli/internal/security"
 	"github.com/spf13/cobra"
 )
 
@@ -392,8 +393,9 @@ func newClusterBackupScheduleCmd() *cobra.Command {
 		Short: "Schedule periodic backups for a cluster",
 		Long: `Schedule periodic backups for a cluster.
 
-This feature is not yet implemented. It will support cron-style scheduling
-and automatic backup retention policies.
+This command runs as a foreground interval scheduler. It creates a backup on
+each interval tick, prunes backups older than the retention window, and keeps
+running until interrupted.
 
 If no cluster name is provided, uses the currently active cluster.`,
 		Example: `  # Schedule daily backups for active cluster
@@ -412,13 +414,44 @@ If no cluster name is provided, uses the currently active cluster.`,
 				return err
 			}
 
-			fmt.Printf("Scheduling backups for cluster %s...\n", clusterName)
-			fmt.Printf("  Interval: %s\n", interval)
-			fmt.Printf("  Retention: %s\n", retention)
-			fmt.Println("\n⚠ Backup scheduling is not yet implemented")
-			fmt.Println("This feature will be available in a future release.")
+			parsedInterval, err := security.ParseDuration(interval)
+			if err != nil {
+				return fmt.Errorf("invalid interval: %w", err)
+			}
+			parsedRetention, err := security.ParseDuration(retention)
+			if err != nil {
+				return fmt.Errorf("invalid retention: %w", err)
+			}
 
-			return nil
+			homeDir, err := os.UserHomeDir()
+			if err != nil {
+				return fmt.Errorf("failed to get home directory: %w", err)
+			}
+
+			configDir := filepath.Join(homeDir, ".config", "opencenter")
+			backupDir := filepath.Join(configDir, "backups")
+			pathResolver := paths.NewPathResolver(configDir)
+
+			bm, err := operations.NewBackupManager(pathResolver, backupDir)
+			if err != nil {
+				return fmt.Errorf("failed to create backup manager: %w", err)
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Scheduling backups for cluster %s every %s\n", clusterName, parsedInterval)
+			fmt.Fprintf(cmd.OutOrStdout(), "Retention window: %s\n", parsedRetention)
+			fmt.Fprintln(cmd.OutOrStdout(), "Backup scheduling is running in the foreground. Press Ctrl+C to stop.")
+
+			return bm.ScheduleBackups(cmd.Context(), clusterName, parsedInterval, parsedRetention, func(backup *operations.Backup, backupErr error) {
+				if backupErr != nil {
+					fmt.Fprintf(cmd.ErrOrStderr(), "Backup run failed: %v\n", backupErr)
+					return
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "[%s] Created backup %s at %s\n",
+					time.Now().Format(time.RFC3339),
+					backup.ID,
+					backup.StorageLocation,
+				)
+			})
 		},
 	}
 

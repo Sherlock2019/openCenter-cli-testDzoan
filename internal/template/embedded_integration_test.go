@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/gitops"
+	"github.com/opencenter-cloud/opencenter-cli/internal/provision"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -77,7 +78,22 @@ func TestRegisterRealGitOpsTemplates(t *testing.T) {
 
 // TestRegisterRealProvisionTemplates tests registration of actual embedded provision templates
 func TestRegisterRealProvisionTemplates(t *testing.T) {
-	t.Skip("Skipping: provision.templatesFS is not exported, tested via mock in other tests")
+	registry := NewInMemoryTemplateRegistry()
+
+	err := RegisterProvisionTemplates(registry, provision.TemplatesFS)
+	require.NoError(t, err)
+
+	templates := registry.ListTemplates()
+	require.NotEmpty(t, templates)
+
+	var inventoryFound bool
+	for _, tmpl := range templates {
+		if tmpl.Type == TemplateTypeInfrastructure {
+			inventoryFound = inventoryFound || tmpl.Name == "inventory"
+		}
+	}
+
+	assert.True(t, inventoryFound, "expected provision inventory template to be registered")
 }
 
 // TestGlobalTemplateRegistry tests the global registry initialization

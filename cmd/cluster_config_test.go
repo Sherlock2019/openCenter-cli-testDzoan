@@ -149,12 +149,14 @@ opencenter:
       prune: true
 deployment:
   auto_deploy: false
+  method: kubespray
 opentofu:
   enabled: true
   path: opentofu
   backend:
     type: local
-    path: terraform.tfstate
+    local:
+      path: terraform.tfstate
 secrets:
   sops_age_key_file: ~/.config/opencenter/age/keys.txt
   ssh_key:
@@ -381,12 +383,14 @@ opencenter:
       prune: true
 deployment:
   auto_deploy: false
+  method: kubespray
 opentofu:
   enabled: true
   path: opentofu
   backend:
     type: local
-    path: terraform.tfstate
+    local:
+      path: terraform.tfstate
 secrets:
   sops_age_key_file: ~/.config/opencenter/age/keys.txt
   ssh_key:

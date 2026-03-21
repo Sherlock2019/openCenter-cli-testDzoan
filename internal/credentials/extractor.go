@@ -82,6 +82,8 @@ func (e *Extractor) ExtractOpenStack() (*OpenStackCredentials, error) {
 	creds.ApplicationCredentialSecret = osCloud.ApplicationCredentialSecret
 	creds.Domain = osCloud.Domain
 	creds.TenantName = osCloud.TenantName
+	creds.ProjectDomainName = osCloud.ProjectDomainName
+	creds.UserDomainName = osCloud.UserDomainName
 	creds.FloatingNetworkID = osCloud.Networking.FloatingNetworkId
 	creds.SubnetID = osCloud.Networking.SubnetId
 	creds.Insecure = osCloud.Insecure

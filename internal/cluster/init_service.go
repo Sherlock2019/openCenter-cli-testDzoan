@@ -78,7 +78,7 @@ func NewInitServiceWithConfigMgr(
 		// Create ConfigurationManager with the provided validation engine
 		errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 		fs := fs.NewDefaultFileSystem(errorHandler)
-		
+
 		// Use the pathResolver's base directory
 		configurationMgr = config.NewConfigurationManagerWithDeps(
 			config.NewConfigIOHandler(fs),
@@ -277,34 +277,36 @@ func (s *InitService) loadOrCreateConfig(opts InitOptions) (*config.Config, map[
 
 // createDefaultConfig creates a default configuration based on options
 func (s *InitService) createDefaultConfig(opts InitOptions) (config.Config, map[string]any, error) {
-	// Generate schema-based defaults for v2 configuration
-	var schemaDefaultYAML []byte
-	var err error
+	var (
+		cfg       config.Config
+		configMap map[string]any
+		err       error
+	)
 
 	if opts.FullSchema {
-		schemaDefaultYAML, err = config.GenerateFullSchemaDefaults(opts.ClusterName)
+		// Keep full-schema generation on the existing path, then overlay provider defaults below.
+		schemaDefaultYAML, err := config.GenerateFullSchemaDefaults(opts.ClusterName)
+		if err != nil {
+			return config.Config{}, nil, fmt.Errorf("generating schema defaults: %w", err)
+		}
+
+		if err := yaml.Unmarshal(schemaDefaultYAML, &cfg); err != nil {
+			return config.Config{}, nil, fmt.Errorf("parsing schema defaults to struct: %w", err)
+		}
+
+		configMap = make(map[string]any)
+		if err := yaml.Unmarshal(schemaDefaultYAML, &configMap); err != nil {
+			return config.Config{}, nil, fmt.Errorf("parsing schema defaults to map: %w", err)
+		}
 	} else {
-		schemaDefaultYAML, err = config.GenerateDefaultFromSchema(opts.ClusterName)
-	}
-
-	if err != nil {
-		return config.Config{}, nil, fmt.Errorf("generating schema defaults: %w", err)
-	}
-
-	// Parse into both struct and map
-	var cfg config.Config
-	if err := yaml.Unmarshal(schemaDefaultYAML, &cfg); err != nil {
-		return config.Config{}, nil, fmt.Errorf("parsing schema defaults to struct: %w", err)
-	}
-
-	configMap := make(map[string]any)
-	if err := yaml.Unmarshal(schemaDefaultYAML, &configMap); err != nil {
-		return config.Config{}, nil, fmt.Errorf("parsing schema defaults to map: %w", err)
+		cfg, err = config.NewProviderDefault(opts.ClusterName, opts.Provider)
+		if err != nil {
+			return config.Config{}, nil, fmt.Errorf("building provider defaults: %w", err)
+		}
 	}
 
 	// Set schema version to v2.0
 	cfg.SchemaVersion = "2.0"
-	configMap["schema_version"] = "2.0"
 
 	// Set organization
 	if opts.Organization != "" {
@@ -316,6 +318,10 @@ func (s *InitService) createDefaultConfig(opts InitOptions) (config.Config, map[
 	// Set provider if specified
 	if opts.Provider != "" {
 		cfg.OpenCenter.Infrastructure.Provider = opts.Provider
+	}
+
+	if err := config.ApplyProviderDefaults(&cfg, cfg.OpenCenter.Infrastructure.Provider); err != nil {
+		return config.Config{}, nil, fmt.Errorf("applying provider defaults: %w", err)
 	}
 
 	// Set storage plugin based on provider type
@@ -336,6 +342,16 @@ func (s *InitService) createDefaultConfig(opts InitOptions) (config.Config, map[
 	// Set initial stage and status
 	cfg.OpenCenter.Meta.Stage = config.StageInit
 	cfg.OpenCenter.Meta.Status = config.StatusSuccess
+
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return config.Config{}, nil, fmt.Errorf("marshaling default config: %w", err)
+	}
+
+	configMap = make(map[string]any)
+	if err := yaml.Unmarshal(data, &configMap); err != nil {
+		return config.Config{}, nil, fmt.Errorf("rebuilding default config map: %w", err)
+	}
 
 	return cfg, configMap, nil
 }
@@ -593,7 +609,26 @@ func (s *InitService) generateSSHKey(clusterPaths *paths.ClusterPaths, cfg *conf
 		return fmt.Errorf("writing SSH public key: %w", err)
 	}
 
+	if shouldPopulateGeneratedSSHAuthorizedKey(cfg.OpenCenter.Cluster.SSHAuthorizedKeys) {
+		cfg.OpenCenter.Cluster.SSHAuthorizedKeys = []string{strings.TrimSpace(string(keyPair.PublicKey))}
+	}
+
 	return nil
+}
+
+func shouldPopulateGeneratedSSHAuthorizedKey(keys []string) bool {
+	if len(keys) == 0 {
+		return true
+	}
+
+	for _, key := range keys {
+		trimmed := strings.TrimSpace(key)
+		if trimmed != "" && trimmed != config.DefaultSSHAuthorizedKeyPlaceholder {
+			return false
+		}
+	}
+
+	return true
 }
 
 // initGitRepo initializes a git repository for the cluster

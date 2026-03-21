@@ -182,7 +182,10 @@ func initializeKeyRotator() (secrets.KeyRotator, error) {
 	logger := createSecretsLogger()
 	configLoader := createConfigLoader()
 	sopsManager := createSOPSManager(logger)
-	auditLogger := &noOpAuditLogger{}
+	auditLogger, err := createAuditLogger()
+	if err != nil {
+		return nil, err
+	}
 
 	// Get registry path
 	registryPath, err := getSecretsRegistryPath()

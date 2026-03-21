@@ -34,7 +34,6 @@ func populateInfraFields(cfg *Config) {
 	cfg.OpenCenter.Secrets.Barbican.AuthURL = "https://barbican.example.com"
 }
 
-
 func TestResolveConfigDir(t *testing.T) {
 	// Unset env var to test default behavior
 	os.Unsetenv("OPENCENTER_CONFIG_DIR")
@@ -107,9 +106,6 @@ func TestConfigToJSON(t *testing.T) {
 	}
 }
 
-
-
-
 func TestListEmptyDirectory(t *testing.T) {
 	dir := t.TempDir()
 	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
@@ -128,7 +124,6 @@ func TestListEmptyDirectory(t *testing.T) {
 		t.Errorf("expected empty list, got %v", names)
 	}
 }
-
 
 func TestActiveClusterOperations(t *testing.T) {
 	dir := t.TempDir()
@@ -176,117 +171,6 @@ func TestActiveClusterOperations(t *testing.T) {
 		t.Errorf("expected empty active cluster after clearing, got %s", active)
 	}
 }
-
-func TestClusterDirectoryPath_SKIP(t *testing.T) {
-	t.Skip("Temporarily skipped - deprecated function")
-	/*
-		dir := t.TempDir()
-		os.Setenv("OPENCENTER_CONFIG_DIR", dir)
-		defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
-
-		tests := []struct {
-			name        string
-			clusterName string
-			expectError bool
-		}{
-			{
-				name:        "valid cluster name",
-				clusterName: "test-cluster",
-				expectError: false,
-			},
-			{
-				name:        "invalid cluster name",
-				clusterName: "test/cluster",
-				expectError: true,
-			},
-			{
-				name:        "empty cluster name",
-				clusterName: "",
-				expectError: true,
-			},
-		}
-
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				path, err := ClusterDirectoryPath(tt.clusterName)
-
-				if tt.expectError {
-					if err == nil {
-						t.Errorf("expected error for cluster name %q, but got none", tt.clusterName)
-					}
-					return
-				}
-
-				if err != nil {
-					t.Errorf("expected no error for cluster name %q, but got: %v", tt.clusterName, err)
-					return
-				}
-
-				expected := filepath.Join(dir, "clusters", tt.clusterName)
-				if path != expected {
-					t.Errorf("expected path %s, got %s", expected, path)
-				}
-			})
-		}
-	*/
-}
-
-func TestClusterSecretsPath_SKIP(t *testing.T) {
-	t.Skip("Temporarily skipped - deprecated function")
-	/*
-		}
-
-		func testClusterSecretsPath_disabled(t *testing.T) {
-			os.Setenv("OPENCENTER_CONFIG_DIR", dir)
-			defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
-
-			tests := []struct {
-				name        string
-				clusterName string
-				expectError bool
-			}{
-				{
-					name:        "valid cluster name",
-					clusterName: "test-cluster",
-					expectError: false,
-				},
-				{
-					name:        "invalid cluster name",
-					clusterName: "test/cluster",
-					expectError: true,
-				},
-				{
-					name:        "empty cluster name",
-					clusterName: "",
-					expectError: true,
-				},
-			}
-
-			for _, tt := range tests {
-				t.Run(tt.name, func(t *testing.T) {
-					path, err := ClusterSecretsPath(tt.clusterName)
-
-					if tt.expectError {
-						if err == nil {
-							t.Errorf("expected error for cluster name %q, but got none", tt.clusterName)
-						}
-						return
-					}
-
-					if err != nil {
-						t.Errorf("expected no error for cluster name %q, but got: %v", tt.clusterName, err)
-						return
-					}
-
-					expected := filepath.Join(dir, "clusters", tt.clusterName, "secrets", "age", "keys")
-					if path != expected {
-						t.Errorf("expected path %s, got %s", expected, path)
-					}
-				})
-			}
-	*/
-}
-
 
 // TestDefaultConfigNewFields tests that NewDefault populates all new configuration fields correctly
 func TestDefaultConfigNewFields(t *testing.T) {
@@ -544,7 +428,6 @@ func TestValidateDomainFormat_DISABLED(t *testing.T) {
 func TestValidateServiceSpecificRequirements_DISABLED(t *testing.T) {
 	t.Skip("Test disabled - uses old API")
 }
-
 
 // TestTemplateRenderingWithNewFields tests that new configuration fields can be used in templates
 func TestTemplateRenderingWithNewFields(t *testing.T) {
@@ -988,4 +871,3 @@ func TestApplicationServicesUseApplicationCredentials(t *testing.T) {
 		}
 	})
 }
-

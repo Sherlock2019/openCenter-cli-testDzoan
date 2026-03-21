@@ -136,9 +136,22 @@ available option.`,
 }
 
 // generateCompleteTemplate creates a configuration with all fields populated
+func templateBaseConfig(provider string) config.Config {
+	if provider == "" || provider == "all" {
+		return config.NewDefault("example-cluster")
+	}
+
+	cfg, err := config.NewProviderDefault("example-cluster", provider)
+	if err != nil {
+		cfg = config.NewDefault("example-cluster")
+		cfg.OpenCenter.Infrastructure.Provider = provider
+	}
+
+	return cfg
+}
+
 func generateCompleteTemplate(provider string) config.Config {
-	// Start with default config
-	cfg := config.NewDefault("example-cluster")
+	cfg := templateBaseConfig(provider)
 
 	// Populate all optional fields with example values
 	cfg.Metadata.CreatedBy = "admin@example.com"
@@ -157,7 +170,7 @@ func generateCompleteTemplate(provider string) config.Config {
 	cfg.OpenCenter.Cluster.ClusterFQDN = "example-cluster.sjc3.k8s.opencenter.cloud"
 	cfg.OpenCenter.Cluster.AdminEmail = "admin@example.com"
 	cfg.OpenCenter.Cluster.SSHAuthorizedKeys = []string{
-		"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExamplePublicKeyDataHere user@example.com",
+		config.DefaultSSHAuthorizedKeyPlaceholder,
 	}
 
 	// Populate Kubernetes configuration
@@ -174,12 +187,13 @@ func generateCompleteTemplate(provider string) config.Config {
 	switch provider {
 	case "openstack":
 		cfg.OpenCenter.Infrastructure.Provider = "openstack"
-		populateOpenStackConfig(&cfg)
 	case "aws":
 		cfg.OpenCenter.Infrastructure.Provider = "aws"
 		populateAWSConfig(&cfg)
 	case "kind":
-		cfg.OpenCenter.Infrastructure.Provider = "kind"
+		if err := config.ApplyProviderDefaults(&cfg, "kind"); err != nil {
+			cfg.OpenCenter.Infrastructure.Provider = "kind"
+		}
 	case "baremetal":
 		cfg.OpenCenter.Infrastructure.Provider = "baremetal"
 		populateBaremetalConfig(&cfg)
@@ -198,36 +212,32 @@ func generateCompleteTemplate(provider string) config.Config {
 
 // generateMinimalTemplate creates a configuration with only required fields
 func generateMinimalTemplate(provider string) config.Config {
+	baseCfg := templateBaseConfig(provider)
+
 	cfg := config.Config{
 		SchemaVersion: config.SchemaVersion,
 		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
-				Name:         "example-cluster",
-				Organization: "opencenter",
-			},
+			Meta: baseCfg.OpenCenter.Meta,
 			Infrastructure: config.Infrastructure{
-				Provider: "openstack",
+				Provider: baseCfg.OpenCenter.Infrastructure.Provider,
+				Kind:     baseCfg.OpenCenter.Infrastructure.Kind,
+				Cloud:    baseCfg.OpenCenter.Infrastructure.Cloud,
 			},
 			Cluster: config.ClusterConfig{
-				ClusterName: "example-cluster",
+				ClusterName: baseCfg.OpenCenter.Cluster.ClusterName,
 				Kubernetes: config.KubernetesConfig{
-					Version:     "1.33.5",
-					MasterCount: 3,
-					WorkerCount: 2,
+					Version:     baseCfg.OpenCenter.Cluster.Kubernetes.Version,
+					MasterCount: baseCfg.OpenCenter.Cluster.Kubernetes.MasterCount,
+					WorkerCount: baseCfg.OpenCenter.Cluster.Kubernetes.WorkerCount,
 				},
 			},
 			GitOps: config.GitOpsConfig{
-				GitDir: "./gitops-repo",
+				GitDir: baseCfg.OpenCenter.GitOps.GitDir,
 			},
+			Storage: baseCfg.OpenCenter.Storage,
 		},
-		OpenTofu: config.SimplifiedOpenTofu{
-			Enabled: true,
-		},
-		Secrets: config.Secrets{},
-	}
-
-	if provider != "" && provider != "all" {
-		cfg.OpenCenter.Infrastructure.Provider = provider
+		OpenTofu: baseCfg.OpenTofu,
+		Secrets:  config.Secrets{},
 	}
 
 	return cfg

@@ -30,11 +30,68 @@ import (
 	"github.com/leanovate/gopter"
 	"github.com/leanovate/gopter/prop"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/sops"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 	"github.com/stretchr/testify/require"
 )
+
+const dryRunTestOrg = "test-org"
+
+func configureDryRunTestEnv(t *testing.T, tmpDir string) {
+	t.Helper()
+
+	originalHome := os.Getenv("HOME")
+	originalConfigDir := os.Getenv("OPENCENTER_CONFIG_DIR")
+	configDir := filepath.Join(tmpDir, ".config", "opencenter")
+
+	require.NoError(t, os.MkdirAll(configDir, 0o755))
+	require.NoError(t, os.Setenv("HOME", tmpDir))
+	require.NoError(t, os.Setenv("OPENCENTER_CONFIG_DIR", configDir))
+
+	t.Cleanup(func() {
+		if originalHome == "" {
+			os.Unsetenv("HOME")
+		} else {
+			os.Setenv("HOME", originalHome)
+		}
+		if originalConfigDir == "" {
+			os.Unsetenv("OPENCENTER_CONFIG_DIR")
+		} else {
+			os.Setenv("OPENCENTER_CONFIG_DIR", originalConfigDir)
+		}
+	})
+}
+
+func createDryRunClusterPaths(ctx context.Context, clusterName string) (*paths.ClusterPaths, error) {
+	resolver := paths.NewPathResolver(config.ResolveClustersDir())
+	if err := resolver.CreateClusterDirectories(ctx, clusterName, dryRunTestOrg); err != nil {
+		return nil, err
+	}
+
+	return resolver.Resolve(ctx, clusterName, dryRunTestOrg)
+}
+
+func saveDryRunConfig(
+	ctx context.Context,
+	configLoader *config.ConfigIOHandler,
+	cfg *config.Config,
+	clusterPaths *paths.ClusterPaths,
+	clusterName string,
+) error {
+	if err := configLoader.SaveToFile(ctx, clusterPaths.ConfigPath, cfg); err != nil {
+		return err
+	}
+
+	legacyDir := filepath.Join(config.ResolveClustersDir(), dryRunTestOrg, clusterName)
+	if err := os.MkdirAll(legacyDir, 0o755); err != nil {
+		return err
+	}
+
+	legacyPath := filepath.Join(legacyDir, fmt.Sprintf(".k8s-%s-config.yaml", clusterName))
+	return configLoader.SaveToFile(ctx, legacyPath, cfg)
+}
 
 // **Validates: Requirements 1.5, 3.8, 6.8, 8.8**
 //
@@ -237,9 +294,9 @@ func TestProperty_DryRunImmutability_Revoke(t *testing.T) {
 
 			// Perform revocation with dry-run
 			opts := RevokeOptions{
-				Cluster:     clusterName,
-				User:        "test-user@example.com",
-				DryRun:      true,
+				Cluster: clusterName,
+				User:    "test-user@example.com",
+				DryRun:  true,
 			}
 
 			_, err = revoker.RevokeByUser(ctx, opts)
@@ -345,12 +402,12 @@ type FilesystemState struct {
 
 // FileState represents the state of a single file
 type FileState struct {
-	Path     string
-	Hash     string // SHA256 hash of file content
-	Mode     os.FileMode
-	Size     int64
-	ModTime  int64 // Unix timestamp
-	IsDir    bool
+	Path    string
+	Hash    string // SHA256 hash of file content
+	Mode    os.FileMode
+	Size    int64
+	ModTime int64 // Unix timestamp
+	IsDir   bool
 }
 
 // captureFilesystemState captures the current state of all files in a directory
@@ -483,17 +540,18 @@ func logStateDifferences(t *testing.T, before, after *FilesystemState) {
 func setupDryRunTest(t *testing.T, tmpDir string, clusterName string, secrets map[string]string) (*DefaultSecretsManager, string, string, error) {
 	t.Helper()
 
-	// Override HOME environment variable for testing
-	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tmpDir)
-	t.Cleanup(func() {
-		os.Setenv("HOME", originalHome)
-	})
+	configureDryRunTestEnv(t, tmpDir)
 
 	// Create logger
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
 
-	// Create directory structure
+	ctx := context.Background()
+	clusterPaths, err := createDryRunClusterPaths(ctx, clusterName)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to create cluster paths: %w", err)
+	}
+
+	// Create directory structure used by the test fixtures.
 	configDir := filepath.Join(tmpDir, ".config", "opencenter", "clusters", "test-org", clusterName)
 	if err := os.MkdirAll(configDir, 0755); err != nil {
 		return nil, "", "", fmt.Errorf("failed to create config dir: %w", err)
@@ -522,7 +580,6 @@ AGE-SECRET-KEY-1TEST1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC
 	}
 
 	// Create config file
-	configPath := filepath.Join(configDir, fmt.Sprintf(".k8s-%s-config.yaml", clusterName))
 	cfg := createDryRunTestConfig(clusterName, tmpDir, secrets)
 
 	// Create file system
@@ -532,9 +589,8 @@ AGE-SECRET-KEY-1TEST1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC
 	// Create config loader
 	configLoader := config.NewConfigIOHandler(fileSystem)
 
-	// Save config
-	ctx := context.Background()
-	if err := configLoader.SaveToFile(ctx, configPath, cfg); err != nil {
+	// Save config in the resolver-backed location and a legacy copy used by older discovery tests.
+	if err := saveDryRunConfig(ctx, configLoader, cfg, clusterPaths, clusterName); err != nil {
 		return nil, "", "", fmt.Errorf("failed to save config: %w", err)
 	}
 
@@ -549,7 +605,7 @@ AGE-SECRET-KEY-1TEST1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC
 		logger:       logger,
 	}
 
-	return manager, configPath, overlayPath, nil
+	return manager, clusterPaths.ConfigPath, overlayPath, nil
 }
 
 // setupDryRunRotationTest creates a test environment for dry-run rotation testing
@@ -793,26 +849,32 @@ func setupDryRunRevocationTest(t *testing.T, tmpDir string, clusterName string, 
 func setupDryRunMultiClusterTest(t *testing.T, tmpDir string, secrets map[string]string) (*DefaultMultiClusterSyncer, error) {
 	t.Helper()
 
+	configureDryRunTestEnv(t, tmpDir)
+
 	// Create logger
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelError}))
-
-	// Create directory structure for multiple clusters
-	clustersDir := filepath.Join(tmpDir, ".config", "opencenter", "clusters", "test-org")
-	if err := os.MkdirAll(clustersDir, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create clusters dir: %w", err)
-	}
 
 	// Create two test clusters
 	clusterNames := []string{"cluster1", "cluster2"}
 	for _, clusterName := range clusterNames {
-		clusterDir := filepath.Join(clustersDir, clusterName)
-		if err := os.MkdirAll(clusterDir, 0755); err != nil {
-			return nil, fmt.Errorf("failed to create cluster dir: %w", err)
+		ctx := context.Background()
+		clusterPaths, err := createDryRunClusterPaths(ctx, clusterName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create cluster paths for %s: %w", clusterName, err)
 		}
 
-		// Create config file
-		configPath := filepath.Join(clusterDir, fmt.Sprintf(".k8s-%s-config.yaml", clusterName))
 		cfg := createDryRunTestConfig(clusterName, tmpDir, secrets)
+
+		if err := os.MkdirAll(filepath.Dir(cfg.Secrets.SopsAgeKeyFile), 0755); err != nil {
+			return nil, fmt.Errorf("failed to create age key dir for %s: %w", clusterName, err)
+		}
+		mockAgeKey := `# created: 2024-01-15T10:30:00Z
+# public key: age1test1234567890abcdefghijklmnopqrstuvwxyz1234567890abc
+AGE-SECRET-KEY-1TEST1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC
+`
+		if err := os.WriteFile(cfg.Secrets.SopsAgeKeyFile, []byte(mockAgeKey), 0600); err != nil {
+			return nil, fmt.Errorf("failed to create mock age key for %s: %w", clusterName, err)
+		}
 
 		// Create file system
 		errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
@@ -821,9 +883,7 @@ func setupDryRunMultiClusterTest(t *testing.T, tmpDir string, secrets map[string
 		// Create config loader
 		configLoader := config.NewConfigIOHandler(fileSystem)
 
-		// Save config
-		ctx := context.Background()
-		if err := configLoader.SaveToFile(ctx, configPath, cfg); err != nil {
+		if err := saveDryRunConfig(ctx, configLoader, cfg, clusterPaths, clusterName); err != nil {
 			return nil, fmt.Errorf("failed to save config for %s: %w", clusterName, err)
 		}
 
@@ -834,13 +894,6 @@ func setupDryRunMultiClusterTest(t *testing.T, tmpDir string, secrets map[string
 			return nil, fmt.Errorf("failed to create service dir for %s: %w", clusterName, err)
 		}
 	}
-
-	// Override HOME environment variable for testing
-	originalHome := os.Getenv("HOME")
-	os.Setenv("HOME", tmpDir)
-	t.Cleanup(func() {
-		os.Setenv("HOME", originalHome)
-	})
 
 	// Create file system
 	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
@@ -904,6 +957,9 @@ func createDryRunTestConfig(clusterName string, tmpDir string, secrets map[strin
 		OpenCenter: config.SimplifiedOpenCenter{
 			Cluster: config.ClusterConfig{
 				ClusterName: clusterName,
+			},
+			Meta: config.ClusterMeta{
+				Organization: dryRunTestOrg,
 			},
 			GitOps: config.GitOpsConfig{
 				GitDir: filepath.Join(tmpDir, "test-repo"),

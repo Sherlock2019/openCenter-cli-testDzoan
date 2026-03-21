@@ -33,14 +33,14 @@ func TestConfigurationManager_Integration(t *testing.T) {
 	// Create organization and cluster structure
 	orgName := "test-org"
 	clusterName := "test-cluster"
-	orgDir := filepath.Join(tmpDir, orgName, "infrastructure", "clusters", clusterName)
-	err := os.MkdirAll(orgDir, 0755)
+	clusterDir := filepath.Join(tmpDir, orgName, "infrastructure", "clusters", clusterName)
+	err := os.MkdirAll(clusterDir, 0755)
 	if err != nil {
 		t.Fatalf("Failed to create cluster directory: %v", err)
 	}
 
 	// Create a test configuration file
-	configPath := filepath.Join(orgDir, "."+clusterName+"-config.yaml")
+	configPath := filepath.Join(tmpDir, orgName, "."+clusterName+"-config.yaml")
 	configContent := `schema_version: "2.0"
 opencenter:
   meta:

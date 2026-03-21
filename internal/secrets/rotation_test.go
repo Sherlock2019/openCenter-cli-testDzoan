@@ -40,6 +40,15 @@ func setupTestRotator(t *testing.T) (*DefaultKeyRotator, *MockKeyRegistry, *Defa
 	tmpDir, err := os.MkdirTemp("", "key-rotator-test-*")
 	require.NoError(t, err)
 
+	originalHome := os.Getenv("HOME")
+	originalConfigDir := os.Getenv("OPENCENTER_CONFIG_DIR")
+	testHome := filepath.Join(tmpDir, "home")
+	testConfigDir := filepath.Join(testHome, ".config", "opencenter")
+
+	require.NoError(t, os.MkdirAll(testConfigDir, 0o755))
+	require.NoError(t, os.Setenv("HOME", testHome))
+	require.NoError(t, os.Setenv("OPENCENTER_CONFIG_DIR", testConfigDir))
+
 	// Create file system
 	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
@@ -60,6 +69,16 @@ func setupTestRotator(t *testing.T) (*DefaultKeyRotator, *MockKeyRegistry, *Defa
 	rotator := NewDefaultKeyRotator(mockRegistry, secretsManager, nil, slog.Default())
 
 	cleanup := func() {
+		if originalHome == "" {
+			os.Unsetenv("HOME")
+		} else {
+			os.Setenv("HOME", originalHome)
+		}
+		if originalConfigDir == "" {
+			os.Unsetenv("OPENCENTER_CONFIG_DIR")
+		} else {
+			os.Setenv("OPENCENTER_CONFIG_DIR", originalConfigDir)
+		}
 		os.RemoveAll(tmpDir)
 	}
 
@@ -112,6 +131,19 @@ func (m *MockKeyRegistry) UpdateKeyStatus(ctx context.Context, cluster string, k
 		}
 	}
 	return nil
+}
+
+func (m *MockKeyRegistry) UpdateKey(ctx context.Context, entry KeyEntry) error {
+	key := entry.Cluster + ":" + string(entry.KeyType)
+	entries := m.keys[key]
+	for i := range entries {
+		if entry.Fingerprint != "" && entries[i].Fingerprint == entry.Fingerprint {
+			entries[i] = entry
+			m.keys[key] = entries
+			return nil
+		}
+	}
+	return &ErrKeyNotFound{Cluster: entry.Cluster, KeyType: entry.KeyType}
 }
 
 func (m *MockKeyRegistry) ListKeys(ctx context.Context, cluster string) ([]KeyEntry, error) {
@@ -608,7 +640,7 @@ secrets:
 		}
 
 		result, err := rotator.RotateSSHKey(ctx, opts)
-		
+
 		// We expect an error because ssh-keygen might not be available or config update might fail
 		// But we can verify the result structure if it succeeds
 		if err != nil {

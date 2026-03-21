@@ -23,6 +23,7 @@ import (
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
 	"github.com/opencenter-cloud/opencenter-cli/internal/provision"
+	"gopkg.in/yaml.v3"
 )
 
 func TestMain(m *testing.M) {
@@ -240,6 +241,136 @@ func TestRenderInfrastructureClusterAtomic(t *testing.T) {
 
 	if !strings.Contains(content, cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL) {
 		t.Errorf("main.tf missing auth_url %q", cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL)
+	}
+}
+
+func TestRenderInfrastructureClusterAtomicKindTemplate(t *testing.T) {
+	tempDir := t.TempDir()
+	manager := NewWorkspaceManager(tempDir)
+	ctx := context.Background()
+
+	cfg := config.NewDefault("kind-render-atomic")
+	cfg.SchemaVersion = "2.0"
+	cfg.OpenCenter.Cluster.ClusterName = "kind-render-atomic"
+	cfg.OpenCenter.Meta.Name = "kind-render-atomic"
+	cfg.OpenCenter.Meta.Organization = "opencenter"
+	if err := config.ApplyProviderDefaults(&cfg, "kind"); err != nil {
+		t.Fatalf("apply provider defaults: %v", err)
+	}
+
+	cfg.OpenCenter.Infrastructure.Kind.ControlPlaneCount = 2
+	cfg.OpenCenter.Infrastructure.Kind.WorkerCount = 3
+	cfg.OpenCenter.Infrastructure.Kind.APIServerAddress = "127.0.0.2"
+	cfg.OpenCenter.Infrastructure.Kind.APIServerPort = 7443
+	cfg.OpenCenter.Infrastructure.Kind.PodSubnet = "10.250.0.0/16"
+	cfg.OpenCenter.Infrastructure.Kind.ServiceSubnet = "10.251.0.0/16"
+	cfg.OpenCenter.Infrastructure.Kind.NodeImage = "kindest/node:v1.31.0"
+	cfg.OpenCenter.Infrastructure.Kind.ExtraPortMappings = []config.KindPortMapping{
+		{
+			ContainerPort: 80,
+			HostPort:      8080,
+			ListenAddress: "127.0.0.1",
+			Protocol:      "TCP",
+		},
+	}
+	cfg.OpenCenter.Infrastructure.Kind.ExtraMounts = []config.KindMount{
+		{
+			HostPath:      "/tmp/kind-cache",
+			ContainerPath: "/var/cache/kind",
+			ReadOnly:      true,
+		},
+	}
+
+	workspace, err := manager.CreateWorkspace(ctx, cfg)
+	if err != nil {
+		t.Fatalf("Failed to create workspace: %v", err)
+	}
+	defer manager.CleanupWorkspace(ctx, workspace)
+
+	if err := RenderInfrastructureClusterAtomic(cfg, workspace); err != nil {
+		t.Fatalf("RenderInfrastructureClusterAtomic failed: %v", err)
+	}
+
+	kindConfigPath := filepath.Join("infrastructure", "clusters", cfg.ClusterName(), "kind-config.yaml")
+	if !workspace.Exists(kindConfigPath) {
+		t.Fatal("kind-config.yaml was not created")
+	}
+
+	data, err := os.ReadFile(workspace.GetPath(kindConfigPath))
+	if err != nil {
+		t.Fatalf("read kind-config.yaml: %v", err)
+	}
+
+	var rendered struct {
+		Kind       string `yaml:"kind"`
+		APIVersion string `yaml:"apiVersion"`
+		Networking struct {
+			APIServerAddress string `yaml:"apiServerAddress"`
+			APIServerPort    int    `yaml:"apiServerPort"`
+			PodSubnet        string `yaml:"podSubnet"`
+			ServiceSubnet    string `yaml:"serviceSubnet"`
+		} `yaml:"networking"`
+		Nodes []struct {
+			Role              string `yaml:"role"`
+			Image             string `yaml:"image"`
+			ExtraPortMappings []struct {
+				ContainerPort int    `yaml:"containerPort"`
+				HostPort      int    `yaml:"hostPort"`
+				ListenAddress string `yaml:"listenAddress"`
+				Protocol      string `yaml:"protocol"`
+			} `yaml:"extraPortMappings"`
+			ExtraMounts []struct {
+				HostPath      string `yaml:"hostPath"`
+				ContainerPath string `yaml:"containerPath"`
+				ReadOnly      bool   `yaml:"readOnly"`
+			} `yaml:"extraMounts"`
+		} `yaml:"nodes"`
+	}
+	if err := yaml.Unmarshal(data, &rendered); err != nil {
+		t.Fatalf("unmarshal kind-config.yaml: %v\ncontent:\n%s", err, string(data))
+	}
+
+	if rendered.Kind != "Cluster" || rendered.APIVersion != "kind.x-k8s.io/v1alpha4" {
+		t.Fatalf("unexpected kind config header: %#v", rendered)
+	}
+	if rendered.Networking.APIServerAddress != "127.0.0.2" || rendered.Networking.APIServerPort != 7443 {
+		t.Fatalf("unexpected networking api settings: %#v", rendered.Networking)
+	}
+	if rendered.Networking.PodSubnet != "10.250.0.0/16" || rendered.Networking.ServiceSubnet != "10.251.0.0/16" {
+		t.Fatalf("unexpected networking subnets: %#v", rendered.Networking)
+	}
+	if len(rendered.Nodes) != 5 {
+		t.Fatalf("expected 5 nodes, got %d\ncontent:\n%s", len(rendered.Nodes), string(data))
+	}
+
+	controlPlanes := 0
+	workers := 0
+	for i, node := range rendered.Nodes {
+		if node.Image != "kindest/node:v1.31.0" {
+			t.Fatalf("unexpected node image for node %d: %s", i, node.Image)
+		}
+
+		switch node.Role {
+		case "control-plane":
+			controlPlanes++
+			if len(node.ExtraPortMappings) != 1 {
+				t.Fatalf("expected control-plane node %d to have a port mapping", i)
+			}
+			if len(node.ExtraMounts) != 1 {
+				t.Fatalf("expected control-plane node %d to have an extra mount", i)
+			}
+		case "worker":
+			workers++
+			if len(node.ExtraMounts) != 1 {
+				t.Fatalf("expected worker node %d to have an extra mount", i)
+			}
+		default:
+			t.Fatalf("unexpected node role: %s", node.Role)
+		}
+	}
+
+	if controlPlanes != 2 || workers != 3 {
+		t.Fatalf("expected 2 control-plane and 3 worker nodes, got %d and %d", controlPlanes, workers)
 	}
 }
 

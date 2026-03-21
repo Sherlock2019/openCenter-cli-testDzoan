@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/sops"
 	"gopkg.in/yaml.v3"
 )
@@ -551,13 +552,24 @@ func (m *DefaultSecretsManager) GetSecretSources(ctx context.Context, cluster st
 	}
 
 	// Get overlay path
-	_, err = m.getOverlayPath(configPath, cfg)
+	overlayPath, err := m.getOverlayPath(configPath, cfg)
 	if err != nil {
 		return sources, nil // Return config source even if overlay path fails
 	}
 
-	// TODO: Scan overlay directory for manifest files
-	// This will be implemented in subsequent tasks
+	manifestFiles, err := m.findManifestFiles(overlayPath)
+	if err != nil {
+		m.logger.Warn("Failed to scan overlay directory for manifest sources", "cluster", cluster, "error", err)
+		return sources, nil
+	}
+
+	for _, manifestPath := range manifestFiles {
+		sources = append(sources, SecretSource{
+			Type:    "manifest",
+			Path:    manifestPath,
+			Service: m.extractServiceFromPath(manifestPath),
+		})
+	}
 
 	m.logger.Info("Found secret sources", "cluster", cluster, "count", len(sources))
 	return sources, nil
@@ -572,7 +584,7 @@ func (m *DefaultSecretsManager) GetSecretSources(ctx context.Context, cluster st
 // Returns ErrConfigNotFound if the config file does not exist.
 func (m *DefaultSecretsManager) loadClusterConfig(ctx context.Context, cluster string) (*config.Config, string, error) {
 	// Determine config file path
-	configPath, err := m.getConfigPath(cluster)
+	configPath, err := m.getConfigPath(ctx, cluster)
 	if err != nil {
 		return nil, "", err
 	}
@@ -596,41 +608,14 @@ func (m *DefaultSecretsManager) loadClusterConfig(ctx context.Context, cluster s
 
 // getConfigPath returns the expected path to the cluster config file.
 // The config file is located at ~/.config/opencenter/clusters/<org>/<cluster>/.k8s-<cluster>-config.yaml
-func (m *DefaultSecretsManager) getConfigPath(cluster string) (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to get user home directory: %w", err)
+func (m *DefaultSecretsManager) getConfigPath(ctx context.Context, cluster string) (string, error) {
+	pathResolver := paths.NewPathResolver(config.ResolveClustersDir())
+	clusterPaths, err := pathResolver.ResolveWithFallback(ctx, cluster)
+	if err == nil {
+		return clusterPaths.ConfigPath, nil
 	}
 
-	// TODO: Determine organization from cluster or config
-	// For now, we'll search for the cluster in all organizations
-	clustersDir := filepath.Join(homeDir, ".config", "opencenter", "clusters")
-
-	// Search for cluster config in all organization directories
-	var configPath string
-	err = filepath.Walk(clustersDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return nil // Skip directories with errors
-		}
-
-		if !info.IsDir() && info.Name() == fmt.Sprintf(".k8s-%s-config.yaml", cluster) {
-			configPath = path
-			return filepath.SkipAll // Stop walking once found
-		}
-
-		return nil
-	})
-
-	if err != nil && err != filepath.SkipAll {
-		return "", fmt.Errorf("failed to search for config file: %w", err)
-	}
-
-	if configPath == "" {
-		// Return expected path for error message
-		return filepath.Join(clustersDir, "<org>", cluster, fmt.Sprintf(".k8s-%s-config.yaml", cluster)), nil
-	}
-
-	return configPath, nil
+	return filepath.Join(config.ResolveClustersDir(), "<org>", cluster, fmt.Sprintf(".k8s-%s-config.yaml", cluster)), nil
 }
 
 // extractSecretsFromConfig extracts all secrets from the config file.
@@ -769,7 +754,7 @@ func (m *DefaultSecretsManager) getManifestPath(service string, cfg *config.Conf
 func (m *DefaultSecretsManager) getOverlayPath(configPath string, cfg *config.Config) (string, error) {
 	// The overlay path is typically in the GitOps repository
 	// Pattern: <repo>/applications/overlays/<cluster>/
-	
+
 	// For now, construct the expected path based on GitOps config
 	if cfg.OpenCenter.GitOps.GitDir == "" {
 		return "", fmt.Errorf("gitops.git_dir not configured")
@@ -1195,10 +1180,10 @@ func (m *DefaultSecretsManager) writeEncryptedManifest(
 	if encryptor == nil {
 		return false, fmt.Errorf("SOPS encryptor not available")
 	}
-	
+
 	encryptConfig := sops.EncryptionConfig{
-		AgeKeys:    []string{ageKey},
-		InPlace:    true,
+		AgeKeys: []string{ageKey},
+		InPlace: true,
 	}
 
 	if err := encryptor.EncryptFile(ctx, tmpPath, encryptConfig); err != nil {
@@ -1309,7 +1294,7 @@ func (m *DefaultSecretsManager) hasSecretsChanged(
 	for key, newValue := range newSecrets {
 		// Convert key to manifest format (underscores to hyphens)
 		manifestKey := strings.ReplaceAll(key, "_", "-")
-		
+
 		existingValue, exists := existingSecrets[manifestKey]
 		if !exists {
 			// New secret added
@@ -1319,7 +1304,7 @@ func (m *DefaultSecretsManager) hasSecretsChanged(
 		// Compare values as strings
 		newStr := fmt.Sprintf("%v", newValue)
 		existingStr := fmt.Sprintf("%v", existingValue)
-		
+
 		if newStr != existingStr {
 			// Secret value changed
 			return true

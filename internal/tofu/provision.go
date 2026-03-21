@@ -18,6 +18,10 @@ import (
 // Note: main.tf is rendered by RenderInfrastructureCluster from the static template
 // to preserve human-readable ordering of locals and modules.
 func Provision(cfg config.Config) error {
+	if cfg.OpenCenter.Infrastructure.Provider == "kind" {
+		return nil
+	}
+
 	if !cfg.OpenTofu.Enabled {
 		return nil
 	}

@@ -79,14 +79,14 @@ func (s *SetupService) Setup(ctx context.Context, opts SetupOptions) (*SetupResu
 	if s.configurationMgr != nil {
 		var loadedCfg *config.Config
 		var err error
-		
+
 		// Use LoadWithoutValidation if validation will be skipped anyway
 		if opts.SkipValidation {
 			loadedCfg, err = s.configurationMgr.LoadWithoutValidation(ctx, opts.ClusterName)
 		} else {
 			loadedCfg, err = s.configurationMgr.Load(ctx, opts.ClusterName)
 		}
-		
+
 		if err != nil {
 			return nil, fmt.Errorf("loading configuration: %w", err)
 		}
@@ -97,14 +97,14 @@ func (s *SetupService) Setup(ctx context.Context, opts SetupOptions) (*SetupResu
 		if err != nil {
 			return nil, fmt.Errorf("creating configuration manager: %w", err)
 		}
-		
+
 		var loadedCfg *config.Config
 		if opts.SkipValidation {
 			loadedCfg, err = tempMgr.LoadWithoutValidation(ctx, opts.ClusterName)
 		} else {
 			loadedCfg, err = tempMgr.Load(ctx, opts.ClusterName)
 		}
-		
+
 		if err != nil {
 			return nil, fmt.Errorf("loading configuration: %w", err)
 		}
@@ -133,16 +133,14 @@ See: https://docs.opencenter.io/migration/v1-to-v2`, opts.ClusterName)
 		GitOpsPath: gitDir,
 	}
 
-	// Validate configuration unless skipped
 	if !opts.SkipValidation {
-		validationResult, err := s.validationEngine.Validate(ctx, "config", cfg)
-		if err != nil {
-			return nil, fmt.Errorf("validating config: %w", err)
-		}
-
-		result.ValidationPassed = validationResult.Valid
-		if !validationResult.Valid && !opts.Force {
-			return nil, fmt.Errorf("validation failed: %v", validationResult.Errors)
+		if err := s.validateSetupConfig(&cfg); err != nil {
+			result.ValidationPassed = false
+			if !opts.Force {
+				return nil, fmt.Errorf("validation failed: %w", err)
+			}
+		} else {
+			result.ValidationPassed = true
 		}
 	}
 
@@ -205,9 +203,10 @@ func (s *SetupService) generateGitOpsManifests(ctx context.Context, cfg config.C
 		return 0, fmt.Errorf("rendering infrastructure cluster: %w", err)
 	}
 
-	// Provision OpenTofu (renders main.tf and provider.tf)
-	if err := tofu.Provision(cfg); err != nil {
-		return 0, fmt.Errorf("provisioning opentofu: %w", err)
+	if strings.ToLower(strings.TrimSpace(cfg.OpenCenter.Infrastructure.Provider)) != "kind" {
+		if err := tofu.Provision(cfg); err != nil {
+			return 0, fmt.Errorf("provisioning opentofu: %w", err)
+		}
 	}
 
 	// Count generated files
@@ -217,6 +216,28 @@ func (s *SetupService) generateGitOpsManifests(ctx context.Context, cfg config.C
 	}
 
 	return manifestCount, nil
+}
+
+func (s *SetupService) validateSetupConfig(cfg *config.Config) error {
+	if cfg == nil {
+		return fmt.Errorf("configuration is nil")
+	}
+	if strings.TrimSpace(cfg.ClusterName()) == "" {
+		return fmt.Errorf("cluster name must be set")
+	}
+	if strings.TrimSpace(cfg.GitOps().GitDir) == "" {
+		return fmt.Errorf("opencenter.gitops.git_dir must be set in the configuration")
+	}
+
+	provider := strings.ToLower(strings.TrimSpace(cfg.OpenCenter.Infrastructure.Provider))
+	if provider == "" {
+		return fmt.Errorf("opencenter.infrastructure.provider must be set")
+	}
+	if provider == "kind" && cfg.OpenCenter.Infrastructure.Kind == nil {
+		return fmt.Errorf("opencenter.infrastructure.kind must be configured for the kind provider")
+	}
+
+	return nil
 }
 
 // validateManifests validates generated GitOps manifests

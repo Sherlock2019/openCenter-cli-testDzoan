@@ -104,13 +104,13 @@ func TestValidateClusterName(t *testing.T) {
 			name:      "starts with hyphen",
 			input:     "-cluster",
 			wantError: true,
-			errorMsg:  "format is invalid",
+			errorMsg:  "invalid cluster name format",
 		},
 		{
 			name:      "starts with underscore",
 			input:     "_cluster",
 			wantError: true,
-			errorMsg:  "format is invalid",
+			errorMsg:  "invalid cluster name format",
 		},
 		{
 			name:      "too long",
@@ -122,13 +122,13 @@ func TestValidateClusterName(t *testing.T) {
 			name:      "contains special characters",
 			input:     "my-cluster!",
 			wantError: true,
-			errorMsg:  "format is invalid",
+			errorMsg:  "invalid cluster name format",
 		},
 		{
 			name:      "contains spaces",
 			input:     "my cluster",
 			wantError: true,
-			errorMsg:  "format is invalid",
+			errorMsg:  "invalid cluster name format",
 		},
 	}
 

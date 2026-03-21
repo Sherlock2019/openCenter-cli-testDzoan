@@ -390,7 +390,10 @@ func initializeSecretsManager() (secrets.SecretsManager, error) {
 	logger := createSecretsLogger()
 	configLoader := createConfigLoader()
 	sopsManager := createSOPSManager(logger)
-	auditLogger := &noOpAuditLogger{}
+	auditLogger, err := createAuditLogger()
+	if err != nil {
+		return nil, err
+	}
 
 	secretsManager := secrets.NewDefaultSecretsManager(configLoader, sopsManager, auditLogger, logger)
 	return secretsManager, nil

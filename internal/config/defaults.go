@@ -20,12 +20,19 @@ import (
 	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
 )
 
+const (
+	// DefaultSSHAuthorizedKeyPlaceholder keeps freshly initialized configs valid
+	// until a user-provided key or generated key replaces it.
+	DefaultSSHAuthorizedKeyPlaceholder = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExamplePublicKeyDataHere user@example.com"
+	defaultVRRPIP                      = "10.2.128.5"
+)
+
 // getDefaultSSHKeys returns SSH keys from CLI defaults or an empty string array as fallback.
 func getDefaultSSHKeys(cliDefaults *DefaultsConfig) []string {
 	if cliDefaults != nil && len(cliDefaults.SSHAuthorizedKeys) > 0 {
 		return cliDefaults.SSHAuthorizedKeys
 	}
-	return []string{""}
+	return []string{DefaultSSHAuthorizedKeyPlaceholder}
 }
 
 // getDefaultProvider returns provider from CLI defaults or "openstack" as fallback.
@@ -167,7 +174,7 @@ func defaultConfig(name string) Config {
 					AllocationPoolStart: "",
 					AllocationPoolEnd:   "",
 					// VRRP defaults
-					VRRPIP:      "",
+					VRRPIP:      defaultVRRPIP,
 					VRRPEnabled: true,
 					// Load balancer defaults
 					UseOctavia:           false,
@@ -267,7 +274,7 @@ func defaultConfig(name string) Config {
 				GitSSHPub:         "",
 				GitBranch:         "main",
 				GitOpsBaseRepo:    "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git",
-				GitOpsBaseRelease: "",
+				GitOpsBaseRelease: "v0.1.0",
 				GitOpsBranch:      "main",
 				Flux: GitOpsFlux{
 					Interval: "15m",
@@ -421,6 +428,7 @@ func defaultConfig(name string) Config {
 		},
 		Deployment: Deployment{
 			AutoDeploy: true,
+			Method:     "kubespray",
 		},
 		Metadata: NewConfigMetadata(),
 		Secrets: Secrets{

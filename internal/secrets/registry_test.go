@@ -83,7 +83,7 @@ func (m *mockSOPSEncryptor) DecryptFile(ctx context.Context, filePath string) ([
 	m.mu.Lock()
 	cachedContent, ok := m.encryptedFiles[filePath]
 	m.mu.Unlock()
-	
+
 	if ok {
 		return cachedContent, nil
 	}
@@ -288,6 +288,43 @@ func TestUpdateKeyStatus(t *testing.T) {
 		assert.Error(t, err)
 		assert.True(t, IsKeyNotFoundError(err))
 	})
+}
+
+func TestUpdateKey(t *testing.T) {
+	ctx := context.Background()
+	tempDir := t.TempDir()
+	encryptor := newMockSOPSEncryptor()
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	registry := NewDefaultKeyRegistry(tempDir, encryptor, logger)
+
+	entry := KeyEntry{
+		Cluster:     "test-cluster",
+		KeyType:     KeyTypeAge,
+		Fingerprint: "age1test123",
+		PublicKey:   "age1test123",
+		Status:      KeyStatusActive,
+		UserEmail:   "alice@example.com",
+	}
+	err := registry.RegisterKey(ctx, entry)
+	require.NoError(t, err)
+
+	entry.Status = KeyStatusRevoked
+	entry.RevokedBy = "bob@example.com"
+	entry.RevokedReason = "compromised"
+	entry.RevokedAt = time.Now().UTC().Truncate(time.Second)
+
+	err = registry.UpdateKey(ctx, entry)
+	require.NoError(t, err)
+
+	keys, err := registry.ListKeys(ctx, "test-cluster")
+	require.NoError(t, err)
+	require.Len(t, keys, 1)
+	assert.Equal(t, KeyStatusRevoked, keys[0].Status)
+	assert.Equal(t, "bob@example.com", keys[0].RevokedBy)
+	assert.Equal(t, "compromised", keys[0].RevokedReason)
+	assert.Equal(t, "alice@example.com", keys[0].UserEmail)
+	assert.False(t, keys[0].RevokedAt.IsZero())
 }
 
 func TestListKeys(t *testing.T) {

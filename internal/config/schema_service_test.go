@@ -295,3 +295,75 @@ func TestServiceSchemasNotUsingBaseSchema(t *testing.T) {
 		t.Errorf("Velero schema has only %d fields, expected more than 5 (appears to be using baseServiceSchema)", len(veleroProps))
 	}
 }
+
+func TestInfrastructureKindSchema(t *testing.T) {
+	schemaBytes, err := GenerateSchema(false)
+	if err != nil {
+		t.Fatalf("Failed to generate schema: %v", err)
+	}
+
+	var schema map[string]interface{}
+	if err := json.Unmarshal(schemaBytes, &schema); err != nil {
+		t.Fatalf("Failed to unmarshal schema: %v", err)
+	}
+
+	properties, ok := schema["properties"].(map[string]interface{})
+	if !ok {
+		t.Fatal("Schema missing properties field")
+	}
+
+	opencenter, ok := properties["opencenter"].(map[string]interface{})
+	if !ok {
+		t.Fatal("Schema missing opencenter field")
+	}
+
+	opencenterProps, ok := opencenter["properties"].(map[string]interface{})
+	if !ok {
+		t.Fatal("Schema missing opencenter.properties field")
+	}
+
+	infrastructure, ok := opencenterProps["infrastructure"].(map[string]interface{})
+	if !ok {
+		t.Fatal("Schema missing opencenter.infrastructure field")
+	}
+
+	infrastructureProps, ok := infrastructure["properties"].(map[string]interface{})
+	if !ok {
+		t.Fatal("Schema missing opencenter.infrastructure.properties field")
+	}
+
+	kind, ok := infrastructureProps["kind"].(map[string]interface{})
+	if !ok {
+		t.Fatal("Schema missing infrastructure.kind field")
+	}
+
+	kindProps, ok := kind["properties"].(map[string]interface{})
+	if !ok {
+		t.Fatal("Kind schema missing properties field")
+	}
+
+	requiredFields := []string{
+		"cluster_name",
+		"kubernetes_version",
+		"node_image",
+		"control_plane_count",
+		"worker_count",
+		"api_server_address",
+		"api_server_port",
+		"pod_subnet",
+		"service_subnet",
+		"disable_default_cni",
+		"ingress_enabled",
+		"runtime",
+		"kubeconfig_path_policy",
+		"registry",
+		"extra_port_mappings",
+		"extra_mounts",
+	}
+
+	for _, field := range requiredFields {
+		if _, ok := kindProps[field]; !ok {
+			t.Errorf("Kind schema missing field: %s", field)
+		}
+	}
+}

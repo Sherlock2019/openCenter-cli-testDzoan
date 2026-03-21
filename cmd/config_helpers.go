@@ -16,8 +16,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -31,6 +29,14 @@ var (
 	configManagerOnce   sync.Once
 	configManagerErr    error
 )
+
+// resetConfigManagerForTests resets the lazy global configuration manager.
+// This keeps command tests isolated when OPENCENTER_CONFIG_DIR changes between runs.
+func resetConfigManagerForTests() {
+	globalConfigManager = nil
+	configManagerErr = nil
+	configManagerOnce = sync.Once{}
+}
 
 // getConfigManager returns the global ConfigurationManager instance.
 // It initializes the manager on first call and reuses it for subsequent calls.
@@ -90,7 +96,7 @@ func loadConfigWithIdentifier(ctx context.Context, identifier string) (config.Co
 
 	// If organization was specified in the identifier, verify it matches
 	if organization != "" && cfg.OpenCenter.Meta.Organization != organization {
-		return config.Config{}, "", "", fmt.Errorf("cluster %s not found in organization %s (found in %s)", 
+		return config.Config{}, "", "", fmt.Errorf("cluster %s not found in organization %s (found in %s)",
 			clusterName, organization, cfg.OpenCenter.Meta.Organization)
 	}
 
@@ -154,7 +160,7 @@ func getConfigPath(ctx context.Context, name, organization string) (string, erro
 	if err != nil {
 		return "", err
 	}
-	
+
 	// Load the config to get the organization if not provided
 	if organization == "" {
 		cfg, err := manager.Load(ctx, name)
@@ -163,27 +169,18 @@ func getConfigPath(ctx context.Context, name, organization string) (string, erro
 		}
 		organization = cfg.OpenCenter.Meta.Organization
 	}
-	
-	// Get base directory from environment or CLI config
-	baseDir := os.Getenv("OPENCENTER_CONFIG_DIR")
-	if baseDir == "" {
-		// Load from CLI config (this reads the clustersDir from config.yaml)
-		baseDir = config.GetClustersDir()
-	} else {
-		baseDir = filepath.Join(baseDir, "clusters")
-	}
-	
+
 	// Get the path resolver
-	pathResolver, err := di.ProvidePathResolver(baseDir)
+	pathResolver, err := di.ProvidePathResolver(config.ResolveClustersDir())
 	if err != nil {
 		return "", err
 	}
-	
+
 	clusterPaths, err := pathResolver.Resolve(ctx, name, organization)
 	if err != nil {
 		return "", err
 	}
-	
+
 	return clusterPaths.ConfigPath, nil
 }
 

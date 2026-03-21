@@ -14,11 +14,13 @@ tags: [providers, openstack, vmware, kind, aws]
 
 This reference documents all infrastructure providers supported by openCenter with their specific requirements and configurations.
 
+For infrastructure drift detection, the `cloud.CloudProvider` registry currently includes only OpenStack and AWS. Kind is lifecycle-only, and Baremetal and Talos remain planned rather than registered drift backends.
+
 ## Provider Overview
 
 | Provider | Status | Provisioning | Deployment | Storage | Load Balancer |
 |----------|--------|--------------|------------|---------|---------------|
-| OpenStack | Production | Terraform | Kubespray | Cinder CSI | Octavia, OVN |
+| OpenStack | Production | OpenTofu | Kubespray | Cinder CSI | Octavia, OVN |
 | VMware | Production | Manual | Kubespray | vSphere CSI | MetalLB |
 | Kind | Development | Automatic | Built-in | Local | None |
 | AWS | Experimental | Terraform | Kubespray | EBS CSI | AWS ELB |
@@ -425,6 +427,8 @@ secrets:
 - EBS volume integration
 - AWS ELB load balancer
 - Security group management
+- Infrastructure drift detection for instances, networks, security groups, load balancers, volumes, and elastic IPs
+- Safe reconciliation for mutable drift such as tags and security-group rules
 
 **Services:**
 - aws-ccm (cloud controller)
@@ -434,7 +438,7 @@ secrets:
 **Limitations:**
 - Experimental status
 - Limited testing
-- May have incomplete features
+- Existence drift is reported but not auto-reconciled
 
 ### Validation
 
@@ -455,6 +459,8 @@ opencenter cluster validate --check-provider
 **Default:** No  
 **Provisioning:** Manual  
 **Deployment:** Kubespray
+
+This provider is not implemented as a `cloud.CloudProvider` drift backend today. The entry is retained as roadmap/reference material only.
 
 ### Requirements
 
@@ -499,6 +505,8 @@ opencenter:
 **Default:** No  
 **Provisioning:** Pulumi  
 **Deployment:** Talos
+
+Talos is not implemented as a `cloud.CloudProvider` drift backend today. The entry is retained as roadmap/reference material only.
 
 ### Requirements
 

@@ -34,8 +34,7 @@ import (
 func TestClusterInitIntegration(t *testing.T) {
 	// Set up temporary config directory
 	dir := t.TempDir()
-	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
-	defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
+	prepareCommandTestEnv(t, dir)
 
 	tests := []struct {
 		name         string
@@ -57,7 +56,7 @@ func TestClusterInitIntegration(t *testing.T) {
 			name:         "cluster init with custom organization",
 			clusterName:  "dev-cluster",
 			organization: "dev-team",
-			provider:     "aws",
+			provider:     "kind",
 			noKeyGen:     false,
 			expectError:  false,
 		},
@@ -127,7 +126,7 @@ func TestClusterInitIntegration(t *testing.T) {
 				t.Errorf("organization directory not created: %s", orgDir)
 			}
 
-			clusterDir := filepath.Join(orgDir, tt.clusterName)
+			clusterDir := filepath.Join(orgDir, "infrastructure", "clusters", tt.clusterName)
 			if _, err := os.Stat(clusterDir); os.IsNotExist(err) {
 				t.Errorf("cluster directory not created: %s", clusterDir)
 			}
@@ -180,12 +179,59 @@ func TestClusterInitIntegration(t *testing.T) {
 	}
 }
 
+func TestClusterInitIntegrationKindProvider(t *testing.T) {
+	dir := t.TempDir()
+	prepareCommandTestEnv(t, dir)
+
+	cmd := newClusterInitCmd()
+	var stdout, stderr bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"kind-int", "--type", "kind", "--org", "opencenter", "--no-keygen"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("cluster init failed: %v\nstderr: %s", err, stderr.String())
+	}
+
+	configPath := filepath.Join(dir, "clusters", "opencenter", ".kind-int-config.yaml")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+
+	var cfg config.Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		t.Fatalf("unmarshal config: %v", err)
+	}
+
+	if cfg.OpenCenter.Infrastructure.Provider != "kind" {
+		t.Fatalf("expected provider kind, got %q", cfg.OpenCenter.Infrastructure.Provider)
+	}
+	if cfg.OpenCenter.Infrastructure.Kind == nil {
+		t.Fatal("expected opencenter.infrastructure.kind to be populated")
+	}
+	if cfg.OpenTofu.Enabled {
+		t.Fatal("expected opentofu to be disabled for kind")
+	}
+	if cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL != "" {
+		t.Fatalf("expected openstack cloud config to be cleared, got %#v", cfg.OpenCenter.Infrastructure.Cloud.OpenStack)
+	}
+	if cfg.OpenCenter.Infrastructure.Cloud.AWS.Region != "" || len(cfg.OpenCenter.Infrastructure.Cloud.AWS.PrivateSubnets) != 0 || len(cfg.OpenCenter.Infrastructure.Cloud.AWS.PublicSubnets) != 0 {
+		t.Fatalf("expected aws cloud config to be cleared, got %#v", cfg.OpenCenter.Infrastructure.Cloud.AWS)
+	}
+	if cfg.OpenCenter.Infrastructure.Cloud.VMware.VCenterServer != "" || len(cfg.OpenCenter.Infrastructure.Cloud.VMware.Nodes) != 0 {
+		t.Fatalf("expected vmware cloud config to be cleared, got %#v", cfg.OpenCenter.Infrastructure.Cloud.VMware)
+	}
+	if cfg.OpenCenter.Meta.Stage != config.StageInit || cfg.OpenCenter.Meta.Status != config.StatusSuccess {
+		t.Fatalf("unexpected lifecycle state: %s/%s", cfg.OpenCenter.Meta.Stage, cfg.OpenCenter.Meta.Status)
+	}
+}
+
 // TestClusterInitWithDIContainer tests that the DI container is properly set up
 func TestClusterInitWithDIContainer(t *testing.T) {
 	// Set up temporary config directory
 	dir := t.TempDir()
-	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
-	defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
+	prepareCommandTestEnv(t, dir)
 
 	// Create DI container
 	container := di.NewContainer()
@@ -231,16 +277,18 @@ func TestClusterInitWithDIContainer(t *testing.T) {
 func TestClusterInitServiceIntegration(t *testing.T) {
 	// Set up temporary config directory
 	dir := t.TempDir()
-	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
-	defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
+	prepareCommandTestEnv(t, dir)
 
 	// Create dependencies
-	pathResolver := paths.NewPathResolver(dir)
+	pathResolver := paths.NewPathResolver(filepath.Join(dir, "clusters"))
 	validationEngine := validation.NewValidationEngine()
 
 	// Register validators
 	if err := validationEngine.Register(validators.NewClusterNameValidator()); err != nil {
 		t.Fatalf("failed to register cluster name validator: %v", err)
+	}
+	if err := validationEngine.Register(validators.NewOrganizationNameValidator()); err != nil {
+		t.Fatalf("failed to register organization name validator: %v", err)
 	}
 
 	configManager, err := config.NewConfigManager("")
@@ -300,8 +348,7 @@ func TestClusterInitServiceIntegration(t *testing.T) {
 func TestClusterInitForceOverwrite(t *testing.T) {
 	// Set up temporary config directory
 	dir := t.TempDir()
-	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
-	defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
+	prepareCommandTestEnv(t, dir)
 
 	clusterName := "test-cluster"
 	organization := "opencenter"
@@ -350,8 +397,7 @@ func TestClusterInitForceOverwrite(t *testing.T) {
 func TestClusterInitStrictValidation(t *testing.T) {
 	// Set up temporary config directory
 	dir := t.TempDir()
-	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
-	defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
+	prepareCommandTestEnv(t, dir)
 
 	// Create command
 	cmd := newClusterInitCmd()

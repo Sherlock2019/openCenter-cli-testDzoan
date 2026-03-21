@@ -270,14 +270,14 @@ func TestConfigurationManager_DeleteWithBackup(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create organization and cluster structure
-	orgDir := filepath.Join(tmpDir, "test-org", "infrastructure", "clusters", "test-cluster")
-	err := os.MkdirAll(orgDir, 0755)
+	clusterDir := filepath.Join(tmpDir, "test-org", "infrastructure", "clusters", "test-cluster")
+	err := os.MkdirAll(clusterDir, 0755)
 	if err != nil {
 		t.Fatalf("Failed to create cluster directory: %v", err)
 	}
 
 	// Create a test config file
-	configPath := filepath.Join(orgDir, ".test-cluster-config.yaml")
+	configPath := filepath.Join(tmpDir, "test-org", ".test-cluster-config.yaml")
 	testContent := []byte("test: config\ndata: value")
 	err = os.WriteFile(configPath, testContent, 0600)
 	if err != nil {

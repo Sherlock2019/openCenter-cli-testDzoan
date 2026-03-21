@@ -22,8 +22,11 @@ import (
 	"strings"
 	"sync"
 
+	semver "github.com/Masterminds/semver/v3"
+	"github.com/go-playground/validator/v10"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
+	validationvalidators "github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 )
@@ -87,19 +90,8 @@ func NewConfigurationManager() (*ConfigurationManager, error) {
 	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
 
-	// Load CLI config to get the correct clusters directory
-	baseDir := filepath.Join(os.Getenv("HOME"), ".config", "opencenter", "clusters")
-	cliConfigManager, err := NewConfigManager("")
-	if err == nil {
-		// Successfully loaded CLI config, use its clustersDir
-		if cliConfigManager.GetConfig().Paths.ClustersDir != "" {
-			baseDir = cliConfigManager.GetConfig().Paths.ClustersDir
-		}
-	}
-	// If CLI config loading fails, fall back to default baseDir
-
 	// Create PathResolver with base directory from CLI config
-	pathResolver := paths.NewPathResolver(baseDir)
+	pathResolver := paths.NewPathResolver(ResolveClustersDir())
 
 	// Create ValidationEngine
 	// Note: Config validation is currently disabled as the ConfigValidator
@@ -183,7 +175,7 @@ func (cm *ConfigurationManager) Load(ctx context.Context, name string) (*Config,
 	// Parse cluster identifier to handle organization/cluster format
 	var clusterPaths *paths.ClusterPaths
 	var err error
-	
+
 	if strings.Contains(name, "/") {
 		// organization/cluster format - parse and use Resolve
 		parts := strings.SplitN(name, "/", 2)
@@ -200,7 +192,7 @@ func (cm *ConfigurationManager) Load(ctx context.Context, name string) (*Config,
 		// Just cluster name - use ResolveWithFallback to search all organizations
 		clusterPaths, err = cm.pathResolver.ResolveWithFallback(ctx, name)
 	}
-	
+
 	if err != nil {
 		return nil, NewConfigNotFoundError(name, errors.WrapWithOperation(
 			NewPathError(name, "", err),
@@ -226,25 +218,6 @@ func (cm *ConfigurationManager) Load(ctx context.Context, name string) (*Config,
 			NewParseError(configPath, 0, 0, err),
 			"load",
 		)
-	}
-
-	// Validate configuration if validators are registered
-	if cm.validator != nil && len(cm.validator.List()) > 0 {
-		result, err := cm.validator.Validate(ctx, "config", config)
-		if err != nil {
-			return nil, errors.WrapWithOperation(
-				NewValidationError("", "validation engine error", err),
-				"load",
-			)
-		}
-
-		if !result.Valid {
-			// Convert validation result to error
-			return nil, errors.WrapWithOperation(
-				result.ToError(),
-				"load",
-			)
-		}
 	}
 
 	// Cache the loaded configuration
@@ -294,7 +267,7 @@ func (cm *ConfigurationManager) LoadWithoutValidation(ctx context.Context, name 
 	// Parse cluster identifier to handle organization/cluster format
 	var clusterPaths *paths.ClusterPaths
 	var err error
-	
+
 	if strings.Contains(name, "/") {
 		// organization/cluster format - parse and use Resolve
 		parts := strings.SplitN(name, "/", 2)
@@ -311,7 +284,7 @@ func (cm *ConfigurationManager) LoadWithoutValidation(ctx context.Context, name 
 		// Just cluster name - use ResolveWithFallback to search all organizations
 		clusterPaths, err = cm.pathResolver.ResolveWithFallback(ctx, name)
 	}
-	
+
 	if err != nil {
 		return nil, NewConfigNotFoundError(name, errors.WrapWithOperation(
 			NewPathError(name, "", err),
@@ -344,6 +317,7 @@ func (cm *ConfigurationManager) LoadWithoutValidation(ctx context.Context, name 
 
 	return config, nil
 }
+
 // Save saves a configuration to disk atomically.
 //
 // The save process follows these steps:
@@ -385,35 +359,13 @@ func (cm *ConfigurationManager) Save(ctx context.Context, config *Config) error 
 	// Validate configuration before saving
 	Debug("ConfigManager.Save: starting validation")
 	Debugf("ConfigManager.Save: validating config for cluster: %s", config.OpenCenter.Cluster.ClusterName)
-	
-	// Note: The "config" validator is designed for individual config values (email, domain, etc.),
-	// not for full Config structs. For now, we skip validation during save.
-	// TODO: Implement proper full-config validation using ConfigStructureValidator or similar
-	
-	// result, err := cm.validator.Validate(ctx, "config", config)
-	// if err != nil {
-	// 	Debugf("ConfigManager.Save: validation engine returned error: %v", err)
-	// 	return errors.WrapWithOperation(
-	// 		NewValidationError("", fmt.Sprintf("validation engine error: %v", err), err),
-	// 		"save",
-	// 	)
-	// }
-	
-	// Debugf("ConfigManager.Save: validation result - Valid: %v, Errors: %d, Warnings: %d", 
-	// 	result.Valid, len(result.Errors), len(result.Warnings))
 
-	// if !result.Valid {
-	// 	Debug("ConfigManager.Save: validation failed, listing errors:")
-	// 	for i, validationErr := range result.Errors {
-	// 		Debugf("  Error %d: Field=%s, Message=%s", i+1, validationErr.Field, validationErr.Message)
-	// 	}
-	// 	return errors.WrapWithOperation(
-	// 		result.ToError(),
-	// 		"save",
-	// 	)
-	// }
-	
-	Debug("ConfigManager.Save: validation skipped (config validator not applicable for full Config structs)")
+	if err := cm.validateConfigStruct(ctx, config); err != nil {
+		return errors.WrapWithOperation(
+			err,
+			"save",
+		)
+	}
 
 	// Resolve configuration path
 	organization := config.OpenCenter.Meta.Organization
@@ -459,6 +411,7 @@ func (cm *ConfigurationManager) Save(ctx context.Context, config *Config) error 
 
 	return nil
 }
+
 // SaveWithoutValidation saves a configuration to disk atomically without validation.
 //
 // This method is primarily intended for testing scenarios where you need to save
@@ -569,26 +522,99 @@ func (cm *ConfigurationManager) Validate(ctx context.Context, config *Config) er
 
 	Debug("ConfigManager.Validate: starting validation")
 	Debugf("ConfigManager.Validate: validating config for cluster: %s", config.OpenCenter.Cluster.ClusterName)
-	
-	result, err := cm.validator.Validate(ctx, "config", config)
+
+	return cm.validateConfigStruct(ctx, config)
+}
+
+func (cm *ConfigurationManager) validateConfigStruct(ctx context.Context, cfg *Config) error {
+	result := validation.NewValidationResult()
+
+	structureValidator := validationvalidators.NewConfigStructureValidator()
+	structureResult, err := structureValidator.Validate(ctx, cfg)
 	if err != nil {
-		Debugf("ConfigManager.Validate: validation engine returned error: %v", err)
 		return NewValidationError("", fmt.Sprintf("validation engine error: %v", err), err)
 	}
-	
-	Debugf("ConfigManager.Validate: validation result - Valid: %v, Errors: %d, Warnings: %d", 
+	result.Merge(structureResult)
+
+	tagValidator := validator.New()
+	if err := registerConfigTagValidations(tagValidator); err != nil {
+		return NewValidationError("", fmt.Sprintf("validation engine error: %v", err), err)
+	}
+
+	if err := tagValidator.Struct(cfg); err != nil {
+		var validationErrors validator.ValidationErrors
+		if stderrors.As(err, &validationErrors) {
+			for _, validationErr := range validationErrors {
+				result.AddError(validationErr.Namespace(), validationMessage(validationErr))
+			}
+		} else {
+			return NewValidationError("", fmt.Sprintf("validation engine error: %v", err), err)
+		}
+	}
+
+	Debugf("ConfigManager.Validate: validation result - Valid: %v, Errors: %d, Warnings: %d",
 		result.Valid, len(result.Errors), len(result.Warnings))
 
 	if !result.Valid {
-		Debug("ConfigManager.Validate: validation failed, listing errors:")
-		for i, validationErr := range result.Errors {
-			Debugf("  Error %d: Field=%s, Message=%s", i+1, validationErr.Field, validationErr.Message)
-		}
 		return result.ToError()
 	}
-	
+
 	Debug("ConfigManager.Validate: validation passed")
 	return nil
+}
+
+func registerConfigTagValidations(v *validator.Validate) error {
+	if err := v.RegisterValidation("dns1123", func(fl validator.FieldLevel) bool {
+		value := fl.Field().String()
+		if value == "" {
+			return true
+		}
+		if len(value) > 253 {
+			return false
+		}
+		for i, c := range value {
+			if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '.') {
+				return false
+			}
+			if (i == 0 || i == len(value)-1) && (c == '-' || c == '.') {
+				return false
+			}
+		}
+		return true
+	}); err != nil {
+		return err
+	}
+
+	if err := v.RegisterValidation("semver", func(fl validator.FieldLevel) bool {
+		value := strings.TrimSpace(fl.Field().String())
+		if value == "" {
+			return true
+		}
+		_, err := semver.NewVersion(value)
+		return err == nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validationMessage(err validator.FieldError) string {
+	switch err.Tag() {
+	case "required":
+		return "field is required"
+	case "required_if":
+		return "field is required when the related condition is met"
+	case "dns1123":
+		return "must be a lowercase DNS-style name"
+	case "oneof":
+		return fmt.Sprintf("must be one of: %s", err.Param())
+	default:
+		if err.Param() != "" {
+			return fmt.Sprintf("failed %s validation (%s)", err.Tag(), err.Param())
+		}
+		return fmt.Sprintf("failed %s validation", err.Tag())
+	}
 }
 
 // List returns all cluster names in the configuration directory.

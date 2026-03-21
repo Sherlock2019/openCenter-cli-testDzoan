@@ -11,9 +11,10 @@ import (
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
+	testhelpers "github.com/opencenter-cloud/opencenter-cli/internal/testing"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
-	testhelpers "github.com/opencenter-cloud/opencenter-cli/internal/testing"
 )
 
 // createTestSetupService creates a SetupService with test dependencies
@@ -25,7 +26,7 @@ func createTestSetupService(pathResolver *paths.PathResolver) *SetupService {
 	cache := config.NewConfigCache()
 	loader := config.NewConfigIOHandler(fileSystem)
 	configMgr := config.NewConfigurationManagerWithDeps(loader, validator, cache, pathResolver, fileSystem)
-	
+
 	return NewSetupServiceWithConfigMgr(pathResolver, validator, configMgr)
 }
 
@@ -259,6 +260,53 @@ func setupContains(s, substr string) bool {
 	return strings.Contains(s, substr)
 }
 
+func TestSetupService_OpenStackSetupDoesNotUseLegacyConfigValidator(t *testing.T) {
+	tmpDir := t.TempDir()
+	clusterName := "openstack-setup"
+	organization := "test-org"
+	gitDir := filepath.Join(tmpDir, "gitops-repo")
+
+	pathResolver := paths.NewPathResolver(tmpDir)
+	ctx := context.Background()
+	if err := pathResolver.CreateClusterDirectories(ctx, clusterName, organization); err != nil {
+		t.Fatalf("failed to create cluster directories: %v", err)
+	}
+
+	cfg, err := config.NewProviderDefault(clusterName, "openstack")
+	if err != nil {
+		t.Fatalf("NewProviderDefault() error = %v", err)
+	}
+	cfg.SchemaVersion = "2.0"
+	cfg.OpenCenter.Meta.Organization = organization
+	cfg.OpenCenter.GitOps.GitDir = gitDir
+
+	testhelpers.SaveConfigWithPathResolver(t, cfg, pathResolver)
+
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fileSystem := fs.NewDefaultFileSystem(errorHandler)
+	validator := validation.NewValidationEngine()
+	if err := validator.Register(validators.NewConfigValidator()); err != nil {
+		t.Fatalf("register config validator: %v", err)
+	}
+	cache := config.NewConfigCache()
+	loader := config.NewConfigIOHandler(fileSystem)
+	configMgr := config.NewConfigurationManagerWithDeps(loader, validator, cache, pathResolver, fileSystem)
+
+	service := NewSetupServiceWithConfigMgr(pathResolver, validator, configMgr)
+	result, err := service.Setup(ctx, SetupOptions{
+		ClusterName:    clusterName,
+		Organization:   organization,
+		DryRun:         true,
+		SkipValidation: false,
+	})
+	if err != nil {
+		t.Fatalf("Setup() unexpected error: %v", err)
+	}
+	if result == nil || result.ManifestsCreated == 0 {
+		t.Fatalf("expected dry-run setup result with manifest count, got %#v", result)
+	}
+}
+
 func TestSetupService_Setup(t *testing.T) {
 	tmpDir := t.TempDir()
 	gitDir := filepath.Join(tmpDir, "gitops")
@@ -309,6 +357,83 @@ func TestSetupService_Setup(t *testing.T) {
 
 	if result.ManifestsCreated == 0 {
 		t.Error("Setup() ManifestsCreated = 0")
+	}
+}
+
+func TestSetupService_Setup_KindProviderRendersKindConfigOnly(t *testing.T) {
+	tmpDir := t.TempDir()
+	gitDir := filepath.Join(tmpDir, "gitops")
+	binDir := filepath.Join(tmpDir, "bin")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatalf("failed to create bin dir: %v", err)
+	}
+	fakeGitPath := filepath.Join(binDir, "git")
+	fakeGit := `#!/bin/sh
+case "$1" in
+  init)
+    mkdir -p .git
+    ;;
+  add)
+    ;;
+  status)
+    ;;
+  commit)
+    ;;
+  rev-parse)
+    echo deadbeef
+    ;;
+esac
+exit 0
+`
+	if err := os.WriteFile(fakeGitPath, []byte(fakeGit), 0o755); err != nil {
+		t.Fatalf("failed to write fake git: %v", err)
+	}
+	t.Setenv("PATH", binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	pathResolver := paths.NewPathResolver(tmpDir)
+
+	ctx := context.Background()
+	if err := pathResolver.CreateClusterDirectories(ctx, "kind-cluster", "opencenter"); err != nil {
+		t.Fatalf("failed to create cluster directories: %v", err)
+	}
+
+	cfg := config.NewDefault("kind-cluster")
+	cfg.SchemaVersion = "2.0"
+	cfg.OpenCenter.Meta.Organization = "opencenter"
+	cfg.OpenCenter.GitOps.GitDir = gitDir
+	if err := config.ApplyProviderDefaults(&cfg, "kind"); err != nil {
+		t.Fatalf("apply provider defaults: %v", err)
+	}
+
+	testhelpers.SaveConfigWithPathResolver(t, cfg, pathResolver)
+
+	service := createTestSetupService(pathResolver)
+	result, err := service.Setup(ctx, SetupOptions{
+		ClusterName:    "kind-cluster",
+		Organization:   "opencenter",
+		DryRun:         false,
+		SkipValidation: false,
+	})
+	if err != nil {
+		t.Fatalf("Setup returned error: %v", err)
+	}
+	if result == nil {
+		t.Fatal("Setup returned nil result")
+	}
+
+	kindConfigPath := filepath.Join(gitDir, "infrastructure", "clusters", "kind-cluster", "kind-config.yaml")
+	if _, err := os.Stat(kindConfigPath); err != nil {
+		t.Fatalf("expected kind-config.yaml to exist: %v", err)
+	}
+
+	mainTFPath := filepath.Join(gitDir, "infrastructure", "clusters", "kind-cluster", "main.tf")
+	if _, err := os.Stat(mainTFPath); !os.IsNotExist(err) {
+		t.Fatalf("expected main.tf to be absent for kind setup")
+	}
+
+	providerTFPath := filepath.Join(gitDir, "infrastructure", "clusters", "kind-cluster", "provider.tf")
+	if _, err := os.Stat(providerTFPath); !os.IsNotExist(err) {
+		t.Fatalf("expected provider.tf to be absent for kind setup")
 	}
 }
 

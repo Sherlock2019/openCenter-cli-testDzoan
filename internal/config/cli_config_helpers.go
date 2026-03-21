@@ -18,6 +18,18 @@ import (
 	"path/filepath"
 )
 
+// ResolveClustersDir returns the runtime clusters directory.
+// If OPENCENTER_CONFIG_DIR is set, it is treated as the config root and
+// the clusters directory is resolved beneath it. Otherwise, the CLI config
+// clustersDir value is used, falling back to the default clusters path.
+func ResolveClustersDir() string {
+	if dir := os.Getenv("OPENCENTER_CONFIG_DIR"); dir != "" {
+		return filepath.Join(dir, "clusters")
+	}
+
+	return GetClustersDir()
+}
+
 // GetClustersDir returns the clusters directory from the CLI config.
 // If the CLI config cannot be loaded or clustersDir is not set, it returns the default.
 // This function is safe to call from anywhere and will not cause circular dependencies.

@@ -29,7 +29,7 @@ type BackupManager interface {
 	RestoreBackup(ctx context.Context, backupID string, passphrase string) error
 	ListBackups(cluster string) ([]*Backup, error)
 	DeleteBackup(backupID string) error
-	ScheduleBackups(schedule string, retention time.Duration) error
+	ScheduleBackups(ctx context.Context, cluster string, interval time.Duration, retention time.Duration, onBackup func(*Backup, error)) error
 }
 
 // Backup represents a cluster backup
@@ -221,6 +221,9 @@ func (bm *backupManager) ListBackups(cluster string) ([]*Backup, error) {
 		}
 
 		name := entry.Name()
+		if filepath.Ext(name) == ".sha256" {
+			continue
+		}
 		// Match backup files for this cluster
 		if cluster != "" && !filepath.HasPrefix(name, cluster+"-") {
 			continue
@@ -233,8 +236,8 @@ func (bm *backupManager) ListBackups(cluster string) ([]*Backup, error) {
 		}
 
 		backup := &Backup{
-			ID:              name,
-			Cluster:         cluster,
+			ID:              trimBackupID(name),
+			Cluster:         clusterFromBackupName(trimBackupID(name), cluster),
 			CreatedAt:       info.ModTime(),
 			Size:            info.Size(),
 			StorageLocation: filepath.Join(bm.backupDir, name),
@@ -268,10 +271,103 @@ func (bm *backupManager) DeleteBackup(backupID string) error {
 	return nil
 }
 
-// ScheduleBackups schedules periodic backups (placeholder for future implementation)
-// Issue: https://github.com/opencenter-cloud/opencenter-cli/issues/XXX - Implement backup scheduling
-func (bm *backupManager) ScheduleBackups(schedule string, retention time.Duration) error {
-	return fmt.Errorf("backup scheduling not yet implemented")
+// ScheduleBackups runs a foreground interval scheduler until the context is canceled.
+func (bm *backupManager) ScheduleBackups(ctx context.Context, cluster string, interval time.Duration, retention time.Duration, onBackup func(*Backup, error)) error {
+	if cluster == "" {
+		return fmt.Errorf("cluster name cannot be empty")
+	}
+	if interval <= 0 {
+		return fmt.Errorf("interval must be greater than zero")
+	}
+	if retention < 0 {
+		return fmt.Errorf("retention cannot be negative")
+	}
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-ticker.C:
+			backup, err := bm.CreateBackup(ctx, cluster)
+			if err == nil && retention > 0 {
+				backup.RetentionUntil = backup.CreatedAt.Add(retention)
+				if pruneErr := bm.pruneExpiredBackups(cluster, retention); pruneErr != nil {
+					err = pruneErr
+				}
+			}
+			if onBackup != nil {
+				onBackup(backup, err)
+			}
+			if err != nil {
+				return err
+			}
+		}
+	}
+}
+
+func (bm *backupManager) pruneExpiredBackups(cluster string, retention time.Duration) error {
+	backups, err := bm.ListBackups(cluster)
+	if err != nil {
+		return fmt.Errorf("failed to list backups for pruning: %w", err)
+	}
+
+	cutoff := time.Now().Add(-retention)
+	for _, backup := range backups {
+		if backup.CreatedAt.After(cutoff) {
+			continue
+		}
+		if err := bm.DeleteBackup(trimBackupID(backup.ID)); err != nil {
+			return fmt.Errorf("failed to delete expired backup %s: %w", backup.ID, err)
+		}
+	}
+
+	return nil
+}
+
+func trimBackupID(name string) string {
+	switch {
+	case filepath.Ext(name) == ".enc":
+		name = name[:len(name)-len(".enc")]
+	}
+	switch {
+	case len(name) > len(".tar.gz") && filepath.Ext(name) == ".gz":
+		return name[:len(name)-len(".tar.gz")]
+	default:
+		return name
+	}
+}
+
+func clusterFromBackupName(backupID, fallback string) string {
+	if fallback != "" {
+		return fallback
+	}
+
+	lastDash := -1
+	for i := len(backupID) - 1; i >= 0; i-- {
+		if backupID[i] == '-' {
+			lastDash = i
+			break
+		}
+	}
+	if lastDash <= 0 {
+		return fallback
+	}
+
+	secondLastDash := -1
+	for i := lastDash - 1; i >= 0; i-- {
+		if backupID[i] == '-' {
+			secondLastDash = i
+			break
+		}
+	}
+	if secondLastDash <= 0 {
+		return fallback
+	}
+
+	return backupID[:secondLastDash]
 }
 
 // collectBackupContents collects all files to be backed up

@@ -11,9 +11,9 @@ import (
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
+	testhelpers "github.com/opencenter-cloud/opencenter-cli/internal/testing"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
-	testhelpers "github.com/opencenter-cloud/opencenter-cli/internal/testing"
 )
 
 // createTestBootstrapService creates a BootstrapService with test dependencies
@@ -26,7 +26,7 @@ func createTestBootstrapService(pathResolver *paths.PathResolver) *BootstrapServ
 	cache := config.NewConfigCache()
 	loader := config.NewConfigIOHandler(fileSystem)
 	configMgr := config.NewConfigurationManagerWithDeps(loader, validator, cache, pathResolver, fileSystem)
-	
+
 	return NewBootstrapServiceWithConfigMgr(pathResolver, validator, configMgr, fileSystem)
 }
 
@@ -171,193 +171,6 @@ func TestBootstrapService_Bootstrap(t *testing.T) {
 	}
 }
 
-func TestBootstrapService_resolveContainerRuntime(t *testing.T) {
-	// Create temporary directory for test
-	tmpDir := t.TempDir()
-
-	// Create path resolver
-	pathResolver := paths.NewPathResolver(tmpDir)
-
-	// Create validation engine
-	validationEngine := validation.NewValidationEngine()
-
-	// Create bootstrap service
-	bootstrapService := NewBootstrapService(pathResolver, validationEngine)
-
-	tests := []struct {
-		name      string
-		flagValue string
-		envVars   map[string]string
-		want      string
-	}{
-		{
-			name:      "flag value takes precedence",
-			flagValue: "podman",
-			envVars: map[string]string{
-				"CONTAINER_RUNTIME": "docker",
-			},
-			want: "podman",
-		},
-		{
-			name:      "CONTAINER_RUNTIME env var",
-			flagValue: "",
-			envVars: map[string]string{
-				"CONTAINER_RUNTIME": "podman",
-			},
-			want: "podman",
-		},
-		{
-			name:      "KIND_EXPERIMENTAL_PROVIDER env var",
-			flagValue: "",
-			envVars: map[string]string{
-				"KIND_EXPERIMENTAL_PROVIDER": "podman",
-			},
-			want: "podman",
-		},
-		{
-			name:      "default to docker",
-			flagValue: "",
-			envVars:   map[string]string{},
-			want:      "docker",
-		},
-		{
-			name:      "uppercase flag value",
-			flagValue: "PODMAN",
-			envVars:   map[string]string{},
-			want:      "podman",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Set environment variables
-			for k, v := range tt.envVars {
-				os.Setenv(k, v)
-				defer os.Unsetenv(k)
-			}
-
-			got := bootstrapService.resolveContainerRuntime(tt.flagValue)
-			if got != tt.want {
-				t.Errorf("resolveContainerRuntime() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestBootstrapService_buildEnvironment(t *testing.T) {
-	// Create temporary directory for test
-	tmpDir := t.TempDir()
-
-	// Create path resolver
-	pathResolver := paths.NewPathResolver(tmpDir)
-
-	// Create validation engine
-	validationEngine := validation.NewValidationEngine()
-
-	// Create bootstrap service
-	bootstrapService := NewBootstrapService(pathResolver, validationEngine)
-
-	tests := []struct {
-		name           string
-		kubeconfigPath string
-		wantKubeconfig bool
-		wantPath       bool
-	}{
-		{
-			name:           "with kubeconfig",
-			kubeconfigPath: "/path/to/kubeconfig",
-			wantKubeconfig: true,
-			wantPath:       true,
-		},
-		{
-			name:           "without kubeconfig",
-			kubeconfigPath: "",
-			wantKubeconfig: false,
-			wantPath:       true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Set PATH environment variable
-			os.Setenv("PATH", "/usr/bin:/bin")
-			defer os.Unsetenv("PATH")
-
-			env := bootstrapService.buildEnvironment(tt.kubeconfigPath)
-
-			if tt.wantKubeconfig {
-				if env["KUBECONFIG"] != tt.kubeconfigPath {
-					t.Errorf("buildEnvironment() KUBECONFIG = %v, want %v", env["KUBECONFIG"], tt.kubeconfigPath)
-				}
-			} else {
-				if _, ok := env["KUBECONFIG"]; ok {
-					t.Error("buildEnvironment() set KUBECONFIG when not expected")
-				}
-			}
-
-			if tt.wantPath {
-				if env["PATH"] == "" {
-					t.Error("buildEnvironment() did not preserve PATH")
-				}
-			}
-		})
-	}
-}
-
-func TestBootstrapService_buildKindEnvironment(t *testing.T) {
-	// Create temporary directory for test
-	tmpDir := t.TempDir()
-
-	// Create path resolver
-	pathResolver := paths.NewPathResolver(tmpDir)
-
-	// Create validation engine
-	validationEngine := validation.NewValidationEngine()
-
-	// Create bootstrap service
-	bootstrapService := NewBootstrapService(pathResolver, validationEngine)
-
-	tests := []struct {
-		name    string
-		runtime string
-		wantEnv map[string]string
-	}{
-		{
-			name:    "podman runtime",
-			runtime: "podman",
-			wantEnv: map[string]string{
-				"KIND_EXPERIMENTAL_PROVIDER": "podman",
-			},
-		},
-		{
-			name:    "docker runtime",
-			runtime: "docker",
-			wantEnv: map[string]string{},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Set PATH environment variable
-			os.Setenv("PATH", "/usr/bin:/bin")
-			defer os.Unsetenv("PATH")
-
-			env := bootstrapService.buildKindEnvironment(tt.runtime)
-
-			for k, v := range tt.wantEnv {
-				if env[k] != v {
-					t.Errorf("buildKindEnvironment() %s = %v, want %v", k, env[k], v)
-				}
-			}
-
-			// Verify PATH is preserved
-			if env["PATH"] == "" {
-				t.Error("buildKindEnvironment() did not preserve PATH")
-			}
-		})
-	}
-}
-
 func TestBootstrapService_filterSteps(t *testing.T) {
 	// Create temporary directory for test
 	tmpDir := t.TempDir()
@@ -447,6 +260,47 @@ func TestBootstrapService_filterSteps(t *testing.T) {
 				t.Errorf("filterSteps() first step ID = %v, want %v", filtered[0].ID, tt.wantFirstID)
 			}
 		})
+	}
+}
+
+func TestBootstrapService_OpenStackDryRunDoesNotUseLegacyConfigValidator(t *testing.T) {
+	tmpDir := t.TempDir()
+	clusterName := "openstack-bootstrap"
+	organization := "test-org"
+
+	pathResolver := paths.NewPathResolver(tmpDir)
+	bootstrapService := createTestBootstrapService(pathResolver)
+
+	ctx := context.Background()
+	if err := pathResolver.CreateClusterDirectories(ctx, clusterName, organization); err != nil {
+		t.Fatalf("Failed to create cluster directories: %v", err)
+	}
+
+	cfg, err := config.NewProviderDefault(clusterName, "openstack")
+	if err != nil {
+		t.Fatalf("NewProviderDefault() error = %v", err)
+	}
+	cfg.SchemaVersion = "2.0"
+	cfg.OpenCenter.Meta.Organization = organization
+	cfg.OpenCenter.GitOps.GitDir = filepath.Join(tmpDir, "gitops-repo")
+
+	testhelpers.SaveConfigWithPathResolver(t, cfg, pathResolver)
+
+	result, err := bootstrapService.Bootstrap(ctx, BootstrapOptions{
+		ClusterName:    clusterName,
+		Organization:   organization,
+		DryRun:         true,
+		SkipValidation: false,
+		Timeout:        5 * time.Second,
+	})
+	if err != nil {
+		t.Fatalf("Bootstrap() unexpected error: %v", err)
+	}
+	if result == nil {
+		t.Fatal("expected bootstrap result")
+	}
+	if result.InfrastructureProvisioned || result.ClusterDeployed || result.ClusterReady {
+		t.Fatalf("dry-run bootstrap should not mark provisioning complete: %#v", result)
 	}
 }
 

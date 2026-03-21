@@ -64,6 +64,7 @@ func TestGetContainer_WrongType(t *testing.T) {
 func TestExecuteWithContext(t *testing.T) {
 	// Create a test container with temp directory
 	tempDir := t.TempDir()
+	prepareCommandTestEnv(t, tempDir)
 	container, err := di.SetupContainer(tempDir)
 	if err != nil {
 		t.Fatalf("SetupContainer() failed: %v", err)

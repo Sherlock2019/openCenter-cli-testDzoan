@@ -160,14 +160,14 @@ func TestInitService_validateClusterName(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name:        "valid cluster name with uppercase",
+			name:        "invalid cluster name with uppercase",
 			clusterName: "Test-Cluster",
-			wantErr:     false,
+			wantErr:     true,
 		},
 		{
-			name:        "valid cluster name with underscore",
+			name:        "invalid cluster name with underscore",
 			clusterName: "test_cluster",
-			wantErr:     false,
+			wantErr:     true,
 		},
 		{
 			name:        "invalid cluster name with slash",

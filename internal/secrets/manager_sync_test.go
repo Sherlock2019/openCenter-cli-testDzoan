@@ -223,13 +223,9 @@ AGE-SECRET-KEY-1GFPYYSJL7VYMDXVJZ4QQZZ7JQJQJQJQJQJQJQJQJQJQJQJQJQJQJQJQ
 		err = os.WriteFile(keyPath, []byte(keyContent), 0600)
 		require.NoError(t, err)
 
-		// This will fail because the method searches in standard locations,
-		// not in our tmpDir. But we can verify the logic is correct.
-		_, err = manager.getAgeKeyPathFromPublicKey(publicKey)
-
-		// Expect error because key is not in standard location
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "Age key file not found")
+		resolvedPath, err := manager.getAgeKeyPathFromPublicKey(publicKey)
+		require.NoError(t, err)
+		assert.Equal(t, keyPath, resolvedPath)
 	})
 
 	t.Run("returns error when key not found", func(t *testing.T) {

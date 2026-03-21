@@ -267,7 +267,7 @@ func (r *DefaultKeyRotator) RotateSSHKey(ctx context.Context, opts RotateOptions
 		OldFingerprint:   oldKey.Fingerprint,
 		NewFingerprint:   newPublicKey,
 		ReencryptedFiles: []string{}, // SSH keys don't require re-encryption
-		DualKeyActive:    false,       // SSH rotation is immediate, no dual-key mode
+		DualKeyActive:    false,      // SSH rotation is immediate, no dual-key mode
 	}
 
 	// In dry-run mode, don't make changes
@@ -543,7 +543,7 @@ func (r *DefaultKeyRotator) generateAgeKey(ctx context.Context, cluster string, 
 	// The key manager handles generation and storage
 	sopsManager := r.secretsManager.(*DefaultSecretsManager).sopsManager
 	keyManager := sopsManager.GetKeyManager()
-	
+
 	// Generate a new key for the cluster
 	keyPair, err := keyManager.GenerateKeyForCluster(cluster)
 	if err != nil {
@@ -818,7 +818,7 @@ func (r *DefaultKeyRotator) updateConfigSSHKey(ctx context.Context, cluster stri
 	r.logger.Debug("Updating config with new SSH key", "cluster", cluster, "key_path", newKeyPath)
 
 	// Get the cluster config path
-	configPath, err := r.secretsManager.(*DefaultSecretsManager).getConfigPath(cluster)
+	configPath, err := r.secretsManager.(*DefaultSecretsManager).getConfigPath(ctx, cluster)
 	if err != nil {
 		return fmt.Errorf("failed to get config path: %w", err)
 	}
@@ -891,7 +891,7 @@ func (r *DefaultKeyRotator) archiveKey(ctx context.Context, cluster string, keyT
 		// This is more complex as there might be multiple SSH keys
 		// For now, we'll use a placeholder approach
 		sshDir := filepath.Join(homeDir, ".config", "opencenter", "clusters", cluster, "secrets", "ssh")
-		
+
 		// Find SSH key files in the directory
 		files, err := os.ReadDir(sshDir)
 		if err != nil {

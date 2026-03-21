@@ -272,6 +272,10 @@ type KeyRegistry interface {
 	// Returns ErrKeyNotFound if no matching key exists.
 	UpdateKeyStatus(ctx context.Context, cluster string, keyType KeyType, status KeyStatus) error
 
+	// UpdateKey updates an existing key entry, preserving metadata fields that callers modify.
+	// Returns ErrKeyNotFound if no matching key exists.
+	UpdateKey(ctx context.Context, entry KeyEntry) error
+
 	// ListKeys returns all keys, optionally filtered by cluster.
 	// If cluster is empty, returns keys for all clusters.
 	ListKeys(ctx context.Context, cluster string) ([]KeyEntry, error)

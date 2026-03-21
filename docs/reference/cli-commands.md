@@ -613,26 +613,34 @@ opencenter cluster drift
 
 ### cluster backup
 
-Backup cluster configuration.
+Manage cluster backups.
 
 ```bash
-opencenter cluster backup [name] [flags]
+opencenter cluster backup <subcommand>
 ```
 
-**Flags:**
+**Subcommands:**
 
-| Flag | Type | Default | Description |
-|------|------|---------|-------------|
-| `--output-dir` | string | | Backup directory |
+- `create [cluster]` - Create a backup for the active or named cluster
+- `restore <backup-id>` - Restore files from a backup into a safe restored location
+- `list [cluster]` - List backups for one cluster or all clusters
+- `delete <backup-id>` - Delete a backup
+- `schedule [cluster]` - Run foreground interval-based backup scheduling
 
 **Examples:**
 
 ```bash
-# Backup to default location
-opencenter cluster backup
+# Create a backup
+opencenter cluster backup create my-cluster
 
-# Backup to custom directory
-opencenter cluster backup --output-dir /backups
+# List backups
+opencenter cluster backup list my-cluster
+
+# Run the foreground scheduler with a 24h interval
+opencenter cluster backup schedule my-cluster --interval 24h
+
+# Run the scheduler with 30d retention
+opencenter cluster backup schedule my-cluster --interval 24h --retention 30d
 ```
 
 ### cluster lock
@@ -779,7 +787,7 @@ opencenter cluster check-keys
 
 ### cluster audit-log
 
-View cluster audit log.
+View or export cluster audit events.
 
 ```bash
 opencenter cluster audit-log [name] [flags]
@@ -789,8 +797,10 @@ opencenter cluster audit-log [name] [flags]
 
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
-| `--since` | string | | Show logs since timestamp |
-| `--tail` | int | 100 | Number of recent entries |
+| `--since` | string | `30d` | Show events within the last duration (`7d`, `24h`, `1w`) |
+| `--event-type` | string | | Filter by event type |
+| `--export` | string | | Export filtered events to JSON |
+| `--verify` | bool | `false` | Verify audit log integrity before displaying events |
 
 **Examples:**
 
@@ -798,11 +808,14 @@ opencenter cluster audit-log [name] [flags]
 # View recent logs
 opencenter cluster audit-log
 
-# Last 50 entries
-opencenter cluster audit-log --tail 50
+# Filter to rotation events from the last 7 days
+opencenter cluster audit-log my-cluster --since 7d --event-type key.rotated
 
-# Since specific time
-opencenter cluster audit-log --since "2026-02-17T10:00:00Z"
+# Export events to JSON
+opencenter cluster audit-log my-cluster --export audit-report.json
+
+# Verify integrity
+opencenter cluster audit-log my-cluster --verify
 ```
 
 ### cluster revoke-key

@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/security"
 	"github.com/opencenter-cloud/opencenter-cli/internal/sops"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
@@ -69,12 +70,12 @@ func (s *sopsEncryptorAdapter) EncryptFile(ctx context.Context, filePath string)
 	if encryptor == nil {
 		return fmt.Errorf("encryptor not available")
 	}
-	
+
 	// Use empty config to use .sops.yaml configuration
 	config := sops.EncryptionConfig{
 		InPlace: true,
 	}
-	
+
 	return encryptor.EncryptFile(ctx, filePath, config)
 }
 
@@ -83,7 +84,7 @@ func (s *sopsEncryptorAdapter) DecryptFile(ctx context.Context, filePath string)
 	if encryptor == nil {
 		return nil, fmt.Errorf("encryptor not available")
 	}
-	
+
 	// Create a temporary file for decrypted output
 	tmpFile, err := os.CreateTemp("", "sops-decrypt-*")
 	if err != nil {
@@ -91,18 +92,18 @@ func (s *sopsEncryptorAdapter) DecryptFile(ctx context.Context, filePath string)
 	}
 	defer os.Remove(tmpFile.Name())
 	tmpFile.Close()
-	
+
 	// Decrypt to temp file
 	if err := encryptor.DecryptFile(ctx, filePath, tmpFile.Name()); err != nil {
 		return nil, fmt.Errorf("failed to decrypt file: %w", err)
 	}
-	
+
 	// Read decrypted content
 	content, err := os.ReadFile(tmpFile.Name())
 	if err != nil {
 		return nil, fmt.Errorf("failed to read decrypted content: %w", err)
 	}
-	
+
 	return content, nil
 }
 
@@ -116,6 +117,10 @@ func createSecretsLogger() *slog.Logger {
 // createSOPSManager creates a SOPS manager instance
 func createSOPSManager(logger *slog.Logger) *sops.DefaultSOPSManager {
 	return sops.NewDefaultSOPSManager(nil, nil, logger)
+}
+
+func createAuditLogger() (*security.AuditLogger, error) {
+	return security.NewDefaultAuditLogger()
 }
 
 // createConfigLoader creates a config loader instance

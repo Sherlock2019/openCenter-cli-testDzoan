@@ -37,14 +37,14 @@ func setupBenchmarkManager(b *testing.B) (*ConfigurationManager, string, func())
 	tmpDir := b.TempDir()
 
 	// Create organization structure
-	orgDir := filepath.Join(tmpDir, "test-org", "infrastructure", "clusters", "bench-cluster")
-	err := os.MkdirAll(orgDir, 0755)
+	clusterDir := filepath.Join(tmpDir, "test-org", "infrastructure", "clusters", "bench-cluster")
+	err := os.MkdirAll(clusterDir, 0755)
 	if err != nil {
 		b.Fatalf("Failed to create cluster directory: %v", err)
 	}
 
 	// Create a sample config file
-	configPath := filepath.Join(orgDir, ".bench-cluster-config.yaml")
+	configPath := filepath.Join(tmpDir, "test-org", ".bench-cluster-config.yaml")
 	sampleConfig := createSampleConfig("bench-cluster")
 	data, err := yaml.Marshal(sampleConfig)
 	if err != nil {

@@ -64,7 +64,7 @@ Create a new cluster configuration with OpenStack defaults:
 ```bash
 opencenter cluster init prod-cluster \
   --org my-company \
-  --type openstack
+  --provider openstack
 ```
 
 **What happens:**
@@ -273,7 +273,7 @@ Configuration is valid and ready for deployment.
 Generate the complete GitOps repository structure:
 
 ```bash
-opencenter cluster setup prod-cluster --render
+opencenter cluster setup prod-cluster
 ```
 
 **What's generated:**
@@ -292,7 +292,7 @@ opencenter cluster setup prod-cluster --render
 │
 └── infrastructure/
     └── clusters/prod-cluster/
-        ├── main.tf                # Terraform/OpenTofu
+        ├── main.tf                # OpenTofu infrastructure
         ├── provider.tf
         ├── variables.tf
         ├── inventory/             # Kubespray Ansible
@@ -304,7 +304,7 @@ opencenter cluster setup prod-cluster --render
 ```
 ✓ Generated GitOps repository: ~/prod-cluster-gitops
 ✓ Encrypted secrets with SOPS
-✓ Created Terraform configuration
+✓ Created OpenTofu configuration
 ✓ Created Kubespray inventory
 ✓ Created FluxCD manifests
 
@@ -393,7 +393,7 @@ Cluster is ready!
 watch -n 5 'openstack server list | grep prod-cluster'
 
 # After Kubernetes is deployed, watch pods
-export KUBECONFIG=~/prod-cluster-gitops/infrastructure/clusters/prod-cluster/kubeconfig.yaml
+eval "$(opencenter cluster select prod-cluster --export-only)"
 watch -n 5 'kubectl get pods -A'
 ```
 
@@ -402,8 +402,8 @@ watch -n 5 'kubectl get pods -A'
 Verify the cluster is working:
 
 ```bash
-# Set kubeconfig
-export KUBECONFIG=~/prod-cluster-gitops/infrastructure/clusters/prod-cluster/kubeconfig.yaml
+# Set kubeconfig from the cluster-owned path
+eval "$(opencenter cluster select prod-cluster --export-only)"
 
 # Check nodes
 kubectl get nodes
@@ -522,7 +522,7 @@ Available: 2 instances, 8 vCPUs, 16 GB RAM
 - Request quota increase from OpenStack administrator
 - Or reduce cluster size (fewer workers, smaller flavors)
 
-### Bootstrap Fails: Terraform Error
+### Bootstrap Fails: OpenTofu Error
 
 **Error:**
 ```
@@ -537,7 +537,7 @@ openstack quota show
 
 # Clean up any existing resources
 cd ~/prod-cluster-gitops/infrastructure/clusters/prod-cluster
-terraform destroy
+opentofu destroy
 
 # Retry bootstrap
 opencenter cluster bootstrap prod-cluster

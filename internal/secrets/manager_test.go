@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/sops"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
@@ -39,6 +40,14 @@ func setupTestManager(t *testing.T) (*DefaultSecretsManager, string, func()) {
 	tmpDir, err := os.MkdirTemp("", "secrets-manager-test-*")
 	require.NoError(t, err)
 
+	originalHome := os.Getenv("HOME")
+	originalConfigDir := os.Getenv("OPENCENTER_CONFIG_DIR")
+	configDir := filepath.Join(tmpDir, ".config", "opencenter")
+
+	require.NoError(t, os.MkdirAll(configDir, 0o755))
+	require.NoError(t, os.Setenv("HOME", tmpDir))
+	require.NoError(t, os.Setenv("OPENCENTER_CONFIG_DIR", configDir))
+
 	// Create file system
 	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
@@ -53,10 +62,33 @@ func setupTestManager(t *testing.T) (*DefaultSecretsManager, string, func()) {
 	manager := NewDefaultSecretsManager(configLoader, sopsManager, nil, slog.Default())
 
 	cleanup := func() {
+		if originalHome == "" {
+			os.Unsetenv("HOME")
+		} else {
+			os.Setenv("HOME", originalHome)
+		}
+		if originalConfigDir == "" {
+			os.Unsetenv("OPENCENTER_CONFIG_DIR")
+		} else {
+			os.Setenv("OPENCENTER_CONFIG_DIR", originalConfigDir)
+		}
 		os.RemoveAll(tmpDir)
 	}
 
 	return manager, tmpDir, cleanup
+}
+
+func writeManagerTestConfig(t *testing.T, clusterName string, configData string) string {
+	t.Helper()
+
+	resolver := paths.NewPathResolver(config.ResolveClustersDir())
+	require.NoError(t, resolver.CreateClusterDirectories(context.Background(), clusterName, "test-org"))
+
+	clusterPaths, err := resolver.Resolve(context.Background(), clusterName, "test-org")
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(clusterPaths.ConfigPath, []byte(configData), 0o644))
+
+	return clusterPaths.ConfigPath
 }
 
 // createTestConfig creates a test configuration with secrets
@@ -338,7 +370,7 @@ func TestSyncSecrets(t *testing.T) {
 		// This test verifies that the Services field in SyncOptions
 		// correctly filters which services are synced
 		cfg := createTestConfig("test-cluster-filter")
-		
+
 		// Verify config has multiple services with secrets
 		secretsMap, err := manager.extractSecretsFromConfig(cfg)
 		require.NoError(t, err)
@@ -425,23 +457,18 @@ AGE-SECRET-KEY-1GFPYYSJL7VYMDXVJZ4QQZZ7JQJQJQJQJQJQJQJQJQJQJQJQJQJQJQJQ
 		require.NoError(t, err)
 		defer os.Remove(ageKeyPath)
 
-		// Create config directory structure
-		configDir := filepath.Join(homeDir, ".config", "opencenter", "clusters", "test-org", "test-cluster-validate")
-		err = os.MkdirAll(configDir, 0755)
-		require.NoError(t, err)
-		defer os.RemoveAll(filepath.Join(homeDir, ".config", "opencenter", "clusters", "test-org", "test-cluster-validate"))
-
 		// Create test repo directory
 		testRepoDir := filepath.Join(tmpDir, "test-repo")
 		err = os.MkdirAll(testRepoDir, 0755)
 		require.NoError(t, err)
 
 		// Write config file
-		configPath := filepath.Join(configDir, ".k8s-test-cluster-validate-config.yaml")
 		configData := `schema_version: "2.0"
 opencenter:
   cluster:
     cluster_name: test-cluster-validate
+  meta:
+    organization: test-org
   gitops:
     git_dir: ` + testRepoDir + `
 secrets:
@@ -450,8 +477,7 @@ secrets:
     aws_access_key: AKIAIOSFODNN7EXAMPLE
     aws_secret_access_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 `
-		err = os.WriteFile(configPath, []byte(configData), 0644)
-		require.NoError(t, err)
+		_ = writeManagerTestConfig(t, "test-cluster-validate", configData)
 
 		// Create overlay directory (but no manifests)
 		overlayPath := filepath.Join(testRepoDir, "applications", "overlays", "test-cluster-validate", "services")
@@ -479,10 +505,10 @@ func TestDetectDrift(t *testing.T) {
 
 	t.Run("returns error when config not found", func(t *testing.T) {
 		report, err := manager.DetectDrift(context.Background(), "nonexistent-cluster")
-		
+
 		assert.Error(t, err)
 		assert.Nil(t, report)
-		
+
 		var configNotFoundErr *ErrConfigNotFound
 		assert.ErrorAs(t, err, &configNotFoundErr)
 	})
@@ -576,7 +602,7 @@ func TestDetectDriftFields(t *testing.T) {
 
 		driftFields := manager.detectDriftFields(configSecrets, manifestSecrets)
 		assert.Len(t, driftFields, 2)
-		
+
 		// Verify both drifted fields are detected
 		driftPaths := make(map[string]bool)
 		for _, field := range driftFields {
@@ -603,7 +629,7 @@ func TestDetectDriftFields(t *testing.T) {
 
 		driftFields := manager.detectDriftFields(configSecrets, manifestSecrets)
 		assert.Len(t, driftFields, 2)
-		
+
 		for _, field := range driftFields {
 			assert.NotEmpty(t, field.ConfigHash)
 			assert.Empty(t, field.ManifestHash)
@@ -624,7 +650,6 @@ func TestGetSecretSources(t *testing.T) {
 		assert.ErrorAs(t, err, &configErr)
 	})
 }
-
 
 func TestSyncSecretsIntegration(t *testing.T) {
 	manager, tmpDir, cleanup := setupTestManager(t)
@@ -852,7 +877,6 @@ func TestHasSecretsChanged(t *testing.T) {
 	})
 }
 
-
 func TestValidateSecretsHelperMethods(t *testing.T) {
 	manager, tmpDir, cleanup := setupTestManager(t)
 	defer cleanup()
@@ -1038,23 +1062,18 @@ AGE-SECRET-KEY-1GFPYYSJL7VYMDXVJZ4QQZZ7JQJQJQJQJQJQJQJQJQJQJQJQJQJQJQJQ
 		require.NoError(t, err)
 		defer os.Remove(ageKeyPath)
 
-		// Create config directory structure
-		configDir := filepath.Join(homeDir, ".config", "opencenter", "clusters", "test-org", "test-cluster-security")
-		err = os.MkdirAll(configDir, 0755)
-		require.NoError(t, err)
-		defer os.RemoveAll(filepath.Join(homeDir, ".config", "opencenter", "clusters", "test-org", "test-cluster-security"))
-
 		// Create test repo directory
 		testRepoDir := filepath.Join(tmpDir, "test-repo-security")
 		err = os.MkdirAll(testRepoDir, 0755)
 		require.NoError(t, err)
 
 		// Write config file
-		configPath := filepath.Join(configDir, ".k8s-test-cluster-security-config.yaml")
 		configData := `schema_version: "2.0"
 opencenter:
   cluster:
     cluster_name: test-cluster-security
+  meta:
+    organization: test-org
   gitops:
     git_dir: ` + testRepoDir + `
 secrets:
@@ -1063,8 +1082,7 @@ secrets:
     aws_access_key: AKIAIOSFODNN7EXAMPLE
     aws_secret_access_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 `
-		err = os.WriteFile(configPath, []byte(configData), 0644)
-		require.NoError(t, err)
+		_ = writeManagerTestConfig(t, "test-cluster-security", configData)
 
 		// Create overlay directory with unencrypted manifest
 		overlayPath := filepath.Join(testRepoDir, "applications", "overlays", "test-cluster-security", "services")

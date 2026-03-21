@@ -17,7 +17,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -41,6 +40,14 @@ var (
 	containerOnce   sync.Once
 )
 
+// resetContainerForTests resets the lazy global DI container.
+// Command tests call this after changing OPENCENTER_CONFIG_DIR so the container
+// picks up the current path resolver configuration.
+func resetContainerForTests() {
+	globalContainer = nil
+	containerOnce = sync.Once{}
+}
+
 // getContainer returns the global DI container, initializing it if necessary
 func getContainer() di.Container {
 	containerOnce.Do(func() {
@@ -51,15 +58,7 @@ func getContainer() di.Container {
 
 // initializeContainer creates and initializes the DI container with all services
 func initializeContainer() di.Container {
-	// Get base directory for path resolver
-	// Use default config directory: ~/.config/opencenter on Linux/macOS
-	baseDir := os.Getenv("OPENCENTER_CONFIG_DIR")
-	if baseDir == "" {
-		// Load from CLI config
-		baseDir = config.GetClustersDir()
-	} else {
-		baseDir = filepath.Join(baseDir, "clusters")
-	}
+	baseDir := config.ResolveClustersDir()
 
 	// Use the unified SetupContainer function
 	// Requirements: 5.6
@@ -169,7 +168,7 @@ Support: https://github.com/opencenter-cloud/opencenter-cli/issues`,
 		config.Debug("=== OpenCenter CLI Debug Information ===")
 		config.Debugf("Command: %s", cmd.CommandPath())
 		config.Debugf("Arguments: %v", args)
-		
+
 		// Log environment variables
 		config.Debug("Environment Variables:")
 		if configDir := os.Getenv("OPENCENTER_CONFIG_DIR"); configDir != "" {
@@ -185,7 +184,7 @@ Support: https://github.com/opencenter-cloud/opencenter-cli/issues`,
 		if home, err := os.UserHomeDir(); err == nil {
 			config.Debugf("  HOME: %s", home)
 		}
-		
+
 		// Log configuration paths
 		config.Debug("Configuration Paths:")
 		if runtime.GOOS == "windows" {
@@ -196,17 +195,11 @@ Support: https://github.com/opencenter-cloud/opencenter-cli/issues`,
 				config.Debugf("  LOCALAPPDATA: %s", localAppData)
 			}
 		}
-		
+
 		// Log computed base directory
-		baseDir := os.Getenv("OPENCENTER_CONFIG_DIR")
-		if baseDir == "" {
-			// Load from CLI config
-			baseDir = config.GetClustersDir()
-		} else {
-			baseDir = filepath.Join(baseDir, "clusters")
-		}
+		baseDir := config.ResolveClustersDir()
 		config.Debugf("  Clusters Directory: %s", baseDir)
-		
+
 		// Log global flags
 		config.Debug("Global Flags:")
 		config.Debugf("  --log-level: %s", globalFlags.LogLevel)
@@ -223,7 +216,6 @@ Support: https://github.com/opencenter-cloud/opencenter-cli/issues`,
 		return cmd.Help()
 	},
 }
-
 
 // ExecuteWithContext runs the root command with a context containing the DI container.
 //
@@ -300,10 +292,6 @@ func parseGlobalFlags(cmd *cobra.Command) (*GlobalFlags, error) {
 		ShowActive: showActive,
 	}, nil
 }
-
-
-
-
 
 // GetRootCmd returns the root cobra command.
 func GetRootCmd() *cobra.Command {

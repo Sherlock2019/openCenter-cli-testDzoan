@@ -174,7 +174,7 @@ opencenter:
     aws_access_key: ""
     aws_secret_access_key: ""
     ssh_authorized_keys:
-      - "ssh-ed25519 AAAAC3..."
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExamplePublicKeyDataHere user@example.com"
     base_domain: "k8s.opencenter.cloud"
     cluster_fqdn: "my-cluster.sjc3.k8s.opencenter.cloud"
     admin_email: "admin@example.com"
@@ -204,7 +204,7 @@ opencenter:
       subnet_nodes: "10.2.128.0/22"
       allocation_pool_start: ""
       allocation_pool_end: ""
-      vrrp_ip: ""                # Required when use_octavia=false
+      vrrp_ip: "10.2.128.5"      # Required when use_octavia=false and vrrp_enabled=true
       vrrp_enabled: true
       use_octavia: false
       loadbalancer_provider: "ovn"
@@ -354,7 +354,7 @@ opencenter:
     git_ssh_pub: ""
     git_branch: "main"
     gitops_base_repo: "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git"
-    gitops_base_release: ""
+    gitops_base_release: "v0.1.0"
     gitops_branch: "main"
     flux:
       interval: "15m"
@@ -458,6 +458,7 @@ Deployment automation settings.
 ```yaml
 deployment:
   auto_deploy: true
+  method: kubespray
 ```
 
 ## metadata Section

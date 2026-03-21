@@ -16,8 +16,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -51,7 +49,7 @@ and re-run bootstrap to continue from where it left off.`,
 	}
 
 	cmd.Flags().Bool("dry-run", false, "show planned actions without executing")
-	cmd.Flags().String("kubeconfig", "./kubeconfig.yaml", "path to kubeconfig used by bootstrap actions")
+	cmd.Flags().String("kubeconfig", "", "path to kubeconfig used by bootstrap actions (defaults to the cluster-owned kubeconfig path)")
 	cmd.Flags().String("log", "", "log file path (defaults to <git_dir>/infrastructure/clusters/<name>/logs/bootstrap-YYYY-MM-DD-TIMESTAMP.log)")
 	cmd.Flags().String("container-runtime", "", "container runtime for kind clusters (docker or podman)")
 	cmd.Flags().Bool("restart", false, "rerun all bootstrap steps and ignore saved state")
@@ -111,9 +109,20 @@ func runClusterBootstrap(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	if !opts.DryRun {
+		if err := config.UpdateStatus(name, config.StageBootstrap, config.StatusRunning); err != nil {
+			fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
+		}
+	}
+
 	// Execute bootstrap
 	result, err := bootstrapService.Bootstrap(ctx, opts)
 	if err != nil {
+		if !opts.DryRun {
+			if statusErr := config.UpdateStatus(name, config.StageBootstrap, config.StatusFailed); statusErr != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", statusErr)
+			}
+		}
 		return err
 	}
 
@@ -127,10 +136,10 @@ func runClusterBootstrap(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(cmd.OutOrStdout(), "Steps failed: %d\n", len(result.StepsFailed))
 	}
 
-	// Update stage and status
-	if err := config.UpdateStatus(name, config.StageBootstrap, config.StatusSuccess); err != nil {
-		// Don't fail the command if status update fails, just warn
-		fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
+	if !opts.DryRun {
+		if err := config.UpdateStatus(name, config.StageBootstrap, config.StatusSuccess); err != nil {
+			fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
+		}
 	}
 
 	return nil
@@ -138,18 +147,7 @@ func runClusterBootstrap(cmd *cobra.Command, args []string) error {
 
 // setupBootstrapContainer initializes the DI container with all required services
 func setupBootstrapContainer(container di.Container) error {
-	// Get base directory from environment or use default
-	baseDir := os.Getenv("OPENCENTER_CONFIG_DIR")
-	if baseDir == "" {
-		// Use default config directory
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return fmt.Errorf("getting home directory: %w", err)
-		}
-		baseDir = filepath.Join(home, ".config", "opencenter")
-	}
-
-	pathResolver, err := di.ProvidePathResolver(baseDir)
+	pathResolver, err := di.ProvidePathResolver(config.ResolveClustersDir())
 	if err != nil {
 		return err
 	}

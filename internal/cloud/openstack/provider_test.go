@@ -32,14 +32,14 @@ func TestNewProvider(t *testing.T) {
 		Password:         "test",
 	}
 
-	provider := NewProvider(authOpts)
+	provider := NewProvider(authOpts, "region-one")
 
 	require.NotNil(t, provider)
 	assert.Equal(t, authOpts, provider.authOpts)
 }
 
 func TestProvider_DetectDrift_NoServers(t *testing.T) {
-	provider := NewProvider(gophercloud.AuthOptions{})
+	provider := NewProvider(gophercloud.AuthOptions{}, "region-one")
 
 	desired := &cloud.InfrastructureState{
 		Servers: []cloud.Server{},
@@ -58,7 +58,7 @@ func TestProvider_DetectDrift_NoServers(t *testing.T) {
 }
 
 func TestProvider_DetectDrift_MissingServer(t *testing.T) {
-	provider := NewProvider(gophercloud.AuthOptions{})
+	provider := NewProvider(gophercloud.AuthOptions{}, "region-one")
 
 	desired := &cloud.InfrastructureState{
 		Servers: []cloud.Server{
@@ -87,12 +87,12 @@ func TestProvider_DetectDrift_MissingServer(t *testing.T) {
 	assert.Equal(t, "existence", drift.Field)
 	assert.Equal(t, "exists", drift.Expected)
 	assert.Equal(t, "missing", drift.Actual)
-	assert.Equal(t, cloud.SeverityCritical, drift.Severity)
-	assert.True(t, drift.Reconcilable)
+	assert.Equal(t, cloud.SeverityWarning, drift.Severity)
+	assert.False(t, drift.Reconcilable)
 }
 
 func TestProvider_DetectDrift_ExtraServer(t *testing.T) {
-	provider := NewProvider(gophercloud.AuthOptions{})
+	provider := NewProvider(gophercloud.AuthOptions{}, "region-one")
 
 	desired := &cloud.InfrastructureState{
 		Servers: []cloud.Server{},
@@ -126,7 +126,7 @@ func TestProvider_DetectDrift_ExtraServer(t *testing.T) {
 }
 
 func TestProvider_DetectDrift_FlavorMismatch(t *testing.T) {
-	provider := NewProvider(gophercloud.AuthOptions{})
+	provider := NewProvider(gophercloud.AuthOptions{}, "region-one")
 
 	desired := &cloud.InfrastructureState{
 		Servers: []cloud.Server{
@@ -167,7 +167,7 @@ func TestProvider_DetectDrift_FlavorMismatch(t *testing.T) {
 }
 
 func TestProvider_DetectDrift_ServerNotActive(t *testing.T) {
-	provider := NewProvider(gophercloud.AuthOptions{})
+	provider := NewProvider(gophercloud.AuthOptions{}, "region-one")
 
 	desired := &cloud.InfrastructureState{
 		Servers: []cloud.Server{
@@ -207,7 +207,7 @@ func TestProvider_DetectDrift_ServerNotActive(t *testing.T) {
 }
 
 func TestProvider_DetectDrift_TagMismatch(t *testing.T) {
-	provider := NewProvider(gophercloud.AuthOptions{})
+	provider := NewProvider(gophercloud.AuthOptions{}, "region-one")
 
 	desired := &cloud.InfrastructureState{
 		Servers: []cloud.Server{
@@ -255,7 +255,7 @@ func TestProvider_DetectDrift_TagMismatch(t *testing.T) {
 }
 
 func TestProvider_DetectDrift_NetworkMissing(t *testing.T) {
-	provider := NewProvider(gophercloud.AuthOptions{})
+	provider := NewProvider(gophercloud.AuthOptions{}, "region-one")
 
 	desired := &cloud.InfrastructureState{
 		Networks: []cloud.Network{
@@ -282,11 +282,11 @@ func TestProvider_DetectDrift_NetworkMissing(t *testing.T) {
 	assert.Equal(t, "test-network", drift.ResourceName)
 	assert.Equal(t, "existence", drift.Field)
 	assert.Equal(t, cloud.SeverityCritical, drift.Severity)
-	assert.True(t, drift.Reconcilable)
+	assert.False(t, drift.Reconcilable)
 }
 
 func TestProvider_DetectDrift_Summary(t *testing.T) {
-	provider := NewProvider(gophercloud.AuthOptions{})
+	provider := NewProvider(gophercloud.AuthOptions{}, "region-one")
 
 	desired := &cloud.InfrastructureState{
 		Servers: []cloud.Server{
@@ -315,7 +315,7 @@ func TestProvider_DetectDrift_Summary(t *testing.T) {
 }
 
 func TestProvider_ReconcileDrift_EmptyReport(t *testing.T) {
-	provider := NewProvider(gophercloud.AuthOptions{})
+	provider := NewProvider(gophercloud.AuthOptions{}, "region-one")
 
 	report := &cloud.DriftReport{
 		Drifts:       []cloud.DriftItem{},
@@ -328,7 +328,7 @@ func TestProvider_ReconcileDrift_EmptyReport(t *testing.T) {
 }
 
 func TestProvider_ReconcileDrift_NonReconcilable(t *testing.T) {
-	provider := NewProvider(gophercloud.AuthOptions{})
+	provider := NewProvider(gophercloud.AuthOptions{}, "region-one")
 
 	report := &cloud.DriftReport{
 		Drifts: []cloud.DriftItem{

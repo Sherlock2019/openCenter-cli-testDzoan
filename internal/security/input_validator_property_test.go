@@ -312,11 +312,15 @@ func genValidClusterName(input string) string {
 	var result strings.Builder
 	result.WriteString("a") // Always start with 'a'
 
-	// Add valid characters from input (alphanumeric, hyphen, underscore)
+	// Add valid lowercase DNS-style characters from input.
 	for _, ch := range input {
-		if (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
-			(ch >= '0' && ch <= '9') || ch == '-' || ch == '_' {
+		if ch >= 'A' && ch <= 'Z' {
+			ch = ch - 'A' + 'a'
+		}
+		if (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '-' {
 			result.WriteRune(ch)
+		} else if ch == '_' {
+			result.WriteRune('-')
 		}
 		// Stop at 63 characters
 		if result.Len() >= 63 {
@@ -327,6 +331,10 @@ func genValidClusterName(input string) string {
 	name := result.String()
 	if len(name) > 63 {
 		name = name[:63]
+	}
+	name = strings.Trim(name, "-")
+	if name == "" {
+		return "a"
 	}
 	return name
 }

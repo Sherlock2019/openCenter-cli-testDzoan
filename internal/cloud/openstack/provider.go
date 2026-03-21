@@ -16,10 +16,19 @@ package openstack
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
+	"github.com/gophercloud/gophercloud/openstack/blockstorage/v3/volumes"
 	"github.com/gophercloud/gophercloud/openstack/compute/v2/servers"
+	"github.com/gophercloud/gophercloud/openstack/loadbalancer/v2/loadbalancers"
+	"github.com/gophercloud/gophercloud/openstack/loadbalancer/v2/pools"
+	floatingips "github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/layer3/floatingips"
+	secgroups "github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/groups"
+	secrules "github.com/gophercloud/gophercloud/openstack/networking/v2/extensions/security/rules"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/networks"
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/subnets"
 
@@ -27,19 +36,25 @@ import (
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 )
 
+type serverLookup struct {
+	idToName      map[string]string
+	addressToName map[string]string
+}
+
 // Provider implements the CloudProvider interface for OpenStack.
 type Provider struct {
 	authOpts gophercloud.AuthOptions
+	region   string
 }
 
 // NewProvider creates a new OpenStack cloud provider.
-func NewProvider(authOpts gophercloud.AuthOptions) *Provider {
+func NewProvider(authOpts gophercloud.AuthOptions, region string) *Provider {
 	return &Provider{
 		authOpts: authOpts,
+		region:   region,
 	}
 }
 
-// getProviderClient creates an authenticated OpenStack provider client.
 func (p *Provider) getProviderClient() (*gophercloud.ProviderClient, error) {
 	client, err := openstack.AuthenticatedClient(p.authOpts)
 	if err != nil {
@@ -48,40 +63,61 @@ func (p *Provider) getProviderClient() (*gophercloud.ProviderClient, error) {
 	return client, nil
 }
 
-// getComputeClient creates a compute service client.
 func (p *Provider) getComputeClient() (*gophercloud.ServiceClient, error) {
 	provider, err := p.getProviderClient()
 	if err != nil {
 		return nil, err
 	}
 
-	client, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{
-		Region: p.authOpts.DomainName, // Use domain name as region for now
-	})
+	client, err := openstack.NewComputeV2(provider, gophercloud.EndpointOpts{Region: p.region})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create compute client: %w", err)
 	}
 	return client, nil
 }
 
-// getNetworkClient creates a network service client.
 func (p *Provider) getNetworkClient() (*gophercloud.ServiceClient, error) {
 	provider, err := p.getProviderClient()
 	if err != nil {
 		return nil, err
 	}
 
-	client, err := openstack.NewNetworkV2(provider, gophercloud.EndpointOpts{
-		Region: p.authOpts.DomainName,
-	})
+	client, err := openstack.NewNetworkV2(provider, gophercloud.EndpointOpts{Region: p.region})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create network client: %w", err)
 	}
 	return client, nil
 }
 
+func (p *Provider) getLoadBalancerClient() (*gophercloud.ServiceClient, error) {
+	provider, err := p.getProviderClient()
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := openstack.NewLoadBalancerV2(provider, gophercloud.EndpointOpts{Region: p.region})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create load balancer client: %w", err)
+	}
+	return client, nil
+}
+
+func (p *Provider) getBlockStorageClient() (*gophercloud.ServiceClient, error) {
+	provider, err := p.getProviderClient()
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := openstack.NewBlockStorageV3(provider, gophercloud.EndpointOpts{Region: p.region})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create block storage client: %w", err)
+	}
+	return client, nil
+}
+
 // GetCurrentState retrieves the current infrastructure state from OpenStack.
 func (p *Provider) GetCurrentState(ctx context.Context, cfg config.Config) (*cloud.InfrastructureState, error) {
+	clusterName := cfg.OpenCenter.Cluster.ClusterName
 	state := &cloud.InfrastructureState{
 		Servers:        []cloud.Server{},
 		Networks:       []cloud.Network{},
@@ -91,131 +127,162 @@ func (p *Provider) GetCurrentState(ctx context.Context, cfg config.Config) (*clo
 		FloatingIPs:    []cloud.FloatingIP{},
 	}
 
-	// Get cluster name for filtering resources
-	clusterName := cfg.OpenCenter.Cluster.ClusterName
-
-	// Retrieve servers
-	serverList, err := p.listServers(ctx, clusterName)
+	serverList, lookup, err := p.listServers(ctx, clusterName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list servers: %w", err)
 	}
 	state.Servers = serverList
 
-	// Retrieve networks
-	networkList, err := p.listNetworks(ctx, clusterName)
+	networkID := cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.NetworkID
+	networkList, err := p.listNetworks(ctx, clusterName, networkID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list networks: %w", err)
 	}
 	state.Networks = networkList
 
-	// TODO: Implement security groups, load balancers, volumes, floating IPs retrieval
-	// These will be added as needed for comprehensive drift detection
+	securityGroupList, err := p.listSecurityGroups(ctx, clusterName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list security groups: %w", err)
+	}
+	state.SecurityGroups = securityGroupList
+
+	loadBalancerList, err := p.listLoadBalancers(ctx, clusterName, lookup.addressToName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list load balancers: %w", err)
+	}
+	state.LoadBalancers = loadBalancerList
+
+	volumeList, err := p.listVolumes(ctx, clusterName, lookup.idToName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list volumes: %w", err)
+	}
+	state.Volumes = volumeList
+
+	floatingIPList, err := p.listFloatingIPs(ctx, clusterName, lookup.addressToName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list floating IPs: %w", err)
+	}
+	state.FloatingIPs = floatingIPList
 
 	return state, nil
 }
 
-// listServers retrieves all servers for the cluster.
-func (p *Provider) listServers(ctx context.Context, clusterName string) ([]cloud.Server, error) {
+func (p *Provider) listServers(ctx context.Context, clusterName string) ([]cloud.Server, serverLookup, error) {
 	client, err := p.getComputeClient()
 	if err != nil {
-		return nil, err
+		return nil, serverLookup{}, err
 	}
 
-	// List all servers with cluster tag
-	opts := servers.ListOpts{
-		// Filter by cluster name in metadata/tags
-		// Note: OpenStack metadata filtering varies by deployment
-	}
-
-	allPages, err := servers.List(client, opts).AllPages()
+	allPages, err := servers.List(client, servers.ListOpts{}).AllPages()
 	if err != nil {
-		return nil, fmt.Errorf("failed to list servers: %w", err)
+		return nil, serverLookup{}, fmt.Errorf("failed to list servers: %w", err)
 	}
 
 	serverList, err := servers.ExtractServers(allPages)
 	if err != nil {
-		return nil, fmt.Errorf("failed to extract servers: %w", err)
+		return nil, serverLookup{}, fmt.Errorf("failed to extract servers: %w", err)
 	}
 
-	// Convert to our Server type
 	result := make([]cloud.Server, 0, len(serverList))
-	for _, s := range serverList {
-		// Filter by cluster name in metadata
-		if clusterTag, ok := s.Metadata["cluster"]; ok && clusterTag == clusterName {
-			networkNames := make([]string, 0)
-			for netName := range s.Addresses {
-				networkNames = append(networkNames, netName)
-			}
-
-			result = append(result, cloud.Server{
-				ID:       s.ID,
-				Name:     s.Name,
-				Flavor:   s.Flavor["id"].(string),
-				Image:    s.Image["id"].(string),
-				Status:   s.Status,
-				Networks: networkNames,
-				Tags:     s.Metadata,
-			})
-		}
+	lookup := serverLookup{
+		idToName:      make(map[string]string),
+		addressToName: make(map[string]string),
 	}
 
-	return result, nil
+	for _, server := range serverList {
+		if !matchesClusterServer(server, clusterName) {
+			continue
+		}
+
+		networks := extractNetworkNames(server.Addresses)
+		addresses := extractServerAddresses(server)
+		for _, address := range addresses {
+			lookup.addressToName[address] = server.Name
+		}
+		lookup.idToName[server.ID] = server.Name
+
+		result = append(result, cloud.Server{
+			ID:       server.ID,
+			Name:     server.Name,
+			Flavor:   mapValue(server.Flavor, "id"),
+			Image:    mapValue(server.Image, "id"),
+			Status:   server.Status,
+			Networks: networks,
+			Tags:     copyStringMap(server.Metadata),
+		})
+	}
+
+	sort.Slice(result, func(i, j int) bool { return result[i].Name < result[j].Name })
+	return result, lookup, nil
 }
 
-// listNetworks retrieves all networks for the cluster.
-func (p *Provider) listNetworks(ctx context.Context, clusterName string) ([]cloud.Network, error) {
+func (p *Provider) listNetworks(ctx context.Context, clusterName, networkID string) ([]cloud.Network, error) {
 	client, err := p.getNetworkClient()
 	if err != nil {
 		return nil, err
 	}
 
-	// List all networks
-	opts := networks.ListOpts{
-		// Filter by cluster name in tags
-		Tags: clusterName,
-	}
-
-	allPages, err := networks.List(client, opts).AllPages()
-	if err != nil {
-		return nil, fmt.Errorf("failed to list networks: %w", err)
-	}
-
-	networkList, err := networks.ExtractNetworks(allPages)
-	if err != nil {
-		return nil, fmt.Errorf("failed to extract networks: %w", err)
-	}
-
-	// Convert to our Network type and fetch subnets
-	result := make([]cloud.Network, 0, len(networkList))
-	for _, n := range networkList {
-		subnetList, err := p.listSubnets(ctx, n.ID)
+	networksToConvert := make([]networks.Network, 0)
+	if networkID != "" {
+		network, err := networks.Get(client, networkID).Extract()
 		if err != nil {
-			return nil, fmt.Errorf("failed to list subnets for network %s: %w", n.ID, err)
+			return nil, fmt.Errorf("failed to get network %s: %w", networkID, err)
+		}
+		networksToConvert = append(networksToConvert, *network)
+	} else {
+		allPages, err := networks.List(client, networks.ListOpts{}).AllPages()
+		if err != nil {
+			return nil, fmt.Errorf("failed to list networks: %w", err)
+		}
+
+		allNetworks, err := networks.ExtractNetworks(allPages)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract networks: %w", err)
+		}
+
+		for _, network := range allNetworks {
+			if matchesClusterResource(clusterName, network.Tags, network.Name, network.Description) {
+				networksToConvert = append(networksToConvert, network)
+			}
+		}
+	}
+
+	result := make([]cloud.Network, 0, len(networksToConvert))
+	for _, network := range networksToConvert {
+		subnetList, err := p.listSubnets(ctx, network.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list subnets for network %s: %w", network.ID, err)
+		}
+
+		networkCIDR := ""
+		if len(subnetList) == 1 {
+			networkCIDR = subnetList[0].CIDR
+		}
+
+		networkName := network.Name
+		if networkID != "" {
+			networkName = network.ID
 		}
 
 		result = append(result, cloud.Network{
-			ID:      n.ID,
-			Name:    n.Name,
-			CIDR:    "", // Networks don't have CIDR directly, subnets do
+			ID:      network.ID,
+			Name:    networkName,
+			CIDR:    networkCIDR,
 			Subnets: subnetList,
 		})
 	}
 
+	sort.Slice(result, func(i, j int) bool { return result[i].Name < result[j].Name })
 	return result, nil
 }
 
-// listSubnets retrieves all subnets for a network.
 func (p *Provider) listSubnets(ctx context.Context, networkID string) ([]cloud.Subnet, error) {
 	client, err := p.getNetworkClient()
 	if err != nil {
 		return nil, err
 	}
 
-	opts := subnets.ListOpts{
-		NetworkID: networkID,
-	}
-
-	allPages, err := subnets.List(client, opts).AllPages()
+	allPages, err := subnets.List(client, subnets.ListOpts{NetworkID: networkID}).AllPages()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list subnets: %w", err)
 	}
@@ -225,251 +292,223 @@ func (p *Provider) listSubnets(ctx context.Context, networkID string) ([]cloud.S
 		return nil, fmt.Errorf("failed to extract subnets: %w", err)
 	}
 
-	// Convert to our Subnet type
 	result := make([]cloud.Subnet, 0, len(subnetList))
-	for _, s := range subnetList {
+	for _, subnet := range subnetList {
 		result = append(result, cloud.Subnet{
-			ID:   s.ID,
-			Name: s.Name,
-			CIDR: s.CIDR,
+			ID:   subnet.ID,
+			Name: subnet.Name,
+			CIDR: subnet.CIDR,
 		})
 	}
 
+	sort.Slice(result, func(i, j int) bool { return result[i].Name < result[j].Name })
+	return result, nil
+}
+
+func (p *Provider) listSecurityGroups(ctx context.Context, clusterName string) ([]cloud.SecurityGroup, error) {
+	client, err := p.getNetworkClient()
+	if err != nil {
+		return nil, err
+	}
+
+	allPages, err := secgroups.List(client, secgroups.ListOpts{}).AllPages()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list security groups: %w", err)
+	}
+
+	groupList, err := secgroups.ExtractGroups(allPages)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract security groups: %w", err)
+	}
+
+	result := make([]cloud.SecurityGroup, 0, len(groupList))
+	for _, group := range groupList {
+		if !matchesClusterResource(clusterName, group.Tags, group.Name, group.Description) {
+			continue
+		}
+
+		result = append(result, cloud.SecurityGroup{
+			ID:    group.ID,
+			Name:  group.Name,
+			Rules: convertSecurityRules(group.Rules),
+		})
+	}
+
+	sort.Slice(result, func(i, j int) bool { return result[i].Name < result[j].Name })
+	return result, nil
+}
+
+func (p *Provider) listLoadBalancers(ctx context.Context, clusterName string, addressToName map[string]string) ([]cloud.LoadBalancer, error) {
+	client, err := p.getLoadBalancerClient()
+	if err != nil {
+		return nil, err
+	}
+
+	allPages, err := loadbalancers.List(client, loadbalancers.ListOpts{}).AllPages()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list load balancers: %w", err)
+	}
+
+	loadBalancerList, err := loadbalancers.ExtractLoadBalancers(allPages)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract load balancers: %w", err)
+	}
+
+	result := make([]cloud.LoadBalancer, 0, len(loadBalancerList))
+	for _, lb := range loadBalancerList {
+		if !matchesClusterResource(clusterName, lb.Tags, lb.Name, lb.Description) {
+			continue
+		}
+
+		members, err := p.listPoolMembers(ctx, client, lb.ID, addressToName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list pool members for load balancer %s: %w", lb.ID, err)
+		}
+
+		protocol := ""
+		port := 0
+		if len(lb.Listeners) > 0 {
+			protocol = lb.Listeners[0].Protocol
+			port = lb.Listeners[0].ProtocolPort
+		}
+
+		canonicalName := lb.Name
+		if strings.Contains(strings.ToLower(lb.Name), strings.ToLower(clusterName)) {
+			canonicalName = fmt.Sprintf("%s-api", clusterName)
+		}
+
+		result = append(result, cloud.LoadBalancer{
+			ID:       lb.ID,
+			Name:     canonicalName,
+			VIP:      lb.VipAddress,
+			Members:  members,
+			Protocol: protocol,
+			Port:     port,
+		})
+	}
+
+	sort.Slice(result, func(i, j int) bool { return result[i].Name < result[j].Name })
+	return result, nil
+}
+
+func (p *Provider) listPoolMembers(ctx context.Context, client *gophercloud.ServiceClient, loadBalancerID string, addressToName map[string]string) ([]string, error) {
+	allPages, err := pools.List(client, pools.ListOpts{LoadbalancerID: loadBalancerID}).AllPages()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list pools: %w", err)
+	}
+
+	poolList, err := pools.ExtractPools(allPages)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract pools: %w", err)
+	}
+
+	members := make([]string, 0)
+	for _, pool := range poolList {
+		for _, member := range pool.Members {
+			if member.Address == "" {
+				continue
+			}
+			if name := addressToName[member.Address]; name != "" {
+				members = append(members, name)
+				continue
+			}
+			members = append(members, member.Address)
+		}
+	}
+
+	sort.Strings(members)
+	return dedupeStrings(members), nil
+}
+
+func (p *Provider) listVolumes(ctx context.Context, clusterName string, serverIDToName map[string]string) ([]cloud.Volume, error) {
+	client, err := p.getBlockStorageClient()
+	if err != nil {
+		return nil, err
+	}
+
+	allPages, err := volumes.List(client, volumes.ListOpts{}).AllPages()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list volumes: %w", err)
+	}
+
+	volumeList, err := volumes.ExtractVolumes(allPages)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract volumes: %w", err)
+	}
+
+	result := make([]cloud.Volume, 0, len(volumeList))
+	for _, volume := range volumeList {
+		if !matchesClusterVolume(clusterName, volume) {
+			continue
+		}
+
+		attachedTo := ""
+		if len(volume.Attachments) > 0 {
+			attachedTo = serverIDToName[volume.Attachments[0].ServerID]
+			if attachedTo == "" {
+				attachedTo = volume.Attachments[0].ServerID
+			}
+		}
+
+		result = append(result, cloud.Volume{
+			ID:         volume.ID,
+			Name:       volume.Name,
+			Size:       volume.Size,
+			Status:     volume.Status,
+			AttachedTo: attachedTo,
+		})
+	}
+
+	sort.Slice(result, func(i, j int) bool { return cloudVolumeKey(result[i]) < cloudVolumeKey(result[j]) })
+	return result, nil
+}
+
+func (p *Provider) listFloatingIPs(ctx context.Context, clusterName string, addressToName map[string]string) ([]cloud.FloatingIP, error) {
+	client, err := p.getNetworkClient()
+	if err != nil {
+		return nil, err
+	}
+
+	allPages, err := floatingips.List(client, floatingips.ListOpts{}).AllPages()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list floating IPs: %w", err)
+	}
+
+	floatingIPList, err := floatingips.ExtractFloatingIPs(allPages)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract floating IPs: %w", err)
+	}
+
+	result := make([]cloud.FloatingIP, 0, len(floatingIPList))
+	for _, fip := range floatingIPList {
+		attachedTo := addressToName[fip.FixedIP]
+		if !matchesClusterFloatingIP(clusterName, fip, attachedTo) {
+			continue
+		}
+
+		result = append(result, cloud.FloatingIP{
+			ID:         fip.ID,
+			Address:    fip.FloatingIP,
+			Status:     fip.Status,
+			AttachedTo: attachedTo,
+		})
+	}
+
+	sort.Slice(result, func(i, j int) bool { return result[i].Address < result[j].Address })
 	return result, nil
 }
 
 // DetectDrift compares desired state with actual state and returns a drift report.
 func (p *Provider) DetectDrift(ctx context.Context, desired, actual *cloud.InfrastructureState) (*cloud.DriftReport, error) {
-	report := &cloud.DriftReport{
-		Drifts:  []cloud.DriftItem{},
-		Summary: cloud.DriftSummary{},
-	}
-
-	// Detect server drift
-	p.detectServerDrift(desired, actual, report)
-
-	// Detect network drift
-	p.detectNetworkDrift(desired, actual, report)
-
-	// Calculate summary
-	p.calculateSummary(report)
-
-	return report, nil
+	return cloud.CompareInfrastructureState(desired, actual), nil
 }
 
-// detectServerDrift compares desired and actual servers.
-func (p *Provider) detectServerDrift(desired, actual *cloud.InfrastructureState, report *cloud.DriftReport) {
-	// Create maps for easier lookup
-	desiredServers := make(map[string]cloud.Server)
-	for _, s := range desired.Servers {
-		desiredServers[s.Name] = s
-	}
-
-	actualServers := make(map[string]cloud.Server)
-	for _, s := range actual.Servers {
-		actualServers[s.Name] = s
-	}
-
-	// Check for missing servers (in desired but not in actual)
-	for name, desiredServer := range desiredServers {
-		if _, exists := actualServers[name]; !exists {
-			report.Drifts = append(report.Drifts, cloud.DriftItem{
-				ResourceType: "server",
-				ResourceID:   desiredServer.ID,
-				ResourceName: name,
-				Field:        "existence",
-				Expected:     "exists",
-				Actual:       "missing",
-				Severity:     cloud.SeverityCritical,
-				Reconcilable: true,
-				Message:      fmt.Sprintf("Server %s is missing from infrastructure", name),
-			})
-		}
-	}
-
-	// Check for extra servers (in actual but not in desired)
-	for name, actualServer := range actualServers {
-		if _, exists := desiredServers[name]; !exists {
-			report.Drifts = append(report.Drifts, cloud.DriftItem{
-				ResourceType: "server",
-				ResourceID:   actualServer.ID,
-				ResourceName: name,
-				Field:        "existence",
-				Expected:     "not exists",
-				Actual:       "exists",
-				Severity:     cloud.SeverityWarning,
-				Reconcilable: false,
-				Message:      fmt.Sprintf("Unexpected server %s found in infrastructure", name),
-			})
-		}
-	}
-
-	// Check for configuration drift in existing servers
-	for name, desiredServer := range desiredServers {
-		actualServer, exists := actualServers[name]
-		if !exists {
-			continue
-		}
-
-		// Check flavor
-		if desiredServer.Flavor != actualServer.Flavor {
-			report.Drifts = append(report.Drifts, cloud.DriftItem{
-				ResourceType: "server",
-				ResourceID:   actualServer.ID,
-				ResourceName: name,
-				Field:        "flavor",
-				Expected:     desiredServer.Flavor,
-				Actual:       actualServer.Flavor,
-				Severity:     cloud.SeverityCritical,
-				Reconcilable: false,
-				Message:      fmt.Sprintf("Server %s has wrong flavor", name),
-			})
-		}
-
-		// Check status
-		if actualServer.Status != "ACTIVE" {
-			report.Drifts = append(report.Drifts, cloud.DriftItem{
-				ResourceType: "server",
-				ResourceID:   actualServer.ID,
-				ResourceName: name,
-				Field:        "status",
-				Expected:     "ACTIVE",
-				Actual:       actualServer.Status,
-				Severity:     cloud.SeverityCritical,
-				Reconcilable: false,
-				Message:      fmt.Sprintf("Server %s is not active", name),
-			})
-		}
-
-		// Check tags
-		for key, expectedValue := range desiredServer.Tags {
-			if actualValue, ok := actualServer.Tags[key]; !ok || actualValue != expectedValue {
-				report.Drifts = append(report.Drifts, cloud.DriftItem{
-					ResourceType: "server",
-					ResourceID:   actualServer.ID,
-					ResourceName: name,
-					Field:        fmt.Sprintf("tags.%s", key),
-					Expected:     expectedValue,
-					Actual:       actualValue,
-					Severity:     cloud.SeverityInfo,
-					Reconcilable: true,
-					Message:      fmt.Sprintf("Server %s has incorrect tag %s", name, key),
-				})
-			}
-		}
-	}
-}
-
-// detectNetworkDrift compares desired and actual networks.
-func (p *Provider) detectNetworkDrift(desired, actual *cloud.InfrastructureState, report *cloud.DriftReport) {
-	// Create maps for easier lookup
-	desiredNetworks := make(map[string]cloud.Network)
-	for _, n := range desired.Networks {
-		desiredNetworks[n.Name] = n
-	}
-
-	actualNetworks := make(map[string]cloud.Network)
-	for _, n := range actual.Networks {
-		actualNetworks[n.Name] = n
-	}
-
-	// Check for missing networks
-	for name, desiredNetwork := range desiredNetworks {
-		if _, exists := actualNetworks[name]; !exists {
-			report.Drifts = append(report.Drifts, cloud.DriftItem{
-				ResourceType: "network",
-				ResourceID:   desiredNetwork.ID,
-				ResourceName: name,
-				Field:        "existence",
-				Expected:     "exists",
-				Actual:       "missing",
-				Severity:     cloud.SeverityCritical,
-				Reconcilable: true,
-				Message:      fmt.Sprintf("Network %s is missing from infrastructure", name),
-			})
-		}
-	}
-
-	// Check for extra networks
-	for name, actualNetwork := range actualNetworks {
-		if _, exists := desiredNetworks[name]; !exists {
-			report.Drifts = append(report.Drifts, cloud.DriftItem{
-				ResourceType: "network",
-				ResourceID:   actualNetwork.ID,
-				ResourceName: name,
-				Field:        "existence",
-				Expected:     "not exists",
-				Actual:       "exists",
-				Severity:     cloud.SeverityWarning,
-				Reconcilable: false,
-				Message:      fmt.Sprintf("Unexpected network %s found in infrastructure", name),
-			})
-		}
-	}
-
-	// Check subnet drift for existing networks
-	for name, desiredNetwork := range desiredNetworks {
-		actualNetwork, exists := actualNetworks[name]
-		if !exists {
-			continue
-		}
-
-		// Compare subnet counts
-		if len(desiredNetwork.Subnets) != len(actualNetwork.Subnets) {
-			report.Drifts = append(report.Drifts, cloud.DriftItem{
-				ResourceType: "network",
-				ResourceID:   actualNetwork.ID,
-				ResourceName: name,
-				Field:        "subnet_count",
-				Expected:     len(desiredNetwork.Subnets),
-				Actual:       len(actualNetwork.Subnets),
-				Severity:     cloud.SeverityWarning,
-				Reconcilable: true,
-				Message:      fmt.Sprintf("Network %s has incorrect number of subnets", name),
-			})
-		}
-	}
-}
-
-// calculateSummary calculates the drift summary and overall severity.
-func (p *Provider) calculateSummary(report *cloud.DriftReport) {
-	report.Summary.TotalDrifts = len(report.Drifts)
-	report.Reconcilable = true
-	report.OverallSeverity = cloud.SeverityInfo
-
-	for _, drift := range report.Drifts {
-		switch drift.Severity {
-		case cloud.SeverityCritical:
-			report.Summary.CriticalCount++
-			report.OverallSeverity = cloud.SeverityCritical
-		case cloud.SeverityWarning:
-			report.Summary.WarningCount++
-			if report.OverallSeverity < cloud.SeverityWarning {
-				report.OverallSeverity = cloud.SeverityWarning
-			}
-		case cloud.SeverityInfo:
-			report.Summary.InfoCount++
-		}
-
-		if drift.Reconcilable {
-			report.Summary.ReconcilableCount++
-		} else {
-			report.Reconcilable = false
-		}
-	}
-}
-
-// ReconcileDrift applies changes to fix detected drift.
+// ReconcileDrift applies safe mutable changes only.
 func (p *Provider) ReconcileDrift(ctx context.Context, drift *cloud.DriftReport) error {
 	if !drift.Reconcilable {
 		return fmt.Errorf("drift report contains non-reconcilable items")
 	}
 
-	if len(drift.Drifts) == 0 {
-		return nil // No drift to reconcile
-	}
-
-	// Process each reconcilable drift item
 	for _, item := range drift.Drifts {
 		if !item.Reconcilable {
 			continue
@@ -483,69 +522,321 @@ func (p *Provider) ReconcileDrift(ctx context.Context, drift *cloud.DriftReport)
 	return nil
 }
 
-// reconcileDriftItem reconciles a single drift item.
 func (p *Provider) reconcileDriftItem(ctx context.Context, item cloud.DriftItem) error {
 	switch item.ResourceType {
 	case "server":
 		return p.reconcileServerDrift(ctx, item)
-	case "network":
-		return p.reconcileNetworkDrift(ctx, item)
+	case "security_group":
+		return p.reconcileSecurityGroupDrift(ctx, item)
 	default:
 		return fmt.Errorf("unsupported resource type for reconciliation: %s", item.ResourceType)
 	}
 }
 
-// reconcileServerDrift reconciles server-specific drift.
 func (p *Provider) reconcileServerDrift(ctx context.Context, item cloud.DriftItem) error {
-	switch item.Field {
-	case "existence":
-		if item.Actual == "missing" {
-			// Server needs to be created
-			return fmt.Errorf("server creation not yet implemented")
-		}
-		return nil
+	if !strings.HasPrefix(item.Field, "tags.") {
+		return fmt.Errorf("unsupported server field for reconciliation: %s", item.Field)
+	}
 
-	case "tags":
-		// Update server metadata/tags
-		client, err := p.getComputeClient()
+	client, err := p.getComputeClient()
+	if err != nil {
+		return err
+	}
+
+	tagKey := strings.TrimPrefix(item.Field, "tags.")
+	updateOpts := servers.MetadataOpts{
+		tagKey: fmt.Sprint(item.Expected),
+	}
+
+	_, err = servers.UpdateMetadata(client, item.ResourceID, updateOpts).Extract()
+	if err != nil {
+		return fmt.Errorf("failed to update server metadata: %w", err)
+	}
+
+	return nil
+}
+
+func (p *Provider) reconcileSecurityGroupDrift(ctx context.Context, item cloud.DriftItem) error {
+	if item.Field != "rules" {
+		return fmt.Errorf("unsupported security group field for reconciliation: %s", item.Field)
+	}
+
+	expectedRules, ok := item.Expected.([]cloud.SecurityRule)
+	if !ok {
+		return fmt.Errorf("unexpected expected rules type %T", item.Expected)
+	}
+	actualRules, ok := item.Actual.([]cloud.SecurityRule)
+	if !ok {
+		return fmt.Errorf("unexpected actual rules type %T", item.Actual)
+	}
+
+	client, err := p.getNetworkClient()
+	if err != nil {
+		return err
+	}
+
+	expectedSet := make(map[string]cloud.SecurityRule, len(expectedRules))
+	for _, rule := range expectedRules {
+		expectedSet[normalizeRule(rule)] = rule
+	}
+
+	actualSet := make(map[string]cloud.SecurityRule, len(actualRules))
+	for _, rule := range actualRules {
+		actualSet[normalizeRule(rule)] = rule
+	}
+
+	for key, actualRule := range actualSet {
+		if _, exists := expectedSet[key]; exists {
+			continue
+		}
+		if !isReconcilableOpenStackRule(actualRule) || actualRule.ID == "" {
+			continue
+		}
+		if err := secrules.Delete(client, actualRule.ID).ExtractErr(); err != nil {
+			return fmt.Errorf("failed to delete security group rule %s: %w", actualRule.ID, err)
+		}
+	}
+
+	for key, expectedRule := range expectedSet {
+		if _, exists := actualSet[key]; exists {
+			continue
+		}
+
+		createOpts, err := toSecurityRuleCreateOpts(item.ResourceID, expectedRule)
 		if err != nil {
 			return err
 		}
-
-		// Extract tag key from field (e.g., "tags.cluster" -> "cluster")
-		tagKey := item.Field[5:] // Remove "tags." prefix
-
-		updateOpts := servers.MetadataOpts{
-			tagKey: item.Expected.(string),
+		if _, err := secrules.Create(client, createOpts).Extract(); err != nil {
+			return fmt.Errorf("failed to create security group rule for %s: %w", item.ResourceName, err)
 		}
-
-		_, err = servers.UpdateMetadata(client, item.ResourceID, updateOpts).Extract()
-		if err != nil {
-			return fmt.Errorf("failed to update server metadata: %w", err)
-		}
-
-		return nil
-
-	default:
-		return fmt.Errorf("unsupported server field for reconciliation: %s", item.Field)
 	}
+
+	return nil
 }
 
-// reconcileNetworkDrift reconciles network-specific drift.
-func (p *Provider) reconcileNetworkDrift(ctx context.Context, item cloud.DriftItem) error {
-	switch item.Field {
-	case "existence":
-		if item.Actual == "missing" {
-			// Network needs to be created
-			return fmt.Errorf("network creation not yet implemented")
-		}
-		return nil
-
-	case "subnet_count":
-		// Subnet reconciliation would require more complex logic
-		return fmt.Errorf("subnet reconciliation not yet implemented")
-
-	default:
-		return fmt.Errorf("unsupported network field for reconciliation: %s", item.Field)
+func matchesClusterServer(server servers.Server, clusterName string) bool {
+	if server.Metadata["cluster"] == clusterName {
+		return true
 	}
+	return strings.Contains(strings.ToLower(server.Name), strings.ToLower(clusterName))
+}
+
+func matchesClusterResource(clusterName string, tags []string, name, description string) bool {
+	lowerCluster := strings.ToLower(clusterName)
+	if strings.Contains(strings.ToLower(name), lowerCluster) || strings.Contains(strings.ToLower(description), lowerCluster) {
+		return true
+	}
+
+	for _, tag := range tags {
+		lowerTag := strings.ToLower(tag)
+		if lowerTag == lowerCluster || lowerTag == "cluster:"+lowerCluster || lowerTag == "cluster="+lowerCluster {
+			return true
+		}
+	}
+
+	return false
+}
+
+func matchesClusterVolume(clusterName string, volume volumes.Volume) bool {
+	if volume.Metadata["cluster"] == clusterName {
+		return true
+	}
+	if strings.Contains(strings.ToLower(volume.Name), strings.ToLower(clusterName)) {
+		return true
+	}
+	return false
+}
+
+func matchesClusterFloatingIP(clusterName string, fip floatingips.FloatingIP, attachedTo string) bool {
+	if matchesClusterResource(clusterName, fip.Tags, fip.Description, fip.Description) {
+		return true
+	}
+	if attachedTo != "" && strings.Contains(strings.ToLower(attachedTo), strings.ToLower(clusterName)) {
+		return true
+	}
+	return false
+}
+
+func convertSecurityRules(rules []secrules.SecGroupRule) []cloud.SecurityRule {
+	result := make([]cloud.SecurityRule, 0, len(rules))
+	for _, rule := range rules {
+		result = append(result, cloud.SecurityRule{
+			ID:          rule.ID,
+			Direction:   rule.Direction,
+			Protocol:    rule.Protocol,
+			PortRange:   portRange(rule.PortRangeMin, rule.PortRangeMax),
+			RemoteIP:    rule.RemoteIPPrefix,
+			Description: rule.Description,
+		})
+	}
+	sort.Slice(result, func(i, j int) bool { return normalizeRule(result[i]) < normalizeRule(result[j]) })
+	return result
+}
+
+func extractNetworkNames(addresses map[string]interface{}) []string {
+	result := make([]string, 0, len(addresses))
+	for name := range addresses {
+		result = append(result, name)
+	}
+	sort.Strings(result)
+	return result
+}
+
+func extractServerAddresses(server servers.Server) []string {
+	addresses := make([]string, 0)
+	if server.AccessIPv4 != "" {
+		addresses = append(addresses, server.AccessIPv4)
+	}
+	if server.AccessIPv6 != "" {
+		addresses = append(addresses, server.AccessIPv6)
+	}
+
+	for _, value := range server.Addresses {
+		entries, ok := value.([]interface{})
+		if !ok {
+			continue
+		}
+		for _, entry := range entries {
+			entryMap, ok := entry.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			address, _ := entryMap["addr"].(string)
+			if address != "" {
+				addresses = append(addresses, address)
+			}
+		}
+	}
+
+	sort.Strings(addresses)
+	return dedupeStrings(addresses)
+}
+
+func copyStringMap(input map[string]string) map[string]string {
+	if len(input) == 0 {
+		return map[string]string{}
+	}
+
+	result := make(map[string]string, len(input))
+	for key, value := range input {
+		result[key] = value
+	}
+	return result
+}
+
+func mapValue(values map[string]interface{}, key string) string {
+	value, ok := values[key]
+	if !ok {
+		return ""
+	}
+	stringValue, _ := value.(string)
+	return stringValue
+}
+
+func cloudVolumeKey(volume cloud.Volume) string {
+	if volume.AttachedTo != "" {
+		return volume.AttachedTo
+	}
+	if volume.Name != "" {
+		return volume.Name
+	}
+	return volume.ID
+}
+
+func dedupeStrings(values []string) []string {
+	if len(values) == 0 {
+		return values
+	}
+
+	result := make([]string, 0, len(values))
+	last := ""
+	for _, value := range values {
+		if value == last {
+			continue
+		}
+		result = append(result, value)
+		last = value
+	}
+	return result
+}
+
+func portRange(minPort, maxPort int) string {
+	if minPort == 0 && maxPort == 0 {
+		return ""
+	}
+	if minPort == maxPort {
+		return strconv.Itoa(minPort)
+	}
+	return fmt.Sprintf("%d-%d", minPort, maxPort)
+}
+
+func normalizeRule(rule cloud.SecurityRule) string {
+	return strings.ToLower(strings.Join([]string{
+		rule.Direction,
+		rule.Protocol,
+		rule.PortRange,
+		rule.RemoteIP,
+	}, "|"))
+}
+
+func isReconcilableOpenStackRule(rule cloud.SecurityRule) bool {
+	if !strings.EqualFold(rule.Direction, "ingress") {
+		return false
+	}
+
+	remote := strings.TrimSpace(rule.RemoteIP)
+	return remote == "0.0.0.0/0" || remote == "::/0"
+}
+
+func toSecurityRuleCreateOpts(groupID string, rule cloud.SecurityRule) (secrules.CreateOpts, error) {
+	minPort, maxPort, err := parsePortRange(rule.PortRange)
+	if err != nil {
+		return secrules.CreateOpts{}, fmt.Errorf("failed to parse port range %q: %w", rule.PortRange, err)
+	}
+
+	etherType := secrules.RuleEtherType("IPv4")
+	if strings.Contains(rule.RemoteIP, ":") {
+		etherType = secrules.RuleEtherType("IPv6")
+	}
+
+	return secrules.CreateOpts{
+		Direction:      secrules.RuleDirection(strings.ToLower(rule.Direction)),
+		Description:    rule.Description,
+		EtherType:      etherType,
+		SecGroupID:     groupID,
+		PortRangeMin:   minPort,
+		PortRangeMax:   maxPort,
+		Protocol:       secrules.RuleProtocol(strings.ToLower(rule.Protocol)),
+		RemoteIPPrefix: rule.RemoteIP,
+	}, nil
+}
+
+func parsePortRange(value string) (int, int, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return 0, 0, nil
+	}
+
+	if !strings.Contains(value, "-") {
+		port, err := strconv.Atoi(value)
+		if err != nil {
+			return 0, 0, err
+		}
+		return port, port, nil
+	}
+
+	parts := strings.SplitN(value, "-", 2)
+	if len(parts) != 2 {
+		return 0, 0, fmt.Errorf("invalid port range")
+	}
+
+	minPort, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, err
+	}
+	maxPort, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, 0, err
+	}
+	return minPort, maxPort, nil
 }

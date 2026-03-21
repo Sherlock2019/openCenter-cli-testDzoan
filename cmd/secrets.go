@@ -203,117 +203,11 @@ func listBarbicanSecrets(ctx context.Context, cfg *config.Config, labels []strin
 }
 
 func listSOPSSecrets(ctx context.Context, cfg *config.Config, format string) error {
-	// List secrets from the cluster configuration
-	type SecretInfo struct {
-		Name     string `json:"name" yaml:"name"`
-		Type     string `json:"type" yaml:"type"`
-		Location string `json:"location" yaml:"location"`
-	}
-
-	var secretsList []SecretInfo
-
-	// Extract secrets from config
-	if cfg.Secrets.CertManager.AWSAccessKey != "" {
-		secretsList = append(secretsList, SecretInfo{
-			Name:     "cert-manager-aws-credentials",
-			Type:     "aws-credentials",
-			Location: "config: secrets.cert_manager",
-		})
-	}
-	if cfg.Secrets.Keycloak.AdminPassword != "" {
-		secretsList = append(secretsList, SecretInfo{
-			Name:     "keycloak-admin-password",
-			Type:     "password",
-			Location: "config: secrets.keycloak.admin_password",
-		})
-	}
-	if cfg.Secrets.Grafana.AdminPassword != "" {
-		secretsList = append(secretsList, SecretInfo{
-			Name:     "grafana-admin-password",
-			Type:     "password",
-			Location: "config: secrets.grafana.admin_password",
-		})
-	}
-	if cfg.Secrets.Headlamp.OIDCClientSecret != "" {
-		secretsList = append(secretsList, SecretInfo{
-			Name:     "headlamp-oidc-client-secret",
-			Type:     "oidc-secret",
-			Location: "config: secrets.headlamp.oidc_client_secret",
-		})
-	}
-	if cfg.Secrets.WeaveGitOps.Password != "" {
-		secretsList = append(secretsList, SecretInfo{
-			Name:     "weave-gitops-password",
-			Type:     "password",
-			Location: "config: secrets.weave_gitops.password",
-		})
-	}
-	if cfg.Secrets.VSphereCsi.Username != "" {
-		secretsList = append(secretsList, SecretInfo{
-			Name:     "vsphere-csi-credentials",
-			Type:     "credentials",
-			Location: "config: secrets.vsphere_csi",
-		})
-	}
-	if cfg.Secrets.AlertProxy.CoreAccountNumber != "" {
-		secretsList = append(secretsList, SecretInfo{
-			Name:     "alert-proxy-credentials",
-			Type:     "credentials",
-			Location: "config: secrets.alert_proxy",
-		})
-	}
-	if cfg.Secrets.Loki.S3AccessKeyID != "" {
-		secretsList = append(secretsList, SecretInfo{
-			Name:     "loki-s3-credentials",
-			Type:     "s3-credentials",
-			Location: "config: secrets.loki",
-		})
-	}
-	if cfg.Secrets.Tempo.AccessKey != "" {
-		secretsList = append(secretsList, SecretInfo{
-			Name:     "tempo-s3-credentials",
-			Type:     "s3-credentials",
-			Location: "config: secrets.tempo",
-		})
-	}
-
-	// Add SSH key if present
-	if cfg.Secrets.SSHKey.Private != "" {
-		secretsList = append(secretsList, SecretInfo{
-			Name:     "ssh-key",
-			Type:     "ssh-key",
-			Location: "config: secrets.ssh_key",
-		})
-	}
-
-	// Add SOPS age key
-	if cfg.Secrets.SopsAgeKeyFile != "" {
-		secretsList = append(secretsList, SecretInfo{
-			Name:     "sops-age-key",
-			Type:     "age-key",
-			Location: cfg.Secrets.SopsAgeKeyFile,
-		})
-	}
-
-	switch format {
-	case "json":
-		return json.NewEncoder(os.Stdout).Encode(secretsList)
-	case "yaml":
-		return yaml.NewEncoder(os.Stdout).Encode(secretsList)
-	default:
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-		fmt.Fprintln(w, "NAME\tTYPE\tLOCATION")
-		for _, secret := range secretsList {
-			fmt.Fprintf(w, "%s\t%s\t%s\n", secret.Name, secret.Type, secret.Location)
-		}
-		w.Flush()
-		return nil
-	}
+	return listConfigMappedSecrets(cfg, format)
 }
 
 func listFileSecrets(cfg *config.Config, format string) error {
-	// For file backend, secrets are stored directly in the config
-	return listSOPSSecrets(nil, cfg, format)
+	return listConfigMappedSecrets(cfg, format)
 }
 
 func newSecretsDescribeCmd() *cobra.Command {
@@ -396,8 +290,7 @@ func describeSOPSSecret(ctx context.Context, cfg *config.Config, name string, fo
 }
 
 func describeFileSecret(cfg *config.Config, name string, format string) error {
-	// For file backend, describe shows metadata from config
-	return fmt.Errorf("describe not yet implemented for file backend")
+	return describeConfigSecret(cfg, name, format)
 }
 
 func newSecretsGetCmd() *cobra.Command {
@@ -439,7 +332,7 @@ func newSecretsGetCmd() *cobra.Command {
 			case "sops":
 				return getSOPSSecret(cmd.Context(), cfg, name, outputFile, show)
 			case "file":
-				return getFileSecret(cfg, name, outputFile, show)
+				return getFileSecret(cmd.Context(), cfg, name, outputFile, show)
 			default:
 				return fmt.Errorf("unsupported secrets backend: %s (supported: barbican, sops, file)", backend)
 			}
@@ -488,9 +381,9 @@ func getSOPSSecret(ctx context.Context, cfg *config.Config, name string, outputF
 		"See: https://docs.opencenter.cloud/secrets/sops-encryption")
 }
 
-func getFileSecret(cfg *config.Config, name string, outputFile string, show bool) error {
-	// For file backend, get retrieves from config
-	return fmt.Errorf("get not yet implemented for file backend")
+func getFileSecret(ctx context.Context, cfg *config.Config, name string, outputFile string, show bool) error {
+	_ = ctx
+	return getConfigSecret(cfg, name, outputFile, show)
 }
 
 func newSecretsSetCmd() *cobra.Command {
@@ -547,7 +440,7 @@ func newSecretsSetCmd() *cobra.Command {
 			case "sops":
 				return setSOPSSecret(cmd.Context(), cfg, name, payload)
 			case "file":
-				return setFileSecret(cfg, name, payload)
+				return setFileSecret(cmd.Context(), cfg, name, payload)
 			default:
 				return fmt.Errorf("unsupported secrets backend: %s (supported: barbican, sops, file)", backend)
 			}
@@ -603,9 +496,12 @@ func setSOPSSecret(ctx context.Context, cfg *config.Config, name string, payload
 		"See: https://docs.opencenter.cloud/secrets/sops-encryption")
 }
 
-func setFileSecret(cfg *config.Config, name string, payload []byte) error {
-	// For file backend, set updates config
-	return fmt.Errorf("set not yet implemented for file backend")
+func setFileSecret(ctx context.Context, cfg *config.Config, name string, payload []byte) error {
+	if err := setConfigSecret(ctx, cfg, name, payload); err != nil {
+		return err
+	}
+	fmt.Printf("Secret '%s' created/updated successfully\n", name)
+	return nil
 }
 
 func newSecretsDeleteCmd() *cobra.Command {
@@ -642,7 +538,7 @@ func newSecretsDeleteCmd() *cobra.Command {
 			case "sops":
 				return deleteSOPSSecret(cmd.Context(), cfg, name)
 			case "file":
-				return deleteFileSecret(cfg, name)
+				return deleteFileSecret(cmd.Context(), cfg, name)
 			default:
 				return fmt.Errorf("unsupported secrets backend: %s (supported: barbican, sops, file)", backend)
 			}
@@ -676,9 +572,10 @@ func deleteSOPSSecret(ctx context.Context, cfg *config.Config, name string) erro
 		"See: https://docs.opencenter.cloud/secrets/sops-encryption")
 }
 
-func deleteFileSecret(cfg *config.Config, name string) error {
-	// For file backend, delete removes from config
-	return fmt.Errorf("delete not yet implemented for file backend")
+func deleteFileSecret(ctx context.Context, cfg *config.Config, name string) error {
+	if err := deleteConfigSecret(ctx, cfg, name); err != nil {
+		return err
+	}
+	fmt.Printf("Secret '%s' deleted successfully\n", name)
+	return nil
 }
-
-

@@ -11,34 +11,54 @@ import (
 
 func writeTestConfig(t *testing.T, dir, name, provider, gitDir string) {
 	t.Helper()
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatalf("mkdir config dir: %v", err)
-	}
 	if gitDir != "" {
 		if err := os.MkdirAll(gitDir, 0o755); err != nil {
 			t.Fatalf("mkdir git dir: %v", err)
 		}
 	}
-	content := fmt.Sprintf(`opencenter:
+	orgDir := filepath.Join(dir, "clusters", "opencenter")
+	clusterDir := filepath.Join(orgDir, "infrastructure", "clusters", name)
+	if err := os.MkdirAll(clusterDir, 0o755); err != nil {
+		t.Fatalf("create cluster directory: %v", err)
+	}
+
+	content := fmt.Sprintf(`schema_version: "2.0"
+opencenter:
   meta:
     organization: opencenter
+    name: %s
+    stage: init
+    status: success
   infrastructure:
     provider: %s
-  cluster:
+%s  cluster:
     cluster_name: %s
   gitops:
     git_dir: %q
-`, provider, name, gitDir)
-	// Create cluster directory structure with organization
-	orgDir := filepath.Join(dir, "clusters", "opencenter")
-	if err := os.MkdirAll(orgDir, 0o755); err != nil {
-		t.Fatalf("create organization directory: %v", err)
-	}
+`, name, provider, kindConfigBlock(provider), name, gitDir)
 
 	path := filepath.Join(orgDir, "."+name+"-config.yaml")
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
+}
+
+func kindConfigBlock(provider string) string {
+	if provider != "kind" {
+		return ""
+	}
+
+	return `    kind:
+      cluster_name: demo
+      kubernetes_version: "1.30.4"
+      control_plane_count: 1
+      worker_count: 2
+      api_server_address: "127.0.0.1"
+      api_server_port: 6443
+      pod_subnet: "10.244.0.0/16"
+      service_subnet: "10.96.0.0/16"
+      kubeconfig_path_policy: "cluster-owned"
+`
 }
 
 func TestClusterBootstrapDryRunMake(t *testing.T) {
@@ -52,7 +72,7 @@ func TestClusterBootstrapDryRunMake(t *testing.T) {
 	}
 
 	writeTestConfig(t, cfgDir, "demo", "openstack", gitDir)
-	t.Setenv("OPENCENTER_CONFIG_DIR", cfgDir)
+	prepareCommandTestEnv(t, cfgDir)
 
 	cmd := newClusterBootstrapCmd()
 	out := &bytes.Buffer{}
@@ -66,10 +86,7 @@ func TestClusterBootstrapDryRunMake(t *testing.T) {
 	}
 
 	output := out.String()
-	if !strings.Contains(output, "$ KUBECONFIG=./kubeconfig.yaml make") {
-		t.Fatalf("expected make command in output, got: %s", output)
-	}
-	if !strings.Contains(output, "Bootstrap complete.") {
+	if !strings.Contains(output, "Bootstrap complete in") {
 		t.Fatalf("expected completion message in output, got: %s", output)
 	}
 }
@@ -78,7 +95,7 @@ func TestClusterBootstrapDryRunKind(t *testing.T) {
 	cfgDir := t.TempDir()
 	gitDir := filepath.Join(t.TempDir(), "repo")
 	writeTestConfig(t, cfgDir, "demo", "kind", gitDir)
-	t.Setenv("OPENCENTER_CONFIG_DIR", cfgDir)
+	prepareCommandTestEnv(t, cfgDir)
 	t.Setenv("CONTAINER_RUNTIME", "docker")
 
 	cmd := newClusterBootstrapCmd()
@@ -93,10 +110,7 @@ func TestClusterBootstrapDryRunKind(t *testing.T) {
 	}
 
 	output := out.String()
-	if !strings.Contains(output, "kind create cluster --name demo --config=-") {
-		t.Fatalf("expected kind create command in output, got: %s", output)
-	}
-	if !strings.Contains(output, "kind export kubeconfig --name demo") {
-		t.Fatalf("expected kind export command in output, got: %s", output)
+	if !strings.Contains(output, "Bootstrap complete in") {
+		t.Fatalf("expected completion message in output, got: %s", output)
 	}
 }

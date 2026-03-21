@@ -99,9 +99,20 @@ func runClusterSetup(cmd *cobra.Command, args []string) error {
 		Force:          force,
 	}
 
+	if !dryRun {
+		if err := config.UpdateStatus(name, config.StageSetup, config.StatusRunning); err != nil {
+			fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
+		}
+	}
+
 	// Execute setup
 	result, err := setupService.Setup(ctx, opts)
 	if err != nil {
+		if !dryRun {
+			if statusErr := config.UpdateStatus(name, config.StageSetup, config.StatusFailed); statusErr != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", statusErr)
+			}
+		}
 		return err
 	}
 
@@ -117,9 +128,10 @@ func runClusterSetup(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(cmd.OutOrStdout(), "Commit:          %s\n", result.CommitHash)
 	}
 
-	// Update cluster stage and status
-	if err := config.UpdateStatus(name, config.StageSetup, config.StatusSuccess); err != nil {
-		fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
+	if !dryRun {
+		if err := config.UpdateStatus(name, config.StageSetup, config.StatusSuccess); err != nil {
+			fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
+		}
 	}
 
 	return nil

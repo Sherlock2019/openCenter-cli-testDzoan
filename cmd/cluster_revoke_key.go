@@ -223,7 +223,7 @@ func displayRevocationResult(cmd *cobra.Command, clusterName string, result *sec
 	if !dryRun {
 		fmt.Fprintln(cmd.OutOrStdout(), "\nRevocation completed successfully.")
 		fmt.Fprintln(cmd.OutOrStdout(), "The revoked key(s) can no longer decrypt cluster secrets.")
-		
+
 		if emergency {
 			fmt.Fprintln(cmd.OutOrStdout(), "\n⚠️  Emergency revocation performed:")
 			fmt.Fprintln(cmd.OutOrStdout(), "  • Distribute the new key to authorized users")
@@ -238,7 +238,10 @@ func initializeKeyRevoker() (secrets.KeyRevoker, error) {
 	logger := createSecretsLogger()
 	configLoader := createConfigLoader()
 	sopsManager := createSOPSManager(logger)
-	auditLogger := &noOpAuditLogger{}
+	auditLogger, err := createAuditLogger()
+	if err != nil {
+		return nil, err
+	}
 
 	// Get registry path
 	registryPath, err := getSecretsRegistryPath()

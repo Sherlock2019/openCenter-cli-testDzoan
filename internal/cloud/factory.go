@@ -225,8 +225,13 @@ func (s Severity) String() string {
 	}
 }
 
-// CloudProviderFactory creates cloud provider instances based on configuration.
-// It maintains a registry of available providers and instantiates them on demand.
+// CloudProviderFactory creates cloud provider instances for drift-detection workflows.
+// It maintains a registry of providers that implement CloudProvider and are queried by
+// commands such as cluster drift.
+//
+// Lifecycle/bootstrap providers are intentionally outside this factory. For example,
+// the Kind bootstrap provider shells out to kind/kubectl and is wired directly into
+// cluster bootstrap/destroy flows rather than the drift-detection registry.
 type CloudProviderFactory struct {
 	providers map[string]CloudProvider
 }

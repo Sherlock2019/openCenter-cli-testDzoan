@@ -1,0 +1,129 @@
+package cmd
+
+import (
+	"context"
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/opencenter-cloud/opencenter-cli/internal/cloud"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+)
+
+func TestBuildDesiredStateOpenStackCoversManagedResources(t *testing.T) {
+	cfg := config.NewDefault("prod-cluster")
+	cfg.OpenCenter.Infrastructure.Provider = "openstack"
+	cfg.OpenCenter.Infrastructure.NodeNaming.Master = "cp"
+	cfg.OpenCenter.Infrastructure.NodeNaming.Worker = "wn"
+	cfg.OpenCenter.Cluster.Kubernetes.MasterCount = 3
+	cfg.OpenCenter.Cluster.Kubernetes.WorkerCount = 2
+	cfg.OpenCenter.Storage.WorkerVolumeSize = 40
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ImageID = "image-123"
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.K8sAPIPortACL = []string{"10.0.0.0/8"}
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.FloatingIPPool = "public"
+	cfg.OpenCenter.Cluster.Networking.LoadbalancerProvider = "octavia"
+
+	state := buildDesiredState(cfg)
+
+	if len(state.Servers) != 5 {
+		t.Fatalf("expected 5 servers, got %d", len(state.Servers))
+	}
+	if len(state.Volumes) != 5 {
+		t.Fatalf("expected 5 boot volumes, got %d", len(state.Volumes))
+	}
+	if len(state.Networks) != 1 {
+		t.Fatalf("expected 1 network, got %d", len(state.Networks))
+	}
+	if len(state.SecurityGroups) != 2 {
+		t.Fatalf("expected 2 security groups, got %d", len(state.SecurityGroups))
+	}
+	if len(state.LoadBalancers) != 1 {
+		t.Fatalf("expected 1 load balancer, got %d", len(state.LoadBalancers))
+	}
+	if len(state.FloatingIPs) != 0 {
+		t.Fatalf("expected Octavia-managed config to skip floating IP desired state, got %d entries", len(state.FloatingIPs))
+	}
+
+	if state.Servers[0].Name != "prod-cluster-cp-1" {
+		t.Fatalf("unexpected first control plane name: %s", state.Servers[0].Name)
+	}
+	if state.Servers[0].Image != "image-123" {
+		t.Fatalf("unexpected desired image: %s", state.Servers[0].Image)
+	}
+	if state.SecurityGroups[0].Name != "prod-cluster-control-plane-sg" {
+		t.Fatalf("unexpected control plane security group name: %s", state.SecurityGroups[0].Name)
+	}
+	if len(state.SecurityGroups[0].Rules) != 1 || state.SecurityGroups[0].Rules[0].RemoteIP != "10.0.0.0/8" {
+		t.Fatalf("unexpected API ACL rules: %#v", state.SecurityGroups[0].Rules)
+	}
+}
+
+func TestCreateCloudProviderFactoryRegistersCloudDriftProvidersOnly(t *testing.T) {
+	cfg := config.NewDefault("prod-cluster")
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://identity.example.com/v3"
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Region = "sjc3"
+	cfg.OpenCenter.Infrastructure.Cloud.AWS.Region = "us-east-1"
+
+	factory := createCloudProviderFactory(cfg)
+
+	for _, providerName := range []string{"openstack", "aws"} {
+		if _, err := factory.GetProvider(providerName); err != nil {
+			t.Fatalf("expected provider %s to be registered: %v", providerName, err)
+		}
+	}
+
+	for _, providerName := range []string{"baremetal", "talos", "kind"} {
+		if _, err := factory.GetProvider(providerName); err == nil {
+			t.Fatalf("expected provider %s to be unavailable for drift detection", providerName)
+		}
+	}
+}
+
+func TestSendDriftCallbackPostsJSON(t *testing.T) {
+	t.Helper()
+
+	report := &cloud.DriftReport{
+		ClusterName: "prod-cluster",
+		DetectedAt:  "2026-03-21T12:00:00Z",
+		Drifts: []cloud.DriftItem{
+			{
+				ResourceType: "security_group",
+				ResourceName: "prod-cluster-control-plane-sg",
+				Field:        "rules",
+			},
+		},
+	}
+
+	var received cloud.DriftReport
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Fatalf("expected POST request, got %s", r.Method)
+		}
+		if got := r.Header.Get("Content-Type"); got != "application/json" {
+			t.Fatalf("expected application/json content type, got %s", got)
+		}
+
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Fatalf("read callback body: %v", err)
+		}
+		if err := json.Unmarshal(body, &received); err != nil {
+			t.Fatalf("unmarshal callback body: %v", err)
+		}
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer server.Close()
+
+	if err := sendDriftCallback(context.Background(), server.URL, report); err != nil {
+		t.Fatalf("sendDriftCallback returned error: %v", err)
+	}
+
+	if received.ClusterName != report.ClusterName {
+		t.Fatalf("expected callback cluster %s, got %s", report.ClusterName, received.ClusterName)
+	}
+	if len(received.Drifts) != 1 {
+		t.Fatalf("expected one drift item, got %d", len(received.Drifts))
+	}
+}

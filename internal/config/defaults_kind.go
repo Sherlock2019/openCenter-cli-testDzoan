@@ -1,0 +1,100 @@
+package config
+
+import (
+	_ "embed"
+	"fmt"
+
+	"gopkg.in/yaml.v3"
+)
+
+//go:embed defaults/kind.yaml
+var kindDefaultsYAML []byte
+
+type kindDefaultsFile struct {
+	Locals kindDefaultsLocals `yaml:"locals"`
+}
+
+type kindDefaultsLocals struct {
+	KubernetesVersion string            `yaml:"kubernetes_version"`
+	WorkerCount       int               `yaml:"worker_count"`
+	ControlPlaneCount int               `yaml:"control_plane_count"`
+	RegistryEnabled   bool              `yaml:"registry_enabled"`
+	RegistryName      string            `yaml:"registry_name"`
+	RegistryPort      int               `yaml:"registry_port"`
+	IngressEnabled    bool              `yaml:"ingress_enabled"`
+	ExtraMounts       []KindMount       `yaml:"extra_mounts"`
+	PortMappings      []KindPortMapping `yaml:"port_mappings"`
+	ServiceSubnet     string            `yaml:"service_subnet"`
+	PodSubnet         string            `yaml:"pod_subnet"`
+	DisableDefaultCNI bool              `yaml:"disable_default_cni"`
+	APIServerAddress  string            `yaml:"api_server_address"`
+	APIServerPort     int               `yaml:"api_server_port"`
+}
+
+func applyProviderDefaults(cfg *Config, provider string) error {
+	switch provider {
+	case "openstack", "":
+		return applyOpenStackDefaults(cfg)
+	case "kind":
+		return applyKindDefaults(cfg)
+	default:
+		return nil
+	}
+}
+
+// ApplyProviderDefaults overlays provider-specific runtime defaults onto a config.
+func ApplyProviderDefaults(cfg *Config, provider string) error {
+	return applyProviderDefaults(cfg, provider)
+}
+
+func applyKindDefaults(cfg *Config) error {
+	var defaults kindDefaultsFile
+	if err := yaml.Unmarshal(kindDefaultsYAML, &defaults); err != nil {
+		return fmt.Errorf("parse embedded kind defaults: %w", err)
+	}
+
+	kind := &KindConfig{
+		ClusterNameOverride:  cfg.ClusterName(),
+		KubernetesVersion:    defaults.Locals.KubernetesVersion,
+		ControlPlaneCount:    defaults.Locals.ControlPlaneCount,
+		WorkerCount:          defaults.Locals.WorkerCount,
+		APIServerAddress:     defaults.Locals.APIServerAddress,
+		APIServerPort:        defaults.Locals.APIServerPort,
+		PodSubnet:            defaults.Locals.PodSubnet,
+		ServiceSubnet:        defaults.Locals.ServiceSubnet,
+		DisableDefaultCNI:    defaults.Locals.DisableDefaultCNI,
+		IngressEnabled:       defaults.Locals.IngressEnabled,
+		KubeconfigPathPolicy: "cluster-owned",
+		Registry: KindRegistryConfig{
+			Enabled: defaults.Locals.RegistryEnabled,
+			Name:    defaults.Locals.RegistryName,
+			Port:    defaults.Locals.RegistryPort,
+		},
+		ExtraPortMappings: defaults.Locals.PortMappings,
+		ExtraMounts:       defaults.Locals.ExtraMounts,
+	}
+
+	cfg.OpenCenter.Infrastructure.Provider = "kind"
+	cfg.OpenCenter.Infrastructure.Kind = kind
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack = SimplifiedOpenStackCloud{}
+	cfg.OpenCenter.Infrastructure.Cloud.AWS = SimplifiedAWSCloud{}
+	cfg.OpenCenter.Infrastructure.Cloud.VMware = VMwareCloud{}
+
+	cfg.OpenCenter.Cluster.Kubernetes.Version = kind.KubernetesVersion
+	cfg.OpenCenter.Cluster.Kubernetes.APIPort = kind.APIServerPort
+	cfg.OpenCenter.Cluster.Kubernetes.SubnetPods = kind.PodSubnet
+	cfg.OpenCenter.Cluster.Kubernetes.SubnetServices = kind.ServiceSubnet
+	cfg.OpenCenter.Cluster.Kubernetes.MasterCount = kind.ControlPlaneCount
+	cfg.OpenCenter.Cluster.Kubernetes.WorkerCount = kind.WorkerCount
+	cfg.OpenCenter.Cluster.Kubernetes.KubeVIPEnabled = false
+	cfg.OpenCenter.Cluster.Networking.VRRPEnabled = false
+	cfg.OpenCenter.Cluster.Networking.VRRPIP = ""
+
+	cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Cinder.Enabled = false
+	cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Vsphere.Enabled = false
+	cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Longhorn.Enabled = false
+
+	cfg.OpenTofu.Enabled = false
+
+	return nil
+}

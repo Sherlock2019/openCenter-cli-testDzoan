@@ -310,19 +310,7 @@ func RenderClusterApps(cfg config.Config) error {
 	if clusterName == "" {
 		return fmt.Errorf("cluster name is empty")
 	}
-
-	// Try to use PathResolver to get the applications directory
-	var target string
-	baseDir := config.GetClustersDir()
-	resolver := paths.NewPathResolver(baseDir)
-	clusterPaths, err := resolver.ResolveWithFallback(context.Background(), clusterName)
-	if err == nil {
-		// Successfully resolved paths
-		target = clusterPaths.ApplicationsDir
-	} else {
-		// Fallback to GitOps.GitDir for test environments or when cluster doesn't exist yet
-		target = filepath.Join(cfg.GitOps().GitDir, "applications", "overlays", clusterName)
-	}
+	target := filepath.Join(cfg.GitOps().GitDir, "applications", "overlays", clusterName)
 
 	// Create target directory
 	if err := os.MkdirAll(target, 0o755); err != nil {
@@ -426,20 +414,10 @@ func RenderInfrastructureCluster(cfg config.Config) error {
 		return fmt.Errorf("cluster name is empty")
 	}
 
-	// Try to use PathResolver to get the cluster directory
-	var target string
-	baseDir := config.GetClustersDir()
-	resolver := paths.NewPathResolver(baseDir)
-	clusterPaths, err := resolver.ResolveWithFallback(context.Background(), clusterName)
-	if err == nil {
-		// Successfully resolved paths
-		target = clusterPaths.ClusterDir
-	} else {
-		// Fallback to GitOps.GitDir for test environments or when cluster doesn't exist yet
-		target = filepath.Join(cfg.GitOps().GitDir, "infrastructure", "clusters", clusterName)
+	target := cfg.GitOps().GitDir
+	if target == "" {
+		return fmt.Errorf("opencenter.gitops.git_dir must be set")
 	}
-
-	// Create target directory
 	if err := os.MkdirAll(target, 0o755); err != nil {
 		return err
 	}
@@ -469,19 +447,7 @@ func RenderSingleService(cfg config.Config, serviceName string, isManaged bool) 
 	if clusterName == "" {
 		return fmt.Errorf("cluster name is empty")
 	}
-
-	// Try to use PathResolver to get the applications directory
-	var target string
-	baseDir := config.GetClustersDir()
-	resolver := paths.NewPathResolver(baseDir)
-	clusterPaths, err := resolver.ResolveWithFallback(context.Background(), clusterName)
-	if err == nil {
-		// Successfully resolved paths
-		target = clusterPaths.ApplicationsDir
-	} else {
-		// Fallback to GitOps.GitDir for test environments or when cluster doesn't exist yet
-		target = filepath.Join(cfg.GitOps().GitDir, "applications", "overlays", clusterName)
-	}
+	target := filepath.Join(cfg.GitOps().GitDir, "applications", "overlays", clusterName)
 
 	// Create target directory
 	if err := os.MkdirAll(target, 0o755); err != nil {
@@ -729,20 +695,16 @@ func RenderInfrastructureClusterAtomic(cfg config.Config, workspace *GitOpsWorks
 		return fmt.Errorf("cluster name is empty")
 	}
 
-	// Try to use PathResolver to get the cluster directory relative to workspace
-	var target string
-	resolver := paths.NewPathResolver(workspace.RootDir)
-	clusterPaths, err := resolver.ResolveWithFallback(context.Background(), clusterName)
-	if err == nil {
-		// Successfully resolved paths
-		target = clusterPaths.ClusterDir
-	} else {
-		// Fallback to workspace root for test environments or when cluster doesn't exist yet
-		target = filepath.Join(workspace.RootDir, "infrastructure", "clusters", clusterName)
+	target := filepath.Join(workspace.RootDir, "infrastructure", "clusters", clusterName)
+
+	provider := strings.ToLower(strings.TrimSpace(cfg.OpenCenter.Infrastructure.Provider))
+	if provider == "kind" {
+		dst := filepath.Join(target, "kind-config.yaml")
+		return renderTemplateAtomic("templates/kind-config.yaml.tpl", dst, cfg, workspace)
 	}
 
 	// Determine which main.tf template to use based on provider
-	provider := cfg.OpenCenter.Infrastructure.Provider
+	provider = cfg.OpenCenter.Infrastructure.Provider
 	if provider == "" {
 		provider = "openstack" // default
 	}

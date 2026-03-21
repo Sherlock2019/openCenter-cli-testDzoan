@@ -17,7 +17,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -127,16 +126,7 @@ func runClusterInit(cmd *cobra.Command, args []string) error {
 
 // setupContainer initializes the DI container with all required services
 func setupContainer(container di.Container) error {
-	// Get base directory from environment or use default from CLI config
-	baseDir := os.Getenv("OPENCENTER_CONFIG_DIR")
-	if baseDir == "" {
-		// Load from CLI config (this reads the clustersDir from config.yaml)
-		baseDir = config.GetClustersDir()
-	} else {
-		baseDir = filepath.Join(baseDir, "clusters")
-	}
-
-	pathResolver, err := di.ProvidePathResolver(baseDir)
+	pathResolver, err := di.ProvidePathResolver(config.ResolveClustersDir())
 	if err != nil {
 		return err
 	}

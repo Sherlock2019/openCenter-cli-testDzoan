@@ -2,13 +2,17 @@ package resilience
 
 import (
 	"context"
+	"encoding/json"
 	stderrors "errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 
 	internalConfig "github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
@@ -104,7 +108,10 @@ func NewLockManager(config LockConfig) (LockManager, error) {
 			return nil, fmt.Errorf("failed to create file lock backend: %w", err)
 		}
 	case "redis":
-		return nil, fmt.Errorf("redis backend not yet implemented")
+		backend, err = newRedisLockBackend(config.RedisAddr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create redis lock backend: %w", err)
+		}
 	default:
 		return nil, fmt.Errorf("unsupported lock backend: %s", config.Backend)
 	}
@@ -475,3 +482,188 @@ func (fl *fileLock) Refresh(ttl time.Duration) error {
 
 	return nil
 }
+
+// ============================================================================
+// Redis Lock Backend
+// ============================================================================
+
+type redisLockBackend struct {
+	client *redis.Client
+	prefix string
+}
+
+type redisLockPayload struct {
+	Owner      string            `json:"owner"`
+	Token      string            `json:"token"`
+	AcquiredAt time.Time         `json:"acquired_at"`
+	Metadata   map[string]string `json:"metadata,omitempty"`
+}
+
+type redisLock struct {
+	backend    *redisLockBackend
+	key        string
+	resource   string
+	owner      string
+	acquiredAt time.Time
+	value      string
+}
+
+func newRedisLockBackend(addr string) (*redisLockBackend, error) {
+	if addr == "" {
+		return nil, fmt.Errorf("redis address cannot be empty")
+	}
+
+	var (
+		client *redis.Client
+		err    error
+	)
+	if strings.Contains(addr, "://") {
+		var opts *redis.Options
+		opts, err = redis.ParseURL(addr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse redis URL: %w", err)
+		}
+		client = redis.NewClient(opts)
+	} else {
+		client = redis.NewClient(&redis.Options{Addr: addr})
+	}
+
+	if err := client.Ping(context.Background()).Err(); err != nil {
+		return nil, fmt.Errorf("failed to connect to redis: %w", err)
+	}
+
+	return &redisLockBackend{
+		client: client,
+		prefix: "opencenter:locks:",
+	}, nil
+}
+
+func (rb *redisLockBackend) acquire(ctx context.Context, resource string, owner string, ttl time.Duration, metadata map[string]string) (Lock, error) {
+	now := time.Now().UTC()
+	payload := redisLockPayload{
+		Owner:      owner,
+		Token:      fmt.Sprintf("%s:%d", owner, now.UnixNano()),
+		AcquiredAt: now,
+		Metadata:   metadata,
+	}
+	serialized, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal redis lock payload: %w", err)
+	}
+
+	key := rb.lockKey(resource)
+	acquired, err := rb.client.SetNX(ctx, key, string(serialized), ttl).Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to acquire redis lock: %w", err)
+	}
+	if !acquired {
+		return nil, fmt.Errorf("lock already held for %s", resource)
+	}
+
+	return &redisLock{
+		backend:    rb,
+		key:        key,
+		resource:   resource,
+		owner:      owner,
+		acquiredAt: now,
+		value:      string(serialized),
+	}, nil
+}
+
+func (rb *redisLockBackend) release(lock Lock) error {
+	redisLock, ok := lock.(*redisLock)
+	if !ok {
+		return fmt.Errorf("invalid lock type")
+	}
+
+	deleted, err := compareAndDeleteScript.Run(context.Background(), rb.client, []string{redisLock.key}, redisLock.value).Int()
+	if err != nil {
+		return fmt.Errorf("failed to release redis lock: %w", err)
+	}
+	if deleted == 0 {
+		return fmt.Errorf("lock %s is no longer owned by %s", redisLock.resource, redisLock.owner)
+	}
+
+	return nil
+}
+
+func (rb *redisLockBackend) forceBreak(resource string) error {
+	if err := rb.client.Del(context.Background(), rb.lockKey(resource)).Err(); err != nil {
+		return fmt.Errorf("failed to force-break redis lock: %w", err)
+	}
+	return nil
+}
+
+func (rb *redisLockBackend) getLockInfo(resource string) (*LockState, error) {
+	key := rb.lockKey(resource)
+	value, err := rb.client.Get(context.Background(), key).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to read redis lock: %w", err)
+	}
+
+	var payload redisLockPayload
+	if err := json.Unmarshal([]byte(value), &payload); err != nil {
+		return nil, fmt.Errorf("failed to parse redis lock payload: %w", err)
+	}
+
+	ttl, err := rb.client.PTTL(context.Background(), key).Result()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read redis lock ttl: %w", err)
+	}
+	if ttl < 0 {
+		ttl = 0
+	}
+
+	return &LockState{
+		Resource:   resource,
+		Owner:      payload.Owner,
+		AcquiredAt: payload.AcquiredAt,
+		ExpiresAt:  time.Now().Add(ttl),
+		TTL:        ttl,
+		Metadata:   payload.Metadata,
+	}, nil
+}
+
+func (rl *redisLock) Resource() string {
+	return rl.resource
+}
+
+func (rl *redisLock) Owner() string {
+	return rl.owner
+}
+
+func (rl *redisLock) AcquiredAt() time.Time {
+	return rl.acquiredAt
+}
+
+func (rl *redisLock) Refresh(ttl time.Duration) error {
+	extended, err := compareAndExpireScript.Run(context.Background(), rl.backend.client, []string{rl.key}, rl.value, ttl.Milliseconds()).Int()
+	if err != nil {
+		return fmt.Errorf("failed to refresh redis lock: %w", err)
+	}
+	if extended == 0 {
+		return fmt.Errorf("lock %s is no longer owned by %s", rl.resource, rl.owner)
+	}
+	return nil
+}
+
+func (rb *redisLockBackend) lockKey(resource string) string {
+	return rb.prefix + resource
+}
+
+var compareAndDeleteScript = redis.NewScript(`
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+	return redis.call("DEL", KEYS[1])
+end
+return 0
+`)
+
+var compareAndExpireScript = redis.NewScript(`
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+	return redis.call("PEXPIRE", KEYS[1], ARGV[2])
+end
+return 0
+`)

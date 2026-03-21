@@ -19,8 +19,10 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
+	kindprovider "github.com/opencenter-cloud/opencenter-cli/internal/cloud/kind"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/resilience"
@@ -112,6 +114,12 @@ If no cluster name is provided, the active cluster will be destroyed.`,
 				}
 			}
 
+			if strings.EqualFold(cfg.OpenCenter.Infrastructure.Provider, "kind") {
+				if err := destroyKindCluster(ctx, cfg); err != nil {
+					return err
+				}
+			}
+
 			// Update cluster status to "destroyed" before removal (skip for flat configs)
 			// Get default config directory
 			configDir := os.Getenv("OPENCENTER_CONFIG_DIR")
@@ -134,36 +142,11 @@ If no cluster name is provided, the active cluster will be destroyed.`,
 
 			// Extract just the cluster name (without organization prefix)
 			actualClusterName := extractClusterName(name)
-
-			if configDir != "" {
-				configPath, pathErr := getConfigPath(ctx, actualClusterName, cfg.OpenCenter.Meta.Organization)
-				if pathErr == nil && filepath.Dir(configPath) != configDir {
-					// Not a flat config, safe to update status
-					cfg.OpenCenter.Meta.Status = "destroyed"
-					if err := saveConfig(ctx, cfg); err != nil {
-						// Log warning but continue with destroy
-						fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
-					}
-				}
-			}
-
-			// Remove GitOps directory if specified
-			gitopsDir := cfg.GitOps().GitDir
-			if gitopsDir != "" {
-				if err := os.RemoveAll(gitopsDir); err != nil && !os.IsNotExist(err) {
-					return fmt.Errorf("failed to remove gitops directory: %w", err)
-				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Removed GitOps directory: %s\n", gitopsDir)
-			}
-
-			// Get the config file path
 			configPath, err := getConfigPath(ctx, actualClusterName, cfg.OpenCenter.Meta.Organization)
 			if err != nil {
 				return fmt.Errorf("failed to resolve config path: %w", err)
 			}
 
-			// Determine the structure type based on config path
-			// Get default config directory
 			resolvedConfigDir := os.Getenv("OPENCENTER_CONFIG_DIR")
 			if resolvedConfigDir == "" {
 				if runtime.GOOS == "windows" {
@@ -187,29 +170,34 @@ If no cluster name is provided, the active cluster will be destroyed.`,
 			// Check if this is a flat config file (not in clusters directory)
 			isFlatConfig := filepath.Dir(configPath) == resolvedConfigDir
 
+			var clusterPaths *paths.ClusterPaths
 			if !isFlatConfig {
-				// Determine if this is an organization-based structure
-				configMgr, err := config.NewConfigManager("")
-				if err != nil {
-					return fmt.Errorf("failed to create config manager: %w", err)
-				}
+				pathResolver := paths.NewPathResolver(config.ResolveClustersDir())
+				clusterPaths, _ = pathResolver.Resolve(context.Background(), clusterName, organization)
+			}
 
-				// Get base directory for clusters
-				baseDir := configMgr.GetConfig().Paths.ClustersDir
-				if baseDir == "" {
-					homeDir, err := os.UserHomeDir()
-					if err != nil {
-						return fmt.Errorf("failed to get home directory: %w", err)
+			if configDir != "" {
+				if filepath.Dir(configPath) != configDir {
+					// Not a flat config, safe to update status
+					cfg.OpenCenter.Meta.Status = "destroyed"
+					if err := saveConfig(ctx, cfg); err != nil {
+						// Log warning but continue with destroy
+						fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
 					}
-					baseDir = filepath.Join(homeDir, ".config", "opencenter", "clusters")
 				}
+			}
 
-				pathResolver := paths.NewPathResolver(baseDir)
+			// Remove GitOps directory if specified
+			gitopsDir := cfg.GitOps().GitDir
+			if gitopsDir != "" {
+				if err := os.RemoveAll(gitopsDir); err != nil && !os.IsNotExist(err) {
+					return fmt.Errorf("failed to remove gitops directory: %w", err)
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "Removed GitOps directory: %s\n", gitopsDir)
+			}
 
-				// Try to resolve cluster paths
-				ctx := context.Background()
-				clusterPaths, err := pathResolver.Resolve(ctx, clusterName, organization)
-				if err == nil {
+			if !isFlatConfig {
+				if clusterPaths != nil {
 					// Organization-based structure found
 					// Remove cluster directory: clusters/<org>/infrastructure/clusters/<cluster>/
 					if err := os.RemoveAll(clusterPaths.ClusterDir); err != nil && !os.IsNotExist(err) {
@@ -255,4 +243,24 @@ If no cluster name is provided, the active cluster will be destroyed.`,
 	cmd.Flags().BoolVar(&force, "force", false, "Skip confirmation prompt")
 
 	return cmd
+}
+
+func destroyKindCluster(ctx context.Context, cfg config.Config) error {
+	runtime := ""
+	if cfg.OpenCenter.Infrastructure.Kind != nil {
+		runtime = cfg.OpenCenter.Infrastructure.Kind.Runtime
+	}
+
+	clusterName := cfg.ClusterName()
+	if cfg.OpenCenter.Infrastructure.Kind != nil {
+		if override := strings.TrimSpace(cfg.OpenCenter.Infrastructure.Kind.ClusterNameOverride); override != "" {
+			clusterName = override
+		}
+	}
+
+	if err := kindprovider.NewProvider().DeleteCluster(ctx, clusterName, kindprovider.BuildEnvironment(runtime)); err != nil {
+		return fmt.Errorf("failed to destroy kind cluster %q: %w", clusterName, err)
+	}
+
+	return nil
 }

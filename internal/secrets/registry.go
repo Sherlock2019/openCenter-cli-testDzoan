@@ -58,9 +58,9 @@ type SOPSEncryptor interface {
 
 // registryData represents the structure of the key registry file.
 type registryData struct {
-	Version            string                  `yaml:"version"`
-	DefaultExpiration  defaultExpirationPolicy `yaml:"default_expiration"`
-	Keys               []KeyEntry              `yaml:"keys"`
+	Version           string                  `yaml:"version"`
+	DefaultExpiration defaultExpirationPolicy `yaml:"default_expiration"`
+	Keys              []KeyEntry              `yaml:"keys"`
 }
 
 // defaultExpirationPolicy defines default expiration periods for different key types.
@@ -207,6 +207,44 @@ func (r *DefaultKeyRegistry) UpdateKeyStatus(ctx context.Context, cluster string
 	}
 
 	r.logger.Info("Successfully updated key status", "cluster", cluster, "type", keyType, "status", status)
+	return nil
+}
+
+// UpdateKey updates an existing key entry.
+// Matching is performed by cluster, key type, and fingerprint when available.
+func (r *DefaultKeyRegistry) UpdateKey(ctx context.Context, entry KeyEntry) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.logger.Info("Updating key entry", "cluster", entry.Cluster, "type", entry.KeyType, "fingerprint", entry.Fingerprint)
+
+	data, err := r.loadRegistry(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to load registry: %w", err)
+	}
+
+	matchIndex := -1
+	for i := range data.Keys {
+		if data.Keys[i].Cluster != entry.Cluster || data.Keys[i].KeyType != entry.KeyType {
+			continue
+		}
+		if entry.Fingerprint != "" && data.Keys[i].Fingerprint == entry.Fingerprint {
+			matchIndex = i
+			break
+		}
+	}
+
+	if matchIndex == -1 {
+		return NewKeyNotFoundError(entry.Cluster, entry.KeyType, nil)
+	}
+
+	data.Keys[matchIndex] = mergeKeyEntry(data.Keys[matchIndex], entry)
+
+	if err := r.saveRegistry(ctx, data); err != nil {
+		return fmt.Errorf("failed to save registry: %w", err)
+	}
+
+	r.logger.Info("Successfully updated key entry", "cluster", entry.Cluster, "type", entry.KeyType, "fingerprint", entry.Fingerprint)
 	return nil
 }
 
@@ -426,6 +464,50 @@ func (r *DefaultKeyRegistry) calculateExpiration(createdAt time.Time, keyType Ke
 		// Default to Age expiration
 		return createdAt.AddDate(0, 0, policy.AgeDays)
 	}
+}
+
+func mergeKeyEntry(existing, incoming KeyEntry) KeyEntry {
+	if incoming.Cluster != "" {
+		existing.Cluster = incoming.Cluster
+	}
+	if incoming.KeyType != "" {
+		existing.KeyType = incoming.KeyType
+	}
+	if incoming.Fingerprint != "" {
+		existing.Fingerprint = incoming.Fingerprint
+	}
+	if incoming.PublicKey != "" {
+		existing.PublicKey = incoming.PublicKey
+	}
+	if !incoming.CreatedAt.IsZero() {
+		existing.CreatedAt = incoming.CreatedAt
+	}
+	if !incoming.ExpiresAt.IsZero() {
+		existing.ExpiresAt = incoming.ExpiresAt
+	}
+	if incoming.Status != "" {
+		existing.Status = incoming.Status
+	}
+	if incoming.RotatedFrom != "" {
+		existing.RotatedFrom = incoming.RotatedFrom
+	}
+	if !incoming.RevokedAt.IsZero() {
+		existing.RevokedAt = incoming.RevokedAt
+	}
+	if incoming.RevokedBy != "" {
+		existing.RevokedBy = incoming.RevokedBy
+	}
+	if incoming.RevokedReason != "" {
+		existing.RevokedReason = incoming.RevokedReason
+	}
+	if incoming.UsedBy != nil {
+		existing.UsedBy = incoming.UsedBy
+	}
+	if incoming.UserEmail != "" {
+		existing.UserEmail = incoming.UserEmail
+	}
+
+	return existing
 }
 
 // scanAgeKeys scans the Age keys directory and adds entries to the registry.

@@ -28,11 +28,12 @@ import (
 // Requirements: 13.2
 func TestSchemaVersionDetection(t *testing.T) {
 	tests := []struct {
-		name          string
-		configContent string
-		expectedV1    bool
-		expectedV2    bool
-		expectError   bool
+		name              string
+		configContent     string
+		expectedV1        bool
+		expectedV2        bool
+		expectError       bool
+		expectedErrSubstr string
 	}{
 		{
 			name: "v1 config with explicit version",
@@ -40,18 +41,20 @@ func TestSchemaVersionDetection(t *testing.T) {
 opencenter:
   cluster:
     cluster_name: test-cluster`,
-			expectedV1:  true,
-			expectedV2:  false,
-			expectError: false,
+			expectedV1:        false,
+			expectedV2:        false,
+			expectError:       true,
+			expectedErrSubstr: "v1 configurations are not supported",
 		},
 		{
 			name: "v1 config without version (backward compatibility)",
 			configContent: `opencenter:
   cluster:
     cluster_name: test-cluster`,
-			expectedV1:  true,
-			expectedV2:  false,
-			expectError: false,
+			expectedV1:        false,
+			expectedV2:        false,
+			expectError:       true,
+			expectedErrSubstr: "v1 configurations are not supported",
 		},
 		{
 			name: "v2 config with explicit version",
@@ -84,6 +87,8 @@ opencenter:
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("expected error but got none")
+				} else if tt.expectedErrSubstr != "" && !strings.Contains(err.Error(), tt.expectedErrSubstr) {
+					t.Fatalf("expected error containing %q, got %v", tt.expectedErrSubstr, err)
 				}
 				return
 			}
@@ -156,7 +161,8 @@ func TestValidateV2ConfigIntegration(t *testing.T) {
 	}
 }
 
-// TestValidateV1ConfigBackwardCompatibility tests that v1 configs still work.
+// TestValidateV1ConfigBackwardCompatibility tests that v1 configs are detected
+// and rejected with migration guidance in v2.
 // Requirements: 13.3
 func TestValidateV1ConfigBackwardCompatibility(t *testing.T) {
 	// Create a minimal v1 config without schema_version field
@@ -184,18 +190,16 @@ func TestValidateV1ConfigBackwardCompatibility(t *testing.T) {
 		t.Fatalf("failed to write test config: %v", err)
 	}
 
-	// Detect schema version - should default to v1
+	// Detect schema version - missing schema_version should still be treated as v1
 	versionInfo, err := config.DetectSchemaVersionFromFile(configPath)
-	if err != nil {
-		t.Fatalf("failed to detect schema version: %v", err)
+	if err == nil {
+		t.Fatal("expected v1 config rejection, got nil error")
 	}
-
-	if !versionInfo.IsV1 {
-		t.Errorf("expected v1 config (backward compatibility), got v2")
+	if !strings.Contains(err.Error(), "v1 configurations are not supported") {
+		t.Fatalf("expected v1 rejection message, got %v", err)
 	}
-
-	if versionInfo.Version != "1.0" {
-		t.Errorf("expected version '1.0' (default), got '%s'", versionInfo.Version)
+	if versionInfo != nil {
+		t.Fatalf("expected no version info for rejected v1 config, got %#v", versionInfo)
 	}
 }
 

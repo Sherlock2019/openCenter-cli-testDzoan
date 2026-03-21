@@ -14,9 +14,11 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/gophercloud/gophercloud"
@@ -106,7 +108,7 @@ If no cluster name is provided, uses the currently active cluster.`,
 			}
 
 			// Create cloud provider factory
-			factory := createCloudProviderFactory()
+			factory := createCloudProviderFactory(cfg)
 
 			// Get provider for this cluster
 			provider, err := factory.GetProvider(cfg.OpenCenter.Infrastructure.Provider)
@@ -197,7 +199,7 @@ If no cluster name is provided, uses the currently active cluster.`,
 			}
 
 			// Create cloud provider factory
-			factory := createCloudProviderFactory()
+			factory := createCloudProviderFactory(cfg)
 
 			// Get provider for this cluster
 			provider, err := factory.GetProvider(cfg.OpenCenter.Infrastructure.Provider)
@@ -311,7 +313,7 @@ If no cluster name is provided, uses the currently active cluster.`,
 			}
 
 			// Create cloud provider factory
-			factory := createCloudProviderFactory()
+			factory := createCloudProviderFactory(cfg)
 
 			// Get provider for this cluster
 			provider, err := factory.GetProvider(cfg.OpenCenter.Infrastructure.Provider)
@@ -324,48 +326,44 @@ If no cluster name is provided, uses the currently active cluster.`,
 			if callbackURL != "" {
 				fmt.Fprintf(cmd.OutOrStdout(), "Drift reports will be sent to: %s\n", callbackURL)
 			}
+			fmt.Fprintln(cmd.OutOrStdout(), "Drift detection scheduled. Press Ctrl+C to stop.")
 
-			// Start periodic check in background
-			go func() {
-				ticker := time.NewTicker(interval)
-				defer ticker.Stop()
+			ticker := time.NewTicker(interval)
+			defer ticker.Stop()
 
-				for range ticker.C {
-					// Get current state
-					currentState, err := provider.GetCurrentState(context.Background(), cfg)
+			for {
+				select {
+				case <-cmd.Context().Done():
+					return nil
+				case <-ticker.C:
+					currentState, err := provider.GetCurrentState(cmd.Context(), cfg)
 					if err != nil {
 						fmt.Fprintf(cmd.ErrOrStderr(), "Error getting current state: %v\n", err)
 						continue
 					}
 
-					// Build desired state
 					desiredState := buildDesiredState(cfg)
-
-					// Detect drift
-					report, err := provider.DetectDrift(context.Background(), desiredState, currentState)
+					report, err := provider.DetectDrift(cmd.Context(), desiredState, currentState)
 					if err != nil {
 						fmt.Fprintf(cmd.ErrOrStderr(), "Error detecting drift: %v\n", err)
 						continue
 					}
 
-					// Set cluster name and timestamp
 					report.ClusterName = clusterName
 					report.DetectedAt = time.Now().Format(time.RFC3339)
 
-					// Send to callback if configured
 					if callbackURL != "" {
-						// TODO: Implement HTTP POST to callback URL
-						fmt.Fprintf(cmd.OutOrStdout(), "Drift detected: %d items (would send to %s)\n", len(report.Drifts), callbackURL)
-					} else {
-						fmt.Fprintf(cmd.OutOrStdout(), "Drift detected: %d items\n", len(report.Drifts))
+						if err := sendDriftCallback(cmd.Context(), callbackURL, report); err != nil {
+							fmt.Fprintf(cmd.ErrOrStderr(), "Error sending drift callback: %v\n", err)
+							continue
+						}
+						fmt.Fprintf(cmd.OutOrStdout(), "Drift detected: %d items (sent to %s)\n", len(report.Drifts), callbackURL)
+						continue
 					}
+
+					fmt.Fprintf(cmd.OutOrStdout(), "Drift detected: %d items\n", len(report.Drifts))
 				}
-			}()
-
-			fmt.Fprintln(cmd.OutOrStdout(), "Drift detection scheduled. Press Ctrl+C to stop.")
-
-			// Block until interrupted
-			select {}
+			}
 		},
 	}
 
@@ -378,16 +376,21 @@ If no cluster name is provided, uses the currently active cluster.`,
 // Helper functions
 
 // createCloudProviderFactory creates and configures a cloud provider factory with all available providers.
-func createCloudProviderFactory() *cloud.CloudProviderFactory {
+func createCloudProviderFactory(cfg config.Config) *cloud.CloudProviderFactory {
 	factory := cloud.NewCloudProviderFactory()
 
-	// Register OpenStack provider
-	// Note: Authentication options would need to be configured from environment or config
-	openstackProvider := openstack.NewProvider(gophercloud.AuthOptions{})
+	openstackConfig := cfg.OpenCenter.Infrastructure.Cloud.OpenStack
+	openstackProvider := openstack.NewProvider(gophercloud.AuthOptions{
+		IdentityEndpoint:            openstackConfig.AuthURL,
+		ApplicationCredentialID:     openstackConfig.ApplicationCredentialID,
+		ApplicationCredentialSecret: openstackConfig.ApplicationCredentialSecret,
+		DomainName:                  openstackConfig.Domain,
+		TenantName:                  openstackConfig.TenantName,
+	}, openstackConfig.Region)
 	factory.RegisterProvider("openstack", openstackProvider)
 
-	// Register AWS provider
-	awsProvider := aws.NewProvider("us-east-1") // Default region, should come from config
+	awsConfig := cfg.OpenCenter.Infrastructure.Cloud.AWS
+	awsProvider := aws.NewProvider(awsConfig.Region, awsConfig.Profile)
 	factory.RegisterProvider("aws", awsProvider)
 
 	return factory
@@ -404,47 +407,167 @@ func buildDesiredState(cfg config.Config) *cloud.InfrastructureState {
 		FloatingIPs:    []cloud.FloatingIP{},
 	}
 
-	// Build desired servers from configuration
-	// This is simplified - in reality, you'd need to interpret the configuration
-	// to determine expected servers based on node pools, control plane config, etc.
 	clusterName := cfg.OpenCenter.Cluster.ClusterName
+	masterPrefix := cfg.OpenCenter.Infrastructure.NodeNaming.Master
+	if masterPrefix == "" {
+		masterPrefix = "master"
+	}
+	workerPrefix := cfg.OpenCenter.Infrastructure.NodeNaming.Worker
+	if workerPrefix == "" {
+		workerPrefix = "worker"
+	}
+	serverImage := ""
+	if cfg.OpenCenter.Infrastructure.Provider == "openstack" {
+		serverImage = cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ImageID
+	}
 
-	// Example: Add control plane nodes
-	for i := 0; i < 3; i++ {
+	for i := 0; i < cfg.OpenCenter.Cluster.Kubernetes.MasterCount; i++ {
+		name := fmt.Sprintf("%s-%s-%d", clusterName, masterPrefix, i+1)
 		state.Servers = append(state.Servers, cloud.Server{
-			Name:   fmt.Sprintf("%s-control-%d", clusterName, i),
+			Name:   name,
 			Flavor: cfg.OpenCenter.Cluster.Kubernetes.FlavorMaster,
+			Image:  serverImage,
 			Status: "ACTIVE",
 			Tags: map[string]string{
 				"cluster": clusterName,
 				"role":    "control-plane",
 			},
 		})
+
+		if size := cfg.OpenCenter.Storage.WorkerVolumeSize; size > 0 {
+			state.Volumes = append(state.Volumes, cloud.Volume{
+				Name:       fmt.Sprintf("%s-boot", name),
+				Size:       size,
+				Status:     "in-use",
+				AttachedTo: name,
+			})
+		}
 	}
 
-	// Example: Add worker nodes
-	for i := 0; i < 3; i++ {
+	for i := 0; i < cfg.OpenCenter.Cluster.Kubernetes.WorkerCount; i++ {
+		name := fmt.Sprintf("%s-%s-%d", clusterName, workerPrefix, i+1)
 		state.Servers = append(state.Servers, cloud.Server{
-			Name:   fmt.Sprintf("%s-worker-%d", clusterName, i),
+			Name:   name,
 			Flavor: cfg.OpenCenter.Cluster.Kubernetes.FlavorWorker,
+			Image:  serverImage,
 			Status: "ACTIVE",
 			Tags: map[string]string{
 				"cluster": clusterName,
 				"role":    "worker",
 			},
 		})
+
+		if size := cfg.OpenCenter.Storage.WorkerVolumeSize; size > 0 {
+			state.Volumes = append(state.Volumes, cloud.Volume{
+				Name:       fmt.Sprintf("%s-boot", name),
+				Size:       size,
+				Status:     "in-use",
+				AttachedTo: name,
+			})
+		}
 	}
 
-	// Build desired networks
-	state.Networks = append(state.Networks, cloud.Network{
-		Name: fmt.Sprintf("%s-network", clusterName),
-		Subnets: []cloud.Subnet{
-			{
-				Name: fmt.Sprintf("%s-subnet-nodes", clusterName),
-				CIDR: cfg.OpenCenter.Cluster.Networking.SubnetNodes,
+	switch cfg.OpenCenter.Infrastructure.Provider {
+	case "aws":
+		vpcID := cfg.OpenCenter.Infrastructure.Cloud.AWS.VPCID
+		if vpcID != "" {
+			subnets := make([]cloud.Subnet, 0, len(cfg.OpenCenter.Infrastructure.Cloud.AWS.PrivateSubnets)+len(cfg.OpenCenter.Infrastructure.Cloud.AWS.PublicSubnets))
+			for _, subnetID := range cfg.OpenCenter.Infrastructure.Cloud.AWS.PrivateSubnets {
+				subnets = append(subnets, cloud.Subnet{ID: subnetID, Name: subnetID})
+			}
+			for _, subnetID := range cfg.OpenCenter.Infrastructure.Cloud.AWS.PublicSubnets {
+				subnets = append(subnets, cloud.Subnet{ID: subnetID, Name: subnetID})
+			}
+			state.Networks = append(state.Networks, cloud.Network{
+				ID:      vpcID,
+				Name:    vpcID,
+				Subnets: subnets,
+			})
+		}
+
+		state.SecurityGroups = append(state.SecurityGroups, cloud.SecurityGroup{
+			Name: fmt.Sprintf("%s-control-plane-sg", clusterName),
+		})
+
+		state.LoadBalancers = append(state.LoadBalancers, cloud.LoadBalancer{
+			Name:     fmt.Sprintf("%s-api", clusterName),
+			Protocol: "TCP",
+			Port:     6443,
+		})
+
+		if len(cfg.OpenCenter.Infrastructure.Cloud.AWS.PublicSubnets) > 0 {
+			state.FloatingIPs = append(state.FloatingIPs, cloud.FloatingIP{
+				ID:     "cluster-api",
+				Status: "ACTIVE",
+			})
+		}
+
+	case "openstack":
+		networkName := fmt.Sprintf("%s-network", clusterName)
+		networkID := cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.NetworkID
+		if networkID != "" {
+			networkName = networkID
+		}
+
+		state.Networks = append(state.Networks, cloud.Network{
+			ID:   networkID,
+			Name: networkName,
+			Subnets: []cloud.Subnet{
+				{
+					ID:   cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.SubnetId,
+					Name: fmt.Sprintf("%s-subnet-nodes", clusterName),
+					CIDR: cfg.OpenCenter.Cluster.Networking.SubnetNodes,
+				},
 			},
-		},
-	})
+		})
+
+		apiRules := make([]cloud.SecurityRule, 0, len(cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.K8sAPIPortACL))
+		for _, cidr := range cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.K8sAPIPortACL {
+			apiRules = append(apiRules, cloud.SecurityRule{
+				Direction: "ingress",
+				Protocol:  "tcp",
+				PortRange: "6443",
+				RemoteIP:  cidr,
+			})
+		}
+
+		state.SecurityGroups = append(state.SecurityGroups,
+			cloud.SecurityGroup{
+				Name:  fmt.Sprintf("%s-control-plane-sg", clusterName),
+				Rules: apiRules,
+			},
+			cloud.SecurityGroup{
+				Name: fmt.Sprintf("%s-worker-sg", clusterName),
+			},
+		)
+
+		if cfg.OpenCenter.Cluster.Networking.LoadbalancerProvider == "ovn" || cfg.OpenCenter.Cluster.Networking.LoadbalancerProvider == "octavia" || cfg.OpenCenter.Cluster.Networking.UseOctavia {
+			state.LoadBalancers = append(state.LoadBalancers, cloud.LoadBalancer{
+				Name:     fmt.Sprintf("%s-api", clusterName),
+				Protocol: "TCP",
+				Port:     6443,
+			})
+		}
+
+		if !cfg.OpenCenter.Cluster.Networking.UseOctavia &&
+			cfg.OpenCenter.Cluster.Networking.LoadbalancerProvider != "octavia" &&
+			cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.FloatingIPPool != "" {
+			state.FloatingIPs = append(state.FloatingIPs, cloud.FloatingIP{
+				ID:     "cluster-api",
+				Status: "ACTIVE",
+			})
+		}
+	default:
+		state.Networks = append(state.Networks, cloud.Network{
+			Name: fmt.Sprintf("%s-network", clusterName),
+			Subnets: []cloud.Subnet{
+				{
+					Name: fmt.Sprintf("%s-subnet-nodes", clusterName),
+					CIDR: cfg.OpenCenter.Cluster.Networking.SubnetNodes,
+				},
+			},
+		})
+	}
 
 	return state
 }
@@ -556,4 +679,32 @@ func filterBySeverity(report *cloud.DriftReport, severityStr string) *cloud.Drif
 	}
 
 	return filtered
+}
+
+func sendDriftCallback(ctx context.Context, callbackURL string, report *cloud.DriftReport) error {
+	body, err := json.Marshal(report)
+	if err != nil {
+		return fmt.Errorf("failed to marshal drift report: %w", err)
+	}
+
+	requestCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(requestCtx, http.MethodPost, callbackURL, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("failed to build callback request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("callback POST failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("callback returned HTTP %d", resp.StatusCode)
+	}
+
+	return nil
 }
