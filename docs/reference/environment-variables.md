@@ -141,7 +141,25 @@ export OPENCENTER_LOG_LEVEL=error
 opencenter cluster validate my-cluster
 ```
 
-## Provider Environment Variables
+### KIND_EXPERIMENTAL_PROVIDER
+
+Optional runtime selector for Kind when using non-default container engines.
+
+**Typical value:** `podman`
+
+**Usage:**
+```bash
+export KIND_EXPERIMENTAL_PROVIDER=podman
+opencenter cluster bootstrap dev-cluster
+```
+
+**What it affects:**
+- Kind bootstrap and destroy flows
+- Local developer and CI environments using Podman instead of Docker
+
+**GA note:** This variable is relevant only for the local Kind provider.
+
+## Provider and Integration Environment Variables
 
 ### OpenStack
 
@@ -274,7 +292,9 @@ opencenter cluster bootstrap my-cluster
 
 **Security note:** Avoid using this in production. Use configuration file with SOPS encryption instead.
 
-### AWS
+### AWS Service Integrations
+
+AWS environment variables remain relevant for GA features that integrate with AWS services such as Route53 or S3-compatible backends. They do not make AWS a supported GA infrastructure provider.
 
 #### AWS_ACCESS_KEY_ID
 
@@ -285,7 +305,7 @@ AWS access key ID.
 **Usage:**
 ```bash
 export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
-opencenter cluster bootstrap my-cluster
+opencenter cluster validate my-cluster
 ```
 
 #### AWS_SECRET_ACCESS_KEY
@@ -297,7 +317,7 @@ AWS secret access key.
 **Usage:**
 ```bash
 export AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-opencenter cluster bootstrap my-cluster
+opencenter cluster validate my-cluster
 ```
 
 **Security note:** Avoid using this in production. Use AWS credentials file or IAM roles instead.
@@ -311,7 +331,7 @@ AWS region.
 **Usage:**
 ```bash
 export AWS_REGION=us-east-1
-opencenter cluster bootstrap my-cluster
+opencenter cluster validate my-cluster
 ```
 
 ## Secrets Environment Variables
@@ -621,5 +641,5 @@ This reference is based on:
 
 - Configuration precedence: `internal/config/manager.go`, Session 2 B0 section 3
 - Environment variables: `cmd/root.go`, `internal/config/`
-- Provider variables: OpenStack, VMware, AWS documentation
+- Provider variables: OpenStack and VMware documentation; AWS-backed service integration references
 - SOPS variables: `internal/sops/manager.go`

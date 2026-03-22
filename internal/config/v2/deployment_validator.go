@@ -41,7 +41,8 @@ func (d *KubesprayDeployment) ValidateConfig(cfg *Config) error {
 // ValidateCompatibility validates Kubespray compatibility with infrastructure provider.
 func (d *KubesprayDeployment) ValidateCompatibility(provider string) error {
 	// Kubespray supports all providers
-	validProviders := []string{"openstack", "aws", "gcp", "azure", "baremetal", "vsphere", "vmware"}
+	validProviders := []string{"openstack", "aws", "gcp", "azure", "baremetal", "vmware"}
+	provider = canonicalInfrastructureProvider(provider)
 	for _, p := range validProviders {
 		if provider == p {
 			return nil
@@ -75,7 +76,8 @@ func (d *TalosDeployment) ValidateConfig(cfg *Config) error {
 // ValidateCompatibility validates Talos compatibility with infrastructure provider.
 func (d *TalosDeployment) ValidateCompatibility(provider string) error {
 	// Talos supports most providers except baremetal and vmware
-	validProviders := []string{"openstack", "aws", "gcp", "azure", "vsphere"}
+	validProviders := []string{"openstack", "aws", "gcp", "azure"}
+	provider = canonicalInfrastructureProvider(provider)
 	for _, p := range validProviders {
 		if provider == p {
 			return nil
@@ -124,7 +126,8 @@ func (d *KamajiDeployment) ValidateConfig(cfg *Config) error {
 // ValidateCompatibility validates Kamaji compatibility with infrastructure provider.
 func (d *KamajiDeployment) ValidateCompatibility(provider string) error {
 	// Kamaji supports OpenStack, AWS, GCP, Azure, vSphere, VMware
-	validProviders := []string{"openstack", "aws", "gcp", "azure", "vsphere", "vmware"}
+	validProviders := []string{"openstack", "aws", "gcp", "azure", "vmware"}
+	provider = canonicalInfrastructureProvider(provider)
 	for _, p := range validProviders {
 		if provider == p {
 			return nil

@@ -68,19 +68,12 @@ func TestProperty_KamajiDeploymentConstraints(t *testing.T) {
 
 	properties.Property("Kamaji control plane replicas must be odd", prop.ForAll(
 		func(cfg *Config) bool {
-			kamaji := cfg.OpenCenter.Infrastructure.Cloud.OpenStack
-			if kamaji == nil {
+			if cfg.Deployment.Kamaji == nil {
 				return true
 			}
 
-			// Get Kamaji config from deployment
-			if len(cfg.OpenCenter.Infrastructure.Compute.AdditionalServerPoolsWorker) == 0 {
-				return false
-			}
-
-			// Check that replicas is odd (1, 3, 5, 7)
-			// This is validated through the generator
-			return true
+			replicas := cfg.Deployment.Kamaji.ControlPlane.Replicas
+			return replicas == 1 || replicas == 3 || replicas == 5 || replicas == 7
 		},
 		genKamajiConfig(),
 	))
@@ -159,28 +152,71 @@ func TestProperty_KamajiDeploymentConstraints(t *testing.T) {
 // genKamajiConfig generates valid Kamaji configurations.
 func genKamajiConfig() gopter.Gen {
 	return gopter.CombineGens(
-		genMetaConfig(),
-		genClusterConfigForKamaji(),
-		genInfrastructureConfigForKamaji(),
+		gen.IntRange(1, 10),
+		gen.OneConstOf(1, 3, 5, 7),
 	).Map(func(parts []interface{}) *Config {
-		return &Config{
-			SchemaVersion: "2.0",
-			OpenCenter: OpenCenterConfig{
-				Meta:           parts[0].(MetaConfig),
-				Cluster:        parts[1].(ClusterConfig),
-				Infrastructure: parts[2].(InfrastructureConfig),
+		workerCount := parts[0].(int)
+		replicas := parts[1].(int)
+
+		cfg := newValidV2TestConfig("openstack")
+		cfg.Deployment.Method = "kamaji"
+		cfg.Deployment.Kamaji = &KamajiConfig{
+			Enabled: true,
+			Version: "1.0.0",
+			ControlPlane: KamajiControlPlane{
+				Replicas:      replicas,
+				Datastore:     "etcd",
+				Etcd:          &KamajiEtcdConfig{StorageClass: "standard", StorageSize: "10Gi"},
+				ServiceType:   "LoadBalancer",
+				APIServerPort: 6443,
 			},
-			Secrets: SecretsConfig{
-				Global: GlobalSecrets{},
+			ClusterAPI: ClusterAPIConfig{
+				Version: "1.7.0",
+				Providers: ClusterAPIProviders{
+					Infrastructure: "openstack",
+					Bootstrap:      "kubeadm",
+					ControlPlane:   "kubeadm",
+				},
+			},
+			WorkerPools: []KamajiWorkerPool{
+				{
+					Name:              "pool-a",
+					OS:                "ubuntu",
+					Count:             workerCount,
+					Flavor:            "m1.large",
+					Image:             "ubuntu-22.04",
+					BootstrapProvider: "kubeadm",
+					BootVolume: VolumeConfig{
+						Size: 100,
+						Type: "ssd",
+					},
+				},
 			},
 		}
+		cfg.OpenCenter.Infrastructure.Compute.MasterCount = 0
+		cfg.OpenCenter.Infrastructure.Compute.WorkerCount = workerCount
+		cfg.OpenCenter.Infrastructure.Compute.AdditionalServerPoolsWorker = []WorkerPoolConfig{
+			{
+				Name:   "pool-a",
+				Count:  workerCount,
+				Flavor: "m1.large",
+				BootVolume: VolumeConfig{
+					Size: 100,
+					Type: "ssd",
+				},
+			},
+		}
+		cfg.OpenCenter.Infrastructure.Networking.VRRPEnabled = false
+		cfg.OpenCenter.Infrastructure.Networking.VRRPIP = ""
+		cfg.OpenCenter.Cluster.Kubernetes.KubeVIPEnabled = false
+		return cfg
 	})
 }
 
 // genClusterConfigForKamaji generates ClusterConfig with Kamaji constraints.
 func genClusterConfigForKamaji() gopter.Gen {
 	return gopter.CombineGens(
-		gen.AlphaString().SuchThat(func(s string) bool { return len(s) > 0 && len(s) < 64 }),
+		gen.OneConstOf("kamaji-cluster", "kamaji-dev", "kamaji-prod"),
 		gen.Const("example.com"),
 		gen.Const("admin@example.com"),
 		genKubernetesConfigForKamaji(),
@@ -296,7 +332,7 @@ func genComputeConfigForKamaji() gopter.Gen {
 // genKamajiWorkerPool generates valid KamajiWorkerPool configurations.
 func genKamajiWorkerPool() gopter.Gen {
 	return gopter.CombineGens(
-		gen.AlphaString().SuchThat(func(s string) bool { return len(s) > 0 && len(s) < 32 }),
+		gen.OneConstOf("pool-a", "pool-b", "pool-c"),
 		gen.OneConstOf("ubuntu", "windows", "talos"),
 		gen.IntRange(1, 10),
 		gen.Bool(),
@@ -371,7 +407,7 @@ func TestProperty_ProviderDeploymentCompatibility(t *testing.T) {
 			// Should return error for invalid combinations
 			return err != nil
 		},
-		gen.OneConstOf("openstack", "aws", "gcp", "azure", "baremetal", "vsphere"),
+		gen.OneConstOf("openstack", "aws", "gcp", "azure", "baremetal", "vmware"),
 		gen.OneConstOf("kubespray", "talos", "kamaji"),
 	))
 
@@ -381,7 +417,21 @@ func TestProperty_ProviderDeploymentCompatibility(t *testing.T) {
 			err := deploymentValidator.ValidateCompatibility(provider)
 			return err == nil
 		},
-		gen.OneConstOf("openstack", "aws", "gcp", "azure", "baremetal", "vsphere"),
+		gen.OneConstOf("openstack", "aws", "gcp", "azure", "baremetal", "vmware"),
+	))
+
+	properties.Property("vsphere alias matches vmware compatibility", prop.ForAll(
+		func(method string) bool {
+			deploymentValidator, err := GetDeploymentMethod(method)
+			if err != nil {
+				return false
+			}
+
+			vmwareErr := deploymentValidator.ValidateCompatibility("vmware")
+			vsphereErr := deploymentValidator.ValidateCompatibility("vsphere")
+			return (vmwareErr == nil) == (vsphereErr == nil)
+		},
+		gen.OneConstOf("kubespray", "talos", "kamaji"),
 	))
 
 	properties.Property("talos does not support baremetal", prop.ForAll(
@@ -487,9 +537,9 @@ func TestProperty_ProviderDeploymentCompatibility(t *testing.T) {
 // isValidProviderDeploymentCombination checks if a provider-deployment combination is valid.
 func isValidProviderDeploymentCombination(provider, method string) bool {
 	validCombinations := map[string][]string{
-		"kubespray": {"openstack", "aws", "gcp", "azure", "baremetal", "vsphere"},
-		"talos":     {"openstack", "aws", "gcp", "azure", "vsphere"},
-		"kamaji":    {"openstack", "aws", "gcp", "azure", "vsphere"},
+		"kubespray": {"openstack", "aws", "gcp", "azure", "baremetal", "vmware"},
+		"talos":     {"openstack", "aws", "gcp", "azure"},
+		"kamaji":    {"openstack", "aws", "gcp", "azure", "vmware"},
 	}
 
 	validProviders, ok := validCombinations[method]

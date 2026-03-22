@@ -305,13 +305,13 @@ func TestProviderSpecificComments(t *testing.T) {
 			},
 		},
 		{
-			name:     "aws comments",
-			provider: "aws",
+			name:     "vmware comments",
+			provider: "vmware",
 			wantComments: []string{
-				"AWS provider configuration",
-				"AWS region",
-				"AWS CLI profile name",
-				"Existing VPC ID",
+				"VMware vSphere configuration",
+				"vCenter server hostname or IP",
+				"VMware datacenter name",
+				"Pre-provisioned VM nodes",
 			},
 		},
 	}

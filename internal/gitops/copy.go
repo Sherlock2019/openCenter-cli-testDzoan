@@ -239,25 +239,21 @@ func shouldSkipFile(relPath string, cfg config.Config) bool {
 				extractedServiceName = strings.TrimSuffix(extractedServiceName, ".yaml")
 				extractedServiceName = strings.TrimSuffix(extractedServiceName, ".yaml.tpl")
 
-				// Check if this service exists and is enabled
+				// Only skip if the service is explicitly present and disabled;
+				// services not in config are included by default (template may
+				// reference shared or infrastructure sources).
 				if service, exists := cfg.OpenCenter.Services[extractedServiceName]; exists {
 					if IsServiceDisabled(service) {
 						return true
 					}
-				} else {
-					// Service not in config - skip it
-					return true
 				}
 			}
-		} else {
-			// Regular service directory check
+		} else if serviceName != "fluxcd" {
+			// Regular service directory check (fluxcd is structural, not a service)
 			if service, exists := cfg.OpenCenter.Services[serviceName]; exists {
 				if IsServiceDisabled(service) {
 					return true
 				}
-			} else {
-				// Service not in config - skip it
-				return true
 			}
 		}
 	}
@@ -275,25 +271,19 @@ func shouldSkipFile(relPath string, cfg config.Config) bool {
 				extractedServiceName = strings.TrimSuffix(extractedServiceName, ".yaml")
 				extractedServiceName = strings.TrimSuffix(extractedServiceName, ".yaml.tpl")
 
-				// Check if this managed service exists and is enabled
+				// Only skip if the managed service is explicitly present and disabled
 				if service, exists := cfg.OpenCenter.ManagedService[extractedServiceName]; exists {
 					if IsServiceDisabled(service) {
 						return true
 					}
-				} else {
-					// Managed service not in config - skip it
-					return true
 				}
 			}
-		} else {
-			// Regular managed service directory check
+		} else if serviceName != "fluxcd" {
+			// Regular managed service directory check (fluxcd is structural, not a service)
 			if service, exists := cfg.OpenCenter.ManagedService[serviceName]; exists {
 				if IsServiceDisabled(service) {
 					return true
 				}
-			} else {
-				// Managed service not in config - skip it
-				return true
 			}
 		}
 	}
@@ -336,8 +326,10 @@ func RenderClusterApps(cfg config.Config) error {
 		return err
 	}
 
-	// Copy files from workspace to target
-	return copyWorkspaceToTarget(workspace.RootDir, target)
+	// Copy from the workspace's applications overlay directory (where RenderClusterAppsAtomic
+	// actually writes files) to the final target, avoiding double-nesting of the overlay path.
+	workspaceAppsDir := filepath.Join(workspace.RootDir, "applications", "overlays", clusterName)
+	return copyWorkspaceToTarget(workspaceAppsDir, target)
 }
 
 // cleanupDisabledServices removes service directories that are not enabled in the configuration.

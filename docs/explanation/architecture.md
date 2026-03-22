@@ -441,7 +441,7 @@ Extend CLI with external plugins:
 
 ### "openCenter only works with OpenStack"
 
-**Reality:** OpenStack is the default and most mature provider, but VMware, Kind, and AWS are supported. Provider abstraction allows adding more.
+**Reality:** OpenStack is the default and most mature provider, and the GA infrastructure surface also includes VMware, Baremetal, and Kind. AWS-backed service integrations remain available where platform services use them, but AWS is not a GA infrastructure provider.
 
 ## Further Reading
 

@@ -213,78 +213,7 @@ func TestConfigLoader_SaveToFile(t *testing.T) {
 	registry := defaults.NewRegistry()
 	loader := NewConfigLoader(registry)
 
-	cfg := &Config{
-		SchemaVersion: "2.0",
-		OpenCenter: OpenCenterConfig{
-			Meta: MetaConfig{
-				Name:         "test-cluster",
-				Organization: "test-org",
-				Env:          "dev",
-				Region:       "sjc3",
-			},
-			Cluster: ClusterConfig{
-				ClusterName: "test-cluster",
-				BaseDomain:  "example.com",
-				ClusterFQDN: "test-cluster.example.com",
-				AdminEmail:  "admin@example.com",
-				Kubernetes: KubernetesConfig{
-					Version:        "1.28.0",
-					APIPort:        6443,
-					SubnetPods:     "10.233.64.0/18",
-					SubnetServices: "10.233.0.0/18",
-				},
-			},
-			Infrastructure: InfrastructureConfig{
-				Provider:  "openstack",
-				OSVersion: "24",
-				SSH: SSHConfig{
-					AuthorizedKeys: []string{"ssh-rsa AAAAB3NzaC1yc2E..."},
-				},
-				Networking: NetworkingConfig{
-					SubnetNodes:          "10.2.128.0/22",
-					AllocationPoolStart:  "10.2.128.10",
-					AllocationPoolEnd:    "10.2.131.254",
-					VRRPEnabled:          true,
-					VRRPIP:               "10.2.128.5",
-					LoadbalancerProvider: "ovn",
-					DNSZoneName:          "cluster.local",
-					DNSNameservers:       []string{"8.8.8.8", "8.8.4.4"},
-					NTPServers:           []string{"time.google.com"},
-				},
-				Compute: ComputeConfig{
-					FlavorMaster: "m1.medium",
-					FlavorWorker: "m1.large",
-					MasterCount:  3,
-					WorkerCount:  2,
-				},
-				Storage: StorageConfig{
-					DefaultStorageClass:         "standard",
-					WorkerVolumeSize:            50,
-					WorkerVolumeDestinationType: "volume",
-					WorkerVolumeSourceType:      "image",
-					WorkerVolumeType:            "ssd",
-				},
-				Cloud: CloudConfig{},
-			},
-			GitOps: GitOpsConfig{
-				GitURL:       "ssh://git@github.com/example/repo.git",
-				GitBranch:    "main",
-				FluxInterval: "15m",
-				FluxPrune:    true,
-			},
-		},
-		OpenTofu: OpenTofuConfig{
-			Backend: BackendConfig{
-				Type: "local",
-				Local: &LocalBackendConfig{
-					Path: "/tmp/terraform.tfstate",
-				},
-			},
-		},
-		Secrets: SecretsConfig{
-			Global: GlobalSecrets{},
-		},
-	}
+	cfg := newValidV2TestConfig("openstack")
 
 	// Save to temporary file
 	tmpFile := t.TempDir() + "/test-config.yaml"

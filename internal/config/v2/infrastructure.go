@@ -16,7 +16,7 @@ package v2
 // InfrastructureConfig represents provider-agnostic infrastructure with provider-specific extensions.
 // Requirements: 2.1, 3.1, 4.1, 9.1, 9.2
 type InfrastructureConfig struct {
-	Provider            string           `yaml:"provider" json:"provider" validate:"required,oneof=openstack aws gcp azure baremetal vsphere kind"`
+	Provider            string           `yaml:"provider" json:"provider" validate:"required,oneof=openstack aws gcp azure baremetal vsphere vmware kind"`
 	SSH                 SSHConfig        `yaml:"ssh" json:"ssh" validate:"required"`
 	OSVersion           string           `yaml:"os_version" json:"os_version" validate:"required"`
 	ServerGroupAffinity []string         `yaml:"server_group_affinity,omitempty" json:"server_group_affinity,omitempty"`

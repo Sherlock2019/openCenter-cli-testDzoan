@@ -62,7 +62,7 @@ mise run build-linux
 
 ### build-all
 
-Build binaries for all platforms.
+Build binaries for the supported release platforms.
 
 **Usage:**
 ```bash
@@ -70,7 +70,7 @@ mise run build-all
 ```
 
 **What it does:**
-- Builds for Linux, macOS, Windows
+- Builds for Linux and macOS
 - Creates binaries for amd64 and arm64
 - Injects version information
 
@@ -79,7 +79,6 @@ mise run build-all
 - `bin/opencenter-linux-arm64`
 - `bin/opencenter-darwin-amd64`
 - `bin/opencenter-darwin-arm64`
-- `bin/opencenter-windows-amd64.exe`
 
 **Evidence:** `.kiro/steering/tech.md:58`
 
@@ -87,7 +86,7 @@ mise run build-all
 
 ### test
 
-Run unit tests.
+Run the deterministic GA test gate.
 
 **Usage:**
 ```bash
@@ -95,11 +94,48 @@ mise run test
 ```
 
 **What it does:**
-- Runs all unit tests in `internal/` packages
-- Executes `go test ./internal/...`
-- Reports test results
+- Runs the default CLI/config/cloud verification lane
+- Covers `./internal/config/...`, `./cmd/...`, and `./internal/cloud/...`
+- Excludes perf-tagged coverage
 
-**Evidence:** `.kiro/steering/tech.md:64`
+### property
+
+Run opt-in property-based coverage.
+
+**Usage:**
+```bash
+mise run property
+```
+
+**What it does:**
+- Runs tests selected by `-run "TestProperty"`
+- Keeps exploratory/property coverage separate from the default gate
+
+### integration
+
+Run the opt-in integration lane.
+
+**Usage:**
+```bash
+mise run integration
+```
+
+**What it does:**
+- Runs integration-oriented command and subsystem tests
+- Intended for deeper pre-release verification
+
+### perf
+
+Run perf-tagged checks.
+
+**Usage:**
+```bash
+mise run perf
+```
+
+**What it does:**
+- Runs `perf` build-tag coverage such as memory-regression checks
+- Keeps noisy or long-running performance tests out of the default lane
 
 ### godog
 

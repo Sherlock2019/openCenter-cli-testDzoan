@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Config
+metadata:
+  name: {{.ClusterName}}
+  organization: {{.Organization}}
+spec:
+  provider: {{.Provider}}
+  kubernetes:
+    version: {{.KubernetesVersion}}
+  nodes:
+    masters: {{.MasterCount}}
+    workers: {{.WorkerCount}}
+  networking:
+    podCIDR: {{.PodCIDR | default "10.244.0.0/16"}}
+    serviceCIDR: {{.ServiceCIDR | default "10.96.0.0/12"}}

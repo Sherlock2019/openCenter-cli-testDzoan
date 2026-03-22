@@ -35,7 +35,7 @@ func newClusterTemplateCmd() *cobra.Command {
 This command creates a comprehensive YAML configuration file that includes:
 - All configuration sections (opencenter, opentofu, secrets, metadata)
 - All service configurations with their specific fields
-- All provider options (OpenStack, AWS, Talos)
+- All GA provider options (OpenStack, VMware, Kind, Baremetal)
 - Inline documentation and examples
 - Default values for all fields
 
@@ -70,7 +70,7 @@ available option.`,
 			minimal, _ := cmd.Flags().GetBool("minimal")
 
 			// Validate provider
-			validProviders := []string{"openstack", "aws", "talos", "kind", "baremetal", "vmware", "all"}
+			validProviders := []string{"openstack", "kind", "baremetal", "vmware", "all"}
 			if provider != "" && provider != "all" {
 				valid := false
 				for _, p := range validProviders {
@@ -80,7 +80,7 @@ available option.`,
 					}
 				}
 				if !valid {
-					return fmt.Errorf("invalid provider '%s', must be one of: openstack, aws, talos, kind, baremetal, vmware, all", provider)
+					return fmt.Errorf("invalid provider '%s', must be one of: openstack, kind, baremetal, vmware, all", provider)
 				}
 			}
 
@@ -128,7 +128,7 @@ available option.`,
 	}
 
 	cmd.Flags().String("out", "", "output file path (default stdout)")
-	cmd.Flags().String("provider", "all", "generate template for specific provider (openstack, aws, talos, kind, baremetal, vmware, all)")
+	cmd.Flags().String("provider", "all", "generate template for specific provider (openstack, kind, baremetal, vmware, all)")
 	cmd.Flags().Bool("comments", false, "include inline comments explaining each field")
 	cmd.Flags().Bool("minimal", false, "generate minimal template with only required fields")
 
@@ -178,18 +178,10 @@ func generateCompleteTemplate(provider string) config.Config {
 	cfg.OpenCenter.Cluster.Kubernetes.MasterCount = 3
 	cfg.OpenCenter.Cluster.Kubernetes.WorkerCount = 3
 
-	// Enable Talos if requested or if provider is "all"
-	if provider == "talos" || provider == "all" {
-		cfg.OpenCenter.Talos = config.DefaultTalosConfig("example-cluster")
-	}
-
 	// Configure provider-specific settings
 	switch provider {
 	case "openstack":
 		cfg.OpenCenter.Infrastructure.Provider = "openstack"
-	case "aws":
-		cfg.OpenCenter.Infrastructure.Provider = "aws"
-		populateAWSConfig(&cfg)
 	case "kind":
 		if err := config.ApplyProviderDefaults(&cfg, "kind"); err != nil {
 			cfg.OpenCenter.Infrastructure.Provider = "kind"
@@ -203,7 +195,6 @@ func generateCompleteTemplate(provider string) config.Config {
 	case "all", "":
 		// Include all provider configurations
 		populateOpenStackConfig(&cfg)
-		populateAWSConfig(&cfg)
 		populateVMwareConfig(&cfg)
 	}
 
@@ -252,15 +243,6 @@ func populateOpenStackConfig(cfg *config.Config) {
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ApplicationCredentialSecret = ""
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ImageID = "799dcf97-3656-4361-8187-13ab1b295e33"
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.FloatingIPPool = "PUBLICNET"
-}
-
-// populateAWSConfig adds AWS-specific configuration
-func populateAWSConfig(cfg *config.Config) {
-	cfg.OpenCenter.Infrastructure.Cloud.AWS.Region = "us-east-1"
-	cfg.OpenCenter.Infrastructure.Cloud.AWS.Profile = ""
-	cfg.OpenCenter.Infrastructure.Cloud.AWS.VPCID = ""
-	cfg.OpenCenter.Infrastructure.Cloud.AWS.PrivateSubnets = []string{}
-	cfg.OpenCenter.Infrastructure.Cloud.AWS.PublicSubnets = []string{}
 }
 
 // populateBaremetalConfig adds baremetal-specific configuration
@@ -475,7 +457,7 @@ func addInfrastructureComments(key, value *yaml.Node, provider string) {
 
 		switch subKey.Value {
 		case "provider":
-			subKey.LineComment = fmt.Sprintf("Cloud provider: %s (openstack, aws, talos, kind, baremetal, vmware)", provider)
+			subKey.LineComment = fmt.Sprintf("Cloud provider: %s (openstack, kind, baremetal, vmware)", provider)
 		case "cloud":
 			addCloudComments(subKey, subValue, provider)
 		case "bastion":
@@ -502,8 +484,6 @@ func addCloudComments(key, value *yaml.Node, provider string) {
 		switch subKey.Value {
 		case "openstack":
 			addOpenStackComments(subKey, subValue)
-		case "aws":
-			addAWSComments(subKey, subValue)
 		case "vmware":
 			addVMwareComments(subKey, subValue)
 		}
@@ -538,34 +518,6 @@ func addOpenStackComments(key, value *yaml.Node) {
 			subKey.LineComment = "Base OS image ID for nodes"
 		case "networking":
 			subKey.LineComment = "OpenStack networking configuration"
-		}
-	}
-}
-
-// addAWSComments adds comments for AWS configuration
-func addAWSComments(key, value *yaml.Node) {
-	key.HeadComment = "AWS provider configuration"
-
-	if value.Kind != yaml.MappingNode {
-		return
-	}
-
-	for i := 0; i < len(value.Content); i += 2 {
-		if i+1 >= len(value.Content) {
-			break
-		}
-		subKey := value.Content[i]
-		switch subKey.Value {
-		case "region":
-			subKey.LineComment = "AWS region (e.g., us-east-1)"
-		case "profile":
-			subKey.LineComment = "AWS CLI profile name"
-		case "vpc_id":
-			subKey.LineComment = "Existing VPC ID (optional)"
-		case "private_subnets":
-			subKey.LineComment = "Private subnet IDs for worker nodes"
-		case "public_subnets":
-			subKey.LineComment = "Public subnet IDs for control plane"
 		}
 	}
 }

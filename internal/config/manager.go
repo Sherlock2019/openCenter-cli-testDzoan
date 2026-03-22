@@ -948,6 +948,10 @@ func (cm *ConfigurationManager) SetActive(name string) error {
 		return cm.fileSystem.Remove(path)
 	}
 
+	if err := cm.fileSystem.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+
 	return cm.fileSystem.WriteFileAtomic(path, []byte(name), 0o600)
 }
 

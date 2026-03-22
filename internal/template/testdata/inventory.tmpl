@@ -1,0 +1,16 @@
+[all]
+{{.ClusterName}}-cluster
+
+[master]
+{{- range $i, $e := until (int .MasterCount) }}
+{{$.ClusterName}}-master-{{ $i }} ansible_host={{index $.MasterIPs $i}}
+{{- end }}
+
+[worker]
+{{- range $i, $e := until (int .WorkerCount) }}
+{{$.ClusterName}}-worker-{{ $i }} ansible_host={{index $.WorkerIPs $i}}
+{{- end }}
+
+[k8s_cluster:children]
+master
+worker

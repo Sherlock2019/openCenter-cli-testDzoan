@@ -723,7 +723,7 @@ func (b *FluentConfigBuilder) validateRequired() {
 			Message: "provider is required",
 			Suggestions: []string{
 				"Set provider with: builder.WithProvider(\"openstack\")",
-				"Supported providers: openstack, aws, baremetal, kind",
+				"Supported providers: openstack, vmware, baremetal, kind",
 				"Choose based on your infrastructure platform",
 			},
 		})
@@ -761,14 +761,14 @@ func (b *FluentConfigBuilder) validateProvider() {
 				},
 			})
 		}
-	case "baremetal", "kind":
+	case "baremetal", "kind", "vmware":
 		// No specific validation for these providers
 	default:
 		b.errors = append(b.errors, ValidationError{
 			Field:   "opencenter.infrastructure.provider",
 			Message: fmt.Sprintf("unsupported provider: %s", provider),
 			Suggestions: []string{
-				"Supported providers: openstack, aws, baremetal, kind",
+				"Supported providers: openstack, vmware, baremetal, kind",
 				"Check provider name for typos",
 				"Refer to documentation for provider-specific setup",
 			},

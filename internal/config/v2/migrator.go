@@ -224,7 +224,7 @@ func (m *DefaultMigrator) migrateOIDC(v1 *config.Config) OIDCConfig {
 // Requirements: 12.2, 12.3, 12.4, 12.5
 func (m *DefaultMigrator) migrateInfrastructure(v1 *config.Config) InfrastructureConfig {
 	return InfrastructureConfig{
-		Provider:            v1.OpenCenter.Infrastructure.Provider,
+		Provider:            canonicalInfrastructureProvider(v1.OpenCenter.Infrastructure.Provider),
 		SSH:                 m.migrateSSH(v1),
 		OSVersion:           v1.OpenCenter.Infrastructure.OSVersion,
 		ServerGroupAffinity: v1.OpenCenter.Infrastructure.ServerGroupAffinity,
@@ -339,7 +339,7 @@ func (m *DefaultMigrator) migrateCloud(v1 *config.Config) CloudConfig {
 		cloud.GCP = m.migrateGCP(v1)
 	case "azure":
 		cloud.Azure = m.migrateAzure(v1)
-	case "vsphere":
+	case "vsphere", "vmware":
 		cloud.VMware = m.migrateVMware(v1)
 	}
 

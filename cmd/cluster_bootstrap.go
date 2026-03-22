@@ -36,7 +36,7 @@ func newClusterBootstrapCmd() *cobra.Command {
 This command provisions infrastructure and deploys the Kubernetes cluster
 based on the cluster configuration. The bootstrap process varies by provider:
 
-- OpenStack/AWS/GCP/Azure: Runs Terraform to provision infrastructure
+- OpenStack/VMware: Runs provider-specific infrastructure bootstrap
 - Kind: Creates a local Kubernetes cluster using kind
 
 Only v2 configurations (schema_version: "2.0") are supported.

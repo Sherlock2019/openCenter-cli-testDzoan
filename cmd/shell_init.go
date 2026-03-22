@@ -25,7 +25,7 @@ import (
 //go:embed shell-integration/*
 var shellIntegrationFS embed.FS
 
-func newShellInitCmd() *cobra.Command {
+func NewShellInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "shell-init",
 		Short: "Output shell integration script for session-scoped cluster selection",
@@ -64,6 +64,10 @@ Features:
 	cmd.Flags().String("shell", "", "Shell type (bash, zsh, fish) - auto-detected if not specified")
 
 	return cmd
+}
+
+func newShellInitCmd() *cobra.Command {
+	return NewShellInitCmd()
 }
 
 func runShellInit(cmd *cobra.Command, args []string) error {

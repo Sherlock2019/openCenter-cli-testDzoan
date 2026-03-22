@@ -17,12 +17,9 @@ package main
 import (
 	"log"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/opencenter-cloud/opencenter-cli/cmd"
 	"github.com/opencenter-cloud/opencenter-cli/internal/plugins"
-	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 )
 
@@ -35,7 +32,9 @@ func main() {
 	rootCmd.AddCommand(cmd.NewConfigCmd())
 	rootCmd.AddCommand(cmd.NewSecretsCmd())
 	rootCmd.AddCommand(cmd.NewPluginsCmd())
+	rootCmd.AddCommand(cmd.NewShellInitCmd())
 	rootCmd.AddCommand(cmd.NewVersionCmd())
+	rootCmd.InitDefaultCompletionCmd()
 	// Discover and attach external plugins as subcommands
 	plugins.LoadExternalPlugins(rootCmd)
 

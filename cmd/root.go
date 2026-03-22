@@ -122,7 +122,7 @@ Key Features:
   • Declarative YAML-based cluster configuration
   • Automatic GitOps repository scaffolding
   • SOPS integration for secrets management
-  • Multi-cloud provider support (OpenStack, AWS, VMware, Kind)
+  • Multi-cloud provider support (OpenStack, VMware, Kind, Baremetal)
   • Comprehensive validation and preflight checks
   • Organization-based multi-tenancy support
 
@@ -255,7 +255,7 @@ func ExecuteWithContext(ctx context.Context, version string) error {
 	rootCmd.AddCommand(NewSecretsCmd())
 	rootCmd.AddCommand(NewPluginsCmd())
 	rootCmd.AddCommand(NewVersionCmd())
-	rootCmd.AddCommand(newShellInitCmd())
+	rootCmd.AddCommand(NewShellInitCmd())
 	// Discover and attach external plugins as subcommands
 	plugins.LoadExternalPlugins(rootCmd)
 

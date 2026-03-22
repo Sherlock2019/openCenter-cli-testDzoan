@@ -15,6 +15,7 @@ package v2
 
 import (
 	"fmt"
+	"strings"
 )
 
 // Provider interface defines provider-specific validation.
@@ -24,13 +25,22 @@ type Provider interface {
 	GetProviderName() string
 }
 
+func canonicalInfrastructureProvider(provider string) string {
+	switch strings.ToLower(provider) {
+	case "vsphere":
+		return "vmware"
+	default:
+		return strings.ToLower(provider)
+	}
+}
+
 // OpenStackProvider implements provider validation for OpenStack.
 // Requirements: 4.3
 type OpenStackProvider struct{}
 
 // ValidateConfig validates OpenStack-specific configuration.
 func (p *OpenStackProvider) ValidateConfig(cfg *InfrastructureConfig) error {
-	if cfg.Provider != "openstack" {
+	if canonicalInfrastructureProvider(cfg.Provider) != "openstack" {
 		return fmt.Errorf("provider mismatch: expected openstack, got %s", cfg.Provider)
 	}
 
@@ -85,7 +95,7 @@ type AWSProvider struct{}
 
 // ValidateConfig validates AWS-specific configuration.
 func (p *AWSProvider) ValidateConfig(cfg *InfrastructureConfig) error {
-	if cfg.Provider != "aws" {
+	if canonicalInfrastructureProvider(cfg.Provider) != "aws" {
 		return fmt.Errorf("provider mismatch: expected aws, got %s", cfg.Provider)
 	}
 
@@ -137,7 +147,7 @@ type GCPProvider struct{}
 
 // ValidateConfig validates GCP-specific configuration.
 func (p *GCPProvider) ValidateConfig(cfg *InfrastructureConfig) error {
-	if cfg.Provider != "gcp" {
+	if canonicalInfrastructureProvider(cfg.Provider) != "gcp" {
 		return fmt.Errorf("provider mismatch: expected gcp, got %s", cfg.Provider)
 	}
 
@@ -192,7 +202,7 @@ type AzureProvider struct{}
 
 // ValidateConfig validates Azure-specific configuration.
 func (p *AzureProvider) ValidateConfig(cfg *InfrastructureConfig) error {
-	if cfg.Provider != "azure" {
+	if canonicalInfrastructureProvider(cfg.Provider) != "azure" {
 		return fmt.Errorf("provider mismatch: expected azure, got %s", cfg.Provider)
 	}
 
@@ -244,9 +254,60 @@ func (p *AzureProvider) GetProviderName() string {
 	return "azure"
 }
 
+// VMwareProvider implements provider validation for VMware/vSphere.
+type VMwareProvider struct{}
+
+// ValidateConfig validates VMware-specific configuration.
+func (p *VMwareProvider) ValidateConfig(cfg *InfrastructureConfig) error {
+	if canonicalInfrastructureProvider(cfg.Provider) != "vmware" {
+		return fmt.Errorf("provider mismatch: expected vmware, got %s", cfg.Provider)
+	}
+
+	if cfg.Cloud.VMware == nil {
+		return fmt.Errorf("infrastructure.cloud.vmware is required when provider is vmware")
+	}
+
+	vmware := cfg.Cloud.VMware
+	if vmware.VCenterServer == "" {
+		return fmt.Errorf("infrastructure.cloud.vmware.vcenter_server is required")
+	}
+	if vmware.Datacenter == "" {
+		return fmt.Errorf("infrastructure.cloud.vmware.datacenter is required")
+	}
+	if vmware.Datastore == "" {
+		return fmt.Errorf("infrastructure.cloud.vmware.datastore is required")
+	}
+	if vmware.Network == "" {
+		return fmt.Errorf("infrastructure.cloud.vmware.network is required")
+	}
+	if vmware.Template == "" {
+		return fmt.Errorf("infrastructure.cloud.vmware.template is required")
+	}
+
+	if cfg.Cloud.OpenStack != nil && !isEmptyOpenStackConfig(cfg.Cloud.OpenStack) {
+		return fmt.Errorf("infrastructure.cloud.openstack must be empty when provider is vmware")
+	}
+	if cfg.Cloud.AWS != nil && !isEmptyAWSConfig(cfg.Cloud.AWS) {
+		return fmt.Errorf("infrastructure.cloud.aws must be empty when provider is vmware")
+	}
+	if cfg.Cloud.GCP != nil && !isEmptyGCPConfig(cfg.Cloud.GCP) {
+		return fmt.Errorf("infrastructure.cloud.gcp must be empty when provider is vmware")
+	}
+	if cfg.Cloud.Azure != nil && !isEmptyAzureConfig(cfg.Cloud.Azure) {
+		return fmt.Errorf("infrastructure.cloud.azure must be empty when provider is vmware")
+	}
+
+	return nil
+}
+
+// GetProviderName returns the provider name.
+func (p *VMwareProvider) GetProviderName() string {
+	return "vmware"
+}
+
 // GetProvider returns the appropriate provider validator for the given provider name.
 func GetProvider(providerName string) (Provider, error) {
-	switch providerName {
+	switch canonicalInfrastructureProvider(providerName) {
 	case "openstack":
 		return &OpenStackProvider{}, nil
 	case "aws":
@@ -255,6 +316,8 @@ func GetProvider(providerName string) (Provider, error) {
 		return &GCPProvider{}, nil
 	case "azure":
 		return &AzureProvider{}, nil
+	case "vmware":
+		return &VMwareProvider{}, nil
 	default:
 		return nil, fmt.Errorf("unsupported provider: %s", providerName)
 	}

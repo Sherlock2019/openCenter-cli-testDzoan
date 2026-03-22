@@ -17,7 +17,7 @@
 //
 // The cloud package defines interfaces and types for interacting with cloud providers
 // to detect and reconcile infrastructure drift. It supports multiple cloud providers
-// through a factory pattern, allowing opencenter to work with OpenStack, AWS, and
+// through a factory pattern, allowing opencenter to work with OpenStack, VMware, and
 // other cloud platforms.
 //
 // This package is not the registry for lifecycle/bootstrap providers. Providers used
@@ -48,7 +48,7 @@
 //	// Create factory and register providers
 //	factory := cloud.NewCloudProviderFactory()
 //	factory.RegisterProvider("openstack", openstack.NewProvider(authOpts, region))
-//	factory.RegisterProvider("aws", aws.NewProvider(region, profile))
+//	factory.RegisterProvider("vmware", vmware.NewProvider())
 //
 //	// Get provider for cluster
 //	provider, err := factory.GetProvider(cfg.Infrastructure.Provider)
@@ -106,7 +106,7 @@
 //
 // Provider implementations are in subpackages:
 //   - openstack: OpenStack cloud provider
-//   - aws: AWS cloud provider
+//   - vmware: VMware vSphere cloud provider
 //
 // Each provider implements the CloudProvider interface and handles
 // provider-specific API calls and resource types.

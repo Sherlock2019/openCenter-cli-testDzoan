@@ -2,12 +2,12 @@
 
 **openCenter** is a command-line tool that transforms a single declarative YAML configuration into a production-ready Kubernetes cluster with GitOps management.
 
-It standardizes cluster bootstrapping across OpenStack, VMware, AWS, and Kind, providing configuration validation, secrets management, and automated GitOps repository generation.
+It standardizes cluster bootstrapping across OpenStack, VMware, Baremetal, and Kind, providing configuration validation, secrets management, and automated GitOps repository generation.
 
 ## What openCenter Does
 
 - **Configuration-First Workflow:** Single YAML file defines your entire cluster (infrastructure, Kubernetes, services, secrets)
-- **Multi-Provider Support:** Deploy to OpenStack, VMware vSphere, AWS, or Kind with the same configuration structure
+- **Multi-Provider Support:** Deploy to OpenStack, VMware, Baremetal, or Kind with the same configuration structure
 - **Built-in Validation:** Schema validation, business rules, and provider-specific checks catch errors before deployment
 - **GitOps Native:** Generates complete FluxCD-ready repository with Kustomize overlays for cluster-specific customization
 - **Secrets Management:** SOPS Age encryption for safe version control of sensitive data
@@ -48,7 +48,7 @@ See [Getting Started Tutorial](docs/tutorials/getting-started.md) for complete w
 - **Configuration Management:** Schema-driven with defaults, validation, and override capabilities
 - **Secrets Operations:** Generate keys, encrypt/decrypt, rotate, check expiration
 - **GitOps Repository:** Automated generation with infrastructure (Terraform/Kubespray) and applications (FluxCD/Kustomize)
-- **Provider Abstraction:** Unified interface across OpenStack, VMware, AWS, Kind
+- **Provider Abstraction:** Unified interface across OpenStack, VMware, Baremetal, and Kind
 - **Service Management:** Enable/disable platform services, customize configurations
 - **Operational Tools:** Drift detection, backup/restore, audit logging, preflight checks
 
@@ -259,7 +259,7 @@ openCenter-cli/
 │   ├── config/           # Configuration management
 │   ├── gitops/           # GitOps repository generation
 │   ├── sops/             # SOPS secrets management
-│   ├── cloud/            # Provider adapters (OpenStack, VMware, AWS)
+│   ├── cloud/            # Provider adapters (OpenStack, VMware, Kind)
 │   ├── provision/        # Provisioning logic (Terraform, Kubespray)
 │   ├── template/         # Template engine
 │   ├── di/               # Dependency injection

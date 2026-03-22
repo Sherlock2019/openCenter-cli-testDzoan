@@ -1,0 +1,78 @@
+# Example Service Plugin Manifest
+# This demonstrates the structure of a service plugin manifest file
+
+name: prometheus-stack
+version: 1.0.0
+type: monitoring
+description: Prometheus monitoring stack with Grafana and Alertmanager
+
+# Service dependencies - these services must be installed first
+dependencies:
+  - cert-manager
+  - storage-class
+
+# Templates used by this service
+templates:
+  - name: prometheus-deployment
+    path: templates/prometheus/deployment.yaml
+  - name: grafana-deployment
+    path: templates/grafana/deployment.yaml
+    condition:
+      enabled: true
+  - name: alertmanager-deployment
+    path: templates/alertmanager/deployment.yaml
+
+# Configuration schema for this service
+config:
+  # JSON Schema for configuration validation
+  schema:
+    enabled:
+      type: boolean
+      description: Enable or disable the service
+    namespace:
+      type: string
+      description: Kubernetes namespace for deployment
+    retention:
+      type: string
+      description: Data retention period
+      pattern: "^[0-9]+(d|w|m|y)$"
+    storage:
+      type: object
+      properties:
+        size:
+          type: string
+        class:
+          type: string
+
+  # Default configuration values
+  defaults:
+    enabled: true
+    namespace: monitoring
+    retention: 30d
+    storage:
+      size: 50Gi
+      class: standard
+
+  # Required configuration fields
+  required:
+    - enabled
+    - namespace
+
+  # Custom validation rules
+  validation:
+    - field: storage.size
+      type: pattern
+      operator: matches
+      value: "^[0-9]+(Gi|Mi|Ti)$"
+      message: "Storage size must be in format like 50Gi, 100Mi, or 1Ti"
+
+# Additional metadata
+metadata:
+  author: OpenCenter Team
+  homepage: https://prometheus.io
+  repository: https://github.com/prometheus/prometheus
+  license: Apache-2.0
+  tags:
+    - monitoring
+    - metrics
+    - alerting

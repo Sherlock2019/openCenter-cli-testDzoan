@@ -60,8 +60,8 @@ don't already exist, unless --no-keygen is specified.`,
   # Initialize with organization
   opencenter cluster init my-cluster --org myorg
 
-  # Initialize with custom values
-  opencenter cluster init my-cluster --org production --type aws
+  # Initialize a VMware cluster
+  opencenter cluster init my-cluster --org production --type vmware
 
   # Initialize without key generation
   opencenter cluster init my-cluster --no-keygen

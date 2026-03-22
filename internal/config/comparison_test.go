@@ -197,7 +197,7 @@ func TestCompareConfigs_ServiceMapChanges(t *testing.T) {
 	// Check that service changes were detected
 	hasServiceChanges := false
 	for _, change := range diff.Changes {
-		if strings.Contains(change.Path, "Services[cert-manager]") && strings.Contains(change.Path, "Enabled") {
+		if change.Path == "OpenCenter.Services[cert-manager].Email" && change.Type == ChangeTypeModified {
 			hasServiceChanges = true
 		}
 	}

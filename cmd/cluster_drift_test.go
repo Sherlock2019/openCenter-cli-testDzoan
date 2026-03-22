@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/opencenter-cloud/opencenter-cli/internal/cloud"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 )
@@ -64,20 +66,58 @@ func TestCreateCloudProviderFactoryRegistersCloudDriftProvidersOnly(t *testing.T
 	cfg := config.NewDefault("prod-cluster")
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://identity.example.com/v3"
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Region = "sjc3"
-	cfg.OpenCenter.Infrastructure.Cloud.AWS.Region = "us-east-1"
+	cfg.OpenCenter.Infrastructure.Cloud.VMware.VCenterServer = "vc.example.com"
+	cfg.Secrets.VSphereCsi.Username = "administrator@vsphere.local"
+	cfg.Secrets.VSphereCsi.Password = "super-secret"
 
 	factory := createCloudProviderFactory(cfg)
 
-	for _, providerName := range []string{"openstack", "aws"} {
+	for _, providerName := range []string{"openstack", "vmware"} {
 		if _, err := factory.GetProvider(providerName); err != nil {
 			t.Fatalf("expected provider %s to be registered: %v", providerName, err)
 		}
 	}
 
-	for _, providerName := range []string{"baremetal", "talos", "kind"} {
+	for _, providerName := range []string{"aws", "baremetal", "talos", "kind"} {
 		if _, err := factory.GetProvider(providerName); err == nil {
 			t.Fatalf("expected provider %s to be unavailable for drift detection", providerName)
 		}
+	}
+}
+
+func TestBuildDesiredStateVMwareUsesConfiguredNodes(t *testing.T) {
+	cfg := config.NewDefault("prod-cluster")
+	cfg.OpenCenter.Infrastructure.Provider = "vmware"
+	cfg.OpenCenter.Infrastructure.Cloud.VMware.Network = "dvpg-prod"
+	cfg.OpenCenter.Infrastructure.Cloud.VMware.Datastore = "vsanDatastore"
+	cfg.OpenCenter.Infrastructure.Cloud.VMware.Nodes = []config.VMNode{
+		{Name: "cp-01", Role: "master"},
+		{Name: "worker-01", Role: "worker"},
+	}
+
+	state := buildDesiredState(cfg)
+
+	require.Len(t, state.Servers, 2)
+	require.Len(t, state.Networks, 1)
+	require.Len(t, state.Volumes, 2)
+	require.Empty(t, state.SecurityGroups)
+	require.Empty(t, state.LoadBalancers)
+	require.Empty(t, state.FloatingIPs)
+
+	if state.Servers[0].Name != "cp-01" {
+		t.Fatalf("unexpected first vmware node name: %s", state.Servers[0].Name)
+	}
+	if state.Servers[0].Tags["role"] != "control-plane" {
+		t.Fatalf("unexpected first vmware node role: %s", state.Servers[0].Tags["role"])
+	}
+	if state.Servers[0].Networks[0] != "dvpg-prod" {
+		t.Fatalf("unexpected vmware network: %v", state.Servers[0].Networks)
+	}
+	if state.Networks[0].Name != "dvpg-prod" {
+		t.Fatalf("unexpected vmware desired network name: %s", state.Networks[0].Name)
+	}
+	if state.Volumes[0].Name != "cp-01@vsanDatastore" {
+		t.Fatalf("unexpected vmware desired datastore volume: %s", state.Volumes[0].Name)
 	}
 }
 

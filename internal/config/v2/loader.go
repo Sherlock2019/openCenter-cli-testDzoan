@@ -117,6 +117,11 @@ func (cl *ConfigLoader) parseYAML(data []byte) (*Config, error) {
 // normalize performs type coercion and field canonicalization.
 // Requirements: 16.6
 func (cl *ConfigLoader) normalize(cfg *Config) error {
+	cfg.OpenCenter.Infrastructure.Provider = canonicalInfrastructureProvider(cfg.OpenCenter.Infrastructure.Provider)
+	if cfg.Deployment.ClusterAPI != nil {
+		cfg.Deployment.ClusterAPI.Providers.Infrastructure = canonicalInfrastructureProvider(cfg.Deployment.ClusterAPI.Providers.Infrastructure)
+	}
+
 	// Handle empty string vs null for optional fields
 	// Ensure consistent representation
 

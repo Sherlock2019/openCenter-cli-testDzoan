@@ -84,7 +84,7 @@ func TestProperty_V1AllDeclaredProvidersPassValidation(t *testing.T) {
 // in the v2 InfrastructureConfig oneof tag passes validation on the Provider field.
 func TestProperty_V2AllDeclaredProvidersPassValidation(t *testing.T) {
 	// Providers declared in the v2 oneof tag on InfrastructureConfig.Provider
-	v2Providers := []string{"openstack", "aws", "gcp", "azure", "baremetal", "vsphere", "kind"}
+	v2Providers := []string{"openstack", "aws", "gcp", "azure", "baremetal", "vsphere", "vmware", "kind"}
 
 	validate := validator.New()
 

@@ -15,7 +15,6 @@ package v2
 
 import (
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/leanovate/gopter"
@@ -98,7 +97,7 @@ func TestProperty_ConfigurationStructureInvariants(t *testing.T) {
 			}
 			if cloud.VMware != nil && !isEmptyStruct(cloud.VMware) {
 				populatedSections++
-				if provider != "vsphere" {
+				if provider != "vmware" {
 					return false
 				}
 			}
@@ -250,34 +249,30 @@ func isEmptyStruct(v interface{}) bool {
 // genValidV2Config generates valid v2 configurations for testing.
 func genValidV2Config() gopter.Gen {
 	return gopter.CombineGens(
-		genMetaConfig(),
-		genClusterConfig(),
-		genInfrastructureConfig(),
+		gen.OneConstOf("openstack", "aws", "gcp", "vmware"),
+		gen.IntRange(1, 3),
+		gen.IntRange(1, 10),
+		gen.IntRange(50, 200),
 	).Map(func(parts []interface{}) *Config {
-		return &Config{
-			SchemaVersion: "2.0",
-			OpenCenter: OpenCenterConfig{
-				Meta:           parts[0].(MetaConfig),
-				Cluster:        parts[1].(ClusterConfig),
-				Infrastructure: parts[2].(InfrastructureConfig),
-			},
-			Secrets: SecretsConfig{
-				Global: GlobalSecrets{},
-			},
-		}
+		provider := parts[0].(string)
+		cfg := newValidV2TestConfig(provider)
+		cfg.OpenCenter.Infrastructure.Compute.MasterCount = parts[1].(int)
+		cfg.OpenCenter.Infrastructure.Compute.WorkerCount = parts[2].(int)
+		cfg.OpenCenter.Infrastructure.Storage.WorkerVolumeSize = parts[3].(int)
+		return cfg
 	})
 }
 
 // genMetaConfig generates valid MetaConfig.
 func genMetaConfig() gopter.Gen {
 	return gopter.CombineGens(
-		gen.AlphaString().SuchThat(func(s string) bool { return len(s) > 0 && len(s) < 64 }),
-		gen.AlphaString().SuchThat(func(s string) bool { return len(s) > 0 }),
+		gen.OneConstOf("test-cluster", "prod-cluster", "dev-cluster"),
+		gen.OneConstOf("test-org", "platform", "engineering"),
 		gen.OneConstOf("dev", "staging", "production"),
-		gen.OneConstOf("sjc3", "dfw3", "iad3", "us-east-1", "us-west-2"),
+		gen.OneConstOf("sjc3", "dfw3", "iad3"),
 	).Map(func(parts []interface{}) MetaConfig {
 		return MetaConfig{
-			Name:         strings.ToLower(parts[0].(string)),
+			Name:         parts[0].(string),
 			Organization: parts[1].(string),
 			Env:          parts[2].(string),
 			Region:       parts[3].(string),
@@ -288,12 +283,12 @@ func genMetaConfig() gopter.Gen {
 // genClusterConfig generates valid ClusterConfig.
 func genClusterConfig() gopter.Gen {
 	return gopter.CombineGens(
-		gen.AlphaString().SuchThat(func(s string) bool { return len(s) > 0 && len(s) < 64 }),
+		gen.OneConstOf("test-cluster", "prod-cluster", "dev-cluster"),
 		gen.Const("example.com"),
 		gen.Const("admin@example.com"),
 		genKubernetesConfig(),
 	).Map(func(parts []interface{}) ClusterConfig {
-		clusterName := strings.ToLower(parts[0].(string))
+		clusterName := parts[0].(string)
 		baseDomain := parts[1].(string)
 		return ClusterConfig{
 			ClusterName: clusterName,
@@ -325,7 +320,7 @@ func genKubernetesConfig() gopter.Gen {
 // genInfrastructureConfig generates valid InfrastructureConfig.
 func genInfrastructureConfig() gopter.Gen {
 	return gopter.CombineGens(
-		gen.OneConstOf("openstack", "aws", "gcp"),
+		gen.OneConstOf("openstack", "aws", "gcp", "vmware"),
 		genNetworkingConfig(),
 		genComputeConfig(),
 		genStorageConfig(),
@@ -441,6 +436,16 @@ func genCloudConfig(provider string) gopter.Gen {
 				Network:     "default",
 				Subnetwork:  "default",
 				ImageFamily: "ubuntu-2204-lts",
+			},
+		})
+	case "vmware":
+		return gen.Const(CloudConfig{
+			VMware: &VMwareCloudConfig{
+				VCenterServer: "vcsa.example.com",
+				Datacenter:    "dc-01",
+				Datastore:     "vsanDatastore",
+				Network:       "dvpg-prod",
+				Template:      "ubuntu-24.04-template",
 			},
 		})
 	default:

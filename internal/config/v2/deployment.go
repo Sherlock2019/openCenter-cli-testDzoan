@@ -118,7 +118,7 @@ type ClusterAPIConfig struct {
 // ClusterAPIProviders represents Cluster API provider configuration.
 // Requirements: 10.6
 type ClusterAPIProviders struct {
-	Infrastructure string `yaml:"infrastructure" json:"infrastructure" validate:"required,oneof=openstack aws azure vsphere metal3"`
+	Infrastructure string `yaml:"infrastructure" json:"infrastructure" validate:"required,oneof=openstack aws azure vsphere vmware metal3"`
 	Bootstrap      string `yaml:"bootstrap" json:"bootstrap" validate:"required,oneof=kubeadm talos"`
 	ControlPlane   string `yaml:"control_plane" json:"control_plane" validate:"required,oneof=kubeadm talos"`
 }

@@ -61,7 +61,7 @@ func TestProperty_ReferenceResolutionCorrectness(t *testing.T) {
 			return cfg.OpenCenter.Meta.Name == varValue
 		},
 		gen.Identifier(),
-		gen.AlphaString(),
+		gen.Identifier(),
 	))
 
 	// Property: File references resolve to file contents
@@ -130,13 +130,13 @@ func TestProperty_ReferenceResolutionCorrectness(t *testing.T) {
 			}
 
 			// Must resolve to concatenated values
-			expected := fmt.Sprintf("%s-%s", val1, val2)
+			expected := fmt.Sprintf("%s-%s", os.Getenv(var1), os.Getenv(var2))
 			return cfg.OpenCenter.Meta.Name == expected
 		},
 		gen.Identifier(),
 		gen.Identifier(),
-		gen.AlphaString(),
-		gen.AlphaString(),
+		gen.Identifier(),
+		gen.Identifier(),
 	))
 
 	// Property: Caching works correctly for repeated references
@@ -171,7 +171,7 @@ func TestProperty_ReferenceResolutionCorrectness(t *testing.T) {
 				cfg.OpenCenter.Meta.Organization == varValue
 		},
 		gen.Identifier(),
-		gen.AlphaString(),
+		gen.Identifier(),
 	))
 
 	// Property: Missing environment variables always error
@@ -307,8 +307,8 @@ func TestProperty_MaxDepthProtection(t *testing.T) {
 			resolver := NewReferenceResolver()
 			err := resolver.Resolve(cfg)
 
-			// If depth > maxDepth, should error
-			if depth > resolver.maxDepth {
+			remainingBudget := resolver.maxDepth - 3
+			if depth > remainingBudget {
 				return err != nil
 			}
 

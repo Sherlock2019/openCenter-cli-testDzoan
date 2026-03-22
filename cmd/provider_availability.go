@@ -22,7 +22,7 @@ func checkProviderAvailability(provider string) error {
 	planned := map[string]bool{"aws": true, "gcp": true, "azure": true}
 	if planned[provider] {
 		return fmt.Errorf("provider %q is planned for a future release and not yet available. "+
-			"Supported providers: openstack, vmware, kind", provider)
+			"Supported providers: openstack, vmware, kind, baremetal", provider)
 	}
 	return nil
 }

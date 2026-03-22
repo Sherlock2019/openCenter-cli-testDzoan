@@ -715,7 +715,9 @@ func (bm *backupManager) archiveDirectory(dirPath string) ([]byte, error) {
 
 // EncryptBackup encrypts a backup with a passphrase
 func EncryptBackup(backupPath, passphrase string) error {
-	bm := &backupManager{}
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fileSystem := fs.NewDefaultFileSystem(errorHandler)
+	bm := &backupManager{fileSystem: fileSystem}
 	encryptedPath := backupPath + ".enc"
 	if err := bm.encryptFile(backupPath, encryptedPath, passphrase); err != nil {
 		return err

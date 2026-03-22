@@ -80,7 +80,7 @@ This map helps:
 | [Configuration Schema](reference/configuration-schema.md) | All | Configuration file structure | All config fields | `internal/config/types*.go`, `schema/` |
 | [Default Values](reference/default-values.md) | All | Default configuration values | All defaults | `internal/config/defaults.go` |
 | [Platform Services](reference/platform-services.md) | Operator | Available services and versions | All services | `internal/config/services/` |
-| [Providers](reference/providers.md) | Operator | Infrastructure provider details | OpenStack, VMware, AWS, Kind | `internal/cloud/` |
+| [Providers](reference/providers.md) | Operator | Infrastructure provider details | OpenStack, VMware, Baremetal, Kind | `internal/cloud/` |
 | [Validation Rules](reference/validation-rules.md) | All | Configuration constraints | All validation rules | `internal/core/validation/` |
 | [Environment Variables](reference/environment-variables.md) | All | Environment configuration | All env vars | `cmd/root.go`, `internal/config/` |
 | [Exit Codes](reference/exit-codes.md) | Developer | CLI exit codes and meanings | All exit codes | `cmd/*.go` error handling |

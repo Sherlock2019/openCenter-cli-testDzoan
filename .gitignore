@@ -76,7 +76,8 @@ godoc.log
 gitea/
 .gitea_admin_token
 .gitea_newuser_token
-testdata/
+testdata/*
+!testdata/.gitkeep
 tests/features/steps/tmp/
 .mygitignore
 .vscode/

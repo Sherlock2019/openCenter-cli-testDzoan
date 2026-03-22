@@ -14,7 +14,7 @@ Welcome to the openCenter CLI documentation. openCenter is a command-line tool t
 
 ## What is openCenter?
 
-openCenter standardizes cluster bootstrapping across multiple infrastructure providers (OpenStack, VMware, AWS, Kind), providing:
+openCenter standardizes cluster bootstrapping across multiple infrastructure providers (OpenStack, VMware, Baremetal, Kind), providing:
 
 - **Configuration-First Workflow:** Single YAML file defines infrastructure, Kubernetes, services, and secrets
 - **Built-in Validation:** Schema validation, business rules, and provider-specific checks

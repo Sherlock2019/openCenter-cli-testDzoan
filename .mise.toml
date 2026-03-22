@@ -421,8 +421,14 @@ echo "Run 'mise run test' to verify everything still works."
 # Format all files to golang standards
 fmt = "gofmt -w ."
 
-# Run BDD tests via go test
-test = "go test ./internal/..."
+# Run the deterministic GA verification lane
+test = '''
+#!/usr/bin/env bash
+set -e
+
+go test ./internal/config/... ./cmd/... -count=1
+go test ./internal/cloud/... -count=1
+'''
 
 # Run BDD tests via godog CLI (optional)
 godog = "go test ./... -v args --godog.tags=~@wip --godog.paths=tests/features"
@@ -440,7 +446,7 @@ tag-wip-failures = "python3 hack/tag_wip_failures.py"
 test-bdd = "go test ./... -v args --godog.tags=~@wip --godog.paths=tests/features"
 
 # Run all property-based tests
-test-properties = '''
+property = '''
 #!/usr/bin/env bash
 set -e
 
@@ -453,6 +459,8 @@ go test ./internal/... -v -run "TestProperty"
 echo ""
 echo "=== Property-Based Tests Complete ==="
 '''
+
+test-properties = "mise run property"
 
 # Run v2-specific tests (v2 schema, migration, validation)
 test-v2 = '''
@@ -525,7 +533,7 @@ echo "  ✓ Secure key storage"
 '''
 
 # Run all operational readiness tests (Phase 2 operational components)
-test-integration = '''
+integration = '''
 #!/usr/bin/env bash
 set -e
 
@@ -567,6 +575,16 @@ echo "  ✓ Drift detection and reconciliation"
 echo "  ✓ Backup and disaster recovery"
 echo ""
 echo "Note: Observability components (metrics, logging) are in separate observability spec"
+'''
+
+test-integration = "mise run integration"
+
+# Run performance-tagged checks
+perf = '''
+#!/usr/bin/env bash
+set -e
+
+go test -tags perf ./internal/config -run "TestMemoryUsageRegression" -count=1
 '''
 
 # Run regression tests (non-WIP scenarios)

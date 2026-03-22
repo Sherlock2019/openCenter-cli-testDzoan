@@ -85,7 +85,7 @@ func TestCloudProviderFactory_GetProvider_NotFound(t *testing.T) {
 func TestCloudProviderFactory_GetProvider_ErrorMessage(t *testing.T) {
 	factory := NewCloudProviderFactory()
 	factory.RegisterProvider("openstack", &mockProvider{name: "openstack"})
-	factory.RegisterProvider("aws", &mockProvider{name: "aws"})
+	factory.RegisterProvider("vmware", &mockProvider{name: "vmware"})
 
 	_, err := factory.GetProvider("azure")
 
@@ -98,20 +98,20 @@ func TestCloudProviderFactory_MultipleProviders(t *testing.T) {
 	factory := NewCloudProviderFactory()
 
 	openstackProvider := &mockProvider{name: "openstack"}
-	awsProvider := &mockProvider{name: "aws"}
+	vmwareProvider := &mockProvider{name: "vmware"}
 
 	factory.RegisterProvider("openstack", openstackProvider)
-	factory.RegisterProvider("aws", awsProvider)
+	factory.RegisterProvider("vmware", vmwareProvider)
 
 	// Get OpenStack provider
 	result1, err := factory.GetProvider("openstack")
 	require.NoError(t, err)
 	assert.Equal(t, openstackProvider, result1)
 
-	// Get AWS provider
-	result2, err := factory.GetProvider("aws")
+	// Get VMware provider
+	result2, err := factory.GetProvider("vmware")
 	require.NoError(t, err)
-	assert.Equal(t, awsProvider, result2)
+	assert.Equal(t, vmwareProvider, result2)
 
 	// Verify they're different
 	assert.NotEqual(t, result1, result2)
@@ -156,11 +156,11 @@ func TestSeverity_String(t *testing.T) {
 func TestUnsupportedProviderError_Error(t *testing.T) {
 	err := &UnsupportedProviderError{
 		Provider:           "azure",
-		SupportedProviders: []string{"openstack", "aws"},
+		SupportedProviders: []string{"openstack", "vmware"},
 	}
 
 	message := err.Error()
 	assert.Contains(t, message, "unsupported cloud provider: azure")
 	assert.Contains(t, message, "openstack")
-	assert.Contains(t, message, "aws")
+	assert.Contains(t, message, "vmware")
 }

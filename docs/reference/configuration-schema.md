@@ -83,7 +83,7 @@ Infrastructure provider configuration.
 ```yaml
 opencenter:
   infrastructure:
-    provider: "openstack"        # Provider (openstack, vmware, aws, kind)
+    provider: "openstack"        # Canonical GA providers: openstack, vmware, kind, baremetal
     ssh_user: "ubuntu"           # SSH user for nodes
     os_version: "24"             # OS version (Ubuntu)
     server_group_affinity:       # Server group affinity
@@ -97,7 +97,7 @@ opencenter:
     k8s_api_ip: ""               # Kubernetes API IP
     cloud:                       # Provider-specific config
       openstack: {}              # OpenStack configuration
-      aws: {}                    # AWS configuration
+      vmware: {}                 # VMware configuration
 ```
 
 ### opencenter.infrastructure.cloud.openstack

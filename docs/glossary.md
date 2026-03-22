@@ -113,7 +113,7 @@ tags: [glossary, terminology, definitions]
 : Validation performed before deployment to catch issues early. openCenter provides preflight commands for connectivity, quotas, and provider constraints.
 
 **Provider**
-: Infrastructure platform for cluster deployment. openCenter supports OpenStack, VMware, AWS, and Kind.
+: Infrastructure platform for cluster deployment. openCenter’s GA infrastructure providers are OpenStack, VMware, Baremetal, and Kind.
 
 ## S
 
