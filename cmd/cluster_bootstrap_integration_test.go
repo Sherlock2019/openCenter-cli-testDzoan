@@ -30,6 +30,8 @@ import (
 )
 
 // TestClusterBootstrapIntegration tests the cluster bootstrap command with DI container
+// broken: full-suite run fails on generated GitOps source contracts (repo casing, ref strategy,
+// sync interval, and cert-manager kustomization indentation); see docs/test-results.md.
 func TestClusterBootstrapIntegration(t *testing.T) {
 	dir, stateDir, clusterDir := prepareKindBootstrapFixture(t, "kind-bootstrap-int")
 
@@ -317,6 +319,8 @@ func TestClusterBootstrapOptions(t *testing.T) {
 }
 
 // TestClusterBootstrapWithExistingCluster tests bootstrap with an existing cluster
+// broken: full-suite run fails on generated GitOps source contracts (repo casing, ref strategy,
+// sync interval, and cert-manager kustomization indentation); see docs/test-results.md.
 func TestClusterBootstrapWithExistingCluster(t *testing.T) {
 	_, stateDir, _ := prepareKindBootstrapFixture(t, "kind-existing-int")
 

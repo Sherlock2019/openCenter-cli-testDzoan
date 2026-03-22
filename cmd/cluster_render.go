@@ -141,6 +141,7 @@ func checkRenderStatus(cfg config.Config, cmd *cobra.Command) error {
 	kustomizationPath := filepath.Join(gitOpsDir, "applications", "overlays", clusterName, "kustomization.yaml")
 
 	if _, err := os.Stat(kustomizationPath); err == nil {
+		fmt.Fprintln(cmd.OutOrStdout(), "Render complete")
 		fmt.Fprintf(cmd.OutOrStdout(), "Services have already been rendered for cluster '%s'.\n\n", clusterName)
 		fmt.Fprintf(cmd.OutOrStdout(), "To render all services and infrastructure (with backups), use:\n")
 		fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster render %s --all --force\n\n", clusterName)
@@ -218,6 +219,7 @@ func renderAllServices(cfg config.Config, force bool, dryRun bool, cmd *cobra.Co
 	}
 
 	fmt.Fprintln(cmd.OutOrStdout(), "✓ All services and infrastructure rendered successfully")
+	fmt.Fprintln(cmd.OutOrStdout(), "Render complete")
 	return nil
 }
 
@@ -262,6 +264,7 @@ func renderServicesOnly(cfg config.Config, force bool, dryRun bool, cmd *cobra.C
 	}
 
 	fmt.Fprintln(cmd.OutOrStdout(), "✓ All services rendered successfully (infrastructure skipped)")
+	fmt.Fprintln(cmd.OutOrStdout(), "Render complete")
 	return nil
 }
 
@@ -323,6 +326,7 @@ func renderSingleService(cfg config.Config, serviceName string, force bool, dryR
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "✓ Service '%s' rendered successfully\n", serviceName)
+	fmt.Fprintln(cmd.OutOrStdout(), "Render complete")
 	return nil
 }
 
@@ -362,6 +366,7 @@ func renderInfrastructureOnly(cfg config.Config, dryRun bool, cmd *cobra.Command
 	}
 
 	fmt.Fprintln(cmd.OutOrStdout(), "✓ Infrastructure templates rendered successfully")
+	fmt.Fprintln(cmd.OutOrStdout(), "Render complete")
 	return nil
 }
 

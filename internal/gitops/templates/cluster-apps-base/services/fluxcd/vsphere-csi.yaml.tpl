@@ -10,7 +10,7 @@ spec:
   dependsOn:
     - name: sources
       namespace: flux-system
-  interval: 15m
+  interval: 5m
   retryInterval: 1m
   timeout: 5m
   sourceRef:
@@ -37,7 +37,7 @@ metadata:
   name: vsphere-csi-override
   namespace: flux-system
 spec:
-  interval: 15m
+  interval: 5m
   retryInterval: 1m
   timeout: 5m
   sourceRef:

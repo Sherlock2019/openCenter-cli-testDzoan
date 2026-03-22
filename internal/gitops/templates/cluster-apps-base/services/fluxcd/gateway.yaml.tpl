@@ -10,7 +10,7 @@ spec:
       namespace: flux-system
     - name: envoy-gateway-api-base
       namespace: flux-system
-  interval: 15m
+  interval: 5m
   retryInterval: 1m
   timeout: 10m
   path: ./applications/overlays/{{ .OpenCenter.Cluster.ClusterName }}/services/gateway/

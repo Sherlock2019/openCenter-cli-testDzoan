@@ -36,7 +36,9 @@ func TestProperty_LockAcquisitionAndRelease(t *testing.T) {
 				Backend:        "file",
 				LockDir:        lockDir,
 				DefaultTTL:     time.Duration(ttlSeconds) * time.Second,
-				AcquireTimeout: 1 * time.Second,
+				// Keep the acquire timeout well below the minimum generated TTL so a
+				// second acquire attempt cannot succeed simply by waiting for expiry.
+				AcquireTimeout: 100 * time.Millisecond,
 			}
 
 			lm, err := NewLockManager(config)

@@ -5,7 +5,7 @@ metadata:
   name: opencenter-keycloak-config
   namespace: flux-system
 spec:
-  interval: 10m
+  interval: 15m
   url: {{ .OpenCenter.GitOps.GitURL }}
   ref:
     branch: {{ .OpenCenter.GitOps.GitBranch }}

@@ -418,7 +418,7 @@ func (s *ValidateService) FormatResultGrouped(result *ValidationResult, provider
 	var out strings.Builder
 
 	if result.Valid {
-		out.WriteString("✓ Validation passed\n")
+		out.WriteString("✓ Validation successful\n")
 		out.WriteString(s.formatDetails(result))
 		if len(result.Warnings) > 0 {
 			out.WriteString(s.formatWarnings(result.Warnings))

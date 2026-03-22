@@ -131,7 +131,7 @@ func (cl *ConfigLoader) normalize(cfg *Config) error {
 	}
 
 	if cfg.OpenCenter.GitOps.FluxInterval == "" {
-		cfg.OpenCenter.GitOps.FluxInterval = "15m"
+		cfg.OpenCenter.GitOps.FluxInterval = "5m"
 	}
 
 	// Normalize deployment settings

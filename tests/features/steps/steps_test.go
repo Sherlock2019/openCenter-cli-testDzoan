@@ -101,6 +101,21 @@ func TestFeatures(t *testing.T) {
 				// Clean up environment variables
 				os.Unsetenv("OPENCENTER_CONFIG_DIR")
 				os.Unsetenv("OPENCENTER_TEST_TMP")
+				if w.oldClusterEnv != "" {
+					os.Setenv("OPENCENTER_CLUSTER", w.oldClusterEnv)
+				} else {
+					os.Unsetenv("OPENCENTER_CLUSTER")
+				}
+				if w.oldSessionEnv != "" {
+					os.Setenv("OPENCENTER_SESSION_FILE", w.oldSessionEnv)
+				} else {
+					os.Unsetenv("OPENCENTER_SESSION_FILE")
+				}
+				if w.oldSessionID != "" {
+					os.Setenv("OPENCENTER_SESSION_ID", w.oldSessionID)
+				} else {
+					os.Unsetenv("OPENCENTER_SESSION_ID")
+				}
 
 				// Clean up temporary directories
 				if w.tmpDir != "" {
@@ -125,6 +140,9 @@ func TestFeatures(t *testing.T) {
 				w.answers = nil
 				w.pendingChoice = ""
 				w.cwd = ""
+				w.oldClusterEnv = ""
+				w.oldSessionEnv = ""
+				w.oldSessionID = ""
 
 				return ctx, err
 			})

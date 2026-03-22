@@ -1,16 +1,14 @@
-Feature: Provider preflight checks
-
-  Background:
-    Given an empty directory "<<tmp>>/conf"
-
+Feature:Providerpreflightchecks
+Background:
+Givenanemptydirectory "<<tmp>>/conf"
   @preflight
-  Scenario: Preflight runs for the selected cluster
-    Given a file "<<tmp>>/conf/demo.yaml" with content:
-      """
-      opencenter:
-        cluster:
-          cluster_name: demo
-      """
-    And I run "opencenter cluster select demo --config-dir <<tmp>>/conf"
-    When I run "opencenter cluster preflight --config-dir <<tmp>>/conf"
-    Then stdout should contain "Preflight complete."
+Scenario:Preflightrunsfortheselectedcluster
+Givenafile "<<tmp>>/conf/demo.yaml"withcontent:
+  """
+opencenter:
+cluster:
+cluster_name:demo
+  """
+AndIrun "opencenterclusterselectdemo --config-dir <<tmp>>/conf"
+WhenIrun "opencenterclusterpreflight --config-dir <<tmp>>/conf"
+Thenstdoutshouldcontain "Preflightcomplete."

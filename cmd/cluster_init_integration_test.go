@@ -227,6 +227,143 @@ func TestClusterInitIntegrationKindProvider(t *testing.T) {
 	}
 }
 
+func TestClusterInitSupportsDottedOverrides(t *testing.T) {
+	dir := t.TempDir()
+	prepareCommandTestEnv(t, dir)
+
+	cmd := newClusterInitCmd()
+	var stdout, stderr bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{
+		"flag-init",
+		"--opencenter.meta.organization=legacy-org",
+		"--opencenter.gitops.git_dir=/opt/opencenter/flag-init",
+		"--opencenter.cluster.kubernetes.master_count=5",
+		"--no-keygen",
+	})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("cluster init failed: %v\nstderr: %s", err, stderr.String())
+	}
+
+	configPath := filepath.Join(dir, "clusters", "legacy-org", ".flag-init-config.yaml")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+
+	var cfg config.Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		t.Fatalf("unmarshal config: %v", err)
+	}
+
+	if cfg.OpenCenter.Meta.Organization != "legacy-org" {
+		t.Fatalf("expected deprecated organization alias to set legacy-org, got %q", cfg.OpenCenter.Meta.Organization)
+	}
+	if cfg.OpenCenter.GitOps.GitDir != "/opt/opencenter/flag-init" {
+		t.Fatalf("expected explicit git_dir to be preserved, got %q", cfg.OpenCenter.GitOps.GitDir)
+	}
+	if cfg.OpenCenter.Cluster.Kubernetes.MasterCount != 5 {
+		t.Fatalf("expected master_count 5, got %d", cfg.OpenCenter.Cluster.Kubernetes.MasterCount)
+	}
+	if !strings.Contains(stdout.String(), "/opt/opencenter/flag-init") {
+		t.Fatalf("expected result message to mention explicit git_dir, got %q", stdout.String())
+	}
+}
+
+func TestClusterInitOrgFlagOverridesDeprecatedAlias(t *testing.T) {
+	dir := t.TempDir()
+	prepareCommandTestEnv(t, dir)
+
+	cmd := newClusterInitCmd()
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{
+		"org-precedence",
+		"--org", "flag-org",
+		"--opencenter.meta.organization=legacy-org",
+		"--no-keygen",
+	})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("cluster init failed: %v\nstderr: %s", err, stderr.String())
+	}
+
+	configPath := filepath.Join(dir, "clusters", "flag-org", ".org-precedence-config.yaml")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+
+	var cfg config.Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		t.Fatalf("unmarshal config: %v", err)
+	}
+
+	if cfg.OpenCenter.Meta.Organization != "flag-org" {
+		t.Fatalf("expected --org to win over deprecated alias, got %q", cfg.OpenCenter.Meta.Organization)
+	}
+}
+
+func TestClusterInitFullSchemaPreservesLocalExamples(t *testing.T) {
+	dir := t.TempDir()
+	prepareCommandTestEnv(t, dir)
+
+	cmd := newClusterInitCmd()
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"full-one", "--full-schema", "--no-keygen"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("cluster init failed: %v\nstderr: %s", err, stderr.String())
+	}
+
+	configPath := filepath.Join(dir, "clusters", "opencenter", ".full-one-config.yaml")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+
+	if !strings.Contains(string(data), "local.") {
+		t.Fatalf("expected full-schema config to retain local examples, got:\n%s", string(data))
+	}
+}
+
+func TestClusterInitNoSOPSKeygenLeavesSOPSPathEmpty(t *testing.T) {
+	dir := t.TempDir()
+	prepareCommandTestEnv(t, dir)
+
+	cmd := newClusterInitCmd()
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"no-sops", "--no-sops-keygen"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("cluster init failed: %v\nstderr: %s", err, stderr.String())
+	}
+
+	configPath := filepath.Join(dir, "clusters", "opencenter", ".no-sops-config.yaml")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+
+	var cfg config.Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		t.Fatalf("unmarshal config: %v", err)
+	}
+
+	if cfg.Secrets.SopsAgeKeyFile != "" {
+		t.Fatalf("expected empty SOPS key path when key generation is disabled, got %q", cfg.Secrets.SopsAgeKeyFile)
+	}
+
+	sopsKeyPath := filepath.Join(dir, "clusters", "opencenter", "secrets", "age", "keys", "no-sops-key.txt")
+	if _, err := os.Stat(sopsKeyPath); !os.IsNotExist(err) {
+		t.Fatalf("expected no SOPS key to be generated at %s", sopsKeyPath)
+	}
+}
+
 // TestClusterInitWithDIContainer tests that the DI container is properly set up
 func TestClusterInitWithDIContainer(t *testing.T) {
 	// Set up temporary config directory

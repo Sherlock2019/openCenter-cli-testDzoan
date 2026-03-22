@@ -9,12 +9,6 @@ spec:
   {{- $service := index .OpenCenter.Services "openstack-ccm" }}
   url: {{ $service.Uri | default .OpenCenter.GitOps.GitOpsBaseRepo }}
   ref:
-  {{- if $service.Release }}
-  tag: {{ $service.Release }}
-  {{- else if .OpenCenter.GitOps.GitOpsBaseRelease }}
-  tag: {{ .OpenCenter.GitOps.GitOpsBaseRelease }}
-  {{- else }}
-  branch: {{ $service.Branch | default .OpenCenter.GitOps.GitOpsBranch | default "main" }}
-  {{- end }}
+    branch: {{ $service.Branch | default .OpenCenter.GitOps.GitOpsBranch | default "main" }}
   secretRef:
-  name: opencenter-base
+    name: opencenter-base

@@ -51,6 +51,9 @@ type world struct {
 	answers       map[string]string
 	pendingChoice string
 	cwd           string
+	oldClusterEnv string
+	oldSessionEnv string
+	oldSessionID  string
 }
 
 // Helper functions for ConfigurationManager operations in tests
@@ -125,6 +128,12 @@ func (w *world) isolateConfigDir() error {
 
 	// Set the environment variable for the CLI to use
 	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
+	w.oldClusterEnv = os.Getenv("OPENCENTER_CLUSTER")
+	w.oldSessionEnv = os.Getenv("OPENCENTER_SESSION_FILE")
+	w.oldSessionID = os.Getenv("OPENCENTER_SESSION_ID")
+	os.Unsetenv("OPENCENTER_CLUSTER")
+	os.Unsetenv("OPENCENTER_SESSION_FILE")
+	os.Unsetenv("OPENCENTER_SESSION_ID")
 
 	return nil
 }
@@ -143,7 +152,7 @@ func (w *world) runOpenCenter(args []string) error {
 		cmd.Dir = w.tmpDir
 	}
 	// set environment: ensure OPENCENTER_CONFIG_DIR is set
-	env := os.Environ()
+	env := filteredScenarioEnv(os.Environ())
 	// propagate config dir
 	env = append(env, fmt.Sprintf("OPENCENTER_CONFIG_DIR=%s", w.configDir))
 	if w.tmpDir != "" {
@@ -181,6 +190,19 @@ func (w *world) pathFromFeature(p string) string {
 		return filepath.Join(w.configDir, suffix)
 	}
 	return p
+}
+
+func filteredScenarioEnv(env []string) []string {
+	filtered := make([]string, 0, len(env))
+	for _, entry := range env {
+		if strings.HasPrefix(entry, "OPENCENTER_CLUSTER=") ||
+			strings.HasPrefix(entry, "OPENCENTER_SESSION_FILE=") ||
+			strings.HasPrefix(entry, "OPENCENTER_SESSION_ID=") {
+			continue
+		}
+		filtered = append(filtered, entry)
+	}
+	return filtered
 }
 
 // resolveClusterConfigPath attempts to find a cluster configuration file
@@ -248,11 +270,44 @@ func normalizeConfigYAML(raw string) string {
 	if err := yaml.Unmarshal([]byte(raw), &data); err != nil {
 		return raw
 	}
-	updated, changed := normalizeLegacyConfigMap(data)
-	if !changed {
+
+	if version, ok := data["schema_version"].(string); ok && strings.TrimSpace(version) != "" {
 		return raw
 	}
-	out, err := yaml.Marshal(updated)
+	if opencenter, ok := data["opencenter"].(map[string]any); ok {
+		if _, hasMeta := opencenter["meta"]; hasMeta {
+			return raw
+		}
+	}
+
+	updated, _ := normalizeLegacyConfigMap(data)
+	clusterName := nestedStringValue(updated, "opencenter", "cluster", "cluster_name")
+	if clusterName == "" {
+		return raw
+	}
+
+	provider := nestedStringValue(updated, "opencenter", "infrastructure", "provider")
+	baseCfg, err := config.NewProviderDefault(clusterName, provider)
+	if err != nil {
+		return raw
+	}
+
+	defaultData, err := baseCfg.ToJSON()
+	if err != nil {
+		return raw
+	}
+
+	merged := map[string]any{}
+	if err := json.Unmarshal(defaultData, &merged); err != nil {
+		return raw
+	}
+
+	deepMerge(merged, updated)
+	// BDD fixtures target the current v2 CLI contract, even when the
+	// provider-default seed still carries a legacy schema marker.
+	merged["schema_version"] = "2.0"
+
+	out, err := yaml.Marshal(merged)
 	if err != nil {
 		return raw
 	}
@@ -307,6 +362,24 @@ func normalizeLegacyConfigMap(src map[string]any) (map[string]any, bool) {
 	}
 	convert["opencenter"] = opencenter
 	return convert, true
+}
+
+func nestedStringValue(data map[string]any, parts ...string) string {
+	var current any = data
+	for _, part := range parts {
+		next, ok := current.(map[string]any)
+		if !ok {
+			return ""
+		}
+		current = next[part]
+	}
+
+	value, ok := current.(string)
+	if !ok {
+		return ""
+	}
+
+	return strings.TrimSpace(value)
 }
 
 // createCluster writes a minimal cluster YAML with defaults for the
@@ -500,38 +573,27 @@ func (w *world) iRunCommand(arg string) error {
 	for i, field := range fields {
 		fields[i] = w.replaceTmp(field)
 	}
+
+	for i, field := range fields {
+		if field == "--config-dir" && i+1 < len(fields) {
+			w.configDir = fields[i+1]
+			break
+		}
+		if strings.HasPrefix(field, "--config-dir=") {
+			w.configDir = strings.TrimPrefix(field, "--config-dir=")
+			break
+		}
+	}
 	return w.runOpenCenter(fields)
 }
 
 func (w *world) aFileShouldExist(path string) error {
 	p := w.pathFromFeature(path)
-	if _, err := os.Stat(p); err != nil {
-		// If the file doesn't exist at the old location, check if it's a cluster config file
-		// and look for it in the new directory structure
-		if strings.Contains(p, "/conf/") && strings.HasSuffix(p, ".yaml") {
-			fileName := filepath.Base(p)
-			clusterName := strings.TrimSuffix(fileName, ".yaml")
-
-			// Try to resolve using the cluster config path resolution
-			if resolvedPath, resolveErr := w.resolveClusterConfigPath(clusterName); resolveErr == nil {
-				w.lastFile = resolvedPath
-				return nil
-			}
-
-			// Fallback to legacy directory structure check
-			confDir := filepath.Dir(p)
-			newPath := filepath.Join(confDir, "clusters", clusterName, "."+clusterName+"-config.yaml")
-
-			if _, newErr := os.Stat(newPath); newErr == nil {
-				// File exists in new location
-				w.lastFile = newPath
-				return nil
-			}
-		}
+	resolvedPath, err := w.resolveFeatureFilePath(p)
+	if err != nil {
 		return err
 	}
-	// remember last file for subsequent content checks
-	w.lastFile = p
+	w.lastFile = resolvedPath
 	return nil
 }
 
@@ -547,7 +609,11 @@ func (w *world) aDirectoryShouldExist(path string) error {
 
 func (w *world) theFileShouldContain(path, substring string) error {
 	p := w.pathFromFeature(path)
-	data, err := os.ReadFile(p)
+	resolvedPath, err := w.resolveFeatureFilePath(p)
+	if err != nil {
+		return err
+	}
+	data, err := os.ReadFile(resolvedPath)
 	if err != nil {
 		return err
 	}
@@ -561,7 +627,7 @@ func (w *world) theFileShouldContain(path, substring string) error {
 		if alt != substring && strings.Contains(content, alt) {
 			return nil
 		}
-		return fmt.Errorf("expected %s to contain %q", p, substring)
+		return fmt.Errorf("expected %s to contain %q", resolvedPath, substring)
 	}
 	return nil
 }
@@ -628,6 +694,11 @@ func (w *world) stdoutShouldContain(expected string) error {
 
 func (w *world) aFileShouldNotExist(path string) error {
 	p := w.pathFromFeature(path)
+	if resolvedPath, err := w.resolveFeatureFilePath(p); err == nil {
+		return fmt.Errorf("file %s exists, but should not", resolvedPath)
+	} else if !os.IsNotExist(err) && !strings.Contains(err.Error(), "cluster configuration not found") {
+		return err
+	}
 	if _, err := os.Stat(p); err == nil {
 		return fmt.Errorf("file %s exists, but should not", p)
 	} else if !os.IsNotExist(err) {
@@ -808,33 +879,93 @@ func (w *world) aFileWithContent(path string, content *godog.DocString) error {
 	// Default behavior: create file at the specified path
 	// This supports both flat file structure and organization structure
 	// depending on what path the test specifies
-	dir := filepath.Dir(p)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return err
-	}
 	body := w.replaceTmp(content.Content)
 	if ext := strings.ToLower(filepath.Ext(p)); ext == ".yaml" || ext == ".yml" {
 		body = normalizeConfigYAML(body)
 	}
+
+	if canonicalPath, clusterName, organization, ok := w.canonicalClusterFixturePath(p, body); ok {
+		p = canonicalPath
+		if err := w.ensureCanonicalClusterFixtureLayout(filepath.Dir(canonicalPath), clusterName, organization); err != nil {
+			return err
+		}
+	}
+
+	dir := filepath.Dir(p)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
 	return os.WriteFile(p, []byte(body), 0644)
+}
+
+func (w *world) canonicalClusterFixturePath(path, body string) (string, string, string, bool) {
+	if ext := strings.ToLower(filepath.Ext(path)); ext != ".yaml" && ext != ".yml" {
+		return "", "", "", false
+	}
+	if filepath.Base(path) == "config.yaml" {
+		return "", "", "", false
+	}
+	if strings.Contains(path, string(filepath.Separator)+"clusters"+string(filepath.Separator)) {
+		return "", "", "", false
+	}
+	if !strings.Contains(path, string(filepath.Separator)+"conf"+string(filepath.Separator)) {
+		return "", "", "", false
+	}
+
+	var cfg config.Config
+	_ = yaml.Unmarshal([]byte(body), &cfg)
+
+	clusterName := cfg.OpenCenter.Cluster.ClusterName
+	if clusterName == "" {
+		clusterName = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+	}
+	if clusterName == "" {
+		return "", "", "", false
+	}
+
+	organization := cfg.OpenCenter.Meta.Organization
+	if organization == "" {
+		organization = "opencenter"
+	}
+
+	baseDir := filepath.Dir(path)
+	return filepath.Join(baseDir, "clusters", organization, "."+clusterName+"-config.yaml"), clusterName, organization, true
+}
+
+func (w *world) ensureCanonicalClusterFixtureLayout(orgDir, clusterName, organization string) error {
+	if clusterName == "" {
+		return nil
+	}
+
+	dirs := []string{
+		filepath.Join(orgDir, "infrastructure", "clusters", clusterName),
+		filepath.Join(orgDir, "applications", "overlays", clusterName),
+		filepath.Join(orgDir, "secrets", "age", "keys"),
+		filepath.Join(orgDir, "secrets", "ssh"),
+	}
+
+	for _, dir := range dirs {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return err
+		}
+	}
+
+	if organization == "" {
+		return nil
+	}
+
+	return nil
 }
 
 func (w *world) theFileShouldMatchRegex(path, pattern string) error {
 	p := w.replaceTmp(path)
-	content, err := os.ReadFile(p)
+	resolvedPath, err := w.resolveFeatureFilePath(p)
 	if err != nil {
-		// Support ".active" fallback when feature uses "active"
-		base := filepath.Base(p)
-		if !strings.HasPrefix(base, ".") {
-			alt := filepath.Join(filepath.Dir(p), "."+base)
-			if data, e2 := os.ReadFile(alt); e2 == nil {
-				content = data
-			} else {
-				return err
-			}
-		} else {
-			return err
-		}
+		return err
+	}
+	content, err := os.ReadFile(resolvedPath)
+	if err != nil {
+		return err
 	}
 	// Normalize common PCRE shorthand to Go's RE2 (e.g., \s)
 	// Handle both literal "\\s" and "\s" occurrences from feature files.
@@ -845,9 +976,39 @@ func (w *world) theFileShouldMatchRegex(path, pattern string) error {
 		return err
 	}
 	if !matched {
-		return fmt.Errorf("file content of %s (%q) did not match %s", path, string(content), pattern)
+		return fmt.Errorf("file content of %s (%q) did not match %s", resolvedPath, string(content), pattern)
 	}
 	return nil
+}
+
+func (w *world) resolveFeatureFilePath(path string) (string, error) {
+	if _, err := os.Stat(path); err == nil {
+		return path, nil
+	}
+
+	base := filepath.Base(path)
+	if strings.Contains(path, string(filepath.Separator)+"conf"+string(filepath.Separator)) && strings.HasSuffix(path, ".yaml") {
+		clusterName := strings.TrimSuffix(base, filepath.Ext(base))
+		if resolvedPath, err := w.resolveClusterConfigPath(clusterName); err == nil {
+			return resolvedPath, nil
+		}
+	}
+
+	activeCandidates := []string{
+		filepath.Join(filepath.Dir(path), "clusters", ".active"),
+		filepath.Join(filepath.Dir(path), ".active"),
+	}
+	if !strings.HasPrefix(base, ".") {
+		activeCandidates = append(activeCandidates, filepath.Join(filepath.Dir(path), "."+base))
+	}
+
+	for _, candidate := range activeCandidates {
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate, nil
+		}
+	}
+
+	return "", os.ErrNotExist
 }
 
 func (w *world) theExitCodeShouldNotBe(code int) error {

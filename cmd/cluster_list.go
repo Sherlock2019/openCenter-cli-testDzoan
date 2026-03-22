@@ -61,6 +61,7 @@ func newClusterListCmd() *cobra.Command {
 				activeCluster = ""
 			} else {
 				config.Debugf("cluster list: active cluster: %s", activeCluster)
+				activeCluster = normalizeClusterDisplayName(activeCluster)
 			}
 
 			jsonOutput, _ := cmd.Flags().GetBool("json")

@@ -282,6 +282,8 @@ func initTestClusterForProperty3(t *testing.T, dir, clusterName, organization st
 // TestProperty_SetupProducesRequiredDirectoryStructure verifies that SetupService.Setup()
 // creates the expected GitOps directory structure containing infrastructure/,
 // applications/, and secrets/ subdirectories for any valid cluster configuration.
+// broken: full-suite run fails on generated GitOps source contracts (repo casing, ref strategy,
+// sync interval, and cert-manager kustomization indentation); see docs/test-results.md.
 func TestProperty_SetupProducesRequiredDirectoryStructure(t *testing.T) {
 	// Test fixture cluster names — valid names per the cluster name validator pattern
 	// (lowercase alphanumeric start/end, hyphens allowed in middle)

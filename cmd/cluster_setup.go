@@ -72,9 +72,12 @@ func runClusterSetup(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	organization := ""
+
 	// Reject planned providers that are not yet available
 	cfg, err := loadConfigV2Only(name)
 	if err == nil {
+		organization = cfg.OpenCenter.Meta.Organization
 		if err := checkProviderAvailability(cfg.OpenCenter.Infrastructure.Provider); err != nil {
 			return err
 		}
@@ -94,6 +97,7 @@ func runClusterSetup(cmd *cobra.Command, args []string) error {
 
 	opts := cluster.SetupOptions{
 		ClusterName:    name,
+		Organization:   organization,
 		DryRun:         dryRun,
 		SkipValidation: skipValidation,
 		Force:          force,

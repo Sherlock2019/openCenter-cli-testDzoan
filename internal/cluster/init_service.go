@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	configflags "github.com/opencenter-cloud/opencenter-cli/internal/config/flags"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 	"github.com/opencenter-cloud/opencenter-cli/internal/sops"
@@ -128,7 +129,7 @@ func (s *InitService) Initialize(ctx context.Context, opts InitOptions) (*InitRe
 	}
 
 	// Check if cluster exists and handle force flag
-	if err := s.checkExistingCluster(clusterPaths, opts.Force); err != nil {
+	if err := s.checkExistingCluster(clusterPaths, opts.ClusterName, opts.Organization, opts.Force); err != nil {
 		return nil, err
 	}
 
@@ -176,7 +177,7 @@ func (s *InitService) Initialize(ctx context.Context, opts InitOptions) (*InitRe
 	}
 
 	// Save configuration
-	if err := s.saveConfig(ctx, cfg, clusterPaths.ConfigPath); err != nil {
+	if err := s.saveConfig(ctx, cfg, configMap, clusterPaths.ConfigPath, shouldPreserveRawConfig(configMap)); err != nil {
 		return nil, fmt.Errorf("saving config: %w", err)
 	}
 
@@ -189,7 +190,7 @@ func (s *InitService) Initialize(ctx context.Context, opts InitOptions) (*InitRe
 	}
 
 	// Build result message
-	result.Message = s.buildResultMessage(clusterPaths, opts.Organization, result.KeysGenerated)
+	result.Message = s.buildResultMessage(clusterPaths, opts.Organization, cfg.OpenCenter.GitOps.GitDir, result.KeysGenerated)
 
 	return result, nil
 }
@@ -223,10 +224,10 @@ func (s *InitService) validateOrganization(ctx context.Context, organization str
 }
 
 // checkExistingCluster checks if cluster already exists and handles force flag
-func (s *InitService) checkExistingCluster(clusterPaths *paths.ClusterPaths, force bool) error {
+func (s *InitService) checkExistingCluster(clusterPaths *paths.ClusterPaths, clusterName, organization string, force bool) error {
 	if _, err := os.Stat(clusterPaths.ClusterDir); err == nil {
 		if !force {
-			return fmt.Errorf("cluster directory already exists at %s, use --force to overwrite", clusterPaths.ClusterDir)
+			return fmt.Errorf("cluster '%s' already exists in organization '%s' at %s, use --force to overwrite", clusterName, organization, clusterPaths.ClusterDir)
 		}
 		// If force is true, we'll overwrite the config but preserve keys
 	}
@@ -348,9 +349,15 @@ func (s *InitService) createDefaultConfig(opts InitOptions) (config.Config, map[
 		return config.Config{}, nil, fmt.Errorf("marshaling default config: %w", err)
 	}
 
-	configMap = make(map[string]any)
-	if err := yaml.Unmarshal(data, &configMap); err != nil {
+	cfgMap := make(map[string]any)
+	if err := yaml.Unmarshal(data, &cfgMap); err != nil {
 		return config.Config{}, nil, fmt.Errorf("rebuilding default config map: %w", err)
+	}
+
+	if opts.FullSchema {
+		deepMergeConfigMap(configMap, cfgMap)
+	} else {
+		configMap = cfgMap
 	}
 
 	return cfg, configMap, nil
@@ -361,21 +368,13 @@ func (s *InitService) applyOverrides(cfg *config.Config, configMap map[string]an
 	// Apply organization
 	if opts.Organization != "" {
 		cfg.OpenCenter.Meta.Organization = opts.Organization
-		if opencenter, ok := configMap["opencenter"].(map[string]any); ok {
-			if meta, ok := opencenter["meta"].(map[string]any); ok {
-				meta["organization"] = opts.Organization
-			}
-		}
+		setNestedConfigValue(configMap, opts.Organization, "opencenter", "meta", "organization")
 	}
 
 	// Apply provider
 	if opts.Provider != "" {
 		cfg.OpenCenter.Infrastructure.Provider = opts.Provider
-		if opencenter, ok := configMap["opencenter"].(map[string]any); ok {
-			if infrastructure, ok := opencenter["infrastructure"].(map[string]any); ok {
-				infrastructure["provider"] = opts.Provider
-			}
-		}
+		setNestedConfigValue(configMap, opts.Provider, "opencenter", "infrastructure", "provider")
 	}
 
 	// Apply CLI config defaults
@@ -383,11 +382,23 @@ func (s *InitService) applyOverrides(cfg *config.Config, configMap map[string]an
 	if cfg.OpenCenter.Meta.Region == "" || cfg.OpenCenter.Meta.Region == "sjc3" {
 		if cliConfig.Defaults.Region != "" {
 			cfg.OpenCenter.Meta.Region = cliConfig.Defaults.Region
+			setNestedConfigValue(configMap, cliConfig.Defaults.Region, "opencenter", "meta", "region")
 		}
 	}
 	if cfg.OpenCenter.Meta.Env == "" || cfg.OpenCenter.Meta.Env == "dev" {
 		if cliConfig.Defaults.Environment != "" {
 			cfg.OpenCenter.Meta.Env = cliConfig.Defaults.Environment
+			setNestedConfigValue(configMap, cliConfig.Defaults.Environment, "opencenter", "meta", "env")
+		}
+	}
+
+	if len(opts.FlagOverrides) > 0 {
+		integration, err := configflags.NewCLIIntegration()
+		if err != nil {
+			return fmt.Errorf("creating flag integration: %w", err)
+		}
+		if err := integration.ProcessFlags(opts.FlagOverrides, cfg, configMap); err != nil {
+			return fmt.Errorf("applying dotted overrides: %w", err)
 		}
 	}
 
@@ -396,12 +407,9 @@ func (s *InitService) applyOverrides(cfg *config.Config, configMap map[string]an
 
 // updateConfigPaths updates configuration with resolved paths
 func (s *InitService) updateConfigPaths(cfg *config.Config, configMap map[string]any, clusterPaths *paths.ClusterPaths, opts InitOptions) {
-	// Update GitOps directory
-	cfg.OpenCenter.GitOps.GitDir = clusterPaths.GitOpsDir
-	if opencenter, ok := configMap["opencenter"].(map[string]any); ok {
-		if gitops, ok := opencenter["gitops"].(map[string]any); ok {
-			gitops["git_dir"] = clusterPaths.GitOpsDir
-		}
+	if !hasExplicitConfigValue(configMap, opts, "opencenter", "gitops", "git_dir") {
+		cfg.OpenCenter.GitOps.GitDir = clusterPaths.GitOpsDir
+		setNestedConfigValue(configMap, clusterPaths.GitOpsDir, "opencenter", "gitops", "git_dir")
 	}
 
 	// Update SSH key paths
@@ -421,9 +429,20 @@ func (s *InitService) updateConfigPaths(cfg *config.Config, configMap map[string
 	cfg.OpenCenter.GitOps.GitSSHPub = sshKeyPath + ".pub"
 	cfg.Secrets.SSHKey.Private = sshKeyPath
 	cfg.Secrets.SSHKey.Public = sshKeyPath + ".pub"
+	setNestedConfigValue(configMap, sshKeyPath, "opencenter", "gitops", "git_ssh_key")
+	setNestedConfigValue(configMap, sshKeyPath+".pub", "opencenter", "gitops", "git_ssh_pub")
+	setNestedConfigValue(configMap, sshKeyPath, "secrets", "ssh_key", "private")
+	setNestedConfigValue(configMap, sshKeyPath+".pub", "secrets", "ssh_key", "public")
 
 	// Update SOPS key path
+	if opts.NoSOPSKeyGen && !hasExplicitConfigValue(configMap, opts, "secrets", "sops_age_key_file") {
+		cfg.Secrets.SopsAgeKeyFile = ""
+		setNestedConfigValue(configMap, "", "secrets", "sops_age_key_file")
+		return
+	}
+
 	cfg.Secrets.SopsAgeKeyFile = clusterPaths.SOPSKeyPath
+	setNestedConfigValue(configMap, clusterPaths.SOPSKeyPath, "secrets", "sops_age_key_file")
 }
 
 // validateConfig validates the configuration
@@ -460,14 +479,21 @@ func (s *InitService) createDirectories(ctx context.Context, clusterPaths *paths
 }
 
 // saveConfig saves the configuration to disk using ConfigurationManager
-func (s *InitService) saveConfig(ctx context.Context, cfg *config.Config, configPath string) error {
+func (s *InitService) saveConfig(ctx context.Context, cfg *config.Config, configMap map[string]any, configPath string, preserveRaw bool) error {
 	// Use ConfigurationManager if available
-	if s.configurationMgr != nil {
+	if !preserveRaw && s.configurationMgr != nil {
 		return s.configurationMgr.Save(ctx, cfg)
 	}
 
-	// Fallback to direct file write
-	data, err := yaml.Marshal(cfg)
+	var (
+		data []byte
+		err  error
+	)
+	if preserveRaw {
+		data, err = yaml.Marshal(configMap)
+	} else {
+		data, err = yaml.Marshal(cfg)
+	}
 	if err != nil {
 		return fmt.Errorf("marshaling config: %w", err)
 	}
@@ -480,14 +506,87 @@ func (s *InitService) saveConfig(ctx context.Context, cfg *config.Config, config
 }
 
 // buildResultMessage builds a user-friendly result message
-func (s *InitService) buildResultMessage(clusterPaths *paths.ClusterPaths, organization string, keysGenerated bool) string {
+func (s *InitService) buildResultMessage(clusterPaths *paths.ClusterPaths, organization, gitDir string, keysGenerated bool) string {
 	var msg strings.Builder
 	msg.WriteString(fmt.Sprintf("Created cluster configuration in organization '%s' at '%s'\n", organization, clusterPaths.ClusterDir))
-	msg.WriteString(fmt.Sprintf("GitOps repository root: %s\n", clusterPaths.GitOpsDir))
+	msg.WriteString(fmt.Sprintf("GitOps repository root: %s\n", gitDir))
 	if keysGenerated {
 		msg.WriteString(fmt.Sprintf("SOPS key location: %s\n", clusterPaths.SOPSKeyPath))
 	}
 	return msg.String()
+}
+
+func shouldPreserveRawConfig(configMap map[string]any) bool {
+	_, ok := configMap["iac"]
+	return ok
+}
+
+func deepMergeConfigMap(dst, src map[string]any) {
+	for key, value := range src {
+		if existing, ok := dst[key]; ok {
+			dstMap, dstOK := existing.(map[string]any)
+			srcMap, srcOK := value.(map[string]any)
+			if dstOK && srcOK {
+				deepMergeConfigMap(dstMap, srcMap)
+				continue
+			}
+		}
+		dst[key] = value
+	}
+}
+
+func setNestedConfigValue(configMap map[string]any, value any, parts ...string) {
+	if len(parts) == 0 {
+		return
+	}
+
+	current := configMap
+	for _, part := range parts[:len(parts)-1] {
+		next, ok := current[part].(map[string]any)
+		if !ok {
+			next = make(map[string]any)
+			current[part] = next
+		}
+		current = next
+	}
+
+	current[parts[len(parts)-1]] = value
+}
+
+func hasExplicitConfigValue(configMap map[string]any, opts InitOptions, parts ...string) bool {
+	dottedPath := strings.Join(parts, ".")
+	if hasFlagOverride(opts.FlagOverrides, dottedPath) {
+		return true
+	}
+
+	if opts.ConfigFile == "" && opts.ConfigMap == nil {
+		return false
+	}
+
+	current := any(configMap)
+	for _, part := range parts {
+		next, ok := current.(map[string]any)
+		if !ok {
+			return false
+		}
+		value, exists := next[part]
+		if !exists {
+			return false
+		}
+		current = value
+	}
+
+	return true
+}
+
+func hasFlagOverride(overrides []string, key string) bool {
+	prefix := "--" + key + "="
+	for _, override := range overrides {
+		if strings.HasPrefix(override, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // generateKeys generates SSH and SOPS keys for the cluster
@@ -506,6 +605,14 @@ func (s *InitService) generateKeys(clusterPaths *paths.ClusterPaths, cfg *config
 				return false, fmt.Errorf("generating SOPS key: %w", err)
 			}
 			keysGenerated = true
+		}
+
+		if cfg.Secrets.SopsAgeKeyFile != "" {
+			if _, err := os.Stat(clusterPaths.SOPSConfigPath); os.IsNotExist(err) || opts.RegenerateKeys || keysGenerated {
+				if err := s.ensureSOPSConfig(clusterPaths, cfg); err != nil {
+					return false, fmt.Errorf("creating SOPS config: %w", err)
+				}
+			}
 		}
 	}
 
@@ -551,6 +658,66 @@ func (s *InitService) generateSOPSKey(clusterPaths *paths.ClusterPaths) error {
 	}
 
 	return nil
+}
+
+func (s *InitService) ensureSOPSConfig(clusterPaths *paths.ClusterPaths, cfg *config.Config) error {
+	publicKey, err := s.readAgePublicKey(cfg.Secrets.SopsAgeKeyFile)
+	if err != nil {
+		return err
+	}
+
+	content := fmt.Sprintf(`creation_rules:
+  - path_regex: 'secrets/age/keys/.*-key\.txt$'
+    age: >-
+      %s
+  - path_regex: 'secrets/ssh/(?!.*\.pub$).*'
+    age: >-
+      %s
+  - path_regex: 'applications/overlays/[^/]+/(managed-services|services)/.*/.*\.ya?ml$'
+    encrypted_regex: "^(secret)$"
+    age: >-
+      %s
+  - path_regex: '^infrastructure\/clusters\/%s\/(?!(?:venv|kubespray|\.terraform|\.bin)\/)(.*)'
+    encrypted_regex: "^(secret)$"
+    age: >-
+      %s
+`, publicKey, publicKey, publicKey, cfg.OpenCenter.Cluster.ClusterName, publicKey)
+
+	return s.fileSystem.WriteFileAtomic(clusterPaths.SOPSConfigPath, []byte(content), 0o600)
+}
+
+func (s *InitService) readAgePublicKey(keyPath string) (string, error) {
+	if keyPath == "" {
+		return "", fmt.Errorf("SOPS age key path cannot be empty")
+	}
+
+	data, err := s.fileSystem.ReadFile(keyPath)
+	if err != nil {
+		return "", fmt.Errorf("reading SOPS age key: %w", err)
+	}
+
+	privateKey := extractAgePrivateKey(string(data))
+	if privateKey == "" {
+		return "", fmt.Errorf("no valid age private key found in %s", keyPath)
+	}
+
+	keyPair, err := crypto.ParseAgeKey(privateKey)
+	if err != nil {
+		return "", fmt.Errorf("parsing SOPS age key: %w", err)
+	}
+
+	return strings.TrimSpace(keyPair.PublicKey), nil
+}
+
+func extractAgePrivateKey(content string) string {
+	for _, line := range strings.Split(content, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "AGE-SECRET-KEY-") {
+			return trimmed
+		}
+	}
+
+	return ""
 }
 
 // generateSSHKey generates an SSH key pair for the cluster

@@ -1095,7 +1095,7 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 				"type":        "string",
 				"description": "URL of the GitOps base repository",
 				"pattern":     "^(https?://|git@|ssh://)",
-				"default":     "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git",
+				"default":     "ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git",
 			},
 			"gitops_base_release": map[string]any{
 				"type":        "string",
@@ -1130,9 +1130,9 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 				"properties": map[string]any{
 					"interval": map[string]any{
 						"type":        "string",
-						"description": "Reconciliation interval (e.g., 15m, 1h)",
+						"description": "Reconciliation interval (e.g., 5m, 1h)",
 						"pattern":     "^[0-9]+(s|m|h)$",
-						"default":     "15m",
+						"default":     "5m",
 					},
 					"prune": map[string]any{
 						"type":        "boolean",

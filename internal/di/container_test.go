@@ -406,6 +406,8 @@ func TestConstructorWithNoReturnValue(t *testing.T) {
 	}
 }
 
+// broken: Initialize()+Resolve() invokes the logger singleton constructor twice in the
+// current full-suite run; see docs/test-results.md.
 func TestSingletonWithDependencies(t *testing.T) {
 	container := NewContainer()
 

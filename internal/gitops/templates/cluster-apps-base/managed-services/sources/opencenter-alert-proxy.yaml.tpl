@@ -8,10 +8,6 @@ spec:
   interval: 15m
   url: {{ .OpenCenter.GitOps.GitOpsBaseRepo }}
   ref:
-  {{- if .OpenCenter.GitOps.GitOpsBaseRelease }}
-  tag: {{ .OpenCenter.GitOps.GitOpsBaseRelease }}
-  {{- else }}
-  branch: {{ .OpenCenter.GitOps.GitOpsBranch | default "main" }}
-  {{- end }}
+    branch: {{ .OpenCenter.GitOps.GitOpsBranch | default "main" }}
   secretRef:
-  name: opencenter-base
+    name: opencenter-base

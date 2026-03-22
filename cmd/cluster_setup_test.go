@@ -95,18 +95,11 @@ func TestClusterSetupMissingConfig(t *testing.T) {
 
 // TestClusterSetupNoClusterArg verifies that running setup without an argument and no active cluster returns an error.
 // Requirements: 2.2
+// broken: full-suite run resolves a load-test cluster path instead of reporting no active cluster;
+// see docs/test-results.md.
 func TestClusterSetupNoClusterArg(t *testing.T) {
 	cfgDir := t.TempDir()
-
-	oldEnv := os.Getenv("OPENCENTER_CONFIG_DIR")
-	os.Setenv("OPENCENTER_CONFIG_DIR", cfgDir)
-	defer func() {
-		if oldEnv != "" {
-			os.Setenv("OPENCENTER_CONFIG_DIR", oldEnv)
-		} else {
-			os.Unsetenv("OPENCENTER_CONFIG_DIR")
-		}
-	}()
+	prepareCommandTestEnv(t, cfgDir)
 
 	cmd := newClusterSetupCmd()
 	out := &bytes.Buffer{}

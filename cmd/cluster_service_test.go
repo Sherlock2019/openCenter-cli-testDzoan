@@ -28,15 +28,36 @@ func setupServiceTestEnv(t *testing.T, clusterName string) (string, func()) {
 	cfgDir := t.TempDir()
 
 	// Manually manage environment to avoid t.Setenv issues with subtests
-	oldEnv := os.Getenv("OPENCENTER_CONFIG_DIR")
+	oldConfigDir := os.Getenv("OPENCENTER_CONFIG_DIR")
+	oldActiveCluster := os.Getenv("OPENCENTER_CLUSTER")
+	oldSessionFile := os.Getenv("OPENCENTER_SESSION_FILE")
+	oldSessionID := os.Getenv("OPENCENTER_SESSION_ID")
 	os.Setenv("OPENCENTER_CONFIG_DIR", cfgDir)
+	os.Unsetenv("OPENCENTER_CLUSTER")
+	os.Unsetenv("OPENCENTER_SESSION_FILE")
+	os.Unsetenv("OPENCENTER_SESSION_ID")
 	resetCommandStateForTests()
 
 	cleanup := func() {
-		if oldEnv != "" {
-			os.Setenv("OPENCENTER_CONFIG_DIR", oldEnv)
+		if oldConfigDir != "" {
+			os.Setenv("OPENCENTER_CONFIG_DIR", oldConfigDir)
 		} else {
 			os.Unsetenv("OPENCENTER_CONFIG_DIR")
+		}
+		if oldActiveCluster != "" {
+			os.Setenv("OPENCENTER_CLUSTER", oldActiveCluster)
+		} else {
+			os.Unsetenv("OPENCENTER_CLUSTER")
+		}
+		if oldSessionFile != "" {
+			os.Setenv("OPENCENTER_SESSION_FILE", oldSessionFile)
+		} else {
+			os.Unsetenv("OPENCENTER_SESSION_FILE")
+		}
+		if oldSessionID != "" {
+			os.Setenv("OPENCENTER_SESSION_ID", oldSessionID)
+		} else {
+			os.Unsetenv("OPENCENTER_SESSION_ID")
 		}
 		resetCommandStateForTests()
 	}
@@ -410,17 +431,11 @@ func TestClusterServiceDisable(t *testing.T) {
 	}
 }
 
+// broken: full-suite run resolves the integration-test cluster instead of reporting a
+// missing active cluster; see docs/test-results.md.
 func TestClusterServiceNoActiveCluster(t *testing.T) {
 	cfgDir := t.TempDir()
-	oldEnv := os.Getenv("OPENCENTER_CONFIG_DIR")
-	os.Setenv("OPENCENTER_CONFIG_DIR", cfgDir)
-	defer func() {
-		if oldEnv != "" {
-			os.Setenv("OPENCENTER_CONFIG_DIR", oldEnv)
-		} else {
-			os.Unsetenv("OPENCENTER_CONFIG_DIR")
-		}
-	}()
+	prepareCommandTestEnv(t, cfgDir)
 
 	// Don't set an active cluster
 
@@ -440,6 +455,8 @@ func TestClusterServiceNoActiveCluster(t *testing.T) {
 	}
 }
 
+// broken: full-suite run resolves the integration-test cluster instead of the per-test
+// fixture before enabling services; see docs/test-results.md.
 func TestClusterServiceEnableDisableRoundtrip(t *testing.T) {
 	clusterName := "roundtrip-cluster"
 	_, cleanup := setupServiceTestEnv(t, clusterName)
@@ -503,6 +520,8 @@ func TestClusterServiceEnableDisableRoundtrip(t *testing.T) {
 	}
 }
 
+// broken: full-suite run resolves the integration-test cluster instead of the per-subtest
+// fixture; failing subtests are tagged inline below and summarized in docs/test-results.md.
 func TestClusterServiceStatus(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -513,6 +532,7 @@ func TestClusterServiceStatus(t *testing.T) {
 		validate    func(t *testing.T, output string)
 	}{
 		{
+			// broken: full-suite run resolves integration-test instead of this subtest fixture.
 			name:        "display status with no services",
 			clusterName: "test-cluster",
 			setupFunc:   nil,
@@ -530,6 +550,7 @@ func TestClusterServiceStatus(t *testing.T) {
 			},
 		},
 		{
+			// broken: full-suite run resolves integration-test instead of this subtest fixture.
 			name:        "display status with enabled services",
 			clusterName: "test-cluster",
 			setupFunc: func(t *testing.T, clusterName string) {
@@ -566,6 +587,7 @@ func TestClusterServiceStatus(t *testing.T) {
 			},
 		},
 		{
+			// broken: full-suite run resolves integration-test instead of this subtest fixture.
 			name:        "display status with managed services",
 			clusterName: "test-cluster",
 			setupFunc: func(t *testing.T, clusterName string) {
@@ -595,6 +617,7 @@ func TestClusterServiceStatus(t *testing.T) {
 			},
 		},
 		{
+			// broken: full-suite run resolves integration-test instead of this subtest fixture.
 			name:        "display status with empty status field",
 			clusterName: "test-cluster",
 			setupFunc: func(t *testing.T, clusterName string) {
@@ -632,6 +655,7 @@ func TestClusterServiceStatus(t *testing.T) {
 			},
 		},
 		{
+			// broken: full-suite run resolves integration-test instead of surfacing no active cluster.
 			name:        "no active cluster",
 			clusterName: "",
 			setupFunc:   nil,
@@ -656,13 +680,36 @@ func TestClusterServiceStatus(t *testing.T) {
 				// Test case with no active cluster
 				cfgDir := t.TempDir()
 				oldEnv := os.Getenv("OPENCENTER_CONFIG_DIR")
+				oldActiveCluster := os.Getenv("OPENCENTER_CLUSTER")
+				oldSessionFile := os.Getenv("OPENCENTER_SESSION_FILE")
+				oldSessionID := os.Getenv("OPENCENTER_SESSION_ID")
 				os.Setenv("OPENCENTER_CONFIG_DIR", cfgDir)
+				os.Unsetenv("OPENCENTER_CLUSTER")
+				os.Unsetenv("OPENCENTER_SESSION_FILE")
+				os.Unsetenv("OPENCENTER_SESSION_ID")
+				resetCommandStateForTests()
 				cleanup = func() {
 					if oldEnv != "" {
 						os.Setenv("OPENCENTER_CONFIG_DIR", oldEnv)
 					} else {
 						os.Unsetenv("OPENCENTER_CONFIG_DIR")
 					}
+					if oldActiveCluster != "" {
+						os.Setenv("OPENCENTER_CLUSTER", oldActiveCluster)
+					} else {
+						os.Unsetenv("OPENCENTER_CLUSTER")
+					}
+					if oldSessionFile != "" {
+						os.Setenv("OPENCENTER_SESSION_FILE", oldSessionFile)
+					} else {
+						os.Unsetenv("OPENCENTER_SESSION_FILE")
+					}
+					if oldSessionID != "" {
+						os.Setenv("OPENCENTER_SESSION_ID", oldSessionID)
+					} else {
+						os.Unsetenv("OPENCENTER_SESSION_ID")
+					}
+					resetCommandStateForTests()
 				}
 				defer cleanup()
 			}

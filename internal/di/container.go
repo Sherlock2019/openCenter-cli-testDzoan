@@ -221,6 +221,10 @@ func (c *DIContainer) callConstructor(name string, constructor interface{}) (int
 // callConstructorUnsafe calls a constructor function with dependency resolution.
 // This version assumes the caller already holds the lock.
 func (c *DIContainer) callConstructorUnsafe(name string, constructor interface{}) (interface{}, error) {
+	if instance, exists := c.singletons[name]; exists {
+		return instance, nil
+	}
+
 	constructorValue := reflect.ValueOf(constructor)
 	constructorType := constructorValue.Type()
 
@@ -294,7 +298,16 @@ func (c *DIContainer) callConstructorUnsafe(name string, constructor interface{}
 		}
 	}
 
-	return results[0].Interface(), nil
+	instance := results[0].Interface()
+
+	// Cache singleton instances immediately so recursive singleton resolution
+	// reuses the same object during Initialize() and later Resolve() calls.
+	if _, exists := c.initialized[name]; exists {
+		c.singletons[name] = instance
+		c.initialized[name] = true
+	}
+
+	return instance, nil
 }
 
 // isInInitOrder checks if a component is currently being initialized (circular dependency check).

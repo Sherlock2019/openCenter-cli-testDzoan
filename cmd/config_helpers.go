@@ -131,7 +131,12 @@ func listClusters(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 
-	return manager.List(ctx)
+	names, err := manager.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return normalizeClusterDisplayNames(names), nil
 }
 
 // getActiveCluster returns the active cluster name using ConfigurationManager.
@@ -182,6 +187,29 @@ func getConfigPath(ctx context.Context, name, organization string) (string, erro
 	}
 
 	return clusterPaths.ConfigPath, nil
+}
+
+func normalizeClusterDisplayNames(names []string) []string {
+	if len(names) == 0 {
+		return names
+	}
+
+	normalized := make([]string, 0, len(names))
+	for _, name := range names {
+		normalized = append(normalized, normalizeClusterDisplayName(name))
+	}
+
+	return normalized
+}
+
+func normalizeClusterDisplayName(name string) string {
+	const defaultOrganizationPrefix = "opencenter/"
+
+	if strings.HasPrefix(name, defaultOrganizationPrefix) {
+		return strings.TrimPrefix(name, defaultOrganizationPrefix)
+	}
+
+	return name
 }
 
 // loadConfigV2Only loads a cluster configuration and rejects v1 configs.

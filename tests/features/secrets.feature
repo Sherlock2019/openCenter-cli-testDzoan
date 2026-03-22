@@ -1,7 +1,6 @@
-Feature: SOPS age key generation
-
-  Scenario: Generate an age key to a specific path
-    When I run "opencenter sops generate-key --key-file <<tmp>>/age.keys"
-    Then a file "<<tmp>>/age.keys" should exist
-    And the file "<<tmp>>/age.keys" should contain "AGE-SECRET-KEY-1"
-
+Feature:SOPSagekeygeneration
+Scenario:Generateanagekeytoaspecificpath
+WhenIrun "opencentersecretskeysgenerate --key-file <<tmp>>/age.keys --update-sops-config=false"
+Thentheexitcodeshouldbe0
+Thenafile "<<tmp>>/age.keys"shouldexist
+Andthefile "<<tmp>>/age.keys"shouldcontain "AGE-SECRET-KEY-1"

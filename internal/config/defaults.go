@@ -148,7 +148,7 @@ func defaultConfig(name string) Config {
 						},
 						Modules: OpenStackModulesConfig{
 							OpenstackNova: OpenstackNovaModuleConfig{
-								Source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main",
+								Source: "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main",
 							},
 						},
 					},
@@ -219,7 +219,7 @@ func defaultConfig(name string) Config {
 							NATOutgoing:               true,
 							Modules: CalicoModulesConfig{
 								Calico: CalicoModuleConfig{
-									Source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cni/calico?ref=main",
+									Source: "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/calico?ref=main",
 								},
 							},
 						},
@@ -229,7 +229,7 @@ func defaultConfig(name string) Config {
 							KubeProxyReplacement: true,
 							Modules: CiliumModulesConfig{
 								Cilium: CiliumModuleConfig{
-									Source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cni/cilium?ref=main",
+									Source: "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/cilium?ref=main",
 								},
 							},
 						},
@@ -238,14 +238,14 @@ func defaultConfig(name string) Config {
 							CiliumIntegration: true,
 							Modules: KubeOVNModulesConfig{
 								KubeOVN: KubeOVNModuleConfig{
-									Source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cni/kube-ovn?ref=main",
+									Source: "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/kube-ovn?ref=main",
 								},
 							},
 						},
 					},
 					Modules: KubernetesModulesConfig{
 						KubesprayCluster: KubesprayClusterModuleConfig{
-							Source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/provider/kubespray?ref=main",
+							Source: "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/provider/kubespray?ref=main",
 						},
 					},
 					OIDC: OIDCConfig{
@@ -273,11 +273,11 @@ func defaultConfig(name string) Config {
 				GitSSHKey:         "",
 				GitSSHPub:         "",
 				GitBranch:         "main",
-				GitOpsBaseRepo:    "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git",
+				GitOpsBaseRepo:    "ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git",
 				GitOpsBaseRelease: "v0.1.0",
 				GitOpsBranch:      "main",
 				Flux: GitOpsFlux{
-					Interval: "15m",
+					Interval: "5m",
 					Prune:    true,
 				},
 			},
@@ -296,7 +296,7 @@ func defaultConfig(name string) Config {
 						Enabled:             false, // Disabled by default - requires device ID, service token, and account number
 						ImageRepository:     "ghcr.io/opencenter-cloud/alert-proxy",
 						ImageTag:            "latest",
-						GitOpsSourceRepo:    "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git",
+						GitOpsSourceRepo:    "ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git",
 						GitOpsSourceRelease: "v0.1.0",
 						GitOpsSourceBranch:  "main",
 					},

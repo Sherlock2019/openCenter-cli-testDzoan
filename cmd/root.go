@@ -228,15 +228,8 @@ Support: https://github.com/opencenter-cloud/opencenter-cli/issues`,
 func ExecuteWithContext(ctx context.Context, version string) error {
 	rootCmd.Version = version
 
-	// Initialize DI container and add to context
-	container := getContainer()
-	ctx = context.WithValue(ctx, ContainerKey, container)
-
-	// Add global persistent flags
-	addGlobalFlags(rootCmd)
-
 	// Pre-parse --config-dir from os.Args so plugin discovery can use it
-	// before Cobra runs PersistentPreRunE.
+	// before Cobra runs PersistentPreRunE or the DI container is initialized.
 	for i := 0; i < len(os.Args); i++ {
 		a := os.Args[i]
 		if a == "--config-dir" && i+1 < len(os.Args) {
@@ -248,6 +241,13 @@ func ExecuteWithContext(ctx context.Context, version string) error {
 			break
 		}
 	}
+
+	// Initialize DI container and add to context
+	container := getContainer()
+	ctx = context.WithValue(ctx, ContainerKey, container)
+
+	// Add global persistent flags
+	addGlobalFlags(rootCmd)
 
 	// Register subcommands
 	rootCmd.AddCommand(NewClusterCmd())

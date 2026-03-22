@@ -127,8 +127,29 @@ func TestListEmptyDirectory(t *testing.T) {
 
 func TestActiveClusterOperations(t *testing.T) {
 	dir := t.TempDir()
+	oldConfigDir := os.Getenv("OPENCENTER_CONFIG_DIR")
+	oldActiveCluster := os.Getenv("OPENCENTER_CLUSTER")
+	oldSessionFile := os.Getenv("OPENCENTER_SESSION_FILE")
 	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
-	defer os.Unsetenv("OPENCENTER_CONFIG_DIR")
+	os.Unsetenv("OPENCENTER_CLUSTER")
+	os.Unsetenv("OPENCENTER_SESSION_FILE")
+	defer func() {
+		if oldConfigDir != "" {
+			os.Setenv("OPENCENTER_CONFIG_DIR", oldConfigDir)
+		} else {
+			os.Unsetenv("OPENCENTER_CONFIG_DIR")
+		}
+		if oldActiveCluster != "" {
+			os.Setenv("OPENCENTER_CLUSTER", oldActiveCluster)
+		} else {
+			os.Unsetenv("OPENCENTER_CLUSTER")
+		}
+		if oldSessionFile != "" {
+			os.Setenv("OPENCENTER_SESSION_FILE", oldSessionFile)
+		} else {
+			os.Unsetenv("OPENCENTER_SESSION_FILE")
+		}
+	}()
 
 	manager, err := NewConfigurationManager()
 	if err != nil {
@@ -209,8 +230,8 @@ func TestDefaultConfigNewFields(t *testing.T) {
 
 	// Test GitOpsConfig new fields
 	t.Run("GitOpsConfig fields", func(t *testing.T) {
-		if cfg.OpenCenter.GitOps.GitOpsBaseRepo != "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git" {
-			t.Errorf("expected GitOpsBaseRepo 'ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git', got %s", cfg.OpenCenter.GitOps.GitOpsBaseRepo)
+		if cfg.OpenCenter.GitOps.GitOpsBaseRepo != "ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git" {
+			t.Errorf("expected GitOpsBaseRepo 'ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git', got %s", cfg.OpenCenter.GitOps.GitOpsBaseRepo)
 		}
 
 		if cfg.OpenCenter.GitOps.GitOpsBaseRelease != "v0.1.0" {
@@ -354,7 +375,7 @@ func TestDefaultConfigMatchesSpecifications(t *testing.T) {
 		{
 			name:     "GitOpsBaseRepo default",
 			getValue: func(c Config) any { return c.OpenCenter.GitOps.GitOpsBaseRepo },
-			expected: "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git",
+			expected: "ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git",
 		},
 		{
 			name:     "GitOpsBaseRelease default",

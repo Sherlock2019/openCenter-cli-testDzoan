@@ -378,7 +378,7 @@ func createMinimalV1Config() config.Config {
 			GitOps: config.GitOpsConfig{
 				GitURL:            "git@github.com:example/cluster.git",
 				GitBranch:         "main",
-				GitOpsBaseRepo:    "ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git",
+				GitOpsBaseRepo:    "ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git",
 				GitOpsBaseRelease: "v0.1.0",
 			},
 		},

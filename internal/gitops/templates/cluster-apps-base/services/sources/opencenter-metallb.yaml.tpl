@@ -5,16 +5,10 @@ metadata:
   name: opencenter-metallb
   namespace: flux-system
 spec:
-  interval: 10m
+  interval: 15m
   {{- $service := index .OpenCenter.Services "metallb" }}
   url: {{ $service.Uri | default .OpenCenter.GitOps.GitOpsBaseRepo }}
   ref:
-  {{- if $service.Release }}
-  tag: {{ $service.Release }}
-  {{- else if .OpenCenter.GitOps.GitOpsBaseRelease }}
-  tag: {{ .OpenCenter.GitOps.GitOpsBaseRelease }}
-  {{- else }}
-  branch: {{ $service.Branch | default .OpenCenter.GitOps.GitOpsBranch | default "main" }}
-  {{- end }}
+    branch: {{ $service.Branch | default .OpenCenter.GitOps.GitOpsBranch | default "main" }}
   secretRef:
-  name: opencenter-base
+    name: opencenter-base

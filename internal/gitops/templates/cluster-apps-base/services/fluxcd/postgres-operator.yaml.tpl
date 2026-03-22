@@ -8,7 +8,7 @@ spec:
   dependsOn:
     - name: sources
       namespace: flux-system
-  interval: 15m
+  interval: 5m
   retryInterval: 1m
   timeout: 10m
   sourceRef:
@@ -36,7 +36,7 @@ metadata:
   name: postgres-operator-override
   namespace: flux-system
 spec:
-  interval: 15m
+  interval: 5m
   retryInterval: 1m
   timeout: 10m
   sourceRef:

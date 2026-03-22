@@ -10,7 +10,6 @@ resources:
   - "./letsencrypt-k8s-dev.yaml"
 secretGenerator:
   - name: cert-manager-values-override
-  type: Opaque
-  files: [override.yaml=helm-values/override-values.yaml]
-  options:
-  disableNameSuffixHash: true
+    files: [override.yaml=helm-values/override-values.yaml]
+    options:
+      disableNameSuffixHash: true

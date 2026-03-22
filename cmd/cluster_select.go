@@ -206,12 +206,12 @@ func generateClusterSelectOutput(clusterName string, shellOverride string) (Clus
 	if strings.Contains(clusterName, "/") {
 		clusterPaths, err = pathResolver.Resolve(ctx, actualClusterName, organization)
 		if err != nil {
-			return ClusterSelectOutput{}, fmt.Errorf("cluster not found: %w", err)
+			return ClusterSelectOutput{}, fmt.Errorf("cluster not found: %w\n\nCheck available clusters with: opencenter cluster list", err)
 		}
 	} else {
 		clusterPaths, err = pathResolver.ResolveWithFallback(ctx, actualClusterName)
 		if err != nil {
-			return ClusterSelectOutput{}, fmt.Errorf("cluster not found: %w", err)
+			return ClusterSelectOutput{}, fmt.Errorf("cluster not found: %w\n\nCheck available clusters with: opencenter cluster list", err)
 		}
 	}
 

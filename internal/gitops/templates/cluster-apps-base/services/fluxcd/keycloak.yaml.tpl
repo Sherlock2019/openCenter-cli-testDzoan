@@ -12,7 +12,7 @@ spec:
       namespace: flux-system
     - name: postgres-operator-override
       namespace: flux-system
-  interval: 15m
+  interval: 5m
   retryInterval: 1m
   timeout: 10m
   sourceRef:
@@ -44,7 +44,7 @@ spec:
       namespace: flux-system
     - name: keycloak-postgres
       namespace: flux-system
-  interval: 15m
+  interval: 5m
   retryInterval: 1m
   timeout: 10m
   sourceRef:
@@ -84,7 +84,7 @@ spec:
       namespace: flux-system
     - name: gateway
       namespace: flux-system
-  interval: 15m
+  interval: 5m
   retryInterval: 1m
   timeout: 10m
   sourceRef:
@@ -116,7 +116,7 @@ spec:
       namespace: flux-system
     - name: rbac-manager-base
       namespace: flux-system
-  interval: 15m
+  interval: 5m
   retryInterval: 1m
   timeout: 10m
   sourceRef:

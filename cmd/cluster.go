@@ -48,6 +48,9 @@ Configuration files are stored in organization-based directories:
   opencenter cluster init my-cluster
 
   # Initialize with organization
+  opencenter cluster init my-cluster --org myorg
+
+  # Backward-compatible organization alias
   opencenter cluster init my-cluster --opencenter.meta.organization=myorg
 
   # Validate configuration

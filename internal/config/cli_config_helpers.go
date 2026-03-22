@@ -23,11 +23,20 @@ import (
 // the clusters directory is resolved beneath it. Otherwise, the CLI config
 // clustersDir value is used, falling back to the default clusters path.
 func ResolveClustersDir() string {
+	// Prefer an explicit CLI configuration override when one exists, even when
+	// OPENCENTER_CONFIG_DIR is only being used to point at the CLI config file.
+	if cliConfigManager, err := NewConfigManager(""); err == nil && cliConfigManager != nil {
+		clustersDir := cliConfigManager.GetConfig().Paths.ClustersDir
+		if clustersDir != "" {
+			return clustersDir
+		}
+	}
+
 	if dir := os.Getenv("OPENCENTER_CONFIG_DIR"); dir != "" {
 		return filepath.Join(dir, "clusters")
 	}
 
-	return GetClustersDir()
+	return filepath.Join(getDefaultConfigDir(), "clusters")
 }
 
 // GetClustersDir returns the clusters directory from the CLI config.

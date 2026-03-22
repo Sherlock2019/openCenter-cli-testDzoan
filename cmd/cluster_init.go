@@ -23,10 +23,12 @@ import (
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/cluster"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	configflags "github.com/opencenter-cloud/opencenter-cli/internal/config/flags"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/di"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"gopkg.in/yaml.v3"
 )
 
@@ -34,6 +36,9 @@ func newClusterInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init [name]",
 		Short: "Initialize a new cluster configuration (non-interactive)",
+		FParseErrWhitelist: cobra.FParseErrWhitelist{
+			UnknownFlags: true,
+		},
 		Long: `Initialize a new cluster configuration with default values.
 
 This command creates a new cluster configuration file with sensible defaults
@@ -60,8 +65,14 @@ don't already exist, unless --no-keygen is specified.`,
   # Initialize with organization
   opencenter cluster init my-cluster --org myorg
 
+  # Backward-compatible organization alias
+  opencenter cluster init my-cluster --opencenter.meta.organization=myorg
+
   # Initialize a VMware cluster
   opencenter cluster init my-cluster --org production --type vmware
+
+  # Override config values using dotted flags
+  opencenter cluster init my-cluster --opencenter.cluster.kubernetes.master_count=5
 
   # Initialize without key generation
   opencenter cluster init my-cluster --no-keygen
@@ -181,11 +192,98 @@ func parseInitOptions(cmd *cobra.Command, args []string) (cluster.InitOptions, e
 	opts.SchemaVersion, _ = cmd.Flags().GetString("schema-version")
 	opts.ServerPools, _ = cmd.Flags().GetStringArray("server-pool")
 
+	flagOverrides, deprecatedOrg, err := parseInitFlagOverrides(cmd)
+	if err != nil {
+		return opts, err
+	}
+	opts.FlagOverrides = flagOverrides
+	if opts.Organization == "" && deprecatedOrg != "" {
+		opts.Organization = deprecatedOrg
+	}
+
 	if opts.SchemaVersion != "2.0" {
 		return opts, fmt.Errorf("invalid schema version '%s': only v2.0 is supported", opts.SchemaVersion)
 	}
 
 	return opts, nil
+}
+
+func parseInitFlagOverrides(cmd *cobra.Command) ([]string, string, error) {
+	rawArgs := rawCommandArgs(cmd)
+	overrides := make([]string, 0)
+	deprecatedOrganization := ""
+
+	for i := 0; i < len(rawArgs); i++ {
+		arg := rawArgs[i]
+		if !strings.HasPrefix(arg, "--") || arg == "--" {
+			continue
+		}
+
+		nameValue := strings.TrimPrefix(arg, "--")
+		name, value, hasValue := strings.Cut(nameValue, "=")
+
+		if flag := lookupCommandFlag(cmd, name); flag != nil {
+			if !hasValue && flag.NoOptDefVal == "" && i+1 < len(rawArgs) && !strings.HasPrefix(rawArgs[i+1], "-") {
+				i++
+			}
+			continue
+		}
+
+		if !strings.Contains(name, ".") {
+			return nil, "", fmt.Errorf("unknown flag: --%s", name)
+		}
+
+		if !hasValue {
+			if i+1 >= len(rawArgs) || strings.HasPrefix(rawArgs[i+1], "-") {
+				return nil, "", fmt.Errorf("flag needs an argument: --%s", name)
+			}
+			value = rawArgs[i+1]
+			i++
+		}
+
+		if name == "opencenter.meta.organization" {
+			deprecatedOrganization = value
+			continue
+		}
+
+		overrides = append(overrides, "--"+name+"="+value)
+	}
+
+	return overrides, deprecatedOrganization, nil
+}
+
+func lookupCommandFlag(cmd *cobra.Command, name string) *pflag.Flag {
+	if flag := cmd.Flags().Lookup(name); flag != nil {
+		return flag
+	}
+	if flag := cmd.InheritedFlags().Lookup(name); flag != nil {
+		return flag
+	}
+	return nil
+}
+
+func rawCommandArgs(cmd *cobra.Command) []string {
+	if cmd != nil {
+		value := reflect.ValueOf(cmd)
+		if value.IsValid() && value.Kind() == reflect.Ptr {
+			argsField := value.Elem().FieldByName("args")
+			if argsField.IsValid() && argsField.Kind() == reflect.Slice {
+				args := make([]string, 0, argsField.Len())
+				for i := 0; i < argsField.Len(); i++ {
+					args = append(args, argsField.Index(i).String())
+				}
+				if len(args) > 0 {
+					return args
+				}
+			}
+		}
+	}
+
+	if len(os.Args) > 1 {
+		return append([]string(nil), os.Args[1:]...)
+	}
+
+	return nil
 }
 
 // extractClusterNameFromConfig extracts the cluster name from a config file
@@ -315,5 +413,22 @@ func setReflectValue(field reflect.Value, value string) error {
 	default:
 		return fmt.Errorf("unsupported field type: %s", field.Type())
 	}
+	return nil
+}
+
+func applyInitFlagOverrides(cfg *config.Config, configMap map[string]any, overrides []string) error {
+	if len(overrides) == 0 {
+		return nil
+	}
+
+	integration, err := configflags.NewCLIIntegration()
+	if err != nil {
+		return fmt.Errorf("creating init flag integration: %w", err)
+	}
+
+	if err := integration.ProcessFlags(overrides, cfg, configMap); err != nil {
+		return err
+	}
+
 	return nil
 }

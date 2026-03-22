@@ -87,6 +87,8 @@ func TestClusterSetupIntegration(t *testing.T) {
 	}
 }
 
+// broken: full-suite run fails on generated GitOps source contracts (repo casing, ref strategy,
+// sync interval, and cert-manager kustomization indentation); see docs/test-results.md.
 func TestClusterSetupIntegrationKindProvider(t *testing.T) {
 	dir := t.TempDir()
 	prepareCommandTestEnv(t, dir)
