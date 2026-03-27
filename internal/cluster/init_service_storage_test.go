@@ -97,13 +97,17 @@ func TestStoragePluginAutoConfiguration(t *testing.T) {
 			}
 
 			// Verify Cinder storage plugin
-			if cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Cinder.Enabled != tt.expectCinder {
-				t.Errorf("expected Cinder.Enabled=%v, got %v", tt.expectCinder, cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Cinder.Enabled)
+			cinderEnabled := cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.CinderCsi != nil &&
+				cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.CinderCsi.Enabled
+			if cinderEnabled != tt.expectCinder {
+				t.Errorf("expected CinderCsi.Enabled=%v, got %v", tt.expectCinder, cinderEnabled)
 			}
 
 			// Verify vSphere storage plugin
-			if cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Vsphere.Enabled != tt.expectVsphere {
-				t.Errorf("expected Vsphere.Enabled=%v, got %v", tt.expectVsphere, cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Vsphere.Enabled)
+			vsphereEnabled := cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.VSphereCsi != nil &&
+				cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.VSphereCsi.Enabled
+			if vsphereEnabled != tt.expectVsphere {
+				t.Errorf("expected VSphereCsi.Enabled=%v, got %v", tt.expectVsphere, vsphereEnabled)
 			}
 		})
 	}
@@ -154,8 +158,10 @@ func TestStoragePluginMutualExclusion(t *testing.T) {
 			}
 
 			// Verify that Cinder and vSphere are mutually exclusive
-			cinderEnabled := cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Cinder.Enabled
-			vsphereEnabled := cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Vsphere.Enabled
+			cinderEnabled := cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.CinderCsi != nil &&
+				cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.CinderCsi.Enabled
+			vsphereEnabled := cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.VSphereCsi != nil &&
+				cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.VSphereCsi.Enabled
 
 			if cinderEnabled && vsphereEnabled {
 				t.Errorf("both Cinder and vSphere are enabled - they should be mutually exclusive")

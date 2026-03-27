@@ -45,9 +45,7 @@ This command creates a new cluster configuration file with sensible defaults
 based on the JSON schema. You can override any configuration value using
 command-line flags with dot notation.
 
-This command generates v2 configuration (schema_version: "2.0") only.
-v1 configurations are not supported in v2.0.0. Users must upgrade to v1.x first
-and migrate their configurations before upgrading to v2.0.0.
+This command generates schema version "2.0" configuration only.
 
 The configuration is created in an organization-based directory structure:
   ~/.config/opencenter/clusters/<organization>/<cluster>/
@@ -71,8 +69,8 @@ don't already exist, unless --no-keygen is specified.`,
   # Initialize a VMware cluster
   opencenter cluster init my-cluster --org production --type vmware
 
-  # Override config values using dotted flags
-  opencenter cluster init my-cluster --opencenter.cluster.kubernetes.master_count=5
+  # Override config values using native v2 dotted flags
+  opencenter cluster init my-cluster --opencenter.infrastructure.compute.master_count=5
 
   # Initialize without key generation
   opencenter cluster init my-cluster --no-keygen
@@ -85,7 +83,6 @@ don't already exist, unless --no-keygen is specified.`,
 
 	cmd.Flags().String("org", "", "organization name (defaults to 'opencenter')")
 	cmd.Flags().String("type", "openstack", "cluster type: openstack, baremetal, kind, vmware")
-	cmd.Flags().String("schema-version", "2.0", "configuration schema version (v2 only)")
 	cmd.Flags().String("config", "", "load configuration from file")
 	cmd.Flags().Bool("strict", false, "fail if required values are missing")
 	cmd.Flags().Bool("force", false, "overwrite existing config file")
@@ -189,7 +186,6 @@ func parseInitOptions(cmd *cobra.Command, args []string) (cluster.InitOptions, e
 	opts.NoSOPSKeyGen, _ = cmd.Flags().GetBool("no-sops-keygen")
 	opts.RegenerateKeys, _ = cmd.Flags().GetBool("regenerate-keys")
 	opts.FullSchema, _ = cmd.Flags().GetBool("full-schema")
-	opts.SchemaVersion, _ = cmd.Flags().GetString("schema-version")
 	opts.ServerPools, _ = cmd.Flags().GetStringArray("server-pool")
 
 	flagOverrides, deprecatedOrg, err := parseInitFlagOverrides(cmd)
@@ -201,9 +197,7 @@ func parseInitOptions(cmd *cobra.Command, args []string) (cluster.InitOptions, e
 		opts.Organization = deprecatedOrg
 	}
 
-	if opts.SchemaVersion != "2.0" {
-		return opts, fmt.Errorf("invalid schema version '%s': only v2.0 is supported", opts.SchemaVersion)
-	}
+	opts.SchemaVersion = "2.0"
 
 	return opts, nil
 }

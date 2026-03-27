@@ -11,8 +11,7 @@ based on the JSON schema. You can override any configuration value using
 command-line flags with dot notation.
 
 This command generates v2 configuration (schema_version: "2.0") only.
-v1 configurations are not supported in v2.0.0. Users must upgrade to v1.x first
-and migrate their configurations before upgrading to v2.0.0.
+Configurations with any other schema version are invalid.
 
 The configuration is created in an organization-based directory structure:
   ~/.config/opencenter/clusters/<organization>/<cluster>/
@@ -41,6 +40,9 @@ opencenter cluster init [name] [flags]
   # Initialize a VMware cluster
   opencenter cluster init my-cluster --org production --type vmware
 
+  # Override config values using native v2 dotted flags
+  opencenter cluster init my-cluster --opencenter.infrastructure.compute.master_count=5
+
   # Initialize without key generation
   opencenter cluster init my-cluster --no-keygen
 
@@ -59,7 +61,6 @@ opencenter cluster init [name] [flags]
       --no-sops-keygen            do not auto-generate SOPS keys
       --org string                organization name (defaults to 'opencenter')
       --regenerate-keys           regenerate keys even if they exist
-      --schema-version string     configuration schema version (v2 only) (default "2.0")
       --server-pool stringArray   additional server pool configuration
       --strict                    fail if required values are missing
       --type string               cluster type: openstack, baremetal, kind, vmware (default "openstack")

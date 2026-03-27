@@ -79,6 +79,13 @@ func (cl *ConfigIOHandler) LoadFromBytes(ctx context.Context, data []byte) (*Con
 	// This allows users to use ${VAR} or $VAR in their config file
 	expandedData := []byte(os.ExpandEnv(string(data)))
 
+	if config, err, handled := cl.loadNativeV2(expandedData); handled {
+		if err != nil {
+			return nil, NewParseError("", 0, 0, err)
+		}
+		return config, nil
+	}
+
 	// Unmarshal the YAML data
 	config, err := cl.UnmarshalConfig(expandedData)
 	if err != nil {
@@ -87,6 +94,24 @@ func (cl *ConfigIOHandler) LoadFromBytes(ctx context.Context, data []byte) (*Con
 	}
 
 	return config, nil
+}
+
+func (cl *ConfigIOHandler) loadNativeV2(data []byte) (*Config, error, bool) {
+	loader := defaultLegacyV2Loader()
+	v2Config, err := loader.LoadFromBytes(data)
+	if err != nil {
+		if isNativeV2ConfigData(data) {
+			return nil, fmt.Errorf("failed to load native v2 configuration: %w", err), true
+		}
+		return nil, nil, false
+	}
+
+	legacyConfig, err := convertNativeV2ToLegacyConfig(v2Config)
+	if err != nil {
+		return nil, fmt.Errorf("convert native v2 configuration: %w", err), true
+	}
+
+	return &legacyConfig, nil, true
 }
 
 // SaveToFile writes a configuration to a file atomically.

@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"gopkg.in/yaml.v3"
 )
 
@@ -27,27 +29,16 @@ func TestClusterInitKindDefaults(t *testing.T) {
 	}
 
 	configPath := filepath.Join(dir, "clusters", "opencenter", ".kind-cluster-config.yaml")
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		t.Fatalf("read config: %v", err)
-	}
-
-	var cfg config.Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		t.Fatalf("unmarshal config: %v", err)
-	}
+	cfg := loadKindV2ConfigForTest(t, configPath)
 
 	if cfg.OpenCenter.Infrastructure.Provider != "kind" {
 		t.Fatalf("expected provider kind, got %s", cfg.OpenCenter.Infrastructure.Provider)
 	}
-	if cfg.OpenCenter.Infrastructure.Kind == nil {
-		t.Fatal("expected opencenter.infrastructure.kind to be populated")
-	}
 	if cfg.OpenTofu.Enabled {
 		t.Fatal("expected opentofu to be disabled for kind")
 	}
-	if cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL != "" {
-		t.Fatalf("expected openstack auth_url to be cleared for kind, got %q", cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL)
+	if cfg.OpenCenter.Infrastructure.Cloud.OpenStack != nil {
+		t.Fatalf("expected openstack auth_url to be cleared for kind, got %#v", cfg.OpenCenter.Infrastructure.Cloud.OpenStack)
 	}
 	if cfg.OpenCenter.Meta.Stage != config.StageInit || cfg.OpenCenter.Meta.Status != config.StatusSuccess {
 		t.Fatalf("unexpected lifecycle state: %s/%s", cfg.OpenCenter.Meta.Stage, cfg.OpenCenter.Meta.Status)
@@ -102,6 +93,17 @@ func TestClusterStatusUsesExplicitClusterName(t *testing.T) {
 	if got := strings.TrimSpace(stdout.String()); got != "requested-cluster" {
 		t.Fatalf("expected requested-cluster, got %q", got)
 	}
+}
+
+func loadKindV2ConfigForTest(t *testing.T, configPath string) *v2.Config {
+	t.Helper()
+
+	loader := v2.NewConfigLoader(defaults.NewRegistry())
+	cfg, err := loader.LoadFromFile(configPath)
+	if err != nil {
+		t.Fatalf("load v2 config: %v", err)
+	}
+	return cfg
 }
 
 func TestClusterStatusShowsKindStatusDetails(t *testing.T) {

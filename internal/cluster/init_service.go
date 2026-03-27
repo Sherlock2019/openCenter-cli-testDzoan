@@ -6,9 +6,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	configdefaults "github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
 	configflags "github.com/opencenter-cloud/opencenter-cli/internal/config/flags"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 	"github.com/opencenter-cloud/opencenter-cli/internal/sops"
@@ -41,7 +44,7 @@ type InitOptions struct {
 type InitResult struct {
 	ConfigPath     string
 	ClusterPaths   *paths.ClusterPaths
-	Config         *config.Config
+	Config         *v2.Config
 	ConfigMap      map[string]any
 	KeysGenerated  bool
 	GitInitialized bool
@@ -177,7 +180,7 @@ func (s *InitService) Initialize(ctx context.Context, opts InitOptions) (*InitRe
 	}
 
 	// Save configuration
-	if err := s.saveConfig(ctx, cfg, configMap, clusterPaths.ConfigPath, shouldPreserveRawConfig(configMap)); err != nil {
+	if err := s.saveConfig(ctx, cfg, clusterPaths.ConfigPath, opts.FullSchema); err != nil {
 		return nil, fmt.Errorf("saving config: %w", err)
 	}
 
@@ -235,8 +238,8 @@ func (s *InitService) checkExistingCluster(clusterPaths *paths.ClusterPaths, clu
 }
 
 // loadOrCreateConfig loads configuration from file or creates default
-func (s *InitService) loadOrCreateConfig(opts InitOptions) (*config.Config, map[string]any, error) {
-	var cfg config.Config
+func (s *InitService) loadOrCreateConfig(opts InitOptions) (*v2.Config, map[string]any, error) {
+	cfg := &v2.Config{}
 	var configMap map[string]any
 
 	if opts.ConfigFile != "" {
@@ -246,7 +249,7 @@ func (s *InitService) loadOrCreateConfig(opts InitOptions) (*config.Config, map[
 			return nil, nil, fmt.Errorf("reading config file: %w", err)
 		}
 
-		if err := yaml.Unmarshal(data, &cfg); err != nil {
+		if err := yaml.Unmarshal(data, cfg); err != nil {
 			return nil, nil, fmt.Errorf("parsing config file: %w", err)
 		}
 
@@ -261,7 +264,7 @@ func (s *InitService) loadOrCreateConfig(opts InitOptions) (*config.Config, map[
 		if err != nil {
 			return nil, nil, fmt.Errorf("marshaling config map: %w", err)
 		}
-		if err := yaml.Unmarshal(data, &cfg); err != nil {
+		if err := yaml.Unmarshal(data, cfg); err != nil {
 			return nil, nil, fmt.Errorf("parsing config map: %w", err)
 		}
 	} else {
@@ -273,98 +276,53 @@ func (s *InitService) loadOrCreateConfig(opts InitOptions) (*config.Config, map[
 		}
 	}
 
-	return &cfg, configMap, nil
+	return cfg, configMap, nil
 }
 
 // createDefaultConfig creates a default configuration based on options
-func (s *InitService) createDefaultConfig(opts InitOptions) (config.Config, map[string]any, error) {
+func (s *InitService) createDefaultConfig(opts InitOptions) (*v2.Config, map[string]any, error) {
 	var (
-		cfg       config.Config
-		configMap map[string]any
-		err       error
+		cfg *v2.Config
+		err error
 	)
 
 	if opts.FullSchema {
-		// Keep full-schema generation on the existing path, then overlay provider defaults below.
-		schemaDefaultYAML, err := config.GenerateFullSchemaDefaults(opts.ClusterName)
+		cfg, err = v2.NewV2FullTemplate(opts.ClusterName, opts.Provider)
 		if err != nil {
-			return config.Config{}, nil, fmt.Errorf("generating schema defaults: %w", err)
-		}
-
-		if err := yaml.Unmarshal(schemaDefaultYAML, &cfg); err != nil {
-			return config.Config{}, nil, fmt.Errorf("parsing schema defaults to struct: %w", err)
-		}
-
-		configMap = make(map[string]any)
-		if err := yaml.Unmarshal(schemaDefaultYAML, &configMap); err != nil {
-			return config.Config{}, nil, fmt.Errorf("parsing schema defaults to map: %w", err)
+			return nil, nil, fmt.Errorf("building v2 full template: %w", err)
 		}
 	} else {
-		cfg, err = config.NewProviderDefault(opts.ClusterName, opts.Provider)
+		cfg, err = v2.NewV2Default(opts.ClusterName, opts.Provider)
 		if err != nil {
-			return config.Config{}, nil, fmt.Errorf("building provider defaults: %w", err)
+			return nil, nil, fmt.Errorf("building v2 defaults: %w", err)
 		}
 	}
 
-	// Set schema version to v2.0
-	cfg.SchemaVersion = "2.0"
-
-	// Set organization
 	if opts.Organization != "" {
 		cfg.OpenCenter.Meta.Organization = opts.Organization
-	} else {
+	}
+	if cfg.OpenCenter.Meta.Organization == "" {
 		cfg.OpenCenter.Meta.Organization = "opencenter"
 	}
-
-	// Set provider if specified
 	if opts.Provider != "" {
 		cfg.OpenCenter.Infrastructure.Provider = opts.Provider
 	}
 
-	if err := config.ApplyProviderDefaults(&cfg, cfg.OpenCenter.Infrastructure.Provider); err != nil {
-		return config.Config{}, nil, fmt.Errorf("applying provider defaults: %w", err)
-	}
-
-	// Set storage plugin based on provider type
-	provider := cfg.OpenCenter.Infrastructure.Provider
-	switch provider {
-	case "openstack":
-		cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Cinder.Enabled = true
-		cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Vsphere.Enabled = false
-	case "vmware":
-		cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Vsphere.Enabled = true
-		cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Cinder.Enabled = false
-	default:
-		// For other providers (kind, baremetal, aws), leave storage plugins disabled by default
-		cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Cinder.Enabled = false
-		cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Vsphere.Enabled = false
-	}
-
-	// Set initial stage and status
-	cfg.OpenCenter.Meta.Stage = config.StageInit
-	cfg.OpenCenter.Meta.Status = config.StatusSuccess
-
 	data, err := yaml.Marshal(cfg)
 	if err != nil {
-		return config.Config{}, nil, fmt.Errorf("marshaling default config: %w", err)
+		return nil, nil, fmt.Errorf("marshaling default v2 config: %w", err)
 	}
 
-	cfgMap := make(map[string]any)
-	if err := yaml.Unmarshal(data, &cfgMap); err != nil {
-		return config.Config{}, nil, fmt.Errorf("rebuilding default config map: %w", err)
-	}
-
-	if opts.FullSchema {
-		deepMergeConfigMap(configMap, cfgMap)
-	} else {
-		configMap = cfgMap
+	configMap := make(map[string]any)
+	if err := yaml.Unmarshal(data, &configMap); err != nil {
+		return nil, nil, fmt.Errorf("rebuilding default v2 config map: %w", err)
 	}
 
 	return cfg, configMap, nil
 }
 
 // applyOverrides applies configuration overrides from options
-func (s *InitService) applyOverrides(cfg *config.Config, configMap map[string]any, opts InitOptions) error {
+func (s *InitService) applyOverrides(cfg *v2.Config, configMap map[string]any, opts InitOptions) error {
 	// Apply organization
 	if opts.Organization != "" {
 		cfg.OpenCenter.Meta.Organization = opts.Organization
@@ -406,62 +364,57 @@ func (s *InitService) applyOverrides(cfg *config.Config, configMap map[string]an
 }
 
 // updateConfigPaths updates configuration with resolved paths
-func (s *InitService) updateConfigPaths(cfg *config.Config, configMap map[string]any, clusterPaths *paths.ClusterPaths, opts InitOptions) {
+func (s *InitService) updateConfigPaths(cfg *v2.Config, configMap map[string]any, clusterPaths *paths.ClusterPaths, opts InitOptions) {
 	if !hasExplicitConfigValue(configMap, opts, "opencenter", "gitops", "git_dir") {
 		cfg.OpenCenter.GitOps.GitDir = clusterPaths.GitOpsDir
 		setNestedConfigValue(configMap, clusterPaths.GitOpsDir, "opencenter", "gitops", "git_dir")
 	}
 
 	// Update SSH key paths
-	env := cfg.OpenCenter.Meta.Env
-	region := cfg.OpenCenter.Meta.Region
-	if env == "" {
-		env = "dev"
-	}
-	if region == "" {
-		region = "local"
-	}
-
-	sshKeyBaseName := fmt.Sprintf("%s-%s-%s", opts.ClusterName, env, region)
-	sshKeyPath := filepath.Join(clusterPaths.SecretsDir, "ssh", sshKeyBaseName)
+	sshKeyPath := clusterPaths.SSHKeyPath
 
 	cfg.OpenCenter.GitOps.GitSSHKey = sshKeyPath
 	cfg.OpenCenter.GitOps.GitSSHPub = sshKeyPath + ".pub"
+	cfg.OpenCenter.Infrastructure.SSH.KeyPath = sshKeyPath
 	cfg.Secrets.SSHKey.Private = sshKeyPath
 	cfg.Secrets.SSHKey.Public = sshKeyPath + ".pub"
 	setNestedConfigValue(configMap, sshKeyPath, "opencenter", "gitops", "git_ssh_key")
 	setNestedConfigValue(configMap, sshKeyPath+".pub", "opencenter", "gitops", "git_ssh_pub")
+	setNestedConfigValue(configMap, sshKeyPath, "opencenter", "infrastructure", "ssh", "key_path")
 	setNestedConfigValue(configMap, sshKeyPath, "secrets", "ssh_key", "private")
 	setNestedConfigValue(configMap, sshKeyPath+".pub", "secrets", "ssh_key", "public")
 
 	// Update SOPS key path
-	if opts.NoSOPSKeyGen && !hasExplicitConfigValue(configMap, opts, "secrets", "sops_age_key_file") {
+	if opts.NoSOPSKeyGen &&
+		!hasExplicitConfigValue(configMap, opts, "secrets", "sops_age_key_file") &&
+		!hasExplicitConfigValue(configMap, opts, "secrets", "sops", "age_key_file") {
 		cfg.Secrets.SopsAgeKeyFile = ""
+		cfg.Secrets.SOPSConfig.Enabled = false
+		cfg.Secrets.SOPSConfig.AgeKeyFile = ""
 		setNestedConfigValue(configMap, "", "secrets", "sops_age_key_file")
+		setNestedConfigValue(configMap, false, "secrets", "sops", "enabled")
+		setNestedConfigValue(configMap, "", "secrets", "sops", "age_key_file")
 		return
 	}
 
 	cfg.Secrets.SopsAgeKeyFile = clusterPaths.SOPSKeyPath
+	cfg.Secrets.SOPSConfig.Enabled = true
+	cfg.Secrets.SOPSConfig.AgeKeyFile = clusterPaths.SOPSKeyPath
 	setNestedConfigValue(configMap, clusterPaths.SOPSKeyPath, "secrets", "sops_age_key_file")
+	setNestedConfigValue(configMap, clusterPaths.SOPSKeyPath, "secrets", "sops", "age_key_file")
 }
 
 // validateConfig validates the configuration
-func (s *InitService) validateConfig(cfg *config.Config) error {
-	// Use ConfigurationManager for validation if available
-	if s.configurationMgr != nil {
-		if err := s.configurationMgr.Validate(context.Background(), cfg); err != nil {
-			return fmt.Errorf("validation failed: %w", err)
-		}
-	} else {
-		// Fallback: create temporary manager
-		tempMgr, err := config.NewConfigurationManager()
-		if err != nil {
-			return fmt.Errorf("creating configuration manager: %w", err)
-		}
-		if err := tempMgr.Validate(context.Background(), cfg); err != nil {
-			return fmt.Errorf("validation failed: %w", err)
-		}
+func (s *InitService) validateConfig(cfg *v2.Config) error {
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("marshal v2 config for validation: %w", err)
 	}
+
+	if _, err := s.v2Loader().LoadFromBytes(data); err != nil {
+		return fmt.Errorf("validation failed: %w", err)
+	}
+
 	return nil
 }
 
@@ -479,27 +432,27 @@ func (s *InitService) createDirectories(ctx context.Context, clusterPaths *paths
 }
 
 // saveConfig saves the configuration to disk using ConfigurationManager
-func (s *InitService) saveConfig(ctx context.Context, cfg *config.Config, configMap map[string]any, configPath string, preserveRaw bool) error {
-	// Use ConfigurationManager if available
-	if !preserveRaw && s.configurationMgr != nil {
-		return s.configurationMgr.Save(ctx, cfg)
+func (s *InitService) saveConfig(ctx context.Context, cfg *v2.Config, configPath string, fullSchema bool) error {
+	_ = ctx
+	cfg.Metadata.UpdatedAt = time.Now().Format(time.RFC3339Nano)
+
+	loader := s.v2Loader()
+	if fullSchema {
+		data, err := v2.RenderFullTemplateYAMLFromConfig(cfg)
+		if err != nil {
+			return fmt.Errorf("rendering v2 full template: %w", err)
+		}
+		if _, err := loader.LoadFromBytes(data); err != nil {
+			return fmt.Errorf("validating rendered v2 full template: %w", err)
+		}
+		if err := s.fileSystem.WriteFileAtomic(configPath, data, 0o600); err != nil {
+			return fmt.Errorf("writing config file: %w", err)
+		}
+		return nil
 	}
 
-	var (
-		data []byte
-		err  error
-	)
-	if preserveRaw {
-		data, err = yaml.Marshal(configMap)
-	} else {
-		data, err = yaml.Marshal(cfg)
-	}
-	if err != nil {
-		return fmt.Errorf("marshaling config: %w", err)
-	}
-
-	if err := s.fileSystem.WriteFileAtomic(configPath, data, 0o600); err != nil {
-		return fmt.Errorf("writing config file: %w", err)
+	if err := loader.SaveToFile(cfg, configPath); err != nil {
+		return fmt.Errorf("saving v2 config: %w", err)
 	}
 
 	return nil
@@ -514,25 +467,6 @@ func (s *InitService) buildResultMessage(clusterPaths *paths.ClusterPaths, organ
 		msg.WriteString(fmt.Sprintf("SOPS key location: %s\n", clusterPaths.SOPSKeyPath))
 	}
 	return msg.String()
-}
-
-func shouldPreserveRawConfig(configMap map[string]any) bool {
-	_, ok := configMap["iac"]
-	return ok
-}
-
-func deepMergeConfigMap(dst, src map[string]any) {
-	for key, value := range src {
-		if existing, ok := dst[key]; ok {
-			dstMap, dstOK := existing.(map[string]any)
-			srcMap, srcOK := value.(map[string]any)
-			if dstOK && srcOK {
-				deepMergeConfigMap(dstMap, srcMap)
-				continue
-			}
-		}
-		dst[key] = value
-	}
 }
 
 func setNestedConfigValue(configMap map[string]any, value any, parts ...string) {
@@ -590,7 +524,7 @@ func hasFlagOverride(overrides []string, key string) bool {
 }
 
 // generateKeys generates SSH and SOPS keys for the cluster
-func (s *InitService) generateKeys(clusterPaths *paths.ClusterPaths, cfg *config.Config, opts InitOptions) (bool, error) {
+func (s *InitService) generateKeys(clusterPaths *paths.ClusterPaths, cfg *v2.Config, opts InitOptions) (bool, error) {
 	keysGenerated := false
 
 	// Generate SOPS Age key if not disabled
@@ -660,7 +594,7 @@ func (s *InitService) generateSOPSKey(clusterPaths *paths.ClusterPaths) error {
 	return nil
 }
 
-func (s *InitService) ensureSOPSConfig(clusterPaths *paths.ClusterPaths, cfg *config.Config) error {
+func (s *InitService) ensureSOPSConfig(clusterPaths *paths.ClusterPaths, cfg *v2.Config) error {
 	publicKey, err := s.readAgePublicKey(cfg.Secrets.SopsAgeKeyFile)
 	if err != nil {
 		return err
@@ -721,7 +655,7 @@ func extractAgePrivateKey(content string) string {
 }
 
 // generateSSHKey generates an SSH key pair for the cluster
-func (s *InitService) generateSSHKey(clusterPaths *paths.ClusterPaths, cfg *config.Config) error {
+func (s *InitService) generateSSHKey(clusterPaths *paths.ClusterPaths, cfg *v2.Config) error {
 	// Create SSH directory if it doesn't exist
 	sshDir := filepath.Dir(clusterPaths.SSHKeyPath)
 	if err := os.MkdirAll(sshDir, 0o700); err != nil {
@@ -776,8 +710,8 @@ func (s *InitService) generateSSHKey(clusterPaths *paths.ClusterPaths, cfg *conf
 		return fmt.Errorf("writing SSH public key: %w", err)
 	}
 
-	if shouldPopulateGeneratedSSHAuthorizedKey(cfg.OpenCenter.Cluster.SSHAuthorizedKeys) {
-		cfg.OpenCenter.Cluster.SSHAuthorizedKeys = []string{strings.TrimSpace(string(keyPair.PublicKey))}
+	if shouldPopulateGeneratedSSHAuthorizedKey(cfg.OpenCenter.Infrastructure.SSH.AuthorizedKeys) {
+		cfg.OpenCenter.Infrastructure.SSH.AuthorizedKeys = []string{strings.TrimSpace(string(keyPair.PublicKey))}
 	}
 
 	return nil
@@ -796,6 +730,10 @@ func shouldPopulateGeneratedSSHAuthorizedKey(keys []string) bool {
 	}
 
 	return true
+}
+
+func (s *InitService) v2Loader() *v2.ConfigLoader {
+	return v2.NewConfigLoader(configdefaults.NewRegistry())
 }
 
 // initGitRepo initializes a git repository for the cluster

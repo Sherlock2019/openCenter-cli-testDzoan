@@ -37,7 +37,7 @@ This command performs comprehensive validation including:
   • SOPS key validation
 
 Only v2 configurations (schema_version: "2.0") are supported.
-v1 configurations will be rejected with migration instructions.
+Configurations with any other schema version are invalid.
 
 If no cluster name is provided, validates the currently active cluster.`,
 		Example: `  # Validate active cluster
@@ -164,6 +164,7 @@ If no cluster name is provided, validates the currently active cluster.`,
 	cmd.Flags().Bool("check-connectivity", false, "check connectivity to cloud provider")
 	cmd.Flags().Bool("check-provider", false, "perform provider-specific validation")
 	cmd.Flags().Bool("generate-debug-config", false, "generate complete config for debugging")
+	cmd.Flags().String("config", "", "path to configuration file to validate")
 	cmd.Flags().String("output-dir", "", "directory to save debug config (defaults to current directory)")
 	cmd.Flags().BoolP("verbose", "v", false, "verbose output")
 	cmd.Flags().Bool("json", false, "output validation results as JSON (for CI/CD pipelines)")

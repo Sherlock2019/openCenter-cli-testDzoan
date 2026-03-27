@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
@@ -308,12 +309,12 @@ func TestInitService_generateKeys(t *testing.T) {
 	}
 
 	// Test key generation
-	cfg := &config.Config{
-		OpenCenter: config.Config{}.OpenCenter,
-		Secrets:    config.Config{}.Secrets,
-	}
+	cfg := &v2.Config{}
 	cfg.OpenCenter.Meta.Region = "test-region"
 	cfg.Secrets.SSHKey.Cypher = "ed25519"
+	cfg.Secrets.SopsAgeKeyFile = clusterPaths.SOPSKeyPath
+	cfg.Secrets.SOPSConfig.Enabled = true
+	cfg.Secrets.SOPSConfig.AgeKeyFile = clusterPaths.SOPSKeyPath
 
 	opts := InitOptions{
 		ClusterName:  "test-cluster",
@@ -558,10 +559,7 @@ func TestInitService_generateSSHKey(t *testing.T) {
 		t.Fatalf("Failed to resolve cluster paths: %v", err)
 	}
 
-	cfg := &config.Config{
-		OpenCenter: config.Config{}.OpenCenter,
-		Secrets:    config.Config{}.Secrets,
-	}
+	cfg := &v2.Config{}
 	cfg.OpenCenter.Meta.Region = "test-region"
 	cfg.Secrets.SSHKey.Cypher = "ed25519"
 

@@ -23,11 +23,12 @@ import (
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/cluster"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
 	"github.com/opencenter-cloud/opencenter-cli/internal/di"
-	"gopkg.in/yaml.v3"
 )
 
 // TestClusterInitIntegration tests the full cluster init workflow
@@ -138,15 +139,7 @@ func TestClusterInitIntegration(t *testing.T) {
 			}
 
 			// Verify config content
-			data, err := os.ReadFile(configPath)
-			if err != nil {
-				t.Fatalf("failed to read config file: %v", err)
-			}
-
-			var cfg config.Config
-			if err := yaml.Unmarshal(data, &cfg); err != nil {
-				t.Fatalf("failed to parse config file: %v", err)
-			}
+			cfg := loadV2ConfigForTest(t, configPath)
 
 			if cfg.OpenCenter.Cluster.ClusterName != tt.clusterName {
 				t.Errorf("expected cluster name %q, got %q", tt.clusterName, cfg.OpenCenter.Cluster.ClusterName)
@@ -168,8 +161,6 @@ func TestClusterInitIntegration(t *testing.T) {
 					t.Errorf("SOPS key not created: %s", sopsKeyPath)
 				}
 
-				// SSH keys are in the format: <cluster> (PathResolver uses simple cluster name)
-				// The old format was <cluster>-<env>-<region> but PathResolver simplified this
 				sshKeyPath := filepath.Join(secretsDir, "ssh", tt.clusterName)
 				if _, err := os.Stat(sshKeyPath); os.IsNotExist(err) {
 					t.Errorf("SSH key not created: %s", sshKeyPath)
@@ -194,32 +185,21 @@ func TestClusterInitIntegrationKindProvider(t *testing.T) {
 	}
 
 	configPath := filepath.Join(dir, "clusters", "opencenter", ".kind-int-config.yaml")
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		t.Fatalf("read config: %v", err)
-	}
-
-	var cfg config.Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		t.Fatalf("unmarshal config: %v", err)
-	}
+	cfg := loadV2ConfigForTest(t, configPath)
 
 	if cfg.OpenCenter.Infrastructure.Provider != "kind" {
 		t.Fatalf("expected provider kind, got %q", cfg.OpenCenter.Infrastructure.Provider)
 	}
-	if cfg.OpenCenter.Infrastructure.Kind == nil {
-		t.Fatal("expected opencenter.infrastructure.kind to be populated")
-	}
 	if cfg.OpenTofu.Enabled {
 		t.Fatal("expected opentofu to be disabled for kind")
 	}
-	if cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL != "" {
+	if cfg.OpenCenter.Infrastructure.Cloud.OpenStack != nil {
 		t.Fatalf("expected openstack cloud config to be cleared, got %#v", cfg.OpenCenter.Infrastructure.Cloud.OpenStack)
 	}
-	if cfg.OpenCenter.Infrastructure.Cloud.AWS.Region != "" || len(cfg.OpenCenter.Infrastructure.Cloud.AWS.PrivateSubnets) != 0 || len(cfg.OpenCenter.Infrastructure.Cloud.AWS.PublicSubnets) != 0 {
+	if cfg.OpenCenter.Infrastructure.Cloud.AWS != nil {
 		t.Fatalf("expected aws cloud config to be cleared, got %#v", cfg.OpenCenter.Infrastructure.Cloud.AWS)
 	}
-	if cfg.OpenCenter.Infrastructure.Cloud.VMware.VCenterServer != "" || len(cfg.OpenCenter.Infrastructure.Cloud.VMware.Nodes) != 0 {
+	if cfg.OpenCenter.Infrastructure.Cloud.VMware != nil {
 		t.Fatalf("expected vmware cloud config to be cleared, got %#v", cfg.OpenCenter.Infrastructure.Cloud.VMware)
 	}
 	if cfg.OpenCenter.Meta.Stage != config.StageInit || cfg.OpenCenter.Meta.Status != config.StatusSuccess {
@@ -239,7 +219,7 @@ func TestClusterInitSupportsDottedOverrides(t *testing.T) {
 		"flag-init",
 		"--opencenter.meta.organization=legacy-org",
 		"--opencenter.gitops.git_dir=/opt/opencenter/flag-init",
-		"--opencenter.cluster.kubernetes.master_count=5",
+		"--opencenter.infrastructure.compute.master_count=5",
 		"--no-keygen",
 	})
 
@@ -248,15 +228,7 @@ func TestClusterInitSupportsDottedOverrides(t *testing.T) {
 	}
 
 	configPath := filepath.Join(dir, "clusters", "legacy-org", ".flag-init-config.yaml")
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		t.Fatalf("read config: %v", err)
-	}
-
-	var cfg config.Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		t.Fatalf("unmarshal config: %v", err)
-	}
+	cfg := loadV2ConfigForTest(t, configPath)
 
 	if cfg.OpenCenter.Meta.Organization != "legacy-org" {
 		t.Fatalf("expected deprecated organization alias to set legacy-org, got %q", cfg.OpenCenter.Meta.Organization)
@@ -264,11 +236,33 @@ func TestClusterInitSupportsDottedOverrides(t *testing.T) {
 	if cfg.OpenCenter.GitOps.GitDir != "/opt/opencenter/flag-init" {
 		t.Fatalf("expected explicit git_dir to be preserved, got %q", cfg.OpenCenter.GitOps.GitDir)
 	}
-	if cfg.OpenCenter.Cluster.Kubernetes.MasterCount != 5 {
-		t.Fatalf("expected master_count 5, got %d", cfg.OpenCenter.Cluster.Kubernetes.MasterCount)
+	if cfg.OpenCenter.Infrastructure.Compute.MasterCount != 5 {
+		t.Fatalf("expected master_count 5, got %d", cfg.OpenCenter.Infrastructure.Compute.MasterCount)
 	}
 	if !strings.Contains(stdout.String(), "/opt/opencenter/flag-init") {
 		t.Fatalf("expected result message to mention explicit git_dir, got %q", stdout.String())
+	}
+}
+
+func TestClusterInitRejectsLegacyDottedOverrides(t *testing.T) {
+	dir := t.TempDir()
+	prepareCommandTestEnv(t, dir)
+
+	cmd := newClusterInitCmd()
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{
+		"legacy-override",
+		"--opencenter.cluster.kubernetes.master_count=5",
+		"--no-keygen",
+	})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected legacy dotted override to fail")
+	}
+	if !strings.Contains(err.Error(), "field not found") {
+		t.Fatalf("expected clear legacy override failure, got: %v", err)
 	}
 }
 
@@ -291,22 +285,14 @@ func TestClusterInitOrgFlagOverridesDeprecatedAlias(t *testing.T) {
 	}
 
 	configPath := filepath.Join(dir, "clusters", "flag-org", ".org-precedence-config.yaml")
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		t.Fatalf("read config: %v", err)
-	}
-
-	var cfg config.Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		t.Fatalf("unmarshal config: %v", err)
-	}
+	cfg := loadV2ConfigForTest(t, configPath)
 
 	if cfg.OpenCenter.Meta.Organization != "flag-org" {
 		t.Fatalf("expected --org to win over deprecated alias, got %q", cfg.OpenCenter.Meta.Organization)
 	}
 }
 
-func TestClusterInitFullSchemaPreservesLocalExamples(t *testing.T) {
+func TestClusterInitFullSchemaProducesValidV2Template(t *testing.T) {
 	dir := t.TempDir()
 	prepareCommandTestEnv(t, dir)
 
@@ -325,9 +311,17 @@ func TestClusterInitFullSchemaPreservesLocalExamples(t *testing.T) {
 		t.Fatalf("read config: %v", err)
 	}
 
-	if !strings.Contains(string(data), "local.") {
-		t.Fatalf("expected full-schema config to retain local examples, got:\n%s", string(data))
+	if strings.Contains(string(data), "local.") {
+		t.Fatalf("expected full-schema config to avoid legacy local examples, got:\n%s", string(data))
 	}
+	if strings.Contains(string(data), "\niac:") {
+		t.Fatalf("expected full-schema config to avoid legacy iac section, got:\n%s", string(data))
+	}
+	if !strings.Contains(string(data), "--opencenter.infrastructure.compute.master_count=5") {
+		t.Fatalf("expected full-schema header to document native v2 dotted paths, got:\n%s", string(data))
+	}
+
+	_ = loadV2ConfigForTest(t, configPath)
 }
 
 func TestClusterInitNoSOPSKeygenLeavesSOPSPathEmpty(t *testing.T) {
@@ -344,23 +338,42 @@ func TestClusterInitNoSOPSKeygenLeavesSOPSPathEmpty(t *testing.T) {
 	}
 
 	configPath := filepath.Join(dir, "clusters", "opencenter", ".no-sops-config.yaml")
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		t.Fatalf("read config: %v", err)
-	}
-
-	var cfg config.Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		t.Fatalf("unmarshal config: %v", err)
-	}
+	cfg := loadV2ConfigForTest(t, configPath)
 
 	if cfg.Secrets.SopsAgeKeyFile != "" {
 		t.Fatalf("expected empty SOPS key path when key generation is disabled, got %q", cfg.Secrets.SopsAgeKeyFile)
+	}
+	if cfg.Secrets.SOPSConfig.Enabled {
+		t.Fatalf("expected SOPS config to be disabled when key generation is disabled")
 	}
 
 	sopsKeyPath := filepath.Join(dir, "clusters", "opencenter", "secrets", "age", "keys", "no-sops-key.txt")
 	if _, err := os.Stat(sopsKeyPath); !os.IsNotExist(err) {
 		t.Fatalf("expected no SOPS key to be generated at %s", sopsKeyPath)
+	}
+}
+
+func TestClusterInitThenValidateSucceeds(t *testing.T) {
+	dir := t.TempDir()
+	prepareCommandTestEnv(t, dir)
+
+	initCmd := newClusterInitCmd()
+	initCmd.SetOut(&bytes.Buffer{})
+	initCmd.SetErr(&bytes.Buffer{})
+	initCmd.SetArgs([]string{"validate-me", "--no-keygen"})
+	if err := initCmd.Execute(); err != nil {
+		t.Fatalf("cluster init failed: %v", err)
+	}
+
+	configPath := filepath.Join(dir, "clusters", "opencenter", ".validate-me-config.yaml")
+
+	validateCmd := newClusterValidateCmd()
+	var stdout, stderr bytes.Buffer
+	validateCmd.SetOut(&stdout)
+	validateCmd.SetErr(&stderr)
+	validateCmd.SetArgs([]string{"--config", configPath})
+	if err := validateCmd.Execute(); err != nil {
+		t.Fatalf("cluster validate failed: %v\nstderr: %s", err, stderr.String())
 	}
 }
 
@@ -408,6 +421,18 @@ func TestClusterInitWithDIContainer(t *testing.T) {
 	if initService == nil {
 		t.Error("init-service is nil")
 	}
+}
+
+func loadV2ConfigForTest(t *testing.T, configPath string) *v2.Config {
+	t.Helper()
+
+	loader := v2.NewConfigLoader(defaults.NewRegistry())
+	cfg, err := loader.LoadFromFile(configPath)
+	if err != nil {
+		t.Fatalf("load v2 config %s: %v", configPath, err)
+	}
+
+	return cfg
 }
 
 // TestClusterInitServiceIntegration tests the InitService directly

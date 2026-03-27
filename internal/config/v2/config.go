@@ -20,7 +20,7 @@ type Config struct {
 	Metadata      ConfigMetadata   `yaml:"metadata,omitempty" json:"metadata,omitempty"`
 	OpenCenter    OpenCenterConfig `yaml:"opencenter" json:"opencenter" validate:"required"`
 	Deployment    DeploymentConfig `yaml:"deployment,omitempty" json:"deployment,omitempty"`
-	OpenTofu      OpenTofuConfig   `yaml:"opentofu,omitempty" json:"opentofu,omitempty"`
+	OpenTofu      OpenTofuConfig   `yaml:"opentofu,omitempty" json:"opentofu,omitempty" validate:"required"`
 	Secrets       SecretsConfig    `yaml:"secrets" json:"secrets" validate:"required"`
 }
 
@@ -28,6 +28,7 @@ type Config struct {
 type ConfigMetadata struct {
 	CreatedAt   string            `yaml:"created_at,omitempty" json:"created_at,omitempty"`
 	UpdatedAt   string            `yaml:"updated_at,omitempty" json:"updated_at,omitempty"`
+	CreatedBy   string            `yaml:"created_by,omitempty" json:"created_by,omitempty"`
 	Version     string            `yaml:"version,omitempty" json:"version,omitempty"`
 	Labels      map[string]string `yaml:"labels,omitempty" json:"labels,omitempty"`
 	Annotations map[string]string `yaml:"annotations,omitempty" json:"annotations,omitempty"`
@@ -39,9 +40,11 @@ type OpenCenterConfig struct {
 	Meta            MetaConfig           `yaml:"meta" json:"meta" validate:"required"`
 	Cluster         ClusterConfig        `yaml:"cluster" json:"cluster" validate:"required"`
 	Infrastructure  InfrastructureConfig `yaml:"infrastructure" json:"infrastructure" validate:"required"`
+	Secrets         OpenCenterSecrets    `yaml:"secrets,omitempty" json:"secrets,omitempty"`
 	Services        ServiceMap           `yaml:"services,omitempty" json:"services,omitempty"`
 	ManagedServices ServiceMap           `yaml:"managed_services,omitempty" json:"managed_services,omitempty"`
-	GitOps          GitOpsConfig         `yaml:"gitops,omitempty" json:"gitops,omitempty"`
+	LegacyManaged   ServiceMap           `yaml:"managed-service,omitempty" json:"managed-service,omitempty"`
+	GitOps          GitOpsConfig         `yaml:"gitops,omitempty" json:"gitops,omitempty" validate:"required"`
 }
 
 // MetaConfig contains cluster identity and organizational context.
@@ -51,22 +54,25 @@ type MetaConfig struct {
 	Organization string `yaml:"organization" json:"organization" validate:"required"`
 	Env          string `yaml:"env" json:"env" validate:"required,oneof=dev staging production"`
 	Region       string `yaml:"region" json:"region" validate:"required"`
+	Stage        string `yaml:"stage,omitempty" json:"stage,omitempty"`
 	Status       string `yaml:"status,omitempty" json:"status,omitempty"`
 }
 
 // OpenTofuConfig represents OpenTofu/Terraform backend configuration.
 // Requirements: 20.1
 type OpenTofuConfig struct {
-	Backend BackendConfig `yaml:"backend,omitempty" json:"backend,omitempty"`
+	Enabled bool          `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+	Path    string        `yaml:"path,omitempty" json:"path,omitempty"`
+	Backend BackendConfig `yaml:"backend,omitempty" json:"backend,omitempty" validate:"required"`
 }
 
 // BackendConfig represents OpenTofu backend configuration.
 // Requirements: 20.1, 20.2, 20.3, 20.4
 type BackendConfig struct {
-	Type   string             `yaml:"type" json:"type" validate:"required,oneof=s3 local remote"`
+	Type   string              `yaml:"type" json:"type" validate:"required,oneof=s3 local remote"`
 	Local  *LocalBackendConfig `yaml:"local,omitempty" json:"local,omitempty"`
 	S3     *S3BackendConfig    `yaml:"s3,omitempty" json:"s3,omitempty"`
-	Config map[string]any     `yaml:"config,omitempty" json:"config,omitempty"`
+	Config map[string]any      `yaml:"config,omitempty" json:"config,omitempty"`
 }
 
 // LocalBackendConfig represents local backend configuration.
@@ -86,6 +92,8 @@ type S3BackendConfig struct {
 // SecretsConfig represents secrets configuration.
 // Requirements: 18.1, 18.2, 18.3
 type SecretsConfig struct {
+	SopsAgeKeyFile string         `yaml:"sops_age_key_file,omitempty" json:"sops_age_key_file,omitempty"`
+	SSHKey         SSHKeyConfig   `yaml:"ssh_key,omitempty" json:"ssh_key,omitempty"`
 	Global         GlobalSecrets  `yaml:"global,omitempty" json:"global,omitempty"`
 	ServiceSecrets map[string]any `yaml:"service_secrets,omitempty" json:"service_secrets,omitempty"`
 	SOPSConfig     SOPSConfig     `yaml:"sops,omitempty" json:"sops,omitempty"`
@@ -94,12 +102,30 @@ type SecretsConfig struct {
 // GlobalSecrets holds infrastructure-wide credentials.
 // Requirements: 18.2
 type GlobalSecrets struct {
-	AWSAccessKey       string `yaml:"aws_access_key,omitempty" json:"aws_access_key,omitempty"`
-	AWSSecretKey       string `yaml:"aws_secret_key,omitempty" json:"aws_secret_key,omitempty"`
-	OpenStackAuthURL   string `yaml:"openstack_auth_url,omitempty" json:"openstack_auth_url,omitempty"`
-	OpenStackUsername  string `yaml:"openstack_username,omitempty" json:"openstack_username,omitempty"`
-	OpenStackPassword  string `yaml:"openstack_password,omitempty" json:"openstack_password,omitempty"`
-	OpenStackProjectID string `yaml:"openstack_project_id,omitempty" json:"openstack_project_id,omitempty"`
+	AWS                AWSGlobalSecrets `yaml:"aws,omitempty" json:"aws,omitempty"`
+	AWSAccessKey       string           `yaml:"aws_access_key,omitempty" json:"aws_access_key,omitempty"`
+	AWSSecretKey       string           `yaml:"aws_secret_key,omitempty" json:"aws_secret_key,omitempty"`
+	OpenStackAuthURL   string           `yaml:"openstack_auth_url,omitempty" json:"openstack_auth_url,omitempty"`
+	OpenStackUsername  string           `yaml:"openstack_username,omitempty" json:"openstack_username,omitempty"`
+	OpenStackPassword  string           `yaml:"openstack_password,omitempty" json:"openstack_password,omitempty"`
+	OpenStackProjectID string           `yaml:"openstack_project_id,omitempty" json:"openstack_project_id,omitempty"`
+}
+
+type AWSGlobalSecrets struct {
+	Infrastructure AWSScopedSecrets `yaml:"infrastructure,omitempty" json:"infrastructure,omitempty"`
+	Application    AWSScopedSecrets `yaml:"application,omitempty" json:"application,omitempty"`
+}
+
+type AWSScopedSecrets struct {
+	AccessKey       string `yaml:"access_key,omitempty" json:"access_key,omitempty"`
+	SecretAccessKey string `yaml:"secret_access_key,omitempty" json:"secret_access_key,omitempty"`
+	Region          string `yaml:"region,omitempty" json:"region,omitempty"`
+}
+
+type SSHKeyConfig struct {
+	Private string `yaml:"private,omitempty" json:"private,omitempty"`
+	Public  string `yaml:"public,omitempty" json:"public,omitempty"`
+	Cypher  string `yaml:"cypher,omitempty" json:"cypher,omitempty"`
 }
 
 // SOPSConfig represents SOPS encryption configuration.
@@ -110,16 +136,45 @@ type SOPSConfig struct {
 	EncryptedRegex string `yaml:"encrypted_regex,omitempty" json:"encrypted_regex,omitempty"`
 }
 
+type OpenCenterSecrets struct {
+	Backend  string         `yaml:"backend,omitempty" json:"backend,omitempty"`
+	Barbican BarbicanConfig `yaml:"barbican,omitempty" json:"barbican,omitempty"`
+}
+
+type BarbicanConfig struct {
+	AuthURL           string `yaml:"auth_url,omitempty" json:"auth_url,omitempty"`
+	ProjectID         string `yaml:"project_id,omitempty" json:"project_id,omitempty"`
+	Region            string `yaml:"region,omitempty" json:"region,omitempty"`
+	UserDomainName    string `yaml:"user_domain_name,omitempty" json:"user_domain_name,omitempty"`
+	ProjectDomainName string `yaml:"project_domain_name,omitempty" json:"project_domain_name,omitempty"`
+	CACert            string `yaml:"ca_cert,omitempty" json:"ca_cert,omitempty"`
+}
+
 // GitOpsConfig represents GitOps repository configuration.
 // Requirements: 19.1
 type GitOpsConfig struct {
-	GitURL          string `yaml:"git_url" json:"git_url" validate:"required"`
-	GitBranch       string `yaml:"git_branch,omitempty" json:"git_branch,omitempty"`
-	GitPath         string `yaml:"git_path,omitempty" json:"git_path,omitempty"`
-	BaseRepoURL     string `yaml:"base_repo_url,omitempty" json:"base_repo_url,omitempty"`
-	BaseRepoRelease string `yaml:"base_repo_release,omitempty" json:"base_repo_release,omitempty"`
-	FluxInterval    string `yaml:"flux_interval,omitempty" json:"flux_interval,omitempty"`
-	FluxPrune       bool   `yaml:"flux_prune" json:"flux_prune"`
+	GitDir            string           `yaml:"git_dir,omitempty" json:"git_dir,omitempty"`
+	GitURL            string           `yaml:"git_url" json:"git_url" validate:"required"`
+	GitSSHKey         string           `yaml:"git_ssh_key,omitempty" json:"git_ssh_key,omitempty"`
+	GitSSHPub         string           `yaml:"git_ssh_pub,omitempty" json:"git_ssh_pub,omitempty"`
+	GitBranch         string           `yaml:"git_branch,omitempty" json:"git_branch,omitempty"`
+	Release           string           `yaml:"release,omitempty" json:"release,omitempty"`
+	Branch            string           `yaml:"branch,omitempty" json:"branch,omitempty"`
+	URI               string           `yaml:"uri,omitempty" json:"uri,omitempty"`
+	GitPath           string           `yaml:"git_path,omitempty" json:"git_path,omitempty"`
+	BaseRepoURL       string           `yaml:"base_repo_url,omitempty" json:"base_repo_url,omitempty"`
+	BaseRepoRelease   string           `yaml:"base_repo_release,omitempty" json:"base_repo_release,omitempty"`
+	GitOpsBaseRepo    string           `yaml:"gitops_base_repo,omitempty" json:"gitops_base_repo,omitempty"`
+	GitOpsBaseRelease string           `yaml:"gitops_base_release,omitempty" json:"gitops_base_release,omitempty"`
+	GitOpsBranch      string           `yaml:"gitops_branch,omitempty" json:"gitops_branch,omitempty"`
+	Flux              GitOpsFluxConfig `yaml:"flux,omitempty" json:"flux,omitempty"`
+	FluxInterval      string           `yaml:"flux_interval,omitempty" json:"flux_interval,omitempty"`
+	FluxPrune         bool             `yaml:"flux_prune" json:"flux_prune"`
+}
+
+type GitOpsFluxConfig struct {
+	Interval string `yaml:"interval,omitempty" json:"interval,omitempty"`
+	Prune    bool   `yaml:"prune" json:"prune"`
 }
 
 // ServiceMap is a polymorphic map of service configurations.

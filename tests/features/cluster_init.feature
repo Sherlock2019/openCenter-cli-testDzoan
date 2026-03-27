@@ -8,10 +8,10 @@ Thenaclusterconfiguration "test-cluster"shouldexist
 Andtheclusterconfiguration "test-cluster"shouldhave "opencenter.cluster.cluster_name"setto "test-cluster"
 Andthefileshouldnotcontain "local."
 Scenario:Initialiseaclusterandoverridestringsettingsfromflags
-WhenIrun "opencenterclusterinittest-cluster --opencenter.gitops.git_dir=/opt/opencenter/test-cluster --opencenter.cluster.kubernetes.master_count=5"
+WhenIrun "opencenterclusterinittest-cluster --opencenter.gitops.git_dir=/opt/opencenter/test-cluster --opencenter.infrastructure.compute.master_count=5"
 Thenaclusterconfiguration "test-cluster"shouldexist
 Andtheclusterconfiguration "test-cluster"shouldhave "opencenter.gitops.git_dir"setto "/opt/opencenter/test-cluster"
-Andtheclusterconfiguration "test-cluster"shouldhave "opencenter.cluster.kubernetes.master_count"setto "5"
+Andtheclusterconfiguration "test-cluster"shouldhave "opencenter.infrastructure.compute.master_count"setto "5"
 Scenario:InitgeneratesaSOPSkeywhennotprovided
 WhenIrun "opencenterclusterinitdemo --opencenter.gitops.git_dir=<<tmp>>/repo-demo"
 Thenafile "~/.config/opencenter/clusters/opencenter/secrets/age/keys/demo-key.txt"shouldexist
@@ -21,10 +21,11 @@ WhenIrun "opencenterclusterinitdemo2 --opencenter.gitops.git_dir=<<tmp>>/repo-de
 Thenthefile "~/.config/opencenter/clusters/opencenter/secrets/age/keys/demo2-key.txt"shouldnotexist
 Andtheclusterconfiguration "demo2"shouldhave "secrets.sops_age_key_file"setto ""
   @priority8
-Scenario:Initwithfullschemaincludeslocalreferences
+Scenario:Initwithfullschemausesvalidv2template
 WhenIrun "opencenterclusterinitfull-one --full-schema"
 Thenaclusterconfiguration "full-one"shouldexist
-Andthefileshouldcontain "local."
+Andthefileshouldnotcontain "local."
+Andthefileshouldnotcontain "iac:"
 Scenario:Initcreatesclusterssubdirectoryandclusterdirectorystructure
 WhenIrun "opencenterclusterinitnew-cluster"
 Thenadirectory "~/.config/opencenter/clusters"shouldexist

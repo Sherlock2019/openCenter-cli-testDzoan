@@ -1,0 +1,722 @@
+package v2
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"time"
+
+	registrydefaults "github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
+	"gopkg.in/yaml.v3"
+)
+
+const (
+	defaultSchemaVersion               = "2.0"
+	defaultOrganization                = "opencenter"
+	defaultProvider                    = "openstack"
+	defaultRegion                      = "sjc3"
+	defaultEnvironment                 = "dev"
+	defaultBaseDomain                  = "k8s.opencenter.cloud"
+	defaultGitBranch                   = "main"
+	defaultGitURLPlaceholder           = "ssh://git@example.com/opencenter/cluster-config.git"
+	defaultGitBaseRepoURL              = "ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git"
+	defaultGitBaseRepoRelease          = "v0.1.0"
+	defaultDefaultStorageClass         = "standard"
+	defaultWorkerVolumeType            = "standard"
+	defaultOpenStackAuthURLPlaceholder = "https://identity.api.example.com/v3"
+	defaultOpenStackProjectID          = "project-id-placeholder"
+	defaultOpenStackProjectName        = "project-name-placeholder"
+	defaultOpenStackNetworkID          = "network-id-placeholder"
+	defaultOpenStackSubnetID           = "subnet-id-placeholder"
+	defaultOpenStackExternalNetworkID  = "external-network-id-placeholder"
+	defaultOpenStackFloatingPool       = "PUBLICNET"
+	defaultOpenStackImageID            = "image-id-placeholder"
+	defaultVMwareVCenter               = "vcenter.example.com"
+	defaultVMwareDatacenter            = "Datacenter1"
+	defaultVMwareCluster               = "Cluster1"
+	defaultVMwareDatastore             = "datastore1"
+	defaultVMwareNetwork               = "VM Network"
+	defaultVMwareTemplate              = "ubuntu-2404-template"
+	defaultSSHKeyPlaceholder           = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExamplePublicKeyDataHere user@example.com"
+	defaultAllocationPoolStart         = "10.2.128.10"
+	defaultAllocationPoolEnd           = "10.2.131.250"
+	defaultGateway                     = "10.2.128.1"
+	defaultVRRPIP                      = "10.2.128.5"
+)
+
+type cliDefaults struct {
+	Provider          string   `yaml:"provider"`
+	Region            string   `yaml:"region"`
+	Environment       string   `yaml:"environment"`
+	SSHAuthorizedKeys []string `yaml:"ssh_authorized_keys"`
+}
+
+type cliConfig struct {
+	Defaults cliDefaults `yaml:"defaults"`
+}
+
+// NewV2Default creates a schema-valid v2 configuration with init defaults.
+func NewV2Default(name, provider string) (*Config, error) {
+	defaults := loadCLIDefaults()
+	selectedProvider := canonicalInfrastructureProvider(strings.TrimSpace(provider))
+	if selectedProvider == "" {
+		selectedProvider = canonicalInfrastructureProvider(defaults.Provider)
+	}
+	if selectedProvider == "" {
+		selectedProvider = defaultProvider
+	}
+
+	region := strings.TrimSpace(defaults.Region)
+	if region == "" {
+		region = defaultRegion
+	}
+	environment := strings.TrimSpace(defaults.Environment)
+	if environment == "" {
+		environment = defaultEnvironment
+	}
+
+	clusterFQDN := fmt.Sprintf("%s.%s.%s", name, region, defaultBaseDomain)
+	sshKeyBase := fmt.Sprintf("%s-%s-%s", name, environment, region)
+	sshKeyPath := filepath.ToSlash(filepath.Join("secrets", "ssh", sshKeyBase))
+	sopsAgeKeyPath := filepath.ToSlash(filepath.Join("secrets", "age", "keys", fmt.Sprintf("%s-key.txt", name)))
+	now := time.Now().Format(time.RFC3339Nano)
+	availabilityZone := "az1"
+	providerDefaults, err := lookupProviderDefaults(selectedProvider, region)
+	if err == nil {
+		azs := providerDefaults.GetAvailabilityZones()
+		if len(azs) > 0 {
+			availabilityZone = azs[0]
+		}
+	}
+
+	bastionEnabled := selectedProvider != "kind" && selectedProvider != "baremetal"
+	bastionFlavor := defaultFlavorForProvider(selectedProvider, region, "bastion")
+	if bastionFlavor == "" {
+		bastionEnabled = false
+	}
+
+	cfg := &Config{
+		SchemaVersion: defaultSchemaVersion,
+		Metadata: ConfigMetadata{
+			CreatedAt: now,
+			UpdatedAt: now,
+			CreatedBy: currentUser(),
+		},
+		OpenCenter: OpenCenterConfig{
+			Meta: MetaConfig{
+				Name:         name,
+				Organization: defaultOrganization,
+				Env:          environment,
+				Region:       region,
+				Stage:        "init",
+				Status:       "success",
+			},
+			Secrets: OpenCenterSecrets{
+				Backend: "sops",
+			},
+			Cluster: ClusterConfig{
+				ClusterName: name,
+				BaseDomain:  defaultBaseDomain,
+				ClusterFQDN: clusterFQDN,
+				AdminEmail:  "admin@example.com",
+				Kubernetes: KubernetesConfig{
+					Version:        "1.33.5",
+					APIPort:        443,
+					KubeVIPEnabled: selectedProvider != "kind",
+					SubnetPods:     "10.42.0.0/16",
+					SubnetServices: "10.43.0.0/16",
+					NetworkPlugin: NetworkPluginConfig{
+						Calico: &CalicoConfig{
+							Enabled:       true,
+							Version:       "3.29.2",
+							VXLANMode:     "Always",
+							NetworkPolicy: true,
+						},
+					},
+					StoragePlugin: storagePluginDefaults(selectedProvider),
+					Security: KubernetesSecurityConfig{
+						PodSecurityStandards: "baseline",
+						AuditLogging:         true,
+						EncryptionAtRest:     true,
+					},
+					OIDC: OIDCConfig{
+						Enabled:       false,
+						UsernameClaim: "sub",
+						GroupsClaim:   "groups",
+					},
+				},
+			},
+			Infrastructure: InfrastructureConfig{
+				Provider: selectedProvider,
+				SSH: SSHConfig{
+					AuthorizedKeys: defaultAuthorizedKeys(defaults),
+					Username:       "ubuntu",
+					User:           "ubuntu",
+					KeyPath:        sshKeyPath,
+				},
+				OSVersion:           "24",
+				ServerGroupAffinity: []string{"anti-affinity"},
+				NodeNaming: NodeNamingConfig{
+					Prefix: name,
+					Suffix: region,
+				},
+				Bastion: BastionConfig{
+					Enabled: bastionEnabled,
+					Flavor:  bastionFlavor,
+					Image:   defaultImageForProvider(selectedProvider, region),
+				},
+				Networking: NetworkingConfig{
+					SubnetNodes:          "10.2.128.0/22",
+					AllocationPoolStart:  defaultAllocationPoolStart,
+					AllocationPoolEnd:    defaultAllocationPoolEnd,
+					Gateway:              defaultGateway,
+					VRRPEnabled:          selectedProvider != "kind",
+					VRRPIP:               defaultVRRPIP,
+					LoadbalancerProvider: "ovn",
+					UseDesignate:         false,
+					DNSZoneName:          clusterFQDN,
+					DNSNameservers:       defaultDNSServers(selectedProvider, region),
+					NTPServers:           defaultNTPServers(selectedProvider, region),
+					Security: NetworkSecurityConfig{
+						AllowedCIDRs: []string{"0.0.0.0/0"},
+						DenyAll:      false,
+					},
+				},
+				Compute: ComputeConfig{
+					FlavorBastion:       bastionFlavor,
+					FlavorMaster:        defaultFlavorForProvider(selectedProvider, region, "master"),
+					FlavorWorker:        defaultFlavorForProvider(selectedProvider, region, "worker"),
+					FlavorWorkerWindows: defaultFlavorForProvider(selectedProvider, region, "worker-windows"),
+					MasterCount:         3,
+					WorkerCount:         2,
+					WorkerCountWindows:  0,
+				},
+				Storage: StorageConfig{
+					DefaultStorageClass:             defaultStorageClass(selectedProvider, region),
+					WorkerVolumeSize:                40,
+					WorkerVolumeDestinationType:     "volume",
+					WorkerVolumeSourceType:          "image",
+					WorkerVolumeType:                defaultStorageType(selectedProvider),
+					WorkerVolumeDeleteOnTermination: false,
+					MasterVolumeSize:                40,
+					MasterVolumeDestinationType:     "volume",
+					MasterVolumeSourceType:          "image",
+					MasterVolumeType:                defaultStorageType(selectedProvider),
+					MasterVolumeDeleteOnTermination: false,
+				},
+			},
+			GitOps: GitOpsConfig{
+				GitDir:            filepath.ToSlash(filepath.Join("clusters", defaultOrganization)),
+				GitURL:            defaultGitURLPlaceholder,
+				GitSSHKey:         sshKeyPath,
+				GitSSHPub:         sshKeyPath + ".pub",
+				GitBranch:         defaultGitBranch,
+				Release:           defaultGitBaseRepoRelease,
+				Branch:            defaultGitBranch,
+				URI:               defaultGitBaseRepoURL,
+				GitPath:           filepath.ToSlash(filepath.Join("clusters", name)),
+				BaseRepoURL:       defaultGitBaseRepoURL,
+				BaseRepoRelease:   defaultGitBaseRepoRelease,
+				GitOpsBaseRepo:    defaultGitBaseRepoURL,
+				GitOpsBaseRelease: defaultGitBaseRepoRelease,
+				GitOpsBranch:      defaultGitBranch,
+				Flux: GitOpsFluxConfig{
+					Interval: "5m",
+					Prune:    true,
+				},
+				FluxInterval: "5m",
+				FluxPrune:    true,
+			},
+			ManagedServices: ServiceMap{
+				"alert-proxy": map[string]any{
+					"enabled":  false,
+					"hostname": fmt.Sprintf("alerts.%s", clusterFQDN),
+				},
+			},
+			Services: defaultServiceMap(clusterFQDN),
+		},
+		Deployment: DeploymentConfig{
+			AutoDeploy: true,
+			Method:     "kubespray",
+			Kubespray: &KubesprayConfig{
+				Version: "2.29.1",
+				Modules: map[string]ModuleConfig{
+					"kubespray": {
+						Enabled: true,
+						Source:  "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/provider/kubespray?ref=main",
+					},
+				},
+			},
+		},
+		OpenTofu: OpenTofuConfig{
+			Enabled: selectedProvider != "kind",
+			Path:    "opentofu",
+			Backend: BackendConfig{
+				Type: "local",
+				Local: &LocalBackendConfig{
+					Path: fmt.Sprintf(".opentofu-local-%s/terraform.tfstate", name),
+				},
+			},
+		},
+		Secrets: SecretsConfig{
+			SSHKey: SSHKeyConfig{
+				Private: sshKeyPath,
+				Public:  sshKeyPath + ".pub",
+				Cypher:  "ed25519",
+			},
+			SopsAgeKeyFile: sopsAgeKeyPath,
+			Global:         GlobalSecrets{},
+			SOPSConfig: SOPSConfig{
+				Enabled:        true,
+				AgeKeyFile:     sopsAgeKeyPath,
+				EncryptedRegex: "^(data|stringData|secret)$",
+			},
+		},
+	}
+
+	applyProviderCloudDefaults(cfg, availabilityZone)
+	applyProviderBehaviorDefaults(cfg)
+
+	return cfg, nil
+}
+
+// NewV2FullTemplate returns a more explicit v2 template for --full-schema output.
+func NewV2FullTemplate(name, provider string) (*Config, error) {
+	cfg, err := NewV2Default(name, provider)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg.Metadata.Version = "template"
+	cfg.Metadata.Labels = map[string]string{
+		"environment": cfg.OpenCenter.Meta.Env,
+		"owner":       "platform-team",
+	}
+	cfg.Metadata.Annotations = map[string]string{
+		"note": "Replace placeholder values before deployment.",
+	}
+
+	cfg.OpenCenter.Secrets.Barbican = BarbicanConfig{
+		AuthURL:           "https://barbican.example.com/v1",
+		ProjectID:         defaultOpenStackProjectID,
+		Region:            cfg.OpenCenter.Meta.Region,
+		UserDomainName:    "default",
+		ProjectDomainName: "default",
+		CACert:            "/etc/ssl/certs/ca.pem",
+	}
+
+	cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium = &CiliumConfig{
+		Enabled:       false,
+		Version:       "1.16.0",
+		TunnelMode:    "vxlan",
+		Hubble:        true,
+		NetworkPolicy: true,
+	}
+	cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN = &KubeOVNConfig{
+		Enabled:       false,
+		Version:       "1.13.0",
+		NetworkPolicy: true,
+	}
+	cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.AwsEbsCsi = &AwsEbsCsiConfig{Enabled: false, Version: "1.37.0"}
+	cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.AzureDiskCsi = &AzureDiskCsiConfig{Enabled: false, Version: "1.30.0"}
+	cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Ceph = &CephCsiConfig{Enabled: false, Version: "3.11.0"}
+	cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.GcpComputeCsi = &GcpComputeCsiConfig{Enabled: false, Version: "1.13.0"}
+	cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Trident = &TridentCsiConfig{Enabled: false, Version: "24.06.0"}
+	cfg.OpenCenter.Cluster.Kubernetes.Security.AdmissionControllers = []string{"NodeRestriction"}
+	cfg.OpenCenter.Cluster.Kubernetes.OIDC.UsernameClaim = "sub"
+	cfg.OpenCenter.Cluster.Kubernetes.OIDC.GroupsClaim = "groups"
+	cfg.OpenCenter.Infrastructure.Networking.VLAN = VLANConfig{
+		Enabled: false,
+		ID:      100,
+	}
+	cfg.OpenCenter.Infrastructure.Compute.AdditionalServerPoolsWorker = []WorkerPoolConfig{
+		{
+			Name:   "gpu-workers",
+			Count:  1,
+			Flavor: "worker-gpu-placeholder",
+			Image:  defaultImageForProvider(cfg.OpenCenter.Infrastructure.Provider, cfg.OpenCenter.Meta.Region),
+			BootVolume: VolumeConfig{
+				Size:                80,
+				Type:                defaultStorageType(cfg.OpenCenter.Infrastructure.Provider),
+				DestinationType:     "volume",
+				SourceType:          "image",
+				DeleteOnTermination: false,
+			},
+			Labels: map[string]string{"accelerator": "gpu"},
+		},
+	}
+	cfg.OpenCenter.Infrastructure.Storage.AdditionalBlockDevices = []BlockDeviceConfig{
+		{
+			Name:                "logs",
+			Size:                100,
+			Type:                defaultStorageType(cfg.OpenCenter.Infrastructure.Provider),
+			MountPath:           "/var/log",
+			DeleteOnTermination: false,
+		},
+	}
+	cfg.OpenCenter.GitOps.Release = defaultGitBaseRepoRelease
+	cfg.OpenCenter.GitOps.Branch = defaultGitBranch
+	cfg.OpenCenter.GitOps.URI = defaultGitBaseRepoURL
+
+	return cfg, nil
+}
+
+// RenderFullTemplateYAML renders a commented, schema-valid full template.
+func RenderFullTemplateYAML(name, provider string) ([]byte, error) {
+	cfg, err := NewV2FullTemplate(name, provider)
+	if err != nil {
+		return nil, err
+	}
+
+	return RenderFullTemplateYAMLFromConfig(cfg)
+}
+
+// RenderFullTemplateYAMLFromConfig renders a commented, schema-valid full template
+// from an already-populated v2 config.
+func RenderFullTemplateYAMLFromConfig(cfg *Config) ([]byte, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("config cannot be nil")
+	}
+
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("marshal v2 full template: %w", err)
+	}
+
+	header := strings.Join([]string{
+		"# Full v2 cluster configuration template",
+		"# Replace placeholder values before deployment.",
+		"# Dotted overrides use native v2 paths such as:",
+		"#   --opencenter.infrastructure.compute.master_count=5",
+		"#   --opencenter.infrastructure.cloud.openstack.project_id=<project-id>",
+		"#   --opencenter.gitops.git_url=ssh://git@example.com/org/repo.git",
+		"",
+	}, "\n")
+
+	return append([]byte(header), data...), nil
+}
+
+func applyProviderCloudDefaults(cfg *Config, availabilityZone string) {
+	switch canonicalInfrastructureProvider(cfg.OpenCenter.Infrastructure.Provider) {
+	case "openstack":
+		cfg.OpenCenter.Infrastructure.Cloud.OpenStack = &OpenStackCloudConfig{
+			AuthURL:                 defaultOpenStackAuthURLPlaceholder,
+			Region:                  cfg.OpenCenter.Meta.Region,
+			ProjectID:               defaultOpenStackProjectID,
+			ProjectName:             defaultOpenStackProjectName,
+			UserDomainName:          "default",
+			ProjectDomainName:       "default",
+			ImageID:                 defaultImageForProvider("openstack", cfg.OpenCenter.Meta.Region),
+			ImageIDWindows:          defaultImageForProvider("openstack", cfg.OpenCenter.Meta.Region),
+			NetworkID:               defaultOpenStackNetworkID,
+			SubnetID:                defaultOpenStackSubnetID,
+			FloatingIPPool:          defaultOpenStackFloatingPool,
+			RouterExternalNetworkID: defaultOpenStackExternalNetworkID,
+			AvailabilityZone:        availabilityZone,
+			AvailabilityZones:       []string{availabilityZone},
+			UseOctavia:              false,
+			UseDesignate:            false,
+			Networking: &OpenStackNetworkingConfig{
+				FloatingIPPool:          defaultOpenStackFloatingPool,
+				NetworkID:               defaultOpenStackNetworkID,
+				RouterExternalNetworkID: defaultOpenStackExternalNetworkID,
+				SubnetID:                defaultOpenStackSubnetID,
+				K8sAPIPortACL:           []string{"0.0.0.0/0"},
+				Designate: DesignateConfig{
+					DNSZoneName: cfg.OpenCenter.Cluster.ClusterFQDN,
+				},
+				VLAN: VLANConfigLegacy{
+					Provider: "physnet1",
+				},
+			},
+			Modules: OpenStackModulesConfig{
+				OpenstackNova: OpenstackNovaModuleConfig{
+					Source: "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cloud/openstack/openstack-nova?ref=main",
+				},
+			},
+		}
+	case "vmware":
+		cfg.OpenCenter.Infrastructure.Cloud.VMware = &VMwareCloudConfig{
+			VCenterServer: defaultVMwareVCenter,
+			Datacenter:    defaultVMwareDatacenter,
+			Cluster:       defaultVMwareCluster,
+			Datastore:     defaultVMwareDatastore,
+			Network:       defaultVMwareNetwork,
+			Template:      defaultVMwareTemplate,
+			Folder:        "/vm/opencenter",
+		}
+	default:
+		cfg.OpenCenter.Infrastructure.Cloud = CloudConfig{}
+	}
+}
+
+func applyProviderBehaviorDefaults(cfg *Config) {
+	switch canonicalInfrastructureProvider(cfg.OpenCenter.Infrastructure.Provider) {
+	case "kind":
+		cfg.OpenCenter.Infrastructure.Bastion.Enabled = false
+		cfg.OpenCenter.Cluster.Kubernetes.KubeVIPEnabled = false
+		cfg.OpenCenter.Infrastructure.Networking.VRRPEnabled = false
+		cfg.OpenCenter.Infrastructure.Networking.VRRPIP = ""
+		cfg.OpenCenter.Infrastructure.Networking.DNSZoneName = "cluster.local"
+	case "baremetal":
+		cfg.OpenCenter.Infrastructure.Bastion.Enabled = false
+	case "vmware":
+		cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.VSphereCsi = &VSphereCsiConfig{
+			Enabled: true,
+			Version: "3.3.0",
+		}
+	case "openstack":
+		cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.CinderCsi = &CinderCsiConfig{
+			Enabled: true,
+			Version: "1.30.0",
+		}
+	}
+}
+
+func defaultServiceMap(clusterFQDN string) ServiceMap {
+	return ServiceMap{
+		"calico": map[string]any{
+			"enabled": true,
+		},
+		"cert-manager": map[string]any{
+			"enabled": true,
+		},
+		"fluxcd": map[string]any{
+			"enabled": true,
+		},
+		"gateway": map[string]any{
+			"enabled": true,
+		},
+		"gateway-api": map[string]any{
+			"enabled": true,
+		},
+		"headlamp": map[string]any{
+			"enabled":  true,
+			"hostname": fmt.Sprintf("dashboard.%s", clusterFQDN),
+		},
+		"keycloak": map[string]any{
+			"enabled":  true,
+			"hostname": fmt.Sprintf("auth.%s", clusterFQDN),
+		},
+	}
+}
+
+func storagePluginDefaults(provider string) StoragePluginConfig {
+	switch canonicalInfrastructureProvider(provider) {
+	case "openstack":
+		return StoragePluginConfig{
+			CinderCsi: &CinderCsiConfig{Enabled: true, Version: "1.30.0"},
+		}
+	case "vmware":
+		return StoragePluginConfig{
+			VSphereCsi: &VSphereCsiConfig{Enabled: true, Version: "3.3.0"},
+		}
+	default:
+		return StoragePluginConfig{}
+	}
+}
+
+func loadCLIDefaults() cliDefaults {
+	defaults := cliDefaults{
+		Provider:    defaultProvider,
+		Region:      defaultRegion,
+		Environment: defaultEnvironment,
+	}
+
+	configPath, err := defaultCLIConfigPath()
+	if err != nil {
+		return defaults
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return defaults
+	}
+
+	var cfg cliConfig
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return defaults
+	}
+
+	if strings.TrimSpace(cfg.Defaults.Provider) != "" {
+		defaults.Provider = cfg.Defaults.Provider
+	}
+	if strings.TrimSpace(cfg.Defaults.Region) != "" {
+		defaults.Region = cfg.Defaults.Region
+	}
+	if strings.TrimSpace(cfg.Defaults.Environment) != "" {
+		defaults.Environment = cfg.Defaults.Environment
+	}
+	if len(cfg.Defaults.SSHAuthorizedKeys) > 0 {
+		defaults.SSHAuthorizedKeys = cfg.Defaults.SSHAuthorizedKeys
+	}
+
+	return defaults
+}
+
+func defaultCLIConfigPath() (string, error) {
+	configDir := os.Getenv("OPENCENTER_CONFIG_DIR")
+	if configDir == "" {
+		switch runtime.GOOS {
+		case "windows":
+			base := os.Getenv("APPDATA")
+			if base == "" {
+				base = os.Getenv("LOCALAPPDATA")
+			}
+			if base == "" {
+				base = os.Getenv("USERPROFILE")
+			}
+			configDir = filepath.Join(base, "opencenter")
+		default:
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return "", err
+			}
+			configDir = filepath.Join(home, ".config", "opencenter")
+		}
+	}
+
+	return filepath.Join(configDir, "config.yaml"), nil
+}
+
+func lookupProviderDefaults(provider, region string) (registrydefaults.ProviderDefaults, error) {
+	registry := registrydefaults.GetGlobalRegistry()
+	return registry.GetDefaults(canonicalInfrastructureProvider(provider), region)
+}
+
+func defaultDNSServers(provider, region string) []string {
+	providerDefaults, err := lookupProviderDefaults(provider, region)
+	if err == nil {
+		if values := providerDefaults.GetDNSNameservers(); len(values) > 0 {
+			return append([]string(nil), values...)
+		}
+	}
+	return []string{"8.8.8.8", "8.8.4.4"}
+}
+
+func defaultNTPServers(provider, region string) []string {
+	providerDefaults, err := lookupProviderDefaults(provider, region)
+	if err == nil {
+		if values := providerDefaults.GetNTPServers(); len(values) > 0 {
+			return append([]string(nil), values...)
+		}
+	}
+	return []string{
+		fmt.Sprintf("time.%s.example.com", strings.ToLower(region)),
+		fmt.Sprintf("time2.%s.example.com", strings.ToLower(region)),
+	}
+}
+
+func defaultStorageClass(provider, region string) string {
+	providerDefaults, err := lookupProviderDefaults(provider, region)
+	if err == nil {
+		if value := strings.TrimSpace(providerDefaults.GetDefaultStorageClass()); value != "" {
+			return value
+		}
+	}
+
+	switch canonicalInfrastructureProvider(provider) {
+	case "openstack":
+		return "csi-cinder-sc-delete"
+	case "vmware":
+		return "vsphere-csi"
+	default:
+		return defaultDefaultStorageClass
+	}
+}
+
+func defaultFlavorForProvider(provider, region, role string) string {
+	providerDefaults, err := lookupProviderDefaults(provider, region)
+	if err == nil {
+		flavors := providerDefaults.GetDefaultFlavors()
+		switch role {
+		case "bastion":
+			if flavors.Bastion != "" {
+				return flavors.Bastion
+			}
+		case "master":
+			if flavors.Master != "" {
+				return flavors.Master
+			}
+		case "worker":
+			if flavors.Worker != "" {
+				return flavors.Worker
+			}
+		case "worker-windows":
+			if flavors.WorkerWindows != "" {
+				return flavors.WorkerWindows
+			}
+		}
+	}
+
+	switch canonicalInfrastructureProvider(provider) {
+	case "vmware":
+		switch role {
+		case "bastion":
+			return "vmware-bastion"
+		case "master":
+			return "vmware-master"
+		case "worker":
+			return "vmware-worker"
+		case "worker-windows":
+			return "vmware-worker-windows"
+		}
+	case "baremetal":
+		switch role {
+		case "bastion":
+			return ""
+		case "master":
+			return "baremetal-master"
+		case "worker":
+			return "baremetal-worker"
+		case "worker-windows":
+			return "baremetal-worker-windows"
+		}
+	case "kind":
+		return ""
+	}
+
+	return ""
+}
+
+func defaultStorageType(provider string) string {
+	switch canonicalInfrastructureProvider(provider) {
+	case "openstack":
+		return "HA-Standard"
+	case "vmware":
+		return "vsphere-default"
+	case "kind":
+		return "local-path"
+	default:
+		return defaultWorkerVolumeType
+	}
+}
+
+func defaultImageForProvider(provider, region string) string {
+	providerDefaults, err := lookupProviderDefaults(provider, region)
+	if err == nil {
+		if value := strings.TrimSpace(providerDefaults.GetImageID("24")); value != "" {
+			return value
+		}
+	}
+	return defaultOpenStackImageID
+}
+
+func defaultAuthorizedKeys(defaults cliDefaults) []string {
+	if len(defaults.SSHAuthorizedKeys) > 0 {
+		return append([]string(nil), defaults.SSHAuthorizedKeys...)
+	}
+	return []string{defaultSSHKeyPlaceholder}
+}
+
+func currentUser() string {
+	if user := strings.TrimSpace(os.Getenv("USER")); user != "" {
+		return user
+	}
+	if user := strings.TrimSpace(os.Getenv("USERNAME")); user != "" {
+		return user
+	}
+	return "unknown"
+}
