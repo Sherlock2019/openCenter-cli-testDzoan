@@ -306,6 +306,65 @@ func parseSchemaErrors(rawError string, activeProvider string) []ValidationError
 	return errors
 }
 
+// yamlFieldErrorRegex matches YAML type errors like "line 12: field stage not found in type v2.MetaConfig"
+var yamlFieldErrorRegex = regexp.MustCompile(`^line (\d+): field (\S+) not found in type v2\.(\w+)$`)
+
+// configTypeToSection maps v2 Go type names to human-readable sections.
+var configTypeToSection = map[string]string{
+	"MetaConfig":               "Meta",
+	"ClusterConfig":            "Cluster",
+	"KubernetesConfig":         "Cluster > Kubernetes",
+	"KubernetesSecurityConfig": "Cluster > Kubernetes",
+	"CalicoConfig":             "Cluster > Kubernetes",
+	"CiliumConfig":             "Cluster > Kubernetes",
+	"KubeOVNConfig":            "Cluster > Kubernetes",
+	"OIDCConfig":               "Cluster > Kubernetes",
+	"InfrastructureConfig":     "Infrastructure",
+	"SSHConfig":                "Infrastructure > SSH",
+	"NetworkingConfig":         "Infrastructure > Networking",
+	"ComputeConfig":            "Infrastructure > Compute",
+	"StorageConfig":            "Infrastructure > Storage",
+	"StoragePluginConfig":      "Infrastructure > Storage",
+	"OpenStackCloudConfig":     "Infrastructure > Cloud",
+	"AWSCloudConfig":           "Infrastructure > Cloud",
+	"VMwareCloudConfig":        "Infrastructure > Cloud",
+	"BastionConfig":            "Infrastructure > Compute",
+	"NodeNamingConfig":         "Infrastructure > Compute",
+	"GitOpsConfig":             "Gitops",
+	"DeploymentConfig":         "Deployment",
+	"OpenTofuConfig":           "Opentofu",
+	"SecretsConfig":            "Secrets",
+	"OpenCenterConfig":         "General",
+	"Config":                   "General",
+}
+
+// parseYAMLFieldError attempts to parse a single YAML "field not found" error
+// into a structured ValidationError. Returns the error and true if parsed.
+func parseYAMLFieldError(text string) (ValidationError, bool) {
+	m := yamlFieldErrorRegex.FindStringSubmatch(text)
+	if m == nil {
+		return ValidationError{}, false
+	}
+
+	line := m[1]
+	field := m[2]
+	typeName := m[3]
+
+	section := "General"
+	if s, ok := configTypeToSection[typeName]; ok {
+		section = s
+	}
+
+	return ValidationError{
+		Section:  section,
+		Field:    field,
+		YAMLPath: "",
+		Tag:      "unknown_field",
+		Message:  fmt.Sprintf("unknown field '%s' (line %s) — not recognized in current schema, may need migration", field, line),
+		Category: "configuration",
+	}, true
+}
+
 // parseRawErrors parses all raw error strings into structured ValidationErrors.
 func parseRawErrors(rawErrors []string, activeProvider string) []ValidationError {
 	var allErrors []ValidationError
@@ -346,6 +405,9 @@ func parseRawErrors(rawErrors []string, activeProvider string) []ValidationError
 				}
 			}
 			allErrors = append(allErrors, parsed...)
+		} else if parsed, ok := parseYAMLFieldError(errorText); ok {
+			parsed.Category = category
+			allErrors = append(allErrors, parsed)
 		} else {
 			allErrors = append(allErrors, ValidationError{
 				Section:  "General",

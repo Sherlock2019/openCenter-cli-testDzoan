@@ -409,8 +409,8 @@ func (v *ManifestValidator) validateVSphereCSI() {
 			lines := strings.Split(content, "\n")
 			for i, line := range lines {
 				if strings.TrimSpace(line) == "kind: StorageClass" {
-					// Check if there's a blank line before this
-					if i > 0 && strings.TrimSpace(lines[i-1]) != "" && !strings.HasPrefix(lines[i-1], "---") {
+					// Check if there's a blank line before this (between apiVersion and kind)
+					if i > 0 && strings.TrimSpace(lines[i-1]) == "" {
 						v.errors = append(v.errors, fmt.Sprintf("%s: StorageClass has formatting gap (extra blank line)", file))
 					}
 				}

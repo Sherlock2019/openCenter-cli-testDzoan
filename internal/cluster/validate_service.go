@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -103,7 +104,6 @@ func (s *ValidateService) Validate(ctx context.Context, opts ValidateOptions) (*
 	}
 
 	var configPath string
-	var err error
 
 	// Determine config path
 	if opts.ConfigPath != "" {
@@ -133,46 +133,8 @@ func (s *ValidateService) Validate(ctx context.Context, opts ValidateOptions) (*
 		}
 	}
 
-	// Detect schema version
-	versionInfo, err := config.DetectSchemaVersionFromFile(configPath)
-	if err != nil {
-		result.Valid = false
-		result.ConfigValid = false
-		result.Errors = append(result.Errors, fmt.Sprintf("failed to detect schema version: %v", err))
-		result.Suggestions = append(result.Suggestions, "Check that the configuration file is valid YAML")
-		return result, nil
-	}
-
-	// Set schema version in result
-	if versionInfo.IsV2 {
-		result.SchemaVersion = "v2"
-	} else {
-		result.SchemaVersion = "v1"
-	}
-
-	// Route to appropriate validator based on version
-	if versionInfo.IsV2 {
-		return s.validateV2Config(ctx, configPath, opts, result)
-	}
-
-	return s.validateV1Config(ctx, opts, result)
-}
-
-// validateV1Config rejects v1 configurations (no longer supported in v2.0.0)
-func (s *ValidateService) validateV1Config(ctx context.Context, opts ValidateOptions, result *ValidationResult) (*ValidationResult, error) {
-	// v1 configurations are not supported in v2.0.0
-	result.Valid = false
-	result.ConfigValid = false
-	result.Errors = append(result.Errors, "v1 configurations are not supported in v2.0.0")
-	result.Suggestions = append(result.Suggestions,
-		"To upgrade to v2.0.0:",
-		"1. Install opencenter v1.x",
-		"2. Run: opencenter cluster migrate-config "+opts.ClusterName,
-		"3. Upgrade to opencenter v2.0.0",
-		"",
-		"See: https://docs.opencenter.io/migration/v1-to-v2",
-	)
-	return result, nil
+	result.SchemaVersion = "v2"
+	return s.validateV2Config(ctx, configPath, opts, result)
 }
 
 // validateV2Config validates a v2 configuration
@@ -186,7 +148,16 @@ func (s *ValidateService) validateV2Config(ctx context.Context, configPath strin
 	if err != nil {
 		result.Valid = false
 		result.ConfigValid = false
-		result.Errors = append(result.Errors, fmt.Sprintf("[validation] %s", err.Error()))
+
+		// Split YAML type errors into individual entries for readable output
+		var yamlTypeErrs *v2.YAMLTypeErrors
+		if stderrors.As(err, &yamlTypeErrs) {
+			for _, e := range yamlTypeErrs.Errors {
+				result.Errors = append(result.Errors, fmt.Sprintf("[validation] %s", strings.TrimSpace(e)))
+			}
+		} else {
+			result.Errors = append(result.Errors, fmt.Sprintf("[validation] %s", err.Error()))
+		}
 		return result, nil
 	}
 

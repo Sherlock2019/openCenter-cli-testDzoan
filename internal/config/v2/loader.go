@@ -14,6 +14,7 @@
 package v2
 
 import (
+	"bytes"
 	"fmt"
 
 	"gopkg.in/yaml.v3"
@@ -22,6 +23,16 @@ import (
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 )
+
+// YAMLTypeErrors wraps individual YAML type errors so they can be split
+// into separate validation messages by the formatter.
+type YAMLTypeErrors struct {
+	Errors []string
+}
+
+func (e *YAMLTypeErrors) Error() string {
+	return fmt.Sprintf("YAML type errors (%d)", len(e.Errors))
+}
 
 // ConfigLoader implements the v2 configuration loading pipeline.
 // Pipeline: Load YAML → Normalize → Resolve References → Apply Defaults → Validate → Freeze
@@ -97,17 +108,23 @@ func (cl *ConfigLoader) LoadFromBytes(data []byte) (*Config, error) {
 func (cl *ConfigLoader) parseYAML(data []byte) (*Config, error) {
 	var cfg Config
 
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+
 	// Parse YAML with detailed error reporting
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	if err := decoder.Decode(&cfg); err != nil {
 		// Check if it's a YAML syntax error with line/column info
 		if yamlErr, ok := err.(*yaml.TypeError); ok {
-			return nil, fmt.Errorf("YAML syntax error: %v", yamlErr.Errors)
+			return nil, &YAMLTypeErrors{Errors: yamlErr.Errors}
 		}
 		return nil, fmt.Errorf("failed to parse YAML: %w", err)
 	}
 
 	// Verify schema version
 	if cfg.SchemaVersion != "2.0" {
+		if cfg.SchemaVersion == "" {
+			return nil, fmt.Errorf("invalid schema version: expected '2.0'")
+		}
 		return nil, fmt.Errorf("invalid schema version: expected '2.0', got '%s'", cfg.SchemaVersion)
 	}
 
@@ -122,6 +139,10 @@ func (cl *ConfigLoader) normalize(cfg *Config) error {
 		cfg.Deployment.ClusterAPI.Providers.Infrastructure = canonicalInfrastructureProvider(cfg.Deployment.ClusterAPI.Providers.Infrastructure)
 	}
 
+	if cfg.OpenCenter.Infrastructure.SSH.Username == "" && cfg.OpenCenter.Infrastructure.SSH.User != "" {
+		cfg.OpenCenter.Infrastructure.SSH.Username = cfg.OpenCenter.Infrastructure.SSH.User
+	}
+
 	// Handle empty string vs null for optional fields
 	// Ensure consistent representation
 
@@ -132,6 +153,52 @@ func (cl *ConfigLoader) normalize(cfg *Config) error {
 
 	if cfg.OpenCenter.GitOps.FluxInterval == "" {
 		cfg.OpenCenter.GitOps.FluxInterval = "5m"
+	}
+	if cfg.OpenCenter.GitOps.Flux.Interval != "" {
+		cfg.OpenCenter.GitOps.FluxInterval = cfg.OpenCenter.GitOps.Flux.Interval
+	}
+	if cfg.OpenCenter.GitOps.Flux.Prune {
+		cfg.OpenCenter.GitOps.FluxPrune = true
+	}
+	if cfg.OpenCenter.GitOps.BaseRepoURL == "" && cfg.OpenCenter.GitOps.GitOpsBaseRepo != "" {
+		cfg.OpenCenter.GitOps.BaseRepoURL = cfg.OpenCenter.GitOps.GitOpsBaseRepo
+	}
+	if cfg.OpenCenter.GitOps.BaseRepoRelease == "" && cfg.OpenCenter.GitOps.GitOpsBaseRelease != "" {
+		cfg.OpenCenter.GitOps.BaseRepoRelease = cfg.OpenCenter.GitOps.GitOpsBaseRelease
+	}
+	if len(cfg.OpenCenter.ManagedServices) == 0 && len(cfg.OpenCenter.LegacyManaged) > 0 {
+		cfg.OpenCenter.ManagedServices = cfg.OpenCenter.LegacyManaged
+	}
+
+	if cfg.Secrets.SOPSConfig.AgeKeyFile == "" && cfg.Secrets.SopsAgeKeyFile != "" {
+		cfg.Secrets.SOPSConfig.AgeKeyFile = cfg.Secrets.SopsAgeKeyFile
+	}
+
+	if cfg.OpenCenter.Infrastructure.Cloud.OpenStack != nil {
+		openstack := cfg.OpenCenter.Infrastructure.Cloud.OpenStack
+		if openstack.Domain == "" && openstack.DomainName != "" {
+			openstack.Domain = openstack.DomainName
+		}
+		if openstack.Networking != nil {
+			if openstack.FloatingIPPool == "" {
+				openstack.FloatingIPPool = openstack.Networking.FloatingIPPool
+			}
+			if openstack.FloatingNetworkID == "" {
+				openstack.FloatingNetworkID = openstack.Networking.FloatingNetworkID
+			}
+			if openstack.NetworkID == "" {
+				openstack.NetworkID = openstack.Networking.NetworkID
+			}
+			if openstack.RouterExternalNetworkID == "" {
+				openstack.RouterExternalNetworkID = openstack.Networking.RouterExternalNetworkID
+			}
+			if openstack.SubnetID == "" {
+				openstack.SubnetID = openstack.Networking.SubnetID
+			}
+			if openstack.DNSZoneName == "" {
+				openstack.DNSZoneName = openstack.Networking.Designate.DNSZoneName
+			}
+		}
 	}
 
 	// Normalize deployment settings
