@@ -248,7 +248,7 @@ spec:
 			wantErrors: 0,
 		},
 		{
-			name: "wrong interval",
+			name: "valid kustomization with 15m interval",
 			content: `apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -256,9 +256,24 @@ metadata:
   namespace: flux-system
 spec:
   interval: 15m
+  path: ./applications/overlays/k8s-qa/services/test
+  sourceRef:
+    kind: GitRepository
+    name: test`,
+			wantErrors: 0,
+		},
+		{
+			name: "wrong interval",
+			content: `apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: test
+  namespace: flux-system
+spec:
+  interval: 30m
   path: ./applications/overlays/k8s-qa/services/test`,
 			wantErrors:  1,
-			errorSubstr: "interval should be 5m",
+			errorSubstr: "interval should be 5m or 15m",
 		},
 		{
 			name: "hardcoded cluster name",

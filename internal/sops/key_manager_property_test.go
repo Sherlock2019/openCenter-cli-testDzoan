@@ -32,7 +32,12 @@ import (
 // Feature: security-and-operational-remediation, Property 7: OS Keyring Storage for Age Keys
 // **Validates: Requirements 4.1, 4.2, 4.5, 4.8**
 func TestProperty_OSKeyringStorageForAgeKeys(t *testing.T) {
-	properties := gopter.NewProperties(nil)
+	if testing.Short() {
+		t.Skip("skipping property test in short mode")
+	}
+	parameters := gopter.DefaultTestParameters()
+	parameters.MinSuccessfulTests = 20 // Reduced: each iteration hits OS keyring (macOS Keychain subprocess)
+	properties := gopter.NewProperties(parameters)
 
 	properties.Property("keys stored in keyring can be retrieved", prop.ForAll(
 		func(clusterName string) bool {

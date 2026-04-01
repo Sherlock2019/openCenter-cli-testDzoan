@@ -52,7 +52,7 @@ dependsOn:
 
 ### Interval Timing
 
-- **Base kustomizations**: `interval: 5m` (fast reconciliation)
+- **Base kustomizations**: `interval: 5m` or `interval: 15m` (reconciliation frequency)
 - **GitRepository sources**: `interval: 15m` (less frequent polling)
 
 ### Override Kustomizations

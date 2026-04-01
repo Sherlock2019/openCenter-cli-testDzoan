@@ -132,11 +132,11 @@ func (v *ManifestValidator) validateFluxCDKustomization(file string) {
 		v.errors = append(v.errors, fmt.Sprintf("%s: improper indentation (must use 2 spaces)", file))
 	}
 
-	// Check interval is 5m for kustomizations
+	// Check interval is valid for kustomizations (5m or 15m are acceptable)
 	if spec, ok := manifest["spec"].(map[string]interface{}); ok {
 		if interval, ok := spec["interval"].(string); ok {
-			if interval != "5m" {
-				v.errors = append(v.errors, fmt.Sprintf("%s: interval should be 5m, got %s", file, interval))
+			if interval != "5m" && interval != "15m" {
+				v.errors = append(v.errors, fmt.Sprintf("%s: interval should be 5m or 15m, got %s", file, interval))
 			}
 		}
 	}

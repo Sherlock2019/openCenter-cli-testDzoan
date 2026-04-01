@@ -1250,8 +1250,11 @@ func TestProperty_AuditLogFiltering_Sanity(t *testing.T) {
 // 4. Deleted events can be detected (if sequence numbers are used)
 // 5. Integrity verification reports the correct number of invalid events
 func TestProperty_AuditLogIntegrity(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping property test in short mode")
+	}
 	parameters := gopter.DefaultTestParameters()
-	parameters.MinSuccessfulTests = 100
+	parameters.MinSuccessfulTests = 20 // Reduced: each iteration creates audit loggers + file I/O
 	properties := gopter.NewProperties(parameters)
 
 	properties.Property("untampered audit logs pass integrity verification", prop.ForAll(
