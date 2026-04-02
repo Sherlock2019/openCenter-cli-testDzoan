@@ -59,7 +59,9 @@ build/
 .#*
 *.swp
 *.bak
+*.prof
 *.tmp
+invalid-output
 
 # 
 applications/overlays

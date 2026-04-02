@@ -25,6 +25,8 @@ import (
 	"time"
 )
 
+const maxTemplateExpansionCount = 10000
+
 // TemplateSandbox provides a secure template rendering environment with restricted functions.
 // It prevents template injection attacks by disabling dangerous functions and enforcing timeouts.
 type TemplateSandbox interface {
@@ -97,7 +99,12 @@ func (s *DefaultTemplateSandbox) registerSafeStringFunctions() {
 	s.safeFunctions["contains"] = strings.Contains
 	s.safeFunctions["hasPrefix"] = strings.HasPrefix
 	s.safeFunctions["hasSuffix"] = strings.HasSuffix
-	s.safeFunctions["repeat"] = strings.Repeat
+	s.safeFunctions["repeat"] = func(count int, value string) (string, error) {
+		if err := validateTemplateExpansionCount(count); err != nil {
+			return "", err
+		}
+		return strings.Repeat(value, count), nil
+	}
 }
 
 // registerSafeFormattingFunctions registers safe formatting functions.
@@ -137,13 +144,26 @@ func (s *DefaultTemplateSandbox) registerSafeFormattingFunctions() {
 	}
 
 	// until generates a slice of integers from 0 to n-1 (safe for iteration)
-	s.safeFunctions["until"] = func(count int) []int {
+	s.safeFunctions["until"] = func(count int) ([]int, error) {
+		if err := validateTemplateExpansionCount(count); err != nil {
+			return nil, err
+		}
 		result := make([]int, count)
 		for i := 0; i < count; i++ {
 			result[i] = i
 		}
-		return result
+		return result, nil
 	}
+}
+
+func validateTemplateExpansionCount(count int) error {
+	if count < 0 {
+		return fmt.Errorf("template expansion count must be non-negative")
+	}
+	if count > maxTemplateExpansionCount {
+		return fmt.Errorf("template expansion count %d exceeds limit %d", count, maxTemplateExpansionCount)
+	}
+	return nil
 }
 
 // GetSafeFunctions returns the map of safe template functions.

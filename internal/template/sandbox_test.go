@@ -104,6 +104,32 @@ func TestTemplateSandbox_DangerousFunctions(t *testing.T) {
 	}
 }
 
+func TestTemplateSandbox_RepeatLimit(t *testing.T) {
+	sandbox := NewTemplateSandbox()
+
+	_, err := sandbox.RenderWithTimeout(`{{ repeat 10001 "x" }}`, nil, 5*time.Second)
+	if err == nil {
+		t.Fatal("RenderWithTimeout() should fail when repeat exceeds the limit")
+	}
+
+	if !strings.Contains(err.Error(), "exceeds limit") {
+		t.Fatalf("expected limit error, got: %v", err)
+	}
+}
+
+func TestTemplateSandbox_UntilLimit(t *testing.T) {
+	sandbox := NewTemplateSandbox()
+
+	_, err := sandbox.RenderWithTimeout(`{{ range until 10001 }}{{ . }}{{ end }}`, nil, 5*time.Second)
+	if err == nil {
+		t.Fatal("RenderWithTimeout() should fail when until exceeds the limit")
+	}
+
+	if !strings.Contains(err.Error(), "exceeds limit") {
+		t.Fatalf("expected limit error, got: %v", err)
+	}
+}
+
 func TestTemplateSandbox_Timeout(t *testing.T) {
 	sandbox := NewTemplateSandbox()
 
