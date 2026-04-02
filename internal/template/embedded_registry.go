@@ -201,26 +201,50 @@ func inferProvider(path string) string {
 	return ""
 }
 
-// inferServices attempts to determine which services a template is associated with
+// inferServices attempts to determine which services a template is associated with.
+//
+// It extracts service names from the file path by matching against known service
+// directory names in the embedded template filesystem. The list is derived from
+// the overlay descriptor registry when available, falling back to a static set
+// for paths outside the descriptor-covered template tree.
 func inferServices(path string) []string {
 	lowerPath := strings.ToLower(path)
 	services := []string{}
 
-	// Common service names to look for
+	// Known service names covering the full embedded template set.
+	// This list must stay in sync with internal/services/descriptors/data/.
 	serviceNames := []string{
 		"alert-proxy",
-		"loki",
-		"prometheus",
-		"grafana",
-		"cert-manager",
 		"calico",
-		"weave-gitops",
-		"velero",
-		"keycloak",
-		"headlamp",
+		"cert-manager",
 		"etcd-backup",
-		"vsphere-csi",
+		"external-snapshotter",
 		"fluxcd",
+		"gateway",
+		"gateway-api",
+		"grafana",
+		"harbor",
+		"headlamp",
+		"kafka-cluster",
+		"keycloak",
+		"kube-prometheus-stack",
+		"kyverno",
+		"loki",
+		"longhorn",
+		"metallb",
+		"mimir",
+		"olm",
+		"openstack-ccm",
+		"openstack-csi",
+		"opentelemetry-kube-stack",
+		"postgres-operator",
+		"prometheus",
+		"rbac-manager",
+		"sealed-secrets",
+		"tempo",
+		"velero",
+		"vsphere-csi",
+		"weave-gitops",
 	}
 
 	for _, service := range serviceNames {

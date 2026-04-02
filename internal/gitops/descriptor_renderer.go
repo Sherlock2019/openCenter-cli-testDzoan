@@ -26,6 +26,10 @@ type clusterAppAction struct {
 	Render   bool
 }
 
+// lastRenderDiagnostics stores the diagnostics from the most recent
+// planClusterAppActions call. It is intended for test and debugging use only.
+var lastRenderDiagnostics *RenderDiagnostics
+
 var (
 	clusterDescriptorOnce     sync.Once
 	clusterDescriptorRegistry *descriptorcfg.Registry
@@ -353,12 +357,23 @@ func planClusterAppActions(cfg config.Config) ([]clusterAppAction, error) {
 		return nil, err
 	}
 
+	diag := &RenderDiagnostics{
+		Cluster: cfg.ClusterName(),
+	}
+
 	var actions []clusterAppAction
 	for _, descriptor := range registry.Descriptors() {
 		enabled, err := isDescriptorEnabled(cfg, view, descriptor)
 		if err != nil {
 			return nil, fmt.Errorf("descriptor %s: %w", descriptor.Name, err)
 		}
+
+		diag.Descriptors = append(diag.Descriptors, DescriptorDecision{
+			Name:    descriptor.Name,
+			Enabled: enabled,
+			Reason:  descriptorEnableReason(descriptor, enabled),
+		})
+
 		if !enabled {
 			continue
 		}
@@ -369,7 +384,43 @@ func planClusterAppActions(cfg config.Config) ([]clusterAppAction, error) {
 		actions = append(actions, expanded...)
 	}
 
+	for _, action := range actions {
+		diag.Actions = append(diag.Actions, ActionDiagnostic{
+			Owner:    action.Owner,
+			Output:   action.Output,
+			Rendered: action.Render,
+		})
+	}
+
+	lastRenderDiagnostics = diag
 	return actions, nil
+}
+
+// descriptorEnableReason returns a human-readable reason for a descriptor's
+// enabled/disabled state.
+func descriptorEnableReason(d descriptorcfg.Descriptor, enabled bool) string {
+	if d.Service != "" {
+		if enabled {
+			return fmt.Sprintf("service %q is enabled in config", d.Service)
+		}
+		return fmt.Sprintf("service %q is disabled or absent in config", d.Service)
+	}
+	if d.ManagedService != "" {
+		if enabled {
+			return fmt.Sprintf("managed service %q is enabled in config", d.ManagedService)
+		}
+		return fmt.Sprintf("managed service %q is disabled or absent in config", d.ManagedService)
+	}
+	if d.EnabledWhen != nil {
+		if enabled {
+			return fmt.Sprintf("condition %s %s %s evaluated to true", d.EnabledWhen.Field, d.EnabledWhen.Operator, d.EnabledWhen.Value)
+		}
+		return fmt.Sprintf("condition %s %s %s evaluated to false", d.EnabledWhen.Field, d.EnabledWhen.Operator, d.EnabledWhen.Value)
+	}
+	if enabled {
+		return "unconditionally enabled (no condition)"
+	}
+	return "disabled (unknown reason)"
 }
 
 func planSingleServiceActions(cfg config.Config, serviceName string, isManaged bool) ([]clusterAppAction, error) {

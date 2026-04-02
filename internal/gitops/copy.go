@@ -222,6 +222,11 @@ func copyFileAtomic(src, dst string, workspace *GitOpsWorkspace) error {
 
 // shouldSkipFile determines if a file should be skipped based on service configuration.
 // It checks if the file belongs to a disabled service or managed service.
+//
+// Deprecated: This function was part of the convention-based (negative-list) renderer.
+// The active renderer uses descriptor-driven planning via planClusterAppActions instead.
+// This function is retained for reference and rollback purposes until formal cutover
+// approval removes it. See docs/dev/rendering-contract.md for details.
 func shouldSkipFile(relPath string, cfg config.Config) bool {
 	pathParts := strings.Split(relPath, string(filepath.Separator))
 

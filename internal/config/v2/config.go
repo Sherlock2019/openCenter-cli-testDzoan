@@ -183,4 +183,11 @@ type GitOpsFluxConfig struct {
 
 // ServiceMap is a polymorphic map of service configurations.
 // Requirements: 17.1, 17.2, 17.7
+//
+// Stability: the overlay unit types referenced by GitOpsConfig.OverlayUnits
+// and SecretsConfig.OverlayUnits (defined in internal/config/overlay/types.go)
+// are considered stable as of schema_version 2.0. Changes to those types
+// require a schema version bump. ServiceMap itself remains map[string]any
+// with custom YAML unmarshaling via the service registry; typed service
+// configs are resolved at unmarshal time through registered service types.
 type ServiceMap map[string]any

@@ -2,6 +2,10 @@ package overlay
 
 // UnitsConfig defines cluster-scoped overlay units that are not tied directly
 // to the standard services or managed-service maps.
+//
+// Stability: this type and its children are considered stable as of v2 schema
+// version 2.0. Field additions are backward-compatible. Field removals or
+// type changes require a schema version bump and migration path.
 type UnitsConfig struct {
 	CustomerManaged CustomerManagedConfig `yaml:"customer_managed,omitempty" json:"customer_managed,omitempty"`
 	SOPS            SOPSGenerationConfig  `yaml:"sops,omitempty" json:"sops,omitempty"`

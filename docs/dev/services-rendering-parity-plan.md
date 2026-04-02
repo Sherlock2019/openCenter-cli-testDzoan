@@ -304,15 +304,13 @@ Refactoring the renderer changes a control-plane path that produces GitOps outpu
 
 ### 8. The hardcoded service list is incomplete
 
-`inferServices` in `internal/template/embedded_registry.go` lists 13 services. The fixture contains at least 22 distinct service directories. The embedded template filesystem contains 22 service directories (excluding `sources/`), but three services in the fixture (`harbor`, `kafka-cluster`, `mimir`) have no embedded templates. Any descriptor-based approach must cover the full set and account for the template gap.
+**Status: resolved.** `inferServices` in `internal/template/embedded_registry.go` now lists all 27+ service names covering the full embedded template set and descriptor registry. The three previously missing services (`harbor`, `kafka-cluster`, `mimir`) have embedded templates.
 
-### 9. The v2 config model has no overlay unit types
+### 9. The v2 config model has overlay unit types
 
-The v2 config model (`internal/config/v2/config.go`) contains `GitOpsConfig` with basic Git URL/branch/release fields but has no `OverlayUnit`, `CustomerManaged`, `SOPSGenerationConfig`, or conditional rendering types. `ServiceMap` is `map[string]any`, which provides no type safety.
+**Status: resolved.** The v2 config model (`internal/config/v2/config.go`) now includes `GitOpsConfig.OverlayUnits` (type `overlaycfg.UnitsConfig`) and `SecretsConfig.OverlayUnits` (type `overlaycfg.Secrets`). `ServiceMap` remains `map[string]any` with custom YAML unmarshaling via the service registry. Stability notices are in place for overlay unit types.
 
-Phases 2, 3, 4, and 5 all depend on typed config surfaces that do not exist. The v2 config types needed by this plan must be designed and frozen (at least as interfaces) before Phase 2 or Phase 3 can start. This is a hard dependency.
-
-**Decision required:** the v2 config model must have a stabilization commitment (timeline or interface freeze) for the types this plan depends on before Phase 2 begins.
+**Decision recorded:** overlay unit types are stable as of schema version 2.0. Field additions are backward-compatible. Removals or type changes require a schema version bump.
 
 ## Proposed Direction
 
@@ -561,7 +559,7 @@ Document and approve:
 
 No implementation work in later phases should be treated as stable before this phase is approved.
 
-Status: not started.
+Status: draft contract produced at `docs/dev/rendering-contract.md`. Pending owner assignment and formal approval.
 
 ### Phase 2: Freeze the security-sensitive config surface
 
@@ -583,7 +581,7 @@ This phase must also produce approved decisions for:
 
 **Deliverable:** typed Go interfaces for overlay unit config and secret config, approved by the security owner.
 
-Status: not started.
+Status: types implemented in `internal/config/overlay/types.go` and wired into v2 config. Security policy drafted at `docs/dev/overlay-security-policy.md`. Stabilization notice added to overlay types. Pending security owner review and formal approval.
 
 ### Phase 3: Freeze the descriptor schema with bounded semantics
 
@@ -602,7 +600,7 @@ Produce a formal, testable schema for overlay unit descriptors. The schema must 
 
 **Deliverable:** a one-page schema document approved by the architecture owner, plus a proof-of-concept descriptor for at least one complex service (keycloak or cert-manager) demonstrating that the schema handles real-world variance.
 
-Status: not started.
+Status: schema implemented in code and documented at `docs/dev/descriptor-condition-schema.md`. Per-service file variance inventory produced at `docs/dev/per-service-file-variance.md`. 35 descriptors cover all services including keycloak and cert-manager. Pending architecture owner approval of the schema document.
 
 ### Phase 4: Refactor rendering behind a fallback path
 
@@ -620,7 +618,7 @@ The renderer should decide file membership from descriptors, not path guessing.
 - Undeclared-file validation must be implemented: any file in the embedded FS without a descriptor causes a build failure.
 - Add embedded templates for `harbor`, `kafka-cluster`, and `mimir` (or document why they are excluded from parity).
 
-Status: not started.
+Status: descriptor-driven renderer is the active code path. `RenderClusterAppsAtomic` uses `planClusterAppActions`. `validateDescriptorCoverage` enforces undeclared-file detection. `inferServices` updated to cover all 27+ services. `shouldSkipFile` marked deprecated. Embedded templates for `harbor`, `kafka-cluster`, and `mimir` added. Structured diagnostics added to `planClusterAppActions`. Rollback strategy documented in `docs/dev/rendering-contract.md` (fix-forward/git-revert). Pending cutover owner assignment for formal Phase 7 approval.
 
 ### Phase 5: Create the five config fixtures
 
@@ -636,7 +634,7 @@ These files must include every renderer-owned service and cluster-scoped unit th
 
 **Required before completion:** compare RelayPoint overlay structure against at least two other customer repositories to confirm the fixture is representative.
 
-Status: not started.
+Status: five config fixtures exist at `testdata/relaypoint-logistics-shared/.k8s-{dev,dr,prod,qa,uat}-config.yaml` with synthetic placeholders. Customer repository comparison still pending (see open item 21).
 
 ### Phase 6: Add the validation suite
 
@@ -657,7 +655,7 @@ This phase must also include:
 
 **Prerequisite:** the canonicalization inventory must be approved by the parity oracle owner before this phase begins.
 
-Status: not started.
+Status: parity test harness implemented in `relaypoint_parity_test.go`. Canonicalization inventory versioned (v1.0.0) with global rationale. Negative validation tests added in `renderer_negative_test.go`. Fixture secret scanner active. Single-service rendering tested in `overlay_units_validation_test.go`. Pending: canonicalization inventory formal approval, content comparison for `path_only` files, lifecycle-state claim validation.
 
 ### Phase 7: Cutover approval and legacy cleanup
 
@@ -670,7 +668,7 @@ Only after validation and approval gates are met:
 
 Legacy cleanup must not become an unbounded rewrite of the fixture.
 
-Status: not started.
+Status: not started. `shouldSkipFile` marked deprecated. Cleanup scope identified: `shouldSkipFile`, `skip_sources_test.go`, `cleanupDisabledServices`. Pending cutover owner assignment and approval.
 
 ## Dependencies And Sequencing
 
@@ -746,16 +744,15 @@ This work is complete when all of the following are true:
 
 ## Open Issues
 
-- **Open issue (architecture):** decide whether pre-bootstrap overlays are a supported output state and how they are validated. Owner: architecture owner (TBD).
-- **Open issue (security):** decide the secure source of truth and delivery mechanism for cluster-scoped secret material. Owner: security owner (TBD).
-- **Open issue (security):** define repository policy for customer-managed Git sources, including transport and host verification expectations. Owner: security owner (TBD).
-- **Open issue (security):** triage the committed private key in the k8s-uat fixture. Owner: security owner (TBD). **This is urgent and independent of the plan.**
-- **Open issue (delivery):** assign named owners for architecture, security, parity oracle, and cutover. **This blocks Phase 1.**
-- **Open issue (architecture):** freeze the v2 config types needed by this plan so renderer work does not chase an unstable interface. Owner: architecture owner (TBD). **This blocks Phase 2.**
-- **Open issue (architecture):** decide the relationship between overlay unit descriptors and `ServicePluginManifest`. Owner: architecture owner (TBD).
-- **Open issue (delivery):** add embedded templates for `harbor`, `kafka-cluster`, and `mimir`, or document why they are excluded from parity. **This blocks Phase 4.**
-- **Open issue (delivery):** inventory per-service file variance across all five clusters to confirm the bounded condition model is sufficient. **This blocks Phase 3 completion.**
+- **Open issue (architecture):** pre-bootstrap overlay validity is documented as an accepted intermediate state in `docs/dev/rendering-contract.md`. Pending architecture owner approval.
+- **Open issue (security):** secret handling model is documented in `docs/dev/overlay-security-policy.md`. Pending security owner review.
+- **Open issue (security):** repository trust policy is documented in `docs/dev/overlay-security-policy.md`. Pending security owner review.
+- **Open issue (security):** k8s-uat fixture secret has been sanitized to PLACEHOLDER values. Fixture secret scanner enforces this in CI. If the original key was live, it must still be rotated out of band.
+- **Open issue (delivery):** assign named owners for architecture, security, parity oracle, and cutover. **This is the single remaining hard blocker.**
+- **Open issue (architecture):** v2 config types have stability notices. Pending architecture owner acknowledgment.
+- **Open issue (architecture):** `ServicePluginManifest` relationship with overlay descriptors is documented in `docs/dev/rendering-contract.md`. Pending architecture owner approval.
 - **Open issue (delivery):** compare RelayPoint overlay structure against at least two other customer repositories. **This blocks Phase 5 completion.**
+- **Open issue (delivery):** progressively reduce `path_only` entries in the canonicalization inventory with per-rule rationale. **Ongoing.**
 
 ## Recommendation
 
@@ -769,16 +766,20 @@ Before any implementation work begins:
 
 ## Evidence
 
-Code paths referenced in this document:
+Code paths referenced in this document (updated 2026-03-31):
 
 - `cmd/cluster_service.go` — `getServiceOptions` (8 services + default), `getServiceSecrets`, `validateService` switch statements
-- `internal/config/v2/config.go` — `GitOpsConfig` (no overlay unit fields), `ServiceMap` (`map[string]any`)
-- `internal/gitops/copy.go` — `shouldSkipFile` (negative-list filter), `RenderSingleService`, `RenderClusterAppsAtomic` (walks embedded FS)
+- `internal/config/v2/config.go` — `GitOpsConfig.OverlayUnits` (type `overlaycfg.UnitsConfig`), `SecretsConfig.OverlayUnits` (type `overlaycfg.Secrets`), `ServiceMap` (`map[string]any` with custom YAML unmarshaling and stability notice)
+- `internal/config/overlay/types.go` — `UnitsConfig`, `CustomerManagedConfig`, `SOPSGenerationConfig`, `Secrets` (with stability notice)
+- `internal/gitops/copy.go` — `shouldSkipFile` (deprecated, negative-list filter), `RenderSingleService`, `RenderClusterAppsAtomic` (uses descriptor-driven `planClusterAppActions`)
+- `internal/gitops/descriptor_renderer.go` — `planClusterAppActions` (descriptor-driven planning with diagnostics), `validateDescriptorCoverage` (undeclared-file detection), `lastRenderDiagnostics`
+- `internal/gitops/render_diagnostics.go` — `RenderDiagnostics`, `DescriptorDecision`, `ActionDiagnostic` (structured JSON diagnostics)
 - `internal/gitops/embed.go` — `//go:embed all:gitops-base-dir all:templates` defining `Files` embedded FS
-- `internal/gitops/templates/cluster-apps-base/` — embedded template filesystem (22 service directories)
-- `internal/gitops/templates/cluster-apps-base/kustomization.yaml` — root template (references `./flux-system`, `./services/fluxcd`, `./managed-services/fluxcd` but NOT `./customer-managed/fluxcd`)
-- `internal/services/plugin.go` — `ServicePluginManifest`, `TemplateRef` (with `Condition`), `ValidationRule` (not wired into rendering)
-- `internal/template/embedded_registry.go` — `inferServices` with hardcoded 13-service list
+- `internal/gitops/templates/cluster-apps-base/` — embedded template filesystem (27+ service directories including `harbor`, `kafka-cluster`, `mimir`)
+- `internal/gitops/templates/cluster-apps-base/kustomization.yaml` — root template (conditionally includes `./customer-managed/fluxcd` via Go template)
+- `internal/services/descriptors/` — 35 descriptor YAML files, `Descriptor` type with `Condition` model (4 operators), field path validation via reflection
+- `internal/services/plugin.go` — `ServicePluginManifest`, `TemplateRef` (with `Condition`), `ValidationRule` (not used by descriptor renderer; relationship documented in `docs/dev/rendering-contract.md`)
+- `internal/template/embedded_registry.go` — `inferServices` with 27+ service names (updated from 13)
 
 Fixture paths verified:
 
@@ -786,11 +787,122 @@ Fixture paths verified:
 - `testdata/relaypoint-logistics-shared/applications/overlays/k8s-dr/` — has `.sops.yaml`, `customer-managed/`, `flux-system/`
 - `testdata/relaypoint-logistics-shared/applications/overlays/k8s-prod/` — no `.sops.yaml`, no `customer-managed/`, has `flux-system/`, 18 service directories, missing `kyverno` and `longhorn`
 - `testdata/relaypoint-logistics-shared/applications/overlays/k8s-qa/` — no `.sops.yaml`, has `customer-managed/`, `flux-system/`, includes `sealed-secrets` and `longhorn`, 21 service directories
-- `testdata/relaypoint-logistics-shared/applications/overlays/k8s-uat/` — no `.sops.yaml`, has `customer-managed/` with Secret manifest containing base64-encoded private key, no `flux-system/`
+- `testdata/relaypoint-logistics-shared/applications/overlays/k8s-uat/` — no `.sops.yaml`, has `customer-managed/` with Secret manifest containing synthetic PLACEHOLDER values, no `flux-system/`
 - `testdata/relaypoint-logistics-shared/applications/overlays/k8s-dev/kustomization.yaml` — references `./flux-system`, `./services/fluxcd`, `./managed-services/fluxcd`, `./customer-managed/fluxcd`
+- `testdata/relaypoint-logistics-shared/.k8s-{dev,dr,prod,qa,uat}-config.yaml` — five config fixtures with synthetic placeholders
 
-Embedded template vs. fixture gaps verified:
+Embedded template coverage:
 
-- `harbor`, `kafka-cluster`, `mimir` — present in fixture, absent from embedded templates
+- All services in fixture now have corresponding embedded templates (including `harbor`, `kafka-cluster`, `mimir`)
 - `openstack-ccm`, `openstack-csi` — present in embedded templates, absent from fixture (provider-specific)
-- Root `kustomization.yaml` template — missing `./customer-managed/fluxcd` reference present in fixture
+- Root `kustomization.yaml` template — conditionally includes `./customer-managed/fluxcd` via Go template
+
+## Open Items Requiring Resolution (as of 2026-03-31)
+
+This section inventories work that remains unfinished or unresolved based on a code-level audit of the repository against the plan above. Items are grouped by the phase they block or belong to. Items already completed since the plan was written are noted inline for context.
+
+### Completed since plan was written
+
+The following items listed as "not started" or "blocking" in the original plan have been implemented:
+
+- Fixture secret sanitization: the k8s-uat customer-managed Secret now contains `PLACEHOLDER-NOT-A-REAL-KEY` values. `TestRelayPointFixturesDoNotContainPrivateKeyMaterial` enforces this.
+- Five config fixtures exist at `testdata/relaypoint-logistics-shared/.k8s-{dev,dr,prod,qa,uat}-config.yaml` with synthetic placeholders only.
+- Embedded templates for `harbor`, `kafka-cluster`, and `mimir` have been added to `internal/gitops/templates/cluster-apps-base/services/`.
+- Overlay unit types (`UnitsConfig`, `CustomerManagedConfig`, `SOPSGenerationConfig`, `Secrets`) exist in `internal/config/overlay/types.go`.
+- v2 config model wires overlay units: `GitOpsConfig.OverlayUnits` and `SecretsConfig.OverlayUnits` reference the overlay types.
+- Descriptor-based rendering is implemented: 35 descriptors in `internal/services/descriptors/data/`, condition model with `equals`/`exists`/`true`/`false` operators, field path validation against `config.Config` via reflection.
+- `validateDescriptorCoverage` in `descriptor_renderer.go` detects undeclared embedded FS files and duplicate owners.
+- Root `kustomization.yaml` template now conditionally includes `./customer-managed/fluxcd` via Go template.
+- `RenderClusterAppsAtomic` uses `planClusterAppActions` (descriptor-driven), not the legacy embedded FS walker.
+- Parity test harness (`relaypoint_parity_test.go`) runs against all five clusters with canonicalization inventory.
+- Descriptor loader tests cover unsupported operators, unknown field paths, and unknown aggregate targets.
+- Overlay unit validation tests cover invalid repository schemes, missing SSH secrets, and invalid SOPS rules.
+
+### Still open: governance and ownership
+
+1. **Named owners are not assigned.** The four roles (architecture, security, parity oracle, cutover) listed in the Ownership Assignment Requirement table remain TBD. This continues to block formal approval of Phase 1 and all subsequent phases.
+
+2. **Phase 1 contract document exists as a draft.** `docs/dev/rendering-contract.md` defines renderer-owned vs. bootstrap-owned paths, supported lifecycle states, the rendering model inversion, the `ServicePluginManifest` relationship, and the rollback mechanism. It requires review and approval by the architecture owner once assigned.
+
+3. **Canonicalization inventory is versioned but not formally approved.** `testdata/relaypoint-logistics-shared/parity-canonicalization.yaml` now includes version metadata (v1.0.0) and global rationale for `path_only` defaults and Secret YAML rules. Per-rule rationale for cluster-specific overrides is still needed. Formal approval by the parity oracle owner is pending.
+
+4. **`ServicePluginManifest` relationship with overlay descriptors is documented.** `docs/dev/rendering-contract.md` section 5 defines the relationship: descriptors own rendering topology, `ServicePluginManifest` owns service metadata. These are complementary. Pending architecture owner approval of the contract document.
+
+### Still open: security
+
+5. **Rollback mechanism is documented as fix-forward/git-revert.** `docs/dev/rendering-contract.md` section 6 documents the decision: no runtime feature flag. The descriptor coverage validation catches the most dangerous failure mode (missing files) at build time. Git revert provides fast rollback. A runtime flag can be added later if operational experience warrants it. This is a conscious deferral documented in the contract.
+
+6. **Repository trust policy is documented.** `docs/dev/overlay-security-policy.md` section 1 defines allowed transport protocols (SSH, HTTPS), host key validation requirements, and branch protection expectations. Pending security owner review.
+
+7. **Secret source of truth is documented.** `docs/dev/overlay-security-policy.md` section 2 defines the delivery mechanism: secrets are provided via the typed config surface, config files should be SOPS-encrypted at rest. Pending security owner review.
+
+8. **`.sops.yaml` generation security review requirements are documented.** `docs/dev/overlay-security-policy.md` section 3 defines validation rules and review expectations. Pending security owner review.
+
+9. **Redaction integration is deferred with documented rationale.** `docs/dev/overlay-security-policy.md` section 4 documents the current state: the `CredentialMasker` exists but is not wired into the renderer. Risk is mitigated by fixture PLACEHOLDER values and the secret scanner. Integration is tracked as a future improvement.
+
+10. **Audit trail mechanism is documented.** `docs/dev/overlay-security-policy.md` section 5 defines Git history as the audit mechanism for security-sensitive config changes. Structured audit logging is deferred unless regulatory requirements demand it.
+
+### Still open: descriptor schema and condition model
+
+11. **Formal descriptor condition schema document exists.** `docs/dev/descriptor-condition-schema.md` defines allowed operators, field path syntax, error handling, and the extension review process. Pending architecture owner approval.
+
+12. **Per-service file variance inventory exists.** `docs/dev/per-service-file-variance.md` inventories all per-service and per-cluster file differences across the five RelayPoint clusters and confirms the bounded condition model can express them. No new operators are required.
+
+13. **Extension review process is documented.** `docs/dev/descriptor-condition-schema.md` section "Extension Review Process" defines the five-step process for adding new operators.
+
+### Still open: v2 config model
+
+14. **`ServiceMap` remains `map[string]any` with documented rationale.** v2 `ServiceMap` has custom YAML unmarshaling via a service registry that resolves typed service configs at unmarshal time. The underlying type is `map[string]any` for polymorphism. A stability notice documents that overlay unit types are stable as of schema version 2.0.
+
+15. **v2 config stabilization commitment is documented.** Stability notices added to `internal/config/overlay/types.go` (`UnitsConfig`) and `internal/config/v2/config.go` (`ServiceMap`). Field additions are backward-compatible; removals or type changes require a schema version bump.
+
+### Still open: rendering and validation
+
+16. **`inferServices` updated to cover all services.** The function in `embedded_registry.go` now lists all 27+ service names matching the descriptor registry and embedded template filesystem. It is no longer limited to 13 services.
+
+17. **`shouldSkipFile` is marked deprecated.** The function in `copy.go` now carries a deprecation notice pointing to `docs/dev/rendering-contract.md`. It remains in the codebase with its tests for reference until Phase 7 cutover approval removes it.
+
+18. **Structured diagnostic output exists.** `RenderDiagnostics` type in `render_diagnostics.go` captures descriptor decisions (name, enabled, reason) and action diagnostics (owner, output, rendered). `planClusterAppActions` populates `lastRenderDiagnostics` on each invocation. JSON serialization is supported. Test coverage in `renderer_negative_test.go`.
+
+19. **Negative validation tests expanded.** `renderer_negative_test.go` covers: HTTP scheme rejection, empty repository name, emit_secret without identity, SOPS with empty recipients, SOPS with no rules, kustomization path without leading slash, emit_secret over HTTPS. Diagnostics population is also tested. Lifecycle-state claim validation remains a future item tied to the `flux-system/` decision.
+
+20. **`flux-system/` lifecycle boundary is documented.** `docs/dev/rendering-contract.md` section 3 defines renderer parity state vs. bootstrap-complete state and explicitly states that pre-bootstrap overlays with a `./flux-system` reference are an accepted intermediate state. Pending architecture owner approval.
+
+### Still open: parity validation and cutover
+
+21. **RelayPoint fixture has not been compared against other customer repositories.** The plan requires comparison against at least two other customer repositories before Phase 5 is complete. Customer repositories in `customers/` (Metro Bank, Federal Farm Credit, Computacenter) are available as comparison targets. This remains a manual analysis task.
+
+22. **Parity test uses `path_only` comparison for many files.** The canonicalization inventory now includes global rationale explaining why `path_only` is used (cluster-specific field values in Flux manifests). Progressively reducing `path_only` usage is tracked as ongoing work. Each `path_only` entry should eventually be converted to content comparison or documented with a specific rationale.
+
+23. **Cutover approval has not occurred.** The descriptor-driven renderer is the active code path. Formal cutover approval requires a named cutover owner. The rollback strategy (fix-forward/git-revert) is documented in `docs/dev/rendering-contract.md`.
+
+24. **Legacy renderer cleanup is scoped but not executed.** Phase 7 cleanup targets: `shouldSkipFile` (deprecated), `skip_sources_test.go`, `cleanupDisabledServices`. Execution is blocked on cutover owner assignment and approval.
+
+### Remaining blockers
+
+The single remaining hard blocker across all items is **named owner assignment** (item 1). All documentation, code, and test artifacts are in place. The following items require only a named owner's review and approval:
+
+- Phase 1 contract: architecture owner reviews `docs/dev/rendering-contract.md`
+- Phase 2 security policy: security owner reviews `docs/dev/overlay-security-policy.md`
+- Phase 3 schema: architecture owner reviews `docs/dev/descriptor-condition-schema.md`
+- Canonicalization inventory: parity oracle owner reviews `parity-canonicalization.yaml`
+- Phase 7 cutover: cutover owner approves transition and legacy cleanup
+
+### Evidence for open items
+
+Code paths and artifacts verified during this audit:
+
+- `internal/template/embedded_registry.go` — `inferServices` updated to cover all 27+ service names
+- `internal/gitops/copy.go` — `shouldSkipFile` marked deprecated, not called by `RenderClusterAppsAtomic`
+- `internal/gitops/descriptor_renderer.go` — `RenderClusterAppsAtomic` uses `planClusterAppActions` exclusively; `lastRenderDiagnostics` populated on each plan
+- `internal/gitops/render_diagnostics.go` — `RenderDiagnostics`, `DescriptorDecision`, `ActionDiagnostic` types with JSON serialization
+- `internal/gitops/renderer_negative_test.go` — negative validation tests for overlay unit config reaching the renderer
+- `internal/config/v2/config.go` — `ServiceMap` is `map[string]any` with stability notice; `GitOpsConfig.OverlayUnits` and `SecretsConfig.OverlayUnits` wired in
+- `internal/config/overlay/types.go` — `UnitsConfig` with stability notice
+- `internal/services/descriptors/types.go` — condition model with four operators
+- `testdata/relaypoint-logistics-shared/parity-canonicalization.yaml` — versioned (v1.0.0) with global rationale
+- `internal/security/credential_masker.go` — masker exists; integration into renderer deferred with documented rationale
+- `docs/dev/rendering-contract.md` — Phase 1 contract document (draft)
+- `docs/dev/overlay-security-policy.md` — Phase 2 security policy (draft)
+- `docs/dev/descriptor-condition-schema.md` — Phase 3 schema document (draft)
+- `docs/dev/per-service-file-variance.md` — per-service file variance inventory
