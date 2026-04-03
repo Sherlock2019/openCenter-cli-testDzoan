@@ -311,14 +311,90 @@ kubectl get pods -n flux-system
 
 ## Cleanup
 
-Tear everything down when you're done:
+Tear down all resources created by this guide. Run these steps in order.
+
+### 1. Delete the Kind Cluster
+
+This removes the Kind containers and the associated kubeconfig context:
 
 ```bash
-# Delete the Kind cluster
 KIND_EXPERIMENTAL_PROVIDER=podman kind delete cluster --name my-cluster
+# or with docker:
+# kind delete cluster --name my-cluster
+```
 
-# Destroy Gitea and its data
+### 2. Destroy Gitea
+
+The `gitea-cleanup` mise task stops the container, removes it, and deletes the `gitea/` data directory. It also removes the token files from the repo root:
+
+```bash
 mise run gitea-cleanup
+```
+
+If the mise task is unavailable, run the equivalent manually:
+
+```bash
+podman stop gitea && podman rm gitea   # or docker stop/rm
+rm -rf gitea/                          # data directory created by setup-gitea.sh
+rm -f .gitea_admin_token .gitea_newuser_token
+```
+
+### 3. Remove the Gitea Remote from the Customer Repo
+
+The guide added a `origin` remote pointing at the local Gitea. Remove it so it doesn't interfere with future work:
+
+```bash
+git -C customers/local remote remove origin
+```
+
+### 4. Remove Generated Cluster Artifacts
+
+Delete the overlay, infrastructure, secrets, and config file that `cluster init` and `cluster setup` created:
+
+```bash
+# Application overlay
+rm -rf customers/local/applications/overlays/my-cluster
+
+# Infrastructure directory (kind-config, kubeconfig, logs, inventory)
+rm -rf customers/local/infrastructure/clusters/my-cluster
+
+# SSH keys
+rm -f customers/local/secrets/ssh/my-cluster customers/local/secrets/ssh/my-cluster.pub
+
+# SOPS Age key
+rm -f customers/local/secrets/age/keys/my-cluster-key.txt
+
+# Cluster config file
+rm -f customers/local/.my-cluster-config.yaml
+```
+
+### 5. Commit the Cleanup
+
+Commit the removal so the customer repo is back to its previous state:
+
+```bash
+git -C customers/local add -A
+git -C customers/local commit -m "cleanup: remove my-cluster artifacts"
+```
+
+### 6. Verify Nothing Is Left
+
+```bash
+# No Kind clusters
+KIND_EXPERIMENTAL_PROVIDER=podman kind get clusters
+# Expected: "No kind clusters found."
+
+# No Gitea container
+podman ps -a --filter name=gitea
+# Expected: empty table
+
+# No token files
+ls .gitea_*_token 2>/dev/null
+# Expected: "No such file or directory"
+
+# No stale remote
+git -C customers/local remote -v
+# Expected: no output
 ```
 
 ## Troubleshooting
