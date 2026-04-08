@@ -74,6 +74,7 @@ func applyKindDefaults(cfg *Config) error {
 		ExtraMounts:       defaults.Locals.ExtraMounts,
 	}
 
+	cfg.OpenCenter.Meta.Region = "local"
 	cfg.OpenCenter.Infrastructure.Provider = "kind"
 	cfg.OpenCenter.Infrastructure.Kind = kind
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack = SimplifiedOpenStackCloud{}
