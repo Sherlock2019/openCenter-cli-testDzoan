@@ -44,6 +44,14 @@ const (
 	defaultAllocationPoolEnd           = "10.2.131.250"
 	defaultGateway                     = "10.2.128.1"
 	defaultVRRPIP                      = "10.2.128.5"
+
+	// Kind provider defaults — kept in sync with internal/config/defaults/kind.yaml.
+	kindDefaultKubernetesVersion = "1.30.4"
+	kindDefaultAPIPort           = 6443
+	kindDefaultControlPlaneCount = 1
+	kindDefaultWorkerCount       = 2
+	kindDefaultPodSubnet         = "10.244.0.0/16"
+	kindDefaultServiceSubnet     = "10.96.0.0/16"
 )
 
 type cliDefaults struct {
@@ -460,6 +468,16 @@ func applyProviderBehaviorDefaults(cfg *Config) {
 		cfg.OpenCenter.Infrastructure.Networking.VRRPEnabled = false
 		cfg.OpenCenter.Infrastructure.Networking.VRRPIP = ""
 		cfg.OpenCenter.Infrastructure.Networking.DNSZoneName = "cluster.local"
+
+		// Kind-specific defaults aligned with internal/config/defaults/kind.yaml.
+		// These override the OpenStack-oriented base values so that
+		// `cluster init --type kind` produces a config that works out of the box.
+		cfg.OpenCenter.Cluster.Kubernetes.Version = kindDefaultKubernetesVersion
+		cfg.OpenCenter.Cluster.Kubernetes.APIPort = kindDefaultAPIPort
+		cfg.OpenCenter.Cluster.Kubernetes.SubnetPods = kindDefaultPodSubnet
+		cfg.OpenCenter.Cluster.Kubernetes.SubnetServices = kindDefaultServiceSubnet
+		cfg.OpenCenter.Infrastructure.Compute.MasterCount = kindDefaultControlPlaneCount
+		cfg.OpenCenter.Infrastructure.Compute.WorkerCount = kindDefaultWorkerCount
 	case "baremetal":
 		cfg.OpenCenter.Infrastructure.Bastion.Enabled = false
 	case "vmware":

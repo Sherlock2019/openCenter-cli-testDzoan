@@ -224,4 +224,24 @@ func TestNewV2Default_KindSpecificBehavior(t *testing.T) {
 	if cfg.OpenCenter.Infrastructure.Cloud.VMware != nil {
 		t.Error("VMware cloud config should be nil for Kind")
 	}
+
+	// Kind-specific overrides from kind.yaml defaults
+	if got := cfg.OpenCenter.Cluster.Kubernetes.Version; got != "1.30.4" {
+		t.Errorf("Kubernetes version = %q, want %q", got, "1.30.4")
+	}
+	if got := cfg.OpenCenter.Cluster.Kubernetes.APIPort; got != 6443 {
+		t.Errorf("API port = %d, want %d", got, 6443)
+	}
+	if got := cfg.OpenCenter.Infrastructure.Compute.MasterCount; got != 1 {
+		t.Errorf("MasterCount = %d, want %d", got, 1)
+	}
+	if got := cfg.OpenCenter.Infrastructure.Compute.WorkerCount; got != 2 {
+		t.Errorf("WorkerCount = %d, want %d", got, 2)
+	}
+	if got := cfg.OpenCenter.Cluster.Kubernetes.SubnetPods; got != "10.244.0.0/16" {
+		t.Errorf("SubnetPods = %q, want %q", got, "10.244.0.0/16")
+	}
+	if got := cfg.OpenCenter.Cluster.Kubernetes.SubnetServices; got != "10.96.0.0/16" {
+		t.Errorf("SubnetServices = %q, want %q", got, "10.96.0.0/16")
+	}
 }

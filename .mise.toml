@@ -19,8 +19,8 @@ CONTAINER_RUNTIME = "podman"
 #OPENCENTER_PLUGINS_DIR = "./testdata/plugins/"
 
 [tasks]
-# Build the opencenter binary with version information
-build = '''
+# Build the opencenter CLI binary with version information
+build-cli = '''
 #!/usr/bin/env bash
 set -e
 
@@ -43,24 +43,58 @@ go build -ldflags "\
 echo "Built opencenter ${VERSION} (${GIT_COMMIT:0:7})"
 '''
 
+# Build the local workflow plugin
+build-local-plugin = '''
+#!/usr/bin/env bash
+set -e
+
+go build -o bin/opencenter-local ./cmd/opencenter-local
+echo "Built opencenter-local"
+'''
+
+# Build both the opencenter CLI and the local workflow plugin
+build = [
+  "mise run build-cli",
+  "mise run build-local-plugin"
+]
+
 # Build and install to local bin directory
 local-install = '''
 #!/usr/bin/env bash
 set -e
 
-# Run the build task
-mise run build
+# Build both binaries before installation
+mise run build-cli
+mise run build-local-plugin
 
 # Ensure ~/.local/bin exists
 mkdir -p ~/.local/bin
+mkdir -p "${OPENCENTER_CONFIG_DIR:-$HOME/.config/opencenter}/plugins"
+
+PLUGINS_DIR="${OPENCENTER_CONFIG_DIR:-$HOME/.config/opencenter}/plugins"
+PLUGIN_PATH="${PLUGINS_DIR}/opencenter-local"
+CHECKSUMS_FILE="${PLUGINS_DIR}/checksums.txt"
 
 # Copy binary to ~/.local/bin
 cp bin/opencenter ~/.local/bin/opencenter
+cp bin/opencenter-local "${PLUGIN_PATH}"
 
 # Make it executable
 chmod +x ~/.local/bin/opencenter
+chmod +x "${PLUGIN_PATH}"
+
+# Register the plugin checksum so discovery treats it as verified
+PLUGIN_SHA=$(shasum -a 256 "${PLUGIN_PATH}" | awk '{print $1}')
+TMP_CHECKSUMS=$(mktemp)
+if [ -f "${CHECKSUMS_FILE}" ]; then
+  grep -v ' opencenter-local$' "${CHECKSUMS_FILE}" > "${TMP_CHECKSUMS}" || true
+fi
+printf '%s  opencenter-local\n' "${PLUGIN_SHA}" >> "${TMP_CHECKSUMS}"
+mv "${TMP_CHECKSUMS}" "${CHECKSUMS_FILE}"
 
 echo "Installed opencenter to ~/.local/bin/opencenter"
+echo "Installed opencenter-local to ${PLUGIN_PATH}"
+echo "Updated plugin checksum in ${CHECKSUMS_FILE}"
 '''
 
 # Enhance CLI to support array indexing in flags
@@ -682,24 +716,23 @@ lint = [
 
 gitea-setup = [
   "echo Starting gitea...",
-  "./hack/gitea-local/setup-gitea.sh"
+  "go run ./cmd/opencenter-local gitea up"
 ]
 
 gitea-configure = [
-  "echo Starting gitea...",
-  "./hack/gitea-local/configure-gitea-user-tokens.sh"
+  "echo Provisioning gitea users, tokens, and repository via the local plugin...",
+  "go run ./cmd/opencenter-local gitea up"
 ]
 
 # Start and configure local Gitea for testing (setup → configure)
 gitea-up = [
-  "mise run gitea-setup",
-  "mise run gitea-configure"
+  "echo Starting and provisioning gitea via the local plugin...",
+  "go run ./cmd/opencenter-local gitea up"
 ]
 
 gitea-cleanup = [
   "echo Cleaning up local git...",
-  "./hack/gitea-local/setup-gitea.sh destroy -y",
-  "rm -f .gitea_admin_token .gitea_newuser_token .gitea_newuser_id_ed25519 .gitea_newuser_id_ed25519.pub"
+  "go run ./cmd/opencenter-local gitea destroy"
 ]
 
 # Create a kind cluster with no CNI and experimental podman support

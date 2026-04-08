@@ -1,0 +1,202 @@
+package gitops
+
+import (
+	"context"
+	"encoding/base64"
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/opencenter-cloud/opencenter-cli/internal/localdev"
+	"github.com/opencenter-cloud/opencenter-cli/internal/localdev/gitea"
+)
+
+const defaultRemoteName = "origin"
+
+// PushResult reports the repository state used for the push.
+type PushResult struct {
+	GitDir     string
+	RemoteName string
+	RemoteURL  string
+	Branch     string
+}
+
+// Service manages GitOps repository operations for the local-dev plugin.
+type Service struct {
+	executor localdev.Executor
+	resolver *localdev.ClusterResolver
+	stateDir string
+}
+
+// NewService returns a GitOps helper service.
+func NewService(executor localdev.Executor, stateDir string) (*Service, error) {
+	if executor == nil {
+		executor = localdev.NewExecutor()
+	}
+	resolver, err := localdev.NewClusterResolver()
+	if err != nil {
+		return nil, err
+	}
+	return &Service{
+		executor: executor,
+		resolver: resolver,
+		stateDir: stateDir,
+	}, nil
+}
+
+// Push pushes the cluster GitOps repo to the local Gitea remote.
+func (s *Service) Push(ctx context.Context, clusterIdentifier string) (*PushResult, error) {
+	cluster, err := s.resolver.Resolve(ctx, clusterIdentifier)
+	if err != nil {
+		return nil, err
+	}
+
+	gitDir := strings.TrimSpace(cluster.Config.GitOps().GitDir)
+	if gitDir == "" {
+		gitDir = cluster.Paths.GitOpsDir
+	}
+	if gitDir == "" {
+		return nil, fmt.Errorf("cluster %q does not define a git_dir", clusterIdentifier)
+	}
+	if _, err := os.Stat(gitDir); err != nil {
+		return nil, fmt.Errorf("git_dir %s: %w", gitDir, err)
+	}
+
+	giteaService, err := gitea.NewService(s.executor, s.stateDir, gitea.DefaultSettings(""))
+	if err != nil {
+		return nil, err
+	}
+	status, err := giteaService.Status(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !status.Running {
+		return nil, fmt.Errorf("local gitea is not running")
+	}
+	if !status.UserTokenExists {
+		return nil, fmt.Errorf("missing Gitea user token at %s; run `opencenter local gitea up` first", status.UserTokenPath)
+	}
+
+	remoteURL := status.LocalRepoURL
+	if err := s.ensureRemote(ctx, gitDir, defaultRemoteName, remoteURL); err != nil {
+		return nil, err
+	}
+
+	branch, err := s.currentBranch(ctx, gitDir)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.gitAuth(ctx, gitDir, status.CAPath, status.Metadata.RepoOwner, status.UserTokenPath, "push", "-u", defaultRemoteName, branch); err != nil {
+		return nil, err
+	}
+
+	return &PushResult{
+		GitDir:     gitDir,
+		RemoteName: defaultRemoteName,
+		RemoteURL:  remoteURL,
+		Branch:     branch,
+	}, nil
+}
+
+// PullRebase synchronizes the local checkout after a Flux bootstrap commit.
+func (s *Service) PullRebase(ctx context.Context, gitDir string) (string, error) {
+	giteaService, err := gitea.NewService(s.executor, s.stateDir, gitea.DefaultSettings(""))
+	if err != nil {
+		return "", err
+	}
+	status, err := giteaService.Status(ctx)
+	if err != nil {
+		return "", err
+	}
+	branch, err := s.currentBranch(ctx, gitDir)
+	if err != nil {
+		return "", err
+	}
+	if err := s.gitAuth(ctx, gitDir, status.CAPath, status.Metadata.RepoOwner, status.UserTokenPath, "pull", "--rebase", defaultRemoteName, branch); err != nil {
+		return "", err
+	}
+	return branch, nil
+}
+
+// CurrentBranch returns the currently checked-out branch or main when detached.
+func (s *Service) CurrentBranch(ctx context.Context, gitDir string) (string, error) {
+	return s.currentBranch(ctx, gitDir)
+}
+
+func (s *Service) currentBranch(ctx context.Context, gitDir string) (string, error) {
+	output, err := s.executor.Run(ctx, localdev.RunOptions{
+		Name: "git",
+		Dir:  gitDir,
+		Args: []string{"branch", "--show-current"},
+	})
+	if err != nil {
+		return "", fmt.Errorf("determine current git branch: %w", err)
+	}
+	branch := strings.TrimSpace(string(output))
+	if branch == "" {
+		branch = "main"
+	}
+	return branch, nil
+}
+
+func (s *Service) ensureRemote(ctx context.Context, gitDir, remoteName, remoteURL string) error {
+	output, err := s.executor.Run(ctx, localdev.RunOptions{
+		Name: "git",
+		Dir:  gitDir,
+		Args: []string{"remote", "get-url", remoteName},
+	})
+	if err != nil {
+		lower := strings.ToLower(err.Error())
+		if strings.Contains(lower, "no such remote") || strings.Contains(lower, "not a git repository") {
+			if strings.Contains(lower, "not a git repository") {
+				return fmt.Errorf("git_dir %s is not a git repository", gitDir)
+			}
+			if _, err := s.executor.Run(ctx, localdev.RunOptions{
+				Name: "git",
+				Dir:  gitDir,
+				Args: []string{"remote", "add", remoteName, remoteURL},
+			}); err != nil {
+				return fmt.Errorf("add git remote %s: %w", remoteName, err)
+			}
+			return nil
+		}
+		return fmt.Errorf("inspect git remote %s: %w", remoteName, err)
+	}
+
+	currentURL := strings.TrimSpace(string(output))
+	if currentURL == remoteURL {
+		return nil
+	}
+
+	if _, err := s.executor.Run(ctx, localdev.RunOptions{
+		Name: "git",
+		Dir:  gitDir,
+		Args: []string{"remote", "set-url", remoteName, remoteURL},
+	}); err != nil {
+		return fmt.Errorf("set git remote %s: %w", remoteName, err)
+	}
+	return nil
+}
+
+func (s *Service) gitAuth(ctx context.Context, gitDir, caPath, username, tokenPath string, gitArgs ...string) error {
+	tokenBytes, err := os.ReadFile(tokenPath)
+	if err != nil {
+		return fmt.Errorf("read Gitea token %s: %w", tokenPath, err)
+	}
+
+	authHeader := "Authorization: Basic " + base64.StdEncoding.EncodeToString([]byte(username+":"+strings.TrimSpace(string(tokenBytes))))
+	args := []string{
+		"-c", "http.sslCAInfo=" + caPath,
+		"-c", "http.extraHeader=" + authHeader,
+	}
+	args = append(args, gitArgs...)
+
+	if _, err := s.executor.Run(ctx, localdev.RunOptions{
+		Name: "git",
+		Dir:  gitDir,
+		Args: args,
+	}); err != nil {
+		return fmt.Errorf("git %s: %w", strings.Join(gitArgs, " "), err)
+	}
+	return nil
+}

@@ -2,502 +2,407 @@
 id: create-kind-cluster
 title: "Create an openCenter Cluster with Kind"
 sidebar_label: Create Kind Cluster
-description: Create a local openCenter Kubernetes cluster using Kind with optional local Gitea for GitOps.
+description: Create a local openCenter Kubernetes cluster using Kind with plugin-managed local Gitea and Flux bootstrap.
 doc_type: how-to
 audience: "platform engineers, developers"
-tags: [kind, cluster, local, gitea, bootstrap, gitops]
+tags: [kind, cluster, local, gitea, bootstrap, gitops, flux]
 ---
 
 # Create an openCenter Cluster with Kind
 
-**Purpose:** For platform engineers and developers, shows how to create a local openCenter cluster using Kind, covering Gitea setup, cluster initialization, and FluxCD bootstrap.
+**Purpose:** For platform engineers and developers, shows how to create a local openCenter cluster using the built-in Kind workflow plus the external `opencenter-local` plugin for disposable Gitea, Git push, and Flux bootstrap.
 
-This guide walks through the full lifecycle: local Gitea server, cluster init, setup, bootstrap, and FluxCD reconciliation against a local Git repository.
+This guide uses:
+
+- core `opencenter cluster ...` commands for cluster init, setup, bootstrap, and destroy
+- `opencenter local ...` for the local Gitea, GitOps push, and Flux bootstrap workflow
 
 ## Prerequisites
 
-- openCenter CLI built (`mise run build`)
 - Podman or Docker installed and running
-- `kind` CLI installed (`mise install` handles this)
-- `flux` CLI installed (for the FluxCD bootstrap step)
+- `kind` installed
+- `flux` installed
 - 8 GB RAM available minimum
+- this repository checked out locally
 
-Verify tools:
+Install the CLI and the `opencenter-local` plugin from this repo:
 
 ```bash
-mise run build
-./bin/opencenter version
-podman --version   # or docker --version
+mise run local-install
+```
+
+Verify the commands are available:
+
+```bash
+opencenter version
+opencenter local --help
 kind --version
 flux --version
+podman --version   # or docker --version
 ```
 
-## Step 1: Start Local Gitea Server
+If `opencenter local` is missing, re-run `mise run local-install`. That task installs:
 
-openCenter ships scripts in `hack/gitea-local/` to run a disposable Gitea instance. The `mise` tasks wrap these scripts.
+- `opencenter` to `~/.local/bin/opencenter`
+- `opencenter-local` to `~/.config/opencenter/plugins/opencenter-local`
 
-Start Gitea and create a user, token, and repository in one shot:
+## Understanding Path Resolution
+
+The CLI resolves cluster paths from `paths.clustersDir` in `~/.config/opencenter/config.yaml`. The default is `~/.config/opencenter/clusters`.
+
+Check the active clusters directory:
 
 ```bash
-mise run gitea-up
+grep clustersDir ~/.config/opencenter/config.yaml
 ```
 
-This runs two tasks sequentially:
+Throughout this guide, `$CLUSTERS_DIR` refers to that resolved directory. After `cluster init`, use `opencenter cluster info <name>` to inspect the resolved config path, GitOps root, and kubeconfig path.
 
-1. `gitea-setup` — pulls the Gitea container image, generates self-signed TLS certs, and starts the container on ports 3000 (HTTP), 3001 (HTTPS), and 2222 (SSH).
-2. `gitea-configure` — creates an admin token, a `newuser` account, a user API token, and a `test-repo` repository.
+## Step 1: Start Local Gitea
 
-After completion, the script prints a summary with tokens and the repository URL. Token files are saved to the repo root:
+Start the disposable local Gitea instance and provision the test user, tokens, and repository:
 
-| File | Content |
+```bash
+opencenter local gitea up
+```
+
+### Gitea Defaults
+
+`opencenter local gitea up` uses the following built-in values. All values are defined in `internal/localdev/gitea/service.go:DefaultSettings()` and cannot currently be overridden via flags.
+
+Container settings:
+
+| Setting | Default |
 |---|---|
-| `.gitea_admin_token` | Admin API token |
-| `.gitea_newuser_token` | User API token |
+| Container image | `docker.gitea.com/gitea:1.24.5` |
+| Container name | `gitea` |
+| Container runtime | auto-detected (`podman` or `docker`) |
+| HTTP port (host → 3000) | `3000` |
+| HTTPS port (host → 3001) | `3001` |
+| SSH port (host → 22) | `2222` |
 
-Verify Gitea is running:
+Admin account:
+
+| Setting | Default |
+|---|---|
+| Username | `admin` |
+| Password | `gitea` |
+| Email | `admin@example.com` |
+
+Repository user account:
+
+| Setting | Default |
+|---|---|
+| Username | `newuser` |
+| Password | `newuserpassword` |
+| Email | `newuser@example.com` |
+
+Repository:
+
+| Setting | Default |
+|---|---|
+| Name | `test-repo` |
+| Visibility | public |
+| Auto-init | yes (default README) |
+
+Derived URLs (from the settings above):
+
+| URL | Value |
+|---|---|
+| Base URL | `https://localhost:3001` |
+| HTTPS clone URL | `https://localhost:3001/newuser/test-repo.git` |
+| SSH clone URL | `ssh://git@localhost:2222/newuser/test-repo.git` |
+
+TLS certificate SANs (generated by `writeCertificates`):
+
+| SAN type | Values |
+|---|---|
+| DNS | `localhost`, `gitea` |
+| IP | `127.0.0.1`, `::1` |
+
+After `opencenter local gitea attach-kind`, the certificate is reissued with the Gitea container's Kind-network IP added to the IP SANs.
+
+### Plugin State Layout
+
+The command writes plugin-managed state under `./.opencenter-local/` in your current working directory:
+
+| Path | Content |
+|---|---|
+| `.opencenter-local/gitea.json` | Persisted metadata (runtime, ports, users, repo name) |
+| `.opencenter-local/gitea/` | Mounted Gitea data directory |
+| `.opencenter-local/gitea/gitea/conf/app.ini` | Generated Gitea server configuration |
+| `.opencenter-local/gitea/gitea/certs/ca.pem` | CA certificate (used by `gitops push` and `flux bootstrap`) |
+| `.opencenter-local/gitea/gitea/certs/cert.pem` | Server TLS certificate |
+| `.opencenter-local/gitea/gitea/certs/key.pem` | Server TLS private key |
+| `.opencenter-local/tokens/gitea-admin.token` | Admin API token |
+| `.opencenter-local/tokens/gitea-user.token` | User API token (used for push and Flux auth) |
+
+### Verify Gitea Is Running
 
 ```bash
-curl -sk https://localhost:3001/api/v1/version
-# {"version":"1.24.x"}
+opencenter local gitea status
 ```
 
-## Step 2: Initialize the Cluster Configuration
+You should see:
 
-Create a Kind cluster configuration using the CLI:
+- `Running: true`
+- a base URL of `https://localhost:3001`
+- a repository URL of `https://localhost:3001/newuser/test-repo.git`
+
+## Step 2: Initialize the Kind Cluster Configuration
+
+Create a Kind cluster configuration:
 
 ```bash
-./bin/opencenter cluster init my-cluster \
+opencenter cluster init my-cluster \
   --org local \
   --type kind
 ```
 
-This creates:
-
-- Configuration file at the customer GitOps directory (e.g., `customers/local/.my-cluster-config.yaml`)
-- SOPS Age encryption keys in `customers/local/secrets/age/`
-- SSH key pair in `customers/local/secrets/ssh/`
-
-### Adjust Configuration Defaults
-
-Edit the generated config to set values appropriate for a local Kind cluster:
+Confirm the resolved paths:
 
 ```bash
-$EDITOR ~/.config/opencenter/clusters/local/.my-cluster-config.yaml
+opencenter cluster info my-cluster
 ```
 
-Key fields to check:
+### Current Kind Defaults
 
-| Field | Recommended Value | Why |
-|---|---|---|
-| `kubernetes.version` | A version with a published `kindest/node` image (e.g., `1.33.7`) | Kind pulls `kindest/node:v<version>`. If the tag doesn't exist, bootstrap fails. |
-| `kubernetes.api_port` | `6443` | Port 443 requires root privileges on macOS/Linux. |
-| `compute.master_count` | `1` | Single control plane is sufficient for local dev. |
-| `compute.worker_count` | `2` | Two workers give enough room for service scheduling. |
+`cluster init --type kind` already applies Kind-specific defaults. You do **not** need to manually change these fields just to make a local cluster boot:
 
-Check available `kindest/node` tags if unsure:
+| Field | Kind default |
+|---|---|
+| `kubernetes.version` | `1.30.4` |
+| `kubernetes.api_port` | `6443` |
+| `kubernetes.subnet_pods` | `10.244.0.0/16` |
+| `kubernetes.subnet_services` | `10.96.0.0/16` |
+| `compute.master_count` | `1` |
+| `compute.worker_count` | `2` |
+
+If you override `kubernetes.version`, verify the corresponding `kindest/node` tag exists before bootstrapping:
 
 ```bash
-# Using podman
-podman search --list-tags docker.io/kindest/node --limit 200 | grep "v1.3"
-
-# Using docker
+podman search --list-tags docker.io/kindest/node --limit 200 | grep "v1.30"
+# or
 docker image ls kindest/node
 ```
 
-### Point GitOps URLs to Local Gitea (Optional)
+### Optional: Record the Local Git URL in Config
 
-If you want FluxCD to reconcile from the local Gitea, update the `gitops` section in the config:
+If you want the cluster config to reflect the local test remote, update the GitOps URL:
 
 ```yaml
 gitops:
   git_url: https://localhost:3001/newuser/test-repo.git
 ```
 
-This step is optional. Without it, the cluster still boots; FluxCD just won't have a reachable Git source until you configure one.
+This is optional. The `opencenter local gitops push` command does not require the config value to be set.
 
-## Step 3: Select the Cluster
+## Step 3: Validate and Generate GitOps Output
 
-Make the new cluster active so subsequent commands target it:
-
-```bash
-./bin/opencenter cluster select my-cluster
-```
-
-## Step 4: Validate Configuration
-
-Catch errors before deploying:
+Validate the cluster config:
 
 ```bash
-./bin/opencenter cluster validate my-cluster
+opencenter cluster validate my-cluster
 ```
 
-Validation checks schema compliance, required fields, network CIDR validity, and SOPS key presence. Fix any reported errors before proceeding.
-
-## Step 5: Generate the GitOps Repository
-
-Generate infrastructure templates, FluxCD manifests, and application overlays:
+Generate the GitOps tree:
 
 ```bash
-./bin/opencenter cluster setup my-cluster --force
+opencenter cluster setup my-cluster --force
 ```
 
-`--force` overwrites any previously generated files. The command creates the full directory tree under the customer GitOps directory:
+At this point the renderer owns the overlay tree, but `flux-system/` does **not** exist yet. That directory is bootstrap-owned and is created later by `flux bootstrap git`.
 
-```
-customers/local/
+The generated layout looks like this:
+
+```text
+$CLUSTERS_DIR/local/
+├── .my-cluster-config.yaml
 ├── applications/overlays/my-cluster/
-│   ├── flux-system/           # FluxCD bootstrap manifests
-│   ├── services/              # Platform service Kustomizations
-│   └── managed-services/      # Customer application Kustomizations
+│   ├── kustomization.yaml
+│   ├── services/
+│   ├── managed-services/
+│   └── customer-managed/   # only when enabled
 ├── infrastructure/clusters/my-cluster/
-│   ├── kind-config.yaml       # Kind cluster definition
-│   └── kubeconfig.yaml        # Written during bootstrap
+│   ├── kind-config.yaml
+│   └── kubeconfig.yaml     # written during bootstrap
 └── secrets/
-    ├── age/                   # SOPS Age keys
-    └── ssh/                   # SSH key pair
+    ├── age/
+    └── ssh/
 ```
 
-Verify the generated `kind-config.yaml` matches your expectations:
+If you want to inspect the rendered Kind cluster definition:
 
 ```bash
-cat customers/local/infrastructure/clusters/my-cluster/kind-config.yaml
+cat "$CLUSTERS_DIR/local/infrastructure/clusters/my-cluster/kind-config.yaml"
 ```
 
-## Step 6: Bootstrap the Cluster
+## Step 4: Bootstrap the Kind Cluster
 
-Create the Kind cluster and provision infrastructure:
+Create the Kind cluster and export its kubeconfig:
 
 ```bash
-./bin/opencenter cluster bootstrap my-cluster --container-runtime podman
+opencenter cluster bootstrap my-cluster --container-runtime podman
 ```
 
-Replace `podman` with `docker` if you use Docker.
+Use `docker` instead of `podman` if needed.
+
+Verify node readiness:
+
+```bash
+GITOPS_DIR=$(opencenter cluster info my-cluster 2>/dev/null | grep "git_dir:" | awk '{print $2}')
+export KUBECONFIG="$GITOPS_DIR/infrastructure/clusters/my-cluster/kubeconfig.yaml"
+kubectl get nodes
+```
+
+## Step 5: Attach Gitea to the Kind Network
+
+Flux runs inside the Kind cluster, so it cannot use `localhost:3001` as its repository URL. Attach the disposable Gitea container to the Kind network:
+
+```bash
+opencenter local gitea attach-kind --cluster my-cluster
+```
 
 This command:
 
-1. Creates the Kind cluster using the generated `kind-config.yaml`.
-2. Exports the kubeconfig to the infrastructure directory.
+1. connects the Gitea container to the `kind` network
+2. reissues the TLS certificate with SANs for `localhost`, `gitea`, loopback, and the current Kind-network IP
+3. restarts Gitea and reports the in-cluster repository URL plus CA path
 
-Bootstrap takes 1–3 minutes depending on whether the `kindest/node` image is already cached.
-
-Verify the cluster is running:
-
-```bash
-export KUBECONFIG=customers/local/infrastructure/clusters/my-cluster/kubeconfig.yaml
-kubectl get nodes
-```
-
-Expected output (1 control-plane + 2 workers):
-
-```
-NAME                       STATUS   ROLES           AGE   VERSION
-my-cluster-control-plane   Ready    control-plane   30s   v1.33.7
-my-cluster-worker          Ready    <none>          20s   v1.33.7
-my-cluster-worker2         Ready    <none>          20s   v1.33.7
-```
-
-## Step 7: Push GitOps Content to Gitea
-
-Commit the generated manifests and push to the local Gitea repository:
+Check the updated status:
 
 ```bash
-cd customers/local
-
-# Add Gitea as remote (use token-based auth for HTTPS)
-git remote add origin \
-  https://newuser:$(cat ../../openCenter-cli/.gitea_newuser_token)@localhost:3001/newuser/test-repo.git
-
-# Push (force because Gitea has an initial commit)
-GIT_SSL_NO_VERIFY=true git push --force origin main
+opencenter local gitea status
 ```
 
-`GIT_SSL_NO_VERIFY=true` is needed because Gitea uses a self-signed certificate.
+You should now see `Kind Attached: true` and a non-empty `Kind IP`.
 
-## Step 8: Bootstrap FluxCD Against Local Gitea
+## Step 6: Push the GitOps Repository to Local Gitea
 
-Install FluxCD and point it at the local Gitea repo:
+Push the generated GitOps repository with explicit CA trust and token auth:
 
 ```bash
-flux bootstrap git \
-  --url=https://localhost:3001/newuser/test-repo.git \
-  --branch=main \
-  --path=applications/overlays/my-cluster \
-  --token-auth \
-  --password=$(cat ../../openCenter-cli/.gitea_newuser_token) \
-  --username=newuser \
-  --ca-file=../../openCenter-cli/gitea/gitea/certs/ca.pem
+opencenter local gitops push --cluster my-cluster
 ```
 
-This installs the FluxCD controllers (source-controller, kustomize-controller, helm-controller, notification-controller) and creates the `flux-system` GitRepository and Kustomization.
+This command:
 
-### Fix In-Cluster Connectivity to Gitea
+- resolves the cluster `git_dir`
+- ensures `origin` points at `https://localhost:3001/newuser/test-repo.git`
+- pushes using the plugin-managed CA and token
 
-FluxCD runs inside the Kind cluster. The source-controller cannot reach `localhost:3001` because that resolves to the container's own loopback, not the host.
+No `GIT_SSL_NO_VERIFY=true` or tokenized remote URL is required.
 
-Connect the Gitea container to the Kind network:
+## Step 7: Bootstrap FluxCD
+
+Bootstrap Flux against the attached local Gitea repository:
 
 ```bash
-podman network connect kind gitea    # or: docker network connect kind gitea
+opencenter local flux bootstrap --cluster my-cluster
 ```
 
-Get the Gitea container's IP on the Kind network:
+This command:
 
-```bash
-podman inspect gitea \
-  --format '{{range $name, $net := .NetworkSettings.Networks}}{{$name}}: {{$net.IPAddress}}{{"\n"}}{{end}}'
-# Example output:
-# kind: 10.89.0.9
-# podman: 10.88.0.6
-```
+1. resolves the cluster kubeconfig
+2. uses the current Kind-network Gitea IP as the Git URL
+3. runs `flux bootstrap git`
+4. pulls the bootstrap commit back into the local checkout
+5. triggers `flux reconcile source git flux-system -n flux-system`
 
-The TLS certificate must include this IP as a Subject Alternative Name. Regenerate the certificate if needed (see [Troubleshooting](#tls-certificate-does-not-cover-container-ip) below), then restart Gitea:
-
-```bash
-podman restart gitea   # or: docker restart gitea
-```
-
-After restart, the IP may change. Re-check it and update the FluxCD GitRepository:
-
-```bash
-GITEA_IP=$(podman inspect gitea \
-  --format '{{(index .NetworkSettings.Networks "kind").IPAddress}}')
-
-# Patch the GitRepository URL
-kubectl -n flux-system patch gitrepository flux-system \
-  --type=merge \
-  -p "{\"spec\":{\"url\":\"https://${GITEA_IP}:3001/newuser/test-repo.git\"}}"
-
-# Update the CA cert in the flux-system secret
-CA_B64=$(base64 < ../../openCenter-cli/gitea/gitea/certs/ca.pem)
-kubectl -n flux-system patch secret flux-system \
-  --type=merge \
-  -p "{\"data\":{\"ca.crt\":\"${CA_B64}\"}}"
-```
-
-Also update `gotk-sync.yaml` in the repo so FluxCD doesn't revert the URL on the next reconciliation:
-
-```bash
-sed -i '' "s|url: https://localhost:3001|url: https://${GITEA_IP}:3001|" \
-  applications/overlays/my-cluster/flux-system/gotk-sync.yaml
-
-git add -A && git commit -m "fix: use gitea container IP for in-cluster access"
-GIT_SSL_NO_VERIFY=true git push origin main
-```
-
-Trigger reconciliation:
-
-```bash
-flux reconcile source git flux-system -n flux-system
-```
+After this step, `applications/overlays/my-cluster/flux-system/` exists and is managed by Flux bootstrap, not by `cluster setup`.
 
 ## Verification
 
-Check that FluxCD is reconciling from the local Gitea:
+Check the cluster and Flux controllers:
 
 ```bash
-flux get sources git -n flux-system
-# READY: True, stored artifact for revision 'main@sha1:...'
+export KUBECONFIG="$GITOPS_DIR/infrastructure/clusters/my-cluster/kubeconfig.yaml"
 
-flux get kustomizations -n flux-system
-# flux-system should show READY: True
-```
-
-Check cluster health:
-
-```bash
 kubectl get nodes
 kubectl get pods -n flux-system
+flux get sources git -n flux-system
+flux get kustomizations -n flux-system
 ```
+
+Expected results:
+
+- all Kind nodes are `Ready`
+- Flux pods are running in `flux-system`
+- the `flux-system` Git source is `READY=True`
 
 ## Cleanup
 
-Tear down all resources created by this guide. Run these steps in order.
-
-### 1. Delete the Kind Cluster
-
-This removes the Kind containers and the associated kubeconfig context:
+Destroy the Kind cluster and remove the local Gitea state:
 
 ```bash
-KIND_EXPERIMENTAL_PROVIDER=podman kind delete cluster --name my-cluster
-# or with docker:
-# kind delete cluster --name my-cluster
+opencenter cluster destroy my-cluster --force
+opencenter local gitea destroy
 ```
 
-### 2. Destroy Gitea
-
-The `gitea-cleanup` mise task stops the container, removes it, and deletes the `gitea/` data directory. It also removes the token files from the repo root:
+The legacy compatibility tasks still exist for one release and now proxy to the plugin:
 
 ```bash
+mise run gitea-up
 mise run gitea-cleanup
-```
-
-If the mise task is unavailable, run the equivalent manually:
-
-```bash
-podman stop gitea && podman rm gitea   # or docker stop/rm
-rm -rf gitea/                          # data directory created by setup-gitea.sh
-rm -f .gitea_admin_token .gitea_newuser_token
-```
-
-### 3. Remove the Gitea Remote from the Customer Repo
-
-The guide added a `origin` remote pointing at the local Gitea. Remove it so it doesn't interfere with future work:
-
-```bash
-git -C customers/local remote remove origin
-```
-
-### 4. Remove Generated Cluster Artifacts
-
-Delete the overlay, infrastructure, secrets, and config file that `cluster init` and `cluster setup` created:
-
-```bash
-# Application overlay
-rm -rf customers/local/applications/overlays/my-cluster
-
-# Infrastructure directory (kind-config, kubeconfig, logs, inventory)
-rm -rf customers/local/infrastructure/clusters/my-cluster
-
-# SSH keys
-rm -f customers/local/secrets/ssh/my-cluster customers/local/secrets/ssh/my-cluster.pub
-
-# SOPS Age key
-rm -f customers/local/secrets/age/keys/my-cluster-key.txt
-
-# Cluster config file
-rm -f customers/local/.my-cluster-config.yaml
-```
-
-### 5. Commit the Cleanup
-
-Commit the removal so the customer repo is back to its previous state:
-
-```bash
-git -C customers/local add -A
-git -C customers/local commit -m "cleanup: remove my-cluster artifacts"
-```
-
-### 6. Verify Nothing Is Left
-
-```bash
-# No Kind clusters
-KIND_EXPERIMENTAL_PROVIDER=podman kind get clusters
-# Expected: "No kind clusters found."
-
-# No Gitea container
-podman ps -a --filter name=gitea
-# Expected: empty table
-
-# No token files
-ls .gitea_*_token 2>/dev/null
-# Expected: "No such file or directory"
-
-# No stale remote
-git -C customers/local remote -v
-# Expected: no output
 ```
 
 ## Troubleshooting
 
+### `opencenter: unknown command "local"`
+
+The plugin is not installed in the discovery path.
+
+**Fix:**
+
+```bash
+mise run local-install
+```
+
 ### `kindest/node` Image Not Found
 
-**Error:** `manifest unknown` when pulling `kindest/node:v<version>`
+**Error:** `manifest unknown`
 
-**Cause:** The Kubernetes version in your config doesn't have a published Kind image.
+The selected Kubernetes version does not have a published `kindest/node` image.
 
-**Fix:** List available tags and pick one that exists:
-
-```bash
-podman search --list-tags docker.io/kindest/node --limit 200 | grep "v1.3"
-```
-
-Update `kubernetes.version` in your cluster config, then re-run `opencenter cluster setup --force` and `opencenter cluster bootstrap --restart`.
-
-### Port 443 Permission Denied
-
-**Error:** `listen tcp 127.0.0.1:443: bind: permission denied`
-
-**Cause:** `api_port` is set to 443, which requires root.
-
-**Fix:** Set `kubernetes.api_port: 6443` in your cluster config, re-run setup and bootstrap.
-
-### FluxCD Cannot Reach Gitea (`connection refused`)
-
-**Error:** `dial tcp [::1]:3001: connect: connection refused`
-
-**Cause:** The source-controller resolves `localhost` to the container's loopback, not the host.
-
-**Fix:** Connect Gitea to the Kind network and patch the GitRepository URL to use the container IP. See [Step 8](#step-8-bootstrap-fluxcd-against-local-gitea).
-
-### TLS Certificate Does Not Cover Container IP
-
-**Error:** `x509: certificate is valid for 127.0.0.1, not 10.89.0.x`
-
-**Cause:** The self-signed cert was generated for `localhost` only.
-
-**Fix:** Regenerate the certificate with the container IP as a SAN. Include several IPs in the range to survive container restarts:
+**Fix:** pick a valid tag, update the config, then rerun:
 
 ```bash
-CERT_DIR="gitea/gitea/certs"
-
-openssl genrsa -out "$CERT_DIR/ca-key.pem" 2048
-openssl req -new -x509 -days 365 -key "$CERT_DIR/ca-key.pem" \
-  -out "$CERT_DIR/ca.pem" -subj "/CN=Gitea-CA"
-
-openssl genrsa -out "$CERT_DIR/key.pem" 2048
-openssl req -new -key "$CERT_DIR/key.pem" \
-  -out /tmp/server.csr -subj "/CN=localhost"
-
-printf 'authorityKeyIdentifier=keyid,issuer
-basicConstraints=CA:FALSE
-keyUsage=digitalSignature,nonRepudiation,keyEncipherment,dataEncipherment
-subjectAltName=DNS:localhost,DNS:gitea,IP:127.0.0.1,IP:::1,IP:10.89.0.7,IP:10.89.0.8,IP:10.89.0.9,IP:10.89.0.10
-' > /tmp/server.ext
-
-openssl x509 -req -days 365 -in /tmp/server.csr \
-  -CA "$CERT_DIR/ca.pem" -CAkey "$CERT_DIR/ca-key.pem" \
-  -CAcreateserial -out "$CERT_DIR/cert.pem" -extfile /tmp/server.ext
-
-rm -f /tmp/server.csr /tmp/server.ext "$CERT_DIR/ca-key.pem"
-podman restart gitea
+opencenter cluster setup my-cluster --force
+opencenter cluster bootstrap my-cluster --restart
 ```
 
-Then update the CA cert in the `flux-system` secret and reconcile.
+### Flux Bootstrap Fails Before `attach-kind`
 
-### Kustomization Fails with `PodMonitor` CRD Missing
+Flux needs a repository URL reachable from inside the Kind network.
 
-**Error:** `no matches for kind "PodMonitor" in version "monitoring.coreos.com/v1"`
-
-**Cause:** The generated overlay includes a PodMonitor resource, but the prometheus-operator CRDs are not installed.
-
-**Fix:** Remove the PodMonitor reference from the services kustomization:
+**Fix:**
 
 ```bash
-sed -i '' '/podmonitor.yaml/d' \
-  applications/overlays/my-cluster/services/fluxcd/kustomization.yaml
-
-git add -A && git commit -m "fix: remove PodMonitor (no prometheus-operator CRDs)"
-GIT_SSL_NO_VERIFY=true git push origin main
-flux reconcile source git flux-system
+opencenter local gitea attach-kind --cluster my-cluster
+opencenter local flux bootstrap --cluster my-cluster
 ```
 
-### Service Kustomizations Show `GitRepository not found`
+### `flux-system/` Is Missing Right After `cluster setup`
 
-**Cause:** Service kustomizations reference `GitRepository` sources (e.g., `opencenter-cert-manager`) that point to the `openCenter-gitops-base` repository. These sources are not available in the local Gitea.
+That is expected. `flux-system/` is bootstrap-owned and is created by `flux bootstrap git`, not by the renderer.
 
-**Fix:** This is expected for a local-only setup. To resolve it, either:
+### Stale Bootstrap Lock
 
-- Mirror `openCenter-gitops-base` into the local Gitea and create matching `GitRepository` sources.
-- Or point the service sources at the upstream GitHub repository (requires internet access from the cluster).
+If bootstrap was interrupted, remove the stale lock and retry:
 
----
+```bash
+rm -f ~/.config/opencenter/locks/my-cluster.lock
+opencenter cluster bootstrap my-cluster --container-runtime podman --restart
+```
 
-**Evidence:**
+## Evidence
 
-- Gitea setup scripts: `hack/gitea-local/setup-gitea.sh`, `hack/gitea-local/configure-gitea-user-tokens.sh`
-- Mise tasks: `.mise.toml` (`gitea-setup`, `gitea-configure`, `gitea-up`, `gitea-cleanup`)
-- Cluster init command: `cmd/cluster_init.go:35-97`
-- Cluster setup command: `cmd/cluster_setup.go:28-60`
-- Cluster bootstrap command: `cmd/cluster_bootstrap.go:35-70`
-- Kind config generation: `customers/local/infrastructure/clusters/*/kind-config.yaml`
-- FluxCD bootstrap: `flux bootstrap git` CLI
+- Gitea defaults and lifecycle: `internal/localdev/gitea/service.go:DefaultSettings()`
+- Plugin state layout: `internal/localdev/layout.go:ResolveLayout()`
+- GitOps push service: `internal/localdev/gitops/service.go`
+- Flux bootstrap service: `internal/localdev/flux/service.go`
+- Kind bootstrap remains in core Go code: `internal/cluster/bootstrap_service.go`, `internal/cloud/kind/provider.go`
+- External plugin discovery: `internal/plugins/loader.go`
+- Local workflow plugin: `cmd/opencenter-local/`, `internal/localdev/`
+- Kind defaults: `internal/config/defaults/kind.yaml`, `internal/config/v2/defaults.go:applyProviderBehaviorDefaults()`
+- Renderer vs bootstrap ownership: `docs/dev/rendering-contract.md`
