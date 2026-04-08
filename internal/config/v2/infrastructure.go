@@ -16,17 +16,24 @@ package v2
 // InfrastructureConfig represents provider-agnostic infrastructure with provider-specific extensions.
 // Requirements: 2.1, 3.1, 4.1, 9.1, 9.2
 type InfrastructureConfig struct {
-	Provider            string           `yaml:"provider" json:"provider" validate:"required,oneof=openstack aws gcp azure baremetal vsphere vmware kind"`
-	SSH                 SSHConfig        `yaml:"ssh" json:"ssh" validate:"required"`
-	OSVersion           string           `yaml:"os_version" json:"os_version" validate:"required"`
-	ServerGroupAffinity []string         `yaml:"server_group_affinity,omitempty" json:"server_group_affinity,omitempty"`
-	K8sAPIIP            string           `yaml:"k8s_api_ip,omitempty" json:"k8s_api_ip,omitempty" validate:"omitempty,ipv4"`
-	NodeNaming          NodeNamingConfig `yaml:"node_naming,omitempty" json:"node_naming,omitempty"`
-	Bastion             BastionConfig    `yaml:"bastion,omitempty" json:"bastion,omitempty"`
-	Networking          NetworkingConfig `yaml:"networking" json:"networking" validate:"required"`
-	Compute             ComputeConfig    `yaml:"compute" json:"compute" validate:"required"`
-	Storage             StorageConfig    `yaml:"storage" json:"storage" validate:"required"`
-	Cloud               CloudConfig      `yaml:"cloud" json:"cloud" validate:"required"`
+	Provider            string                   `yaml:"provider" json:"provider" validate:"required,oneof=openstack aws gcp azure baremetal vsphere vmware kind"`
+	SSH                 SSHConfig                `yaml:"ssh" json:"ssh" validate:"required"`
+	OSVersion           string                   `yaml:"os_version" json:"os_version" validate:"required"`
+	ServerGroupAffinity []string                 `yaml:"server_group_affinity,omitempty" json:"server_group_affinity,omitempty"`
+	K8sAPIIP            string                   `yaml:"k8s_api_ip,omitempty" json:"k8s_api_ip,omitempty" validate:"omitempty,ipv4"`
+	NodeNaming          NodeNamingConfig         `yaml:"node_naming,omitempty" json:"node_naming,omitempty"`
+	Bastion             BastionConfig            `yaml:"bastion,omitempty" json:"bastion,omitempty"`
+	Networking          NetworkingConfig         `yaml:"networking" json:"networking" validate:"required"`
+	Compute             ComputeConfig            `yaml:"compute" json:"compute" validate:"required"`
+	Storage             StorageConfig            `yaml:"storage" json:"storage" validate:"required"`
+	Cloud               CloudConfig              `yaml:"cloud" json:"cloud" validate:"required"`
+	Kind                *KindCompatibilityConfig `yaml:"kind,omitempty" json:"kind,omitempty"`
+}
+
+// KindCompatibilityConfig carries Kind-specific settings that do not have a
+// provider-agnostic v2 home yet but still need to round-trip through native v2 files.
+type KindCompatibilityConfig struct {
+	DisableDefaultCNI bool `yaml:"disable_default_cni,omitempty" json:"disable_default_cni,omitempty"`
 }
 
 // SSHConfig represents SSH configuration for cluster nodes.

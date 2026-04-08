@@ -241,8 +241,11 @@ mise run schema
 # Validate templates
 mise run validate-templates
 
-# Run local Kind cluster
-mise run kind-cluster-no-cni
+# Run a named Kind cluster with openCenter-managed CNI
+opencenter cluster init dev-cluster --type kind --kind-disable-default-cni
+opencenter cluster validate dev-cluster
+opencenter cluster setup dev-cluster
+opencenter cluster bootstrap dev-cluster
 
 # Setup local Gitea for testing
 mise run gitea-up

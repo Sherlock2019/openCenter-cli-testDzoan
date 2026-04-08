@@ -115,10 +115,10 @@ func overlayLegacyInfrastructure(dst *Config, src *v2.Config) {
 	dst.OpenCenter.Cluster.Networking.DNSNameservers = append([]string(nil), src.OpenCenter.Infrastructure.Networking.DNSNameservers...)
 	dst.OpenCenter.Cluster.Networking.NTPServers = append([]string(nil), src.OpenCenter.Infrastructure.Networking.NTPServers...)
 
-	dst.OpenCenter.Cluster.Kubernetes.FlavorBastion = src.OpenCenter.Infrastructure.Compute.FlavorBastion
-	dst.OpenCenter.Cluster.Kubernetes.FlavorMaster = src.OpenCenter.Infrastructure.Compute.FlavorMaster
-	dst.OpenCenter.Cluster.Kubernetes.FlavorWorker = src.OpenCenter.Infrastructure.Compute.FlavorWorker
-	dst.OpenCenter.Cluster.Kubernetes.FlavorWorkerWindows = src.OpenCenter.Infrastructure.Compute.FlavorWorkerWindows
+	dst.OpenCenter.Cluster.Kubernetes.FlavorBastion = firstNonEmpty(src.OpenCenter.Infrastructure.Compute.FlavorBastion, dst.OpenCenter.Cluster.Kubernetes.FlavorBastion)
+	dst.OpenCenter.Cluster.Kubernetes.FlavorMaster = firstNonEmpty(src.OpenCenter.Infrastructure.Compute.FlavorMaster, dst.OpenCenter.Cluster.Kubernetes.FlavorMaster)
+	dst.OpenCenter.Cluster.Kubernetes.FlavorWorker = firstNonEmpty(src.OpenCenter.Infrastructure.Compute.FlavorWorker, dst.OpenCenter.Cluster.Kubernetes.FlavorWorker)
+	dst.OpenCenter.Cluster.Kubernetes.FlavorWorkerWindows = firstNonEmpty(src.OpenCenter.Infrastructure.Compute.FlavorWorkerWindows, dst.OpenCenter.Cluster.Kubernetes.FlavorWorkerWindows)
 	dst.OpenCenter.Cluster.Kubernetes.MasterCount = src.OpenCenter.Infrastructure.Compute.MasterCount
 	dst.OpenCenter.Cluster.Kubernetes.WorkerCount = src.OpenCenter.Infrastructure.Compute.WorkerCount
 	dst.OpenCenter.Cluster.Kubernetes.WorkerCountWindows = src.OpenCenter.Infrastructure.Compute.WorkerCountWindows
@@ -142,6 +142,9 @@ func overlayLegacyInfrastructure(dst *Config, src *v2.Config) {
 			dst.OpenCenter.Infrastructure.Kind.APIServerPort = src.OpenCenter.Cluster.Kubernetes.APIPort
 			dst.OpenCenter.Infrastructure.Kind.PodSubnet = src.OpenCenter.Cluster.Kubernetes.SubnetPods
 			dst.OpenCenter.Infrastructure.Kind.ServiceSubnet = src.OpenCenter.Cluster.Kubernetes.SubnetServices
+			if src.OpenCenter.Infrastructure.Kind != nil {
+				dst.OpenCenter.Infrastructure.Kind.DisableDefaultCNI = src.OpenCenter.Infrastructure.Kind.DisableDefaultCNI
+			}
 		}
 	default:
 		dst.OpenCenter.Infrastructure.Kind = nil

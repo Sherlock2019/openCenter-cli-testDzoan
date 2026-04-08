@@ -62,12 +62,14 @@ Create a new cluster configuration with Kind defaults:
 ```bash
 opencenter cluster init dev-cluster \
   --org local \
-  --type kind
+  --type kind \
+  --kind-disable-default-cni
 ```
 
 **What happens:**
 - Creates configuration file at `~/.config/opencenter/clusters/local/.dev-cluster-config.yaml`
 - Applies Kind defaults (single control plane, 2 workers)
+- Sets `opencenter.infrastructure.kind.disable_default_cni: true` so openCenter can install the cluster CNI during bootstrap
 - Generates SSH keys (not used for Kind, but required for consistency)
 - Generates SOPS Age keys for secrets encryption
 
@@ -107,8 +109,9 @@ opencenter:
     provider: kind
     kind:
       cluster_name: dev-cluster
-      control_plane_nodes: 1  # Single control plane for dev
-      worker_nodes: 2         # 2 workers for testing
+      control_plane_count: 1  # Single control plane for dev
+      worker_count: 2         # 2 workers for testing
+      disable_default_cni: true
   
   cluster:
     kubernetes:
@@ -182,7 +185,7 @@ Configuration is valid and ready for deployment.
 Generate the GitOps repository structure:
 
 ```bash
-opencenter cluster setup dev-cluster --render
+opencenter cluster setup dev-cluster
 ```
 
 **What's generated:**
@@ -195,7 +198,6 @@ opencenter cluster setup dev-cluster --render
 │
 ├── applications/
 │   └── overlays/dev-cluster/
-│       ├── flux-system/           # FluxCD bootstrap (optional)
 │       ├── services/              # Platform services
 │       └── managed-services/      # Your applications
 │
@@ -210,7 +212,6 @@ opencenter cluster setup dev-cluster --render
 ```
 ✓ Generated GitOps repository: ~/dev-cluster-gitops
 ✓ Created Kind configuration
-✓ Created FluxCD manifests
 
 Next steps:
 1. Bootstrap cluster: opencenter cluster bootstrap dev-cluster

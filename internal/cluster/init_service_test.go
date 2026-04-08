@@ -505,6 +505,57 @@ func TestInitService_Initialize_DifferentProviders(t *testing.T) {
 	}
 }
 
+func TestInitService_Initialize_KindDisableDefaultCNI(t *testing.T) {
+	tmpDir := t.TempDir()
+	pathResolver := paths.NewPathResolver(tmpDir)
+	validationEngine := setupValidationEngine(t)
+
+	configManager, _ := config.NewConfigManager("")
+	initService := NewInitService(pathResolver, validationEngine, configManager)
+
+	enabled := true
+	result, err := initService.Initialize(context.Background(), InitOptions{
+		ClusterName:           "kind-cni",
+		Organization:          "test-org",
+		Provider:              "kind",
+		NoKeyGen:              true,
+		NoGitInit:             true,
+		KindDisableDefaultCNI: &enabled,
+	})
+	if err != nil {
+		t.Fatalf("Initialize() error = %v", err)
+	}
+
+	if result.Config.OpenCenter.Infrastructure.Kind == nil {
+		t.Fatal("expected native v2 kind compatibility config to be present")
+	}
+	if !result.Config.OpenCenter.Infrastructure.Kind.DisableDefaultCNI {
+		t.Fatal("expected disable_default_cni to be true in native v2 config")
+	}
+}
+
+func TestInitService_Initialize_RejectsKindDisableDefaultCNIForNonKind(t *testing.T) {
+	tmpDir := t.TempDir()
+	pathResolver := paths.NewPathResolver(tmpDir)
+	validationEngine := setupValidationEngine(t)
+
+	configManager, _ := config.NewConfigManager("")
+	initService := NewInitService(pathResolver, validationEngine, configManager)
+
+	enabled := true
+	_, err := initService.Initialize(context.Background(), InitOptions{
+		ClusterName:           "openstack-cni",
+		Organization:          "test-org",
+		Provider:              "openstack",
+		NoKeyGen:              true,
+		NoGitInit:             true,
+		KindDisableDefaultCNI: &enabled,
+	})
+	if err == nil {
+		t.Fatal("expected Initialize() to reject kind disable_default_cni for non-kind providers")
+	}
+}
+
 func TestInitService_generateSOPSKey(t *testing.T) {
 	tmpDir := t.TempDir()
 	pathResolver := paths.NewPathResolver(tmpDir)

@@ -160,9 +160,14 @@ and suggest using 'opencenter cluster select' to set one.`,
 				kindConfigReady := pathExists(renderedKindConfigPath)
 				kubeconfigReady := pathExists(resolvedClusterPaths.KubeconfigPath)
 				clusterExists, apiReady, endpoint, providerError := kindClusterStatus(ctx, &cfg, resolvedClusterPaths.KubeconfigPath)
+				defaultCNIStatus := "Enabled"
+				if cfg.OpenCenter.Infrastructure.Kind != nil && cfg.OpenCenter.Infrastructure.Kind.DisableDefaultCNI {
+					defaultCNIStatus = "Disabled"
+				}
 
 				fmt.Fprintf(cmd.OutOrStdout(), "\nKind Status:\n")
 				fmt.Fprintf(cmd.OutOrStdout(), "  Config:            ✓ Present\n")
+				fmt.Fprintf(cmd.OutOrStdout(), "  Default CNI:       %s\n", defaultCNIStatus)
 				fmt.Fprintf(cmd.OutOrStdout(), "  GitOps Setup:      %s\n", statusLabel(gitOpsReady, "Ready", "Not ready"))
 				fmt.Fprintf(cmd.OutOrStdout(), "  kind-config.yaml:  %s\n", statusLabel(kindConfigReady, "Present", "Missing"))
 				fmt.Fprintf(cmd.OutOrStdout(), "  Kubeconfig:        %s\n", statusLabel(kubeconfigReady, "Present", "Missing"))

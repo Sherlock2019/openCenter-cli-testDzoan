@@ -3,8 +3,8 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
@@ -118,6 +118,8 @@ func showUpdateHelp(cmd *cobra.Command) error {
 	fmt.Fprintln(cmd.OutOrStdout(), "  opencenter cluster update --iac.main.master_count=5")
 	fmt.Fprintln(cmd.OutOrStdout(), "  opencenter cluster update my-cluster --iac.main.worker_count=3")
 	fmt.Fprintln(cmd.OutOrStdout(), "  opencenter cluster update --iac.main.kubernetes_version=1.30.4")
+	fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster update my-kind-cluster --%s\n", kindDisableDefaultCNIFlagName)
+	fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster update my-kind-cluster --%s=false\n", kindDisableDefaultCNIFlagName)
 
 	return nil
 }
@@ -134,24 +136,13 @@ func newClusterUpdateCmd() *cobra.Command {
 			UnknownFlags: true,
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Check if any update flags are provided by inspecting os.Args
-			hasUpdateFlags := false
-			for _, arg := range os.Args {
-				if strings.HasPrefix(arg, "--") {
-					parts := strings.SplitN(strings.TrimPrefix(arg, "--"), "=", 2)
-					if len(parts) >= 1 {
-						key := parts[0]
-						// Skip built-in flags
-						if cmd.Flags().Lookup(key) == nil && key != "help" && key != "config-dir" {
-							hasUpdateFlags = true
-							break
-						}
-					}
-				}
+			flagOverrides, err := parseUpdateFlagOverrides(cmd)
+			if err != nil {
+				return err
 			}
 
 			// If no cluster name provided and no update flags, show enhanced help
-			if len(args) == 0 && !hasUpdateFlags {
+			if len(args) == 0 && len(flagOverrides) == 0 && !cmd.Flags().Changed(kindDisableDefaultCNIFlagName) {
 				return showUpdateHelp(cmd)
 			}
 
@@ -166,19 +157,20 @@ func newClusterUpdateCmd() *cobra.Command {
 				return fmt.Errorf("failed to load cluster %s: %w", name, err)
 			}
 
-			// Apply overrides from flags by inspecting os.Args similar to init
-			for _, arg := range os.Args {
-				if strings.HasPrefix(arg, "--") {
-					parts := strings.SplitN(strings.TrimPrefix(arg, "--"), "=", 2)
-					if len(parts) == 2 {
-						key, value := parts[0], parts[1]
-						if cmd.Flags().Lookup(key) != nil {
-							continue
-						}
-						if err := setField(&cfg, key, value); err != nil {
-							return fmt.Errorf("error setting config from flag '%s': %w", key, err)
-						}
-					}
+			if enabled, changed, err := kindDisableDefaultCNIValue(cmd, cfg.OpenCenter.Infrastructure.Provider); err != nil {
+				return err
+			} else if changed {
+				flagOverrides = append(flagOverrides, "--"+kindDisableDefaultCNIPath+"="+strconv.FormatBool(enabled))
+			}
+
+			for _, override := range flagOverrides {
+				nameValue := strings.TrimPrefix(override, "--")
+				key, value, ok := strings.Cut(nameValue, "=")
+				if !ok {
+					return fmt.Errorf("invalid override format: %s", override)
+				}
+				if err := setField(&cfg, key, value); err != nil {
+					return fmt.Errorf("error setting config from flag '%s': %w", key, err)
 				}
 			}
 
@@ -203,5 +195,44 @@ func newClusterUpdateCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().Bool("strict", false, "fail if the resulting configuration is not valid")
+	cmd.Flags().Bool(kindDisableDefaultCNIFlagName, false, "disable Kind's default CNI so cluster networking is managed by openCenter")
 	return cmd
+}
+
+func parseUpdateFlagOverrides(cmd *cobra.Command) ([]string, error) {
+	rawArgs := rawCommandArgs(cmd)
+	overrides := make([]string, 0)
+
+	for i := 0; i < len(rawArgs); i++ {
+		arg := rawArgs[i]
+		if !strings.HasPrefix(arg, "--") || arg == "--" {
+			continue
+		}
+
+		nameValue := strings.TrimPrefix(arg, "--")
+		name, value, hasValue := strings.Cut(nameValue, "=")
+
+		if flag := lookupCommandFlag(cmd, name); flag != nil {
+			if !hasValue && flag.NoOptDefVal == "" && i+1 < len(rawArgs) && !strings.HasPrefix(rawArgs[i+1], "-") {
+				i++
+			}
+			continue
+		}
+
+		if !strings.Contains(name, ".") {
+			return nil, fmt.Errorf("unknown flag: --%s", name)
+		}
+
+		if !hasValue {
+			if i+1 >= len(rawArgs) || strings.HasPrefix(rawArgs[i+1], "-") {
+				return nil, fmt.Errorf("flag needs an argument: --%s", name)
+			}
+			value = rawArgs[i+1]
+			i++
+		}
+
+		overrides = append(overrides, "--"+name+"="+value)
+	}
+
+	return overrides, nil
 }

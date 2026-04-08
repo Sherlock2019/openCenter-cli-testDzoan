@@ -32,6 +32,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	kindDisableDefaultCNIFlagName = "kind-disable-default-cni"
+	kindDisableDefaultCNIPath     = "opencenter.infrastructure.kind.disable_default_cni"
+)
+
 func newClusterInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init [name]",
@@ -69,6 +74,9 @@ don't already exist, unless --no-keygen is specified.`,
   # Initialize a VMware cluster
   opencenter cluster init my-cluster --org production --type vmware
 
+  # Initialize a Kind cluster with the built-in CNI disabled
+  opencenter cluster init my-cluster --org local --type kind --kind-disable-default-cni
+
   # Override config values using native v2 dotted flags
   opencenter cluster init my-cluster --opencenter.infrastructure.compute.master_count=5
 
@@ -90,6 +98,7 @@ don't already exist, unless --no-keygen is specified.`,
 	cmd.Flags().Bool("no-sops-keygen", false, "do not auto-generate SOPS keys")
 	cmd.Flags().Bool("regenerate-keys", false, "regenerate keys even if they exist")
 	cmd.Flags().Bool("full-schema", false, "generate configuration with all available fields")
+	cmd.Flags().Bool(kindDisableDefaultCNIFlagName, false, "disable Kind's default CNI so cluster networking is managed by openCenter")
 	cmd.Flags().StringArray("server-pool", []string{}, "additional server pool configuration")
 
 	return cmd
@@ -201,9 +210,35 @@ func parseInitOptions(cmd *cobra.Command, args []string) (cluster.InitOptions, e
 		opts.Organization = deprecatedOrg
 	}
 
+	if enabled, changed, err := kindDisableDefaultCNIValue(cmd, opts.Provider); err != nil {
+		return opts, err
+	} else if changed {
+		opts.KindDisableDefaultCNI = &enabled
+	}
+
 	opts.SchemaVersion = "2.0"
 
 	return opts, nil
+}
+
+func kindDisableDefaultCNIValue(cmd *cobra.Command, provider string) (bool, bool, error) {
+	if cmd == nil || !cmd.Flags().Changed(kindDisableDefaultCNIFlagName) {
+		return false, false, nil
+	}
+
+	if !strings.EqualFold(strings.TrimSpace(provider), "kind") {
+		if strings.TrimSpace(provider) == "" {
+			return false, false, fmt.Errorf("--%s is only valid for kind clusters", kindDisableDefaultCNIFlagName)
+		}
+		return false, false, fmt.Errorf("--%s is only valid for kind clusters (provider: %s)", kindDisableDefaultCNIFlagName, provider)
+	}
+
+	enabled, err := cmd.Flags().GetBool(kindDisableDefaultCNIFlagName)
+	if err != nil {
+		return false, false, fmt.Errorf("read --%s: %w", kindDisableDefaultCNIFlagName, err)
+	}
+
+	return enabled, true, nil
 }
 
 func parseInitFlagOverrides(cmd *cobra.Command) ([]string, string, error) {

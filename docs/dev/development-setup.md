@@ -238,20 +238,23 @@ Verify end-to-end functionality with a local Kind cluster:
 
 ```bash
 # Initialize test cluster configuration
-./bin/opencenter cluster init test-dev --org my-org
+./bin/opencenter cluster init test-dev --org my-org --type kind --kind-disable-default-cni
 
 # Validate configuration
 ./bin/opencenter cluster validate test-dev
 
-# Create local Kind cluster (requires Docker or Podman)
-mise run kind-cluster-no-cni
+# Generate GitOps output
+./bin/opencenter cluster setup test-dev
+
+# Create the named Kind cluster (requires Docker or Podman)
+./bin/opencenter cluster bootstrap test-dev
 ```
 
-Expected: Kind cluster created with 1 control plane + 3 workers
+Expected: Kind cluster created for `test-dev` using the rendered `kind-config.yaml`
 
 **Clean up:**
 ```bash
-kind delete cluster --name opencenter-dev
+./bin/opencenter cluster destroy test-dev --force
 ```
 
 ## Check Your Work
@@ -349,7 +352,7 @@ docker ps  # or: podman ps
 export KIND_EXPERIMENTAL_PROVIDER=podman
 
 # Retry
-mise run kind-cluster-no-cni
+./bin/opencenter cluster bootstrap test-dev
 ```
 
 ## Next Steps
@@ -400,5 +403,5 @@ This documentation is based on the following repository files:
 - Development guide: `.kiro/steering/tech.md:1-149`
 - Project structure: `.kiro/steering/structure.md:1-128`
 - Go dependencies: `go.mod:1-77`
-- Shell integration: `.mise.toml:945-948` (install-shell-integration task)
-- Kind cluster setup: `.mise.toml:920-937` (kind-cluster-no-cni task)
+- Shell integration: `.mise.toml` (`install-shell-integration` task)
+- Kind cluster workflow: `cmd/cluster_init.go`, `cmd/cluster_setup.go`, `cmd/cluster_bootstrap.go`, `cmd/cluster_destroy.go`

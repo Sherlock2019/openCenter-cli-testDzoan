@@ -23,21 +23,22 @@ import (
 
 // InitOptions contains options for cluster initialization
 type InitOptions struct {
-	ClusterName    string
-	Organization   string
-	Provider       string
-	ConfigFile     string
-	ConfigMap      map[string]any
-	Force          bool
-	Strict         bool
-	NoKeyGen       bool
-	NoSOPSKeyGen   bool
-	RegenerateKeys bool
-	NoGitInit      bool
-	FullSchema     bool
-	SchemaVersion  string
-	ServerPools    []string
-	FlagOverrides  []string
+	ClusterName           string
+	Organization          string
+	Provider              string
+	ConfigFile            string
+	ConfigMap             map[string]any
+	Force                 bool
+	Strict                bool
+	NoKeyGen              bool
+	NoSOPSKeyGen          bool
+	RegenerateKeys        bool
+	NoGitInit             bool
+	FullSchema            bool
+	SchemaVersion         string
+	ServerPools           []string
+	FlagOverrides         []string
+	KindDisableDefaultCNI *bool
 }
 
 // InitResult contains the result of cluster initialization
@@ -358,6 +359,17 @@ func (s *InitService) applyOverrides(cfg *v2.Config, configMap map[string]any, o
 		if err := integration.ProcessFlags(opts.FlagOverrides, cfg, configMap); err != nil {
 			return fmt.Errorf("applying dotted overrides: %w", err)
 		}
+	}
+
+	if opts.KindDisableDefaultCNI != nil {
+		if !strings.EqualFold(cfg.OpenCenter.Infrastructure.Provider, "kind") {
+			return fmt.Errorf("--kind-disable-default-cni is only valid for kind clusters")
+		}
+		if cfg.OpenCenter.Infrastructure.Kind == nil {
+			cfg.OpenCenter.Infrastructure.Kind = &v2.KindCompatibilityConfig{}
+		}
+		cfg.OpenCenter.Infrastructure.Kind.DisableDefaultCNI = *opts.KindDisableDefaultCNI
+		setNestedConfigValue(configMap, *opts.KindDisableDefaultCNI, "opencenter", "infrastructure", "kind", "disable_default_cni")
 	}
 
 	return nil

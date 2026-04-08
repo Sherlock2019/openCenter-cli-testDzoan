@@ -39,6 +39,7 @@ func TestConfigurationManagerLoad_NativeV2Compatibility(t *testing.T) {
 	cfg.OpenCenter.GitOps.GitSSHKey = clusterPaths.SSHKeyPath
 	cfg.OpenCenter.GitOps.GitSSHPub = clusterPaths.SSHKeyPath + ".pub"
 	cfg.OpenCenter.Infrastructure.SSH.KeyPath = clusterPaths.SSHKeyPath
+	cfg.OpenCenter.Infrastructure.Kind = &v2.KindCompatibilityConfig{DisableDefaultCNI: true}
 
 	if err := defaultLegacyV2Loader().SaveToFile(cfg, clusterPaths.ConfigPath); err != nil {
 		t.Fatalf("SaveToFile() error = %v", err)
@@ -65,8 +66,14 @@ func TestConfigurationManagerLoad_NativeV2Compatibility(t *testing.T) {
 	if legacyCfg.OpenCenter.Infrastructure.Kind == nil {
 		t.Fatal("expected kind compatibility projection to populate infrastructure.kind")
 	}
+	if !legacyCfg.OpenCenter.Infrastructure.Kind.DisableDefaultCNI {
+		t.Fatal("expected native v2 kind.disable_default_cni to bridge into canonical config")
+	}
 	if legacyCfg.OpenCenter.Cluster.Kubernetes.MasterCount != cfg.OpenCenter.Infrastructure.Compute.MasterCount {
 		t.Fatalf("master_count = %d, want %d", legacyCfg.OpenCenter.Cluster.Kubernetes.MasterCount, cfg.OpenCenter.Infrastructure.Compute.MasterCount)
+	}
+	if legacyCfg.OpenCenter.Cluster.Kubernetes.FlavorBastion == "" {
+		t.Fatal("expected legacy kind projection to retain a non-empty bastion flavor default")
 	}
 	if legacyCfg.OpenTofu.Enabled {
 		t.Fatal("expected opentofu to stay disabled for kind")

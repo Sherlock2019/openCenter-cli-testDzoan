@@ -18,6 +18,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/cluster"
@@ -121,6 +122,13 @@ func TestClusterSetupIntegrationKindProvider(t *testing.T) {
 	if _, err := os.Stat(kindConfigPath); err != nil {
 		t.Fatalf("expected kind-config.yaml to exist: %v", err)
 	}
+	kindConfigBytes, err := os.ReadFile(kindConfigPath)
+	if err != nil {
+		t.Fatalf("read kind-config.yaml: %v", err)
+	}
+	if !strings.Contains(string(kindConfigBytes), "disableDefaultCNI: false") {
+		t.Fatalf("expected kind-config.yaml to render disableDefaultCNI: false by default\ncontents:\n%s", string(kindConfigBytes))
+	}
 
 	for _, path := range []string{
 		filepath.Join(clusterDir, "main.tf"),
@@ -129,6 +137,44 @@ func TestClusterSetupIntegrationKindProvider(t *testing.T) {
 		if _, err := os.Stat(path); !os.IsNotExist(err) {
 			t.Fatalf("expected %s to be absent for kind setup", path)
 		}
+	}
+}
+
+func TestClusterSetupIntegrationKindProviderDisableDefaultCNI(t *testing.T) {
+	dir := t.TempDir()
+	prepareCommandTestEnv(t, dir)
+
+	binDir := t.TempDir()
+	installFakeGitBinary(t, binDir)
+	prependTestPath(t, binDir)
+
+	initCmd := newClusterInitCmd()
+	initCmd.SetOut(&bytes.Buffer{})
+	initCmd.SetErr(&bytes.Buffer{})
+	initCmd.SetArgs([]string{"kind-setup-cni-int", "--type", "kind", "--no-keygen", "--kind-disable-default-cni"})
+	if err := initCmd.Execute(); err != nil {
+		t.Fatalf("cluster init failed: %v", err)
+	}
+
+	resetCommandStateForTests()
+
+	setupCmd := newClusterSetupCmd()
+	var stdout, stderr bytes.Buffer
+	setupCmd.SetOut(&stdout)
+	setupCmd.SetErr(&stderr)
+	setupCmd.SetArgs([]string{"kind-setup-cni-int"})
+	if err := setupCmd.Execute(); err != nil {
+		t.Fatalf("cluster setup failed: %v\nstderr: %s", err, stderr.String())
+	}
+
+	clusterDir := filepath.Join(dir, "clusters", "opencenter", "infrastructure", "clusters", "kind-setup-cni-int")
+	kindConfigPath := filepath.Join(clusterDir, "kind-config.yaml")
+	kindConfigBytes, err := os.ReadFile(kindConfigPath)
+	if err != nil {
+		t.Fatalf("read kind-config.yaml: %v", err)
+	}
+	if !strings.Contains(string(kindConfigBytes), "disableDefaultCNI: true") {
+		t.Fatalf("expected kind-config.yaml to render disableDefaultCNI: true\ncontents:\n%s", string(kindConfigBytes))
 	}
 }
 

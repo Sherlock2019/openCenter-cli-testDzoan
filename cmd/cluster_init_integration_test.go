@@ -202,8 +202,73 @@ func TestClusterInitIntegrationKindProvider(t *testing.T) {
 	if cfg.OpenCenter.Infrastructure.Cloud.VMware != nil {
 		t.Fatalf("expected vmware cloud config to be cleared, got %#v", cfg.OpenCenter.Infrastructure.Cloud.VMware)
 	}
+
+	canonicalCfg, err := loadCanonicalConfig("kind-int")
+	if err != nil {
+		t.Fatalf("load canonical config: %v", err)
+	}
+	if canonicalCfg.OpenCenter.Infrastructure.Kind == nil {
+		t.Fatal("expected kind infrastructure config to be present")
+	}
+	if canonicalCfg.OpenCenter.Infrastructure.Kind.DisableDefaultCNI {
+		t.Fatal("expected disable_default_cni to default to false for kind")
+	}
 	if cfg.OpenCenter.Meta.Stage != config.StageInit || cfg.OpenCenter.Meta.Status != config.StatusSuccess {
 		t.Fatalf("unexpected lifecycle state: %s/%s", cfg.OpenCenter.Meta.Stage, cfg.OpenCenter.Meta.Status)
+	}
+}
+
+func TestClusterInitKindDisableDefaultCNIFlag(t *testing.T) {
+	dir := t.TempDir()
+	prepareCommandTestEnv(t, dir)
+
+	cmd := newClusterInitCmd()
+	var stdout, stderr bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"kind-cni-int", "--type", "kind", "--org", "opencenter", "--no-keygen", "--kind-disable-default-cni"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("cluster init failed: %v\nstderr: %s", err, stderr.String())
+	}
+
+	configPath := filepath.Join(dir, "clusters", "opencenter", ".kind-cni-int-config.yaml")
+	v2Cfg := loadV2ConfigForTest(t, configPath)
+	if v2Cfg.OpenCenter.Infrastructure.Kind == nil {
+		t.Fatal("expected native v2 kind compatibility config to be present")
+	}
+	if !v2Cfg.OpenCenter.Infrastructure.Kind.DisableDefaultCNI {
+		t.Fatal("expected native v2 config to persist disable_default_cni=true")
+	}
+
+	cfg, err := loadCanonicalConfig("kind-cni-int")
+	if err != nil {
+		t.Fatalf("load canonical config: %v", err)
+	}
+
+	if cfg.OpenCenter.Infrastructure.Kind == nil {
+		t.Fatal("expected kind infrastructure config to be present")
+	}
+	if !cfg.OpenCenter.Infrastructure.Kind.DisableDefaultCNI {
+		t.Fatal("expected disable_default_cni to be true when --kind-disable-default-cni is set")
+	}
+}
+
+func TestClusterInitRejectsKindDisableDefaultCNIForNonKind(t *testing.T) {
+	dir := t.TempDir()
+	prepareCommandTestEnv(t, dir)
+
+	cmd := newClusterInitCmd()
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"openstack-cni-int", "--type", "openstack", "--no-keygen", "--kind-disable-default-cni"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected cluster init to reject --kind-disable-default-cni for non-kind provider")
+	}
+	if !strings.Contains(err.Error(), "--kind-disable-default-cni is only valid for kind clusters") {
+		t.Fatalf("expected kind-only error, got: %v", err)
 	}
 }
 

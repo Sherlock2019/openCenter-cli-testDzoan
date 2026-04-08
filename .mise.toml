@@ -735,27 +735,6 @@ gitea-cleanup = [
   "go run ./cmd/opencenter-local gitea destroy"
 ]
 
-# Create a kind cluster with no CNI and experimental podman support
-kind-cluster-no-cni = """
-echo "Creating kind cluster with no CNI and podman support..."
-cat <<EOF | KIND_EXPERIMENTAL_PROVIDER=podman kind create cluster --name opencenter-dev --config=-
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-networking:
-  disableDefaultCNI: true
-  podSubnet: "10.244.0.0/16"
-  serviceSubnet: "10.96.0.0/12"
-nodes:
-- role: control-plane
-- role: worker
-- role: worker
-- role: worker
-EOF
-echo "Exporting kubeconfig for kind cluster..."
-KIND_EXPERIMENTAL_PROVIDER=podman kind export kubeconfig --name opencenter-dev
-echo "Cluster created successfully! Nodes will show NotReady until CNI is installed."
-"""
-
 clean = [
   "echo Cleaning up...",
   "rm -rf testdata",

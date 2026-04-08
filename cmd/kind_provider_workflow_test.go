@@ -120,6 +120,7 @@ func TestClusterStatusShowsKindStatusDetails(t *testing.T) {
 	cfg, clusterPaths := saveKindConfigForCommandTest(t, dir, "status-kind-cluster", "opencenter")
 	cfg.OpenCenter.Meta.Stage = config.StageBootstrap
 	cfg.OpenCenter.Meta.Status = config.StatusSuccess
+	cfg.OpenCenter.Infrastructure.Kind.DisableDefaultCNI = true
 	if err := saveConfig(context.Background(), cfg); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
@@ -147,6 +148,7 @@ func TestClusterStatusShowsKindStatusDetails(t *testing.T) {
 	output := stdout.String()
 	for _, expected := range []string{
 		"Kind Status:",
+		"Default CNI:       Disabled",
 		"GitOps Setup:      ✓ Ready",
 		"kind-config.yaml:  ✓ Present",
 		"Kubeconfig:        ✓ Present",
