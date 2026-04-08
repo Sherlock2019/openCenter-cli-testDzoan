@@ -302,33 +302,10 @@ func (s *BootstrapService) provisionInfrastructure(ctx context.Context, cfg *con
 		}
 
 	case "kind":
-		kindProvider := kindprovider.NewProvider()
-		runtime := kindprovider.ResolveRuntime(opts.ContainerRuntime)
-		env := kindprovider.BuildEnvironment(runtime)
-		kindConfigPath := filepath.Join(clusterPaths.ClusterDir, "kind-config.yaml")
-		kindClusterName := s.resolveKindClusterName(cfg)
-
-		steps = []bootstrapStep{
-			{
-				ID:          "kind-create",
-				Description: "Create kind cluster",
-				Run: func(ctx context.Context) error {
-					if _, err := os.Stat(kindConfigPath); err != nil {
-						if os.IsNotExist(err) {
-							return fmt.Errorf("kind config not found at %s; run 'opencenter cluster setup %s' first", kindConfigPath, cfg.ClusterName())
-						}
-						return fmt.Errorf("stat kind config: %w", err)
-					}
-					return kindProvider.CreateCluster(ctx, kindClusterName, kindConfigPath, env)
-				},
-			},
-			{
-				ID:          "kind-export-kubeconfig",
-				Description: "Export kind kubeconfig",
-				Run: func(ctx context.Context) error {
-					return kindProvider.ExportKubeconfig(ctx, kindClusterName, opts.KubeconfigPath, env)
-				},
-			},
+		providerImpl := newKindBootstrapProvider(s.runner)
+		steps, err = providerImpl.BuildSteps(cfg, clusterPaths, opts)
+		if err != nil {
+			return err
 		}
 
 	default:
@@ -487,16 +464,6 @@ func (s *BootstrapService) validateBootstrapConfig(cfg *config.Config) error {
 	}
 
 	return nil
-}
-
-func (s *BootstrapService) resolveKindClusterName(cfg *config.Config) string {
-	if cfg != nil && cfg.OpenCenter.Infrastructure.Kind != nil {
-		if name := strings.TrimSpace(cfg.OpenCenter.Infrastructure.Kind.ClusterNameOverride); name != "" {
-			return name
-		}
-	}
-
-	return cfg.ClusterName()
 }
 
 // filterSteps filters bootstrap steps based on options

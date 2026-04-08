@@ -43,6 +43,10 @@ For accomplishing specific tasks:
 **Secrets & Security**
 - [Manage Secrets](how-to/manage-secrets.md)
 
+**Cluster Creation**
+- [Create OpenStack Cluster](how-to/create-openstack-cluster.md)
+- [Create Kind Cluster](how-to/create-kind-cluster.md)
+
 **Operations**
 - [Add Worker Pools](how-to/add-worker-pools.md)
 - [Backup and Restore](how-to/backup-and-restore.md)
@@ -141,6 +145,7 @@ For contributors and developers:
 ### Initial Setup
 - [Getting Started Tutorial](tutorials/getting-started.md)
 - [OpenStack First Cluster](tutorials/openstack-first-cluster.md)
+- [Create OpenStack Cluster](how-to/create-openstack-cluster.md)
 - [Kind Local Development](tutorials/kind-local-development.md)
 
 ### Configuration

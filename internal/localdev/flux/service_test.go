@@ -60,9 +60,18 @@ func TestBootstrapUsesKindIPURLAndReconciles(t *testing.T) {
 			"git branch --show-current": func(opts localdev.RunOptions) ([]byte, error) {
 				return []byte("main"), nil
 			},
-			fmt.Sprintf("flux bootstrap git --url=https://%s:3001/newuser/test-repo.git --branch=main --path=applications/overlays/%s --token-auth --username=newuser --password=user-token --ca-file=%s", status.KindIP, clusterName, status.CAPath): func(opts localdev.RunOptions) ([]byte, error) {
+			// Bootstrap uses localhost (host-reachable) for the initial clone.
+			fmt.Sprintf("flux bootstrap git --url=https://localhost:3001/newuser/test-repo.git --branch=main --path=applications/overlays/%s --token-auth --username=newuser --password=user-token --ca-file=%s", clusterName, status.CAPath): func(opts localdev.RunOptions) ([]byte, error) {
 				if opts.Env["KUBECONFIG"] != clusterCtx.Paths.KubeconfigPath {
 					t.Fatalf("bootstrap KUBECONFIG = %q, want %q", opts.Env["KUBECONFIG"], clusterCtx.Paths.KubeconfigPath)
+				}
+				return nil, nil
+			},
+			// After bootstrap, the GitRepository is patched to the Kind network IP
+			// so the in-cluster source-controller can reach Gitea.
+			fmt.Sprintf(`kubectl patch gitrepository flux-system -n flux-system --type=merge -p {"spec":{"url":"https://%s:3001/newuser/test-repo.git"}}`, status.KindIP): func(opts localdev.RunOptions) ([]byte, error) {
+				if opts.Env["KUBECONFIG"] != clusterCtx.Paths.KubeconfigPath {
+					t.Fatalf("patch KUBECONFIG = %q, want %q", opts.Env["KUBECONFIG"], clusterCtx.Paths.KubeconfigPath)
 				}
 				return nil, nil
 			},

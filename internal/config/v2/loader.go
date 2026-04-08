@@ -16,6 +16,7 @@ package v2
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 
@@ -220,11 +221,17 @@ func (cl *ConfigLoader) resolveReferences(cfg *Config) error {
 // applyDefaults applies provider-region defaults without overwriting explicit values.
 // Requirements: 15.1, 15.2, 15.3
 func (cl *ConfigLoader) applyDefaults(cfg *Config) error {
-	// Extract provider and region from configuration
 	provider := cfg.OpenCenter.Infrastructure.Provider
 	region := cfg.OpenCenter.Meta.Region
 
-	// Apply defaults using hydrator
+	// Providers without region-based defaults in the registry (kind, vmware,
+	// baremetal) skip hydration entirely. Their defaults are applied at init
+	// time via applyProviderBehaviorDefaults, not through the registry.
+	switch strings.ToLower(strings.TrimSpace(provider)) {
+	case "kind", "vmware", "baremetal":
+		return nil
+	}
+
 	return cl.hydrator.Hydrate(cfg, provider, region)
 }
 

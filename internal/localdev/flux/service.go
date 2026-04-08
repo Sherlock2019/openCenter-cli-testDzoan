@@ -96,16 +96,23 @@ func (s *Service) Bootstrap(ctx context.Context, clusterIdentifier string) (*Boo
 		return nil, err
 	}
 
-	repoURL := fmt.Sprintf("https://%s:%d/%s/%s.git", status.KindIP, status.Metadata.HTTPSPort, status.Metadata.RepoOwner, status.Metadata.RepoName)
+	// Use localhost for the initial bootstrap clone (runs on the host).
+	// The Kind network IP is unreachable from the host; localhost is
+	// port-forwarded to the Gitea container.
+	hostURL := fmt.Sprintf("https://localhost:%d/%s/%s.git", status.Metadata.HTTPSPort, status.Metadata.RepoOwner, status.Metadata.RepoName)
+	// The in-cluster URL uses the Kind network IP so the Flux
+	// source-controller inside the cluster can reach Gitea.
+	inClusterURL := fmt.Sprintf("https://%s:%d/%s/%s.git", status.KindIP, status.Metadata.HTTPSPort, status.Metadata.RepoOwner, status.Metadata.RepoName)
 	bootstrapPath := filepathForFlux(cluster.ClusterName)
+	kubeconfigEnv := map[string]string{"KUBECONFIG": cluster.Paths.KubeconfigPath}
 
 	if _, err := s.executor.Run(ctx, localdev.RunOptions{
 		Name: "flux",
 		Dir:  gitDir,
-		Env:  map[string]string{"KUBECONFIG": cluster.Paths.KubeconfigPath},
+		Env:  kubeconfigEnv,
 		Args: []string{
 			"bootstrap", "git",
-			"--url=" + repoURL,
+			"--url=" + hostURL,
 			"--branch=" + branch,
 			"--path=" + bootstrapPath,
 			"--token-auth",
@@ -117,12 +124,28 @@ func (s *Service) Bootstrap(ctx context.Context, clusterIdentifier string) (*Boo
 		return nil, fmt.Errorf("flux bootstrap git: %w", err)
 	}
 
+	// Patch the in-cluster GitRepository URL to the Kind network IP so
+	// the source-controller can reach Gitea from inside the cluster.
+	patchJSON := fmt.Sprintf(`{"spec":{"url":"%s"}}`, inClusterURL)
+	if _, err := s.executor.Run(ctx, localdev.RunOptions{
+		Name: "kubectl",
+		Env:  kubeconfigEnv,
+		Args: []string{
+			"patch", "gitrepository", "flux-system",
+			"-n", "flux-system",
+			"--type=merge",
+			"-p", patchJSON,
+		},
+	}); err != nil {
+		return nil, fmt.Errorf("patch flux-system GitRepository URL to in-cluster address: %w", err)
+	}
+
 	if _, err := s.gitops.PullRebase(ctx, gitDir); err != nil {
 		return nil, fmt.Errorf("sync local checkout after bootstrap: %w", err)
 	}
 	if _, err := s.executor.Run(ctx, localdev.RunOptions{
 		Name: "flux",
-		Env:  map[string]string{"KUBECONFIG": cluster.Paths.KubeconfigPath},
+		Env:  kubeconfigEnv,
 		Args: []string{"reconcile", "source", "git", "flux-system", "-n", "flux-system"},
 	}); err != nil {
 		return nil, fmt.Errorf("flux reconcile source git flux-system: %w", err)
@@ -130,7 +153,7 @@ func (s *Service) Bootstrap(ctx context.Context, clusterIdentifier string) (*Boo
 
 	return &BootstrapResult{
 		GitDir:         gitDir,
-		RepoURL:        repoURL,
+		RepoURL:        inClusterURL,
 		Branch:         branch,
 		KubeconfigPath: cluster.Paths.KubeconfigPath,
 	}, nil
