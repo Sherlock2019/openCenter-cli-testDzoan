@@ -382,19 +382,35 @@ func (s *InitService) updateConfigPaths(cfg *v2.Config, configMap map[string]any
 		setNestedConfigValue(configMap, clusterPaths.GitOpsDir, "opencenter", "gitops", "git_dir")
 	}
 
-	// Update SSH key paths
+	// Update SSH key paths (used by non-Kind providers for Git SSH auth).
 	sshKeyPath := clusterPaths.SSHKeyPath
 
-	cfg.OpenCenter.GitOps.GitSSHKey = sshKeyPath
-	cfg.OpenCenter.GitOps.GitSSHPub = sshKeyPath + ".pub"
 	cfg.OpenCenter.Infrastructure.SSH.KeyPath = sshKeyPath
 	cfg.Secrets.SSHKey.Private = sshKeyPath
 	cfg.Secrets.SSHKey.Public = sshKeyPath + ".pub"
-	setNestedConfigValue(configMap, sshKeyPath, "opencenter", "gitops", "git_ssh_key")
-	setNestedConfigValue(configMap, sshKeyPath+".pub", "opencenter", "gitops", "git_ssh_pub")
 	setNestedConfigValue(configMap, sshKeyPath, "opencenter", "infrastructure", "ssh", "key_path")
 	setNestedConfigValue(configMap, sshKeyPath, "secrets", "ssh_key", "private")
 	setNestedConfigValue(configMap, sshKeyPath+".pub", "secrets", "ssh_key", "public")
+
+	provider := strings.ToLower(strings.TrimSpace(cfg.OpenCenter.Infrastructure.Provider))
+	if provider == "kind" {
+		// Kind uses token-based HTTPS auth against local Gitea.
+		// SSH key fields are not needed for gitops; clear them.
+		cfg.OpenCenter.GitOps.GitSSHKey = ""
+		cfg.OpenCenter.GitOps.GitSSHPub = ""
+		setNestedConfigValue(configMap, "", "opencenter", "gitops", "git_ssh_key")
+		setNestedConfigValue(configMap, "", "opencenter", "gitops", "git_ssh_pub")
+
+		// Set token provider; the actual token path is resolved at bootstrap
+		// time from the Gitea service state directory.
+		cfg.OpenCenter.GitOps.GitTokenProvider = "gitea"
+		setNestedConfigValue(configMap, "gitea", "opencenter", "gitops", "git_token_provider")
+	} else {
+		cfg.OpenCenter.GitOps.GitSSHKey = sshKeyPath
+		cfg.OpenCenter.GitOps.GitSSHPub = sshKeyPath + ".pub"
+		setNestedConfigValue(configMap, sshKeyPath, "opencenter", "gitops", "git_ssh_key")
+		setNestedConfigValue(configMap, sshKeyPath+".pub", "opencenter", "gitops", "git_ssh_pub")
+	}
 
 	// Update SOPS key path
 	if opts.NoSOPSKeyGen &&

@@ -1086,6 +1086,15 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 				"description": "Path to SSH public key for Git authentication",
 				"pattern":     "^[~./].*",
 			},
+			"git_token": map[string]any{
+				"type":        "string",
+				"description": "Path to file containing Git access token for HTTPS authentication",
+			},
+			"git_token_provider": map[string]any{
+				"type":        "string",
+				"description": "Token provider type for HTTPS Git authentication",
+				"enum":        []string{"gitea", "github", "gitlab"},
+			},
 			"git_url": map[string]any{
 				"type":        "string",
 				"description": "Git repository URL (SSH or HTTPS)",

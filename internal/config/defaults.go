@@ -273,6 +273,8 @@ func defaultConfig(name string) Config {
 				GitSSHKey:         "",
 				GitSSHPub:         "",
 				GitBranch:         "main",
+				GitToken:          "",
+				GitTokenProvider:  "",
 				GitOpsBaseRepo:    "ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git",
 				GitOpsBaseRelease: "v0.1.0",
 				GitOpsBranch:      "main",

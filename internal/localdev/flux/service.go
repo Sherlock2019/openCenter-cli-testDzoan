@@ -48,13 +48,22 @@ func NewService(executor localdev.Executor, stateDir string) (*Service, error) {
 	}, nil
 }
 
-// Bootstrap runs `flux bootstrap git` against the attached local Gitea repo.
+// Bootstrap runs `flux bootstrap git --token-auth` against the attached local
+// Gitea repo.
+//
+// We use the generic `flux bootstrap git` subcommand rather than
+// `flux bootstrap gitea` because the Gitea provider in go-git-providers
+// panics on non-standard ports (e.g. 172.16.0.146:3001). The generic git
+// subcommand handles arbitrary HTTPS URLs correctly.
+//
+// The config field git_token_provider: gitea signals that token-based HTTPS
+// auth should be used (not SSH). The token is read from the Gitea service
+// state directory at runtime.
 //
 // The bootstrap URL uses the host's routable IP (e.g. 172.16.0.146:3001)
 // rather than localhost. Podman binds the Gitea port on 0.0.0.0, so this
 // IP is reachable from both the macOS host (where the flux CLI clones) and
 // from inside the Kind cluster (where the source-controller reconciles).
-// This eliminates the need for a post-bootstrap kubectl patch.
 func (s *Service) Bootstrap(ctx context.Context, clusterIdentifier string) (*BootstrapResult, error) {
 	cluster, err := s.resolver.Resolve(ctx, clusterIdentifier)
 	if err != nil {
@@ -100,45 +109,35 @@ func (s *Service) Bootstrap(ctx context.Context, clusterIdentifier string) (*Boo
 	if err != nil {
 		return nil, fmt.Errorf("read Gitea user token: %w", err)
 	}
+	token := strings.TrimSpace(string(tokenBytes))
+
 	branch, err := s.gitops.CurrentBranch(ctx, gitDir)
 	if err != nil {
 		return nil, err
 	}
 
-	// Use the host's routable IP for the bootstrap URL. This single URL
-	// works from both the host (flux CLI clone) and inside the cluster
-	// (source-controller reconciliation) because Podman binds on 0.0.0.0.
 	repoURL := status.HostRepoURL
 	bootstrapPath := filepathForFlux(cluster.ClusterName)
 	kubeconfigEnv := map[string]string{"KUBECONFIG": cluster.Paths.KubeconfigPath}
+
+	fluxArgs := []string{
+		"bootstrap", "git",
+		"--url=" + repoURL,
+		"--branch=" + branch,
+		"--path=" + bootstrapPath,
+		"--token-auth",
+		"--username=" + status.Metadata.RepoOwner,
+		"--password=" + token,
+		"--ca-file=" + status.CAPath,
+	}
 
 	if _, err := s.executor.Run(ctx, localdev.RunOptions{
 		Name: "flux",
 		Dir:  gitDir,
 		Env:  kubeconfigEnv,
-		Args: []string{
-			"bootstrap", "git",
-			"--url=" + repoURL,
-			"--branch=" + branch,
-			"--path=" + bootstrapPath,
-			"--token-auth",
-			"--username=" + status.Metadata.RepoOwner,
-			"--password=" + strings.TrimSpace(string(tokenBytes)),
-			"--ca-file=" + status.CAPath,
-		},
+		Args: fluxArgs,
 	}); err != nil {
-		return nil, fmt.Errorf("flux bootstrap git: %w", err)
-	}
-
-	if _, err := s.gitops.PullRebase(ctx, gitDir); err != nil {
-		return nil, fmt.Errorf("sync local checkout after bootstrap: %w", err)
-	}
-	if _, err := s.executor.Run(ctx, localdev.RunOptions{
-		Name: "flux",
-		Env:  kubeconfigEnv,
-		Args: []string{"reconcile", "source", "git", "flux-system", "-n", "flux-system"},
-	}); err != nil {
-		return nil, fmt.Errorf("flux reconcile source git flux-system: %w", err)
+		return nil, fmt.Errorf("flux bootstrap: %w", err)
 	}
 
 	return &BootstrapResult{

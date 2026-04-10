@@ -238,6 +238,8 @@ func overlayLegacyGitOps(dst *Config, src *v2.Config) {
 	dst.OpenCenter.GitOps.GitOpsBaseRepo = firstNonEmpty(src.OpenCenter.GitOps.GitOpsBaseRepo, src.OpenCenter.GitOps.BaseRepoURL)
 	dst.OpenCenter.GitOps.GitOpsBaseRelease = firstNonEmpty(src.OpenCenter.GitOps.GitOpsBaseRelease, src.OpenCenter.GitOps.BaseRepoRelease)
 	dst.OpenCenter.GitOps.GitOpsBranch = src.OpenCenter.GitOps.GitOpsBranch
+	dst.OpenCenter.GitOps.GitToken = src.OpenCenter.GitOps.GitToken
+	dst.OpenCenter.GitOps.GitTokenProvider = src.OpenCenter.GitOps.GitTokenProvider
 	dst.OpenCenter.GitOps.Flux.Interval = firstNonEmpty(src.OpenCenter.GitOps.Flux.Interval, src.OpenCenter.GitOps.FluxInterval)
 	dst.OpenCenter.GitOps.Flux.Prune = src.OpenCenter.GitOps.Flux.Prune || src.OpenCenter.GitOps.FluxPrune
 	dst.OpenCenter.GitOps.OverlayUnits = src.OpenCenter.GitOps.OverlayUnits

@@ -105,6 +105,7 @@ For contributors and developers:
 **Extending**
 - [Adding Providers](dev/adding-providers.md)
 - [Adding Services](dev/adding-services.md)
+- [Service Enable/Disable Lifecycle](dev/services.md)
 
 **Building & Releasing**
 - [Build System](dev/build-system.md)

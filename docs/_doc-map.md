@@ -110,6 +110,7 @@ This map helps:
 | [Code Structure](dev/code-structure.md) | Developer | Codebase organization | Packages, modules, patterns | `internal/` structure |
 | [Adding Providers](dev/adding-providers.md) | Developer | Implement new infrastructure providers | Provider interface, examples | `internal/cloud/factory.go` |
 | [Adding Services](dev/adding-services.md) | Developer | Add new platform services | Service interface, examples | `internal/config/services/` |
+| [Service Lifecycle](dev/services.md) | Developer | Service enable/disable lifecycle | Config, rendering, FluxCD reconciliation | `cmd/cluster_service.go`, `internal/gitops/` |
 | [Build System](dev/build-system.md) | Developer | Mise-based build and release | Build tasks, release process | `.mise.toml` |
 | [Release Process](dev/release-process.md) | Maintainer | Creating releases | Versioning, changelog, artifacts | `.mise.toml` release tasks |
 

@@ -102,20 +102,6 @@ func (p *kindBootstrapProvider) BuildSteps(cfg *config.Config, clusterPaths *pat
 			},
 		},
 		{
-			ID:          "gitops-push",
-			Description: "Push GitOps repository to local Gitea",
-			Run: func(ctx context.Context) error {
-				gitopsService, err := gitops.NewService(executor, stateDir)
-				if err != nil {
-					return fmt.Errorf("create gitops service: %w", err)
-				}
-				if _, err := gitopsService.Push(ctx, clusterIdentifier); err != nil {
-					return fmt.Errorf("push gitops repo: %w", err)
-				}
-				return nil
-			},
-		},
-		{
 			ID:          "flux-bootstrap",
 			Description: "Bootstrap FluxCD from local Gitea",
 			Run: func(ctx context.Context) error {
@@ -129,7 +115,52 @@ func (p *kindBootstrapProvider) BuildSteps(cfg *config.Config, clusterPaths *pat
 				return nil
 			},
 		},
+		{
+			ID:          "gitea-rebase",
+			Description: "Rebase local checkout with Flux bootstrap commits from Gitea",
+			Run: func(ctx context.Context) error {
+				gitopsService, err := gitops.NewService(executor, stateDir)
+				if err != nil {
+					return fmt.Errorf("create gitops service: %w", err)
+				}
+				gitDir, err := resolveGitDir(cfg, clusterPaths)
+				if err != nil {
+					return fmt.Errorf("resolve git dir: %w", err)
+				}
+				if _, err := gitopsService.PullRebase(ctx, gitDir); err != nil {
+					return fmt.Errorf("rebase from gitea: %w", err)
+				}
+				return nil
+			},
+		},
+		{
+			ID:          "gitops-push",
+			Description: "Push GitOps repository to local Gitea",
+			Run: func(ctx context.Context) error {
+				gitopsService, err := gitops.NewService(executor, stateDir)
+				if err != nil {
+					return fmt.Errorf("create gitops service: %w", err)
+				}
+				if _, err := gitopsService.Push(ctx, clusterIdentifier); err != nil {
+					return fmt.Errorf("push gitops repo: %w", err)
+				}
+				return nil
+			},
+		},
 	}, nil
+}
+
+// resolveGitDir returns the GitOps directory for the cluster, falling back to
+// the cluster paths when the config does not specify one.
+func resolveGitDir(cfg *config.Config, clusterPaths *paths.ClusterPaths) (string, error) {
+	gitDir := strings.TrimSpace(cfg.GitOps().GitDir)
+	if gitDir == "" {
+		gitDir = clusterPaths.GitOpsDir
+	}
+	if gitDir == "" {
+		return "", fmt.Errorf("cluster %q does not define a git_dir", cfg.ClusterName())
+	}
+	return gitDir, nil
 }
 
 // resolveKindClusterName returns the Kind cluster name, preferring an explicit

@@ -46,7 +46,7 @@ const (
 	defaultVRRPIP                      = "10.2.128.5"
 
 	// Kind provider defaults — kept in sync with internal/config/defaults/kind.yaml.
-	kindDefaultKubernetesVersion = "1.30.4"
+	kindDefaultKubernetesVersion = "1.33.7"
 	kindDefaultAPIPort           = 6443
 	kindDefaultControlPlaneCount = 1
 	kindDefaultWorkerCount       = 2
@@ -478,6 +478,15 @@ func applyProviderBehaviorDefaults(cfg *Config) {
 		cfg.OpenCenter.Cluster.Kubernetes.SubnetServices = kindDefaultServiceSubnet
 		cfg.OpenCenter.Infrastructure.Compute.MasterCount = kindDefaultControlPlaneCount
 		cfg.OpenCenter.Infrastructure.Compute.WorkerCount = kindDefaultWorkerCount
+
+		// Kind uses token-based HTTPS auth against local Gitea, not SSH.
+		// Clear release fields so FluxCD GitRepository sources use branch only.
+		cfg.OpenCenter.GitOps.GitSSHKey = ""
+		cfg.OpenCenter.GitOps.GitSSHPub = ""
+		cfg.OpenCenter.GitOps.GitTokenProvider = "gitea"
+		cfg.OpenCenter.GitOps.Release = ""
+		cfg.OpenCenter.GitOps.BaseRepoRelease = ""
+		cfg.OpenCenter.GitOps.GitOpsBaseRelease = ""
 	case "baremetal":
 		cfg.OpenCenter.Infrastructure.Bastion.Enabled = false
 	case "vmware":

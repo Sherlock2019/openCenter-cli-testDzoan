@@ -55,7 +55,7 @@ sequenceDiagram
     CLI->>BS: Bootstrap(ctx, opts)
     BS->>BS: loadConfig, resolvePaths, acquireLock
     BS->>KBP: BuildSteps(cfg, clusterPaths, opts)
-    KBP-->>BS: []bootstrapStep (5 steps)
+    KBP-->>BS: []bootstrapStep (6 steps)
 
     Note over BS: Step execution loop (resumable via state file)
 
@@ -88,19 +88,7 @@ sequenceDiagram
     end
 
     rect rgb(232, 245, 233)
-        Note over BS,Gitea: Step 4: gitops-push
-        BS->>GitOps: Push(ctx, "local/my-cluster")
-        GitOps->>GitOps: resolve cluster → git_dir
-        GitOps->>Gitea: Status(ctx)
-        Gitea-->>GitOps: LocalRepoURL: https://localhost:3001/newuser/test-repo.git
-        GitOps->>GitOps: git remote set-url origin https://localhost:3001/...
-        GitOps->>Gitea: git push -u origin main (via localhost:3001, token auth, CA cert)
-        Gitea-->>GitOps: push accepted
-        GitOps-->>BS: PushResult{RemoteURL: localhost:3001, Branch: main}
-    end
-
-    rect rgb(232, 245, 233)
-        Note over BS,K8s: Step 5: flux-bootstrap
+        Note over BS,K8s: Step 4: flux-bootstrap
         BS->>Flux: flux.NewService → Bootstrap(ctx, "local/my-cluster")
         Flux->>Gitea: Status(ctx)
         Gitea-->>Flux: HostRepoURL: https://172.16.0.146:3001/..., UserToken: present
@@ -117,10 +105,29 @@ sequenceDiagram
         K8s->>Gitea: 6. source-controller clones https://172.16.0.146:3001/... ✅
         Note over K8s,Gitea: ✅ Works: Podman binds on 0.0.0.0<br/>so the host IP is reachable from<br/>inside the Kind cluster via the<br/>Podman VM bridge.
         Flux-->>Flux: ✅ health check passes (GitRepository ready)
-
-        Flux->>GitOps: git pull --rebase (sync Flux commits to local checkout)
-        Flux->>Flux: flux reconcile source git flux-system
         Flux-->>BS: BootstrapResult{RepoURL: https://172.16.0.146:3001/...}
+    end
+
+    rect rgb(245, 235, 255)
+        Note over BS,Gitea: Step 5: gitea-rebase
+        BS->>GitOps: PullRebase(ctx, gitDir)
+        GitOps->>Gitea: Status(ctx)
+        Gitea-->>GitOps: CAPath, UserToken
+        GitOps->>GitOps: git pull --rebase origin main (via localhost:3001, token auth, CA cert)
+        Gitea-->>GitOps: Flux bootstrap commits rebased into local checkout
+        GitOps-->>BS: branch: main
+    end
+
+    rect rgb(232, 245, 233)
+        Note over BS,Gitea: Step 6: gitops-push
+        BS->>GitOps: Push(ctx, "local/my-cluster")
+        GitOps->>GitOps: resolve cluster → git_dir
+        GitOps->>Gitea: Status(ctx)
+        Gitea-->>GitOps: LocalRepoURL: https://localhost:3001/newuser/test-repo.git
+        GitOps->>GitOps: git remote set-url origin https://localhost:3001/...
+        GitOps->>Gitea: git push -u origin main (via localhost:3001, token auth, CA cert)
+        Gitea-->>GitOps: push accepted
+        GitOps-->>BS: PushResult{RemoteURL: localhost:3001, Branch: main}
     end
 
     BS-->>CLI: ✅ bootstrap complete
@@ -186,8 +193,9 @@ Substitute `docker` if that is your runtime. This command runs the full Kind boo
 1. `kind-create` — Creates the Kind cluster using the generated `kind-config.yaml`
 2. `kind-export-kubeconfig` — Exports the kubeconfig to the cluster's infrastructure directory
 3. `gitea-attach-kind` — Connects the local Gitea container to the Kind network and reissues the TLS certificate with the in-cluster IP
-4. `gitops-push` — Pushes the generated GitOps repository to the local Gitea instance
-5. `flux-bootstrap` — Runs `flux bootstrap git` against the in-cluster Gitea URL, then reconciles the source
+4. `flux-bootstrap` — Runs `flux bootstrap git` against the in-cluster Gitea URL
+5. `gitea-rebase` — Rebases the local checkout to include the Flux bootstrap commits from Gitea
+6. `gitops-push` — Pushes the generated GitOps repository to the local Gitea instance
 
 The command is resumable. If a step fails, fix the issue and re-run. Use `--restart` to re-run all steps from scratch, or `--from-step <id>` to resume from a specific step (e.g., `--from-step gitea-attach-kind`).
 

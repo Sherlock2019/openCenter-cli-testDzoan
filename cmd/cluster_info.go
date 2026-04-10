@@ -283,19 +283,20 @@ func handleExportOnly(cmd *cobra.Command, clusterName string, shellOverride stri
 func printEnabledServices(cmd *cobra.Command, cfg *config.Config) error {
 	fmt.Fprintln(cmd.OutOrStdout(), "\nEnabled Services:")
 
-	// Collect enabled services from cfg.OpenCenter.Services
+	// Collect enabled services from cfg.OpenCenter.Services.
+	// After YAML unmarshaling, values are typed service config structs
+	// (e.g. *services.CertManagerConfig) that embed BaseConfig and
+	// implement the IsEnabled()/GetStatus() interface.
 	enabledServices := []string{}
 	for serviceName, serviceConfig := range cfg.OpenCenter.Services {
-		// Check if service is enabled
-		if configMap, ok := serviceConfig.(map[string]interface{}); ok {
-			if enabled, ok := configMap["enabled"].(bool); ok && enabled {
-				// Get status if available
-				status := "unknown"
-				if statusVal, ok := configMap["status"].(string); ok && statusVal != "" {
-					status = statusVal
+		if svc, ok := serviceConfig.(interface{ IsEnabled() bool }); ok && svc.IsEnabled() {
+			status := "unknown"
+			if statusGetter, ok := serviceConfig.(interface{ GetStatus() string }); ok {
+				if s := statusGetter.GetStatus(); s != "" {
+					status = s
 				}
-				enabledServices = append(enabledServices, fmt.Sprintf("  - %s (status: %s)", serviceName, status))
 			}
+			enabledServices = append(enabledServices, fmt.Sprintf("  - %s (status: %s)", serviceName, status))
 		}
 	}
 

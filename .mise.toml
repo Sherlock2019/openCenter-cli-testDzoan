@@ -1075,3 +1075,92 @@ echo "  - TOC placed after main title"
 echo "  - Includes all ## and ### headings"
 echo "  - Proper anchor link formatting"
 '''
+
+# Destroy the local Kind cluster and Gitea instance, removing all local dev state.
+# Runs the cleanup steps from docs/how-to/create-kind-cluster.md:
+#   1. opencenter cluster destroy my-cluster --force
+#   2. opencenter local gitea destroy
+#   3. Verify nothing remains (kind get clusters, opencenter cluster list)
+kind-cleanup = '''
+#!/usr/bin/env bash
+set -e
+
+CLUSTER="${1:-my-cluster}"
+
+echo "=== Cleaning up local Kind environment ==="
+echo ""
+
+echo "1. Destroying cluster '${CLUSTER}'..."
+if ./bin/opencenter cluster info "${CLUSTER}" >/dev/null 2>&1; then
+  ./bin/opencenter cluster destroy "${CLUSTER}" --force
+  echo "   ✓ Cluster destroyed"
+else
+  echo "   (cluster not found, skipping)"
+fi
+
+echo ""
+echo "2. Destroying local Gitea instance..."
+if ./bin/opencenter local gitea status >/dev/null 2>&1; then
+  ./bin/opencenter local gitea destroy
+  echo "   ✓ Gitea destroyed"
+else
+  echo "   (gitea not running, skipping)"
+fi
+
+echo ""
+echo "3. Verifying cleanup..."
+
+KIND_CLUSTERS=$(kind get clusters 2>&1 || true)
+if echo "${KIND_CLUSTERS}" | grep -q "${CLUSTER}"; then
+  echo "   ✗ WARNING: Kind cluster '${CLUSTER}' still exists"
+  echo "     Run: kind delete cluster --name ${CLUSTER}"
+else
+  echo "   ✓ No Kind cluster '${CLUSTER}'"
+fi
+
+if ./bin/opencenter cluster list 2>/dev/null | grep -q "local/${CLUSTER}"; then
+  echo "   ✗ WARNING: Cluster config for '${CLUSTER}' still registered"
+else
+  echo "   ✓ No cluster config for '${CLUSTER}'"
+fi
+
+LOCK_FILE="${HOME}/.config/opencenter/locks/${CLUSTER}.lock"
+if [ -f "${LOCK_FILE}" ]; then
+  rm -f "${LOCK_FILE}"
+  echo "   ✓ Removed stale lock file"
+else
+  echo "   ✓ No stale lock file"
+fi
+
+echo ""
+echo "=== Cleanup complete ==="
+'''
+
+# Remove build artifacts, test fixtures, and generated files from the workspace.
+dev-cleanup = '''
+#!/usr/bin/env bash
+set -e
+
+echo "=== Cleaning development artifacts ==="
+
+rm -rf bin/
+echo "✓ Removed bin/"
+
+rm -rf testdata/
+echo "✓ Removed testdata/"
+
+rm -f new-schema.json
+echo "✓ Removed generated schema files"
+
+rm -rf terraform-output/
+echo "✓ Removed terraform output"
+
+echo ""
+echo "=== Dev cleanup complete ==="
+'''
+
+# Full demo teardown: destroy local Kind cluster + Gitea, then clean build artifacts.
+demo-cleanup = [
+  "mise run kind-cleanup",
+  "mise run dev-cleanup"
+]

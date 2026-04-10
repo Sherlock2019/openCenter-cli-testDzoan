@@ -170,6 +170,8 @@ type GitOpsConfig struct {
 	GitOpsBaseRepo    string                 `yaml:"gitops_base_repo,omitempty" json:"gitops_base_repo,omitempty"`
 	GitOpsBaseRelease string                 `yaml:"gitops_base_release,omitempty" json:"gitops_base_release,omitempty"`
 	GitOpsBranch      string                 `yaml:"gitops_branch,omitempty" json:"gitops_branch,omitempty"`
+	GitToken          string                 `yaml:"git_token,omitempty" json:"git_token,omitempty"`
+	GitTokenProvider  string                 `yaml:"git_token_provider,omitempty" json:"git_token_provider,omitempty"`
 	Flux              GitOpsFluxConfig       `yaml:"flux,omitempty" json:"flux,omitempty"`
 	FluxInterval      string                 `yaml:"flux_interval,omitempty" json:"flux_interval,omitempty"`
 	FluxPrune         bool                   `yaml:"flux_prune" json:"flux_prune"`
