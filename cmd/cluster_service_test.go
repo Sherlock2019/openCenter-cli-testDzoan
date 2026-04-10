@@ -16,11 +16,13 @@ import (
 	"bytes"
 	"context"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
+	"github.com/opencenter-cloud/opencenter-cli/internal/gitops"
 )
 
 func setupServiceTestEnv(t *testing.T, clusterName string) (string, func()) {
@@ -84,6 +86,14 @@ func setupServiceTestEnv(t *testing.T, clusterName string) (string, func()) {
 	}
 
 	return cfgDir, cleanup
+}
+
+func uniqueServiceTestCluster(base, testName string) string {
+	name := base + "-" + strings.ReplaceAll(testName, " ", "-")
+	if len(name) > 63 {
+		return name[:63]
+	}
+	return name
 }
 
 func TestClusterServiceEnable(t *testing.T) {
@@ -154,6 +164,29 @@ func TestClusterServiceEnable(t *testing.T) {
 			},
 		},
 		{
+			name:        "re-enable disabled service preserves config",
+			clusterName: "test-cluster",
+			serviceName: "cert-manager",
+			args:        []string{"cert-manager"},
+			expectError: false,
+			validate: func(t *testing.T, cfg *config.Config) {
+				svc, exists := cfg.OpenCenter.Services["cert-manager"]
+				if !exists {
+					t.Fatal("expected cert-manager service to exist")
+				}
+				certManager, ok := svc.(*services.CertManagerConfig)
+				if !ok {
+					t.Fatalf("expected *services.CertManagerConfig, got %T", svc)
+				}
+				if !certManager.Enabled {
+					t.Error("expected cert-manager service to be enabled")
+				}
+				if certManager.Email != "preserved@example.com" {
+					t.Errorf("expected existing email to be preserved, got %q", certManager.Email)
+				}
+			},
+		},
+		{
 			name:        "enable service without required parameter",
 			clusterName: "test-cluster",
 			serviceName: "cert-manager",
@@ -183,12 +216,21 @@ func TestClusterServiceEnable(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:        "enable service with missing dependency",
+			clusterName: "test-cluster",
+			serviceName: "weave-gitops",
+			args:        []string{"weave-gitops"},
+			expectError: true,
+			errorMsg:    "service 'weave-gitops' requires 'fluxcd' to be enabled",
+			validate:    nil,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Use a unique cluster name per test to avoid state pollution
-			uniqueCluster := tt.clusterName + "-" + strings.ReplaceAll(tt.name, " ", "-")
+			// Use a unique cluster name per test to avoid state pollution.
+			uniqueCluster := uniqueServiceTestCluster(tt.clusterName, tt.name)
 			_, cleanup := setupServiceTestEnv(t, uniqueCluster)
 			defer cleanup()
 
@@ -202,6 +244,59 @@ func TestClusterServiceEnable(t *testing.T) {
 					cfg.OpenCenter.Services = make(config.ServiceMap)
 				}
 				cfg.OpenCenter.Services[tt.serviceName] = &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}}
+				if err := saveConfig(context.Background(), cfg); err != nil {
+					t.Fatalf("failed to save config: %v", err)
+				}
+			}
+
+			if strings.Contains(tt.name, "re-enable disabled service") {
+				cfg, err := loadConfig(context.Background(), uniqueCluster)
+				if err != nil {
+					t.Fatalf("failed to load config: %v", err)
+				}
+				cfg.OpenCenter.Services["cert-manager"] = &services.CertManagerConfig{
+					BaseConfig: services.BaseConfig{Enabled: false},
+					Email:      "preserved@example.com",
+				}
+				if err := saveConfig(context.Background(), cfg); err != nil {
+					t.Fatalf("failed to save config: %v", err)
+				}
+			}
+
+			if strings.Contains(tt.name, "missing dependency") {
+				cfg, err := loadConfig(context.Background(), uniqueCluster)
+				if err != nil {
+					t.Fatalf("failed to load config: %v", err)
+				}
+				cfg.OpenCenter.Services["fluxcd"] = &services.DefaultServiceConfig{
+					BaseConfig: services.BaseConfig{Enabled: false},
+				}
+				if err := saveConfig(context.Background(), cfg); err != nil {
+					t.Fatalf("failed to save config: %v", err)
+				}
+			}
+
+			if strings.Contains(tt.name, "without required parameter") {
+				cfg, err := loadConfig(context.Background(), uniqueCluster)
+				if err != nil {
+					t.Fatalf("failed to load config: %v", err)
+				}
+				cfg.OpenCenter.Services["cert-manager"] = &services.CertManagerConfig{
+					BaseConfig: services.BaseConfig{Enabled: false},
+				}
+				if err := saveConfig(context.Background(), cfg); err != nil {
+					t.Fatalf("failed to save config: %v", err)
+				}
+			}
+
+			if strings.Contains(tt.name, "without required secret") {
+				cfg, err := loadConfig(context.Background(), uniqueCluster)
+				if err != nil {
+					t.Fatalf("failed to load config: %v", err)
+				}
+				cfg.OpenCenter.Services["loki"] = &services.LokiConfig{
+					BaseConfig: services.BaseConfig{Enabled: false},
+				}
 				if err := saveConfig(context.Background(), cfg); err != nil {
 					t.Fatalf("failed to save config: %v", err)
 				}
@@ -374,12 +469,78 @@ func TestClusterServiceDisable(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:        "disable service with enabled dependents",
+			clusterName: "test-cluster",
+			serviceName: "keycloak",
+			args:        []string{"keycloak"},
+			setupFunc: func(t *testing.T, clusterName string) {
+				cfg, err := loadConfig(context.Background(), clusterName)
+				if err != nil {
+					t.Fatalf("failed to load config: %v", err)
+				}
+				cfg.OpenCenter.Services["headlamp"] = &services.HeadlampConfig{
+					BaseConfig: services.BaseConfig{Enabled: true},
+				}
+				cfg.OpenCenter.Services["keycloak"] = &services.KeycloakConfig{
+					BaseConfig: services.BaseConfig{Enabled: true},
+				}
+				if err := saveConfig(context.Background(), cfg); err != nil {
+					t.Fatalf("failed to save config: %v", err)
+				}
+			},
+			expectError: true,
+			errorMsg:    "service 'headlamp' requires 'keycloak' to be enabled",
+			validate:    nil,
+		},
+		{
+			name:        "disable service with render removes manifests",
+			clusterName: "test-cluster",
+			serviceName: "cert-manager",
+			args:        []string{"cert-manager", "--render"},
+			setupFunc: func(t *testing.T, clusterName string) {
+				cfg, err := loadConfig(context.Background(), clusterName)
+				if err != nil {
+					t.Fatalf("failed to load config: %v", err)
+				}
+				cfg.OpenCenter.Services["cert-manager"] = &services.CertManagerConfig{
+					BaseConfig: services.BaseConfig{Enabled: true},
+					Email:      "render@example.com",
+				}
+				if err := saveConfig(context.Background(), cfg); err != nil {
+					t.Fatalf("failed to save config: %v", err)
+				}
+				if err := gitops.RenderClusterApps(cfg); err != nil {
+					t.Fatalf("failed to render cluster apps: %v", err)
+				}
+			},
+			expectError: false,
+			validate: func(t *testing.T, cfg *config.Config) {
+				if svc, exists := cfg.OpenCenter.Services["cert-manager"]; !exists {
+					t.Error("expected cert-manager service to still exist")
+				} else if isEnabled(svc) {
+					t.Error("expected cert-manager service to be disabled")
+				}
+
+				clusterRoot := filepath.Join(cfg.OpenCenter.GitOps.GitDir, "applications", "overlays", cfg.ClusterName())
+				paths := []string{
+					filepath.Join(clusterRoot, "services", "cert-manager"),
+					filepath.Join(clusterRoot, "services", "sources", "opencenter-cert-manager.yaml"),
+					filepath.Join(clusterRoot, "services", "fluxcd", "cert-manager.yaml"),
+				}
+				for _, path := range paths {
+					if _, err := os.Stat(path); !os.IsNotExist(err) {
+						t.Errorf("expected rendered path %s to be removed, got err=%v", path, err)
+					}
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Use a unique cluster name per test to avoid state pollution
-			uniqueCluster := tt.clusterName + "-" + strings.ReplaceAll(tt.name, " ", "-")
+			// Use a unique cluster name per test to avoid state pollution.
+			uniqueCluster := uniqueServiceTestCluster(tt.clusterName, tt.name)
 			_, cleanup := setupServiceTestEnv(t, uniqueCluster)
 			defer cleanup()
 

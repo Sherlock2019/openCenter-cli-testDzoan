@@ -89,67 +89,59 @@ Examples:
 			if err != nil {
 				return fmt.Errorf("failed to load cluster configuration for '%s': %w", clusterName, err)
 			}
-			// Create new service config using registry to get correct type
-			configType := registry.GetServiceConfigType(serviceName)
-			if configType == nil {
-				configType = reflect.TypeOf(services.DefaultServiceConfig{})
+			serviceMap := ensureServiceMap(&cfg, isManaged)
+			existingService, exists := serviceMap[serviceName]
+			wasEnabled := exists && isEnabled(existingService)
+			serviceLabel := serviceTargetLabel(isManaged)
+
+			if exists && wasEnabled && !force {
+				return fmt.Errorf("%s '%s' is already enabled. Use --force to update or re-render", serviceLabel, serviceName)
 			}
-			// Create new instance
-			newService := reflect.New(configType).Interface()
+
+			serviceCfg := existingService
+			if !exists {
+				serviceCfg = newServiceConfig(serviceName)
+			}
 
 			// Set Enabled = true
-			if err := setEnabled(newService, true); err != nil {
+			if err := setEnabled(serviceCfg, true); err != nil {
 				return fmt.Errorf("failed to enable service: %w", err)
 			}
 
 			// Process parameters
-			if err := processParams(params, newService); err != nil {
+			if err := processParams(params, serviceCfg); err != nil {
 				return err
 			}
 			// Process secrets
 			if err := processSecrets(secrets, serviceName, &cfg.Secrets); err != nil {
 				return err
 			}
-			// Custom validation logic (validate before checking if already enabled)
-			if err := validateService(serviceName, newService, &cfg.Secrets); err != nil {
+			// Custom validation logic (validate before saving)
+			if err := validateService(serviceName, serviceCfg, &cfg.Secrets); err != nil {
 				return err
 			}
-			// Check if service already exists and is enabled (unless --force is used)
-			if !force {
-				if svc, exists := cfg.OpenCenter.Services[serviceName]; exists && isEnabled(svc) {
-					return fmt.Errorf("service '%s' is already enabled. Use --force to re-enable", serviceName)
-				}
-				if svc, exists := cfg.OpenCenter.ManagedService[serviceName]; exists && isEnabled(svc) {
-					return fmt.Errorf("managed service '%s' is already enabled. Use --force to re-enable", serviceName)
+
+			serviceMap[serviceName] = serviceCfg
+
+			if !isManaged {
+				if err := validateServiceDependencies(cfg.OpenCenter.Services); err != nil {
+					return err
 				}
 			}
-			// Enable service in the appropriate map
-			if isManaged {
-				if cfg.OpenCenter.ManagedService == nil {
-					cfg.OpenCenter.ManagedService = make(config.ServiceMap)
-				}
-				cfg.OpenCenter.ManagedService[serviceName] = newService
-				if force {
-					fmt.Fprintf(cmd.OutOrStdout(), "Re-enabling managed service '%s' in cluster '%s'...\n", serviceName, clusterName)
-				} else {
-					fmt.Fprintf(cmd.OutOrStdout(), "Enabling managed service '%s' in cluster '%s'...\n", serviceName, clusterName)
-				}
-			} else {
-				if cfg.OpenCenter.Services == nil {
-					cfg.OpenCenter.Services = make(config.ServiceMap)
-				}
-				cfg.OpenCenter.Services[serviceName] = newService
-				if force {
-					fmt.Fprintf(cmd.OutOrStdout(), "Re-enabling service '%s' in cluster '%s'...\n", serviceName, clusterName)
-				} else {
-					fmt.Fprintf(cmd.OutOrStdout(), "Enabling service '%s' in cluster '%s'...\n", serviceName, clusterName)
-				}
+
+			switch {
+			case exists && wasEnabled:
+				fmt.Fprintf(cmd.OutOrStdout(), "Updating enabled %s '%s' in cluster '%s'...\n", serviceLabel, serviceName, clusterName)
+			case exists:
+				fmt.Fprintf(cmd.OutOrStdout(), "Re-enabling %s '%s' in cluster '%s'...\n", serviceLabel, serviceName, clusterName)
+			default:
+				fmt.Fprintf(cmd.OutOrStdout(), "Enabling %s '%s' in cluster '%s'...\n", serviceLabel, serviceName, clusterName)
 			}
 			// Save the updated configuration
 			if err := saveConfig(cmd.Context(), cfg); err != nil {
 				return fmt.Errorf("failed to save updated configuration: %w", err)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Successfully enabled service '%s' in cluster '%s'.\n", serviceName, clusterName)
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully enabled %s '%s' in cluster '%s'.\n", serviceLabel, serviceName, clusterName)
 
 			// Render the service if --render flag is set
 			if render {
@@ -183,6 +175,7 @@ func newClusterServiceDisableCmd() *cobra.Command {
 	var (
 		isManaged bool
 		cluster   string
+		render    bool
 	)
 	cmd := &cobra.Command{
 		Use:   "disable <service-name>",
@@ -194,7 +187,10 @@ Examples:
   opencenter cluster service disable cert-manager
 
   # Disable a managed service
-  opencenter cluster service disable my-managed-service --managed`,
+  opencenter cluster service disable my-managed-service --managed
+
+  # Disable a service and immediately update the rendered manifests
+  opencenter cluster service disable loki --render`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			serviceName := args[0]
@@ -210,47 +206,100 @@ Examples:
 			if err != nil {
 				return fmt.Errorf("failed to load cluster configuration for '%s': %w", clusterName, err)
 			}
+			serviceLabel := serviceTargetLabel(isManaged)
 			// Disable the service in the appropriate map
 			if isManaged {
 				svc, exists := cfg.OpenCenter.ManagedService[serviceName]
 				if !exists {
-					return fmt.Errorf("managed service '%s' not found", serviceName)
+					return fmt.Errorf("%s '%s' not found", serviceLabel, serviceName)
 				}
 				if !isEnabled(svc) {
-					return fmt.Errorf("managed service '%s' is already disabled", serviceName)
+					return fmt.Errorf("%s '%s' is already disabled", serviceLabel, serviceName)
 				}
 				if err := setEnabled(svc, false); err != nil {
 					return fmt.Errorf("failed to disable service: %w", err)
 				}
-				// Map holds a pointer/interface so modifying it modifies the value in the map if it's a pointer.
-				// But svc is 'any'. If it's a pointer, we are good.
-				// ServiceMap values are pointers to structs.
-				fmt.Fprintf(cmd.OutOrStdout(), "Disabling managed service '%s' in cluster '%s'...\n", serviceName, clusterName)
+				fmt.Fprintf(cmd.OutOrStdout(), "Disabling %s '%s' in cluster '%s'...\n", serviceLabel, serviceName, clusterName)
 			} else {
 				svc, exists := cfg.OpenCenter.Services[serviceName]
 				if !exists {
-					return fmt.Errorf("service '%s' not found", serviceName)
+					return fmt.Errorf("%s '%s' not found", serviceLabel, serviceName)
 				}
 				if !isEnabled(svc) {
-					return fmt.Errorf("service '%s' is already disabled", serviceName)
+					return fmt.Errorf("%s '%s' is already disabled", serviceLabel, serviceName)
 				}
 				if err := setEnabled(svc, false); err != nil {
 					return fmt.Errorf("failed to disable service: %w", err)
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Disabling service '%s' in cluster '%s'...\n", serviceName, clusterName)
+				if err := validateServiceDependencies(cfg.OpenCenter.Services); err != nil {
+					return err
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "Disabling %s '%s' in cluster '%s'...\n", serviceLabel, serviceName, clusterName)
 			}
 			// Save the updated configuration
 			if err := saveConfig(cmd.Context(), cfg); err != nil {
 				return fmt.Errorf("failed to save updated configuration: %w", err)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Successfully disabled service '%s' in cluster '%s'.\n", serviceName, clusterName)
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully disabled %s '%s' in cluster '%s'.\n", serviceLabel, serviceName, clusterName)
+
+			if render {
+				if cfg.OpenCenter.GitOps.GitDir == "" {
+					return fmt.Errorf("git_dir is not configured. Run 'opencenter cluster setup' first or set git_dir in the configuration")
+				}
+
+				fmt.Fprintf(cmd.OutOrStdout(), "Rendering cluster apps after disabling '%s'...\n", serviceName)
+				if err := gitops.RenderClusterApps(cfg); err != nil {
+					return fmt.Errorf("failed to render cluster apps: %w", err)
+				}
+				fmt.Fprintln(cmd.OutOrStdout(), "Cluster apps rendered successfully.")
+			}
 			return nil
 		},
 	}
 	cmd.Flags().BoolVar(&isManaged, "managed", false, "Disable the service from the managed services list")
 	cmd.Flags().StringVar(&cluster, "cluster", "", "Specify the cluster name")
+	cmd.Flags().BoolVar(&render, "render", false, "Render the cluster application manifests immediately after disabling")
 	return cmd
 }
+
+func newServiceConfig(serviceName string) any {
+	configType := registry.GetServiceConfigType(serviceName)
+	if configType == nil {
+		configType = reflect.TypeOf(services.DefaultServiceConfig{})
+	}
+	return reflect.New(configType).Interface()
+}
+
+func ensureServiceMap(cfg *config.Config, isManaged bool) config.ServiceMap {
+	if isManaged {
+		if cfg.OpenCenter.ManagedService == nil {
+			cfg.OpenCenter.ManagedService = make(config.ServiceMap)
+		}
+		return cfg.OpenCenter.ManagedService
+	}
+
+	if cfg.OpenCenter.Services == nil {
+		cfg.OpenCenter.Services = make(config.ServiceMap)
+	}
+	return cfg.OpenCenter.Services
+}
+
+func serviceTargetLabel(isManaged bool) string {
+	if isManaged {
+		return "managed service"
+	}
+	return "service"
+}
+
+func validateServiceDependencies(serviceMap config.ServiceMap) error {
+	validator := services.NewDependencyValidator()
+	errors := validator.ValidateDependencies(map[string]any(serviceMap))
+	if len(errors) == 0 {
+		return nil
+	}
+	return fmt.Errorf("%s", strings.Join(errors, "\n"))
+}
+
 func processParams(params []string, serviceCfg any) error {
 	v := reflect.ValueOf(serviceCfg)
 	if v.Kind() == reflect.Ptr {
