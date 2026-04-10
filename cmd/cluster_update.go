@@ -152,7 +152,7 @@ func newClusterUpdateCmd() *cobra.Command {
 				return err
 			}
 
-			cfg, err := loadCanonicalConfig(name)
+			cfg, _, _, _, err := loadNativeV2ConfigWithIdentifier(cmd.Context(), name)
 			if err != nil {
 				return fmt.Errorf("failed to load cluster %s: %w", name, err)
 			}
@@ -169,7 +169,7 @@ func newClusterUpdateCmd() *cobra.Command {
 				if !ok {
 					return fmt.Errorf("invalid override format: %s", override)
 				}
-				if err := setField(&cfg, key, value); err != nil {
+				if err := setField(cfg, key, value); err != nil {
 					return fmt.Errorf("error setting config from flag '%s': %w", key, err)
 				}
 			}
@@ -177,17 +177,13 @@ func newClusterUpdateCmd() *cobra.Command {
 			// Optional strict validation
 			strict, _ := cmd.Flags().GetBool("strict")
 			if strict {
-				manager, err := getConfigManager()
-				if err != nil {
-					return fmt.Errorf("failed to get config manager: %w", err)
-				}
-				if err := manager.Validate(cmd.Context(), &cfg); err != nil {
+				if err := validateNativeV2Config(cfg); err != nil {
 					fmt.Fprintln(cmd.ErrOrStderr(), err)
 					return fmt.Errorf("validation failed")
 				}
 			}
 
-			if err := saveConfig(cmd.Context(), cfg); err != nil {
+			if err := saveNativeV2Config(cmd.Context(), cfg); err != nil {
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Updated cluster configuration %s\n", name)

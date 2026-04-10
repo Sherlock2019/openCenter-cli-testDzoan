@@ -29,6 +29,8 @@ type kindDefaultsLocals struct {
 	DisableDefaultCNI bool              `yaml:"disable_default_cni"`
 	APIServerAddress  string            `yaml:"api_server_address"`
 	APIServerPort     int               `yaml:"api_server_port"`
+	GitURL            string            `yaml:"git_url"`
+	GitTokenProvider  string            `yaml:"git_token_provider"`
 }
 
 func applyProviderDefaults(cfg *Config, provider string) error {
@@ -96,6 +98,14 @@ func applyKindDefaults(cfg *Config) error {
 	cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Longhorn.Enabled = false
 
 	cfg.OpenTofu.Enabled = false
+
+	// Set Gitea-based Git defaults for local Kind clusters.
+	if defaults.Locals.GitURL != "" {
+		cfg.OpenCenter.GitOps.GitURL = defaults.Locals.GitURL
+	}
+	if defaults.Locals.GitTokenProvider != "" {
+		cfg.OpenCenter.GitOps.GitTokenProvider = defaults.Locals.GitTokenProvider
+	}
 
 	return nil
 }

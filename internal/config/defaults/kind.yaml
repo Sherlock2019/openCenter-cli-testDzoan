@@ -11,7 +11,7 @@ locals:
   registry_name: "kind-registry"
   registry_port: 5001
   ingress_enabled: true
-  ingress_controller: "nginx"
+  ingress_controller: "gateway-api"
   load_balancer_enabled: false
   extra_mounts: []
   port_mappings: []
@@ -24,6 +24,8 @@ locals:
   networking_disable_default_cni: false
   api_server_address: "127.0.0.1"
   api_server_port: 6443
+  git_url: "https://localhost:3001/newuser/test-repo.git"
+  git_token_provider: "gitea"
 
 modules:
   kind-cluster:

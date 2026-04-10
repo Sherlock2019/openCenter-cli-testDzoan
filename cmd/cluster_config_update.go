@@ -39,6 +39,9 @@ This command loads the current cluster configuration, merges it with the default
 configuration template to add any missing keys, and writes the updated configuration
 back to the file.
 
+To set specific configuration values, use 'opencenter cluster update' with dotted
+flags instead (e.g., --opencenter.gitops.git_url=...).
+
 A timestamped backup is automatically created before modification:
   <config-file>.backup.<timestamp>
 
@@ -76,7 +79,7 @@ If no cluster name is provided, updates the currently active cluster.`,
 			}
 
 			ctx := cmd.Context()
-			
+
 			// Load config to get organization
 			cfg, err := loadConfig(ctx, name)
 			if err != nil {
@@ -108,7 +111,7 @@ If no cluster name is provided, updates the currently active cluster.`,
 			if err != nil {
 				return fmt.Errorf("failed to get configuration manager: %w", err)
 			}
-			
+
 			completeCfg, err := manager.Load(ctx, name)
 			if err != nil {
 				return fmt.Errorf("failed to load configuration: %w", err)

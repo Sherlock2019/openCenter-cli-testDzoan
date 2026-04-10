@@ -182,7 +182,26 @@ opencenter cluster setup my-cluster --force
 
 Produces the overlay tree under the cluster's `git_dir`: `applications/overlays/my-cluster/`, `infrastructure/clusters/my-cluster/`, and `secrets/`. The `flux-system/` directory does not exist yet; it is created later during bootstrap by `flux bootstrap git`.
 
-### 5. Bootstrap the Cluster
+### 5. Set the Git Remote and Token Provider
+
+```bash
+GITEA_REPO_URL=$(opencenter local gitea status 2>/dev/null | grep "Bootstrap repo URL:" | awk '{print $NF}')
+GITEA_TOKEN_PATH=$(opencenter local gitea status 2>/dev/null | grep "User token present:" | sed 's/.*(\(.*\))/\1/')
+opencenter cluster update my-cluster \
+  --opencenter.gitops.git_url="$GITEA_REPO_URL" \
+  --opencenter.gitops.git_token="$GITEA_TOKEN_PATH" \
+  --opencenter.gitops.git_token_provider=gitea
+```
+
+Points the cluster configuration at the local Gitea repository using the host-routable IP (e.g. `https://172.16.0.146:3001/...`). This IP is reachable from both the macOS host and from inside the Kind cluster because Podman binds on `0.0.0.0`. The `git_token` field is set to the path of the Gitea user token file, and `git_token_provider` tells bootstrap how to read it.
+
+Verify:
+
+```bash
+opencenter cluster info my-cluster | grep git_url
+```
+
+### 6. Bootstrap the Cluster
 
 ```bash
 opencenter cluster bootstrap my-cluster --container-runtime podman

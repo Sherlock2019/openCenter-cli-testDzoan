@@ -16,11 +16,17 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/di"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -140,6 +146,115 @@ func saveConfig(ctx context.Context, cfg config.Config) error {
 	}
 
 	return manager.Save(ctx, &cfg)
+}
+
+func loadNativeV2ConfigWithIdentifier(ctx context.Context, identifier string) (*v2.Config, string, string, *paths.ClusterPaths, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	clusterName := identifier
+	organization := ""
+	parts := strings.Split(identifier, "/")
+	if len(parts) == 2 {
+		organization = parts[0]
+		clusterName = parts[1]
+	}
+
+	pathResolver, err := di.ProvidePathResolver(config.ResolveClustersDir())
+	if err != nil {
+		return nil, "", "", nil, err
+	}
+
+	var clusterPaths *paths.ClusterPaths
+	if organization != "" {
+		clusterPaths, err = pathResolver.Resolve(ctx, clusterName, organization)
+	} else {
+		clusterPaths, err = pathResolver.ResolveWithFallback(ctx, clusterName)
+	}
+	if err != nil {
+		return nil, "", "", nil, err
+	}
+
+	loader := v2.NewConfigLoader(defaults.NewRegistry())
+	cfg, err := loader.LoadFromFile(clusterPaths.ConfigPath)
+	if err != nil {
+		return nil, "", "", nil, err
+	}
+
+	resolvedOrganization := cfg.OpenCenter.Meta.Organization
+	if resolvedOrganization == "" {
+		resolvedOrganization = filepath.Base(clusterPaths.OrganizationDir)
+	}
+
+	if organization != "" && resolvedOrganization != "" && organization != resolvedOrganization {
+		return nil, "", "", nil, fmt.Errorf("cluster %s not found in organization %s (found in %s)",
+			clusterName, organization, resolvedOrganization)
+	}
+
+	return cfg, clusterName, resolvedOrganization, clusterPaths, nil
+}
+
+func saveNativeV2Config(ctx context.Context, cfg *v2.Config) error {
+	if cfg == nil {
+		return fmt.Errorf("configuration cannot be nil")
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	clusterName := strings.TrimSpace(cfg.OpenCenter.Cluster.ClusterName)
+	if clusterName == "" {
+		clusterName = strings.TrimSpace(cfg.OpenCenter.Meta.Name)
+	}
+	if clusterName == "" {
+		return fmt.Errorf("cluster name cannot be empty")
+	}
+
+	organization := strings.TrimSpace(cfg.OpenCenter.Meta.Organization)
+	if organization == "" {
+		return fmt.Errorf("organization cannot be empty")
+	}
+
+	pathResolver, err := di.ProvidePathResolver(config.ResolveClustersDir())
+	if err != nil {
+		return err
+	}
+
+	clusterPaths, err := pathResolver.Resolve(ctx, clusterName, organization)
+	if err != nil {
+		return err
+	}
+
+	configPath := clusterPaths.ConfigPath
+	if data, err := os.ReadFile(configPath); err == nil {
+		if err := os.WriteFile(configPath+".backup", data, 0o600); err != nil {
+			return err
+		}
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+
+	loader := v2.NewConfigLoader(defaults.NewRegistry())
+	return loader.SaveToFile(cfg, configPath)
+}
+
+func validateNativeV2Config(cfg *v2.Config) error {
+	if cfg == nil {
+		return fmt.Errorf("configuration cannot be nil")
+	}
+
+	data, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("marshal v2 config for validation: %w", err)
+	}
+
+	loader := v2.NewConfigLoader(defaults.NewRegistry())
+	if _, err := loader.LoadFromBytes(data); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // listClusters lists all cluster configurations using the ConfigurationManager.
