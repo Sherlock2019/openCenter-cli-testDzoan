@@ -232,10 +232,17 @@ func (cl *ConfigLoader) applyDefaults(cfg *Config) error {
 	region := cfg.OpenCenter.Meta.Region
 
 	// Providers without region-based defaults in the registry (kind, vmware,
-	// baremetal) skip hydration entirely. Their defaults are applied at init
-	// time via applyProviderBehaviorDefaults, not through the registry.
+	// baremetal) skip registry-based hydration. However, provider-specific
+	// behavior defaults (e.g. the Kind block) must still be applied when
+	// missing so that configs created outside `cluster init` or manually
+	// edited to change the provider are valid.
 	switch strings.ToLower(strings.TrimSpace(provider)) {
-	case "kind", "vmware", "baremetal":
+	case "kind":
+		if cfg.OpenCenter.Infrastructure.Kind == nil {
+			applyProviderBehaviorDefaults(cfg)
+		}
+		return nil
+	case "vmware", "baremetal":
 		return nil
 	}
 

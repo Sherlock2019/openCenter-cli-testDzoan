@@ -166,8 +166,39 @@ func (v *defaultValidator) validateOpenTofuBackend(opentofu *OpenTofuConfig) err
 // ValidateProvider validates provider-specific requirements.
 // Requirements: 11.3
 func (v *defaultValidator) ValidateProvider(cfg *Config) error {
-	// Placeholder for provider validation
-	// This will be implemented in subsequent tasks
+	provider := strings.ToLower(strings.TrimSpace(cfg.OpenCenter.Infrastructure.Provider))
+
+	switch provider {
+	case "kind":
+		if cfg.OpenCenter.Infrastructure.Kind == nil {
+			return fmt.Errorf("opencenter.infrastructure.kind must be configured for the kind provider")
+		}
+	case "openstack":
+		if cfg.OpenCenter.Infrastructure.Cloud.OpenStack == nil {
+			return fmt.Errorf("opencenter.infrastructure.cloud.openstack must be configured for the openstack provider")
+		}
+	case "aws":
+		if cfg.OpenCenter.Infrastructure.Cloud.AWS == nil {
+			return fmt.Errorf("opencenter.infrastructure.cloud.aws must be configured for the aws provider")
+		}
+	case "vmware", "vsphere":
+		if cfg.OpenCenter.Infrastructure.Cloud.VMware == nil {
+			return fmt.Errorf("opencenter.infrastructure.cloud.vmware must be configured for the %s provider", provider)
+		}
+	case "gcp":
+		if cfg.OpenCenter.Infrastructure.Cloud.GCP == nil {
+			return fmt.Errorf("opencenter.infrastructure.cloud.gcp must be configured for the gcp provider")
+		}
+	case "azure":
+		if cfg.OpenCenter.Infrastructure.Cloud.Azure == nil {
+			return fmt.Errorf("opencenter.infrastructure.cloud.azure must be configured for the azure provider")
+		}
+	case "baremetal":
+		// No provider-specific config block required for baremetal
+	case "":
+		return fmt.Errorf("opencenter.infrastructure.provider must be set")
+	}
+
 	return nil
 }
 
