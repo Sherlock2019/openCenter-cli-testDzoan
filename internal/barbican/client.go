@@ -24,20 +24,20 @@ import (
 	"github.com/gophercloud/gophercloud/openstack"
 	"github.com/gophercloud/gophercloud/openstack/keymanager/v1/secrets"
 	"github.com/gophercloud/gophercloud/pagination"
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/resilience"
 )
 
 // Client is a wrapper around the Barbican client from gophercloud.
 type Client struct {
 	client         *gophercloud.ServiceClient
-	config         *config.BarbicanConfig
+	config         *v2.BarbicanConfig
 	retryHandler   resilience.RetryHandler
 	circuitBreaker resilience.CircuitBreaker
 }
 
 // NewClient creates a new Barbican client.
-func NewClient(cfg *config.BarbicanConfig) (*Client, error) {
+func NewClient(cfg *v2.BarbicanConfig) (*Client, error) {
 	if cfg.AuthURL == "" {
 		return nil, fmt.Errorf("barbican backend requires auth_url to be configured\n\n" +
 			"The 'opencenter secrets' commands are designed for Barbican (OpenStack Key Manager).\n" +

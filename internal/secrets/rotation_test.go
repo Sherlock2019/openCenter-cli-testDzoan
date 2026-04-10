@@ -395,8 +395,7 @@ opencenter:
 secrets:
   sops_age_key_file: ~/.config/sops/age/test-key.txt
 `
-		err = os.WriteFile(configPath, []byte(configData), 0644)
-		require.NoError(t, err)
+		writeNormalizedSecretsConfigFile(t, configPath, cluster, configData)
 
 		// Create overlay directory with .sops.yaml
 		overlayPath := filepath.Join(testRepoDir, "applications", "overlays", cluster)
@@ -617,8 +616,7 @@ secrets:
   ssh_private_key_file: ~/.ssh/old-key
   ssh_public_key_file: ~/.ssh/old-key.pub
 `
-		err = os.WriteFile(configPath, []byte(configData), 0644)
-		require.NoError(t, err)
+		writeNormalizedSecretsConfigFile(t, configPath, cluster, configData)
 
 		// Create SSH directory for key generation
 		sshDir := filepath.Join(homeDir, ".config", "opencenter", "clusters", cluster, "secrets", "ssh")

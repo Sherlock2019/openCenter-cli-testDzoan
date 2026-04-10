@@ -591,8 +591,7 @@ opencenter:
 secrets:
   sops_age_key_file: ~/.config/sops/age/test-key.txt
 `
-		err = os.WriteFile(configPath, []byte(configData), 0644)
-		require.NoError(t, err)
+		writeNormalizedSecretsConfigFile(t, configPath, cluster, configData)
 
 		// Create overlay directory with .sops.yaml
 		overlayPath := filepath.Join(testRepoDir, "applications", "overlays", cluster)

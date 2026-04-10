@@ -15,6 +15,7 @@ package config
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -830,7 +831,7 @@ func (cm *ConfigurationManager) GetActive() (string, error) {
 
 	data, readErr := cm.fileSystem.ReadFile(path)
 	if readErr != nil {
-		if os.IsNotExist(readErr) {
+		if stderrors.Is(readErr, os.ErrNotExist) {
 			return "", nil
 		}
 		return "", readErr

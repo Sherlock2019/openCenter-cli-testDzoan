@@ -19,7 +19,7 @@ package sops
 import (
 	"context"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/crypto"
 )
 
@@ -32,9 +32,9 @@ type SOPSManager interface {
 	GetEncryptor() Encryptor
 
 	// High-level operations
-	EncryptOverlayFiles(ctx context.Context, overlayPath string, cfg *config.Config) error
-	CreateSOPSConfig(overlayPath string, cfg *config.Config) error
-	ValidateEncryption(overlayPath string, cfg *config.Config) error
+	EncryptOverlayFiles(ctx context.Context, overlayPath string, cfg *v2.Config) error
+	CreateSOPSConfig(overlayPath string, cfg *v2.Config) error
+	ValidateEncryption(overlayPath string, cfg *v2.Config) error
 	CreateSampleEncryptedSecrets(ctx context.Context, repoPath string, ageKey string) error
 	EncryptRepositorySecrets(ctx context.Context, repoPath string, ageKey string) error
 	CheckSOPSVersion(ctx context.Context) (string, error)

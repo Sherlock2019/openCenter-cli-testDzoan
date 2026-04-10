@@ -46,15 +46,15 @@ func TestPipelineIntegration_WithInitStage(t *testing.T) {
 
 	// Create test configuration
 	cfg := v2.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
+		OpenCenter: v2.OpenCenterConfig{
+			Meta: v2.MetaConfig{
 				Name:         "test-cluster",
 				Organization: "test-org",
 			},
-			Infrastructure: config.Infrastructure{
+			Infrastructure: v2.InfrastructureConfig{
 				Provider: "openstack",
 			},
-			Cluster: config.ClusterConfig{
+			Cluster: v2.ClusterConfig{
 				ClusterName: "test-cluster",
 			},
 		},
@@ -109,15 +109,15 @@ func TestPipelineIntegration_DryRun(t *testing.T) {
 
 	// Create test configuration
 	cfg := v2.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
+		OpenCenter: v2.OpenCenterConfig{
+			Meta: v2.MetaConfig{
 				Name:         "test-cluster",
 				Organization: "test-org",
 			},
-			Infrastructure: config.Infrastructure{
+			Infrastructure: v2.InfrastructureConfig{
 				Provider: "openstack",
 			},
-			Cluster: config.ClusterConfig{
+			Cluster: v2.ClusterConfig{
 				ClusterName: "test-cluster",
 			},
 		},

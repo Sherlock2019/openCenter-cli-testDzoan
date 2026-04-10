@@ -39,7 +39,7 @@ func writeRotationTestConfig(t *testing.T, cluster string, configData string) st
 
 	clusterPaths, err := resolver.Resolve(context.Background(), cluster, "test-org")
 	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(clusterPaths.ConfigPath, []byte(configData), 0o644))
+	writeNormalizedSecretsConfigFile(t, clusterPaths.ConfigPath, cluster, configData)
 
 	return clusterPaths.ConfigPath
 }

@@ -72,12 +72,8 @@ func TestBootstrapService_Bootstrap(t *testing.T) {
 				}
 
 				// Create minimal config
-				cfg := config.Config{
-					SchemaVersion: "2.0",
-				}
+				cfg := mustNewClusterTestConfig(clusterName, "kind")
 				cfg.OpenCenter.Meta.Organization = "test-org"
-				cfg.OpenCenter.Infrastructure.Provider = "kind"
-				cfg.OpenCenter.Cluster.ClusterName = clusterName
 				cfg.OpenCenter.GitOps.GitDir = filepath.Join(tmpDir, "gitops")
 
 				// Save config
@@ -112,12 +108,8 @@ func TestBootstrapService_Bootstrap(t *testing.T) {
 				}
 
 				// Create minimal config
-				cfg := config.Config{
-					SchemaVersion: "2.0",
-				}
+				cfg := mustNewClusterTestConfig(clusterName, "kind")
 				cfg.OpenCenter.Meta.Organization = "test-org"
-				cfg.OpenCenter.Infrastructure.Provider = "kind"
-				cfg.OpenCenter.Cluster.ClusterName = clusterName
 				cfg.OpenCenter.GitOps.GitDir = filepath.Join(tmpDir, "gitops")
 
 				// Save config
@@ -276,11 +268,7 @@ func TestBootstrapService_OpenStackDryRunDoesNotUseLegacyConfigValidator(t *test
 		t.Fatalf("Failed to create cluster directories: %v", err)
 	}
 
-	cfg, err := config.NewProviderDefault(clusterName, "openstack")
-	if err != nil {
-		t.Fatalf("NewProviderDefault() error = %v", err)
-	}
-	cfg.SchemaVersion = "2.0"
+	cfg := mustNewClusterTestConfig(clusterName, "openstack")
 	cfg.OpenCenter.Meta.Organization = organization
 	cfg.OpenCenter.GitOps.GitDir = filepath.Join(tmpDir, "gitops-repo")
 

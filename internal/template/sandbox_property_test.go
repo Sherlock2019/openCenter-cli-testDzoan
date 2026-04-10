@@ -160,8 +160,10 @@ func TestProperty_TemplateInputValidation(t *testing.T) {
 				return false
 			}
 
-			// Elapsed time should be close to timeout (within 5x for goroutine scheduling)
-			return elapsed >= timeout && elapsed < timeout*5
+			// Time-based assertions are scheduler-sensitive in CI. The important
+			// contract is that rendering stops after the deadline rather than
+			// hanging indefinitely.
+			return elapsed >= timeout && elapsed < timeout+(2*time.Second)
 		},
 		gen.IntRange(10, 50),
 	))

@@ -24,7 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/crypto"
@@ -102,7 +102,7 @@ func (m *DefaultSOPSManager) GetEncryptor() Encryptor {
 }
 
 // EncryptOverlayFiles encrypts sensitive files in an overlay directory
-func (m *DefaultSOPSManager) EncryptOverlayFiles(ctx context.Context, overlayPath string, cfg *config.Config) error {
+func (m *DefaultSOPSManager) EncryptOverlayFiles(ctx context.Context, overlayPath string, cfg *v2.Config) error {
 	m.logger.Info("Starting overlay files encryption", "overlay_path", overlayPath)
 
 	// Get list of files to encrypt
@@ -214,7 +214,7 @@ func (m *DefaultSOPSManager) EncryptOverlayFiles(ctx context.Context, overlayPat
 }
 
 // CreateSOPSConfig creates a .sops.yaml configuration file
-func (m *DefaultSOPSManager) CreateSOPSConfig(overlayPath string, cfg *config.Config) error {
+func (m *DefaultSOPSManager) CreateSOPSConfig(overlayPath string, cfg *v2.Config) error {
 	m.logger.Info("Creating SOPS configuration", "overlay_path", overlayPath)
 
 	sopsConfig, err := m.generateSOPSConfig(cfg)
@@ -270,7 +270,7 @@ func (m *DefaultSOPSManager) CreateSOPSConfig(overlayPath string, cfg *config.Co
 }
 
 // ValidateEncryption validates that files are properly encrypted
-func (m *DefaultSOPSManager) ValidateEncryption(overlayPath string, cfg *config.Config) error {
+func (m *DefaultSOPSManager) ValidateEncryption(overlayPath string, cfg *v2.Config) error {
 	m.logger.Info("Validating encryption", "overlay_path", overlayPath)
 
 	// Get the SOPS key file path
@@ -435,7 +435,7 @@ func (m *DefaultSOPSManager) CheckSOPSVersion(ctx context.Context) (string, erro
 // Helper methods
 
 // getFilesToEncrypt returns the list of files that should be encrypted
-func (m *DefaultSOPSManager) getFilesToEncrypt(overlayPath string, cfg *config.Config) []string {
+func (m *DefaultSOPSManager) getFilesToEncrypt(overlayPath string, cfg *v2.Config) []string {
 	var files []string
 
 	// Standard encrypted files
@@ -459,7 +459,7 @@ func (m *DefaultSOPSManager) getFilesToEncrypt(overlayPath string, cfg *config.C
 }
 
 // generateSOPSConfig generates the SOPS configuration content
-func (m *DefaultSOPSManager) generateSOPSConfig(cfg *config.Config) (string, error) {
+func (m *DefaultSOPSManager) generateSOPSConfig(cfg *v2.Config) (string, error) {
 	var ageKey string
 	if cfg.Secrets.SopsAgeKeyFile != "" {
 		// Load the public key from the age key file

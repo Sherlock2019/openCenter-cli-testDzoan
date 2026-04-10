@@ -21,8 +21,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/crypto"
 )
 
@@ -45,11 +43,7 @@ func TestSOPSValidationMigration_ValidKey(t *testing.T) {
 	manager := NewDefaultSOPSManager(keyManager, encryptor, nil)
 
 	// Create test config
-	cfg := &config.Config{
-		Secrets: config.Secrets{
-			SopsAgeKeyFile: keyPath,
-		},
-	}
+	cfg := newSOPSTestConfig("valid-key-test", "openstack", keyPath)
 
 	// Validate encryption - should succeed
 	err := manager.ValidateEncryption(tmpDir, cfg)
@@ -70,11 +64,7 @@ func TestSOPSValidationMigration_MissingKey(t *testing.T) {
 	manager := NewDefaultSOPSManager(keyManager, encryptor, nil)
 
 	// Create test config with non-existent key
-	cfg := &config.Config{
-		Secrets: config.Secrets{
-			SopsAgeKeyFile: filepath.Join(tmpDir, "nonexistent-key.txt"),
-		},
-	}
+	cfg := newSOPSTestConfig("missing-key-test", "openstack", filepath.Join(tmpDir, "nonexistent-key.txt"))
 
 	// Validate encryption - should fail
 	err := manager.ValidateEncryption(tmpDir, cfg)
@@ -108,11 +98,7 @@ func TestSOPSValidationMigration_InvalidKeyFormat(t *testing.T) {
 	manager := NewDefaultSOPSManager(keyManager, encryptor, nil)
 
 	// Create test config
-	cfg := &config.Config{
-		Secrets: config.Secrets{
-			SopsAgeKeyFile: keyPath,
-		},
-	}
+	cfg := newSOPSTestConfig("invalid-key-format-test", "openstack", keyPath)
 
 	// Validate encryption - should fail
 	err := manager.ValidateEncryption(tmpDir, cfg)
@@ -140,11 +126,7 @@ func TestSOPSValidationMigration_InsecurePermissions(t *testing.T) {
 	manager := NewDefaultSOPSManager(keyManager, encryptor, nil)
 
 	// Create test config
-	cfg := &config.Config{
-		Secrets: config.Secrets{
-			SopsAgeKeyFile: keyPath,
-		},
-	}
+	cfg := newSOPSTestConfig("insecure-permissions-test", "openstack", keyPath)
 
 	// Validate encryption - should succeed but log warning
 	// Note: The warning is logged, not returned as an error

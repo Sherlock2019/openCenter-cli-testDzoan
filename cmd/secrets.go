@@ -23,7 +23,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/barbican"
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 )
@@ -166,7 +166,7 @@ func newSecretsListCmd() *cobra.Command {
 	return cmd
 }
 
-func listBarbicanSecrets(ctx context.Context, cfg *config.Config, labels []string, format string) error {
+func listBarbicanSecrets(ctx context.Context, cfg *v2.Config, labels []string, format string) error {
 	client, err := barbican.NewClient(&cfg.OpenCenter.Secrets.Barbican)
 	if err != nil {
 		return err
@@ -196,11 +196,11 @@ func listBarbicanSecrets(ctx context.Context, cfg *config.Config, labels []strin
 	}
 }
 
-func listSOPSSecrets(ctx context.Context, cfg *config.Config, format string) error {
+func listSOPSSecrets(ctx context.Context, cfg *v2.Config, format string) error {
 	return listConfigMappedSecrets(cfg, format)
 }
 
-func listFileSecrets(cfg *config.Config, format string) error {
+func listFileSecrets(cfg *v2.Config, format string) error {
 	return listConfigMappedSecrets(cfg, format)
 }
 
@@ -248,7 +248,7 @@ func newSecretsDescribeCmd() *cobra.Command {
 	return cmd
 }
 
-func describeBarbicanSecret(ctx context.Context, cfg *config.Config, name string, format string) error {
+func describeBarbicanSecret(ctx context.Context, cfg *v2.Config, name string, format string) error {
 	client, err := barbican.NewClient(&cfg.OpenCenter.Secrets.Barbican)
 	if err != nil {
 		return err
@@ -273,7 +273,7 @@ func describeBarbicanSecret(ctx context.Context, cfg *config.Config, name string
 	return nil
 }
 
-func describeSOPSSecret(ctx context.Context, cfg *config.Config, name string, format string) error {
+func describeSOPSSecret(ctx context.Context, cfg *v2.Config, name string, format string) error {
 	return fmt.Errorf("SOPS backend does not support individual secret describe operations.\n\n" +
 		"SOPS manages secrets as encrypted YAML files, not individual key-value pairs.\n" +
 		"To inspect SOPS-encrypted secrets:\n" +
@@ -283,7 +283,7 @@ func describeSOPSSecret(ctx context.Context, cfg *config.Config, name string, fo
 		"See: https://docs.opencenter.cloud/secrets/sops-encryption")
 }
 
-func describeFileSecret(cfg *config.Config, name string, format string) error {
+func describeFileSecret(cfg *v2.Config, name string, format string) error {
 	return describeConfigSecret(cfg, name, format)
 }
 
@@ -337,7 +337,7 @@ func newSecretsGetCmd() *cobra.Command {
 	return cmd
 }
 
-func getBarbicanSecret(ctx context.Context, cfg *config.Config, name string, outputFile string, show bool) error {
+func getBarbicanSecret(ctx context.Context, cfg *v2.Config, name string, outputFile string, show bool) error {
 	client, err := barbican.NewClient(&cfg.OpenCenter.Secrets.Barbican)
 	if err != nil {
 		return err
@@ -365,7 +365,7 @@ func getBarbicanSecret(ctx context.Context, cfg *config.Config, name string, out
 	return nil
 }
 
-func getSOPSSecret(ctx context.Context, cfg *config.Config, name string, outputFile string, show bool) error {
+func getSOPSSecret(ctx context.Context, cfg *v2.Config, name string, outputFile string, show bool) error {
 	return fmt.Errorf("SOPS backend does not support individual secret get operations.\n\n" +
 		"SOPS manages secrets as encrypted YAML files, not individual key-value pairs.\n" +
 		"To work with SOPS secrets:\n" +
@@ -375,7 +375,7 @@ func getSOPSSecret(ctx context.Context, cfg *config.Config, name string, outputF
 		"See: https://docs.opencenter.cloud/secrets/sops-encryption")
 }
 
-func getFileSecret(ctx context.Context, cfg *config.Config, name string, outputFile string, show bool) error {
+func getFileSecret(ctx context.Context, cfg *v2.Config, name string, outputFile string, show bool) error {
 	_ = ctx
 	return getConfigSecret(cfg, name, outputFile, show)
 }
@@ -447,7 +447,7 @@ func newSecretsSetCmd() *cobra.Command {
 	return cmd
 }
 
-func setBarbicanSecret(ctx context.Context, cfg *config.Config, name string, payload []byte, labels []string, secretType string, payloadContentEncoding string) error {
+func setBarbicanSecret(ctx context.Context, cfg *v2.Config, name string, payload []byte, labels []string, secretType string, payloadContentEncoding string) error {
 	client, err := barbican.NewClient(&cfg.OpenCenter.Secrets.Barbican)
 	if err != nil {
 		return err
@@ -480,7 +480,7 @@ func setBarbicanSecret(ctx context.Context, cfg *config.Config, name string, pay
 	return nil
 }
 
-func setSOPSSecret(ctx context.Context, cfg *config.Config, name string, payload []byte) error {
+func setSOPSSecret(ctx context.Context, cfg *v2.Config, name string, payload []byte) error {
 	return fmt.Errorf("SOPS backend does not support individual secret set operations.\n\n" +
 		"SOPS manages secrets as encrypted YAML files, not individual key-value pairs.\n" +
 		"To create or update SOPS secrets:\n" +
@@ -490,7 +490,7 @@ func setSOPSSecret(ctx context.Context, cfg *config.Config, name string, payload
 		"See: https://docs.opencenter.cloud/secrets/sops-encryption")
 }
 
-func setFileSecret(ctx context.Context, cfg *config.Config, name string, payload []byte) error {
+func setFileSecret(ctx context.Context, cfg *v2.Config, name string, payload []byte) error {
 	if err := setConfigSecret(ctx, cfg, name, payload); err != nil {
 		return err
 	}
@@ -542,7 +542,7 @@ func newSecretsDeleteCmd() *cobra.Command {
 	return cmd
 }
 
-func deleteBarbicanSecret(ctx context.Context, cfg *config.Config, name string) error {
+func deleteBarbicanSecret(ctx context.Context, cfg *v2.Config, name string) error {
 	client, err := barbican.NewClient(&cfg.OpenCenter.Secrets.Barbican)
 	if err != nil {
 		return err
@@ -556,7 +556,7 @@ func deleteBarbicanSecret(ctx context.Context, cfg *config.Config, name string) 
 	return nil
 }
 
-func deleteSOPSSecret(ctx context.Context, cfg *config.Config, name string) error {
+func deleteSOPSSecret(ctx context.Context, cfg *v2.Config, name string) error {
 	return fmt.Errorf("SOPS backend does not support individual secret delete operations.\n\n" +
 		"SOPS manages secrets as encrypted YAML files, not individual key-value pairs.\n" +
 		"To remove secrets from SOPS-encrypted files:\n" +
@@ -566,7 +566,7 @@ func deleteSOPSSecret(ctx context.Context, cfg *config.Config, name string) erro
 		"See: https://docs.opencenter.cloud/secrets/sops-encryption")
 }
 
-func deleteFileSecret(ctx context.Context, cfg *config.Config, name string) error {
+func deleteFileSecret(ctx context.Context, cfg *v2.Config, name string) error {
 	if err := deleteConfigSecret(ctx, cfg, name); err != nil {
 		return err
 	}

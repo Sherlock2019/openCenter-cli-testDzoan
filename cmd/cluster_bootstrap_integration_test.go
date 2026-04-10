@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/cluster"
+	configdefaults "github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
@@ -139,30 +141,18 @@ func TestClusterBootstrapServiceIntegration(t *testing.T) {
 		t.Fatalf("failed to create cluster directory: %v", err)
 	}
 
-	// Create a minimal config file at the org root path expected by PathResolver.
+	// Create a schema-valid native v2 config file at the org root path expected by PathResolver.
 	configPath := filepath.Join(orgDir, "."+clusterName+"-config.yaml")
-	configContent := `schema_version: "2.0"
-opencenter:
-  meta:
-    organization: ` + organization + `
-    name: ` + clusterName + `
-  cluster:
-    cluster_name: ` + clusterName + `
-  infrastructure:
-    provider: kind
-    kind:
-      cluster_name: ` + clusterName + `
-      kubernetes_version: "1.30.4"
-      control_plane_count: 1
-      worker_count: 2
-      api_server_address: "127.0.0.1"
-      api_server_port: 6443
-      pod_subnet: "10.244.0.0/16"
-      service_subnet: "10.96.0.0/16"
-  gitops:
-    git_dir: ` + filepath.Join(dir, "clusters", organization) + `
-`
-	if err := os.WriteFile(configPath, []byte(configContent), 0o644); err != nil {
+	cfgPtr, err := v2.NewV2Default(clusterName, "kind")
+	if err != nil {
+		t.Fatalf("create v2 config: %v", err)
+	}
+	cfg := *cfgPtr
+	cfg.OpenCenter.Meta.Organization = organization
+	cfg.OpenCenter.GitOps.GitDir = filepath.Join(dir, "clusters", organization)
+
+	loader := v2.NewConfigLoader(configdefaults.NewRegistry())
+	if err := loader.SaveToFile(&cfg, configPath); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
 	}
 

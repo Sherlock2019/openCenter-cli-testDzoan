@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/cloud"
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 func TestNewProvider(t *testing.T) {
@@ -348,16 +348,26 @@ func TestProvider_ReconcileDrift_NonReconcilable(t *testing.T) {
 }
 
 func TestBuildDesiredState(t *testing.T) {
-	cfg := &config.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Cluster: config.ClusterConfig{
+	cfg := &v2.Config{
+		OpenCenter: v2.OpenCenterConfig{
+			Cluster: v2.ClusterConfig{
 				ClusterName: "test-cluster",
-				Kubernetes: config.KubernetesConfig{
+				BaseDomain:  "example.com",
+				ClusterFQDN: "test-cluster.example.com",
+				AdminEmail:  "admin@example.com",
+				Kubernetes: v2.KubernetesConfig{
+					Version: "1.33.5",
+				},
+			},
+			Infrastructure: v2.InfrastructureConfig{
+				Compute: v2.ComputeConfig{
 					FlavorMaster: "m1.large",
 					FlavorWorker: "m1.medium",
 				},
-				Networking: config.ClusterNetworkingConfig{
-					SubnetNodes: "10.0.1.0/24",
+				Networking: v2.NetworkingConfig{
+					SubnetNodes:         "10.0.1.0/24",
+					AllocationPoolStart: "10.0.1.10",
+					AllocationPoolEnd:   "10.0.1.250",
 				},
 			},
 		},
@@ -373,7 +383,7 @@ func TestBuildDesiredState(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		state.Servers = append(state.Servers, cloud.Server{
 			Name:   "test-cluster-control-" + string(rune('0'+i)),
-			Flavor: cfg.OpenCenter.Cluster.Kubernetes.FlavorMaster,
+			Flavor: cfg.OpenCenter.Infrastructure.Compute.FlavorMaster,
 			Status: "ACTIVE",
 			Tags: map[string]string{
 				"cluster": cfg.OpenCenter.Cluster.ClusterName,

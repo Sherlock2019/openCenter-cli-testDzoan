@@ -916,7 +916,7 @@ func (w *world) canonicalClusterFixturePath(path, body string) (string, string, 
 		return "", "", "", false
 	}
 
-	var cfg config.Config
+	var cfg v2.Config
 	_ = yaml.Unmarshal([]byte(body), &cfg)
 
 	clusterName := cfg.OpenCenter.Cluster.ClusterName
@@ -1319,7 +1319,7 @@ func (w *world) assertClusterConfigValue(clusterName, path, expectedValue string
 		return fmt.Errorf("could not read config file %s: %w", configPath, err)
 	}
 
-	var cfg config.Config
+	var cfg v2.Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return fmt.Errorf("could not unmarshal config: %w", err)
 	}
@@ -1351,7 +1351,7 @@ func (w *world) assertClusterConfigValueContains(clusterName, path, expectedSubs
 		return fmt.Errorf("could not read config file %s: %w", configPath, err)
 	}
 
-	var cfg config.Config
+	var cfg v2.Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return fmt.Errorf("could not unmarshal config: %w", err)
 	}
@@ -1450,7 +1450,7 @@ func (w *world) validateConfigurationLoading(clusterName string) error {
 	normalizedData := normalizeConfigYAML(string(data))
 
 	// Try to unmarshal as a config struct
-	var cfg config.Config
+	var cfg v2.Config
 	if err := yaml.Unmarshal([]byte(normalizedData), &cfg); err != nil {
 		return fmt.Errorf("failed to unmarshal config: %w", err)
 	}

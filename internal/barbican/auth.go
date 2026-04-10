@@ -16,13 +16,14 @@ package barbican
 import (
 	"context"
 	"fmt"
+
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 // Authenticate handles the authentication against Keystone and returns a token.
-func Authenticate(ctx context.Context, cfg *config.BarbicanConfig, username, password string) (string, error) {
+func Authenticate(ctx context.Context, cfg *v2.BarbicanConfig, username, password string) (string, error) {
 	provider, err := openstack.NewClient(cfg.AuthURL)
 	if err != nil {
 		return "", fmt.Errorf("could not create OpenStack client: %w", err)

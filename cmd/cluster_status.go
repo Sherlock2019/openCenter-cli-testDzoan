@@ -25,6 +25,7 @@ import (
 
 	kindprovider "github.com/opencenter-cloud/opencenter-cli/internal/cloud/kind"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/security"
 )
@@ -294,7 +295,7 @@ func pathExists(path string) bool {
 	return err == nil
 }
 
-func openTofuStateStatus(cfg *config.Config, infraDir string) string {
+func openTofuStateStatus(cfg *v2.Config, infraDir string) string {
 	if cfg == nil || !cfg.OpenTofu.Enabled {
 		return "✗ Disabled"
 	}
@@ -302,7 +303,10 @@ func openTofuStateStatus(cfg *config.Config, infraDir string) string {
 	backendType := strings.ToLower(strings.TrimSpace(cfg.OpenTofu.Backend.Type))
 	switch backendType {
 	case "", "local":
-		statePath := strings.TrimSpace(cfg.OpenTofu.Backend.Local.Path)
+		statePath := ""
+		if cfg.OpenTofu.Backend.Local != nil {
+			statePath = strings.TrimSpace(cfg.OpenTofu.Backend.Local.Path)
+		}
 		if statePath == "" {
 			statePath = fmt.Sprintf(".opentofu-local-%s/terraform.tfstate", cfg.ClusterName())
 		}
@@ -311,7 +315,9 @@ func openTofuStateStatus(cfg *config.Config, infraDir string) string {
 		}
 		return statusLabel(pathExists(statePath), "Present", "Missing")
 	case "s3", "aws":
-		if strings.TrimSpace(cfg.OpenTofu.Backend.S3.Bucket) != "" && strings.TrimSpace(cfg.OpenTofu.Backend.S3.Key) != "" {
+		if cfg.OpenTofu.Backend.S3 != nil &&
+			strings.TrimSpace(cfg.OpenTofu.Backend.S3.Bucket) != "" &&
+			strings.TrimSpace(cfg.OpenTofu.Backend.S3.Key) != "" {
 			return "✓ Remote backend configured"
 		}
 		return "✗ Remote backend unconfigured"
@@ -349,18 +355,11 @@ func cloudClusterStatus(ctx context.Context, kubeconfigPath string) (bool, strin
 	return true, strings.TrimSpace(string(output)), ""
 }
 
-func kindClusterStatus(ctx context.Context, cfg *config.Config, kubeconfigPath string) (bool, bool, string, string) {
-	runtime := ""
-	if cfg != nil && cfg.OpenCenter.Infrastructure.Kind != nil {
-		runtime = cfg.OpenCenter.Infrastructure.Kind.Runtime
-	}
-	env := kindprovider.BuildEnvironment(runtime)
+func kindClusterStatus(ctx context.Context, cfg *v2.Config, kubeconfigPath string) (bool, bool, string, string) {
+	env := kindprovider.BuildEnvironment("")
 
 	provider := kindprovider.NewProvider()
 	clusterName := cfg.ClusterName()
-	if cfg != nil && cfg.OpenCenter.Infrastructure.Kind != nil && strings.TrimSpace(cfg.OpenCenter.Infrastructure.Kind.ClusterNameOverride) != "" {
-		clusterName = cfg.OpenCenter.Infrastructure.Kind.ClusterNameOverride
-	}
 
 	exists, err := provider.ClusterExists(ctx, clusterName, env)
 	if err != nil {

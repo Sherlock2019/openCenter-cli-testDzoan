@@ -614,25 +614,28 @@ func TestServiceStageConditions(t *testing.T) {
 // Helper functions
 
 func createTestConfigWithServices(enabledServices []string) v2.Config {
-	services := make(config.ServiceMap)
+	services := make(v2.ServiceMap)
 	for _, svc := range enabledServices {
-		services[svc] = config.ServiceCfg{
-			Enabled: true,
-		}
+		services[svc] = map[string]any{"enabled": true}
 	}
 
 	return v2.Config{
-		SchemaVersion: "1.0.0",
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
+		SchemaVersion: "2.0",
+		OpenCenter: v2.OpenCenterConfig{
+			Meta: v2.MetaConfig{
 				Name:         "test-cluster",
 				Organization: "test-org",
+				Env:          "dev",
+				Region:       "sjc3",
 			},
-			Infrastructure: config.Infrastructure{
+			Infrastructure: v2.InfrastructureConfig{
 				Provider: "openstack",
 			},
-			Cluster: config.ClusterConfig{
+			Cluster: v2.ClusterConfig{
 				ClusterName: "test-cluster",
+				BaseDomain:  "example.com",
+				ClusterFQDN: "test-cluster.example.com",
+				AdminEmail:  "admin@example.com",
 			},
 			Services: services,
 		},

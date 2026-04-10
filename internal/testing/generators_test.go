@@ -16,7 +16,7 @@ package testing
 import (
 	"testing"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -36,7 +36,7 @@ func TestConfigGenerator_GenerateConfig(t *testing.T) {
 		require.NotNil(t, cfg.OpenCenter.Infrastructure.Cloud.OpenStack)
 		assert.NotEmpty(t, cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL)
 		assert.NotEmpty(t, cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Region)
-		assert.NotEmpty(t, cfg.OpenCenter.Infrastructure.Cloud.OpenStack.TenantName)
+		assert.NotEmpty(t, cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ProjectName)
 	})
 
 	t.Run("generates valid AWS config", func(t *testing.T) {
@@ -54,10 +54,10 @@ func TestConfigGenerator_GenerateConfig(t *testing.T) {
 	t.Run("generates valid networking config", func(t *testing.T) {
 		cfg := gen.GenerateConfig("openstack")
 
-		assert.NotEmpty(t, cfg.OpenCenter.Cluster.Kubernetes.Networking.SubnetPods)
-		assert.NotEmpty(t, cfg.OpenCenter.Cluster.Kubernetes.Networking.SubnetServices)
-		assert.NotEmpty(t, cfg.OpenCenter.Cluster.Kubernetes.Networking.DNSNameservers)
-		assert.Greater(t, len(cfg.OpenCenter.Cluster.Kubernetes.Networking.DNSNameservers), 0)
+		assert.NotEmpty(t, cfg.OpenCenter.Cluster.Kubernetes.SubnetPods)
+		assert.NotEmpty(t, cfg.OpenCenter.Cluster.Kubernetes.SubnetServices)
+		assert.NotEmpty(t, cfg.OpenCenter.Infrastructure.Networking.DNSNameservers)
+		assert.Greater(t, len(cfg.OpenCenter.Infrastructure.Networking.DNSNameservers), 0)
 	})
 
 	t.Run("generates valid secrets config", func(t *testing.T) {
@@ -70,8 +70,8 @@ func TestConfigGenerator_GenerateConfig(t *testing.T) {
 	t.Run("generates valid security config", func(t *testing.T) {
 		cfg := gen.GenerateConfig("openstack")
 
-		assert.True(t, cfg.OpenCenter.Cluster.Kubernetes.Security.K8sHardening)
-		assert.True(t, cfg.OpenCenter.Cluster.Networking.Security.OSHardening)
+		assert.True(t, cfg.OpenCenter.Cluster.Kubernetes.Security.AuditLogging)
+		assert.True(t, cfg.OpenCenter.Cluster.Kubernetes.Security.EncryptionAtRest)
 	})
 }
 
@@ -241,7 +241,7 @@ func TestGenerators_Realistic(t *testing.T) {
 		assert.Regexp(t, `^1\.\d+\.\d+$`, cfg.OpenCenter.Cluster.Kubernetes.Version)
 
 		// DNS servers should be valid IPs
-		for _, dns := range cfg.OpenCenter.Cluster.Kubernetes.Networking.DNSNameservers {
+		for _, dns := range cfg.OpenCenter.Infrastructure.Networking.DNSNameservers {
 			assert.Regexp(t, `^\d+\.\d+\.\d+\.\d+$`, dns)
 		}
 
@@ -634,7 +634,7 @@ func TestConfigGenerator_GenerateMinimalConfig(t *testing.T) {
 
 		assert.Equal(t, "openstack", cfg.OpenCenter.Infrastructure.Provider)
 		assert.NotEmpty(t, cfg.OpenCenter.Meta.Name)
-		assert.Equal(t, "development", cfg.OpenCenter.Meta.Env)
+		assert.Equal(t, "dev", cfg.OpenCenter.Meta.Env)
 		assert.Equal(t, "local", cfg.OpenTofu.Backend.Type)
 		assert.Empty(t, cfg.OpenCenter.Services)
 	})
@@ -668,12 +668,12 @@ func TestConfigGenerator_GenerateComplexConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("complex config has overrides", func(t *testing.T) {
+	t.Run("complex config records complex metadata", func(t *testing.T) {
 		cfg := gen.GenerateComplexConfig("aws")
 
-		assert.NotEmpty(t, cfg.Overrides)
-		assert.Contains(t, cfg.Overrides, "kubernetes.apiserver.extraArgs")
-		assert.Contains(t, cfg.Overrides, "networking.cni")
+		assert.NotEmpty(t, cfg.Metadata.Labels)
+		assert.Contains(t, cfg.Metadata.Labels, "kubernetes.apiserver.extraArgs.audit-log-maxage")
+		assert.Contains(t, cfg.Metadata.Labels, "networking.cni")
 	})
 }
 
@@ -781,8 +781,8 @@ func TestScenarioGenerator_GenerateUpgradeScenario(t *testing.T) {
 		assert.Equal(t, "minor", scenario["upgrade_type"])
 		assert.True(t, scenario["rollback_enabled"].(bool))
 
-		oldConfig := scenario["old_config"].(config.Config)
-		newConfig := scenario["new_config"].(config.Config)
+		oldConfig := scenario["old_config"].(v2.Config)
+		newConfig := scenario["new_config"].(v2.Config)
 
 		// Verify versions are different
 		assert.NotEqual(t, oldConfig.OpenCenter.Cluster.Kubernetes.Version, newConfig.OpenCenter.Cluster.Kubernetes.Version)
@@ -804,8 +804,8 @@ func TestScenarioGenerator_GenerateMigrationScenario(t *testing.T) {
 		assert.Equal(t, "provider", scenario["migration_type"])
 		assert.True(t, scenario["data_migration_required"].(bool))
 
-		sourceConfig := scenario["source_config"].(config.Config)
-		targetConfig := scenario["target_config"].(config.Config)
+		sourceConfig := scenario["source_config"].(v2.Config)
+		targetConfig := scenario["target_config"].(v2.Config)
 
 		// Verify providers are different
 		assert.Equal(t, "openstack", sourceConfig.OpenCenter.Infrastructure.Provider)
@@ -829,8 +829,8 @@ func TestScenarioGenerator_GenerateDisasterRecoveryScenario(t *testing.T) {
 		assert.Equal(t, 15, scenario["rpo_minutes"])
 		assert.Equal(t, 30, scenario["rto_minutes"])
 
-		primaryConfig := scenario["primary_config"].(config.Config)
-		drConfig := scenario["dr_config"].(config.Config)
+		primaryConfig := scenario["primary_config"].(v2.Config)
+		drConfig := scenario["dr_config"].(v2.Config)
 
 		// Verify different regions
 		assert.NotEqual(t, primaryConfig.OpenCenter.Meta.Region, drConfig.OpenCenter.Meta.Region)
@@ -873,7 +873,7 @@ func TestScenarioGenerator_GeneratePerformanceTestScenario(t *testing.T) {
 		assert.Equal(t, 10, scenario["concurrent_operations"])
 		assert.Equal(t, 30, scenario["duration_minutes"])
 
-		configs := scenario["configs"].([]config.Config)
+		configs := scenario["configs"].([]v2.Config)
 		assert.Equal(t, 10, len(configs))
 
 		workloads, ok := scenario["workloads"].([]map[string]interface{})
@@ -917,10 +917,10 @@ func TestScenarioGenerator_GenerateComplianceScenario(t *testing.T) {
 		assert.True(t, scenario["audit_logging_enabled"].(bool))
 		assert.True(t, scenario["encryption_at_rest"].(bool))
 
-		cfg := scenario["config"].(config.Config)
-		assert.True(t, cfg.OpenCenter.Cluster.Kubernetes.Security.K8sHardening)
-		assert.True(t, cfg.OpenCenter.Cluster.Networking.Security.OSHardening)
-		assert.True(t, cfg.OpenCenter.Cluster.Kubernetes.KubeletRotateServerCerts)
+		cfg := scenario["config"].(v2.Config)
+		assert.True(t, cfg.OpenCenter.Cluster.Kubernetes.Security.AuditLogging)
+		assert.True(t, cfg.OpenCenter.Cluster.Kubernetes.Security.EncryptionAtRest)
+		assert.NotEmpty(t, cfg.OpenCenter.Infrastructure.Networking.Security.AllowedCIDRs)
 	})
 }
 

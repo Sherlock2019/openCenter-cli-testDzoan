@@ -29,6 +29,7 @@ import (
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/sops"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
@@ -736,33 +737,23 @@ func setupPropertyTestManager(t *testing.T, tmpDir string, clusterName string) (
 	return manager, configPath, overlayPath
 }
 
-func createPropertyTestConfig(clusterName string, tmpDir string, certManager CertManagerSecretsGen, loki LokiSecretsGen, keycloak KeycloakSecretsGen) *config.Config {
-	return &config.Config{
-		SchemaVersion: "2.0",
-		OpenCenter: config.SimplifiedOpenCenter{
-			Cluster: config.ClusterConfig{
-				ClusterName: clusterName,
-			},
-			GitOps: config.GitOpsConfig{
-				GitDir: filepath.Join(tmpDir, "test-repo"),
-			},
-		},
-		Secrets: config.Secrets{
-			SopsAgeKeyFile: filepath.Join(tmpDir, "age-key.txt"),
-			CertManager: config.CertManagerSecrets{
-				AWSAccessKey:       certManager.AWSAccessKey,
-				AWSSecretAccessKey: certManager.AWSSecretAccessKey,
-			},
-			Loki: config.LokiSecrets{
-				S3AccessKeyID:     loki.S3AccessKeyID,
-				S3SecretAccessKey: loki.S3SecretAccessKey,
-			},
-			Keycloak: config.KeycloakSecrets{
-				ClientSecret:  keycloak.ClientSecret,
-				AdminPassword: keycloak.AdminPassword,
-			},
-		},
+func createPropertyTestConfig(clusterName string, tmpDir string, certManager CertManagerSecretsGen, loki LokiSecretsGen, keycloak KeycloakSecretsGen) *v2.Config {
+	cfg := newSecretsTestConfig(clusterName, "openstack")
+	cfg.OpenCenter.GitOps.GitDir = filepath.Join(tmpDir, "test-repo")
+	cfg.Secrets.SopsAgeKeyFile = filepath.Join(tmpDir, "age-key.txt")
+	cfg.Secrets.CertManager = v2.CertManagerSecrets{
+		AWSAccessKey:       certManager.AWSAccessKey,
+		AWSSecretAccessKey: certManager.AWSSecretAccessKey,
 	}
+	cfg.Secrets.Loki = v2.LokiSecrets{
+		S3AccessKeyID:     loki.S3AccessKeyID,
+		S3SecretAccessKey: loki.S3SecretAccessKey,
+	}
+	cfg.Secrets.Keycloak = v2.KeycloakSecrets{
+		ClientSecret:  keycloak.ClientSecret,
+		AdminPassword: keycloak.AdminPassword,
+	}
+	return cfg
 }
 
 // **Validates: Requirements 2.3, 2.4, 2.5**
@@ -1881,4 +1872,3 @@ func TestProperty_ServiceFilterCorrectness_Sanity(t *testing.T) {
 		require.NotContains(t, manifestPaths, "non-existent-service", "Should not contain non-existent-service")
 	})
 }
-

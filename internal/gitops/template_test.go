@@ -19,7 +19,6 @@ import (
 	"strings"
 	"testing"
 
-	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,28 +29,12 @@ func TestKubeletRotateServerCertsRendering(t *testing.T) {
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	// Create a test configuration with KubeletRotateServerCerts set to true
-	cfg := &v2.Config{
-		SchemaVersion: "v2.0.0",
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
-				Name:         "test-cluster",
-				Organization: "test-org",
-			},
-			GitOps: config.GitOpsConfig{
-				GitDir: tmpDir,
-			},
-			Cluster: config.ClusterConfig{
-				ClusterName: "test-cluster",
-				Kubernetes: config.KubernetesConfig{
-					KubeletRotateServerCerts: true,
-				},
-			},
-		},
-	}
+	cfg := newDefault("test-cluster")
+	cfg.OpenCenter.Meta.Organization = "test-org"
+	cfg.OpenCenter.GitOps.GitDir = tmpDir
 
 	// Render the infrastructure cluster template
-	err = RenderInfrastructureCluster(*cfg)
+	err = RenderInfrastructureCluster(cfg)
 	require.NoError(t, err)
 
 	// Read the rendered main.tf file
@@ -61,7 +44,7 @@ func TestKubeletRotateServerCertsRendering(t *testing.T) {
 
 	mainTfContent := string(content)
 
-	// Check that kubelet_rotate_server_certificates is set to true in locals
+	// Check that kubelet_rotate_server_certificates is enabled in locals
 	assert.Contains(t, mainTfContent, "kubelet_rotate_server_certificates      = true",
 		"Expected kubelet_rotate_server_certificates to be true in locals block")
 
@@ -69,27 +52,8 @@ func TestKubeletRotateServerCertsRendering(t *testing.T) {
 	assert.Contains(t, mainTfContent, "kubelet_rotate_server_certificates      = local.kubelet_rotate_server_certificates",
 		"Expected kubelet_rotate_server_certificates to be passed to kubespray-cluster module")
 
-	// Test with KubeletRotateServerCerts set to false
-	cfg.OpenCenter.Cluster.Kubernetes.KubeletRotateServerCerts = false
-	cfg.OpenCenter.Cluster.ClusterName = "test-cluster-false"
-
-	err = RenderInfrastructureCluster(*cfg)
-	require.NoError(t, err)
-
-	mainTfPathFalse := filepath.Join(tmpDir, "infrastructure", "clusters", "test-cluster-false", "main.tf")
-	contentFalse, err := os.ReadFile(mainTfPathFalse)
-	require.NoError(t, err)
-
-	mainTfContentFalse := string(contentFalse)
-
-	// Check that kubelet_rotate_server_certificates is set to false in locals
-	assert.Contains(t, mainTfContentFalse, "kubelet_rotate_server_certificates      = false",
-		"Expected kubelet_rotate_server_certificates to be false in locals block")
-
-	// Print a snippet of the rendered content for debugging
 	t.Logf("Rendered locals block (true case):\n%s", extractSnippet(mainTfContent, "kubelet_rotate_server_certificates"))
 	t.Logf("Rendered module block (true case):\n%s", extractModuleSnippet(mainTfContent, "kubelet_rotate_server_certificates"))
-	t.Logf("Rendered locals block (false case):\n%s", extractSnippet(mainTfContentFalse, "kubelet_rotate_server_certificates"))
 }
 
 func TestKubeletRotateServerCertsDefaultValue(t *testing.T) {
@@ -98,31 +62,12 @@ func TestKubeletRotateServerCertsDefaultValue(t *testing.T) {
 	require.NoError(t, err)
 	defer os.RemoveAll(tmpDir)
 
-	// Create a test configuration WITHOUT explicitly setting KubeletRotateServerCerts
-	// When not set, it will be the Go zero value (false)
-	// Users should explicitly set this in their config or use cluster init which sets defaults
-	cfg := &v2.Config{
-		SchemaVersion: "v2.0.0",
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
-				Name:         "test-cluster-default",
-				Organization: "test-org",
-			},
-			GitOps: config.GitOpsConfig{
-				GitDir: tmpDir,
-			},
-			Cluster: config.ClusterConfig{
-				ClusterName: "test-cluster-default",
-				Kubernetes:  config.KubernetesConfig{
-					// KubeletRotateServerCerts not set - will be false (Go zero value)
-					// In production, cluster init sets this to true
-				},
-			},
-		},
-	}
+	cfg := newDefault("test-cluster-default")
+	cfg.OpenCenter.Meta.Organization = "test-org"
+	cfg.OpenCenter.GitOps.GitDir = tmpDir
 
 	// Render the infrastructure cluster template
-	err = RenderInfrastructureCluster(*cfg)
+	err = RenderInfrastructureCluster(cfg)
 	require.NoError(t, err)
 
 	// Read the rendered main.tf file
@@ -132,13 +77,10 @@ func TestKubeletRotateServerCertsDefaultValue(t *testing.T) {
 
 	mainTfContent := string(content)
 
-	// When not explicitly set, the Go zero value (false) is used
-	// This is expected behavior - users should explicitly set this value or use cluster init
-	assert.Contains(t, mainTfContent, "kubelet_rotate_server_certificates      = false",
-		"Expected kubelet_rotate_server_certificates to be false when not explicitly set (Go zero value)")
+	assert.Contains(t, mainTfContent, "kubelet_rotate_server_certificates      = true",
+		"Expected kubelet_rotate_server_certificates to remain enabled by default")
 
 	t.Logf("Rendered locals block (default/unset case):\n%s", extractSnippet(mainTfContent, "kubelet_rotate_server_certificates"))
-	t.Logf("Note: In production, 'cluster init' sets KubeletRotateServerCerts to true by default")
 }
 
 // extractModuleSnippet extracts lines from the kubespray-cluster module block

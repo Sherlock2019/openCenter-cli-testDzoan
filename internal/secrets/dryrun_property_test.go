@@ -30,6 +30,7 @@ import (
 	"github.com/leanovate/gopter"
 	"github.com/leanovate/gopter/prop"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/sops"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
@@ -76,7 +77,7 @@ func createDryRunClusterPaths(ctx context.Context, clusterName string) (*paths.C
 func saveDryRunConfig(
 	ctx context.Context,
 	configLoader *config.ConfigIOHandler,
-	cfg *config.Config,
+	cfg *v2.Config,
 	clusterPaths *paths.ClusterPaths,
 	clusterName string,
 ) error {
@@ -920,11 +921,11 @@ AGE-SECRET-KEY-1TEST1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890ABC
 }
 
 // createDryRunTestConfig creates a test configuration for dry-run testing
-func createDryRunTestConfig(clusterName string, tmpDir string, secrets map[string]string) *config.Config {
+func createDryRunTestConfig(clusterName string, tmpDir string, secrets map[string]string) *v2.Config {
 	// Convert secrets to config format
-	certManagerSecrets := config.CertManagerSecrets{}
-	lokiSecrets := config.LokiSecrets{}
-	keycloakSecrets := config.KeycloakSecrets{}
+	certManagerSecrets := v2.CertManagerSecrets{}
+	lokiSecrets := v2.LokiSecrets{}
+	keycloakSecrets := v2.KeycloakSecrets{}
 
 	// Distribute secrets across services
 	i := 0
@@ -952,26 +953,14 @@ func createDryRunTestConfig(clusterName string, tmpDir string, secrets map[strin
 		i++
 	}
 
-	return &config.Config{
-		SchemaVersion: "2.0",
-		OpenCenter: config.SimplifiedOpenCenter{
-			Cluster: config.ClusterConfig{
-				ClusterName: clusterName,
-			},
-			Meta: config.ClusterMeta{
-				Organization: dryRunTestOrg,
-			},
-			GitOps: config.GitOpsConfig{
-				GitDir: filepath.Join(tmpDir, "test-repo"),
-			},
-		},
-		Secrets: config.Secrets{
-			SopsAgeKeyFile: filepath.Join(tmpDir, ".config", "opencenter", "clusters", "test-org", clusterName, "secrets", "age", fmt.Sprintf("%s_keys.txt", clusterName)),
-			CertManager:    certManagerSecrets,
-			Loki:           lokiSecrets,
-			Keycloak:       keycloakSecrets,
-		},
-	}
+	cfg := newSecretsTestConfig(clusterName, "openstack")
+	cfg.OpenCenter.Meta.Organization = dryRunTestOrg
+	cfg.OpenCenter.GitOps.GitDir = filepath.Join(tmpDir, "test-repo")
+	cfg.Secrets.SopsAgeKeyFile = filepath.Join(tmpDir, ".config", "opencenter", "clusters", "test-org", clusterName, "secrets", "age", fmt.Sprintf("%s_keys.txt", clusterName))
+	cfg.Secrets.CertManager = certManagerSecrets
+	cfg.Secrets.Loki = lokiSecrets
+	cfg.Secrets.Keycloak = keycloakSecrets
+	return cfg
 }
 
 // Sanity tests to verify the property tests are working correctly

@@ -27,7 +27,6 @@ import (
 	"github.com/leanovate/gopter"
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/crypto"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 )
@@ -59,19 +58,7 @@ func TestProperty_SOPSUnavailableError(t *testing.T) {
 			}
 
 			// Create config without age keys
-			cfg := &config.Config{
-				OpenCenter: config.SimplifiedOpenCenter{
-					Meta: config.ClusterMeta{
-						Name: clusterName,
-					},
-					Infrastructure: config.Infrastructure{
-						Provider: provider,
-					},
-				},
-				Secrets: config.Secrets{
-					SopsAgeKeyFile: "", // No key file configured
-				},
-			}
+			cfg := newSOPSTestConfig(clusterName, provider, "")
 
 			// Create key manager that returns no keys
 			keyManager := crypto.NewDefaultKeyManager(filepath.Join(tempDir, "keys"))
@@ -137,19 +124,7 @@ func TestProperty_SOPSUnavailableError(t *testing.T) {
 			}
 
 			// Create config without age keys
-			cfg := &config.Config{
-				OpenCenter: config.SimplifiedOpenCenter{
-					Meta: config.ClusterMeta{
-						Name: clusterName,
-					},
-					Infrastructure: config.Infrastructure{
-						Provider: provider,
-					},
-				},
-				Secrets: config.Secrets{
-					SopsAgeKeyFile: "", // No key file configured
-				},
-			}
+			cfg := newSOPSTestConfig(clusterName, provider, "")
 
 			// Create key manager that returns no keys
 			keyManager := crypto.NewDefaultKeyManager(filepath.Join(tempDir, "keys"))
@@ -215,19 +190,7 @@ func TestProperty_SOPSUnavailableError(t *testing.T) {
 			}
 
 			// Create config without age keys
-			cfg := &config.Config{
-				OpenCenter: config.SimplifiedOpenCenter{
-					Meta: config.ClusterMeta{
-						Name: clusterName,
-					},
-					Infrastructure: config.Infrastructure{
-						Provider: "openstack",
-					},
-				},
-				Secrets: config.Secrets{
-					SopsAgeKeyFile: "", // No key file configured
-				},
-			}
+			cfg := newSOPSTestConfig(clusterName, "openstack", "")
 
 			// Create key manager that returns no keys
 			keyManager := crypto.NewDefaultKeyManager(filepath.Join(tempDir, "keys"))
@@ -293,22 +256,7 @@ func TestProperty_MissingKeyErrorWithInstructions(t *testing.T) {
 			}
 
 			// Create config with non-existent key file
-			cfg := &config.Config{
-				OpenCenter: config.SimplifiedOpenCenter{
-					Meta: config.ClusterMeta{
-						Name: clusterName,
-					},
-					Cluster: config.ClusterConfig{
-						ClusterName: clusterName,
-					},
-					Infrastructure: config.Infrastructure{
-						Provider: "openstack",
-					},
-				},
-				Secrets: config.Secrets{
-					SopsAgeKeyFile: filepath.Join(tempDir, nonExistentPath, "nonexistent.txt"),
-				},
-			}
+			cfg := newSOPSTestConfig(clusterName, "openstack", filepath.Join(tempDir, nonExistentPath, "nonexistent.txt"))
 
 			// Create key manager
 			keyManager := crypto.NewDefaultKeyManager(filepath.Join(tempDir, "keys"))
@@ -483,22 +431,7 @@ func TestProperty_NoPlaceholderKeyFallback(t *testing.T) {
 			}
 
 			// Create config without age keys
-			cfg := &config.Config{
-				OpenCenter: config.SimplifiedOpenCenter{
-					Meta: config.ClusterMeta{
-						Name: clusterName,
-					},
-					Cluster: config.ClusterConfig{
-						ClusterName: clusterName,
-					},
-					Infrastructure: config.Infrastructure{
-						Provider: provider,
-					},
-				},
-				Secrets: config.Secrets{
-					SopsAgeKeyFile: "", // No key file configured
-				},
-			}
+			cfg := newSOPSTestConfig(clusterName, provider, "")
 
 			// Create key manager that returns no keys
 			keyManager := crypto.NewDefaultKeyManager(filepath.Join(tempDir, "keys"))

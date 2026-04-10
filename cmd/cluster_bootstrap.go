@@ -121,6 +121,13 @@ func runClusterBootstrap(cmd *cobra.Command, args []string) error {
 			if err := ensureCleanWorkingTree(ctx, cmd, gitDir); err != nil {
 				return err
 			}
+			// Verify the local repo's origin remote points to git_url so the
+			// gitea-rebase and gitops-push steps operate against the expected remote.
+			if gitURL := strings.TrimSpace(cfg.OpenCenter.GitOps.GitURL); gitURL != "" {
+				if err := verifyOriginMatchesGitURL(ctx, gitDir, gitURL); err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -241,5 +248,23 @@ func ensureCleanWorkingTree(ctx context.Context, cmd *cobra.Command, gitDir stri
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "Changes committed successfully.\n")
+	return nil
+}
+
+// verifyOriginMatchesGitURL checks that the "origin" remote in gitDir points to
+// the expected git_url from the cluster configuration. A mismatch means the
+// rebase and push steps would operate against the wrong repository.
+func verifyOriginMatchesGitURL(ctx context.Context, gitDir, expectedURL string) error {
+	remoteCmd := exec.CommandContext(ctx, "git", "-C", gitDir, "remote", "get-url", "origin")
+	output, err := remoteCmd.Output()
+	if err != nil {
+		// No origin remote — the bootstrap steps will add it, so skip the check.
+		return nil
+	}
+	actual := strings.TrimSpace(string(output))
+	if actual != expectedURL {
+		return fmt.Errorf("git remote origin in %s points to %q, but git_url is %q\nUpdate the remote with: git -C %s remote set-url origin %s",
+			gitDir, actual, expectedURL, gitDir, expectedURL)
+	}
 	return nil
 }

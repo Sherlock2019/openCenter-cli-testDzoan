@@ -360,7 +360,11 @@ opencenter:
 secrets:
   sops_age_key_file: %s
 `, clusterName, filepath.Join(tmpDir, "test-repo"), key1Path)
-	if err := os.WriteFile(configPath, []byte(clusterConfig), 0644); err != nil {
+	data, err := normalizeSecretsConfigYAMLBytes(clusterName, clusterConfig)
+	if err != nil {
+		return nil, "", "", "", "", "", fmt.Errorf("failed to normalize cluster config: %w", err)
+	}
+	if err := os.WriteFile(configPath, data, 0o644); err != nil {
 		return nil, "", "", "", "", "", fmt.Errorf("failed to create cluster config: %w", err)
 	}
 

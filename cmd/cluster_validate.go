@@ -17,7 +17,7 @@ import (
 	"fmt"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/cluster"
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -86,7 +86,7 @@ If no cluster name is provided, validates the currently active cluster.`,
 				}
 
 				// Use loadConfigWithIdentifier to support organization/cluster-name format
-				var cfg config.Config
+				var cfg v2.Config
 				cfg, clusterName, organization, err = loadConfigWithIdentifier(cmd.Context(), identifier)
 				if err != nil {
 					return err

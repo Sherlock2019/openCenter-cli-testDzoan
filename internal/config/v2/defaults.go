@@ -9,6 +9,7 @@ import (
 	"time"
 
 	registrydefaults "github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
 	"gopkg.in/yaml.v3"
 )
 
@@ -238,9 +239,13 @@ func NewV2Default(name, provider string) (*Config, error) {
 				FluxPrune:    true,
 			},
 			ManagedServices: ServiceMap{
-				"alert-proxy": map[string]any{
-					"enabled":  false,
-					"hostname": fmt.Sprintf("alerts.%s", clusterFQDN),
+				"alert-proxy": &services.AlertProxyConfig{
+					BaseConfig: services.BaseConfig{
+						Enabled:  false,
+						Hostname: fmt.Sprintf("alerts.%s", clusterFQDN),
+					},
+					AlertManagerBaseUrl: "",
+					HTTPRouteFQDN:       fmt.Sprintf("alerts.%s", clusterFQDN),
 				},
 			},
 			Services: defaultServiceMap(clusterFQDN),
@@ -463,6 +468,24 @@ func applyProviderCloudDefaults(cfg *Config, availabilityZone string) {
 func applyProviderBehaviorDefaults(cfg *Config) {
 	switch canonicalInfrastructureProvider(cfg.OpenCenter.Infrastructure.Provider) {
 	case "kind":
+		cfg.OpenCenter.Infrastructure.Kind = &KindCompatibilityConfig{
+			ClusterNameOverride:  cfg.ClusterName(),
+			KubernetesVersion:    kindDefaultKubernetesVersion,
+			ControlPlaneCount:    kindDefaultControlPlaneCount,
+			WorkerCount:          kindDefaultWorkerCount,
+			APIServerAddress:     "127.0.0.1",
+			APIServerPort:        kindDefaultAPIPort,
+			PodSubnet:            kindDefaultPodSubnet,
+			ServiceSubnet:        kindDefaultServiceSubnet,
+			DisableDefaultCNI:    false,
+			IngressEnabled:       true,
+			KubeconfigPathPolicy: "cluster-owned",
+			Registry: KindRegistryConfig{
+				Enabled: false,
+				Name:    "kind-registry",
+				Port:    5001,
+			},
+		}
 		cfg.OpenCenter.Infrastructure.Bastion.Enabled = false
 		cfg.OpenCenter.Cluster.Kubernetes.KubeVIPEnabled = false
 		cfg.OpenCenter.Infrastructure.Networking.VRRPEnabled = false
@@ -504,28 +527,22 @@ func applyProviderBehaviorDefaults(cfg *Config) {
 
 func defaultServiceMap(clusterFQDN string) ServiceMap {
 	return ServiceMap{
-		"calico": map[string]any{
-			"enabled": true,
+		"calico":       &services.CalicoConfig{BaseConfig: services.BaseConfig{Enabled: true}, KubeAPIServer: ""},
+		"cert-manager": &services.CertManagerConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"fluxcd":       &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"gateway":      &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"gateway-api":  &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"headlamp": &services.HeadlampConfig{
+			BaseConfig: services.BaseConfig{
+				Enabled:  true,
+				Hostname: fmt.Sprintf("dashboard.%s", clusterFQDN),
+			},
 		},
-		"cert-manager": map[string]any{
-			"enabled": true,
-		},
-		"fluxcd": map[string]any{
-			"enabled": true,
-		},
-		"gateway": map[string]any{
-			"enabled": true,
-		},
-		"gateway-api": map[string]any{
-			"enabled": true,
-		},
-		"headlamp": map[string]any{
-			"enabled":  true,
-			"hostname": fmt.Sprintf("dashboard.%s", clusterFQDN),
-		},
-		"keycloak": map[string]any{
-			"enabled":  true,
-			"hostname": fmt.Sprintf("auth.%s", clusterFQDN),
+		"keycloak": &services.KeycloakConfig{
+			BaseConfig: services.BaseConfig{
+				Enabled:  true,
+				Hostname: fmt.Sprintf("auth.%s", clusterFQDN),
+			},
 		},
 	}
 }

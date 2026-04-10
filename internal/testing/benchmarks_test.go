@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/template"
 )
 
@@ -213,9 +213,9 @@ func TestCreateLargeBenchmarkConfig(t *testing.T) {
 		t.Errorf("expected provider 'openstack', got %s", cfg.OpenCenter.Infrastructure.Provider)
 	}
 
-	// Verify overrides were added
-	if len(cfg.Overrides) < 100 {
-		t.Errorf("expected at least 100 overrides, got %d", len(cfg.Overrides))
+	// Verify metadata labels were added
+	if len(cfg.Metadata.Labels) < 100 {
+		t.Errorf("expected at least 100 labels, got %d", len(cfg.Metadata.Labels))
 	}
 }
 
@@ -412,7 +412,7 @@ func BenchmarkFramework_TemplateRendering(b *testing.B) {
 func BenchmarkFramework_ConfigBuilding(b *testing.B) {
 	fw := NewBenchmarkFramework(b)
 
-	buildFunc := func() (config.Config, error) {
+	buildFunc := func() (v2.Config, error) {
 		return fw.CreateBenchmarkConfig("openstack"), nil
 	}
 
@@ -424,7 +424,7 @@ func BenchmarkFramework_ConfigValidation(b *testing.B) {
 
 	cfg := fw.CreateBenchmarkConfig("openstack")
 
-	validateFunc := func(c config.Config) error {
+	validateFunc := func(c v2.Config) error {
 		// Simple validation
 		if c.OpenCenter.Infrastructure.Provider == "" {
 			return errors.New("provider is required")
@@ -500,7 +500,7 @@ func BenchmarkFramework_ConfigGenerators(b *testing.B) {
 
 	for _, provider := range providers {
 		b.Run(provider, func(b *testing.B) {
-			buildFunc := func() (config.Config, error) {
+			buildFunc := func() (v2.Config, error) {
 				return fw.CreateBenchmarkConfig(provider), nil
 			}
 			fw.BenchmarkConfigBuilding(b, buildFunc)

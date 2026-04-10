@@ -17,11 +17,12 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config/registry"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/gitops"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 // newClusterServiceCmd creates the top-level "cluster service" command.
@@ -101,6 +102,10 @@ Examples:
 			serviceCfg := existingService
 			if !exists {
 				serviceCfg = newServiceConfig(serviceName)
+			}
+			serviceCfg, err = materializeServiceConfig(serviceName, serviceCfg)
+			if err != nil {
+				return fmt.Errorf("failed to prepare service config: %w", err)
 			}
 
 			// Set Enabled = true
@@ -209,7 +214,7 @@ Examples:
 			serviceLabel := serviceTargetLabel(isManaged)
 			// Disable the service in the appropriate map
 			if isManaged {
-				svc, exists := cfg.OpenCenter.ManagedService[serviceName]
+				svc, exists := cfg.OpenCenter.ManagedServices[serviceName]
 				if !exists {
 					return fmt.Errorf("%s '%s' not found", serviceLabel, serviceName)
 				}
@@ -270,16 +275,16 @@ func newServiceConfig(serviceName string) any {
 	return reflect.New(configType).Interface()
 }
 
-func ensureServiceMap(cfg *config.Config, isManaged bool) config.ServiceMap {
+func ensureServiceMap(cfg *v2.Config, isManaged bool) v2.ServiceMap {
 	if isManaged {
-		if cfg.OpenCenter.ManagedService == nil {
-			cfg.OpenCenter.ManagedService = make(config.ServiceMap)
+		if cfg.OpenCenter.ManagedServices == nil {
+			cfg.OpenCenter.ManagedServices = make(v2.ServiceMap)
 		}
-		return cfg.OpenCenter.ManagedService
+		return cfg.OpenCenter.ManagedServices
 	}
 
 	if cfg.OpenCenter.Services == nil {
-		cfg.OpenCenter.Services = make(config.ServiceMap)
+		cfg.OpenCenter.Services = make(v2.ServiceMap)
 	}
 	return cfg.OpenCenter.Services
 }
@@ -291,7 +296,7 @@ func serviceTargetLabel(isManaged bool) string {
 	return "service"
 }
 
-func validateServiceDependencies(serviceMap config.ServiceMap) error {
+func validateServiceDependencies(serviceMap v2.ServiceMap) error {
 	validator := services.NewDependencyValidator()
 	errors := validator.ValidateDependencies(map[string]any(serviceMap))
 	if len(errors) == 0 {
@@ -305,7 +310,6 @@ func processParams(params []string, serviceCfg any) error {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
-	t := v.Type()
 	paramMap := make(map[string]string)
 	for _, p := range params {
 		parts := strings.SplitN(p, "=", 2)
@@ -314,6 +318,20 @@ func processParams(params []string, serviceCfg any) error {
 		}
 		paramMap[parts[0]] = parts[1]
 	}
+	if v.Kind() == reflect.Map {
+		if v.IsNil() {
+			return fmt.Errorf("service config map cannot be nil")
+		}
+		for key, value := range paramMap {
+			v.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(value))
+		}
+		return nil
+	}
+	if v.Kind() != reflect.Struct {
+		return fmt.Errorf("service config must be a struct or map, got %s", v.Kind())
+	}
+
+	t := v.Type()
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		jsonTag := strings.Split(field.Tag.Get("json"), ",")[0]
@@ -329,7 +347,34 @@ func processParams(params []string, serviceCfg any) error {
 	}
 	return nil
 }
-func processSecrets(secrets []string, serviceName string, secretsCfg *config.Secrets) error {
+
+func materializeServiceConfig(serviceName string, serviceCfg any) (any, error) {
+	if serviceCfg == nil {
+		return newServiceConfig(serviceName), nil
+	}
+
+	switch serviceCfg.(type) {
+	case map[string]any:
+		configType := registry.GetServiceConfigType(serviceName)
+		if configType == nil {
+			return serviceCfg, nil
+		}
+
+		data, err := yaml.Marshal(serviceCfg)
+		if err != nil {
+			return nil, fmt.Errorf("marshal map-backed service config: %w", err)
+		}
+
+		typedCfg := reflect.New(configType).Interface()
+		if err := yaml.Unmarshal(data, typedCfg); err != nil {
+			return nil, fmt.Errorf("decode typed service config: %w", err)
+		}
+		return typedCfg, nil
+	default:
+		return serviceCfg, nil
+	}
+}
+func processSecrets(secrets []string, serviceName string, secretsCfg *v2.SecretsConfig) error {
 	secretMap := make(map[string]string)
 	for _, s := range secrets {
 		parts := strings.SplitN(s, "=", 2)
@@ -385,7 +430,7 @@ func processSecrets(secrets []string, serviceName string, secretsCfg *config.Sec
 }
 
 // validateService performs custom validation for specific services.
-func validateService(serviceName string, serviceCfg any, secretsCfg *config.Secrets) error {
+func validateService(serviceName string, serviceCfg any, secretsCfg *v2.SecretsConfig) error {
 	switch serviceName {
 	case "cert-manager":
 		if cfg, ok := serviceCfg.(*services.CertManagerConfig); ok {
@@ -469,7 +514,7 @@ Examples:
 			}
 
 			// Print managed services
-			for name, svc := range cfg.OpenCenter.ManagedService {
+			for name, svc := range cfg.OpenCenter.ManagedServices {
 				enabledStr := "disabled"
 				if isEnabled(svc) {
 					enabledStr = "enabled"
@@ -706,6 +751,11 @@ func getServiceSecrets(serviceName string) []ServiceOption {
 // isEnabled checks if a service is enabled using reflection
 func isEnabled(svc any) bool {
 	val := reflect.ValueOf(svc)
+	if svcMap, ok := svc.(map[string]any); ok {
+		if enabled, ok := svcMap["enabled"].(bool); ok {
+			return enabled
+		}
+	}
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
 	}
@@ -720,6 +770,11 @@ func isEnabled(svc any) bool {
 
 // setEnabled sets the Enabled field of a service using reflection
 func setEnabled(svc any, enabled bool) error {
+	if svcMap, ok := svc.(map[string]any); ok {
+		svcMap["enabled"] = enabled
+		return nil
+	}
+
 	val := reflect.ValueOf(svc)
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
@@ -740,6 +795,11 @@ func setEnabled(svc any, enabled bool) error {
 // getStatus gets the Status field of a service using reflection
 func getStatus(svc any) string {
 	val := reflect.ValueOf(svc)
+	if svcMap, ok := svc.(map[string]any); ok {
+		if status, ok := svcMap["status"].(string); ok {
+			return status
+		}
+	}
 	if val.Kind() == reflect.Ptr {
 		val = val.Elem()
 	}

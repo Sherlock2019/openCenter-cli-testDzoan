@@ -24,6 +24,7 @@ import (
 
 	kindprovider "github.com/opencenter-cloud/opencenter-cli/internal/cloud/kind"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/resilience"
 	"github.com/opencenter-cloud/opencenter-cli/internal/ui"
@@ -245,20 +246,9 @@ If no cluster name is provided, the active cluster will be destroyed.`,
 	return cmd
 }
 
-func destroyKindCluster(ctx context.Context, cfg config.Config) error {
-	runtime := ""
-	if cfg.OpenCenter.Infrastructure.Kind != nil {
-		runtime = cfg.OpenCenter.Infrastructure.Kind.Runtime
-	}
-
+func destroyKindCluster(ctx context.Context, cfg v2.Config) error {
 	clusterName := cfg.ClusterName()
-	if cfg.OpenCenter.Infrastructure.Kind != nil {
-		if override := strings.TrimSpace(cfg.OpenCenter.Infrastructure.Kind.ClusterNameOverride); override != "" {
-			clusterName = override
-		}
-	}
-
-	if err := kindprovider.NewProvider().DeleteCluster(ctx, clusterName, kindprovider.BuildEnvironment(runtime)); err != nil {
+	if err := kindprovider.NewProvider().DeleteCluster(ctx, clusterName, kindprovider.BuildEnvironment("")); err != nil {
 		return fmt.Errorf("failed to destroy kind cluster %q: %w", clusterName, err)
 	}
 

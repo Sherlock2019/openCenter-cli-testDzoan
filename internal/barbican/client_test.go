@@ -21,7 +21,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 var server *httptest.Server
@@ -55,7 +55,7 @@ func TestMain(m *testing.M) {
 func TestSecrets(t *testing.T) {
 	os.Setenv("OS_USERNAME", "testuser")
 	os.Setenv("OS_PASSWORD", "testpass")
-	cfg := &config.BarbicanConfig{
+	cfg := &v2.BarbicanConfig{
 		AuthURL: server.URL + "/v3",
 	}
 

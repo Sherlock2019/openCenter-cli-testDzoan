@@ -58,6 +58,8 @@ type MetaConfig struct {
 	Region       string `yaml:"region" json:"region" validate:"required"`
 	Stage        string `yaml:"stage,omitempty" json:"stage,omitempty"`
 	Status       string `yaml:"status,omitempty" json:"status,omitempty"`
+	Locked       bool   `yaml:"locked,omitempty" json:"locked,omitempty"`
+	LockReason   string `yaml:"lock_reason,omitempty" json:"lock_reason,omitempty"`
 }
 
 // OpenTofuConfig represents OpenTofu/Terraform backend configuration.
@@ -97,6 +99,15 @@ type SecretsConfig struct {
 	SopsAgeKeyFile string             `yaml:"sops_age_key_file,omitempty" json:"sops_age_key_file,omitempty"`
 	SSHKey         SSHKeyConfig       `yaml:"ssh_key,omitempty" json:"ssh_key,omitempty"`
 	Global         GlobalSecrets      `yaml:"global,omitempty" json:"global,omitempty"`
+	CertManager    CertManagerSecrets `yaml:"cert_manager,omitempty" json:"cert_manager,omitempty"`
+	Loki           LokiSecrets        `yaml:"loki,omitempty" json:"loki,omitempty"`
+	Keycloak       KeycloakSecrets    `yaml:"keycloak,omitempty" json:"keycloak,omitempty"`
+	Headlamp       HeadlampSecrets    `yaml:"headlamp,omitempty" json:"headlamp,omitempty"`
+	WeaveGitOps    WeaveGitOpsSecrets `yaml:"weave_gitops,omitempty" json:"weave_gitops,omitempty"`
+	Grafana        GrafanaSecrets     `yaml:"grafana,omitempty" json:"grafana,omitempty"`
+	Tempo          TempoSecrets       `yaml:"tempo,omitempty" json:"tempo,omitempty"`
+	AlertProxy     AlertProxySecrets  `yaml:"alert_proxy,omitempty" json:"alert_proxy,omitempty"`
+	VSphereCsi     VSphereCsiSecrets  `yaml:"vsphere_csi,omitempty" json:"vsphere_csi,omitempty"`
 	ServiceSecrets map[string]any     `yaml:"service_secrets,omitempty" json:"service_secrets,omitempty"`
 	SOPSConfig     SOPSConfig         `yaml:"sops,omitempty" json:"sops,omitempty"`
 	OverlayUnits   overlaycfg.Secrets `yaml:"overlay_units,omitempty" json:"overlay_units,omitempty"`
@@ -129,6 +140,57 @@ type SSHKeyConfig struct {
 	Private string `yaml:"private,omitempty" json:"private,omitempty"`
 	Public  string `yaml:"public,omitempty" json:"public,omitempty"`
 	Cypher  string `yaml:"cypher,omitempty" json:"cypher,omitempty"`
+}
+
+type CertManagerSecrets struct {
+	AWSAccessKey       string `yaml:"aws_access_key,omitempty" json:"aws_access_key,omitempty"`
+	AWSSecretAccessKey string `yaml:"aws_secret_access_key,omitempty" json:"aws_secret_access_key,omitempty"`
+}
+
+type LokiSecrets struct {
+	SwiftPassword                    string `yaml:"swift_password,omitempty" json:"swift_password,omitempty"`
+	SwiftApplicationCredentialSecret string `yaml:"swift_application_credential_secret,omitempty" json:"swift_application_credential_secret,omitempty"`
+	S3AccessKeyID                    string `yaml:"s3_access_key_id,omitempty" json:"s3_access_key_id,omitempty"`
+	S3SecretAccessKey                string `yaml:"s3_secret_access_key,omitempty" json:"s3_secret_access_key,omitempty"`
+}
+
+type KeycloakSecrets struct {
+	ClientSecret  string `yaml:"client_secret,omitempty" json:"client_secret,omitempty"`
+	AdminPassword string `yaml:"admin_password,omitempty" json:"admin_password,omitempty"`
+}
+
+type HeadlampSecrets struct {
+	OIDCClientSecret string `yaml:"oidc_client_secret,omitempty" json:"oidc_client_secret,omitempty"`
+}
+
+type WeaveGitOpsSecrets struct {
+	Password     string `yaml:"password,omitempty" json:"password,omitempty"`
+	PasswordHash string `yaml:"password_hash,omitempty" json:"password_hash,omitempty"`
+}
+
+type GrafanaSecrets struct {
+	AdminPassword string `yaml:"admin_password,omitempty" json:"admin_password,omitempty"`
+}
+
+type TempoSecrets struct {
+	AccessKey string `yaml:"access_key,omitempty" json:"access_key,omitempty"`
+	SecretKey string `yaml:"secret_key,omitempty" json:"secret_key,omitempty"`
+}
+
+type AlertProxySecrets struct {
+	CoreDeviceId        string `yaml:"core_device_id,omitempty" json:"core_device_id,omitempty"`
+	AccountServiceToken string `yaml:"account_service_token,omitempty" json:"account_service_token,omitempty"`
+	CoreAccountNumber   string `yaml:"core_account_number,omitempty" json:"core_account_number,omitempty"`
+}
+
+type VSphereCsiSecrets struct {
+	VCenterHost  string `yaml:"vcenter_host,omitempty" json:"vcenter_host,omitempty"`
+	Username     string `yaml:"username,omitempty" json:"username,omitempty"`
+	Password     string `yaml:"password,omitempty" json:"password,omitempty"`
+	Datacenters  string `yaml:"datacenters,omitempty" json:"datacenters,omitempty"`
+	InsecureFlag string `yaml:"insecure_flag,omitempty" json:"insecure_flag,omitempty"`
+	Port         string `yaml:"port,omitempty" json:"port,omitempty"`
+	Datastoreurl string `yaml:"datastoreurl,omitempty" json:"datastoreurl,omitempty"`
 }
 
 // SOPSConfig represents SOPS encryption configuration.

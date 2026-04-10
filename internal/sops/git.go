@@ -24,7 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/security"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/crypto"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
@@ -72,7 +72,7 @@ type CommitConfig struct {
 }
 
 // CommitEncryptedFiles commits SOPS-encrypted files to Git
-func (g *GitIntegrator) CommitEncryptedFiles(ctx context.Context, cfg *config.Config, commitCfg CommitConfig) error {
+func (g *GitIntegrator) CommitEncryptedFiles(ctx context.Context, cfg *v2.Config, commitCfg CommitConfig) error {
 	// Change to repository directory
 	originalDir, err := os.Getwd()
 	if err != nil {
@@ -103,7 +103,7 @@ func (g *GitIntegrator) CommitEncryptedFiles(ctx context.Context, cfg *config.Co
 }
 
 // encryptFilesForCommit encrypts files that should be encrypted before commit
-func (g *GitIntegrator) encryptFilesForCommit(ctx context.Context, cfg *config.Config) error {
+func (g *GitIntegrator) encryptFilesForCommit(ctx context.Context, cfg *v2.Config) error {
 	filesToEncrypt := g.getFilesToEncrypt(g.repoPath, cfg)
 
 	// Get age key from configuration
@@ -146,7 +146,7 @@ func (g *GitIntegrator) encryptFilesForCommit(ctx context.Context, cfg *config.C
 }
 
 // stageEncryptedFiles stages encrypted files for commit
-func (g *GitIntegrator) stageEncryptedFiles(ctx context.Context, cfg *config.Config) error {
+func (g *GitIntegrator) stageEncryptedFiles(ctx context.Context, cfg *v2.Config) error {
 	filesToStage := g.getFilesToEncrypt(g.repoPath, cfg)
 
 	for _, file := range filesToStage {
@@ -500,8 +500,8 @@ func (g *GitIntegrator) ValidateGitConfig(ctx context.Context) error {
 }
 
 // CreateCommitMessage generates a commit message for overlay changes
-func (g *GitIntegrator) CreateCommitMessage(cfg *config.Config, operation string) string {
-	clusterName := cfg.OpenCenter.Cluster.ClusterName
+func (g *GitIntegrator) CreateCommitMessage(cfg *v2.Config, operation string) string {
+	clusterName := cfg.ClusterName()
 
 	switch operation {
 	case "bootstrap":
@@ -543,7 +543,7 @@ func (g *GitIntegrator) GetLastCommitHash(ctx context.Context) (string, error) {
 // Helper methods for GitIntegrator
 
 // getFilesToEncrypt returns the list of files that should be encrypted
-func (g *GitIntegrator) getFilesToEncrypt(overlayPath string, cfg *config.Config) []string {
+func (g *GitIntegrator) getFilesToEncrypt(overlayPath string, cfg *v2.Config) []string {
 	var files []string
 
 	// Standard encrypted files

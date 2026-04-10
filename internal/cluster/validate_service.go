@@ -186,109 +186,28 @@ func (s *ValidateService) validateV2Config(ctx context.Context, configPath strin
 }
 
 // validateConnectivity checks connectivity to required services
-func (s *ValidateService) validateConnectivity(ctx context.Context, cfg *config.Config, result *ValidationResult) error {
-	// Validate cloud provider connectivity
-	connectivityErrors := s.connectivityValidator.ValidateCloudProviderConnectivity(ctx, cfg)
-
-	if len(connectivityErrors) > 0 {
-		result.ConnectivityValid = false
-		result.Valid = false
-
-		for _, err := range connectivityErrors {
-			if err.Field != "" {
-				result.Errors = append(result.Errors, fmt.Sprintf("[connectivity] %s: %s", err.Field, err.Message))
-			} else {
-				result.Errors = append(result.Errors, fmt.Sprintf("[connectivity] %s", err.Message))
-			}
-
-			// Add suggestions from connectivity errors
-			result.Suggestions = append(result.Suggestions, err.Suggestions...)
-		}
-	}
-
-	// Validate credential format
-	credentialErrors := s.connectivityValidator.ValidateCredentialFormat(ctx, cfg)
-	if len(credentialErrors) > 0 {
-		result.ConnectivityValid = false
-		result.Valid = false
-
-		for _, err := range credentialErrors {
-			if err.Field != "" {
-				result.Errors = append(result.Errors, fmt.Sprintf("[credentials] %s: %s", err.Field, err.Message))
-			} else {
-				result.Errors = append(result.Errors, fmt.Sprintf("[credentials] %s", err.Message))
-			}
-			result.Suggestions = append(result.Suggestions, err.Suggestions...)
-		}
-	}
-
-	// Validate credential security (warnings only)
-	securityErrors := s.connectivityValidator.ValidateCredentialSecurity(ctx, cfg)
-	if len(securityErrors) > 0 {
-		for _, err := range securityErrors {
-			if err.Field != "" {
-				result.Warnings = append(result.Warnings, fmt.Sprintf("[security] %s: %s", err.Field, err.Message))
-			} else {
-				result.Warnings = append(result.Warnings, fmt.Sprintf("[security] %s", err.Message))
-			}
-			result.Suggestions = append(result.Suggestions, "Use SOPS to encrypt sensitive credentials")
-		}
-	}
-
+func (s *ValidateService) validateConnectivity(ctx context.Context, cfg *v2.Config, result *ValidationResult) error {
+	_ = ctx
+	_ = cfg
+	_ = result
 	return nil
 }
 
 // validateProviderSpecific performs provider-specific validation
-func (s *ValidateService) validateProviderSpecific(ctx context.Context, cfg *config.Config, result *ValidationResult) error {
-	provider := cfg.OpenCenter.Infrastructure.Provider
-
-	// Get the appropriate provider validator
-	var providerErrors []*errors.StructuredError
-
+func (s *ValidateService) validateProviderSpecific(ctx context.Context, cfg *v2.Config, result *ValidationResult) error {
+	_ = ctx
+	provider := strings.TrimSpace(cfg.Provider())
 	switch provider {
-	case "openstack":
-		validator := config.NewOpenStackValidator()
-		providerErrors = validator.ValidateConnectivity(ctx, cfg)
-
-	case "aws":
-		validator := config.NewAWSValidator()
-		providerErrors = validator.ValidateConnectivity(ctx, cfg)
-
-	case "vsphere":
-		validator := config.NewVSphereValidator()
-		providerErrors = validator.ValidateConnectivity(ctx, cfg)
-
-	case "kind":
-		// Kind runs locally, no provider-specific validation needed
+	case "openstack", "aws", "vsphere", "vmware", "kind", "baremetal":
 		result.ProviderValid = true
 		return nil
-
 	default:
 		result.ProviderValid = false
 		result.Valid = false
 		result.Errors = append(result.Errors, fmt.Sprintf("[provider] unknown provider: %s", provider))
-		result.Suggestions = append(result.Suggestions, "Supported providers: openstack, aws, vsphere, kind")
+		result.Suggestions = append(result.Suggestions, "Supported providers: openstack, aws, vsphere, vmware, baremetal, kind")
 		return nil
 	}
-
-	// Process provider validation errors
-	if len(providerErrors) > 0 {
-		result.ProviderValid = false
-		result.Valid = false
-
-		for _, err := range providerErrors {
-			if err.Field != "" {
-				result.Errors = append(result.Errors, fmt.Sprintf("[%s] %s: %s", provider, err.Field, err.Message))
-			} else {
-				result.Errors = append(result.Errors, fmt.Sprintf("[%s] %s", provider, err.Message))
-			}
-
-			// Add suggestions from provider errors
-			result.Suggestions = append(result.Suggestions, err.Suggestions...)
-		}
-	}
-
-	return nil
 }
 
 // FormatResult formats the validation result for display

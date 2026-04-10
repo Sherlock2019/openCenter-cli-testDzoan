@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 // mockProvider is a mock implementation of CloudProvider for testing
@@ -28,7 +28,7 @@ type mockProvider struct {
 	name string
 }
 
-func (m *mockProvider) GetCurrentState(ctx context.Context, cfg config.Config) (*InfrastructureState, error) {
+func (m *mockProvider) GetCurrentState(ctx context.Context, cfg v2.Config) (*InfrastructureState, error) {
 	return &InfrastructureState{}, nil
 }
 

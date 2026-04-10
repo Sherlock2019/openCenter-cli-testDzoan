@@ -18,18 +18,21 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 func TestProvision_ServiceDisabled(t *testing.T) {
-	cfg := config.NewDefault("test-cluster")
+	cfg, err := v2.NewV2Default("test-cluster", "openstack")
+	if err != nil {
+		t.Fatalf("NewV2Default() error = %v", err)
+	}
 	cfg.OpenCenter.GitOps.GitDir = t.TempDir()
-	cfg.OpenCenter.Services = config.ServiceMap{
+	cfg.OpenCenter.Services = v2.ServiceMap{
 		"ansible": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
 	}
 
-	err := Provision(cfg)
+	err = Provision(*cfg)
 	if err != nil {
 		t.Errorf("unexpected error when ansible service is disabled: %v", err)
 	}
@@ -42,11 +45,14 @@ func TestProvision_ServiceDisabled(t *testing.T) {
 }
 
 func TestProvision_ServiceNotConfigured(t *testing.T) {
-	cfg := config.NewDefault("test-cluster")
+	cfg, err := v2.NewV2Default("test-cluster", "openstack")
+	if err != nil {
+		t.Fatalf("NewV2Default() error = %v", err)
+	}
 	cfg.OpenCenter.GitOps.GitDir = t.TempDir()
-	cfg.OpenCenter.Services = config.ServiceMap{}
+	cfg.OpenCenter.Services = v2.ServiceMap{}
 
-	err := Provision(cfg)
+	err = Provision(*cfg)
 	if err != nil {
 		t.Errorf("unexpected error when ansible service is not configured: %v", err)
 	}
@@ -59,13 +65,16 @@ func TestProvision_ServiceNotConfigured(t *testing.T) {
 }
 
 func TestProvision_MissingGitDir(t *testing.T) {
-	cfg := config.NewDefault("test-cluster")
+	cfg, err := v2.NewV2Default("test-cluster", "openstack")
+	if err != nil {
+		t.Fatalf("NewV2Default() error = %v", err)
+	}
 	cfg.OpenCenter.GitOps.GitDir = ""
-	cfg.OpenCenter.Services = config.ServiceMap{
+	cfg.OpenCenter.Services = v2.ServiceMap{
 		"ansible": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
 	}
 
-	err := Provision(cfg)
+	err = Provision(*cfg)
 	if err == nil {
 		t.Error("expected error when git_dir is missing")
 	}
@@ -75,13 +84,16 @@ func TestProvision_MissingGitDir(t *testing.T) {
 }
 
 func TestProvision_WhitespaceOnlyGitDir(t *testing.T) {
-	cfg := config.NewDefault("test-cluster")
+	cfg, err := v2.NewV2Default("test-cluster", "openstack")
+	if err != nil {
+		t.Fatalf("NewV2Default() error = %v", err)
+	}
 	cfg.OpenCenter.GitOps.GitDir = "   \t\n  "
-	cfg.OpenCenter.Services = config.ServiceMap{
+	cfg.OpenCenter.Services = v2.ServiceMap{
 		"ansible": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
 	}
 
-	err := Provision(cfg)
+	err = Provision(*cfg)
 	if err == nil {
 		t.Error("expected error when git_dir is whitespace only")
 	}
@@ -91,12 +103,15 @@ func TestProvision_WhitespaceOnlyGitDir(t *testing.T) {
 }
 
 func TestProvision_DirectoryCreationFailure(t *testing.T) {
-	cfg := config.NewDefault("test-cluster")
+	cfg, err := v2.NewV2Default("test-cluster", "openstack")
+	if err != nil {
+		t.Fatalf("NewV2Default() error = %v", err)
+	}
 
 	// Create a file where we want to create the ansible directory
 	tempDir := t.TempDir()
 	cfg.OpenCenter.GitOps.GitDir = tempDir
-	cfg.OpenCenter.Services = config.ServiceMap{
+	cfg.OpenCenter.Services = v2.ServiceMap{
 		"ansible": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
 	}
 
@@ -106,7 +121,7 @@ func TestProvision_DirectoryCreationFailure(t *testing.T) {
 		t.Fatalf("failed to create blocking file: %v", err)
 	}
 
-	err := Provision(cfg)
+	err = Provision(*cfg)
 	if err == nil {
 		t.Error("expected error when ansible directory creation fails")
 	}
@@ -116,12 +131,15 @@ func TestProvision_DirectoryCreationFailure(t *testing.T) {
 }
 
 func TestProvision_FileCreationFailure(t *testing.T) {
-	cfg := config.NewDefault("test-cluster")
+	cfg, err := v2.NewV2Default("test-cluster", "openstack")
+	if err != nil {
+		t.Fatalf("NewV2Default() error = %v", err)
+	}
 
 	// Create a directory structure where file creation will fail
 	tempDir := t.TempDir()
 	cfg.OpenCenter.GitOps.GitDir = tempDir
-	cfg.OpenCenter.Services = config.ServiceMap{
+	cfg.OpenCenter.Services = v2.ServiceMap{
 		"ansible": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
 	}
 
@@ -132,7 +150,7 @@ func TestProvision_FileCreationFailure(t *testing.T) {
 	}
 	defer os.Chmod(ansibleDir, 0755) // Restore permissions for cleanup
 
-	err := Provision(cfg)
+	err = Provision(*cfg)
 	if err == nil {
 		t.Error("expected error when file creation fails")
 	}
@@ -142,15 +160,18 @@ func TestProvision_FileCreationFailure(t *testing.T) {
 }
 
 func TestProvision_DirectoryPermissions(t *testing.T) {
-	cfg := config.NewDefault("test-cluster")
+	cfg, err := v2.NewV2Default("test-cluster", "openstack")
+	if err != nil {
+		t.Fatalf("NewV2Default() error = %v", err)
+	}
 	cfg.OpenCenter.GitOps.GitDir = t.TempDir()
-	cfg.OpenCenter.Services = config.ServiceMap{
+	cfg.OpenCenter.Services = v2.ServiceMap{
 		"ansible": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
 	}
 
 	// This test will fail due to template execution, but we can test that
 	// the directory is created with correct permissions
-	err := Provision(cfg)
+	err = Provision(*cfg)
 
 	// Check that ansible directory was created with correct permissions
 	ansibleDir := filepath.Join(cfg.OpenCenter.GitOps.GitDir, "ansible")

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 // resolveBackend reads the secrets.backend field from the active cluster config
@@ -12,7 +12,7 @@ import (
 // for backward compatibility. Returns an error if the backend value is not supported.
 //
 // Supported backends: barbican, sops, file
-func resolveBackend(ctx context.Context, clusterName string) (string, *config.Config, error) {
+func resolveBackend(ctx context.Context, clusterName string) (string, *v2.Config, error) {
 	cfg, err := loadConfig(ctx, clusterName)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to load cluster config: %w", err)

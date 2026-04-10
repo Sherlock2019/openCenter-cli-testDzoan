@@ -24,7 +24,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	corepaths "github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/resilience"
 	"github.com/opencenter-cloud/opencenter-cli/internal/security"
@@ -280,7 +280,7 @@ func handleExportOnly(cmd *cobra.Command, clusterName string, shellOverride stri
 }
 
 // printEnabledServices prints the list of enabled services from the configuration
-func printEnabledServices(cmd *cobra.Command, cfg *config.Config) error {
+func printEnabledServices(cmd *cobra.Command, cfg *v2.Config) error {
 	fmt.Fprintln(cmd.OutOrStdout(), "\nEnabled Services:")
 
 	// Collect enabled services from cfg.OpenCenter.Services.
@@ -327,7 +327,7 @@ func sortStrings(s []string) {
 }
 
 // printGitOpsStatus prints the GitOps reconciliation status using kubectl
-func printGitOpsStatus(cmd *cobra.Command, cfg *config.Config, clusterName string) error {
+func printGitOpsStatus(cmd *cobra.Command, cfg *v2.Config, clusterName string) error {
 	fmt.Fprintln(cmd.OutOrStdout(), "\nGitOps Status:")
 
 	// Check if kubeconfig exists
@@ -377,7 +377,7 @@ func printGitOpsStatus(cmd *cobra.Command, cfg *config.Config, clusterName strin
 }
 
 // getKubeconfigPath returns the path to the kubeconfig file for the cluster
-func getKubeconfigPath(cfg *config.Config, clusterName string) string {
+func getKubeconfigPath(cfg *v2.Config, clusterName string) string {
 	// Try to get from GitOps directory first
 	if cfg.OpenCenter.GitOps.GitDir != "" {
 		gitDir := corepaths.ExpandPath(cfg.OpenCenter.GitOps.GitDir)

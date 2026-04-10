@@ -624,24 +624,37 @@ func (m *DefaultSecretsManager) getConfigPath(ctx context.Context, cluster strin
 func (m *DefaultSecretsManager) extractSecretsFromConfig(cfg *v2.Config) (map[string]map[string]interface{}, error) {
 	secretsMap := make(map[string]map[string]interface{})
 
-	for rawService, rawSecrets := range cfg.Secrets.ServiceSecrets {
-		serviceSecrets, ok := rawSecrets.(map[string]any)
-		if !ok {
+	serviceBlocks := []struct {
+		name    string
+		secrets any
+	}{
+		{name: "cert-manager", secrets: cfg.Secrets.CertManager},
+		{name: "loki", secrets: cfg.Secrets.Loki},
+		{name: "keycloak", secrets: cfg.Secrets.Keycloak},
+		{name: "headlamp", secrets: cfg.Secrets.Headlamp},
+		{name: "weave-gitops", secrets: cfg.Secrets.WeaveGitOps},
+		{name: "grafana", secrets: cfg.Secrets.Grafana},
+		{name: "tempo", secrets: cfg.Secrets.Tempo},
+		{name: "alert-proxy", secrets: cfg.Secrets.AlertProxy},
+		{name: "vsphere-csi", secrets: cfg.Secrets.VSphereCsi},
+	}
+
+	for _, block := range serviceBlocks {
+		filtered, err := normalizeServiceSecrets(block.secrets)
+		if err != nil {
+			return nil, fmt.Errorf("failed to normalize %s secrets: %w", block.name, err)
+		}
+		if len(filtered) == 0 {
 			continue
 		}
 
-		filtered := make(map[string]interface{})
-		for key, value := range serviceSecrets {
-			switch typed := value.(type) {
-			case string:
-				if strings.TrimSpace(typed) != "" {
-					filtered[key] = typed
-				}
-			case nil:
-				continue
-			default:
-				filtered[key] = value
-			}
+		secretsMap[block.name] = filtered
+	}
+
+	for rawService, rawSecrets := range cfg.Secrets.ServiceSecrets {
+		filtered, err := normalizeServiceSecrets(rawSecrets)
+		if err != nil {
+			return nil, fmt.Errorf("failed to normalize %s service_secrets: %w", rawService, err)
 		}
 
 		if len(filtered) == 0 {
@@ -649,10 +662,56 @@ func (m *DefaultSecretsManager) extractSecretsFromConfig(cfg *v2.Config) (map[st
 		}
 
 		serviceName := strings.ReplaceAll(rawService, "_", "-")
+		if existing, ok := secretsMap[serviceName]; ok {
+			for key, value := range filtered {
+				existing[key] = value
+			}
+			continue
+		}
 		secretsMap[serviceName] = filtered
 	}
 
 	return secretsMap, nil
+}
+
+func normalizeServiceSecrets(rawSecrets any) (map[string]interface{}, error) {
+	if rawSecrets == nil {
+		return nil, nil
+	}
+
+	if serviceSecrets, ok := rawSecrets.(map[string]any); ok {
+		return filterNonEmptySecrets(serviceSecrets), nil
+	}
+
+	data, err := yaml.Marshal(rawSecrets)
+	if err != nil {
+		return nil, err
+	}
+
+	serviceSecrets := make(map[string]any)
+	if err := yaml.Unmarshal(data, &serviceSecrets); err != nil {
+		return nil, err
+	}
+
+	return filterNonEmptySecrets(serviceSecrets), nil
+}
+
+func filterNonEmptySecrets(serviceSecrets map[string]any) map[string]interface{} {
+	filtered := make(map[string]interface{})
+	for key, value := range serviceSecrets {
+		switch typed := value.(type) {
+		case string:
+			if strings.TrimSpace(typed) != "" {
+				filtered[key] = typed
+			}
+		case nil:
+			continue
+		default:
+			filtered[key] = value
+		}
+	}
+
+	return filtered
 }
 
 // mapSecretsToManifests maps config secrets to their corresponding manifest file paths.

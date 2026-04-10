@@ -17,7 +17,7 @@ import (
 	"testing"
 	"testing/quick"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/secrets"
 	"github.com/spf13/cobra"
 )
@@ -152,10 +152,10 @@ func TestProperty_BackendValidationRejectsUnsupportedValues(t *testing.T) {
 }
 
 // Helper function to create a minimal valid config for testing
-func createTestConfig(backend string) *config.Config {
-	return &config.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Secrets: config.OpenCenterSecrets{
+func createTestConfig(backend string) *v2.Config {
+	return &v2.Config{
+		OpenCenter: v2.OpenCenterConfig{
+			Secrets: v2.OpenCenterSecrets{
 				Backend: backend,
 			},
 		},
@@ -428,9 +428,9 @@ func TestProperty_FlagNamingConsistency(t *testing.T) {
 		// Define expected flag names for specific subcommands
 		// Map: subcommand name -> expected flags
 		expectedFlags := map[string][]string{
-			"encrypt": {"path"},        // search directory
-			"decrypt": {"path"},        // search directory
-			"status":  {"path"},        // search directory
+			"encrypt": {"path"},               // search directory
+			"decrypt": {"path"},               // search directory
+			"status":  {"path"},               // search directory
 			"sync":    {"cluster", "dry-run"}, // cluster identifier, preview mode
 			// Note: validate takes cluster as positional arg, not flag
 			// This is a deviation from Requirements 7.4 which specifies --cluster flag
@@ -452,7 +452,7 @@ func TestProperty_FlagNamingConsistency(t *testing.T) {
 			for _, subcmd := range keysSubcommands {
 				// All keys subcommands should have --dry-run
 				expectedFlags["keys "+subcmd.Name()] = []string{"dry-run"}
-				
+
 				// keys rotate should also have --path
 				if subcmd.Name() == "rotate" {
 					expectedFlags["keys "+subcmd.Name()] = []string{"path", "dry-run"}

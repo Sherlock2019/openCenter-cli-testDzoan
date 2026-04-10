@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 // TestRenderClusterTemplatesIntegration tests the render functions
@@ -30,7 +30,11 @@ func TestRenderClusterTemplatesIntegration(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create test configuration
-	cfg := config.NewDefault("test-render-integration")
+	cfgPtr, err := v2.NewV2Default("test-render-integration", "openstack")
+	if err != nil {
+		t.Fatalf("NewV2Default() error = %v", err)
+	}
+	cfg := *cfgPtr
 	cfg.OpenCenter.GitOps.GitDir = tempDir
 
 	// Create a mock cobra command for output
@@ -41,7 +45,7 @@ func TestRenderClusterTemplatesIntegration(t *testing.T) {
 	cmd.SetContext(context.Background())
 
 	// Test rendering all services
-	if err := renderAllServices(cfg, false, false, cmd); err != nil {
+	if err := renderAllServices(&cfg, false, false, cmd); err != nil {
 		t.Fatalf("renderAllServices failed: %v\nStdout: %s\nStderr: %s",
 			err, stdout.String(), stderr.String())
 	}

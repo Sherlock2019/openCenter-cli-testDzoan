@@ -17,7 +17,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 // CloudProvider defines the interface for cloud provider operations needed for drift detection.
@@ -25,7 +25,7 @@ import (
 type CloudProvider interface {
 	// GetCurrentState retrieves the current infrastructure state from the cloud provider.
 	// It queries the provider's APIs to get the actual state of all resources.
-	GetCurrentState(ctx context.Context, cfg config.Config) (*InfrastructureState, error)
+	GetCurrentState(ctx context.Context, cfg v2.Config) (*InfrastructureState, error)
 
 	// DetectDrift compares desired state (from config) with actual state (from provider)
 	// and returns a report of all differences found.

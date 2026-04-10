@@ -3,7 +3,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 {{- $hasManagedServices := false }}
-{{- range $name, $service := .OpenCenter.ManagedService }}
+{{- range $name, $service := .OpenCenter.ManagedServices }}
   {{- if $service.Enabled }}
   {{- $hasManagedServices = true }}
   {{- end }}
@@ -11,6 +11,6 @@ resources:
 {{- if $hasManagedServices }}
   - ./sources.yaml
 {{- end }}
-{{- if (index .OpenCenter.ManagedService "alert-proxy").Enabled }}
+{{- if (index .OpenCenter.ManagedServices "alert-proxy").Enabled }}
   - ./alert-proxy.yaml
 {{- end }}

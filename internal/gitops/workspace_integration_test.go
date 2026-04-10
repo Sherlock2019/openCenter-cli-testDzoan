@@ -18,8 +18,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 // TestWorkspaceIsolatedEnvironment verifies that workspace provides an isolated
@@ -42,19 +40,19 @@ func TestWorkspaceIsolatedEnvironment(t *testing.T) {
 	ctx := context.Background()
 
 	// Create multiple workspaces for different clusters
-	cfg1 := config.NewDefault("production-cluster")
+	cfg1 := newDefault("production-cluster")
 	workspace1, err := manager.CreateWorkspace(ctx, cfg1)
 	if err != nil {
 		t.Fatalf("Failed to create workspace1: %v", err)
 	}
 
-	cfg2 := config.NewDefault("staging-cluster")
+	cfg2 := newDefault("staging-cluster")
 	workspace2, err := manager.CreateWorkspace(ctx, cfg2)
 	if err != nil {
 		t.Fatalf("Failed to create workspace2: %v", err)
 	}
 
-	cfg3 := config.NewDefault("development-cluster")
+	cfg3 := newDefault("development-cluster")
 	workspace3, err := manager.CreateWorkspace(ctx, cfg3)
 	if err != nil {
 		t.Fatalf("Failed to create workspace3: %v", err)
@@ -256,7 +254,7 @@ func TestWorkspaceGenerationScenario(t *testing.T) {
 	ctx := context.Background()
 
 	// Create workspace for cluster generation
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)

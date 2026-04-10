@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/template"
 )
 
@@ -143,7 +143,7 @@ func (fw *BenchmarkFramework) BenchmarkTemplateRendering(b *testing.B, engine te
 }
 
 // BenchmarkConfigBuilding benchmarks configuration building performance.
-func (fw *BenchmarkFramework) BenchmarkConfigBuilding(b *testing.B, buildFunc func() (config.Config, error)) {
+func (fw *BenchmarkFramework) BenchmarkConfigBuilding(b *testing.B, buildFunc func() (v2.Config, error)) {
 	b.Helper()
 
 	// Warmup
@@ -163,7 +163,7 @@ func (fw *BenchmarkFramework) BenchmarkConfigBuilding(b *testing.B, buildFunc fu
 }
 
 // BenchmarkConfigValidation benchmarks configuration validation performance.
-func (fw *BenchmarkFramework) BenchmarkConfigValidation(b *testing.B, cfg config.Config, validateFunc func(config.Config) error) {
+func (fw *BenchmarkFramework) BenchmarkConfigValidation(b *testing.B, cfg v2.Config, validateFunc func(v2.Config) error) {
 	b.Helper()
 
 	// Warmup
@@ -256,21 +256,21 @@ data:
 }
 
 // CreateBenchmarkConfig creates a configuration for benchmarking.
-func (fw *BenchmarkFramework) CreateBenchmarkConfig(provider string) config.Config {
+func (fw *BenchmarkFramework) CreateBenchmarkConfig(provider string) v2.Config {
 	return fw.ConfigGenerator.GenerateConfig(provider)
 }
 
 // CreateLargeBenchmarkConfig creates a large configuration for stress testing.
-func (fw *BenchmarkFramework) CreateLargeBenchmarkConfig(provider string) config.Config {
+func (fw *BenchmarkFramework) CreateLargeBenchmarkConfig(provider string) v2.Config {
 	cfg := fw.ConfigGenerator.GenerateConfig(provider)
 
 	// Simulate large configuration by adding overrides
-	if cfg.Overrides == nil {
-		cfg.Overrides = make(map[string]any)
+	if cfg.Metadata.Labels == nil {
+		cfg.Metadata.Labels = make(map[string]string)
 	}
 
 	for i := 0; i < 100; i++ {
-		cfg.Overrides[fmt.Sprintf("custom.setting.%d", i)] = fmt.Sprintf("value-%d", i)
+		cfg.Metadata.Labels[fmt.Sprintf("custom.setting.%d", i)] = fmt.Sprintf("value-%d", i)
 	}
 
 	return cfg

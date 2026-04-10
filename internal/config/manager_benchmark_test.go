@@ -20,8 +20,8 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
-	"time"
 
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
@@ -74,83 +74,20 @@ func setupBenchmarkManager(b *testing.B) (*ConfigurationManager, string, func())
 }
 
 // createSampleConfig creates a sample configuration for benchmarking
-func createSampleConfig(name string) *Config {
-	now := time.Now()
-	return &Config{
-		SchemaVersion: "2.0",
-		Metadata: ConfigMetadata{
-			CreatedAt: now,
-			UpdatedAt: now,
-			CreatedBy: "benchmark",
-		},
-		OpenCenter: SimplifiedOpenCenter{
-			Meta: ClusterMeta{
-				Name:         name,
-				Env:          "dev",
-				Region:       "us-east-1",
-				Organization: "test-org",
-			},
-			Cluster: ClusterConfig{
-				ClusterName:       name,
-				SSHAuthorizedKeys: []string{"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ test@example.com"},
-				Kubernetes: KubernetesConfig{
-					Version:          "1.28.0",
-					KubesprayVersion: "2.24.0",
-				},
-				Networking: ClusterNetworkingConfig{
-					NTPServers:     []string{"time.cloudflare.com"},
-					DNSNameservers: []string{"1.1.1.1"},
-					SubnetNodes:    "10.0.0.0/24",
-				},
-				BaseDomain:  "k8s.opencenter.cloud",
-				ClusterFQDN: name + ".k8s.opencenter.cloud",
-			},
-			GitOps: GitOpsConfig{
-				GitDir:            "/tmp/gitops",
-				GitOpsBaseRepo:    "https://github.com/opencenter-cloud/openCenter-gitops-base.git",
-				GitOpsBaseRelease: "v0.1.0",
-				GitOpsBranch:      "main",
-			},
-			Infrastructure: Infrastructure{
-				Provider: "openstack",
-				Cloud: CloudConfig{
-					OpenStack: SimplifiedOpenStackCloud{
-						AuthURL:  "https://identity.example.com:5000/v3",
-						Region:   "us-east-1",
-						Insecure: false,
-					},
-				},
-				SSHUser:   "ubuntu",
-				OSVersion: "22.04",
-				NodeNaming: NodeNaming{
-					Worker: "worker",
-					Master: "master",
-				},
-				Bastion: BastionConfig{
-					Address: "bastion.example.com",
-				},
-			},
-			Storage: StorageConfig{
-				DefaultStorageClass: "csi-cinder-sc-delete",
-				WorkerVolumeSize:    40,
-			},
-		},
-		OpenTofu: SimplifiedOpenTofu{
-			Enabled: true,
-			Path:    "/tmp/opentofu",
-			Backend: SimplifiedTofuBackend{
-				Type: "s3",
-				S3: SimplifiedTofuS3{
-					Bucket: "test-bucket",
-					Key:    "test-key",
-					Region: "us-east-1",
-				},
-			},
-		},
-		Secrets: Secrets{
-			SopsAgeKeyFile: "/tmp/age-key.txt",
-		},
+func createSampleConfig(name string) *v2.Config {
+	cfg, err := v2.NewV2Default(name, "openstack")
+	if err != nil {
+		panic(err)
 	}
+
+	cfg.OpenCenter.Meta.Organization = "test-org"
+	cfg.OpenCenter.Meta.Region = "us-east-1"
+	cfg.OpenCenter.GitOps.GitDir = "/tmp/gitops"
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://identity.example.com:5000/v3"
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Region = "us-east-1"
+	cfg.Secrets.SopsAgeKeyFile = "/tmp/age-key.txt"
+
+	return cfg
 }
 
 // BenchmarkLoad_WithCache benchmarks Load operation with cache hit
@@ -524,10 +461,10 @@ func BenchmarkLoadSaveCycle(b *testing.B) {
 		}
 
 		// Modify
-		if config.Metadata.Tags == nil {
-			config.Metadata.Tags = make(map[string]string)
+		if config.Metadata.Labels == nil {
+			config.Metadata.Labels = make(map[string]string)
 		}
-		config.Metadata.Tags["iteration"] = fmt.Sprintf("%d", i)
+		config.Metadata.Labels["iteration"] = fmt.Sprintf("%d", i)
 
 		// Save
 		err = manager.Save(ctx, config)

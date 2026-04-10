@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/localdev"
 	"github.com/opencenter-cloud/opencenter-cli/internal/localdev/gitea"
 	"gopkg.in/yaml.v3"
@@ -96,15 +96,15 @@ func TestPushUsesCleanRemoteAndExplicitCA(t *testing.T) {
 func writeClusterFixture(t *testing.T, configDir, clusterName, org, gitDir string) {
 	t.Helper()
 
-	cfg, err := config.NewProviderDefault(clusterName, "kind")
+	cfg, err := v2.NewV2Default(clusterName, "kind")
 	if err != nil {
-		t.Fatalf("NewProviderDefault() error = %v", err)
+		t.Fatalf("NewV2Default() error = %v", err)
 	}
 	cfg.OpenCenter.Meta.Organization = org
 	cfg.OpenCenter.GitOps.GitDir = gitDir
 	cfg.OpenCenter.Infrastructure.Kind.Runtime = "podman"
 
-	data, err := yaml.Marshal(&cfg)
+	data, err := yaml.Marshal(cfg)
 	if err != nil {
 		t.Fatalf("yaml.Marshal() error = %v", err)
 	}

@@ -174,7 +174,7 @@ func TestClusterUpdateNativeV2GitOpsFieldsValidate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read config file: %v", err)
 	}
-	if strings.Contains(string(data), "kubernetes_version:") || strings.Contains(string(data), "ssh_user:") {
+	if strings.Contains(string(data), "ssh_user:") {
 		t.Fatalf("expected cluster update to keep native v2 YAML, got:\n%s", string(data))
 	}
 

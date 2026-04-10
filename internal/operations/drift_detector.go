@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 // Severity represents the severity level of drift
@@ -151,7 +151,7 @@ type LoadBalancer struct {
 
 // ConfigLoader defines the interface for loading cluster configurations
 type ConfigLoader interface {
-	LoadConfig(ctx context.Context, cluster string) (*config.Config, error)
+	LoadConfig(ctx context.Context, cluster string) (*v2.Config, error)
 }
 
 // driftDetector implements the DriftDetector interface
@@ -211,7 +211,7 @@ func (d *driftDetector) DetectDrift(ctx context.Context, cluster string) (*Drift
 }
 
 // detectInstanceDrift detects drift in compute instances
-func (d *driftDetector) detectInstanceDrift(ctx context.Context, cluster string, cfg *config.Config, report *DriftReport) error {
+func (d *driftDetector) detectInstanceDrift(ctx context.Context, cluster string, cfg *v2.Config, report *DriftReport) error {
 	instances, err := d.provider.GetInstances(ctx, cluster)
 	if err != nil {
 		return fmt.Errorf("failed to get instances: %w", err)
@@ -254,14 +254,14 @@ func (d *driftDetector) detectInstanceDrift(ctx context.Context, cluster string,
 }
 
 // detectNetworkDrift detects drift in network resources
-func (d *driftDetector) detectNetworkDrift(ctx context.Context, cluster string, cfg *config.Config, report *DriftReport) error {
+func (d *driftDetector) detectNetworkDrift(ctx context.Context, cluster string, cfg *v2.Config, report *DriftReport) error {
 	networks, err := d.provider.GetNetworks(ctx, cluster)
 	if err != nil {
 		return fmt.Errorf("failed to get networks: %w", err)
 	}
 
 	// Compare actual networks with expected configuration
-	expectedCIDR := cfg.OpenCenter.Cluster.Networking.SubnetNodes
+	expectedCIDR := cfg.OpenCenter.Infrastructure.Networking.SubnetNodes
 	for _, network := range networks {
 		if network.CIDR != expectedCIDR {
 			report.Drifts = append(report.Drifts, ResourceDrift{
@@ -281,7 +281,7 @@ func (d *driftDetector) detectNetworkDrift(ctx context.Context, cluster string, 
 }
 
 // detectSecurityGroupDrift detects drift in security groups
-func (d *driftDetector) detectSecurityGroupDrift(ctx context.Context, cluster string, cfg *config.Config, report *DriftReport) error {
+func (d *driftDetector) detectSecurityGroupDrift(ctx context.Context, cluster string, cfg *v2.Config, report *DriftReport) error {
 	securityGroups, err := d.provider.GetSecurityGroups(ctx, cluster)
 	if err != nil {
 		return fmt.Errorf("failed to get security groups: %w", err)
@@ -309,7 +309,7 @@ func (d *driftDetector) detectSecurityGroupDrift(ctx context.Context, cluster st
 }
 
 // detectLoadBalancerDrift detects drift in load balancers
-func (d *driftDetector) detectLoadBalancerDrift(ctx context.Context, cluster string, cfg *config.Config, report *DriftReport) error {
+func (d *driftDetector) detectLoadBalancerDrift(ctx context.Context, cluster string, cfg *v2.Config, report *DriftReport) error {
 	loadBalancers, err := d.provider.GetLoadBalancers(ctx, cluster)
 	if err != nil {
 		return fmt.Errorf("failed to get load balancers: %w", err)

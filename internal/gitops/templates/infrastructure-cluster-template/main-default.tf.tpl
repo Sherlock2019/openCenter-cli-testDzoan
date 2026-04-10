@@ -18,171 +18,143 @@ locals {
   floatingip_pool                         = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.Networking.FloatingIPPool | default "PUBLICNET" }}"
   router_external_network_id              = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.Networking.RouterExternalNetworkID | default "" }}"
   # VLAN settings
-  vlan_id                                 = "{{ .OpenCenter.Cluster.Networking.VLAN.ID | default "" }}"
-  mtu                                     = "{{ .OpenCenter.Cluster.Networking.VLAN.MTU | default "" }}"
-  network_provider                        = "{{ .OpenCenter.Cluster.Networking.VLAN.Provider | default "physnet1" }}"
+  vlan_id                                 = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.Networking.VLAN.ID | default "" }}"
+  mtu                                     = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.Networking.VLAN.MTU | default "" }}"
+  network_provider                        = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.Networking.VLAN.Provider | default "physnet1" }}"
 {{- end }}
   #CIDR that the openstack VMs will use for K8s nodes
-  subnet_nodes                            = "{{ .OpenCenter.Cluster.Kubernetes.Networking.SubnetNodes | default "10.2.128.0/22" }}"
+  subnet_nodes                            = "{{ .OpenCenter.Infrastructure.Networking.SubnetNodes | default "10.2.128.0/22" }}"
   subnet_nodes_oct                       = join(".", slice(split(".", split("/", local.subnet_nodes)[0]), 0, 3))
   #Leave some IPs free for the VRRP IP and the MetalLB Range
-  allocation_pool_start                   = "{{ .OpenCenter.Cluster.Kubernetes.Networking.AllocationPoolStart | default "${local.subnet_nodes_oct}.50" }}"
-  allocation_pool_end                     = "{{ .OpenCenter.Cluster.Kubernetes.Networking.AllocationPoolEnd | default "${local.subnet_nodes_oct}.254" }}"
+  allocation_pool_start                   = "{{ .OpenCenter.Infrastructure.Networking.AllocationPoolStart | default "${local.subnet_nodes_oct}.50" }}"
+  allocation_pool_end                     = "{{ .OpenCenter.Infrastructure.Networking.AllocationPoolEnd | default "${local.subnet_nodes_oct}.254" }}"
   # vrrp_ip Must be an IP from subnet_nodes and will be used as the internal Kubernetes API VIP.
-  vrrp_ip                                 = "{{ .OpenCenter.Cluster.Kubernetes.Networking.VRRPIP | default "${local.subnet_nodes_oct}.10" }}"
+  vrrp_ip                                 = "{{ .OpenCenter.Infrastructure.Networking.VRRPIP | default "${local.subnet_nodes_oct}.10" }}"
   #CIDR that will be used by kubernetes pods. Not an openstack network.
   subnet_pods                             = "{{ .OpenCenter.Cluster.Kubernetes.SubnetPods | default "10.42.0.0/16" }}"
   #CIDR that will be used for kubernetes services. Not an openstack network.
   subnet_services                         = "{{ .OpenCenter.Cluster.Kubernetes.SubnetServices | default "10.43.0.0/16" }}"
   # use_octavia set to false to create a floating IP associated with the vrrp_ip port. true will create an octavia LB with a floating IP
-  use_octavia                             = {{ .OpenCenter.Cluster.Kubernetes.Networking.UseOctavia | default false }}
-  loadbalancer_provider                   = "{{ .OpenCenter.Cluster.Kubernetes.Networking.LoadbalancerProvider | default .OpenCenter.Cluster.Kubernetes.LoadbalancerProvider | default "ovn" }}"
+  use_octavia                             = {{ .OpenCenter.Infrastructure.Networking.UseOctavia | default false }}
+  loadbalancer_provider                   = "{{ .OpenCenter.Infrastructure.Networking.LoadbalancerProvider | default "ovn" }}"
   # vrrp_enabled cannot be set to true if use_octavia is true
-  vrrp_enabled                            = "{{ .OpenCenter.Cluster.Kubernetes.Networking.VRRPEnabled | default true }}"
+  vrrp_enabled                            = "{{ .OpenCenter.Infrastructure.Networking.VRRPEnabled | default true }}"
   # Creates a DNS record using the LB floating IP and dns_zone_name
-  use_designate                           = {{ .OpenCenter.Cluster.Kubernetes.Networking.UseDesignate | default false }}
+  use_designate                           = {{ .OpenCenter.Infrastructure.Networking.UseDesignate | default false }}
   # dns_zone_name is the dns zone to create if use_designate is true
-  dns_zone_name                           = "{{ .OpenCenter.Cluster.Kubernetes.Networking.DNSZoneName | default "" }}"
+  dns_zone_name                           = "{{ .OpenCenter.Infrastructure.Networking.DNSZoneName | default "" }}"
   # DNS servers to configure on the nodes
-  dns_nameservers                         = {{ if .OpenCenter.Cluster.Networking.DNSNameservers }}[{{ range $i, $dns := .OpenCenter.Cluster.Networking.DNSNameservers }}{{if $i}}, {{end}}"{{ $dns }}"{{ end }}]{{ else }}["1.1.1.1","8.8.8.8"]{{ end }}
-  ntp_servers                             = {{ if .OpenCenter.Cluster.Networking.NTPServers }}[{{ range $i, $ntp := .OpenCenter.Cluster.Networking.NTPServers }}{{if $i}}, {{end}}"{{ $ntp }}"{{ end }}]{{ else }}["time.dfw3.rackspace.com","time2.dfw3.rackspace.com"]{{ end }}
+  dns_nameservers                         = {{ if .OpenCenter.Infrastructure.Networking.DNSNameservers }}[{{ range $i, $dns := .OpenCenter.Infrastructure.Networking.DNSNameservers }}{{if $i}}, {{end}}"{{ $dns }}"{{ end }}]{{ else }}["1.1.1.1","8.8.8.8"]{{ end }}
+  ntp_servers                             = {{ if .OpenCenter.Infrastructure.Networking.NTPServers }}[{{ range $i, $ntp := .OpenCenter.Infrastructure.Networking.NTPServers }}{{if $i}}, {{end}}"{{ $ntp }}"{{ end }}]{{ else }}["time.dfw3.rackspace.com","time2.dfw3.rackspace.com"]{{ end }}
 {{- if ne (.OpenCenter.Infrastructure.Provider | default "openstack") "baremetal" }}
   image_id                                = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.ImageID | default "" }}"
   image_id_windows                        = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.ImageIDWindows | default "" }}"
 {{- end }}
   k8s_api_port                            = {{ .OpenCenter.Cluster.Kubernetes.APIPort | default 443 }}
   k8s_api_port_acl                        = {{ if .OpenCenter.Infrastructure.Cloud.OpenStack.Networking.K8sAPIPortACL }}[{{ range $i, $acl := .OpenCenter.Infrastructure.Cloud.OpenStack.Networking.K8sAPIPortACL }}{{if $i}}, {{end}}"{{ $acl }}"{{ end }}]{{ else }}["0.0.0.0/0"]{{ end }}
-  worker_count                            = {{ .OpenCenter.Cluster.Kubernetes.WorkerCount | default 4 }}
-  worker_count_windows                    = {{ .OpenCenter.Cluster.Kubernetes.WorkerCountWindows | default 0 }}
+  worker_count                            = {{ .OpenCenter.Infrastructure.Compute.WorkerCount | default 4 }}
+  worker_count_windows                    = {{ .OpenCenter.Infrastructure.Compute.WorkerCountWindows | default 0 }}
   # Enter 1 or 3 masters.
-  master_count                            = {{ .OpenCenter.Cluster.Kubernetes.MasterCount | default 3 }}
-  ssh_user                                = "{{ .OpenCenter.Infrastructure.SSHUser | default "ubuntu" }}"
+  master_count                            = {{ .OpenCenter.Infrastructure.Compute.MasterCount | default 3 }}
+  ssh_user                                = "{{ .OpenCenter.Infrastructure.SSH.Username | default .OpenCenter.Infrastructure.SSH.User | default "ubuntu" }}"
   # these are the ssh public keys that will be able to connect to the cluster's bastion node
-  ssh_authorized_keys                     = {{ if .OpenCenter.Cluster.SSHAuthorizedKeys }}[{{ range $i, $key := .OpenCenter.Cluster.SSHAuthorizedKeys }}{{if $i}}, {{end}}"{{ $key }}"{{ end }}]{{ else }}["ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDogzEullM89m//Vd8IGPERto2DotXnUCKGH6II1Vk/klEuDVqXx9kCb981XJKh8mU15bfJVdE4h078q/shK9EIcPMRKSQSMs2LkgF/1yUeVYPNYiIBph6CaqjIxKHy1kYxw3KUTIh8IIl1M4t5fc5c49Gr3QuDpeMN4Z/wrbR1DceIbFDiVxYNeyJWfOdowKgTn4AKh0n1xtg6/XLin3cCstpvfUJUKm0WOcmn3+DHK6cBNqNAMKdtxgnGwlY4MfizJOZE30Y7hwPqXUjOgLgB2vybcdcMpUvw9e8HopogOFQnVwwmlc9/7ZKPCaCKRBEC38IV82CJ6+/eePIMriPF migu4903@MNF0TUDV30"]{{ end }}
-  node_worker                             = "{{ .OpenCenter.Infrastructure.NodeNaming.Worker | default "wn" }}"
-  node_master                             = "{{ .OpenCenter.Infrastructure.NodeNaming.Master | default "cp" }}"
-  node_worker_windows                     = "{{ .OpenCenter.Infrastructure.NodeNaming.WorkerWindows | default "win" }}"
+  ssh_authorized_keys                     = {{ if .OpenCenter.Infrastructure.SSH.AuthorizedKeys }}[{{ range $i, $key := .OpenCenter.Infrastructure.SSH.AuthorizedKeys }}{{if $i}}, {{end}}"{{ $key }}"{{ end }}]{{ else }}["ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDogzEullM89m//Vd8IGPERto2DotXnUCKGH6II1Vk/klEuDVqXx9kCb981XJKh8mU15bfJVdE4h078q/shK9EIcPMRKSQSMs2LkgF/1yUeVYPNYiIBph6CaqjIxKHy1kYxw3KUTIh8IIl1M4t5fc5c49Gr3QuDpeMN4Z/wrbR1DceIbFDiVxYNeyJWfOdowKgTn4AKh0n1xtg6/XLin3cCstpvfUJUKm0WOcmn3+DHK6cBNqNAMKdtxgnGwlY4MfizJOZE30Y7hwPqXUjOgLgB2vybcdcMpUvw9e8HopogOFQnVwwmlc9/7ZKPCaCKRBEC38IV82CJ6+/eePIMriPF migu4903@MNF0TUDV30"]{{ end }}
+  node_worker                             = "wn"
+  node_master                             = "cp"
+  node_worker_windows                     = "win"
   ub_version                              = "{{ .OpenCenter.Infrastructure.OSVersion | default "24" }}"
 {{- if ne (.OpenCenter.Infrastructure.Provider | default "openstack") "baremetal" }}
   #FLEX Flavor Settings ==========================
-  flavor_bastion                          = "{{ .OpenCenter.Cluster.Kubernetes.FlavorBastion | default "" }}"
-  flavor_master                           = "{{ .OpenCenter.Cluster.Kubernetes.FlavorMaster | default "" }}"
-  flavor_worker                           = "{{ .OpenCenter.Cluster.Kubernetes.FlavorWorker | default "" }}"
-  flavor_worker_windows                   = "{{ .OpenCenter.Cluster.Kubernetes.FlavorWorkerWindows | default "" }}"
+  flavor_bastion                          = "{{ .OpenCenter.Infrastructure.Compute.FlavorBastion | default "" }}"
+  flavor_master                           = "{{ .OpenCenter.Infrastructure.Compute.FlavorMaster | default "" }}"
+  flavor_worker                           = "{{ .OpenCenter.Infrastructure.Compute.FlavorWorker | default "" }}"
+  flavor_worker_windows                   = "{{ .OpenCenter.Infrastructure.Compute.FlavorWorkerWindows | default "" }}"
 
-  worker_node_bfv_volume_size             = {{ .OpenCenter.Storage.WorkerVolumeSize | default 100 }}
-  worker_node_bfv_destination_type        = "{{ .OpenCenter.Storage.WorkerVolumeDestinationType | default "volume" }}"
-  worker_node_bfv_source_type             = "{{ .OpenCenter.Storage.WorkerVolumeSourceType | default "image" }}"
-  worker_node_bfv_volume_type             = "{{ .OpenCenter.Storage.WorkerVolumeType | default "HA-Performance" }}"
+  worker_node_bfv_volume_size             = {{ .OpenCenter.Infrastructure.Storage.WorkerVolumeSize | default 100 }}
+  worker_node_bfv_destination_type        = "{{ .OpenCenter.Infrastructure.Storage.WorkerVolumeDestinationType | default "volume" }}"
+  worker_node_bfv_source_type             = "{{ .OpenCenter.Infrastructure.Storage.WorkerVolumeSourceType | default "image" }}"
+  worker_node_bfv_volume_type             = "{{ .OpenCenter.Infrastructure.Storage.WorkerVolumeType | default "HA-Performance" }}"
   wn_server_group_affinity                = {{ if .OpenCenter.Infrastructure.ServerGroupAffinity }}[{{ range $i, $affinity := .OpenCenter.Infrastructure.ServerGroupAffinity }}{{if $i}}, {{end}}"{{ $affinity }}"{{ end }}]{{ else }}["anti-affinity"]{{ end }}
 {{- else }}
-  worker_node_bfv_volume_size             = {{ .OpenCenter.Storage.WorkerVolumeSize | default 20 }}
-  worker_node_bfv_destination_type        = "{{ .OpenCenter.Storage.WorkerVolumeDestinationType | default "volume" }}"
-  worker_node_bfv_source_type             = "{{ .OpenCenter.Storage.WorkerVolumeSourceType | default "image" }}"
-  worker_node_bfv_volume_type             = "{{ .OpenCenter.Storage.WorkerVolumeType | default "Standard" }}"
+  worker_node_bfv_volume_size             = {{ .OpenCenter.Infrastructure.Storage.WorkerVolumeSize | default 20 }}
+  worker_node_bfv_destination_type        = "{{ .OpenCenter.Infrastructure.Storage.WorkerVolumeDestinationType | default "volume" }}"
+  worker_node_bfv_source_type             = "{{ .OpenCenter.Infrastructure.Storage.WorkerVolumeSourceType | default "image" }}"
+  worker_node_bfv_volume_type             = "{{ .OpenCenter.Infrastructure.Storage.WorkerVolumeType | default "Standard" }}"
 {{- end }}
-  additional_block_devices_worker = {{ if .OpenCenter.Storage.AdditionalBlockDevices }}[{{ range $i, $device := .OpenCenter.Storage.AdditionalBlockDevices }}{{if $i}}, {{end}}{{ $device }}{{ end }}]{{ else }}[]{{ end }}
+  additional_block_devices_worker = {{ if .OpenCenter.Infrastructure.Storage.AdditionalBlockDevices }}[{{ range $i, $device := .OpenCenter.Infrastructure.Storage.AdditionalBlockDevices }}{{if $i}}, {{end}}{{ $device }}{{ end }}]{{ else }}[]{{ end }}
 
-  additional_server_pools_worker = {{ if .OpenCenter.Cluster.Kubernetes.AdditionalServerPoolsWorker }}[{{ range $i, $pool := .OpenCenter.Cluster.Kubernetes.AdditionalServerPoolsWorker }}{{if $i}}, {{end}}{
+  additional_server_pools_worker = {{ if .OpenCenter.Infrastructure.Compute.AdditionalServerPoolsWorker }}[{{ range $i, $pool := .OpenCenter.Infrastructure.Compute.AdditionalServerPoolsWorker }}{{if $i}}, {{end}}{
     name                                = "{{ $pool.Name }}"
-    worker_count                        = {{ $pool.WorkerCount }}
-    flavor_worker                       = "{{ $pool.FlavorWorker }}"
-    node_worker                         = "{{ $pool.NodeWorker }}"
-    {{- if $pool.ServerGroupAffinity }}
-    server_group_affinity               = "{{ $pool.ServerGroupAffinity }}"
+    worker_count                        = {{ $pool.Count }}
+    flavor_worker                       = "{{ $pool.Flavor }}"
+    node_worker                         = "{{ $pool.Name }}"
+    {{- if $pool.Image }}
+    image_id                            = "{{ $pool.Image }}"
     {{- end }}
-    {{- if $pool.ImageID }}
-    image_id                            = "{{ $pool.ImageID }}"
+    {{- if $pool.BootVolume.Size }}
+    worker_node_bfv_volume_size         = {{ $pool.BootVolume.Size }}
     {{- end }}
-    {{- if $pool.ImageName }}
-    image_name                          = "{{ $pool.ImageName }}"
+    {{- if $pool.BootVolume.DestinationType }}
+    worker_node_bfv_destination_type    = "{{ $pool.BootVolume.DestinationType }}"
     {{- end }}
-    {{- if $pool.WorkerNodeBFVVolumeSize }}
-    worker_node_bfv_volume_size         = {{ $pool.WorkerNodeBFVVolumeSize }}
+    {{- if $pool.BootVolume.SourceType }}
+    worker_node_bfv_source_type         = "{{ $pool.BootVolume.SourceType }}"
     {{- end }}
-    {{- if $pool.WorkerNodeBFVDestinationType }}
-    worker_node_bfv_destination_type    = "{{ $pool.WorkerNodeBFVDestinationType }}"
+    {{- if $pool.BootVolume.Type }}
+    worker_node_bfv_volume_type         = "{{ $pool.BootVolume.Type }}"
     {{- end }}
-    {{- if $pool.WorkerNodeBFVSourceType }}
-    worker_node_bfv_source_type         = "{{ $pool.WorkerNodeBFVSourceType }}"
-    {{- end }}
-    {{- if $pool.WorkerNodeBFVVolumeType }}
-    worker_node_bfv_volume_type         = "{{ $pool.WorkerNodeBFVVolumeType }}"
-    {{- end }}
-    {{- if $pool.WorkerNodeBFVDeleteOnTermination }}
-    worker_node_bfv_delete_on_termination = {{ $pool.WorkerNodeBFVDeleteOnTermination }}
-    {{- end }}
-    {{- if $pool.PF9Onboard }}
-    pf9_onboard                         = {{ $pool.PF9Onboard }}
-    {{- end }}
-    {{- if $pool.SubnetID }}
-    subnet_id                           = "{{ $pool.SubnetID }}"
-    {{- end }}
-    {{- if $pool.AdditionalBlockDevicesWorker }}
-    additional_block_devices_worker     = [{{ range $j, $device := $pool.AdditionalBlockDevicesWorker }}{{if $j}}, {{end}}{{ $device }}{{ end }}]
-    {{- end }}
+    worker_node_bfv_delete_on_termination = {{ $pool.BootVolume.DeleteOnTermination }}
   }{{ end }}]{{ else }}[]{{ end }}
 
   # ===================================
   #ca_certificates add CA certificates to server's trusts. Good for trusting internal private Certificate Authorities.
-  ca_certificates                         = "{{ .OpenCenter.Cluster.Networking.Security.CACertificates | default "" }}"
+  ca_certificates                         = ""
   openstack_ca                            = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.CA | default "" }}"
 
   # ====================================
   #Kubespray Settings
-  kubespray_version                       = "{{ .OpenCenter.Cluster.Kubernetes.KubesprayVersion | default "v2.29.1" }}"
+  kubespray_version                       = "{{ .Deployment.Kubespray.Version | default "v2.29.1" }}"
   kubernetes_version                      = "{{ .OpenCenter.Cluster.Kubernetes.Version | default "1.33.7" }}"
-  network_plugin                          = "{{ if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled }}calico{{ else if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled }}cilium{{ else if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Enabled }}kube-ovn{{ else }}calico{{ end }}"
+  network_plugin                          = "{{ if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled }}calico{{ else if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled }}cilium{{ else if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Enabled }}kube-ovn{{ else }}calico{{ end }}"
   deploy_cluster                          = {{ .Deployment.AutoDeploy | default true }}
   #kub-vip settings
   kube_vip_enabled                        = {{ .OpenCenter.Cluster.Kubernetes.KubeVIPEnabled | default true }}
   #Hardening
-  k8s_hardening_enabled                   = {{ .OpenCenter.Cluster.Kubernetes.Security.K8sHardening | default true }}
-  kube_pod_security_exemptions_namespaces = {{ if .OpenCenter.Cluster.Kubernetes.Security.PodSecurityExemptions }}[{{ range $i, $ns := .OpenCenter.Cluster.Kubernetes.Security.PodSecurityExemptions }}{{if $i}}, {{end}}"{{ $ns }}"{{ end }}]{{ else }}["trivy-temp"]{{ end }}
-  kubelet_rotate_server_certificates      = {{ .OpenCenter.Cluster.Kubernetes.KubeletRotateServerCerts }}
-  os_hardening_enabled                    = {{ .OpenCenter.Cluster.Networking.Security.OSHardening | default true }}
+  k8s_hardening_enabled                   = true
+  kube_pod_security_exemptions_namespaces = ["trivy-temp"]
+  kubelet_rotate_server_certificates      = true
+  os_hardening_enabled                    = true
 
   {{- if .OpenCenter.Cluster.Kubernetes.OIDC.Enabled }}
   #OIDC Settings
   kube_oidc_auth_enabled                 = {{ .OpenCenter.Cluster.Kubernetes.OIDC.Enabled | default true }}
-  kube_oidc_url                          = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCURL | default "https://auth.gdo.prod.sjc3.k8s.opencenter.cloud/realms/opencenter" }}"
-  kube_oidc_client_id                    = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCClientID | default "opencenter" }}"
+  kube_oidc_url                          = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.IssuerURL | default "https://auth.gdo.prod.sjc3.k8s.opencenter.cloud/realms/opencenter" }}"
+  kube_oidc_client_id                    = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.ClientID | default "opencenter" }}"
   # Optional settings fo OIDC
-  kube_oidc_ca_file                      = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCCAFile | default "/etc/ssl/certs/ca-certificates.crt" }}"
-  kube_oidc_username_claim               = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCUsernameClaim | default "preferred_username" }}"
-  kube_oidc_username_prefix              = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCUsernamePrefix | default "oidc:" }}"
-  kube_oidc_groups_claim                 = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCGroupsClaim | default "groups" }}"
-  kube_oidc_groups_prefix                = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.KubeOIDCGroupsPrefix | default "oidc:" }}"
+  kube_oidc_ca_file                      = "/etc/ssl/certs/ca-certificates.crt"
+  kube_oidc_username_claim               = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.UsernameClaim | default "preferred_username" }}"
+  kube_oidc_username_prefix              = "oidc:"
+  kube_oidc_groups_claim                 = "{{ .OpenCenter.Cluster.Kubernetes.OIDC.GroupsClaim | default "groups" }}"
+  kube_oidc_groups_prefix                = "oidc:"
   {{- else }}
   {{- end }}
 
   #Calico Settings
-  cni_iface                               = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.CNIIface | default "enp3s0" }}"
+  cni_iface                               = "enp3s0"
   #Interface detection method for Calico nodeAddressAutodetectionV4. Can be "first-found", "interface", "cidr"
   #https://docs.tigera.io/calico/latest/reference/installation/api#operator.tigera.io%2fv1.NodeAddressAutodetection
-  calico_interface_autodetect             = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.CalicoInterfaceAutodetect | default "interface" }}"
-  calico_interface_autodetect_cidr        = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.AutodetectCIDR | default "" }}"
-  calico_encapsulation_type               = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.EncapsulationType | default "VXLAN" }}"
-  calico_nat_outgoing                     = {{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.NATOutgoing | default true }}
+  calico_interface_autodetect             = "interface"
+  calico_interface_autodetect_cidr        = ""
+  calico_encapsulation_type               = "VXLAN"
+  calico_nat_outgoing                     = true
 
-  {{- if gt (.OpenCenter.Cluster.Kubernetes.WorkerCountWindows | default 0) 0 }}
+  {{- if gt (.OpenCenter.Infrastructure.Compute.WorkerCountWindows | default 0) 0 }}
   # ## Windows settings
-  windows_user                            = "{{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WindowsUser | default "Administrator" }}"
-  windows_admin_password                  = "{{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WindowsAdminPassword | default "" }}"
-  worker_node_bfv_size_windows            = {{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WorkerNodeBFVSizeWindows | default 100 }}
-  worker_node_bfv_type_windows            = "{{ .OpenCenter.Cluster.Kubernetes.WindowsWorkers.WorkerNodeBFVTypeWindows | default "volume" }}"
-  additional_server_pools_worker_windows = {{ if .OpenCenter.Cluster.Kubernetes.AdditionalServerPoolsWorkerWindows }}[{{ range $i, $pool := .OpenCenter.Cluster.Kubernetes.AdditionalServerPoolsWorkerWindows }}{{if $i}}, {{end}}{
-    name                    = "{{ $pool.Name }}"
-    worker_count            = {{ $pool.WorkerCount }}
-    flavor_worker           = "{{ $pool.FlavorWorker }}"
-    node_worker             = "{{ $pool.NodeWorker }}"
-    {{- if $pool.ServerGroupAffinity }}
-    server_group_affinity   = "{{ $pool.ServerGroupAffinity }}"
-    {{- end }}
-    {{- if $pool.ImageID }}
-    image_id                = "{{ $pool.ImageID }}"
-    {{- end }}
-  }{{ end }}]{{ else }}[]{{ end }}
+  windows_user                            = "Administrator"
+  windows_admin_password                  = ""
+  worker_node_bfv_size_windows            = 100
+  worker_node_bfv_type_windows            = "volume"
+  additional_server_pools_worker_windows  = []
   {{- else }}
   additional_server_pools_worker_windows = []
   {{- end }}
@@ -192,9 +164,9 @@ locals {
 # Baremetal-specific settings
 ######################
   address_bastion                        = "{{ .OpenCenter.Infrastructure.Bastion.Address | default "50.56.158.76" }}" ##Or Public IP NATed to Bastion
-  windows_dataplane                       = {{ if gt (.OpenCenter.Cluster.Kubernetes.WorkerCountWindows | default 0) 0 }}"HSN"{{ else }}"Disabled"{{ end }}
+  windows_dataplane                       = {{ if gt (.OpenCenter.Infrastructure.Compute.WorkerCountWindows | default 0) 0 }}"HSN"{{ else }}"Disabled"{{ end }}
   k8s_api_ip                              = "{{ .OpenCenter.Infrastructure.K8sAPIIP | default "" }}" != "" ? "{{ .OpenCenter.Infrastructure.K8sAPIIP }}" : local.vrrp_ip
-  ssh_key_path                            = "{{ .OpenCenter.Infrastructure.SSHKeyPath | default "" }}" 
+  ssh_key_path                            = "{{ .OpenCenter.Infrastructure.SSH.KeyPath | default "" }}" 
 
   {{- if .OpenCenter.Cluster.Kubernetes.MasterNodes }}
   master_nodes = [
@@ -246,10 +218,10 @@ module "openstack-nova" {
   # source = "../../../gitclones/openCenter-gitops-base/iac/cloud/openstack/openstack-nova"
   availability_zone             = local.availability_zone
   additional_block_devices_worker      = local.additional_block_devices_worker
-  {{- if .OpenCenter.Cluster.Kubernetes.AdditionalServerPoolsWorkerWindows }}
+  {{- if gt (.OpenCenter.Infrastructure.Compute.WorkerCountWindows | default 0) 0 }}
   additional_server_pools_worker_windows = local.additional_server_pools_worker_windows
   {{- end }}
-  {{- if .OpenCenter.Cluster.Kubernetes.AdditionalServerPoolsWorker }}
+  {{- if .OpenCenter.Infrastructure.Compute.AdditionalServerPoolsWorker }}
   additional_server_pools_worker = local.additional_server_pools_worker
   {{- end }}
   application_credential_id     = local.application_credential_id
@@ -296,7 +268,7 @@ module "openstack-nova" {
     count  = local.worker_count
     flavor = local.flavor_worker
   }
-  {{- if gt (.OpenCenter.Cluster.Kubernetes.WorkerCountWindows | default 0) 0 }}
+  {{- if gt (.OpenCenter.Infrastructure.Compute.WorkerCountWindows | default 0) 0 }}
   size_worker_windows = {
       count  = local.worker_count_windows
       flavor = local.flavor_worker_windows
@@ -316,7 +288,7 @@ module "openstack-nova" {
 {{- end }}
 
 module "kubespray-cluster" {
-  source = "{{ .OpenCenter.Cluster.Kubernetes.Modules.KubesprayCluster.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/provider/kubespray?ref=main" }}"
+  source = "{{ (index .Deployment.Kubespray.Modules "kubespray").Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/provider/kubespray?ref=main" }}"
 {{- if eq (.OpenCenter.Infrastructure.Provider | default "openstack") "baremetal" }}
   address_bastion                         = local.address_bastion
 {{- else }}
@@ -356,7 +328,7 @@ module "kubespray-cluster" {
   vrrp_ip                                 = local.vrrp_ip
   vrrp_enabled                            = local.vrrp_enabled
 {{- if eq (.OpenCenter.Infrastructure.Provider | default "openstack") "baremetal" }}
-  {{- if gt (.OpenCenter.Cluster.Kubernetes.WorkerCountWindows | default 0) 0 }}
+  {{- if gt (.OpenCenter.Infrastructure.Compute.WorkerCountWindows | default 0) 0 }}
   windows_nodes                           = local.windows_nodes
   {{- else }}
   windows_nodes                           = []
@@ -364,7 +336,7 @@ module "kubespray-cluster" {
   ssh_key_path                            = local.ssh_key_path
   use_octavia                             = local.use_octavia
 {{- else }}
-  {{- if gt (.OpenCenter.Cluster.Kubernetes.WorkerCountWindows | default 0) 0 }}
+  {{- if gt (.OpenCenter.Infrastructure.Compute.WorkerCountWindows | default 0) 0 }}
   windows_nodes = concat(
     module.openstack-nova.windows_nodes,
     flatten([
@@ -390,9 +362,9 @@ module "kubespray-cluster" {
 }
 
 
-{{- if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled }}
+{{- if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled }}
 module "calico" {
-  source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Modules.Calico.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/calico?ref=main" }}"
+  source = "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/calico?ref=main"
 
   calico_interface_autodetect      = local.calico_interface_autodetect
   calico_encapsulation_type        = local.calico_encapsulation_type
@@ -406,7 +378,7 @@ module "calico" {
   subnet_nodes                     = local.subnet_nodes
   subnet_pods                      = local.subnet_pods
   subnet_services                  = local.subnet_services
-  {{- if gt (.OpenCenter.Cluster.Kubernetes.WorkerCountWindows | default 0) 0 }}
+  {{- if gt (.OpenCenter.Infrastructure.Compute.WorkerCountWindows | default 0) 0 }}
   windows_dataplane                = "HNS"
   {{- else }}
   windows_dataplane                = "Disabled"
@@ -414,7 +386,7 @@ module "calico" {
 }
 {{- end }}
 
-{{- if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled }}
+{{- if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled }}
 module "cilium" {
   source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Modules.Cilium.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/cilium?ref=main" }}"
 
@@ -430,7 +402,7 @@ module "cilium" {
 }
 {{- end }}
 
-{{- if .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Enabled }}
+{{- if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Enabled }}
 module "kube-ovn" {
   source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Modules.KubeOVN.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/kube-ovn?ref=main" }}"
 

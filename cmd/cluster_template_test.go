@@ -19,7 +19,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 func TestAddConfigComments(t *testing.T) {
@@ -65,7 +65,7 @@ func TestAddConfigComments(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Generate config
-			var cfg config.Config
+			var cfg v2.Config
 			if tt.useComplete {
 				cfg = generateCompleteTemplate(tt.provider)
 			} else {
@@ -112,7 +112,7 @@ func TestAddConfigCommentsPreservesStructure(t *testing.T) {
 	output := addConfigComments(data, "openstack")
 
 	// Parse back into config
-	var parsedCfg config.Config
+	var parsedCfg v2.Config
 	if err := yaml.Unmarshal(output, &parsedCfg); err != nil {
 		t.Fatalf("failed to unmarshal commented YAML: %v", err)
 	}
@@ -261,10 +261,11 @@ func TestGitOpsComments(t *testing.T) {
 }
 
 func TestGenerateCompleteTemplateUsesSharedOpenStackDefaults(t *testing.T) {
-	expected, err := config.NewProviderDefault("example-cluster", "openstack")
+	expectedPtr, err := v2.NewV2Default("example-cluster", "openstack")
 	if err != nil {
-		t.Fatalf("NewProviderDefault() error = %v", err)
+		t.Fatalf("NewV2Default() error = %v", err)
 	}
+	expected := *expectedPtr
 
 	cfg := generateCompleteTemplate("openstack")
 
@@ -277,14 +278,14 @@ func TestGenerateCompleteTemplateUsesSharedOpenStackDefaults(t *testing.T) {
 	if cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ImageID != expected.OpenCenter.Infrastructure.Cloud.OpenStack.ImageID {
 		t.Fatalf("expected image ID %q, got %q", expected.OpenCenter.Infrastructure.Cloud.OpenStack.ImageID, cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ImageID)
 	}
-	if cfg.OpenCenter.Cluster.Kubernetes.FlavorMaster != expected.OpenCenter.Cluster.Kubernetes.FlavorMaster {
-		t.Fatalf("expected master flavor %q, got %q", expected.OpenCenter.Cluster.Kubernetes.FlavorMaster, cfg.OpenCenter.Cluster.Kubernetes.FlavorMaster)
+	if cfg.OpenCenter.Infrastructure.Compute.FlavorMaster != expected.OpenCenter.Infrastructure.Compute.FlavorMaster {
+		t.Fatalf("expected master flavor %q, got %q", expected.OpenCenter.Infrastructure.Compute.FlavorMaster, cfg.OpenCenter.Infrastructure.Compute.FlavorMaster)
 	}
-	if cfg.OpenCenter.Storage.DefaultStorageClass != expected.OpenCenter.Storage.DefaultStorageClass {
-		t.Fatalf("expected storage class %q, got %q", expected.OpenCenter.Storage.DefaultStorageClass, cfg.OpenCenter.Storage.DefaultStorageClass)
+	if cfg.OpenCenter.Infrastructure.Storage.DefaultStorageClass != expected.OpenCenter.Infrastructure.Storage.DefaultStorageClass {
+		t.Fatalf("expected storage class %q, got %q", expected.OpenCenter.Infrastructure.Storage.DefaultStorageClass, cfg.OpenCenter.Infrastructure.Storage.DefaultStorageClass)
 	}
-	if cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Cinder.Enabled != expected.OpenCenter.Cluster.Kubernetes.StoragePlugin.Cinder.Enabled {
-		t.Fatalf("expected cinder enabled %v, got %v", expected.OpenCenter.Cluster.Kubernetes.StoragePlugin.Cinder.Enabled, cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.Cinder.Enabled)
+	if cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.CinderCsi.Enabled != expected.OpenCenter.Cluster.Kubernetes.StoragePlugin.CinderCsi.Enabled {
+		t.Fatalf("expected cinder enabled %v, got %v", expected.OpenCenter.Cluster.Kubernetes.StoragePlugin.CinderCsi.Enabled, cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.CinderCsi.Enabled)
 	}
 }
 

@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 func newClusterTemplateCmd() *cobra.Command {
@@ -85,7 +85,7 @@ available option.`,
 			}
 
 			// Generate template configuration
-			var cfg config.Config
+			var cfg v2.Config
 			if minimal {
 				cfg = generateMinimalTemplate(provider)
 			} else {
@@ -122,7 +122,7 @@ available option.`,
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "Complete cluster configuration template written to %s\n", outPath)
-			fmt.Fprintf(cmd.OutOrStdout(), "Schema version: %s\n", config.GetSchemaVersion())
+			fmt.Fprintf(cmd.OutOrStdout(), "Schema version: %s\n", cfg.SchemaVersion)
 			return nil
 		},
 	}
@@ -136,26 +136,54 @@ available option.`,
 }
 
 // generateCompleteTemplate creates a configuration with all fields populated
-func templateBaseConfig(provider string) config.Config {
-	if provider == "" || provider == "all" {
-		return config.NewDefault("example-cluster")
+func templateBaseConfig(provider string) v2.Config {
+	selectedProvider := provider
+	if selectedProvider == "" || selectedProvider == "all" {
+		selectedProvider = "openstack"
 	}
 
-	cfg, err := config.NewProviderDefault("example-cluster", provider)
+	cfg, err := v2.NewV2Default("example-cluster", selectedProvider)
 	if err != nil {
-		cfg = config.NewDefault("example-cluster")
-		cfg.OpenCenter.Infrastructure.Provider = provider
+		cfg = &v2.Config{
+			SchemaVersion: "2.0",
+			OpenCenter: v2.OpenCenterConfig{
+				Meta: v2.MetaConfig{
+					Name:         "example-cluster",
+					Organization: "opencenter",
+					Env:          "dev",
+					Region:       "sjc3",
+				},
+				Cluster: v2.ClusterConfig{
+					ClusterName: "example-cluster",
+					BaseDomain:  "k8s.opencenter.cloud",
+					ClusterFQDN: "example-cluster.sjc3.k8s.opencenter.cloud",
+					AdminEmail:  "admin@example.com",
+				},
+				Infrastructure: v2.InfrastructureConfig{
+					Provider: selectedProvider,
+				},
+				GitOps: v2.GitOpsConfig{
+					GitDir: "clusters/opencenter",
+					GitURL: "https://example.invalid/opencenter/example-cluster.git",
+				},
+			},
+			OpenTofu: v2.OpenTofuConfig{
+				Enabled: true,
+				Backend: v2.BackendConfig{Type: "local"},
+			},
+			Secrets: v2.SecretsConfig{},
+		}
 	}
 
-	return cfg
+	return *cfg
 }
 
-func generateCompleteTemplate(provider string) config.Config {
+func generateCompleteTemplate(provider string) v2.Config {
 	cfg := templateBaseConfig(provider)
 
 	// Populate all optional fields with example values
 	cfg.Metadata.CreatedBy = "admin@example.com"
-	cfg.Metadata.Tags = map[string]string{
+	cfg.Metadata.Labels = map[string]string{
 		"environment": "production",
 		"cost-center": "engineering",
 		"team":        "platform",
@@ -169,23 +197,22 @@ func generateCompleteTemplate(provider string) config.Config {
 	cfg.OpenCenter.Cluster.BaseDomain = "k8s.opencenter.cloud"
 	cfg.OpenCenter.Cluster.ClusterFQDN = "example-cluster.sjc3.k8s.opencenter.cloud"
 	cfg.OpenCenter.Cluster.AdminEmail = "admin@example.com"
-	cfg.OpenCenter.Cluster.SSHAuthorizedKeys = []string{
-		config.DefaultSSHAuthorizedKeyPlaceholder,
+	cfg.OpenCenter.Infrastructure.SSH.AuthorizedKeys = []string{
+		"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFAKEPLACEHOLDEREXAMPLEKEY opencenter@example",
 	}
 
 	// Populate Kubernetes configuration
 	cfg.OpenCenter.Cluster.Kubernetes.Version = "1.33.5"
-	cfg.OpenCenter.Cluster.Kubernetes.MasterCount = 3
-	cfg.OpenCenter.Cluster.Kubernetes.WorkerCount = 3
+	cfg.OpenCenter.Infrastructure.Compute.MasterCount = 3
+	cfg.OpenCenter.Infrastructure.Compute.WorkerCount = 3
 
 	// Configure provider-specific settings
 	switch provider {
 	case "openstack":
 		cfg.OpenCenter.Infrastructure.Provider = "openstack"
+		populateOpenStackConfig(&cfg)
 	case "kind":
-		if err := config.ApplyProviderDefaults(&cfg, "kind"); err != nil {
-			cfg.OpenCenter.Infrastructure.Provider = "kind"
-		}
+		cfg.OpenCenter.Infrastructure.Provider = "kind"
 	case "baremetal":
 		cfg.OpenCenter.Infrastructure.Provider = "baremetal"
 		populateBaremetalConfig(&cfg)
@@ -202,66 +229,35 @@ func generateCompleteTemplate(provider string) config.Config {
 }
 
 // generateMinimalTemplate creates a configuration with only required fields
-func generateMinimalTemplate(provider string) config.Config {
-	baseCfg := templateBaseConfig(provider)
-
-	cfg := config.Config{
-		SchemaVersion: config.SchemaVersion,
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: baseCfg.OpenCenter.Meta,
-			Infrastructure: config.Infrastructure{
-				Provider: baseCfg.OpenCenter.Infrastructure.Provider,
-				Kind:     baseCfg.OpenCenter.Infrastructure.Kind,
-				Cloud:    baseCfg.OpenCenter.Infrastructure.Cloud,
-			},
-			Cluster: config.ClusterConfig{
-				ClusterName: baseCfg.OpenCenter.Cluster.ClusterName,
-				Kubernetes: config.KubernetesConfig{
-					Version:     baseCfg.OpenCenter.Cluster.Kubernetes.Version,
-					MasterCount: baseCfg.OpenCenter.Cluster.Kubernetes.MasterCount,
-					WorkerCount: baseCfg.OpenCenter.Cluster.Kubernetes.WorkerCount,
-				},
-			},
-			GitOps: config.GitOpsConfig{
-				GitDir: baseCfg.OpenCenter.GitOps.GitDir,
-			},
-			Storage: baseCfg.OpenCenter.Storage,
-		},
-		OpenTofu: baseCfg.OpenTofu,
-		Secrets:  config.Secrets{},
-	}
-
+func generateMinimalTemplate(provider string) v2.Config {
+	cfg := templateBaseConfig(provider)
+	cfg.Metadata = v2.ConfigMetadata{}
+	cfg.OpenCenter.Services = nil
+	cfg.OpenCenter.ManagedServices = nil
+	cfg.OpenCenter.LegacyManaged = nil
 	return cfg
 }
 
 // populateOpenStackConfig adds OpenStack-specific configuration
-func populateOpenStackConfig(cfg *config.Config) {
+func populateOpenStackConfig(cfg *v2.Config) {
+	if cfg.OpenCenter.Infrastructure.Cloud.OpenStack == nil {
+		cfg.OpenCenter.Infrastructure.Cloud.OpenStack = &v2.OpenStackCloudConfig{}
+	}
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://identity.api.sjc3.rackspacecloud.com/v3"
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Region = "sjc3"
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Domain = "Default"
-	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ApplicationCredentialID = ""
-	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ApplicationCredentialSecret = ""
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ApplicationCredentialID = "app-credential-id"
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ApplicationCredentialSecret = "app-credential-secret"
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ImageID = "799dcf97-3656-4361-8187-13ab1b295e33"
-	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.FloatingIPPool = "PUBLICNET"
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.FloatingIPPool = "PUBLICNET"
 }
 
 // populateBaremetalConfig adds baremetal-specific configuration
-func populateBaremetalConfig(cfg *config.Config) {
-	cfg.OpenCenter.Infrastructure.Bastion.Address = "bastion.example.com"
-	cfg.OpenCenter.Cluster.Kubernetes.MasterNodes = []config.NodeConfig{
-		{
-			ID:         "master-1",
-			Name:       "master-1.example.com",
-			AccessIPv4: "192.168.1.10",
-		},
-	}
-	cfg.OpenCenter.Cluster.Kubernetes.WorkerNodes = []config.NodeConfig{
-		{
-			ID:         "worker-1",
-			Name:       "worker-1.example.com",
-			AccessIPv4: "192.168.1.20",
-		},
-	}
+func populateBaremetalConfig(cfg *v2.Config) {
+	cfg.OpenCenter.Infrastructure.Provider = "baremetal"
+	cfg.OpenCenter.Infrastructure.SSH.Username = "ubuntu"
+	cfg.OpenCenter.Infrastructure.Compute.MasterCount = 1
+	cfg.OpenCenter.Infrastructure.Compute.WorkerCount = 1
 }
 
 // addConfigComments adds inline comments to the YAML output using yaml.v3 Node API
@@ -271,7 +267,7 @@ func addConfigComments(data []byte, provider string) []byte {
 	if err := yaml.Unmarshal(data, &node); err != nil {
 		// If parsing fails, return original data with header
 		header := []byte(`# Complete opencenter Cluster Configuration Template
-# Schema Version: ` + config.GetSchemaVersion() + `
+# Schema Version: 2.0
 # Generated by: opencenter cluster template
 #
 # This template shows all available configuration options.
@@ -292,7 +288,7 @@ func addConfigComments(data []byte, provider string) []byte {
 	if err := encoder.Encode(&node); err != nil {
 		// If encoding fails, return original data with header
 		header := []byte(`# Complete opencenter Cluster Configuration Template
-# Schema Version: ` + config.GetSchemaVersion() + `
+# Schema Version: 2.0
 # Generated by: opencenter cluster template
 #
 # This template shows all available configuration options.
@@ -380,7 +376,7 @@ func addMetadataComments(key, value *yaml.Node) {
 			subKey.LineComment = "Timestamp of last update"
 		case "created_by":
 			subKey.LineComment = "User who created the cluster"
-		case "tags":
+		case "tags", "labels":
 			subKey.LineComment = "Key-value tags for organization"
 		case "annotations":
 			subKey.LineComment = "Additional metadata annotations"
@@ -458,10 +454,60 @@ func addInfrastructureComments(key, value *yaml.Node, provider string) {
 		switch subKey.Value {
 		case "provider":
 			subKey.LineComment = fmt.Sprintf("Cloud provider: %s (openstack, kind, baremetal, vmware)", provider)
+		case "ssh":
+			addSSHComments(subKey, subValue)
+		case "compute":
+			addComputeComments(subKey, subValue)
 		case "cloud":
 			addCloudComments(subKey, subValue, provider)
 		case "bastion":
 			subKey.LineComment = "Bastion host configuration for baremetal/vmware"
+		}
+	}
+}
+
+func addSSHComments(key, value *yaml.Node) {
+	key.HeadComment = "SSH configuration for node access"
+
+	if value.Kind != yaml.MappingNode {
+		return
+	}
+
+	for i := 0; i < len(value.Content); i += 2 {
+		if i+1 >= len(value.Content) {
+			break
+		}
+		subKey := value.Content[i]
+		switch subKey.Value {
+		case "authorized_keys":
+			subKey.LineComment = "SSH public keys for node access"
+		case "username":
+			subKey.LineComment = "SSH username for cluster nodes"
+		}
+	}
+}
+
+func addComputeComments(key, value *yaml.Node) {
+	key.HeadComment = "Compute sizing and node counts"
+
+	if value.Kind != yaml.MappingNode {
+		return
+	}
+
+	for i := 0; i < len(value.Content); i += 2 {
+		if i+1 >= len(value.Content) {
+			break
+		}
+		subKey := value.Content[i]
+		switch subKey.Value {
+		case "master_count":
+			subKey.LineComment = "Number of control plane nodes (odd number recommended)"
+		case "worker_count":
+			subKey.LineComment = "Number of worker nodes"
+		case "flavor_master":
+			subKey.LineComment = "Flavor for control plane nodes"
+		case "flavor_worker":
+			subKey.LineComment = "Flavor for worker nodes"
 		}
 	}
 }
@@ -706,36 +752,24 @@ func addDeploymentComments(key, value *yaml.Node) {
 
 // populateVMwareConfig adds VMware-specific configuration
 // VMware is treated as baremetal - requires pre-provisioned VMs
-func populateVMwareConfig(cfg *config.Config) {
+func populateVMwareConfig(cfg *v2.Config) {
+	if cfg.OpenCenter.Infrastructure.Cloud.VMware == nil {
+		cfg.OpenCenter.Infrastructure.Cloud.VMware = &v2.VMwareCloudConfig{}
+	}
 	cfg.OpenCenter.Infrastructure.Cloud.VMware.VCenterServer = "vcenter.example.com"
 	cfg.OpenCenter.Infrastructure.Cloud.VMware.Datacenter = "Datacenter1"
 	cfg.OpenCenter.Infrastructure.Cloud.VMware.Datastore = "datastore1"
 	cfg.OpenCenter.Infrastructure.Cloud.VMware.Cluster = "Cluster1"
-	cfg.OpenCenter.Infrastructure.Cloud.VMware.ResourcePool = ""
 	cfg.OpenCenter.Infrastructure.Cloud.VMware.Folder = "/vm/kubernetes"
 	cfg.OpenCenter.Infrastructure.Cloud.VMware.Network = "VM Network"
-	cfg.OpenCenter.Infrastructure.Cloud.VMware.Nodes = []config.VMNode{
-		{
-			Name:       "master-1.example.com",
-			IP:         "192.168.1.10",
-			Role:       "master",
-			UUID:       "",
-			MACAddress: "00:50:56:12:34:56",
-		},
-		{
-			Name:       "worker-1.example.com",
-			IP:         "192.168.1.20",
-			Role:       "worker",
-			UUID:       "",
-			MACAddress: "00:50:56:12:34:57",
-		},
-	}
-	cfg.OpenCenter.Infrastructure.Bastion.Address = "bastion.example.com"
+	cfg.OpenCenter.Infrastructure.Cloud.VMware.Template = "ubuntu-2404-template"
+	cfg.OpenCenter.Infrastructure.Compute.MasterCount = 1
+	cfg.OpenCenter.Infrastructure.Compute.WorkerCount = 1
 }
 
 // addVMwareComments adds comments for VMware configuration
 func addVMwareComments(key, value *yaml.Node) {
-	key.HeadComment = "VMware vSphere configuration (treated as baremetal - requires pre-provisioned VMs)"
+	key.HeadComment = "VMware vSphere configuration (Pre-provisioned VM nodes are represented through native v2 compute counts)"
 
 	if value.Kind != yaml.MappingNode {
 		return

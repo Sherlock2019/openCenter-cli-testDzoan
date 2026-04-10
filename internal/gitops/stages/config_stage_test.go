@@ -153,14 +153,14 @@ func TestConfigStage_Execute(t *testing.T) {
 		{
 			name: "creates default configuration files",
 			config: v2.Config{
-				OpenCenter: config.SimplifiedOpenCenter{
-					Meta: config.ClusterMeta{
+				OpenCenter: v2.OpenCenterConfig{
+					Meta: v2.MetaConfig{
 						Organization: "test-org",
 					},
-					Cluster: config.ClusterConfig{
+					Cluster: v2.ClusterConfig{
 						ClusterName: "test-cluster",
 					},
-					Infrastructure: config.Infrastructure{
+					Infrastructure: v2.InfrastructureConfig{
 						Provider: "openstack",
 					},
 				},
@@ -178,14 +178,14 @@ func TestConfigStage_Execute(t *testing.T) {
 		{
 			name: "renders configuration templates",
 			config: v2.Config{
-				OpenCenter: config.SimplifiedOpenCenter{
-					Meta: config.ClusterMeta{
+				OpenCenter: v2.OpenCenterConfig{
+					Meta: v2.MetaConfig{
 						Organization: "test-org",
 					},
-					Cluster: config.ClusterConfig{
+					Cluster: v2.ClusterConfig{
 						ClusterName: "test-cluster",
 					},
-					Infrastructure: config.Infrastructure{
+					Infrastructure: v2.InfrastructureConfig{
 						Provider: "openstack",
 					},
 				},
@@ -213,11 +213,11 @@ func TestConfigStage_Execute(t *testing.T) {
 		{
 			name: "fails when cluster name is missing",
 			config: v2.Config{
-				OpenCenter: config.SimplifiedOpenCenter{
-					Meta: config.ClusterMeta{
+				OpenCenter: v2.OpenCenterConfig{
+					Meta: v2.MetaConfig{
 						Organization: "test-org",
 					},
-					Infrastructure: config.Infrastructure{
+					Infrastructure: v2.InfrastructureConfig{
 						Provider: "openstack",
 					},
 				},
@@ -285,14 +285,14 @@ func TestConfigStage_Rollback(t *testing.T) {
 	// Create temporary workspace
 	tempDir := t.TempDir()
 	cfg := v2.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
+		OpenCenter: v2.OpenCenterConfig{
+			Meta: v2.MetaConfig{
 				Organization: "test-org",
 			},
-			Cluster: config.ClusterConfig{
+			Cluster: v2.ClusterConfig{
 				ClusterName: "test-cluster",
 			},
-			Infrastructure: config.Infrastructure{
+			Infrastructure: v2.InfrastructureConfig{
 				Provider: "openstack",
 			},
 		},
@@ -351,11 +351,11 @@ func TestConfigStage_Validate(t *testing.T) {
 		{
 			name: "validates successfully with all required files",
 			config: v2.Config{
-				OpenCenter: config.SimplifiedOpenCenter{
-					Meta: config.ClusterMeta{
+				OpenCenter: v2.OpenCenterConfig{
+					Meta: v2.MetaConfig{
 						Organization: "test-org",
 					},
-					Cluster: config.ClusterConfig{
+					Cluster: v2.ClusterConfig{
 						ClusterName: "test-cluster",
 					},
 				},
@@ -371,11 +371,11 @@ func TestConfigStage_Validate(t *testing.T) {
 		{
 			name: "fails when required files are missing",
 			config: v2.Config{
-				OpenCenter: config.SimplifiedOpenCenter{
-					Meta: config.ClusterMeta{
+				OpenCenter: v2.OpenCenterConfig{
+					Meta: v2.MetaConfig{
 						Organization: "test-org",
 					},
-					Cluster: config.ClusterConfig{
+					Cluster: v2.ClusterConfig{
 						ClusterName: "test-cluster",
 					},
 				},
@@ -388,8 +388,8 @@ func TestConfigStage_Validate(t *testing.T) {
 		{
 			name: "fails when cluster name is missing",
 			config: v2.Config{
-				OpenCenter: config.SimplifiedOpenCenter{
-					Meta: config.ClusterMeta{
+				OpenCenter: v2.OpenCenterConfig{
+					Meta: v2.MetaConfig{
 						Organization: "test-org",
 					},
 				},
@@ -452,14 +452,14 @@ func TestConfigStage_DryRun(t *testing.T) {
 		{
 			name: "returns plan with default configuration files",
 			config: v2.Config{
-				OpenCenter: config.SimplifiedOpenCenter{
-					Meta: config.ClusterMeta{
+				OpenCenter: v2.OpenCenterConfig{
+					Meta: v2.MetaConfig{
 						Organization: "test-org",
 					},
-					Cluster: config.ClusterConfig{
+					Cluster: v2.ClusterConfig{
 						ClusterName: "test-cluster",
 					},
-					Infrastructure: config.Infrastructure{
+					Infrastructure: v2.InfrastructureConfig{
 						Provider: "openstack",
 					},
 				},
@@ -471,14 +471,14 @@ func TestConfigStage_DryRun(t *testing.T) {
 		{
 			name: "includes template files in plan",
 			config: v2.Config{
-				OpenCenter: config.SimplifiedOpenCenter{
-					Meta: config.ClusterMeta{
+				OpenCenter: v2.OpenCenterConfig{
+					Meta: v2.MetaConfig{
 						Organization: "test-org",
 					},
-					Cluster: config.ClusterConfig{
+					Cluster: v2.ClusterConfig{
 						ClusterName: "test-cluster",
 					},
-					Infrastructure: config.Infrastructure{
+					Infrastructure: v2.InfrastructureConfig{
 						Provider: "openstack",
 					},
 				},
@@ -496,8 +496,8 @@ func TestConfigStage_DryRun(t *testing.T) {
 		{
 			name: "fails when cluster name is missing",
 			config: v2.Config{
-				OpenCenter: config.SimplifiedOpenCenter{
-					Meta: config.ClusterMeta{
+				OpenCenter: v2.OpenCenterConfig{
+					Meta: v2.MetaConfig{
 						Organization: "test-org",
 					},
 				},
@@ -558,14 +558,14 @@ func TestConfigStage_CreateDefaultConfigs(t *testing.T) {
 	// Create temporary workspace
 	tempDir := t.TempDir()
 	cfg := v2.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
+		OpenCenter: v2.OpenCenterConfig{
+			Meta: v2.MetaConfig{
 				Organization: "test-org",
 			},
-			Cluster: config.ClusterConfig{
+			Cluster: v2.ClusterConfig{
 				ClusterName: "test-cluster",
 			},
-			Infrastructure: config.Infrastructure{
+			Infrastructure: v2.InfrastructureConfig{
 				Provider: "openstack",
 			},
 		},

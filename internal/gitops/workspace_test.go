@@ -18,8 +18,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 // TestWorkspaceCreation tests that a workspace can be created successfully.
@@ -31,7 +29,7 @@ func TestWorkspaceCreation(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 
 	// Create test configuration
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 
 	// Create workspace
 	ctx := context.Background()
@@ -80,14 +78,14 @@ func TestWorkspaceIsolation(t *testing.T) {
 	ctx := context.Background()
 
 	// Create first workspace
-	cfg1 := config.NewDefault("cluster1")
+	cfg1 := newDefault("cluster1")
 	workspace1, err := manager.CreateWorkspace(ctx, cfg1)
 	if err != nil {
 		t.Fatalf("Failed to create workspace1: %v", err)
 	}
 
 	// Create second workspace
-	cfg2 := config.NewDefault("cluster2")
+	cfg2 := newDefault("cluster2")
 	workspace2, err := manager.CreateWorkspace(ctx, cfg2)
 	if err != nil {
 		t.Fatalf("Failed to create workspace2: %v", err)
@@ -143,7 +141,7 @@ func TestWorkspaceMetadata(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)
@@ -193,7 +191,7 @@ func TestWorkspacePathOperations(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)
@@ -237,7 +235,7 @@ func TestWorkspaceCleanup(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)
@@ -274,7 +272,7 @@ func TestWorkspaceTimestamps(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)
@@ -319,7 +317,7 @@ func TestCheckpointCreation(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)
@@ -363,7 +361,7 @@ func TestCheckpointRestore(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)
@@ -426,7 +424,7 @@ func TestCheckpointDeletion(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)
@@ -470,7 +468,7 @@ func TestAtomicWrite(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)
@@ -513,7 +511,7 @@ func TestAtomicWriteString(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)
@@ -545,7 +543,7 @@ func TestAtomicCopyFile(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)
@@ -582,7 +580,7 @@ func TestTransaction(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)
@@ -629,7 +627,7 @@ func TestTransactionRollback(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)

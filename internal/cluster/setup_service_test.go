@@ -54,12 +54,8 @@ func TestSetupService_generateGitOpsManifests_DryRun(t *testing.T) {
 	tmpDir := t.TempDir()
 	gitDir := filepath.Join(tmpDir, "gitops")
 
-	cfg := config.Config{
-		SchemaVersion: "2.0",
-	}
-	cfg.OpenCenter.Meta.Name = "test-cluster"
+	cfg := mustNewClusterTestConfig("test-cluster", "openstack")
 	cfg.OpenCenter.GitOps.GitDir = gitDir
-	cfg.OpenCenter.Infrastructure.Provider = "openstack"
 
 	pathResolver := paths.NewPathResolver(tmpDir)
 
@@ -272,11 +268,7 @@ func TestSetupService_OpenStackSetupDoesNotUseLegacyConfigValidator(t *testing.T
 		t.Fatalf("failed to create cluster directories: %v", err)
 	}
 
-	cfg, err := config.NewProviderDefault(clusterName, "openstack")
-	if err != nil {
-		t.Fatalf("NewProviderDefault() error = %v", err)
-	}
-	cfg.SchemaVersion = "2.0"
+	cfg := mustNewClusterTestConfig(clusterName, "openstack")
 	cfg.OpenCenter.Meta.Organization = organization
 	cfg.OpenCenter.GitOps.GitDir = gitDir
 
@@ -320,13 +312,8 @@ func TestSetupService_Setup(t *testing.T) {
 	}
 
 	// Create a minimal config
-	cfg := config.Config{
-		SchemaVersion: "2.0",
-	}
-	cfg.OpenCenter.Cluster.ClusterName = "test-cluster"
-	cfg.OpenCenter.Meta.Name = "test-cluster"
+	cfg := mustNewClusterTestConfig("test-cluster", "kind")
 	cfg.OpenCenter.GitOps.GitDir = gitDir
-	cfg.OpenCenter.Infrastructure.Provider = "kind"
 
 	// Save config
 	testhelpers.SaveConfigWithPathResolver(t, cfg, pathResolver)
@@ -397,11 +384,10 @@ exit 0
 		t.Fatalf("failed to create cluster directories: %v", err)
 	}
 
-	cfg := config.NewDefault("kind-cluster")
-	cfg.SchemaVersion = "2.0"
+	cfg := mustNewClusterTestConfig("kind-cluster", "openstack")
 	cfg.OpenCenter.Meta.Organization = "opencenter"
 	cfg.OpenCenter.GitOps.GitDir = gitDir
-	if err := config.ApplyProviderDefaults(&cfg, "kind"); err != nil {
+	if err := applyClusterProviderDefaults(&cfg, "kind"); err != nil {
 		t.Fatalf("apply provider defaults: %v", err)
 	}
 
@@ -449,13 +435,8 @@ func TestSetupService_Setup_MissingGitDir(t *testing.T) {
 	}
 
 	// Create a config without git_dir
-	cfg := config.Config{
-		SchemaVersion: "2.0",
-	}
-	cfg.OpenCenter.Cluster.ClusterName = "test-cluster"
-	cfg.OpenCenter.Meta.Name = "test-cluster"
+	cfg := mustNewClusterTestConfig("test-cluster", "kind")
 	cfg.OpenCenter.GitOps.GitDir = "" // Empty git_dir
-	cfg.OpenCenter.Infrastructure.Provider = "kind"
 
 	// Save config
 	testhelpers.SaveConfigWithPathResolver(t, cfg, pathResolver)
@@ -489,13 +470,9 @@ func TestSetupService_Setup_ValidationFailure(t *testing.T) {
 	}
 
 	// Create an invalid config
-	cfg := config.Config{
-		SchemaVersion: "2.0",
-	}
-	cfg.OpenCenter.Cluster.ClusterName = "test-cluster"
-	cfg.OpenCenter.Meta.Name = "test-cluster"
+	cfg := mustNewClusterTestConfig("test-cluster", "kind")
 	cfg.OpenCenter.GitOps.GitDir = gitDir
-	cfg.OpenCenter.Infrastructure.Provider = "kind"
+	cfg.OpenCenter.Infrastructure.Provider = "invalid-provider"
 
 	// Save config
 	testhelpers.SaveConfigWithPathResolver(t, cfg, pathResolver)
@@ -535,13 +512,8 @@ func TestSetupService_Setup_WithForce(t *testing.T) {
 		t.Fatalf("failed to create cluster directories: %v", err)
 	}
 
-	cfg := config.Config{
-		SchemaVersion: "2.0",
-	}
-	cfg.OpenCenter.Cluster.ClusterName = "test-cluster"
-	cfg.OpenCenter.Meta.Name = "test-cluster"
+	cfg := mustNewClusterTestConfig("test-cluster", "kind")
 	cfg.OpenCenter.GitOps.GitDir = gitDir
-	cfg.OpenCenter.Infrastructure.Provider = "kind"
 
 	testhelpers.SaveConfigWithPathResolver(t, cfg, pathResolver)
 

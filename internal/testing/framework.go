@@ -18,7 +18,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/template"
 )
 
@@ -190,7 +190,7 @@ func (fw *TestFramework) WriteFile(t *testing.T, filename string, content []byte
 }
 
 // CreateTestConfig creates a test configuration with the given provider.
-func (fw *TestFramework) CreateTestConfig(provider string) config.Config {
+func (fw *TestFramework) CreateTestConfig(provider string) v2.Config {
 	return fw.ConfigGenerator.GenerateConfig(provider)
 }
 

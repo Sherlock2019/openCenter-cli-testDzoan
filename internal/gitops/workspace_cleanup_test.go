@@ -19,8 +19,6 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 // TestWorkspaceCleanupCheckpoints tests that cleanup removes all checkpoints.
@@ -29,7 +27,7 @@ func TestWorkspaceCleanupCheckpoints(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)
@@ -101,7 +99,7 @@ func TestStaleWorkspaceCleanup(t *testing.T) {
 	ctx := context.Background()
 
 	// Create workspace
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)
@@ -152,7 +150,7 @@ func TestWorkspaceNotStaleWithActivity(t *testing.T) {
 	ctx := context.Background()
 
 	// Create workspace
-	cfg := config.NewDefault("test-cluster")
+	cfg := newDefault("test-cluster")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)
@@ -204,19 +202,19 @@ func TestManagerShutdown(t *testing.T) {
 	ctx := context.Background()
 
 	// Create multiple workspaces
-	cfg1 := config.NewDefault("cluster1")
+	cfg1 := newDefault("cluster1")
 	workspace1, err := manager.CreateWorkspace(ctx, cfg1)
 	if err != nil {
 		t.Fatalf("Failed to create workspace1: %v", err)
 	}
 
-	cfg2 := config.NewDefault("cluster2")
+	cfg2 := newDefault("cluster2")
 	workspace2, err := manager.CreateWorkspace(ctx, cfg2)
 	if err != nil {
 		t.Fatalf("Failed to create workspace2: %v", err)
 	}
 
-	cfg3 := config.NewDefault("cluster3")
+	cfg3 := newDefault("cluster3")
 	workspace3, err := manager.CreateWorkspace(ctx, cfg3)
 	if err != nil {
 		t.Fatalf("Failed to create workspace3: %v", err)
@@ -283,7 +281,7 @@ func TestOrphanedWorkspaceCleanup(t *testing.T) {
 	}
 
 	// Create a tracked workspace (should not be cleaned up)
-	cfg := config.NewDefault("tracked-cluster")
+	cfg := newDefault("tracked-cluster")
 	trackedWorkspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create tracked workspace: %v", err)
@@ -360,14 +358,14 @@ func TestGetActiveWorkspaceCount(t *testing.T) {
 	}
 
 	// Create workspaces
-	cfg1 := config.NewDefault("cluster1")
+	cfg1 := newDefault("cluster1")
 	workspace1, _ := manager.CreateWorkspace(ctx, cfg1)
 
 	if count := manager.(*DefaultWorkspaceManager).GetActiveWorkspaceCount(); count != 1 {
 		t.Errorf("Expected 1 active workspace, got %d", count)
 	}
 
-	cfg2 := config.NewDefault("cluster2")
+	cfg2 := newDefault("cluster2")
 	workspace2, _ := manager.CreateWorkspace(ctx, cfg2)
 
 	if count := manager.(*DefaultWorkspaceManager).GetActiveWorkspaceCount(); count != 2 {
@@ -401,13 +399,13 @@ func TestListActiveWorkspaces(t *testing.T) {
 	}
 
 	// Create workspaces
-	cfg1 := config.NewDefault("cluster1")
+	cfg1 := newDefault("cluster1")
 	workspace1, _ := manager.CreateWorkspace(ctx, cfg1)
 
-	cfg2 := config.NewDefault("cluster2")
+	cfg2 := newDefault("cluster2")
 	workspace2, _ := manager.CreateWorkspace(ctx, cfg2)
 
-	cfg3 := config.NewDefault("cluster3")
+	cfg3 := newDefault("cluster3")
 	workspace3, _ := manager.CreateWorkspace(ctx, cfg3)
 
 	// Get list of active workspaces
@@ -448,7 +446,7 @@ func TestConcurrentWorkspaceCleanup(t *testing.T) {
 	// Create multiple workspaces
 	workspaces := make([]*GitOpsWorkspace, 10)
 	for i := 0; i < 10; i++ {
-		cfg := config.NewDefault("cluster-" + string(rune('0'+i)))
+		cfg := newDefault("cluster-" + string(rune('0'+i)))
 		workspace, err := manager.CreateWorkspace(ctx, cfg)
 		if err != nil {
 			t.Fatalf("Failed to create workspace %d: %v", i, err)

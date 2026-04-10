@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
@@ -40,42 +41,6 @@ func TestConfigurationManager_Integration(t *testing.T) {
 	}
 
 	// Create a test configuration file
-	configPath := filepath.Join(tmpDir, orgName, "."+clusterName+"-config.yaml")
-	configContent := `schema_version: "2.0"
-opencenter:
-  meta:
-    name: test-cluster
-    organization: test-org
-    region: us-east-1
-    env: dev
-  cluster:
-    cluster_name: test-cluster
-  gitops:
-    git_dir: /tmp/gitops
-  infrastructure:
-    provider: kind
-  storage:
-    enabled: false
-opentofu:
-  enabled: false
-  path: /usr/bin/tofu
-  backend:
-    type: local
-    local:
-      path: /tmp/terraform
-secrets:
-  global:
-    aws:
-      infrastructure:
-        access_key: ""
-        secret_access_key: ""
-`
-
-	err = os.WriteFile(configPath, []byte(configContent), 0600)
-	if err != nil {
-		t.Fatalf("Failed to write config file: %v", err)
-	}
-
 	// Create manager with test directory
 	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := fs.NewDefaultFileSystem(errorHandler)
@@ -87,6 +52,16 @@ secrets:
 	manager := NewConfigurationManagerWithDeps(loader, validator, cache, pathResolver, fileSystem)
 
 	ctx := context.Background()
+	configPath := filepath.Join(tmpDir, orgName, "."+clusterName+"-config.yaml")
+	cfg, err := v2.NewV2Default(clusterName, "kind")
+	if err != nil {
+		t.Fatalf("NewV2Default() error = %v", err)
+	}
+	cfg.OpenCenter.Meta.Organization = orgName
+	cfg.OpenCenter.GitOps.GitDir = "/tmp/gitops"
+	if err := loader.SaveToFile(ctx, configPath, cfg); err != nil {
+		t.Fatalf("Failed to write config file: %v", err)
+	}
 
 	// Test Load
 	t.Run("Load", func(t *testing.T) {

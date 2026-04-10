@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	testhelpers "github.com/opencenter-cloud/opencenter-cli/internal/testing"
 )
@@ -23,6 +23,7 @@ func prepareCommandTestEnv(t *testing.T, dir string) {
 	t.Setenv("OPENCENTER_CLUSTER", "")
 	t.Setenv("OPENCENTER_SESSION_FILE", "")
 	t.Setenv("OPENCENTER_SESSION_ID", "")
+	t.Setenv("OPENCENTER_TEST_MODE", "1")
 	resetCommandStateForTests()
 }
 
@@ -42,19 +43,19 @@ func createClusterDirectoriesForTest(t *testing.T, dir, clusterName, organizatio
 	return resolver, clusterPaths
 }
 
-func saveKindConfigForCommandTest(t *testing.T, dir, clusterName, organization string) (config.Config, *paths.ClusterPaths) {
+func saveKindConfigForCommandTest(t *testing.T, dir, clusterName, organization string) (v2.Config, *paths.ClusterPaths) {
 	t.Helper()
 
 	resolver, clusterPaths := createClusterDirectoriesForTest(t, dir, clusterName, organization)
 
-	cfg := config.NewDefault(clusterName)
-	cfg.SchemaVersion = "2.0"
+	cfgPtr, err := v2.NewV2Default(clusterName, "kind")
+	if err != nil {
+		t.Fatalf("create native v2 kind config: %v", err)
+	}
+	cfg := *cfgPtr
 	cfg.OpenCenter.Meta.Name = clusterName
 	cfg.OpenCenter.Meta.Organization = organization
 	cfg.OpenCenter.GitOps.GitDir = clusterPaths.GitOpsDir
-	if err := config.ApplyProviderDefaults(&cfg, "kind"); err != nil {
-		t.Fatalf("apply kind defaults: %v", err)
-	}
 
 	testhelpers.SaveConfigWithPathResolver(t, cfg, resolver)
 	return cfg, clusterPaths
@@ -65,14 +66,44 @@ func installFakeGitBinary(t *testing.T, binDir string) {
 
 	writeFakeExecutable(t, filepath.Join(binDir, "git"), `#!/bin/sh
 set -eu
-case "${1:-}" in
+if [ "${1:-}" = "-C" ]; then
+  cd "${2:?}"
+  shift 2
+fi
+
+subcommand="${1:-}"
+shift || true
+
+case "$subcommand" in
   init)
     mkdir -p .git
+    ;;
+  remote)
+    action="${1:-}"
+    shift || true
+    case "$action" in
+      add)
+        if [ "${1:-}" = "origin" ]; then
+          printf '%s\n' "${2:-}" > .git/origin-url
+        fi
+        ;;
+      get-url)
+        if [ "${1:-}" = "origin" ] && [ -f .git/origin-url ]; then
+          cat .git/origin-url
+        else
+          exit 1
+        fi
+        ;;
+      set-url)
+        if [ "${1:-}" = "origin" ]; then
+          printf '%s\n' "${2:-}" > .git/origin-url
+        fi
+        ;;
+    esac
     ;;
   add)
     ;;
   status)
-    printf 'M README.md\n'
     ;;
   commit)
     ;;

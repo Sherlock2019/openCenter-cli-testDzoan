@@ -7,13 +7,12 @@ import (
 	"testing"
 
 	overlaycfg "github.com/opencenter-cloud/opencenter-cli/internal/config/overlay"
-	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 func TestValidateOverlayUnitConfigRejectsInvalidRepositoryScheme(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.NewDefault("overlay-validation")
+	cfg := newDefault("overlay-validation")
 	cfg.OpenCenter.GitOps.OverlayUnits.CustomerManaged = overlaycfg.CustomerManagedConfig{
 		Enabled:        true,
 		RepositoryName: "customer-apps",
@@ -35,7 +34,7 @@ func TestValidateOverlayUnitConfigRejectsInvalidRepositoryScheme(t *testing.T) {
 func TestValidateOverlayUnitConfigRejectsMissingSSHSecrets(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.NewDefault("overlay-validation")
+	cfg := newDefault("overlay-validation")
 	cfg.OpenCenter.GitOps.OverlayUnits.CustomerManaged = overlaycfg.CustomerManagedConfig{
 		Enabled:        true,
 		RepositoryName: "customer-apps",
@@ -58,7 +57,7 @@ func TestValidateOverlayUnitConfigRejectsMissingSSHSecrets(t *testing.T) {
 func TestValidateOverlayUnitConfigRejectsInvalidSOPSRules(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.NewDefault("overlay-validation")
+	cfg := newDefault("overlay-validation")
 	cfg.OpenCenter.GitOps.OverlayUnits.SOPS = overlaycfg.SOPSGenerationConfig{
 		Enabled: true,
 		Rules: []overlaycfg.SOPSGenerationRule{
@@ -76,7 +75,7 @@ func TestValidateOverlayUnitConfigRejectsInvalidSOPSRules(t *testing.T) {
 }
 
 func TestRenderSingleServiceRewritesOnlyTargetAndAggregates(t *testing.T) {
-	cfg := config.NewDefault("single-service")
+	cfg := newDefault("single-service")
 	cfg.OpenCenter.Cluster.ClusterName = "single-service"
 	cfg.OpenCenter.GitOps.GitDir = t.TempDir()
 

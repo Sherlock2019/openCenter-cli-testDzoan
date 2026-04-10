@@ -28,6 +28,7 @@ import (
 	"testing"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/gitops"
 	"github.com/opencenter-cloud/opencenter-cli/internal/template"
 	testingpkg "github.com/opencenter-cloud/opencenter-cli/internal/testing"
@@ -117,14 +118,14 @@ func BenchmarkConfigBuilding_Legacy(b *testing.B) {
 
 			for i := 0; i < b.N; i++ {
 				// Legacy: Direct struct construction
-				cfg := config.Config{
-					SchemaVersion: "1.0.0",
-					OpenCenter: config.SimplifiedOpenCenter{
-						Meta: config.ClusterMeta{
+				cfg := v2.Config{
+					SchemaVersion: "2.0",
+					OpenCenter: v2.OpenCenterConfig{
+						Meta: v2.MetaConfig{
 							Name:         "test-cluster",
 							Organization: "test-org",
 						},
-						Infrastructure: config.Infrastructure{
+						Infrastructure: v2.InfrastructureConfig{
 							Provider: provider,
 						},
 					},
@@ -179,12 +180,12 @@ func BenchmarkConfigBuilding_Complex(b *testing.B) {
 
 		for i := 0; i < b.N; i++ {
 			cfg := gen.GenerateConfig("openstack")
-			// Add many overrides
-			if cfg.Overrides == nil {
-				cfg.Overrides = make(map[string]any)
+			// Add many labels to simulate a larger config surface.
+			if cfg.Metadata.Labels == nil {
+				cfg.Metadata.Labels = make(map[string]string)
 			}
 			for j := 0; j < 50; j++ {
-				cfg.Overrides[fmt.Sprintf("custom.setting.%d", j)] = fmt.Sprintf("value-%d", j)
+				cfg.Metadata.Labels[fmt.Sprintf("custom.setting.%d", j)] = fmt.Sprintf("value-%d", j)
 			}
 			_ = cfg
 		}

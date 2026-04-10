@@ -20,8 +20,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 )
 
 func TestNewGitIntegrator(t *testing.T) {
@@ -103,13 +101,7 @@ func TestGitIntegrator_CreateCommitMessage(t *testing.T) {
 	encryptor := NewDefaultEncryptor(nil, nil)
 	integrator := NewGitIntegrator(tmpDir, encryptor)
 
-	cfg := &config.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Cluster: config.ClusterConfig{
-				ClusterName: "test-cluster",
-			},
-		},
-	}
+	cfg := newSOPSTestConfig("test-cluster", "openstack", "")
 
 	tests := []struct {
 		operation string
@@ -140,13 +132,7 @@ func TestGitIntegrator_getFilesToEncrypt(t *testing.T) {
 	encryptor := NewDefaultEncryptor(nil, nil)
 	integrator := NewGitIntegrator(tmpDir, encryptor)
 
-	cfg := &config.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Infrastructure: config.Infrastructure{
-				Provider: "openstack",
-			},
-		},
-	}
+	cfg := newSOPSTestConfig("test-cluster", "openstack", "")
 
 	files := integrator.getFilesToEncrypt(tmpDir, cfg)
 

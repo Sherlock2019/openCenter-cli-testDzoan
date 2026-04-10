@@ -2,11 +2,15 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
+	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	configdefaults "github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 func writeTestConfig(t *testing.T, dir, name, provider, gitDir string) {
@@ -22,43 +26,21 @@ func writeTestConfig(t *testing.T, dir, name, provider, gitDir string) {
 		t.Fatalf("create cluster directory: %v", err)
 	}
 
-	content := fmt.Sprintf(`schema_version: "2.0"
-opencenter:
-  meta:
-    organization: opencenter
-    name: %s
-    stage: init
-    status: success
-  infrastructure:
-    provider: %s
-%s  cluster:
-    cluster_name: %s
-  gitops:
-    git_dir: %q
-`, name, provider, kindConfigBlock(provider), name, gitDir)
+	cfgPtr, err := v2.NewV2Default(name, provider)
+	if err != nil {
+		t.Fatalf("create v2 config: %v", err)
+	}
+	cfg := *cfgPtr
+	cfg.OpenCenter.Meta.Organization = "opencenter"
+	if gitDir != "" {
+		cfg.OpenCenter.GitOps.GitDir = gitDir
+	}
 
-	path := filepath.Join(orgDir, "."+name+"-config.yaml")
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	loader := v2.NewConfigLoader(configdefaults.NewRegistry())
+	configPath := filepath.Join(orgDir, "."+name+"-config.yaml")
+	if err := loader.SaveToFile(&cfg, configPath); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
-}
-
-func kindConfigBlock(provider string) string {
-	if provider != "kind" {
-		return ""
-	}
-
-	return `    kind:
-      cluster_name: demo
-      kubernetes_version: "1.30.4"
-      control_plane_count: 1
-      worker_count: 2
-      api_server_address: "127.0.0.1"
-      api_server_port: 6443
-      pod_subnet: "10.244.0.0/16"
-      service_subnet: "10.96.0.0/16"
-      kubeconfig_path_policy: "cluster-owned"
-`
 }
 
 func TestClusterBootstrapDryRunMake(t *testing.T) {
@@ -112,5 +94,64 @@ func TestClusterBootstrapDryRunKind(t *testing.T) {
 	output := out.String()
 	if !strings.Contains(output, "Bootstrap complete in") {
 		t.Fatalf("expected completion message in output, got: %s", output)
+	}
+}
+
+// initGitRepo initializes a bare-minimum git repo in dir with an initial commit.
+func initGitRepo(t *testing.T, dir string) {
+	t.Helper()
+	for _, args := range [][]string{
+		{"init"},
+		{"config", "user.email", "test@test.com"},
+		{"config", "user.name", "test"},
+		{"commit", "--allow-empty", "-m", "init"},
+	} {
+		cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %s: %v", args, out, err)
+		}
+	}
+}
+
+func TestVerifyOriginMatchesGitURL_Match(t *testing.T) {
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+
+	expectedURL := "https://gitea.local:3001/user/repo.git"
+	cmd := exec.Command("git", "-C", dir, "remote", "add", "origin", expectedURL)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("add remote: %s: %v", out, err)
+	}
+
+	if err := verifyOriginMatchesGitURL(context.Background(), dir, expectedURL); err != nil {
+		t.Fatalf("expected no error for matching origin, got: %v", err)
+	}
+}
+
+func TestVerifyOriginMatchesGitURL_Mismatch(t *testing.T) {
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+
+	cmd := exec.Command("git", "-C", dir, "remote", "add", "origin", "https://wrong.example.com/repo.git")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("add remote: %s: %v", out, err)
+	}
+
+	err := verifyOriginMatchesGitURL(context.Background(), dir, "https://gitea.local:3001/user/repo.git")
+	if err == nil {
+		t.Fatal("expected error for mismatched origin, got nil")
+	}
+	if !strings.Contains(err.Error(), "git remote origin") {
+		t.Fatalf("expected descriptive mismatch error, got: %v", err)
+	}
+}
+
+func TestVerifyOriginMatchesGitURL_NoRemote(t *testing.T) {
+	dir := t.TempDir()
+	initGitRepo(t, dir)
+
+	// No origin remote — should pass silently so bootstrap can add it later.
+	if err := verifyOriginMatchesGitURL(context.Background(), dir, "https://gitea.local:3001/user/repo.git"); err != nil {
+		t.Fatalf("expected no error when origin is absent, got: %v", err)
 	}
 }

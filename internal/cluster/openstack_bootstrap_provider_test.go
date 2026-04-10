@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 )
 
@@ -48,10 +47,7 @@ func copyStringMap(input map[string]string) map[string]string {
 
 func TestOpenStackBootstrapProviderUsesOpenTofuAndNormalizesKubeconfig(t *testing.T) {
 	clusterName := "demo"
-	cfg, err := config.NewProviderDefault(clusterName, "openstack")
-	if err != nil {
-		t.Fatalf("NewProviderDefault() error = %v", err)
-	}
+	cfg := mustNewClusterTestConfig(clusterName, "openstack")
 
 	cfg.OpenCenter.GitOps.GitDir = filepath.Join(t.TempDir(), "repo")
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://keystone.example.com/v3"
@@ -141,11 +137,7 @@ func TestBootstrapServiceOpenStackProvisionInfrastructureHonorsSavedState(t *tes
 		t.Fatalf("resolve cluster paths: %v", err)
 	}
 
-	cfg, err := config.NewProviderDefault(clusterName, "openstack")
-	if err != nil {
-		t.Fatalf("NewProviderDefault() error = %v", err)
-	}
-	cfg.SchemaVersion = "2.0"
+	cfg := mustNewClusterTestConfig(clusterName, "openstack")
 	cfg.OpenCenter.Meta.Organization = organization
 	cfg.OpenCenter.GitOps.GitDir = filepath.Join(tmpDir, "repo")
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://keystone.example.com/v3"

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 )
@@ -293,7 +294,7 @@ func TestValidateService_validateConnectivity(t *testing.T) {
 	configManager, _ := config.NewConfigManager("")
 	service := NewValidateService(pathResolver, validationEngine, configManager)
 
-	cfg := config.Config{}
+	cfg := v2.Config{}
 	cfg.OpenCenter.Infrastructure.Provider = "kind"
 
 	result := &ValidationResult{
@@ -352,7 +353,7 @@ func TestValidateService_validateProviderSpecific(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := config.Config{}
+			cfg := v2.Config{}
 			cfg.OpenCenter.Infrastructure.Provider = tt.provider
 
 			result := &ValidationResult{

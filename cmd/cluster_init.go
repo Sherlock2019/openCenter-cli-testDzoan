@@ -24,6 +24,7 @@ import (
 	"github.com/opencenter-cloud/opencenter-cli/internal/cluster"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	configflags "github.com/opencenter-cloud/opencenter-cli/internal/config/flags"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/di"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util"
@@ -449,7 +450,7 @@ func setReflectValue(field reflect.Value, value string) error {
 	return nil
 }
 
-func applyInitFlagOverrides(cfg *config.Config, configMap map[string]any, overrides []string) error {
+func applyInitFlagOverrides(cfg *v2.Config, configMap map[string]any, overrides []string) error {
 	if len(overrides) == 0 {
 		return nil
 	}

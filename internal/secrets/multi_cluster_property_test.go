@@ -622,7 +622,11 @@ secrets:
   sops_age_key_file: %s
 `, clusterName, filepath.Join(tmpDir, "gitops"), filepath.Join(configDir, "age-key.txt"))
 
-	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+	data, err := normalizeSecretsConfigYAMLBytes(clusterName, configContent)
+	if err != nil {
+		return fmt.Errorf("failed to normalize config file: %w", err)
+	}
+	if err := os.WriteFile(configPath, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
 

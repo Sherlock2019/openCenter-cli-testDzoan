@@ -27,7 +27,7 @@ import (
 	"github.com/vmware/govmomi/vim25/types"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/cloud"
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 func TestProvider_GetCurrentState(t *testing.T) {
@@ -56,6 +56,10 @@ func TestProvider_GetCurrentState(t *testing.T) {
 	virtualMachines, err := finder.VirtualMachineList(ctx, "*")
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, len(virtualMachines), 2)
+	vm1Name, err := virtualMachines[0].ObjectName(ctx)
+	require.NoError(t, err)
+	vm2Name, err := virtualMachines[1].ObjectName(ctx)
+	require.NoError(t, err)
 
 	virtualMachineState, err := listVirtualMachines(ctx, client, datacenter)
 	require.NoError(t, err)
@@ -69,28 +73,30 @@ func TestProvider_GetCurrentState(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, networkNames)
 	networkName := networkNames[0]
-	vm1Name, err := virtualMachines[0].ObjectName(ctx)
-	require.NoError(t, err)
-	vm2Name, err := virtualMachines[1].ObjectName(ctx)
-	require.NoError(t, err)
-
 	password, _ := server.URL.User.Password()
 
-	cfg := config.NewDefault("prod-cluster")
+	cfgPtr, err := v2.NewV2Default("prod-cluster", "vmware")
+	require.NoError(t, err)
+	cfg := *cfgPtr
 	cfg.OpenCenter.Infrastructure.Provider = "vmware"
 	cfg.OpenCenter.Infrastructure.Cloud.VMware.VCenterServer = server.URL.Hostname()
 	cfg.OpenCenter.Infrastructure.Cloud.VMware.Datacenter = datacenterName
 	cfg.OpenCenter.Infrastructure.Cloud.VMware.Datastore = datastoreName
 	cfg.OpenCenter.Infrastructure.Cloud.VMware.Network = networkName
-	cfg.OpenCenter.Infrastructure.Cloud.VMware.Nodes = []config.VMNode{
+	cfg.OpenCenter.Infrastructure.Cloud.VMware.Nodes = []v2.VMwareNode{
 		{Name: vm1Name, Role: "master"},
 		{Name: vm2Name, Role: "worker"},
 	}
-	cfg.Secrets.VSphereCsi.VCenterHost = server.URL.Hostname()
-	cfg.Secrets.VSphereCsi.Username = server.URL.User.Username()
-	cfg.Secrets.VSphereCsi.Password = password
-	cfg.Secrets.VSphereCsi.Port = server.URL.Port()
-	cfg.Secrets.VSphereCsi.InsecureFlag = "true"
+	if cfg.Secrets.ServiceSecrets == nil {
+		cfg.Secrets.ServiceSecrets = make(map[string]any)
+	}
+	cfg.Secrets.ServiceSecrets["vsphere_csi"] = map[string]any{
+		"vcenter_host":  server.URL.Hostname(),
+		"username":      server.URL.User.Username(),
+		"password":      password,
+		"port":          server.URL.Port(),
+		"insecure_flag": "true",
+	}
 
 	provider := NewProvider()
 	provider.newClient = func(context.Context, *url.URL, bool) (*govmomi.Client, error) {

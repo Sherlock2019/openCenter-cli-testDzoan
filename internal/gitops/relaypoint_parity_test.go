@@ -55,8 +55,12 @@ type resolvedParityRules struct {
 }
 
 func TestRelayPointRenderingParity(t *testing.T) {
-	inventory := loadParityInventory(t)
 	fixtureRoot := filepath.Join("..", "..", "testdata", "relaypoint-logistics-shared")
+	if _, err := os.Stat(fixtureRoot); os.IsNotExist(err) {
+		t.Skipf("relaypoint fixture root not present: %s", fixtureRoot)
+	}
+
+	inventory := loadParityInventory(t)
 
 	clusters := []string{"k8s-dev", "k8s-dr", "k8s-prod", "k8s-qa", "k8s-uat"}
 	for _, cluster := range clusters {

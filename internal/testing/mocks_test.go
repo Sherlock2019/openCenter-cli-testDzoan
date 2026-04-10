@@ -18,7 +18,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -107,7 +107,7 @@ func TestMockConfigBuilder(t *testing.T) {
 func TestMockConfigValidator(t *testing.T) {
 	t.Run("default behavior", func(t *testing.T) {
 		validator := NewMockConfigValidator()
-		cfg := config.Config{}
+		cfg := v2.Config{}
 
 		errors := validator.Validate(cfg)
 		assert.Nil(t, errors)
@@ -116,13 +116,13 @@ func TestMockConfigValidator(t *testing.T) {
 
 	t.Run("custom behavior", func(t *testing.T) {
 		validator := NewMockConfigValidator()
-		validator.ValidateFunc = func(cfg config.Config) []error {
+		validator.ValidateFunc = func(cfg v2.Config) []error {
 			return []error{
 				errors.New("test error"),
 			}
 		}
 
-		errs := validator.Validate(config.Config{})
+		errs := validator.Validate(v2.Config{})
 		assert.Len(t, errs, 1)
 		assert.Equal(t, "test error", errs[0].Error())
 	})
@@ -167,7 +167,7 @@ func TestMockTemplateRegistry(t *testing.T) {
 func TestMockGitOpsGenerator(t *testing.T) {
 	t.Run("generate", func(t *testing.T) {
 		generator := NewMockGitOpsGenerator()
-		cfg := config.Config{}
+		cfg := v2.Config{}
 
 		err := generator.Generate(context.Background(), cfg)
 		require.NoError(t, err)
@@ -176,7 +176,7 @@ func TestMockGitOpsGenerator(t *testing.T) {
 
 	t.Run("dry run", func(t *testing.T) {
 		generator := NewMockGitOpsGenerator()
-		cfg := config.Config{}
+		cfg := v2.Config{}
 
 		plan, err := generator.GenerateDryRun(context.Background(), cfg)
 		require.NoError(t, err)
@@ -230,7 +230,7 @@ func TestMockServiceRegistry(t *testing.T) {
 
 	t.Run("get enabled services", func(t *testing.T) {
 		registry := NewMockServiceRegistry()
-		cfg := config.Config{}
+		cfg := v2.Config{}
 
 		services := registry.GetEnabledServices(cfg)
 		assert.Empty(t, services)
@@ -258,7 +258,7 @@ func TestMockServicePlugin(t *testing.T) {
 		assert.Equal(t, "test-plugin", plugin.Name())
 		assert.Equal(t, "monitoring", plugin.Type())
 
-		cfg := config.Config{}
+		cfg := v2.Config{}
 		err := plugin.Validate(cfg)
 		require.NoError(t, err)
 		assert.Len(t, plugin.ValidateCalls, 1)
@@ -285,7 +285,7 @@ func TestMockMigrationManager(t *testing.T) {
 		assert.Len(t, versions, 1)
 		assert.Equal(t, 1, manager.GetSupportedVersionsCalls)
 
-		cfg := config.Config{}
+		cfg := v2.Config{}
 		migratedCfg, err := manager.MigrateConfig(cfg, "2.0.0")
 		require.NoError(t, err)
 		assert.NotNil(t, migratedCfg)

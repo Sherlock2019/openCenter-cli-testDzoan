@@ -17,30 +17,27 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 func TestExtractAWS(t *testing.T) {
-	cfg := config.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Infrastructure: config.Infrastructure{
-				Cloud: config.CloudConfig{
-					AWS: config.SimplifiedAWSCloud{
-						Profile: "test-profile",
-						Region:  "us-west-2",
-						VPCID:   "vpc-12345",
+	cfg := v2.Config{
+		OpenCenter: v2.OpenCenterConfig{
+			Infrastructure: v2.InfrastructureConfig{
+				Cloud: v2.CloudConfig{
+					AWS: &v2.AWSCloudConfig{
+						Region:    "us-west-2",
+						VPCID:     "vpc-12345",
+						SubnetIDs: []string{"subnet-12345"},
+						AMIID:     "ami-12345",
 					},
 				},
 			},
-			Cluster: config.ClusterConfig{
-				AWSAccessKey:       "AKIATEST123",
-				AWSSecretAccessKey: "test-secret-key",
-			},
 		},
-		Secrets: config.Secrets{
-			Global: config.GlobalSecrets{
-				AWS: config.AWSGlobalSecrets{
-					Infrastructure: config.AWSSecrets{
+		Secrets: v2.SecretsConfig{
+			Global: v2.GlobalSecrets{
+				AWS: v2.AWSGlobalSecrets{
+					Infrastructure: v2.AWSScopedSecrets{
 						AccessKey:       "AKIATEST456",
 						SecretAccessKey: "test-secret-key-2",
 						Region:          "us-east-1",
@@ -71,31 +68,27 @@ func TestExtractAWS(t *testing.T) {
 		t.Errorf("Expected Region 'us-east-1', got '%s'", creds.Region)
 	}
 
-	if creds.Profile != "test-profile" {
-		t.Errorf("Expected Profile 'test-profile', got '%s'", creds.Profile)
-	}
-
 	if creds.VPCID != "vpc-12345" {
 		t.Errorf("Expected VPCID 'vpc-12345', got '%s'", creds.VPCID)
 	}
 }
 
 func TestExtractOpenStack(t *testing.T) {
-	cfg := config.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Infrastructure: config.Infrastructure{
-				Cloud: config.CloudConfig{
-					OpenStack: config.SimplifiedOpenStackCloud{
+	cfg := v2.Config{
+		OpenCenter: v2.OpenCenterConfig{
+			Infrastructure: v2.InfrastructureConfig{
+				Cloud: v2.CloudConfig{
+					OpenStack: &v2.OpenStackCloudConfig{
 						AuthURL:                     "https://keystone.example.com/v3",
 						Region:                      "RegionOne",
 						ApplicationCredentialID:     "test-app-cred-id",
 						ApplicationCredentialSecret: "test-app-cred-secret",
 						Domain:                      "Default",
-						TenantName:                  "test-tenant",
+						ProjectName:                 "test-tenant",
 						Insecure:                    true,
-						Networking: config.OpenStackNetworkingConfig{
-							FloatingNetworkId: "net-12345",
-							SubnetId:          "subnet-67890",
+						Networking: &v2.OpenStackNetworkingConfig{
+							FloatingNetworkID: "net-12345",
+							SubnetID:          "subnet-67890",
 						},
 					},
 				},

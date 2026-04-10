@@ -628,8 +628,7 @@ secrets:
     aws_access_key: AKIAIOSFODNN7EXAMPLE
     aws_secret_access_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 `, clusterName, filepath.Join(tmpDir, "test-repo"), filepath.Join(tmpDir, "age-key.txt"))
-	err = os.WriteFile(configPath, []byte(configContent), 0644)
-	require.NoError(t, err)
+	writeNormalizedSecretsConfigFile(t, configPath, clusterName, configContent)
 
 	// Load config using LoadFromFile
 	cfg, err := configLoader.LoadFromFile(context.Background(), configPath)

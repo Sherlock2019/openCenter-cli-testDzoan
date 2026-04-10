@@ -11,21 +11,26 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/cloud"
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 func TestBuildDesiredStateOpenStackCoversManagedResources(t *testing.T) {
-	cfg := config.NewDefault("prod-cluster")
+	cfgPtr, err := v2.NewV2Default("prod-cluster", "openstack")
+	if err != nil {
+		t.Fatalf("NewV2Default() error = %v", err)
+	}
+	cfg := *cfgPtr
 	cfg.OpenCenter.Infrastructure.Provider = "openstack"
-	cfg.OpenCenter.Infrastructure.NodeNaming.Master = "cp"
-	cfg.OpenCenter.Infrastructure.NodeNaming.Worker = "wn"
-	cfg.OpenCenter.Cluster.Kubernetes.MasterCount = 3
-	cfg.OpenCenter.Cluster.Kubernetes.WorkerCount = 2
-	cfg.OpenCenter.Storage.WorkerVolumeSize = 40
+	cfg.OpenCenter.Infrastructure.Compute.MasterCount = 3
+	cfg.OpenCenter.Infrastructure.Compute.WorkerCount = 2
+	cfg.OpenCenter.Infrastructure.Storage.WorkerVolumeSize = 40
+	cfg.OpenCenter.Infrastructure.Storage.MasterVolumeSize = 40
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ImageID = "image-123"
-	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.K8sAPIPortACL = []string{"10.0.0.0/8"}
-	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.FloatingIPPool = "public"
-	cfg.OpenCenter.Cluster.Networking.LoadbalancerProvider = "octavia"
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking = &v2.OpenStackNetworkingConfig{
+		K8sAPIPortACL:  []string{"10.0.0.0/8"},
+		FloatingIPPool: "public",
+	}
+	cfg.OpenCenter.Infrastructure.Networking.LoadbalancerProvider = "octavia"
 
 	state := buildDesiredState(cfg)
 
@@ -48,7 +53,7 @@ func TestBuildDesiredStateOpenStackCoversManagedResources(t *testing.T) {
 		t.Fatalf("expected Octavia-managed config to skip floating IP desired state, got %d entries", len(state.FloatingIPs))
 	}
 
-	if state.Servers[0].Name != "prod-cluster-cp-1" {
+	if state.Servers[0].Name != "prod-cluster-master-1" {
 		t.Fatalf("unexpected first control plane name: %s", state.Servers[0].Name)
 	}
 	if state.Servers[0].Image != "image-123" {
@@ -63,10 +68,14 @@ func TestBuildDesiredStateOpenStackCoversManagedResources(t *testing.T) {
 }
 
 func TestCreateCloudProviderFactoryRegistersCloudDriftProvidersOnly(t *testing.T) {
-	cfg := config.NewDefault("prod-cluster")
+	cfgPtr, err := v2.NewV2Default("prod-cluster", "openstack")
+	if err != nil {
+		t.Fatalf("NewV2Default() error = %v", err)
+	}
+	cfg := *cfgPtr
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://identity.example.com/v3"
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Region = "sjc3"
-	cfg.OpenCenter.Infrastructure.Cloud.VMware.VCenterServer = "vc.example.com"
+	cfg.OpenCenter.Infrastructure.Cloud.VMware = &v2.VMwareCloudConfig{VCenterServer: "vc.example.com"}
 	cfg.Secrets.VSphereCsi.Username = "administrator@vsphere.local"
 	cfg.Secrets.VSphereCsi.Password = "super-secret"
 
@@ -86,14 +95,16 @@ func TestCreateCloudProviderFactoryRegistersCloudDriftProvidersOnly(t *testing.T
 }
 
 func TestBuildDesiredStateVMwareUsesConfiguredNodes(t *testing.T) {
-	cfg := config.NewDefault("prod-cluster")
+	cfgPtr, err := v2.NewV2Default("prod-cluster", "vmware")
+	if err != nil {
+		t.Fatalf("NewV2Default() error = %v", err)
+	}
+	cfg := *cfgPtr
 	cfg.OpenCenter.Infrastructure.Provider = "vmware"
 	cfg.OpenCenter.Infrastructure.Cloud.VMware.Network = "dvpg-prod"
 	cfg.OpenCenter.Infrastructure.Cloud.VMware.Datastore = "vsanDatastore"
-	cfg.OpenCenter.Infrastructure.Cloud.VMware.Nodes = []config.VMNode{
-		{Name: "cp-01", Role: "master"},
-		{Name: "worker-01", Role: "worker"},
-	}
+	cfg.OpenCenter.Infrastructure.Compute.MasterCount = 1
+	cfg.OpenCenter.Infrastructure.Compute.WorkerCount = 1
 
 	state := buildDesiredState(cfg)
 
@@ -104,7 +115,7 @@ func TestBuildDesiredStateVMwareUsesConfiguredNodes(t *testing.T) {
 	require.Empty(t, state.LoadBalancers)
 	require.Empty(t, state.FloatingIPs)
 
-	if state.Servers[0].Name != "cp-01" {
+	if state.Servers[0].Name != "prod-cluster-master-1" {
 		t.Fatalf("unexpected first vmware node name: %s", state.Servers[0].Name)
 	}
 	if state.Servers[0].Tags["role"] != "control-plane" {
@@ -116,7 +127,7 @@ func TestBuildDesiredStateVMwareUsesConfiguredNodes(t *testing.T) {
 	if state.Networks[0].Name != "dvpg-prod" {
 		t.Fatalf("unexpected vmware desired network name: %s", state.Networks[0].Name)
 	}
-	if state.Volumes[0].Name != "cp-01@vsanDatastore" {
+	if state.Volumes[0].Name != "prod-cluster-master-1@vsanDatastore" {
 		t.Fatalf("unexpected vmware desired datastore volume: %s", state.Volumes[0].Name)
 	}
 }

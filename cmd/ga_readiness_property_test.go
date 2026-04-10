@@ -513,7 +513,7 @@ func TestProperty_SOPSCRUDReturnsActionableGuidance(t *testing.T) {
 
 	// Minimal config fixture — SOPS functions only inspect the error path,
 	// so an empty config is sufficient.
-	cfg := &config.Config{}
+	cfg := &v2.Config{}
 	ctx := context.Background()
 
 	// requiredKeywords must appear in every SOPS error message.

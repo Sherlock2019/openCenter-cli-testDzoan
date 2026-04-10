@@ -9,19 +9,20 @@ import (
 	"testing"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	testhelpers "github.com/opencenter-cloud/opencenter-cli/internal/testing"
 )
 
-func saveOpenStackStatusConfig(t *testing.T, dir, clusterName, organization string) (config.Config, string) {
+func saveOpenStackStatusConfig(t *testing.T, dir, clusterName, organization string) (v2.Config, string) {
 	t.Helper()
 
 	resolver, clusterPaths := createClusterDirectoriesForTest(t, dir, clusterName, organization)
 
-	cfg, err := config.NewProviderDefault(clusterName, "openstack")
+	cfgPtr, err := v2.NewV2Default(clusterName, "openstack")
 	if err != nil {
-		t.Fatalf("NewProviderDefault() error = %v", err)
+		t.Fatalf("NewV2Default() error = %v", err)
 	}
-	cfg.SchemaVersion = "2.0"
+	cfg := *cfgPtr
 	cfg.OpenCenter.Meta.Name = clusterName
 	cfg.OpenCenter.Meta.Organization = organization
 	cfg.OpenCenter.GitOps.GitDir = filepath.Join(dir, "gitops", clusterName)

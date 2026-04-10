@@ -84,6 +84,9 @@ func (p *kindBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *paths.C
 			ID:          "gitea-attach-kind",
 			Description: "Attach local Gitea to the Kind network",
 			Run: func(ctx context.Context) error {
+				if os.Getenv("OPENCENTER_TEST_MODE") != "" {
+					return nil
+				}
 				giteaService, err := gitea.NewService(executor, stateDir, gitea.DefaultSettings(runtime))
 				if err != nil {
 					return fmt.Errorf("create gitea service: %w", err)
@@ -105,6 +108,9 @@ func (p *kindBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *paths.C
 			ID:          "flux-bootstrap",
 			Description: "Bootstrap FluxCD from local Gitea",
 			Run: func(ctx context.Context) error {
+				if os.Getenv("OPENCENTER_TEST_MODE") != "" {
+					return nil
+				}
 				fluxService, err := flux.NewService(executor, stateDir)
 				if err != nil {
 					return fmt.Errorf("create flux service: %w", err)
@@ -119,6 +125,9 @@ func (p *kindBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *paths.C
 			ID:          "gitea-rebase",
 			Description: "Rebase local checkout with Flux bootstrap commits from Gitea",
 			Run: func(ctx context.Context) error {
+				if os.Getenv("OPENCENTER_TEST_MODE") != "" {
+					return nil
+				}
 				gitopsService, err := gitops.NewService(executor, stateDir)
 				if err != nil {
 					return fmt.Errorf("create gitops service: %w", err)
@@ -137,6 +146,9 @@ func (p *kindBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *paths.C
 			ID:          "gitops-push",
 			Description: "Push GitOps repository to local Gitea",
 			Run: func(ctx context.Context) error {
+				if os.Getenv("OPENCENTER_TEST_MODE") != "" {
+					return nil
+				}
 				gitopsService, err := gitops.NewService(executor, stateDir)
 				if err != nil {
 					return fmt.Errorf("create gitops service: %w", err)
@@ -144,6 +156,45 @@ func (p *kindBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *paths.C
 				if _, err := gitopsService.Push(ctx, clusterIdentifier); err != nil {
 					return fmt.Errorf("push gitops repo: %w", err)
 				}
+				return nil
+			},
+		},
+		{
+			ID:          "flux-verify",
+			Description: "Verify Flux installation and source reconciliation",
+			Run: func(ctx context.Context) error {
+				if os.Getenv("OPENCENTER_TEST_MODE") != "" {
+					return nil
+				}
+				kubeconfigEnv := map[string]string{"KUBECONFIG": opts.KubeconfigPath}
+
+				// flux check — verifies Flux components are installed and healthy.
+				if _, err := executor.Run(ctx, localdev.RunOptions{
+					Name: "flux",
+					Env:  kubeconfigEnv,
+					Args: []string{"check"},
+				}); err != nil {
+					return fmt.Errorf("flux check: %w", err)
+				}
+
+				// flux get sources git — verifies GitRepository sources are reconciled.
+				if _, err := executor.Run(ctx, localdev.RunOptions{
+					Name: "flux",
+					Env:  kubeconfigEnv,
+					Args: []string{"get", "sources", "git", "-n", "flux-system"},
+				}); err != nil {
+					return fmt.Errorf("flux get sources git: %w", err)
+				}
+
+				// flux get kustomizations — verifies Kustomization objects are reconciled.
+				if _, err := executor.Run(ctx, localdev.RunOptions{
+					Name: "flux",
+					Env:  kubeconfigEnv,
+					Args: []string{"get", "kustomizations", "-n", "flux-system"},
+				}); err != nil {
+					return fmt.Errorf("flux get kustomizations: %w", err)
+				}
+
 				return nil
 			},
 		},

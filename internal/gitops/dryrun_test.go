@@ -28,15 +28,15 @@ import (
 func TestDryRunWorkspace_NoFilesystemChanges(t *testing.T) {
 	// Create a test configuration
 	cfg := v2.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
+		OpenCenter: v2.OpenCenterConfig{
+			Meta: v2.MetaConfig{
 				Name:         "test-cluster",
 				Organization: "test-org",
 			},
-			Infrastructure: config.Infrastructure{
+			Infrastructure: v2.InfrastructureConfig{
 				Provider: "openstack",
 			},
-			Cluster: config.ClusterConfig{
+			Cluster: v2.ClusterConfig{
 				ClusterName: "test-cluster",
 			},
 		},
@@ -89,8 +89,8 @@ func TestDryRunWorkspace_NoFilesystemChanges(t *testing.T) {
 // This tests the "accurate preview" part of Property 17.
 func TestDryRunWorkspace_AccuratePreview(t *testing.T) {
 	cfg := v2.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
+		OpenCenter: v2.OpenCenterConfig{
+			Meta: v2.MetaConfig{
 				Name:         "test-cluster",
 				Organization: "test-org",
 			},
@@ -118,8 +118,8 @@ func TestDryRunWorkspace_AccuratePreview(t *testing.T) {
 // TestDryRunWorkspace_Exists verifies that the Exists method works correctly in dry-run mode.
 func TestDryRunWorkspace_Exists(t *testing.T) {
 	cfg := v2.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
+		OpenCenter: v2.OpenCenterConfig{
+			Meta: v2.MetaConfig{
 				Name:         "test-cluster",
 				Organization: "test-org",
 			},
@@ -158,8 +158,8 @@ func TestDryRunWorkspace_Exists(t *testing.T) {
 // TestDryRunWorkspace_Summary verifies the summary generation.
 func TestDryRunWorkspace_Summary(t *testing.T) {
 	cfg := v2.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
+		OpenCenter: v2.OpenCenterConfig{
+			Meta: v2.MetaConfig{
 				Name:         "test-cluster",
 				Organization: "test-org",
 			},
@@ -191,8 +191,8 @@ func TestDryRunWorkspace_Summary(t *testing.T) {
 // TestAtomicWriter_DryRunMode verifies that AtomicWriter detects and uses dry-run mode.
 func TestAtomicWriter_DryRunMode(t *testing.T) {
 	cfg := v2.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
+		OpenCenter: v2.OpenCenterConfig{
+			Meta: v2.MetaConfig{
 				Name:         "test-cluster",
 				Organization: "test-org",
 			},
@@ -247,8 +247,8 @@ func TestAtomicWriter_DryRunMode(t *testing.T) {
 // TestDryRunWorkspace_Checkpoints verifies checkpoint operations in dry-run mode.
 func TestDryRunWorkspace_Checkpoints(t *testing.T) {
 	cfg := v2.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
+		OpenCenter: v2.OpenCenterConfig{
+			Meta: v2.MetaConfig{
 				Name:         "test-cluster",
 				Organization: "test-org",
 			},

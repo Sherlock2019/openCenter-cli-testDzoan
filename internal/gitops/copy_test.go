@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 
 func TestCopyBase(t *testing.T) {
 	dst := t.TempDir()
-	cfg := config.NewDefault("test")
+	cfg := newDefault("test")
 	cfg.OpenCenter.GitOps.GitDir = dst
 
 	if err := CopyBase(cfg, false); err != nil {
@@ -55,7 +55,7 @@ func TestCopyBase(t *testing.T) {
 
 func TestRenderInfrastructureClusterRendersConfigValues(t *testing.T) {
 	dst := t.TempDir()
-	cfg := config.NewDefault("render-test")
+	cfg := newDefault("render-test")
 	cfg.OpenCenter.Cluster.ClusterName = "render-test"
 	cfg.OpenCenter.GitOps.GitDir = dst
 	cfg.OpenCenter.Cluster.Kubernetes.Version = "9.9.9"
@@ -81,7 +81,7 @@ func TestRenderInfrastructureClusterRendersConfigValues(t *testing.T) {
 
 func TestRenderClusterAppsRendersClusterName(t *testing.T) {
 	dst := t.TempDir()
-	cfg := config.NewDefault("cluster-apps")
+	cfg := newDefault("cluster-apps")
 	cfg.OpenCenter.Cluster.ClusterName = "cluster-apps"
 	cfg.OpenCenter.GitOps.GitDir = dst
 
@@ -101,14 +101,14 @@ func TestRenderClusterAppsRendersClusterName(t *testing.T) {
 
 func TestRenderClusterAppsSkipsDisabledServices(t *testing.T) {
 	dst := t.TempDir()
-	cfg := config.NewDefault("disabled-services-test")
+	cfg := newDefault("disabled-services-test")
 	cfg.OpenCenter.Cluster.ClusterName = "disabled-services-test"
 	cfg.OpenCenter.GitOps.GitDir = dst
 
 	// Disable some services
 	cfg.OpenCenter.Services["cert-manager"] = &services.CertManagerConfig{BaseConfig: services.BaseConfig{Enabled: false}}
 	cfg.OpenCenter.Services["velero"] = &services.VeleroConfig{BaseConfig: services.BaseConfig{Enabled: false}}
-	cfg.OpenCenter.ManagedService["alert-proxy"] = &services.AlertProxyConfig{BaseConfig: services.BaseConfig{Enabled: false}}
+	cfg.OpenCenter.ManagedServices["alert-proxy"] = &services.AlertProxyConfig{BaseConfig: services.BaseConfig{Enabled: false}}
 
 	if err := RenderClusterApps(cfg); err != nil {
 		t.Fatalf("RenderClusterApps returned error: %v", err)
@@ -172,7 +172,7 @@ func TestCopyBaseAtomic(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("test-atomic")
+	cfg := newDefault("test-atomic")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)
@@ -206,7 +206,7 @@ func TestRenderInfrastructureClusterAtomic(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("render-test-atomic")
+	cfg := newDefault("render-test-atomic")
 	cfg.OpenCenter.Cluster.ClusterName = "render-test-atomic"
 	cfg.OpenCenter.Cluster.Kubernetes.Version = "9.9.9"
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://auth.example.local/v3/"
@@ -249,12 +249,9 @@ func TestRenderInfrastructureClusterAtomicKindTemplate(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("kind-render-atomic")
-	cfg.SchemaVersion = "2.0"
-	cfg.OpenCenter.Cluster.ClusterName = "kind-render-atomic"
-	cfg.OpenCenter.Meta.Name = "kind-render-atomic"
+	cfg := newDefault("kind-render-atomic")
 	cfg.OpenCenter.Meta.Organization = "opencenter"
-	if err := config.ApplyProviderDefaults(&cfg, "kind"); err != nil {
+	if err := applyProviderDefaults(&cfg, "kind"); err != nil {
 		t.Fatalf("apply provider defaults: %v", err)
 	}
 
@@ -265,7 +262,7 @@ func TestRenderInfrastructureClusterAtomicKindTemplate(t *testing.T) {
 	cfg.OpenCenter.Infrastructure.Kind.PodSubnet = "10.250.0.0/16"
 	cfg.OpenCenter.Infrastructure.Kind.ServiceSubnet = "10.251.0.0/16"
 	cfg.OpenCenter.Infrastructure.Kind.NodeImage = "kindest/node:v1.31.0"
-	cfg.OpenCenter.Infrastructure.Kind.ExtraPortMappings = []config.KindPortMapping{
+	cfg.OpenCenter.Infrastructure.Kind.ExtraPortMappings = []v2.KindPortMapping{
 		{
 			ContainerPort: 80,
 			HostPort:      8080,
@@ -273,7 +270,7 @@ func TestRenderInfrastructureClusterAtomicKindTemplate(t *testing.T) {
 			Protocol:      "TCP",
 		},
 	}
-	cfg.OpenCenter.Infrastructure.Kind.ExtraMounts = []config.KindMount{
+	cfg.OpenCenter.Infrastructure.Kind.ExtraMounts = []v2.KindMount{
 		{
 			HostPath:      "/tmp/kind-cache",
 			ContainerPath: "/var/cache/kind",
@@ -380,7 +377,7 @@ func TestRenderClusterAppsAtomic(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("cluster-apps-atomic")
+	cfg := newDefault("cluster-apps-atomic")
 	cfg.OpenCenter.Cluster.ClusterName = "cluster-apps-atomic"
 
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
@@ -417,7 +414,7 @@ func TestAtomicOperationsPreventPartialWrites(t *testing.T) {
 	manager := NewWorkspaceManager(tempDir)
 	ctx := context.Background()
 
-	cfg := config.NewDefault("partial-write-test")
+	cfg := newDefault("partial-write-test")
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
 		t.Fatalf("Failed to create workspace: %v", err)

@@ -18,6 +18,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 // TestConfigCache_NewConfigCache tests cache creation
@@ -37,7 +39,7 @@ func TestConfigCache_SetAndGet(t *testing.T) {
 	cache := NewConfigCache()
 
 	// Create a minimal test config
-	testConfig := &Config{}
+	testConfig := &v2.Config{}
 
 	// Test Get on empty cache
 	config, found := cache.Get(ctx, "test-cluster")
@@ -70,7 +72,7 @@ func TestConfigCache_Invalidate(t *testing.T) {
 	ctx := context.Background()
 	cache := NewConfigCache()
 
-	testConfig := &Config{}
+	testConfig := &v2.Config{}
 	cache.Set(ctx, "test-cluster", testConfig)
 
 	// Verify entry exists
@@ -102,7 +104,7 @@ func TestConfigCache_Clear(t *testing.T) {
 
 	// Add multiple entries
 	for i := 0; i < 5; i++ {
-		config := &Config{}
+		config := &v2.Config{}
 		cache.Set(ctx, "cluster-"+string(rune('0'+i)), config)
 	}
 
@@ -131,7 +133,7 @@ func TestConfigCache_Expiration(t *testing.T) {
 	ctx := context.Background()
 	cache := NewConfigCache()
 
-	testConfig := &Config{}
+	testConfig := &v2.Config{}
 
 	// Set with expiration in the past
 	pastTime := time.Now().Add(-1 * time.Hour)
@@ -182,7 +184,7 @@ func TestConfigCache_ThreadSafety(t *testing.T) {
 				// Perform random operations
 				switch j % 4 {
 				case 0: // Set
-					config := &Config{}
+					config := &v2.Config{}
 					cache.Set(ctx, clusterName, config)
 
 				case 1: // Get
@@ -213,7 +215,7 @@ func TestConfigCache_MultipleEntries(t *testing.T) {
 	clusters := []string{"dev-cluster", "staging-cluster", "prod-cluster"}
 
 	for _, name := range clusters {
-		config := &Config{}
+		config := &v2.Config{}
 		cache.Set(ctx, name, config)
 	}
 
@@ -259,7 +261,7 @@ func TestConfigCache_SetWithoutExpiration(t *testing.T) {
 	ctx := context.Background()
 	cache := NewConfigCache()
 
-	testConfig := &Config{}
+	testConfig := &v2.Config{}
 
 	// Set without expiration (using regular Set)
 	cache.Set(ctx, "test-cluster", testConfig)

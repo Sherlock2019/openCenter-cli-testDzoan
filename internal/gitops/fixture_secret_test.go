@@ -27,6 +27,9 @@ func TestRelayPointFixturesDoNotContainPrivateKeyMaterial(t *testing.T) {
 	t.Parallel()
 
 	fixtureRoot := filepath.Join("..", "..", "testdata", "relaypoint-logistics-shared")
+	if _, err := os.Stat(fixtureRoot); os.IsNotExist(err) {
+		t.Skipf("relaypoint fixture root not present: %s", fixtureRoot)
+	}
 	var findings []string
 
 	err := filepath.WalkDir(fixtureRoot, func(path string, d fs.DirEntry, walkErr error) error {

@@ -22,9 +22,21 @@ import (
 	"strings"
 	"testing"
 
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 	utilfs "github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 )
+
+func mustLoaderTestConfig(t *testing.T, name, provider string) *v2.Config {
+	t.Helper()
+
+	cfg, err := v2.NewV2Default(name, provider)
+	if err != nil {
+		t.Fatalf("NewV2Default(%q, %q) error = %v", name, provider, err)
+	}
+
+	return cfg
+}
 
 // TestConfigIOHandler_NewConfigIOHandler tests loader creation
 func TestConfigIOHandler_NewConfigIOHandler(t *testing.T) {
@@ -48,20 +60,13 @@ func TestConfigIOHandler_MarshalConfig(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		config      *Config
+		config      *v2.Config
 		expectError bool
 		errorMsg    string
 	}{
 		{
 			name: "valid config",
-			config: &Config{
-				SchemaVersion: "2.0",
-				OpenCenter: SimplifiedOpenCenter{
-					Cluster: ClusterConfig{
-						ClusterName: "test-cluster",
-					},
-				},
-			},
+			config:      mustLoaderTestConfig(t, "test-cluster", "openstack"),
 			expectError: false,
 		},
 		{
@@ -109,6 +114,10 @@ func TestConfigIOHandler_UnmarshalConfig(t *testing.T) {
 	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fileSystem := utilfs.NewDefaultFileSystem(errorHandler)
 	loader := NewConfigIOHandler(fileSystem)
+	validData, err := loader.MarshalConfig(mustLoaderTestConfig(t, "unmarshal-test", "openstack"))
+	if err != nil {
+		t.Fatalf("marshal valid config: %v", err)
+	}
 
 	tests := []struct {
 		name        string
@@ -118,12 +127,7 @@ func TestConfigIOHandler_UnmarshalConfig(t *testing.T) {
 	}{
 		{
 			name: "valid YAML",
-			data: []byte(`
-schema_version: "2.0"
-opencenter:
-  cluster:
-    cluster_name: test-cluster
-`),
+			data:        validData,
 			expectError: false,
 		},
 		{
@@ -176,40 +180,40 @@ func TestConfigIOHandler_LoadFromBytes(t *testing.T) {
 	fileSystem := utilfs.NewDefaultFileSystem(errorHandler)
 	loader := NewConfigIOHandler(fileSystem)
 	ctx := context.Background()
+	validData, err := loader.MarshalConfig(mustLoaderTestConfig(t, "unmarshal-test", "openstack"))
+	if err != nil {
+		t.Fatalf("marshal valid config: %v", err)
+	}
 
 	tests := []struct {
 		name        string
 		data        []byte
 		expectError bool
-		checkFunc   func(*testing.T, *Config)
+		checkFunc   func(*testing.T, *v2.Config)
 	}{
 		{
-			name: "valid config with environment variable",
-			data: []byte(`
-schema_version: "2.0"
-opencenter:
-  cluster:
-    cluster_name: test-cluster
-`),
+			name:        "valid config",
+			data:        validData,
 			expectError: false,
-			checkFunc: func(t *testing.T, cfg *Config) {
-				if cfg.OpenCenter.Cluster.ClusterName != "test-cluster" {
-					t.Errorf("expected cluster name 'test-cluster', got %q", cfg.OpenCenter.Cluster.ClusterName)
+			checkFunc: func(t *testing.T, cfg *v2.Config) {
+				if cfg.OpenCenter.Cluster.ClusterName != "unmarshal-test" {
+					t.Errorf("expected cluster name 'unmarshal-test', got %q", cfg.OpenCenter.Cluster.ClusterName)
 				}
 			},
 		},
 		{
 			name: "config with nested structures",
-			data: []byte(`
-schema_version: "2.0"
-opencenter:
-  cluster:
-    cluster_name: nested-test
-  gitops:
-    git_dir: /path/to/gitops
-`),
+			data: func() []byte {
+				cfg := mustLoaderTestConfig(t, "nested-test", "openstack")
+				cfg.OpenCenter.GitOps.GitDir = "/path/to/gitops"
+				data, err := loader.MarshalConfig(cfg)
+				if err != nil {
+					t.Fatalf("marshal nested config: %v", err)
+				}
+				return data
+			}(),
 			expectError: false,
-			checkFunc: func(t *testing.T, cfg *Config) {
+			checkFunc: func(t *testing.T, cfg *v2.Config) {
 				if cfg.OpenCenter.GitOps.GitDir != "/path/to/gitops" {
 					t.Errorf("expected git_dir '/path/to/gitops', got %q", cfg.OpenCenter.GitOps.GitDir)
 				}
@@ -217,16 +221,17 @@ opencenter:
 		},
 		{
 			name: "config does not expand arbitrary environment variables",
-			data: []byte(`
-schema_version: "2.0"
-opencenter:
-  cluster:
-    cluster_name: test-cluster
-  gitops:
-    git_dir: ${AWS_SECRET_ACCESS_KEY}
-`),
+			data: func() []byte {
+				cfg := mustLoaderTestConfig(t, "literal-env", "openstack")
+				cfg.OpenCenter.GitOps.GitDir = "${AWS_SECRET_ACCESS_KEY}"
+				data, err := loader.MarshalConfig(cfg)
+				if err != nil {
+					t.Fatalf("marshal env config: %v", err)
+				}
+				return data
+			}(),
 			expectError: false,
-			checkFunc: func(t *testing.T, cfg *Config) {
+			checkFunc: func(t *testing.T, cfg *v2.Config) {
 				if cfg.OpenCenter.GitOps.GitDir != "${AWS_SECRET_ACCESS_KEY}" {
 					t.Errorf("expected literal git_dir, got %q", cfg.OpenCenter.GitOps.GitDir)
 				}
@@ -278,20 +283,13 @@ func TestConfigIOHandler_SaveToFile(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		config      *Config
+		config      *v2.Config
 		filename    string
 		expectError bool
 	}{
 		{
 			name: "save valid config",
-			config: &Config{
-				SchemaVersion: "2.0",
-				OpenCenter: SimplifiedOpenCenter{
-					Cluster: ClusterConfig{
-						ClusterName: "save-test",
-					},
-				},
-			},
+			config:      mustLoaderTestConfig(t, "save-test", "openstack"),
 			filename:    "test-config.yaml",
 			expectError: false,
 		},
@@ -370,14 +368,12 @@ func TestConfigIOHandler_LoadFromFile(t *testing.T) {
 
 	// Create a valid test config file
 	validConfigPath := filepath.Join(tmpDir, "valid-config.yaml")
-	validConfigData := []byte(`
-schema_version: "2.0"
-opencenter:
-  cluster:
-    cluster_name: load-test
-  gitops:
-    git_dir: /test/path
-`)
+	validCfg := mustLoaderTestConfig(t, "load-test", "openstack")
+	validCfg.OpenCenter.GitOps.GitDir = "/test/path"
+	validConfigData, err := loader.MarshalConfig(validCfg)
+	if err != nil {
+		t.Fatalf("marshal valid config: %v", err)
+	}
 	if err := os.WriteFile(validConfigPath, validConfigData, 0o600); err != nil {
 		t.Fatalf("failed to create test file: %v", err)
 	}
@@ -393,13 +389,13 @@ opencenter:
 		name        string
 		path        string
 		expectError bool
-		checkFunc   func(*testing.T, *Config)
+		checkFunc   func(*testing.T, *v2.Config)
 	}{
 		{
 			name:        "load valid config",
 			path:        validConfigPath,
 			expectError: false,
-			checkFunc: func(t *testing.T, cfg *Config) {
+			checkFunc: func(t *testing.T, cfg *v2.Config) {
 				if cfg.OpenCenter.Cluster.ClusterName != "load-test" {
 					t.Errorf("expected cluster name 'load-test', got %q", cfg.OpenCenter.Cluster.ClusterName)
 				}
@@ -453,17 +449,8 @@ func TestConfigIOHandler_RoundTrip(t *testing.T) {
 	fileSystem := utilfs.NewDefaultFileSystem(errorHandler)
 	loader := NewConfigIOHandler(fileSystem)
 
-	originalConfig := &Config{
-		SchemaVersion: "2.0",
-		OpenCenter: SimplifiedOpenCenter{
-			Cluster: ClusterConfig{
-				ClusterName: "roundtrip-test",
-			},
-			GitOps: GitOpsConfig{
-				GitDir: "/test/gitops",
-			},
-		},
-	}
+	originalConfig := mustLoaderTestConfig(t, "roundtrip-test", "openstack")
+	originalConfig.OpenCenter.GitOps.GitDir = "/test/gitops"
 
 	// Marshal to YAML
 	data, err := loader.MarshalConfig(originalConfig)
@@ -504,17 +491,8 @@ func TestConfigIOHandler_SaveAndLoad(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "cycle-test.yaml")
 
-	originalConfig := &Config{
-		SchemaVersion: "2.0",
-		OpenCenter: SimplifiedOpenCenter{
-			Cluster: ClusterConfig{
-				ClusterName: "cycle-test",
-			},
-			GitOps: GitOpsConfig{
-				GitDir: "/cycle/test/path",
-			},
-		},
-	}
+	originalConfig := mustLoaderTestConfig(t, "cycle-test", "openstack")
+	originalConfig.OpenCenter.GitOps.GitDir = "/cycle/test/path"
 
 	// Save config
 	if err := loader.SaveToFile(ctx, configPath, originalConfig); err != nil {
@@ -550,21 +528,21 @@ func TestConfigIOHandler_EnvironmentVariablesRemainLiteral(t *testing.T) {
 	testValue := "expanded-value"
 	t.Setenv("TEST_CONFIG_VAR", testValue)
 
-	configData := []byte(`
-schema_version: "2.0"
-opencenter:
-  cluster:
-    cluster_name: ${TEST_CONFIG_VAR}
-`)
+	cfg := mustLoaderTestConfig(t, "literal-env", "openstack")
+	cfg.OpenCenter.GitOps.GitDir = "${TEST_CONFIG_VAR}"
+	configData, err := loader.MarshalConfig(cfg)
+	if err != nil {
+		t.Fatalf("marshal env config: %v", err)
+	}
 
 	config, err := loader.LoadFromBytes(ctx, configData)
 	if err != nil {
 		t.Fatalf("failed to load config: %v", err)
 	}
 
-	if config.OpenCenter.Cluster.ClusterName != "${TEST_CONFIG_VAR}" {
-		t.Errorf("expected literal cluster name, got %q",
-			config.OpenCenter.Cluster.ClusterName)
+	if config.OpenCenter.GitOps.GitDir != "${TEST_CONFIG_VAR}" {
+		t.Errorf("expected literal git_dir, got %q",
+			config.OpenCenter.GitOps.GitDir)
 	}
 }
 
@@ -579,14 +557,7 @@ func TestConfigIOHandler_AtomicWrite(t *testing.T) {
 	configPath := filepath.Join(tmpDir, "atomic-test.yaml")
 
 	// Create initial config
-	initialConfig := &Config{
-		SchemaVersion: "2.0",
-		OpenCenter: SimplifiedOpenCenter{
-			Cluster: ClusterConfig{
-				ClusterName: "initial",
-			},
-		},
-	}
+	initialConfig := mustLoaderTestConfig(t, "initial", "openstack")
 
 	// Save initial config
 	if err := loader.SaveToFile(ctx, configPath, initialConfig); err != nil {
@@ -599,19 +570,12 @@ func TestConfigIOHandler_AtomicWrite(t *testing.T) {
 		t.Fatalf("failed to read initial config: %v", err)
 	}
 
-	if !strings.Contains(string(data), "initial") {
-		t.Error("expected initial config to contain 'initial'")
+	if !strings.Contains(string(data), "cluster_name: initial") {
+		t.Error("expected initial config to contain initial cluster name")
 	}
 
 	// Save updated config (should overwrite atomically)
-	updatedConfig := &Config{
-		SchemaVersion: "2.0",
-		OpenCenter: SimplifiedOpenCenter{
-			Cluster: ClusterConfig{
-				ClusterName: "updated",
-			},
-		},
-	}
+	updatedConfig := mustLoaderTestConfig(t, "updated", "openstack")
 
 	if err := loader.SaveToFile(ctx, configPath, updatedConfig); err != nil {
 		t.Fatalf("failed to save updated config: %v", err)
@@ -623,12 +587,12 @@ func TestConfigIOHandler_AtomicWrite(t *testing.T) {
 		t.Fatalf("failed to read updated config: %v", err)
 	}
 
-	if !strings.Contains(string(data), "updated") {
-		t.Error("expected updated config to contain 'updated'")
+	if !strings.Contains(string(data), "cluster_name: updated") {
+		t.Error("expected updated config to contain updated cluster name")
 	}
 
-	if strings.Contains(string(data), "initial") {
-		t.Error("expected updated config to not contain 'initial'")
+	if strings.Contains(string(data), "cluster_name: initial") {
+		t.Error("expected updated config to not contain the initial cluster name")
 	}
 }
 
@@ -687,7 +651,7 @@ func TestConfigIOHandler_LoadFromFileError(t *testing.T) {
 		t.Error("expected error from LoadFromFile with failing FileSystem")
 	}
 
-	if !strings.Contains(err.Error(), "file operation failed: read") {
+	if !strings.Contains(err.Error(), "failed to read configuration file") {
 		t.Errorf("expected error message about reading file, got: %v", err)
 	}
 }
@@ -702,14 +666,7 @@ func TestConfigIOHandler_SaveToFileError(t *testing.T) {
 	loader := NewConfigIOHandler(mockFS)
 	ctx := context.Background()
 
-	config := &Config{
-		SchemaVersion: "2.0",
-		OpenCenter: SimplifiedOpenCenter{
-			Cluster: ClusterConfig{
-				ClusterName: "test",
-			},
-		},
-	}
+	config := mustLoaderTestConfig(t, "test", "openstack")
 
 	err := loader.SaveToFile(ctx, "/test/path", config)
 	if err == nil {

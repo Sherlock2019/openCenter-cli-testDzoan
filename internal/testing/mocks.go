@@ -17,7 +17,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 // MockTemplateEngine provides a mock implementation of template.TemplateEngine for testing.
@@ -142,7 +142,7 @@ type MockConfigBuilder struct {
 	overrides    map[string]interface{}
 
 	// BuildFunc allows customizing the Build behavior
-	BuildFunc func() (config.Config, error)
+	BuildFunc func() (v2.Config, error)
 
 	// ValidateFunc allows customizing the Validate behavior
 	ValidateFunc func() []error
@@ -226,7 +226,7 @@ func (m *MockConfigBuilder) WithOverride(path string, value interface{}) *MockCo
 }
 
 // Build implements config.ConfigBuilder.Build
-func (m *MockConfigBuilder) Build() (config.Config, error) {
+func (m *MockConfigBuilder) Build() (v2.Config, error) {
 	m.mu.Lock()
 	m.BuildCalls++
 	m.mu.Unlock()
@@ -236,9 +236,9 @@ func (m *MockConfigBuilder) Build() (config.Config, error) {
 	}
 
 	// Default behavior: return a basic config
-	return config.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
+	return v2.Config{
+		OpenCenter: v2.OpenCenterConfig{
+			Meta: v2.MetaConfig{
 				Name:         m.clusterName,
 				Organization: m.organization,
 			},
@@ -265,21 +265,21 @@ type MockConfigValidator struct {
 	mu sync.RWMutex
 
 	// ValidateFunc allows customizing the Validate behavior
-	ValidateFunc func(cfg config.Config) []error
+	ValidateFunc func(cfg v2.Config) []error
 
 	// Tracking fields
-	ValidateCalls []config.Config
+	ValidateCalls []v2.Config
 }
 
 // NewMockConfigValidator creates a new mock config validator.
 func NewMockConfigValidator() *MockConfigValidator {
 	return &MockConfigValidator{
-		ValidateCalls: make([]config.Config, 0),
+		ValidateCalls: make([]v2.Config, 0),
 	}
 }
 
 // Validate implements config.ConfigValidator.Validate
-func (m *MockConfigValidator) Validate(cfg config.Config) []error {
+func (m *MockConfigValidator) Validate(cfg v2.Config) []error {
 	m.mu.Lock()
 	m.ValidateCalls = append(m.ValidateCalls, cfg)
 	m.mu.Unlock()
@@ -465,27 +465,27 @@ type MockGitOpsGenerator struct {
 	mu sync.RWMutex
 
 	// Function customization
-	GenerateFunc       func(ctx context.Context, cfg config.Config) error
-	GenerateDryRunFunc func(ctx context.Context, cfg config.Config) (interface{}, error)
+	GenerateFunc       func(ctx context.Context, cfg v2.Config) error
+	GenerateDryRunFunc func(ctx context.Context, cfg v2.Config) (interface{}, error)
 	RollbackFunc       func(ctx context.Context, checkpointID string) error
 
 	// Tracking fields
-	GenerateCalls       []config.Config
-	GenerateDryRunCalls []config.Config
+	GenerateCalls       []v2.Config
+	GenerateDryRunCalls []v2.Config
 	RollbackCalls       []string
 }
 
 // NewMockGitOpsGenerator creates a new mock GitOps generator.
 func NewMockGitOpsGenerator() *MockGitOpsGenerator {
 	return &MockGitOpsGenerator{
-		GenerateCalls:       make([]config.Config, 0),
-		GenerateDryRunCalls: make([]config.Config, 0),
+		GenerateCalls:       make([]v2.Config, 0),
+		GenerateDryRunCalls: make([]v2.Config, 0),
 		RollbackCalls:       make([]string, 0),
 	}
 }
 
 // Generate implements GitOpsGenerator.Generate
-func (m *MockGitOpsGenerator) Generate(ctx context.Context, cfg config.Config) error {
+func (m *MockGitOpsGenerator) Generate(ctx context.Context, cfg v2.Config) error {
 	m.mu.Lock()
 	m.GenerateCalls = append(m.GenerateCalls, cfg)
 	m.mu.Unlock()
@@ -498,7 +498,7 @@ func (m *MockGitOpsGenerator) Generate(ctx context.Context, cfg config.Config) e
 }
 
 // GenerateDryRun implements GitOpsGenerator.GenerateDryRun
-func (m *MockGitOpsGenerator) GenerateDryRun(ctx context.Context, cfg config.Config) (interface{}, error) {
+func (m *MockGitOpsGenerator) GenerateDryRun(ctx context.Context, cfg v2.Config) (interface{}, error) {
 	m.mu.Lock()
 	m.GenerateDryRunCalls = append(m.GenerateDryRunCalls, cfg)
 	m.mu.Unlock()
@@ -609,14 +609,14 @@ type MockServiceRegistry struct {
 	// Function customization
 	RegisterServiceFunc      func(service interface{}) error
 	GetServiceFunc           func(name string) (interface{}, error)
-	GetEnabledServicesFunc   func(cfg config.Config) []interface{}
+	GetEnabledServicesFunc   func(cfg v2.Config) []interface{}
 	ResolveDependenciesFunc  func(services []string) ([]interface{}, error)
 	ValidateDependenciesFunc func(services []string) error
 
 	// Tracking fields
 	RegisterServiceCalls      []interface{}
 	GetServiceCalls           []string
-	GetEnabledServicesCalls   []config.Config
+	GetEnabledServicesCalls   []v2.Config
 	ResolveDependenciesCalls  [][]string
 	ValidateDependenciesCalls [][]string
 }
@@ -627,7 +627,7 @@ func NewMockServiceRegistry() *MockServiceRegistry {
 		services:                  make(map[string]interface{}),
 		RegisterServiceCalls:      make([]interface{}, 0),
 		GetServiceCalls:           make([]string, 0),
-		GetEnabledServicesCalls:   make([]config.Config, 0),
+		GetEnabledServicesCalls:   make([]v2.Config, 0),
 		ResolveDependenciesCalls:  make([][]string, 0),
 		ValidateDependenciesCalls: make([][]string, 0),
 	}
@@ -666,7 +666,7 @@ func (m *MockServiceRegistry) GetService(name string) (interface{}, error) {
 }
 
 // GetEnabledServices implements ServiceRegistry.GetEnabledServices
-func (m *MockServiceRegistry) GetEnabledServices(cfg config.Config) []interface{} {
+func (m *MockServiceRegistry) GetEnabledServices(cfg v2.Config) []interface{} {
 	m.mu.Lock()
 	m.GetEnabledServicesCalls = append(m.GetEnabledServicesCalls, cfg)
 	m.mu.Unlock()
@@ -715,19 +715,19 @@ type MockServicePlugin struct {
 	// Function customization
 	NameFunc     func() string
 	TypeFunc     func() string
-	ValidateFunc func(cfg config.Config) error
-	RenderFunc   func(ctx context.Context, cfg config.Config, workspace interface{}) error
-	StatusFunc   func(cfg config.Config) interface{}
+	ValidateFunc func(cfg v2.Config) error
+	RenderFunc   func(ctx context.Context, cfg v2.Config, workspace interface{}) error
+	StatusFunc   func(cfg v2.Config) interface{}
 
 	// Tracking fields
-	ValidateCalls []config.Config
+	ValidateCalls []v2.Config
 	RenderCalls   []RenderPluginCall
-	StatusCalls   []config.Config
+	StatusCalls   []v2.Config
 }
 
 // RenderPluginCall tracks a call to Render
 type RenderPluginCall struct {
-	Config    config.Config
+	Config    v2.Config
 	Workspace interface{}
 }
 
@@ -736,9 +736,9 @@ func NewMockServicePlugin(name, pluginType string) *MockServicePlugin {
 	return &MockServicePlugin{
 		pluginName:    name,
 		pluginType:    pluginType,
-		ValidateCalls: make([]config.Config, 0),
+		ValidateCalls: make([]v2.Config, 0),
 		RenderCalls:   make([]RenderPluginCall, 0),
-		StatusCalls:   make([]config.Config, 0),
+		StatusCalls:   make([]v2.Config, 0),
 	}
 }
 
@@ -759,7 +759,7 @@ func (m *MockServicePlugin) Type() string {
 }
 
 // Validate implements ServicePlugin.Validate
-func (m *MockServicePlugin) Validate(cfg config.Config) error {
+func (m *MockServicePlugin) Validate(cfg v2.Config) error {
 	m.mu.Lock()
 	m.ValidateCalls = append(m.ValidateCalls, cfg)
 	m.mu.Unlock()
@@ -772,7 +772,7 @@ func (m *MockServicePlugin) Validate(cfg config.Config) error {
 }
 
 // Render implements ServicePlugin.Render
-func (m *MockServicePlugin) Render(ctx context.Context, cfg config.Config, workspace interface{}) error {
+func (m *MockServicePlugin) Render(ctx context.Context, cfg v2.Config, workspace interface{}) error {
 	m.mu.Lock()
 	m.RenderCalls = append(m.RenderCalls, RenderPluginCall{
 		Config:    cfg,
@@ -788,7 +788,7 @@ func (m *MockServicePlugin) Render(ctx context.Context, cfg config.Config, works
 }
 
 // Status implements ServicePlugin.Status
-func (m *MockServicePlugin) Status(cfg config.Config) interface{} {
+func (m *MockServicePlugin) Status(cfg v2.Config) interface{} {
 	m.mu.Lock()
 	m.StatusCalls = append(m.StatusCalls, cfg)
 	m.mu.Unlock()
@@ -809,7 +809,7 @@ type MockMigrationManager struct {
 	supportedVersions []string
 
 	// Function customization
-	MigrateConfigFunc         func(cfg config.Config, targetVersion string) (config.Config, error)
+	MigrateConfigFunc         func(cfg v2.Config, targetVersion string) (v2.Config, error)
 	GetCurrentVersionFunc     func() string
 	GetSupportedVersionsFunc  func() []string
 	ValidateMigrationPathFunc func(fromVersion, toVersion string) error
@@ -823,7 +823,7 @@ type MockMigrationManager struct {
 
 // MigrateConfigCall tracks a call to MigrateConfig
 type MigrateConfigCall struct {
-	Config        config.Config
+	Config        v2.Config
 	TargetVersion string
 }
 
@@ -844,7 +844,7 @@ func NewMockMigrationManager() *MockMigrationManager {
 }
 
 // MigrateConfig implements MigrationManager.MigrateConfig
-func (m *MockMigrationManager) MigrateConfig(cfg config.Config, targetVersion string) (config.Config, error) {
+func (m *MockMigrationManager) MigrateConfig(cfg v2.Config, targetVersion string) (v2.Config, error) {
 	m.mu.Lock()
 	m.MigrateConfigCalls = append(m.MigrateConfigCalls, MigrateConfigCall{
 		Config:        cfg,

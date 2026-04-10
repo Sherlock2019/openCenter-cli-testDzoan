@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"gopkg.in/yaml.v3"
 )
 
@@ -25,10 +25,10 @@ type configSecretEntry struct {
 	Location    string
 	Description string
 	PayloadKind configSecretPayloadKind
-	Present     func(*config.Config) bool
-	Get         func(*config.Config) interface{}
-	Set         func(*config.Config, []byte) error
-	Delete      func(*config.Config)
+	Present     func(*v2.Config) bool
+	Get         func(*v2.Config) interface{}
+	Set         func(*v2.Config, []byte) error
+	Delete      func(*v2.Config)
 }
 
 type configSecretMetadata struct {
@@ -47,22 +47,22 @@ func configSecretCatalog() []configSecretEntry {
 			Location:    "config: secrets.cert_manager",
 			Description: "cert-manager Route53 AWS credentials",
 			PayloadKind: configSecretObject,
-			Present: func(cfg *config.Config) bool {
+			Present: func(cfg *v2.Config) bool {
 				return cfg.Secrets.CertManager.AWSAccessKey != "" || cfg.Secrets.CertManager.AWSSecretAccessKey != ""
 			},
-			Get: func(cfg *config.Config) interface{} {
+			Get: func(cfg *v2.Config) interface{} {
 				return cfg.Secrets.CertManager
 			},
-			Set: func(cfg *config.Config, payload []byte) error {
-				var value config.CertManagerSecrets
+			Set: func(cfg *v2.Config, payload []byte) error {
+				var value v2.CertManagerSecrets
 				if err := yaml.Unmarshal(payload, &value); err != nil {
 					return fmt.Errorf("failed to parse cert-manager credentials payload: %w", err)
 				}
 				cfg.Secrets.CertManager = value
 				return nil
 			},
-			Delete: func(cfg *config.Config) {
-				cfg.Secrets.CertManager = config.CertManagerSecrets{}
+			Delete: func(cfg *v2.Config) {
+				cfg.Secrets.CertManager = v2.CertManagerSecrets{}
 			},
 		},
 		{
@@ -71,17 +71,17 @@ func configSecretCatalog() []configSecretEntry {
 			Location:    "config: secrets.keycloak.admin_password",
 			Description: "Keycloak admin password",
 			PayloadKind: configSecretScalar,
-			Present: func(cfg *config.Config) bool {
+			Present: func(cfg *v2.Config) bool {
 				return cfg.Secrets.Keycloak.AdminPassword != ""
 			},
-			Get: func(cfg *config.Config) interface{} {
+			Get: func(cfg *v2.Config) interface{} {
 				return cfg.Secrets.Keycloak.AdminPassword
 			},
-			Set: func(cfg *config.Config, payload []byte) error {
+			Set: func(cfg *v2.Config, payload []byte) error {
 				cfg.Secrets.Keycloak.AdminPassword = normalizeScalarSecret(payload)
 				return nil
 			},
-			Delete: func(cfg *config.Config) {
+			Delete: func(cfg *v2.Config) {
 				cfg.Secrets.Keycloak.AdminPassword = ""
 			},
 		},
@@ -91,17 +91,17 @@ func configSecretCatalog() []configSecretEntry {
 			Location:    "config: secrets.grafana.admin_password",
 			Description: "Grafana admin password",
 			PayloadKind: configSecretScalar,
-			Present: func(cfg *config.Config) bool {
+			Present: func(cfg *v2.Config) bool {
 				return cfg.Secrets.Grafana.AdminPassword != ""
 			},
-			Get: func(cfg *config.Config) interface{} {
+			Get: func(cfg *v2.Config) interface{} {
 				return cfg.Secrets.Grafana.AdminPassword
 			},
-			Set: func(cfg *config.Config, payload []byte) error {
+			Set: func(cfg *v2.Config, payload []byte) error {
 				cfg.Secrets.Grafana.AdminPassword = normalizeScalarSecret(payload)
 				return nil
 			},
-			Delete: func(cfg *config.Config) {
+			Delete: func(cfg *v2.Config) {
 				cfg.Secrets.Grafana.AdminPassword = ""
 			},
 		},
@@ -111,17 +111,17 @@ func configSecretCatalog() []configSecretEntry {
 			Location:    "config: secrets.headlamp.oidc_client_secret",
 			Description: "Headlamp OIDC client secret",
 			PayloadKind: configSecretScalar,
-			Present: func(cfg *config.Config) bool {
+			Present: func(cfg *v2.Config) bool {
 				return cfg.Secrets.Headlamp.OIDCClientSecret != ""
 			},
-			Get: func(cfg *config.Config) interface{} {
+			Get: func(cfg *v2.Config) interface{} {
 				return cfg.Secrets.Headlamp.OIDCClientSecret
 			},
-			Set: func(cfg *config.Config, payload []byte) error {
+			Set: func(cfg *v2.Config, payload []byte) error {
 				cfg.Secrets.Headlamp.OIDCClientSecret = normalizeScalarSecret(payload)
 				return nil
 			},
-			Delete: func(cfg *config.Config) {
+			Delete: func(cfg *v2.Config) {
 				cfg.Secrets.Headlamp.OIDCClientSecret = ""
 			},
 		},
@@ -131,17 +131,17 @@ func configSecretCatalog() []configSecretEntry {
 			Location:    "config: secrets.weave_gitops.password",
 			Description: "Weave GitOps admin password",
 			PayloadKind: configSecretScalar,
-			Present: func(cfg *config.Config) bool {
+			Present: func(cfg *v2.Config) bool {
 				return cfg.Secrets.WeaveGitOps.Password != ""
 			},
-			Get: func(cfg *config.Config) interface{} {
+			Get: func(cfg *v2.Config) interface{} {
 				return cfg.Secrets.WeaveGitOps.Password
 			},
-			Set: func(cfg *config.Config, payload []byte) error {
+			Set: func(cfg *v2.Config, payload []byte) error {
 				cfg.Secrets.WeaveGitOps.Password = normalizeScalarSecret(payload)
 				return nil
 			},
-			Delete: func(cfg *config.Config) {
+			Delete: func(cfg *v2.Config) {
 				cfg.Secrets.WeaveGitOps.Password = ""
 			},
 		},
@@ -151,23 +151,23 @@ func configSecretCatalog() []configSecretEntry {
 			Location:    "config: secrets.vsphere_csi",
 			Description: "vSphere CSI credentials and connection settings",
 			PayloadKind: configSecretObject,
-			Present: func(cfg *config.Config) bool {
+			Present: func(cfg *v2.Config) bool {
 				secret := cfg.Secrets.VSphereCsi
 				return secret.VCenterHost != "" || secret.Username != "" || secret.Password != ""
 			},
-			Get: func(cfg *config.Config) interface{} {
+			Get: func(cfg *v2.Config) interface{} {
 				return cfg.Secrets.VSphereCsi
 			},
-			Set: func(cfg *config.Config, payload []byte) error {
-				var value config.VSphereCsiSecrets
+			Set: func(cfg *v2.Config, payload []byte) error {
+				var value v2.VSphereCsiSecrets
 				if err := yaml.Unmarshal(payload, &value); err != nil {
 					return fmt.Errorf("failed to parse vSphere CSI credentials payload: %w", err)
 				}
 				cfg.Secrets.VSphereCsi = value
 				return nil
 			},
-			Delete: func(cfg *config.Config) {
-				cfg.Secrets.VSphereCsi = config.VSphereCsiSecrets{}
+			Delete: func(cfg *v2.Config) {
+				cfg.Secrets.VSphereCsi = v2.VSphereCsiSecrets{}
 			},
 		},
 		{
@@ -176,23 +176,23 @@ func configSecretCatalog() []configSecretEntry {
 			Location:    "config: secrets.alert_proxy",
 			Description: "Alert proxy service credentials",
 			PayloadKind: configSecretObject,
-			Present: func(cfg *config.Config) bool {
+			Present: func(cfg *v2.Config) bool {
 				secret := cfg.Secrets.AlertProxy
 				return secret.CoreDeviceId != "" || secret.AccountServiceToken != "" || secret.CoreAccountNumber != ""
 			},
-			Get: func(cfg *config.Config) interface{} {
+			Get: func(cfg *v2.Config) interface{} {
 				return cfg.Secrets.AlertProxy
 			},
-			Set: func(cfg *config.Config, payload []byte) error {
-				var value config.AlertProxySecrets
+			Set: func(cfg *v2.Config, payload []byte) error {
+				var value v2.AlertProxySecrets
 				if err := yaml.Unmarshal(payload, &value); err != nil {
 					return fmt.Errorf("failed to parse alert-proxy credentials payload: %w", err)
 				}
 				cfg.Secrets.AlertProxy = value
 				return nil
 			},
-			Delete: func(cfg *config.Config) {
-				cfg.Secrets.AlertProxy = config.AlertProxySecrets{}
+			Delete: func(cfg *v2.Config) {
+				cfg.Secrets.AlertProxy = v2.AlertProxySecrets{}
 			},
 		},
 		{
@@ -201,10 +201,10 @@ func configSecretCatalog() []configSecretEntry {
 			Location:    "config: secrets.loki",
 			Description: "Loki S3 credentials",
 			PayloadKind: configSecretObject,
-			Present: func(cfg *config.Config) bool {
+			Present: func(cfg *v2.Config) bool {
 				return cfg.Secrets.Loki.S3AccessKeyID != "" || cfg.Secrets.Loki.S3SecretAccessKey != ""
 			},
-			Get: func(cfg *config.Config) interface{} {
+			Get: func(cfg *v2.Config) interface{} {
 				return struct {
 					S3AccessKeyID     string `yaml:"s3_access_key_id" json:"s3_access_key_id"`
 					S3SecretAccessKey string `yaml:"s3_secret_access_key" json:"s3_secret_access_key"`
@@ -213,7 +213,7 @@ func configSecretCatalog() []configSecretEntry {
 					S3SecretAccessKey: cfg.Secrets.Loki.S3SecretAccessKey,
 				}
 			},
-			Set: func(cfg *config.Config, payload []byte) error {
+			Set: func(cfg *v2.Config, payload []byte) error {
 				var value struct {
 					S3AccessKeyID     string `yaml:"s3_access_key_id" json:"s3_access_key_id"`
 					S3SecretAccessKey string `yaml:"s3_secret_access_key" json:"s3_secret_access_key"`
@@ -225,7 +225,7 @@ func configSecretCatalog() []configSecretEntry {
 				cfg.Secrets.Loki.S3SecretAccessKey = value.S3SecretAccessKey
 				return nil
 			},
-			Delete: func(cfg *config.Config) {
+			Delete: func(cfg *v2.Config) {
 				cfg.Secrets.Loki.S3AccessKeyID = ""
 				cfg.Secrets.Loki.S3SecretAccessKey = ""
 			},
@@ -236,22 +236,22 @@ func configSecretCatalog() []configSecretEntry {
 			Location:    "config: secrets.tempo",
 			Description: "Tempo S3 credentials",
 			PayloadKind: configSecretObject,
-			Present: func(cfg *config.Config) bool {
+			Present: func(cfg *v2.Config) bool {
 				return cfg.Secrets.Tempo.AccessKey != "" || cfg.Secrets.Tempo.SecretKey != ""
 			},
-			Get: func(cfg *config.Config) interface{} {
+			Get: func(cfg *v2.Config) interface{} {
 				return cfg.Secrets.Tempo
 			},
-			Set: func(cfg *config.Config, payload []byte) error {
-				var value config.TempoSecrets
+			Set: func(cfg *v2.Config, payload []byte) error {
+				var value v2.TempoSecrets
 				if err := yaml.Unmarshal(payload, &value); err != nil {
 					return fmt.Errorf("failed to parse Tempo credentials payload: %w", err)
 				}
 				cfg.Secrets.Tempo = value
 				return nil
 			},
-			Delete: func(cfg *config.Config) {
-				cfg.Secrets.Tempo = config.TempoSecrets{}
+			Delete: func(cfg *v2.Config) {
+				cfg.Secrets.Tempo = v2.TempoSecrets{}
 			},
 		},
 		{
@@ -260,22 +260,22 @@ func configSecretCatalog() []configSecretEntry {
 			Location:    "config: secrets.ssh_key",
 			Description: "Cluster SSH private and public key material",
 			PayloadKind: configSecretObject,
-			Present: func(cfg *config.Config) bool {
+			Present: func(cfg *v2.Config) bool {
 				return cfg.Secrets.SSHKey.Private != "" || cfg.Secrets.SSHKey.Public != "" || cfg.Secrets.SSHKey.Cypher != ""
 			},
-			Get: func(cfg *config.Config) interface{} {
+			Get: func(cfg *v2.Config) interface{} {
 				return cfg.Secrets.SSHKey
 			},
-			Set: func(cfg *config.Config, payload []byte) error {
-				var value config.SSHKey
+			Set: func(cfg *v2.Config, payload []byte) error {
+				var value v2.SSHKeyConfig
 				if err := yaml.Unmarshal(payload, &value); err != nil {
 					return fmt.Errorf("failed to parse SSH key payload: %w", err)
 				}
 				cfg.Secrets.SSHKey = value
 				return nil
 			},
-			Delete: func(cfg *config.Config) {
-				cfg.Secrets.SSHKey = config.SSHKey{}
+			Delete: func(cfg *v2.Config) {
+				cfg.Secrets.SSHKey = v2.SSHKeyConfig{}
 			},
 		},
 		{
@@ -284,17 +284,17 @@ func configSecretCatalog() []configSecretEntry {
 			Location:    "config: secrets.sops_age_key_file",
 			Description: "Path to the SOPS Age key file",
 			PayloadKind: configSecretScalar,
-			Present: func(cfg *config.Config) bool {
+			Present: func(cfg *v2.Config) bool {
 				return cfg.Secrets.SopsAgeKeyFile != ""
 			},
-			Get: func(cfg *config.Config) interface{} {
+			Get: func(cfg *v2.Config) interface{} {
 				return cfg.Secrets.SopsAgeKeyFile
 			},
-			Set: func(cfg *config.Config, payload []byte) error {
+			Set: func(cfg *v2.Config, payload []byte) error {
 				cfg.Secrets.SopsAgeKeyFile = normalizeScalarSecret(payload)
 				return nil
 			},
-			Delete: func(cfg *config.Config) {
+			Delete: func(cfg *v2.Config) {
 				cfg.Secrets.SopsAgeKeyFile = ""
 			},
 		},
@@ -315,7 +315,7 @@ func findConfigSecretEntry(name string) (*configSecretEntry, error) {
 	return nil, fmt.Errorf("unknown config-backed secret %q", name)
 }
 
-func listConfigMappedSecrets(cfg *config.Config, format string) error {
+func listConfigMappedSecrets(cfg *v2.Config, format string) error {
 	var secretsList []configSecretMetadata
 	for _, entry := range configSecretCatalog() {
 		if !entry.Present(cfg) {
@@ -345,7 +345,7 @@ func listConfigMappedSecrets(cfg *config.Config, format string) error {
 	}
 }
 
-func describeConfigSecret(cfg *config.Config, name string, format string) error {
+func describeConfigSecret(cfg *v2.Config, name string, format string) error {
 	entry, err := findConfigSecretEntry(name)
 	if err != nil {
 		return err
@@ -377,7 +377,7 @@ func describeConfigSecret(cfg *config.Config, name string, format string) error 
 	}
 }
 
-func getConfigSecret(cfg *config.Config, name string, outputFile string, show bool) error {
+func getConfigSecret(cfg *v2.Config, name string, outputFile string, show bool) error {
 	entry, err := findConfigSecretEntry(name)
 	if err != nil {
 		return err
@@ -408,7 +408,7 @@ func getConfigSecret(cfg *config.Config, name string, outputFile string, show bo
 	return nil
 }
 
-func setConfigSecret(ctx context.Context, cfg *config.Config, name string, payload []byte) error {
+func setConfigSecret(ctx context.Context, cfg *v2.Config, name string, payload []byte) error {
 	entry, err := findConfigSecretEntry(name)
 	if err != nil {
 		return err
@@ -419,7 +419,7 @@ func setConfigSecret(ctx context.Context, cfg *config.Config, name string, paylo
 	return saveConfig(ctx, *cfg)
 }
 
-func deleteConfigSecret(ctx context.Context, cfg *config.Config, name string) error {
+func deleteConfigSecret(ctx context.Context, cfg *v2.Config, name string) error {
 	entry, err := findConfigSecretEntry(name)
 	if err != nil {
 		return err
@@ -428,7 +428,7 @@ func deleteConfigSecret(ctx context.Context, cfg *config.Config, name string) er
 	return saveConfig(ctx, *cfg)
 }
 
-func marshalConfigSecretPayload(entry *configSecretEntry, cfg *config.Config) ([]byte, error) {
+func marshalConfigSecretPayload(entry *configSecretEntry, cfg *v2.Config) ([]byte, error) {
 	value := entry.Get(cfg)
 	switch entry.PayloadKind {
 	case configSecretScalar:

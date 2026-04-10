@@ -15,6 +15,7 @@ package vmware
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -31,7 +32,7 @@ import (
 	"github.com/vmware/govmomi/vim25/types"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/cloud"
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 type clientFactory func(context.Context, *url.URL, bool) (*govmomi.Client, error)
@@ -51,7 +52,7 @@ func NewProvider() *Provider {
 }
 
 // GetCurrentState retrieves the current infrastructure state from VMware vSphere.
-func (p *Provider) GetCurrentState(ctx context.Context, cfg config.Config) (*cloud.InfrastructureState, error) {
+func (p *Provider) GetCurrentState(ctx context.Context, cfg v2.Config) (*cloud.InfrastructureState, error) {
 	sdkURL, insecure, err := buildSDKURL(cfg)
 	if err != nil {
 		return nil, err
@@ -113,9 +114,9 @@ func (p *Provider) GetCurrentState(ctx context.Context, cfg config.Config) (*clo
 		}
 	}
 
-	clusterName := cfg.OpenCenter.Cluster.ClusterName
-	for _, node := range cfg.OpenCenter.Infrastructure.Cloud.VMware.Nodes {
-		vm, ok := matchVirtualMachine(node, byUUID, byName)
+	clusterName := cfg.ClusterName()
+	for _, node := range desiredVMwareNodes(cfg) {
+		vm, ok := matchVirtualMachine(node, byName)
 		if !ok {
 			continue
 		}
@@ -162,28 +163,32 @@ func (p *Provider) ReconcileDrift(ctx context.Context, drift *cloud.DriftReport)
 	return fmt.Errorf("vmware drift reconciliation is not supported; resolve the reported drift manually")
 }
 
-func buildSDKURL(cfg config.Config) (*url.URL, bool, error) {
-	host := strings.TrimSpace(cfg.Secrets.VSphereCsi.VCenterHost)
+func buildSDKURL(cfg v2.Config) (*url.URL, bool, error) {
+	secret := vSphereSecretConfig(cfg)
+
+	host := strings.TrimSpace(secret.VCenterHost)
 	if host == "" {
-		host = strings.TrimSpace(cfg.OpenCenter.Infrastructure.Cloud.VMware.VCenterServer)
+		if vmwareCfg := cfg.OpenCenter.Infrastructure.Cloud.VMware; vmwareCfg != nil {
+			host = strings.TrimSpace(vmwareCfg.VCenterServer)
+		}
 	}
 	if host == "" {
 		return nil, false, fmt.Errorf("vmware drift detection requires secrets.vsphere_csi.vcenter_host or infrastructure.cloud.vmware.vcenter_server")
 	}
 
-	username := strings.TrimSpace(cfg.Secrets.VSphereCsi.Username)
-	password := cfg.Secrets.VSphereCsi.Password
+	username := strings.TrimSpace(secret.Username)
+	password := secret.Password
 	if username == "" || password == "" {
 		return nil, false, fmt.Errorf("vmware drift detection requires secrets.vsphere_csi.username and secrets.vsphere_csi.password")
 	}
 
-	port := strings.TrimSpace(cfg.Secrets.VSphereCsi.Port)
+	port := strings.TrimSpace(secret.Port)
 	if port == "" {
 		port = "443"
 	}
 
 	insecure := false
-	rawInsecure := strings.TrimSpace(cfg.Secrets.VSphereCsi.InsecureFlag)
+	rawInsecure := strings.TrimSpace(secret.InsecureFlag)
 	if rawInsecure != "" {
 		value, err := strconv.ParseBool(rawInsecure)
 		if err != nil {
@@ -219,10 +224,15 @@ func buildSDKURL(cfg config.Config) (*url.URL, bool, error) {
 	return sdkURL, insecure, nil
 }
 
-func resolveDatacenter(ctx context.Context, finder *find.Finder, cfg config.Config) (*object.Datacenter, error) {
-	datacenter := strings.TrimSpace(cfg.OpenCenter.Infrastructure.Cloud.VMware.Datacenter)
+func resolveDatacenter(ctx context.Context, finder *find.Finder, cfg v2.Config) (*object.Datacenter, error) {
+	secret := vSphereSecretConfig(cfg)
+
+	datacenter := ""
+	if vmwareCfg := cfg.OpenCenter.Infrastructure.Cloud.VMware; vmwareCfg != nil {
+		datacenter = strings.TrimSpace(vmwareCfg.Datacenter)
+	}
 	if datacenter == "" {
-		for _, candidate := range strings.Split(cfg.Secrets.VSphereCsi.Datacenters, ",") {
+		for _, candidate := range strings.Split(secret.Datacenters, ",") {
 			candidate = strings.TrimSpace(candidate)
 			if candidate != "" {
 				datacenter = candidate
@@ -241,6 +251,71 @@ func resolveDatacenter(ctx context.Context, finder *find.Finder, cfg config.Conf
 	return dc, nil
 }
 
+type desiredVMNode struct {
+	Name string
+	Role string
+}
+
+type vSphereSecret struct {
+	VCenterHost  string `json:"vcenter_host" yaml:"vcenter_host"`
+	Username     string `json:"username" yaml:"username"`
+	Password     string `json:"password" yaml:"password"`
+	Datacenters  string `json:"datacenters" yaml:"datacenters"`
+	InsecureFlag string `json:"insecure_flag" yaml:"insecure_flag"`
+	Port         string `json:"port" yaml:"port"`
+}
+
+func desiredVMwareNodes(cfg v2.Config) []desiredVMNode {
+	if vmwareCfg := cfg.OpenCenter.Infrastructure.Cloud.VMware; vmwareCfg != nil && len(vmwareCfg.Nodes) > 0 {
+		nodes := make([]desiredVMNode, 0, len(vmwareCfg.Nodes))
+		for _, node := range vmwareCfg.Nodes {
+			nodes = append(nodes, desiredVMNode{
+				Name: node.Name,
+				Role: node.Role,
+			})
+		}
+		return nodes
+	}
+
+	clusterName := cfg.ClusterName()
+	nodes := make([]desiredVMNode, 0, cfg.OpenCenter.Infrastructure.Compute.MasterCount+cfg.OpenCenter.Infrastructure.Compute.WorkerCount)
+
+	for i := 0; i < cfg.OpenCenter.Infrastructure.Compute.MasterCount; i++ {
+		nodes = append(nodes, desiredVMNode{
+			Name: fmt.Sprintf("%s-master-%d", clusterName, i+1),
+			Role: "master",
+		})
+	}
+	for i := 0; i < cfg.OpenCenter.Infrastructure.Compute.WorkerCount; i++ {
+		nodes = append(nodes, desiredVMNode{
+			Name: fmt.Sprintf("%s-worker-%d", clusterName, i+1),
+			Role: "worker",
+		})
+	}
+
+	return nodes
+}
+
+func vSphereSecretConfig(cfg v2.Config) vSphereSecret {
+	for _, key := range []string{"vsphere_csi", "vsphere-csi"} {
+		raw, ok := cfg.Secrets.ServiceSecrets[key]
+		if !ok || raw == nil {
+			continue
+		}
+
+		var secret vSphereSecret
+		data, err := json.Marshal(raw)
+		if err != nil {
+			continue
+		}
+		if err := json.Unmarshal(data, &secret); err == nil {
+			return secret
+		}
+	}
+
+	return vSphereSecret{}
+}
+
 func listVirtualMachines(ctx context.Context, client *govmomi.Client, dc *object.Datacenter) ([]mo.VirtualMachine, error) {
 	manager := view.NewManager(client.Client)
 	containerView, err := manager.CreateContainerView(ctx, dc.Reference(), []string{"VirtualMachine"}, true)
@@ -257,14 +332,7 @@ func listVirtualMachines(ctx context.Context, client *govmomi.Client, dc *object
 	return virtualMachines, nil
 }
 
-func matchVirtualMachine(node config.VMNode, byUUID map[string]mo.VirtualMachine, byName map[string]mo.VirtualMachine) (mo.VirtualMachine, bool) {
-	if node.UUID != "" {
-		vm, ok := byUUID[strings.ToLower(strings.TrimSpace(node.UUID))]
-		if ok {
-			return vm, true
-		}
-	}
-
+func matchVirtualMachine(node desiredVMNode, byName map[string]mo.VirtualMachine) (mo.VirtualMachine, bool) {
 	vm, ok := byName[node.Name]
 	return vm, ok
 }

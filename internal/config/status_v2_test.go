@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
 	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 )
@@ -40,7 +41,7 @@ func TestUpdateStatusPreservesNativeV2Structure(t *testing.T) {
 	cfg.OpenCenter.GitOps.GitSSHPub = clusterPaths.SSHKeyPath + ".pub"
 	cfg.OpenCenter.Infrastructure.SSH.KeyPath = clusterPaths.SSHKeyPath
 
-	loader := defaultLegacyV2Loader()
+	loader := v2.NewConfigLoader(defaults.NewRegistry())
 	if err := loader.SaveToFile(cfg, clusterPaths.ConfigPath); err != nil {
 		t.Fatalf("SaveToFile() error = %v", err)
 	}

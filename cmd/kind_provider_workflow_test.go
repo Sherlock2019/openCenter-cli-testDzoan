@@ -56,7 +56,7 @@ func TestClusterTemplateKindDefaults(t *testing.T) {
 		t.Fatalf("cluster template failed: %v", err)
 	}
 
-	var cfg config.Config
+	var cfg v2.Config
 	if err := yaml.Unmarshal(stdout.Bytes(), &cfg); err != nil {
 		t.Fatalf("unmarshal template: %v", err)
 	}

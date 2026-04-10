@@ -22,11 +22,11 @@ import (
 	"testing"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/cluster"
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	configdefaults "github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
-	"gopkg.in/yaml.v3"
 )
 
 // TestClusterSetupCommandRegistration verifies that NewClusterCmd() includes the "setup" subcommand.
@@ -151,17 +151,17 @@ func TestClusterSetupDryRunSkipsCommit(t *testing.T) {
 	}
 
 	// Write config file directly at the expected path
-	cfg := config.NewDefault(clusterName)
-	cfg.SchemaVersion = "2.0"
+	cfgPtr, err := v2.NewV2Default(clusterName, "openstack")
+	if err != nil {
+		t.Fatalf("failed to create native v2 config: %v", err)
+	}
+	cfg := *cfgPtr
 	cfg.OpenCenter.Meta.Organization = organization
 	cfg.OpenCenter.GitOps.GitDir = gitopsDir
 
 	configPath := filepath.Join(orgDir, "."+clusterName+"-config.yaml")
-	data, err := yaml.Marshal(cfg)
-	if err != nil {
-		t.Fatalf("failed to marshal config: %v", err)
-	}
-	if err := os.WriteFile(configPath, data, 0o600); err != nil {
+	loader := v2.NewConfigLoader(configdefaults.NewRegistry())
+	if err := loader.SaveToFile(&cfg, configPath); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
 	}
 

@@ -13,36 +13,31 @@
 
 package cmd
 
-import "github.com/opencenter-cloud/opencenter-cli/internal/config"
+import (
+	"fmt"
 
-// minimalTestConfig returns a minimal Config for testing.
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
+)
+
+// minimalTestConfig returns a minimal v2 config for testing.
 // This is a helper function for cmd package tests.
-func minimalTestConfig(name string) config.Config {
-	cfg := config.Config{
-		SchemaVersion: config.SchemaVersion,
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
-				Name:         name,
-				Organization: "opencenter",
-			},
-			Cluster: config.ClusterConfig{
-				ClusterName: name,
-			},
-			GitOps: config.GitOpsConfig{
-				GitDir: "./testdata/test-git-repo-" + name,
-			},
-		},
-		OpenTofu: config.SimplifiedOpenTofu{
-			Enabled: true,
-		},
-		Secrets: config.Secrets{
-			SSHKey: config.SSHKey{
-				Private: "./testdata/test-git-repo-" + name + "/" + name + "/secrets/ssh/" + name,
-				Public:  "./testdata/test-git-repo-" + name + "/" + name + "/secrets/ssh/" + name + ".pub",
-			},
-		},
-		Metadata: config.NewConfigMetadata(),
+func minimalTestConfig(name string) v2.Config {
+	cfg, err := v2.NewV2Default(name, "openstack")
+	if err != nil {
+		panic(fmt.Sprintf("minimalTestConfig: %v", err))
 	}
 
-	return cfg
+	result := *cfg
+	result.OpenCenter.Meta.Organization = "opencenter"
+	result.OpenCenter.Cluster.ClusterName = name
+	result.OpenCenter.Cluster.BaseDomain = "example.com"
+	result.OpenCenter.Cluster.ClusterFQDN = fmt.Sprintf("%s.example.com", name)
+	result.OpenCenter.GitOps.GitDir = "./testdata/test-git-repo-" + name
+	result.OpenTofu.Enabled = true
+	result.Secrets.SSHKey = v2.SSHKeyConfig{
+		Private: "./testdata/test-git-repo-" + name + "/" + name + "/secrets/ssh/" + name,
+		Public:  "./testdata/test-git-repo-" + name + "/" + name + "/secrets/ssh/" + name + ".pub",
+	}
+
+	return result
 }

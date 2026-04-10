@@ -28,6 +28,104 @@ func (c Config) GitOps() GitOpsConfig {
 	return c.OpenCenter.GitOps
 }
 
+// GetAWSCredentials resolves service credentials with fallback to infrastructure credentials.
+func (c Config) GetAWSCredentials(serviceAccessKey, serviceSecretKey string) (accessKey, secretKey string) {
+	if serviceAccessKey != "" && serviceSecretKey != "" {
+		return serviceAccessKey, serviceSecretKey
+	}
+
+	return c.Secrets.Global.AWS.Infrastructure.AccessKey, c.Secrets.Global.AWS.Infrastructure.SecretAccessKey
+}
+
+// GetAWSApplicationCredentials resolves application credentials with fallback to infrastructure credentials.
+func (c Config) GetAWSApplicationCredentials() (accessKey, secretKey string) {
+	if c.Secrets.Global.AWS.Application.AccessKey != "" && c.Secrets.Global.AWS.Application.SecretAccessKey != "" {
+		return c.Secrets.Global.AWS.Application.AccessKey, c.Secrets.Global.AWS.Application.SecretAccessKey
+	}
+
+	return c.Secrets.Global.AWS.Infrastructure.AccessKey, c.Secrets.Global.AWS.Infrastructure.SecretAccessKey
+}
+
+// GetCertManagerAWSCredentials resolves cert-manager Route53 credentials.
+func (c Config) GetCertManagerAWSCredentials() (accessKey, secretKey string) {
+	if c.Secrets.CertManager.AWSAccessKey != "" && c.Secrets.CertManager.AWSSecretAccessKey != "" {
+		return c.Secrets.CertManager.AWSAccessKey, c.Secrets.CertManager.AWSSecretAccessKey
+	}
+
+	return c.GetAWSApplicationCredentials()
+}
+
+// GetLokiS3Credentials resolves Loki S3 credentials.
+func (c Config) GetLokiS3Credentials() (accessKey, secretKey string) {
+	if c.Secrets.Loki.S3AccessKeyID != "" && c.Secrets.Loki.S3SecretAccessKey != "" {
+		return c.Secrets.Loki.S3AccessKeyID, c.Secrets.Loki.S3SecretAccessKey
+	}
+
+	return c.GetAWSApplicationCredentials()
+}
+
+// GetTempoS3Credentials resolves Tempo S3 credentials.
+func (c Config) GetTempoS3Credentials() (accessKey, secretKey string) {
+	if c.Secrets.Tempo.AccessKey != "" && c.Secrets.Tempo.SecretKey != "" {
+		return c.Secrets.Tempo.AccessKey, c.Secrets.Tempo.SecretKey
+	}
+
+	return c.GetAWSApplicationCredentials()
+}
+
+// GetS3BackendCredentials resolves backend S3 credentials using infrastructure credentials.
+func (c Config) GetS3BackendCredentials() (accessKey, secretKey string) {
+	return c.GetAWSCredentials("", "")
+}
+
+// GetCertManagerAWSAccessKey returns the cert-manager AWS access key for templates.
+func (c Config) GetCertManagerAWSAccessKey() string {
+	accessKey, _ := c.GetCertManagerAWSCredentials()
+	return accessKey
+}
+
+// GetCertManagerAWSSecretKey returns the cert-manager AWS secret key for templates.
+func (c Config) GetCertManagerAWSSecretKey() string {
+	_, secretKey := c.GetCertManagerAWSCredentials()
+	return secretKey
+}
+
+// GetLokiS3AccessKey returns the Loki S3 access key for templates.
+func (c Config) GetLokiS3AccessKey() string {
+	accessKey, _ := c.GetLokiS3Credentials()
+	return accessKey
+}
+
+// GetLokiS3SecretKey returns the Loki S3 secret key for templates.
+func (c Config) GetLokiS3SecretKey() string {
+	_, secretKey := c.GetLokiS3Credentials()
+	return secretKey
+}
+
+// GetTempoS3AccessKey returns the Tempo S3 access key for templates.
+func (c Config) GetTempoS3AccessKey() string {
+	accessKey, _ := c.GetTempoS3Credentials()
+	return accessKey
+}
+
+// GetTempoS3SecretKey returns the Tempo S3 secret key for templates.
+func (c Config) GetTempoS3SecretKey() string {
+	_, secretKey := c.GetTempoS3Credentials()
+	return secretKey
+}
+
+// GetS3BackendAccessKey returns the backend S3 access key for templates.
+func (c Config) GetS3BackendAccessKey() string {
+	accessKey, _ := c.GetS3BackendCredentials()
+	return accessKey
+}
+
+// GetS3BackendSecretKey returns the backend S3 secret key for templates.
+func (c Config) GetS3BackendSecretKey() string {
+	_, secretKey := c.GetS3BackendCredentials()
+	return secretKey
+}
+
 // GitDir returns the configured GitOps working directory.
 func (c Config) GitDir() string {
 	return strings.TrimSpace(c.OpenCenter.GitOps.GitDir)

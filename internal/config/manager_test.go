@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
@@ -297,7 +298,7 @@ func TestConfigurationManager_DeleteWithBackup(t *testing.T) {
 	ctx := context.Background()
 
 	// Add to cache to verify invalidation
-	testConfig := &Config{}
+	testConfig := &v2.Config{}
 	cache.Set(ctx, "test-cluster", testConfig)
 
 	// Verify it's in cache

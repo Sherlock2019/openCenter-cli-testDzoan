@@ -18,7 +18,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 // ConfigGenerator provides methods for generating realistic test configurations
@@ -34,79 +34,76 @@ func NewConfigGenerator(seed int64) *ConfigGenerator {
 }
 
 // GenerateConfig creates a realistic cluster configuration with random but valid values
-func (g *ConfigGenerator) GenerateConfig(provider string) config.Config {
-	cfg := config.Config{
-		OpenCenter: g.generateOpenCenter(provider),
-		OpenTofu:   g.generateOpenTofu(provider),
-		Secrets:    g.generateSecrets(),
-		Deployment: g.generateDeployment(),
-		Overrides:  make(map[string]any),
-	}
+func (g *ConfigGenerator) GenerateConfig(provider string) v2.Config {
+	cfg := g.GenerateMinimalConfig(provider)
+	cfg.OpenCenter.Meta.Organization = g.randomOrganization()
+	cfg.OpenCenter.Meta.Env = g.randomEnvironment()
+	cfg.OpenCenter.Meta.Region = g.randomRegionForProvider(provider)
+	cfg.OpenCenter.Infrastructure.Cloud = g.generateCloudConfig(provider)
+	cfg.OpenCenter.Infrastructure.Networking = g.generateNetworking(provider)
+	cfg.OpenCenter.Infrastructure.Compute.MasterCount = 3
+	cfg.OpenCenter.Infrastructure.Compute.WorkerCount = 2
+	cfg.OpenCenter.Cluster.Kubernetes.Version = g.randomKubernetesVersion()
+	cfg.OpenCenter.Cluster.Kubernetes.Security = g.generateSecurity()
+	cfg.OpenCenter.Services = g.generateServices()
+	cfg.OpenCenter.GitOps.GitURL = g.randomGitRepository()
+	cfg.OpenCenter.GitOps.GitBranch = g.randomBranch()
+	cfg.Deployment = g.generateDeployment()
 	return cfg
 }
 
 // GenerateMinimalConfig creates a minimal but valid configuration
-func (g *ConfigGenerator) GenerateMinimalConfig(provider string) config.Config {
+func (g *ConfigGenerator) GenerateMinimalConfig(provider string) v2.Config {
 	clusterName := g.randomClusterName()
-	return config.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Meta: config.ClusterMeta{
-				Name:         clusterName,
-				Env:          "development",
-				Region:       "RegionOne",
-				Status:       "pending",
-				Organization: "test-org",
-			},
-			Infrastructure: config.Infrastructure{
-				Provider: provider,
-				SSHUser:  "ubuntu",
-				Cloud:    g.generateCloudConfig(provider),
-			},
-			Cluster: config.ClusterConfig{
-				ClusterName: clusterName,
-				Kubernetes: config.KubernetesConfig{
-					Version:                  "1.28.0",
-					SubnetPods:               "10.42.0.0/16",
-					SubnetServices:           "10.43.0.0/16",
-					KubeletRotateServerCerts: true,
-					Networking: config.Networking{
-						SubnetNodes:          "10.0.1.0/24",
-						SubnetPods:           "10.42.0.0/16",
-						SubnetServices:       "10.43.0.0/16",
-						DNSNameservers:       []string{"8.8.8.8", "8.8.4.4"},
-						LoadbalancerProvider: "ovn",
-						VRRPEnabled:          false,
-					},
-				},
-			},
-			Services: make(config.ServiceMap),
-		},
-		OpenTofu: config.SimplifiedOpenTofu{
-			Backend: config.SimplifiedTofuBackend{
-				Type: "local",
-			},
-		},
-		Secrets: config.Secrets{
-			SopsAgeKeyFile: "/path/to/age/key.txt",
-			SSHKey: config.SSHKey{
-				Private: "/path/to/ssh/private",
-				Public:  "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC test@host",
-				Cypher:  "rsa",
-			},
-		},
-		Deployment: config.Deployment{
-			AutoDeploy: false,
-		},
-		Overrides: make(map[string]any),
+	cfgPtr, err := v2.NewV2Default(clusterName, provider)
+	if err != nil {
+		panic(fmt.Sprintf("generate minimal config: %v", err))
 	}
+
+	cfg := *cfgPtr
+	cfg.OpenCenter.Meta.Organization = "test-org"
+	cfg.OpenCenter.Meta.Env = "dev"
+	cfg.OpenCenter.Meta.Region = g.randomRegionForProvider(provider)
+	cfg.OpenCenter.Meta.Status = "pending"
+	cfg.OpenCenter.Infrastructure.Provider = provider
+	cfg.OpenCenter.Infrastructure.Cloud = g.generateCloudConfig(provider)
+	cfg.OpenCenter.Infrastructure.Networking = g.generateNetworking(provider)
+	cfg.OpenCenter.Infrastructure.Compute.MasterCount = 1
+	cfg.OpenCenter.Infrastructure.Compute.WorkerCount = 1
+	cfg.OpenCenter.Cluster.ClusterName = clusterName
+	cfg.OpenCenter.Cluster.BaseDomain = "example.com"
+	cfg.OpenCenter.Cluster.ClusterFQDN = fmt.Sprintf("%s.example.com", clusterName)
+	cfg.OpenCenter.Cluster.AdminEmail = "admin@example.com"
+	cfg.OpenCenter.Cluster.Kubernetes.Version = "1.28.0"
+	cfg.OpenCenter.Cluster.Kubernetes.SubnetPods = "10.42.0.0/16"
+	cfg.OpenCenter.Cluster.Kubernetes.SubnetServices = "10.43.0.0/16"
+	cfg.OpenCenter.Cluster.Kubernetes.Security = g.generateSecurity()
+	cfg.OpenCenter.Services = make(v2.ServiceMap)
+	cfg.OpenTofu.Enabled = true
+	cfg.OpenTofu.Backend = v2.BackendConfig{
+		Type:  "local",
+		Local: &v2.LocalBackendConfig{Path: "terraform.tfstate"},
+	}
+	cfg.Secrets.SopsAgeKeyFile = "/path/to/age/key.txt"
+	cfg.Secrets.SSHKey = v2.SSHKeyConfig{
+		Private: "/path/to/ssh/private",
+		Public:  "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC test@host",
+		Cypher:  "rsa",
+	}
+	cfg.Deployment = g.generateDeployment()
+	if cfg.Metadata.Labels == nil {
+		cfg.Metadata.Labels = make(map[string]string)
+	}
+
+	return cfg
 }
 
 // GenerateComplexConfig creates a complex configuration with many services enabled
-func (g *ConfigGenerator) GenerateComplexConfig(provider string) config.Config {
+func (g *ConfigGenerator) GenerateComplexConfig(provider string) v2.Config {
 	cfg := g.GenerateConfig(provider)
 
 	// Enable all services
-	cfg.OpenCenter.Services = config.ServiceMap{
+	cfg.OpenCenter.Services = v2.ServiceMap{
 		"cert-manager": map[string]interface{}{
 			"enabled": true,
 			"version": "v1.12.0",
@@ -135,131 +132,86 @@ func (g *ConfigGenerator) GenerateComplexConfig(provider string) config.Config {
 		},
 	}
 
-	// Add complex overrides
-	cfg.Overrides = map[string]any{
-		"kubernetes.apiserver.extraArgs": map[string]string{
-			"audit-log-maxage":    "30",
-			"audit-log-maxbackup": "10",
-		},
-		"networking.cni": "calico",
+	if cfg.Metadata.Labels == nil {
+		cfg.Metadata.Labels = make(map[string]string)
 	}
+	cfg.Metadata.Labels["kubernetes.apiserver.extraArgs.audit-log-maxage"] = "30"
+	cfg.Metadata.Labels["kubernetes.apiserver.extraArgs.audit-log-maxbackup"] = "10"
+	cfg.Metadata.Labels["networking.cni"] = "calico"
 
 	return cfg
 }
 
-// generateOpenCenter creates a realistic OpenCenter configuration section
-func (g *ConfigGenerator) generateOpenCenter(provider string) config.SimplifiedOpenCenter {
-	clusterName := g.randomClusterName()
-	region := g.randomRegion()
-
-	return config.SimplifiedOpenCenter{
-		Meta: config.ClusterMeta{
-			Name:         clusterName,
-			Env:          g.randomEnvironment(),
-			Region:       region,
-			Status:       "pending",
-			Organization: g.randomOrganization(),
-		},
-		Infrastructure: config.Infrastructure{
-			Provider: provider,
-			SSHUser:  "ubuntu",
-			Cloud:    g.generateCloudConfig(provider),
-		},
-		Cluster: config.ClusterConfig{
-			ClusterName: clusterName,
-			Kubernetes: config.KubernetesConfig{
-				Version:                  g.randomKubernetesVersion(),
-				SubnetPods:               g.randomCIDR("10.42.0.0/16"),
-				SubnetServices:           g.randomCIDR("10.43.0.0/16"),
-				KubeletRotateServerCerts: true,
-				Networking:               g.generateNetworking(provider),
-				Security: config.KubernetesSecurityConfig{
-					K8sHardening: true,
-				},
-			},
-			Networking: config.ClusterNetworkingConfig{
-				Security: config.ClusterSecurityConfig{
-					OSHardening: true,
-				},
-			},
-		},
-		Services: g.generateServices(),
-	}
-}
-
 // generateCloudConfig creates cloud-specific configuration
-func (g *ConfigGenerator) generateCloudConfig(provider string) config.CloudConfig {
-	cloudConfig := config.CloudConfig{}
+func (g *ConfigGenerator) generateCloudConfig(provider string) v2.CloudConfig {
+	cloudConfig := v2.CloudConfig{}
+	region := g.randomRegionForProvider(provider)
 
 	switch provider {
 	case "openstack":
-		cloudConfig.OpenStack = config.SimplifiedOpenStackCloud{
-			AuthURL:    "https://identity.example.com/v3",
-			Region:     g.randomRegion(),
-			TenantName: g.randomTenantName(),
+		cloudConfig.OpenStack = &v2.OpenStackCloudConfig{
+			AuthURL:     "https://identity.example.com/v3",
+			Region:      region,
+			ProjectID:   "project-id",
+			ProjectName: "project-name",
+			ImageID:     "image-id",
+			NetworkID:   "network-id",
+			SubnetID:    "subnet-id",
 		}
 	case "aws":
-		cloudConfig.AWS = config.SimplifiedAWSCloud{
-			Region: g.randomAWSRegion(),
+		cloudConfig.AWS = &v2.AWSCloudConfig{
+			Region:    region,
+			VPCID:     "vpc-12345",
+			SubnetIDs: []string{"subnet-12345"},
+			AMIID:     "ami-12345",
 		}
 	}
 
 	return cloudConfig
 }
 
-// generateOpenTofu creates a realistic OpenTofu configuration section
-func (g *ConfigGenerator) generateOpenTofu(provider string) config.SimplifiedOpenTofu {
-	return config.SimplifiedOpenTofu{
-		Backend: config.SimplifiedTofuBackend{
-			Type: g.randomBackendType(),
-		},
-	}
-}
-
 // generateSecrets creates a realistic secrets configuration
-func (g *ConfigGenerator) generateSecrets() config.Secrets {
-	return config.Secrets{
-		SopsAgeKeyFile: "/path/to/age/key.txt",
-		SSHKey: config.SSHKey{
-			Private: "/path/to/ssh/private",
-			Public:  g.randomSSHKey(),
-			Cypher:  "rsa",
+func (g *ConfigGenerator) generateNetworking(provider string) v2.NetworkingConfig {
+	return v2.NetworkingConfig{
+		SubnetNodes:          g.randomCIDR("10.0.1.0/24"),
+		AllocationPoolStart:  "10.0.1.10",
+		AllocationPoolEnd:    "10.0.1.250",
+		Gateway:              "10.0.1.1",
+		DNSZoneName:          "cluster.example.com",
+		DNSNameservers:       g.randomDNSServers(),
+		NTPServers:           []string{"time.google.com"},
+		LoadbalancerProvider: "ovn",
+		VRRPEnabled:          provider != "kind",
+		VRRPIP:               "10.0.1.5",
+		Security: v2.NetworkSecurityConfig{
+			AllowedCIDRs: []string{"0.0.0.0/0"},
 		},
 	}
-}
-
-// generateNetworking creates a realistic networking configuration
-func (g *ConfigGenerator) generateNetworking(provider string) config.Networking {
-	networking := config.Networking{
-		SubnetNodes:          g.randomCIDR("10.0.1.0/24"),
-		SubnetPods:           g.randomCIDR("10.42.0.0/16"),
-		SubnetServices:       g.randomCIDR("10.43.0.0/16"),
-		DNSNameservers:       g.randomDNSServers(),
-		LoadbalancerProvider: "ovn",
-		VRRPEnabled:          false,
-	}
-
-	return networking
 }
 
 // generateSecurity creates a realistic security configuration
-func (g *ConfigGenerator) generateSecurity() config.Security {
-	return config.Security{
-		K8sHardening: true,
-		OSHardening:  true,
+func (g *ConfigGenerator) generateSecurity() v2.KubernetesSecurityConfig {
+	return v2.KubernetesSecurityConfig{
+		PodSecurityStandards: "baseline",
+		AuditLogging:         true,
+		EncryptionAtRest:     true,
 	}
 }
 
 // generateDeployment creates a realistic deployment configuration
-func (g *ConfigGenerator) generateDeployment() config.Deployment {
-	return config.Deployment{
+func (g *ConfigGenerator) generateDeployment() v2.DeploymentConfig {
+	return v2.DeploymentConfig{
 		AutoDeploy: g.randomBool(),
+		Method:     "kubespray",
+		Kubespray: &v2.KubesprayConfig{
+			Version: "2.26.0",
+		},
 	}
 }
 
 // generateServices creates a realistic services configuration
-func (g *ConfigGenerator) generateServices() config.ServiceMap {
-	services := make(config.ServiceMap)
+func (g *ConfigGenerator) generateServices() v2.ServiceMap {
+	services := make(v2.ServiceMap)
 
 	// Randomly enable some services
 	if g.randomBool() {
@@ -289,6 +241,15 @@ func (g *ConfigGenerator) generateServices() config.ServiceMap {
 	return services
 }
 
+func (g *ConfigGenerator) randomRegionForProvider(provider string) string {
+	switch provider {
+	case "aws":
+		return g.randomAWSRegion()
+	default:
+		return g.randomRegion()
+	}
+}
+
 // Random value generators
 
 func (g *ConfigGenerator) randomOrganization() string {
@@ -297,7 +258,7 @@ func (g *ConfigGenerator) randomOrganization() string {
 }
 
 func (g *ConfigGenerator) randomEnvironment() string {
-	envs := []string{"development", "staging", "production", "test"}
+	envs := []string{"dev", "staging", "production"}
 	return envs[g.rand.Intn(len(envs))]
 }
 
@@ -1102,13 +1063,14 @@ func (g *ScenarioGenerator) GenerateEdgeCaseScenario(provider string) map[string
 
 	switch selectedCase {
 	case "empty_services":
-		cfg.OpenCenter.Services = make(config.ServiceMap)
+		cfg.OpenCenter.Services = make(v2.ServiceMap)
 	case "max_node_count":
 		// Simulate maximum node count scenario
-		cfg.Overrides["node_count"] = 100
+		cfg.OpenCenter.Infrastructure.Compute.MasterCount = 50
+		cfg.OpenCenter.Infrastructure.Compute.WorkerCount = 50
 	case "min_resources":
 		// Simulate minimal resource allocation
-		cfg.Overrides["resources"] = "minimal"
+		cfg.OpenCenter.Infrastructure.Storage.WorkerVolumeSize = 20
 	case "special_characters_in_names":
 		cfg.OpenCenter.Meta.Name = "test-cluster_v2.0-final"
 	case "long_cluster_name":
@@ -1128,7 +1090,7 @@ func (g *ScenarioGenerator) GeneratePerformanceTestScenario(provider string) map
 	workloadGen := &WorkloadDataGenerator{rand: g.rand}
 
 	// Generate multiple configurations
-	configs := make([]config.Config, 0, 10)
+	configs := make([]v2.Config, 0, 10)
 	for i := 0; i < 10; i++ {
 		configs = append(configs, configGen.GenerateConfig(provider))
 	}
@@ -1183,9 +1145,9 @@ func (g *ScenarioGenerator) GenerateComplianceScenario(provider string, framewor
 	securityConfig := securityGen.GenerateSecurityConfig()
 
 	// Ensure compliance-required settings
-	cfg.OpenCenter.Cluster.Kubernetes.Security.K8sHardening = true
-	cfg.OpenCenter.Cluster.Networking.Security.OSHardening = true
-	cfg.OpenCenter.Cluster.Kubernetes.KubeletRotateServerCerts = true
+	cfg.OpenCenter.Cluster.Kubernetes.Security.AuditLogging = true
+	cfg.OpenCenter.Cluster.Kubernetes.Security.EncryptionAtRest = true
+	cfg.OpenCenter.Infrastructure.Networking.Security.AllowedCIDRs = []string{"0.0.0.0/0"}
 
 	return map[string]interface{}{
 		"config":                cfg,

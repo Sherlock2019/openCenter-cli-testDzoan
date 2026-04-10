@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/sops"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
@@ -86,42 +87,32 @@ func writeManagerTestConfig(t *testing.T, clusterName string, configData string)
 
 	clusterPaths, err := resolver.Resolve(context.Background(), clusterName, "test-org")
 	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(clusterPaths.ConfigPath, []byte(configData), 0o644))
+	writeNormalizedSecretsConfigFile(t, clusterPaths.ConfigPath, clusterName, configData)
 
 	return clusterPaths.ConfigPath
 }
 
 // createTestConfig creates a test configuration with secrets
-func createTestConfig(clusterName string) *config.Config {
-	return &config.Config{
-		SchemaVersion: "2.0",
-		OpenCenter: config.SimplifiedOpenCenter{
-			Cluster: config.ClusterConfig{
-				ClusterName: clusterName,
-			},
-			GitOps: config.GitOpsConfig{
-				GitDir: "/tmp/test-repo",
-			},
-		},
-		Secrets: config.Secrets{
-			SopsAgeKeyFile: "~/.config/sops/age/test-key.txt",
-			CertManager: config.CertManagerSecrets{
-				AWSAccessKey:       "AKIAIOSFODNN7EXAMPLE",
-				AWSSecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-			},
-			Loki: config.LokiSecrets{
-				S3AccessKeyID:     "AKIAIOSFODNN7EXAMPLE",
-				S3SecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-			},
-			Keycloak: config.KeycloakSecrets{
-				ClientSecret:  "test-client-secret",
-				AdminPassword: "test-admin-password",
-			},
-			Grafana: config.GrafanaSecrets{
-				AdminPassword: "test-grafana-password",
-			},
-		},
+func createTestConfig(clusterName string) *v2.Config {
+	cfg := newSecretsTestConfig(clusterName, "openstack")
+	cfg.OpenCenter.GitOps.GitDir = "/tmp/test-repo"
+	cfg.Secrets.SopsAgeKeyFile = "~/.config/sops/age/test-key.txt"
+	cfg.Secrets.CertManager = v2.CertManagerSecrets{
+		AWSAccessKey:       "AKIAIOSFODNN7EXAMPLE",
+		AWSSecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 	}
+	cfg.Secrets.Loki = v2.LokiSecrets{
+		S3AccessKeyID:     "AKIAIOSFODNN7EXAMPLE",
+		S3SecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+	}
+	cfg.Secrets.Keycloak = v2.KeycloakSecrets{
+		ClientSecret:  "test-client-secret",
+		AdminPassword: "test-admin-password",
+	}
+	cfg.Secrets.Grafana = v2.GrafanaSecrets{
+		AdminPassword: "test-grafana-password",
+	}
+	return cfg
 }
 
 func TestNewDefaultSecretsManager(t *testing.T) {
@@ -177,12 +168,11 @@ func TestExtractSecretsFromConfig(t *testing.T) {
 	})
 
 	t.Run("excludes services with no secrets", func(t *testing.T) {
-		cfg := &config.Config{
-			Secrets: config.Secrets{
-				CertManager: config.CertManagerSecrets{
+		cfg := &v2.Config{
+			Secrets: v2.SecretsConfig{
+				CertManager: v2.CertManagerSecrets{
 					AWSAccessKey: "test-key",
 				},
-				// Other services have no secrets
 			},
 		}
 
@@ -196,8 +186,8 @@ func TestExtractSecretsFromConfig(t *testing.T) {
 	})
 
 	t.Run("handles empty config", func(t *testing.T) {
-		cfg := &config.Config{
-			Secrets: config.Secrets{},
+		cfg := &v2.Config{
+			Secrets: v2.SecretsConfig{},
 		}
 
 		secretsMap, err := manager.extractSecretsFromConfig(cfg)
@@ -207,9 +197,9 @@ func TestExtractSecretsFromConfig(t *testing.T) {
 	})
 
 	t.Run("extracts vSphere CSI secrets", func(t *testing.T) {
-		cfg := &config.Config{
-			Secrets: config.Secrets{
-				VSphereCsi: config.VSphereCsiSecrets{
+		cfg := &v2.Config{
+			Secrets: v2.SecretsConfig{
+				VSphereCsi: v2.VSphereCsiSecrets{
 					VCenterHost:  "vcenter.example.com",
 					Username:     "administrator@vsphere.local",
 					Password:     "test-password",
@@ -682,8 +672,7 @@ secrets:
     client_secret: test-client-secret
     admin_password: test-admin-password
 `
-		err = os.WriteFile(configPath, []byte(configData), 0644)
-		require.NoError(t, err)
+		writeNormalizedSecretsConfigFile(t, configPath, "test-cluster", configData)
 
 		// Run sync in dry-run mode
 		opts := SyncOptions{

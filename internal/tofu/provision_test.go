@@ -5,19 +5,22 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/gitops"
 )
 
 func TestProvisionProviderFile(t *testing.T) {
 	dir := t.TempDir()
-	cfg := config.NewDefault("dev")
+	cfg, err := v2.NewV2Default("dev", "openstack")
+	if err != nil {
+		t.Fatalf("NewV2Default() error = %v", err)
+	}
 	cfg.OpenCenter.GitOps.GitDir = dir
 	cfg.OpenTofu.Enabled = true
 	cfg.OpenTofu.Backend.Type = "local"
-	cfg.OpenTofu.Backend.Local.Path = "terraform.tfstate"
+	cfg.OpenTofu.Backend.Local = &v2.LocalBackendConfig{Path: "terraform.tfstate"}
 
-	if err := Provision(cfg); err != nil {
+	if err := Provision(*cfg); err != nil {
 		t.Fatal(err)
 	}
 
@@ -32,9 +35,9 @@ func TestProvisionProviderFile(t *testing.T) {
 
 func TestInfrastructureArtifactsAreCoLocated(t *testing.T) {
 	dir := t.TempDir()
-	cfg, err := config.NewProviderDefault("demo", "openstack")
+	cfg, err := v2.NewV2Default("demo", "openstack")
 	if err != nil {
-		t.Fatalf("NewProviderDefault() error = %v", err)
+		t.Fatalf("NewV2Default() error = %v", err)
 	}
 
 	cfg.OpenCenter.GitOps.GitDir = dir
@@ -43,12 +46,12 @@ func TestInfrastructureArtifactsAreCoLocated(t *testing.T) {
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ApplicationCredentialSecret = "app-cred-secret"
 	cfg.OpenTofu.Enabled = true
 	cfg.OpenTofu.Backend.Type = "local"
-	cfg.OpenTofu.Backend.Local.Path = "terraform.tfstate"
+	cfg.OpenTofu.Backend.Local = &v2.LocalBackendConfig{Path: "terraform.tfstate"}
 
-	if err := gitops.RenderInfrastructureCluster(cfg); err != nil {
+	if err := gitops.RenderInfrastructureCluster(*cfg); err != nil {
 		t.Fatalf("RenderInfrastructureCluster() error = %v", err)
 	}
-	if err := Provision(cfg); err != nil {
+	if err := Provision(*cfg); err != nil {
 		t.Fatalf("Provision() error = %v", err)
 	}
 

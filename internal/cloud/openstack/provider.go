@@ -33,7 +33,7 @@ import (
 	"github.com/gophercloud/gophercloud/openstack/networking/v2/subnets"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/cloud"
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 type serverLookup struct {
@@ -116,8 +116,8 @@ func (p *Provider) getBlockStorageClient() (*gophercloud.ServiceClient, error) {
 }
 
 // GetCurrentState retrieves the current infrastructure state from OpenStack.
-func (p *Provider) GetCurrentState(ctx context.Context, cfg config.Config) (*cloud.InfrastructureState, error) {
-	clusterName := cfg.OpenCenter.Cluster.ClusterName
+func (p *Provider) GetCurrentState(ctx context.Context, cfg v2.Config) (*cloud.InfrastructureState, error) {
+	clusterName := cfg.ClusterName()
 	state := &cloud.InfrastructureState{
 		Servers:        []cloud.Server{},
 		Networks:       []cloud.Network{},
@@ -133,7 +133,7 @@ func (p *Provider) GetCurrentState(ctx context.Context, cfg config.Config) (*clo
 	}
 	state.Servers = serverList
 
-	networkID := cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.NetworkID
+	networkID := openStackNetworkID(cfg)
 	networkList, err := p.listNetworks(ctx, clusterName, networkID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list networks: %w", err)
@@ -165,6 +165,20 @@ func (p *Provider) GetCurrentState(ctx context.Context, cfg config.Config) (*clo
 	state.FloatingIPs = floatingIPList
 
 	return state, nil
+}
+
+func openStackNetworkID(cfg v2.Config) string {
+	openstackCfg := cfg.OpenCenter.Infrastructure.Cloud.OpenStack
+	if openstackCfg == nil {
+		return ""
+	}
+	if networkID := strings.TrimSpace(openstackCfg.NetworkID); networkID != "" {
+		return networkID
+	}
+	if openstackCfg.Networking != nil {
+		return strings.TrimSpace(openstackCfg.Networking.NetworkID)
+	}
+	return ""
 }
 
 func (p *Provider) listServers(ctx context.Context, clusterName string) ([]cloud.Server, serverLookup, error) {

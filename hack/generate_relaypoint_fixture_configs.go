@@ -9,9 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	overlaycfg "github.com/opencenter-cloud/opencenter-cli/internal/config/overlay"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
+	"gopkg.in/yaml.v3"
 )
 
 type clusterSpec struct {
@@ -193,7 +194,7 @@ func main() {
 	root := filepath.Join("testdata", "relaypoint-logistics-shared")
 	for _, spec := range relayPointSpecs {
 		cfg := buildRelayPointConfig(spec)
-		data, err := config.MarshalConfigOptimized(&cfg)
+		data, err := yaml.Marshal(&cfg)
 		if err != nil {
 			panic(fmt.Errorf("marshal %s config: %w", spec.Name, err))
 		}
@@ -206,11 +207,15 @@ func main() {
 	}
 }
 
-func buildRelayPointConfig(spec clusterSpec) config.Config {
-	cfg := config.NewDefault(spec.Name)
-	cfg.Metadata = config.ConfigMetadata{
-		CreatedAt: time.Date(2026, 3, 31, 0, 0, 0, 0, time.UTC),
-		UpdatedAt: time.Date(2026, 3, 31, 0, 0, 0, 0, time.UTC),
+func buildRelayPointConfig(spec clusterSpec) v2.Config {
+	cfgPtr, err := v2.NewV2Default(spec.Name, "openstack")
+	if err != nil {
+		panic(fmt.Errorf("default %s config: %w", spec.Name, err))
+	}
+	cfg := *cfgPtr
+	cfg.Metadata = v2.ConfigMetadata{
+		CreatedAt: time.Date(2026, 3, 31, 0, 0, 0, 0, time.UTC).Format(time.RFC3339),
+		UpdatedAt: time.Date(2026, 3, 31, 0, 0, 0, 0, time.UTC).Format(time.RFC3339),
 		CreatedBy: "fixture-generator",
 	}
 
@@ -227,7 +232,7 @@ func buildRelayPointConfig(spec clusterSpec) config.Config {
 	cfg.OpenCenter.Cluster.ClusterName = spec.Name
 	cfg.OpenCenter.Cluster.ClusterFQDN = clusterFQDN
 	cfg.OpenCenter.Cluster.BaseDomain = baseDomain
-	cfg.OpenCenter.Cluster.SSHAuthorizedKeys = []string{config.DefaultSSHAuthorizedKeyPlaceholder}
+	cfg.OpenCenter.Infrastructure.SSH.AuthorizedKeys = []string{"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExamplePublicKeyDataHere user@example.com"}
 
 	cfg.OpenCenter.GitOps.GitDir = "./testdata/relaypoint-logistics-shared"
 	cfg.OpenCenter.GitOps.GitURL = "ssh://git@github.com/rpc-environments/7742901-RelayPoint-Logistics.git"
@@ -249,17 +254,17 @@ func buildRelayPointConfig(spec clusterSpec) config.Config {
 		cfg.OpenCenter.Services[name] = service
 	}
 
-	for name, service := range cfg.OpenCenter.ManagedService {
+	for name, service := range cfg.OpenCenter.ManagedServices {
 		setEnabled(service, false)
-		cfg.OpenCenter.ManagedService[name] = service
+		cfg.OpenCenter.ManagedServices[name] = service
 	}
 	for _, name := range spec.EnableManagedServices {
-		service := cfg.OpenCenter.ManagedService[name]
+		service := cfg.OpenCenter.ManagedServices[name]
 		if service == nil {
 			continue
 		}
 		setEnabled(service, true)
-		cfg.OpenCenter.ManagedService[name] = service
+		cfg.OpenCenter.ManagedServices[name] = service
 	}
 
 	if service, ok := cfg.OpenCenter.Services["headlamp"].(*services.HeadlampConfig); ok {
@@ -358,7 +363,7 @@ func buildRelayPointConfig(spec clusterSpec) config.Config {
 		cfg.Secrets.OverlayUnits.CustomerManaged = overlaycfg.CustomerManagedSecrets{}
 	}
 
-	if service, ok := cfg.OpenCenter.ManagedService["alert-proxy"].(*services.AlertProxyConfig); ok {
+	if service, ok := cfg.OpenCenter.ManagedServices["alert-proxy"].(*services.AlertProxyConfig); ok {
 		service.Uri = "https://github.com/rackerlabs/alert-proxy.git"
 		service.Branch = "main"
 		service.ImageTag = "1761602071"
@@ -371,7 +376,7 @@ func buildRelayPointConfig(spec clusterSpec) config.Config {
 	}
 
 	sortServiceMaps(cfg.OpenCenter.Services)
-	sortServiceMaps(cfg.OpenCenter.ManagedService)
+	sortServiceMaps(cfg.OpenCenter.ManagedServices)
 
 	return cfg
 }
@@ -398,14 +403,14 @@ func setEnabled(service any, enabled bool) {
 	}
 }
 
-func sortServiceMaps(serviceMap config.ServiceMap) {
+func sortServiceMaps(serviceMap v2.ServiceMap) {
 	keys := make([]string, 0, len(serviceMap))
 	for key := range serviceMap {
 		keys = append(keys, key)
 	}
 	slices.Sort(keys)
 
-	ordered := make(config.ServiceMap, len(serviceMap))
+	ordered := make(v2.ServiceMap, len(serviceMap))
 	for _, key := range keys {
 		ordered[key] = serviceMap[key]
 	}

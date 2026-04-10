@@ -22,7 +22,7 @@ import (
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 // Feature: security-and-operational-remediation, Property 13: Drift Detection Completeness
@@ -470,13 +470,24 @@ type mockConfigurationManager struct {
 	cluster string
 }
 
-func (m *mockConfigurationManager) LoadConfig(ctx context.Context, cluster string) (*config.Config, error) {
-	return &config.Config{
-		OpenCenter: config.SimplifiedOpenCenter{
-			Cluster: config.ClusterConfig{
+func (m *mockConfigurationManager) LoadConfig(ctx context.Context, cluster string) (*v2.Config, error) {
+	return &v2.Config{
+		OpenCenter: v2.OpenCenterConfig{
+			Cluster: v2.ClusterConfig{
 				ClusterName: cluster,
-				Networking: config.ClusterNetworkingConfig{
-					SubnetNodes: "10.0.0.0/24",
+				BaseDomain:  "example.com",
+				ClusterFQDN: cluster + ".example.com",
+				AdminEmail:  "admin@example.com",
+				Kubernetes: v2.KubernetesConfig{
+					SubnetPods:     "10.42.0.0/16",
+					SubnetServices: "10.43.0.0/16",
+				},
+			},
+			Infrastructure: v2.InfrastructureConfig{
+				Networking: v2.NetworkingConfig{
+					SubnetNodes:         "10.0.0.0/24",
+					AllocationPoolStart: "10.0.0.10",
+					AllocationPoolEnd:   "10.0.0.250",
 				},
 			},
 		},

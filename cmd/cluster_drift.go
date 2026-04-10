@@ -29,7 +29,7 @@ import (
 	"github.com/opencenter-cloud/opencenter-cli/internal/cloud"
 	"github.com/opencenter-cloud/opencenter-cli/internal/cloud/openstack"
 	"github.com/opencenter-cloud/opencenter-cli/internal/cloud/vmware"
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 // newClusterDriftCmd creates the parent drift command
@@ -377,18 +377,20 @@ If no cluster name is provided, uses the currently active cluster.`,
 // Helper functions
 
 // createCloudProviderFactory creates and configures a cloud provider factory with all available providers.
-func createCloudProviderFactory(cfg config.Config) *cloud.CloudProviderFactory {
+func createCloudProviderFactory(cfg v2.Config) *cloud.CloudProviderFactory {
 	factory := cloud.NewCloudProviderFactory()
 
 	openstackConfig := cfg.OpenCenter.Infrastructure.Cloud.OpenStack
-	openstackProvider := openstack.NewProvider(gophercloud.AuthOptions{
-		IdentityEndpoint:            openstackConfig.AuthURL,
-		ApplicationCredentialID:     openstackConfig.ApplicationCredentialID,
-		ApplicationCredentialSecret: openstackConfig.ApplicationCredentialSecret,
-		DomainName:                  openstackConfig.Domain,
-		TenantName:                  openstackConfig.TenantName,
-	}, openstackConfig.Region)
-	factory.RegisterProvider("openstack", openstackProvider)
+	if openstackConfig != nil {
+		openstackProvider := openstack.NewProvider(gophercloud.AuthOptions{
+			IdentityEndpoint:            openstackConfig.AuthURL,
+			ApplicationCredentialID:     openstackConfig.ApplicationCredentialID,
+			ApplicationCredentialSecret: openstackConfig.ApplicationCredentialSecret,
+			DomainName:                  openstackConfig.Domain,
+			TenantName:                  openstackConfig.TenantName,
+		}, openstackConfig.Region)
+		factory.RegisterProvider("openstack", openstackProvider)
+	}
 
 	factory.RegisterProvider("vmware", vmware.NewProvider())
 
@@ -396,7 +398,7 @@ func createCloudProviderFactory(cfg config.Config) *cloud.CloudProviderFactory {
 }
 
 // buildDesiredState constructs the desired infrastructure state from configuration.
-func buildDesiredState(cfg config.Config) *cloud.InfrastructureState {
+func buildDesiredState(cfg v2.Config) *cloud.InfrastructureState {
 	state := &cloud.InfrastructureState{
 		Servers:        []cloud.Server{},
 		Networks:       []cloud.Network{},
@@ -406,32 +408,51 @@ func buildDesiredState(cfg config.Config) *cloud.InfrastructureState {
 		FloatingIPs:    []cloud.FloatingIP{},
 	}
 
-	provider := canonicalDriftProvider(cfg.OpenCenter.Infrastructure.Provider)
-	clusterName := cfg.OpenCenter.Cluster.ClusterName
-	masterPrefix := cfg.OpenCenter.Infrastructure.NodeNaming.Master
-	if masterPrefix == "" {
-		masterPrefix = "master"
-	}
-	workerPrefix := cfg.OpenCenter.Infrastructure.NodeNaming.Worker
-	if workerPrefix == "" {
-		workerPrefix = "worker"
-	}
+	provider := canonicalDriftProvider(cfg.Provider())
+	clusterName := cfg.ClusterName()
+	masterPrefix := "master"
+	workerPrefix := "worker"
 	serverImage := ""
-	if provider == "openstack" {
+	if provider == "openstack" && cfg.OpenCenter.Infrastructure.Cloud.OpenStack != nil {
 		serverImage = cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ImageID
 	}
 
 	if provider == "vmware" {
-		networkName := strings.TrimSpace(cfg.OpenCenter.Infrastructure.Cloud.VMware.Network)
-		datastoreName := strings.TrimSpace(cfg.OpenCenter.Infrastructure.Cloud.VMware.Datastore)
-		for _, node := range cfg.OpenCenter.Infrastructure.Cloud.VMware.Nodes {
-			role := "worker"
-			if strings.EqualFold(node.Role, "master") || strings.EqualFold(node.Role, "control-plane") {
-				role = "control-plane"
-			}
+		networkName := ""
+		datastoreName := ""
+		if vmwareCfg := cfg.OpenCenter.Infrastructure.Cloud.VMware; vmwareCfg != nil {
+			networkName = strings.TrimSpace(vmwareCfg.Network)
+			datastoreName = strings.TrimSpace(vmwareCfg.Datastore)
+		}
 
+		for i := 0; i < cfg.OpenCenter.Infrastructure.Compute.MasterCount; i++ {
+			nodeName := fmt.Sprintf("%s-%s-%d", clusterName, masterPrefix, i+1)
 			server := cloud.Server{
-				Name:   node.Name,
+				Name:   nodeName,
+				Status: "ACTIVE",
+				Tags: map[string]string{
+					"cluster": clusterName,
+					"role":    "control-plane",
+				},
+			}
+			if networkName != "" {
+				server.Networks = []string{networkName}
+			}
+			state.Servers = append(state.Servers, server)
+
+			if datastoreName != "" {
+				state.Volumes = append(state.Volumes, cloud.Volume{
+					Name:   fmt.Sprintf("%s@%s", nodeName, datastoreName),
+					Status: "in-use",
+				})
+			}
+		}
+
+		for i := 0; i < cfg.OpenCenter.Infrastructure.Compute.WorkerCount; i++ {
+			nodeName := fmt.Sprintf("%s-%s-%d", clusterName, workerPrefix, i+1)
+			role := "worker"
+			server := cloud.Server{
+				Name:   nodeName,
 				Status: "ACTIVE",
 				Tags: map[string]string{
 					"cluster": clusterName,
@@ -445,17 +466,17 @@ func buildDesiredState(cfg config.Config) *cloud.InfrastructureState {
 
 			if datastoreName != "" {
 				state.Volumes = append(state.Volumes, cloud.Volume{
-					Name:   fmt.Sprintf("%s@%s", node.Name, datastoreName),
+					Name:   fmt.Sprintf("%s@%s", nodeName, datastoreName),
 					Status: "in-use",
 				})
 			}
 		}
 	} else {
-		for i := 0; i < cfg.OpenCenter.Cluster.Kubernetes.MasterCount; i++ {
+		for i := 0; i < cfg.OpenCenter.Infrastructure.Compute.MasterCount; i++ {
 			name := fmt.Sprintf("%s-%s-%d", clusterName, masterPrefix, i+1)
 			state.Servers = append(state.Servers, cloud.Server{
 				Name:   name,
-				Flavor: cfg.OpenCenter.Cluster.Kubernetes.FlavorMaster,
+				Flavor: cfg.OpenCenter.Infrastructure.Compute.FlavorMaster,
 				Image:  serverImage,
 				Status: "ACTIVE",
 				Tags: map[string]string{
@@ -464,7 +485,7 @@ func buildDesiredState(cfg config.Config) *cloud.InfrastructureState {
 				},
 			})
 
-			if size := cfg.OpenCenter.Storage.WorkerVolumeSize; size > 0 {
+			if size := cfg.OpenCenter.Infrastructure.Storage.MasterVolumeSize; size > 0 {
 				state.Volumes = append(state.Volumes, cloud.Volume{
 					Name:       fmt.Sprintf("%s-boot", name),
 					Size:       size,
@@ -474,11 +495,11 @@ func buildDesiredState(cfg config.Config) *cloud.InfrastructureState {
 			}
 		}
 
-		for i := 0; i < cfg.OpenCenter.Cluster.Kubernetes.WorkerCount; i++ {
+		for i := 0; i < cfg.OpenCenter.Infrastructure.Compute.WorkerCount; i++ {
 			name := fmt.Sprintf("%s-%s-%d", clusterName, workerPrefix, i+1)
 			state.Servers = append(state.Servers, cloud.Server{
 				Name:   name,
-				Flavor: cfg.OpenCenter.Cluster.Kubernetes.FlavorWorker,
+				Flavor: cfg.OpenCenter.Infrastructure.Compute.FlavorWorker,
 				Image:  serverImage,
 				Status: "ACTIVE",
 				Tags: map[string]string{
@@ -487,7 +508,7 @@ func buildDesiredState(cfg config.Config) *cloud.InfrastructureState {
 				},
 			})
 
-			if size := cfg.OpenCenter.Storage.WorkerVolumeSize; size > 0 {
+			if size := cfg.OpenCenter.Infrastructure.Storage.WorkerVolumeSize; size > 0 {
 				state.Volumes = append(state.Volumes, cloud.Volume{
 					Name:       fmt.Sprintf("%s-boot", name),
 					Size:       size,
@@ -501,7 +522,31 @@ func buildDesiredState(cfg config.Config) *cloud.InfrastructureState {
 	switch provider {
 	case "openstack":
 		networkName := fmt.Sprintf("%s-network", clusterName)
-		networkID := cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.NetworkID
+		networkID := ""
+		subnetID := ""
+		floatingIPPool := ""
+		apiACL := []string(nil)
+		useOctavia := cfg.OpenCenter.Infrastructure.Networking.UseOctavia
+		loadBalancerProvider := cfg.OpenCenter.Infrastructure.Networking.LoadbalancerProvider
+		subnetNodes := cfg.OpenCenter.Infrastructure.Networking.SubnetNodes
+		if openstackCfg := cfg.OpenCenter.Infrastructure.Cloud.OpenStack; openstackCfg != nil {
+			networkID = strings.TrimSpace(openstackCfg.NetworkID)
+			subnetID = strings.TrimSpace(openstackCfg.SubnetID)
+			floatingIPPool = strings.TrimSpace(openstackCfg.FloatingIPPool)
+			useOctavia = useOctavia || openstackCfg.UseOctavia
+			if openstackCfg.Networking != nil {
+				if networkID == "" {
+					networkID = strings.TrimSpace(openstackCfg.Networking.NetworkID)
+				}
+				if subnetID == "" {
+					subnetID = strings.TrimSpace(openstackCfg.Networking.SubnetID)
+				}
+				if floatingIPPool == "" {
+					floatingIPPool = strings.TrimSpace(openstackCfg.Networking.FloatingIPPool)
+				}
+				apiACL = append(apiACL, openstackCfg.Networking.K8sAPIPortACL...)
+			}
+		}
 		if networkID != "" {
 			networkName = networkID
 		}
@@ -511,15 +556,15 @@ func buildDesiredState(cfg config.Config) *cloud.InfrastructureState {
 			Name: networkName,
 			Subnets: []cloud.Subnet{
 				{
-					ID:   cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.SubnetId,
+					ID:   subnetID,
 					Name: fmt.Sprintf("%s-subnet-nodes", clusterName),
-					CIDR: cfg.OpenCenter.Cluster.Networking.SubnetNodes,
+					CIDR: subnetNodes,
 				},
 			},
 		})
 
-		apiRules := make([]cloud.SecurityRule, 0, len(cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.K8sAPIPortACL))
-		for _, cidr := range cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.K8sAPIPortACL {
+		apiRules := make([]cloud.SecurityRule, 0, len(apiACL))
+		for _, cidr := range apiACL {
 			apiRules = append(apiRules, cloud.SecurityRule{
 				Direction: "ingress",
 				Protocol:  "tcp",
@@ -538,7 +583,7 @@ func buildDesiredState(cfg config.Config) *cloud.InfrastructureState {
 			},
 		)
 
-		if cfg.OpenCenter.Cluster.Networking.LoadbalancerProvider == "ovn" || cfg.OpenCenter.Cluster.Networking.LoadbalancerProvider == "octavia" || cfg.OpenCenter.Cluster.Networking.UseOctavia {
+		if loadBalancerProvider == "ovn" || loadBalancerProvider == "octavia" || useOctavia {
 			state.LoadBalancers = append(state.LoadBalancers, cloud.LoadBalancer{
 				Name:     fmt.Sprintf("%s-api", clusterName),
 				Protocol: "TCP",
@@ -546,16 +591,15 @@ func buildDesiredState(cfg config.Config) *cloud.InfrastructureState {
 			})
 		}
 
-		if !cfg.OpenCenter.Cluster.Networking.UseOctavia &&
-			cfg.OpenCenter.Cluster.Networking.LoadbalancerProvider != "octavia" &&
-			cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Networking.FloatingIPPool != "" {
+		if !useOctavia && loadBalancerProvider != "octavia" && floatingIPPool != "" {
 			state.FloatingIPs = append(state.FloatingIPs, cloud.FloatingIP{
 				ID:     "cluster-api",
 				Status: "ACTIVE",
 			})
 		}
 	case "vmware":
-		if networkName := strings.TrimSpace(cfg.OpenCenter.Infrastructure.Cloud.VMware.Network); networkName != "" {
+		if cfg.OpenCenter.Infrastructure.Cloud.VMware != nil && strings.TrimSpace(cfg.OpenCenter.Infrastructure.Cloud.VMware.Network) != "" {
+			networkName := strings.TrimSpace(cfg.OpenCenter.Infrastructure.Cloud.VMware.Network)
 			state.Networks = append(state.Networks, cloud.Network{
 				Name: networkName,
 			})
@@ -566,7 +610,7 @@ func buildDesiredState(cfg config.Config) *cloud.InfrastructureState {
 			Subnets: []cloud.Subnet{
 				{
 					Name: fmt.Sprintf("%s-subnet-nodes", clusterName),
-					CIDR: cfg.OpenCenter.Cluster.Networking.SubnetNodes,
+					CIDR: cfg.OpenCenter.Infrastructure.Networking.SubnetNodes,
 				},
 			},
 		})
