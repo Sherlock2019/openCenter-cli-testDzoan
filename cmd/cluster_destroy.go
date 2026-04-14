@@ -26,7 +26,6 @@ import (
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
-	"github.com/opencenter-cloud/opencenter-cli/internal/resilience"
 	"github.com/opencenter-cloud/opencenter-cli/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -42,7 +41,10 @@ func newClusterDestroyCmd() *cobra.Command {
 This command removes the cluster configuration and optionally its GitOps directory.
 The cluster name can be specified as 'cluster' or 'organization/cluster'.
 
-If no cluster name is provided, the active cluster will be destroyed.`,
+If no cluster name is provided, the active cluster will be destroyed.
+
+If an existing lock is found, you will be prompted to break it. Use --break-lock
+to automatically break any existing lock without prompting.`,
 		Example: `  # Destroy a specific cluster
   opencenter cluster destroy my-cluster
 
@@ -51,6 +53,9 @@ If no cluster name is provided, the active cluster will be destroyed.`,
 
   # Destroy without confirmation
   opencenter cluster destroy my-cluster --force
+
+  # Destroy and break any existing lock without prompting
+  opencenter cluster destroy my-cluster --force --break-lock
 
   # Destroy active cluster
   opencenter cluster destroy`,
@@ -62,21 +67,24 @@ If no cluster name is provided, the active cluster will be destroyed.`,
 				return err
 			}
 
-			// Acquire lock for destroy operation
-			lockMgr, err := resilience.NewLockManager(resilience.DefaultLockConfig)
-			if err != nil {
-				return fmt.Errorf("failed to create lock manager: %w", err)
-			}
-
 			ctx := cmd.Context()
-			lock, err := lockMgr.AcquireWithMetadata(ctx, name, 1*time.Hour, map[string]string{
+
+			// Acquire lock for destroy operation (with prompt if lock exists)
+			lockResult, err := AcquireLockWithPrompt(ctx, cmd, name, "destroy", 1*time.Hour, map[string]string{
 				"operation": "destroy",
 				"command":   "cluster destroy",
 			})
 			if err != nil {
-				return fmt.Errorf("failed to acquire lock for cluster %q: %w\nAnother operation may be in progress. Wait for it to complete or use 'opencenter cluster info %s' to check lock status", name, err, name)
+				return err
 			}
-			defer lockMgr.Release(lock)
+			// Ensure lock is released on success and lock file is removed
+			defer func() {
+				if lockResult.Lock != nil {
+					lockResult.LockManager.Release(lockResult.Lock)
+					// Force break to ensure lock file is removed after successful destroy
+					_ = lockResult.LockManager.ForceBreak(name)
+				}
+			}()
 
 			// Load cluster configuration
 			cfg, err := loadCanonicalConfig(name)

@@ -16,9 +16,13 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
+	"github.com/opencenter-cloud/opencenter-cli/internal/resilience"
+	"github.com/opencenter-cloud/opencenter-cli/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -231,4 +235,110 @@ func resolveClusterNameFromFlag(flagValue string, requireActive bool) (string, e
 	}
 
 	return activeName, nil
+}
+
+// LockAcquisitionResult contains the result of attempting to acquire a lock
+type LockAcquisitionResult struct {
+	Lock          resilience.Lock
+	LockManager   resilience.LockManager
+	ExistingLock  *resilience.LockState
+	WasBroken     bool
+	UserConfirmed bool
+}
+
+// AcquireLockWithPrompt attempts to acquire a lock on a cluster resource.
+// If a lock already exists, it checks the --break-lock flag or prompts the user
+// for confirmation before breaking the lock.
+//
+// Parameters:
+//   - ctx: Context for the operation
+//   - cmd: The cobra command (for flags and I/O)
+//   - resource: The resource name to lock (typically cluster name)
+//   - operation: Description of the operation (e.g., "destroy", "bootstrap")
+//   - ttl: Time-to-live for the lock
+//   - metadata: Additional metadata to store with the lock
+//
+// Returns:
+//   - *LockAcquisitionResult: Contains the acquired lock and related info
+//   - error: An error if lock acquisition fails
+func AcquireLockWithPrompt(ctx context.Context, cmd *cobra.Command, resource string, operation string, ttl time.Duration, metadata map[string]string) (*LockAcquisitionResult, error) {
+	lockMgr, err := resilience.NewLockManager(resilience.DefaultLockConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create lock manager: %w", err)
+	}
+
+	result := &LockAcquisitionResult{
+		LockManager: lockMgr,
+	}
+
+	// Check for existing lock first
+	existingLock, err := lockMgr.GetLockInfo(resource)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check existing lock: %w", err)
+	}
+
+	if existingLock != nil {
+		result.ExistingLock = existingLock
+
+		// Check if --break-lock flag is set
+		breakLock, _ := cmd.Flags().GetBool("break-lock")
+
+		if breakLock {
+			// Force break the lock
+			if err := lockMgr.ForceBreak(resource); err != nil {
+				return nil, fmt.Errorf("failed to break existing lock: %w", err)
+			}
+			result.WasBroken = true
+			fmt.Fprintf(cmd.OutOrStdout(), "Broke existing lock held by %s (operation: %s)\n",
+				existingLock.Owner, existingLock.Metadata["operation"])
+		} else {
+			// Prompt user for confirmation
+			testMode := os.Getenv("OPENCENTER_TEST_MODE") != ""
+			prompter := ui.GetPrompter(os.Stdin, cmd.OutOrStdout(), testMode)
+
+			// Build informative message about the existing lock
+			lockAge := time.Since(existingLock.AcquiredAt).Round(time.Second)
+			expiresIn := time.Until(existingLock.ExpiresAt).Round(time.Second)
+
+			message := fmt.Sprintf(
+				"An existing lock was found:\n"+
+					"  Owner: %s\n"+
+					"  Operation: %s\n"+
+					"  Acquired: %s ago\n"+
+					"  Expires in: %s\n\n"+
+					"Do you want to break this lock and proceed with %s?",
+				existingLock.Owner,
+				existingLock.Metadata["operation"],
+				lockAge,
+				expiresIn,
+				operation,
+			)
+
+			confirmed, err := prompter.Confirm(ctx, message)
+			if err != nil {
+				return nil, fmt.Errorf("confirmation prompt failed: %w", err)
+			}
+			if !confirmed {
+				return nil, fmt.Errorf("operation cancelled: existing lock not broken")
+			}
+
+			result.UserConfirmed = true
+
+			// Break the lock
+			if err := lockMgr.ForceBreak(resource); err != nil {
+				return nil, fmt.Errorf("failed to break existing lock: %w", err)
+			}
+			result.WasBroken = true
+			fmt.Fprintf(cmd.OutOrStdout(), "Broke existing lock held by %s\n", existingLock.Owner)
+		}
+	}
+
+	// Now acquire the lock
+	lock, err := lockMgr.AcquireWithMetadata(ctx, resource, ttl, metadata)
+	if err != nil {
+		return nil, fmt.Errorf("failed to acquire lock for cluster %q: %w\nAnother operation may be in progress. Wait for it to complete or use 'opencenter cluster info %s' to check lock status", resource, err, resource)
+	}
+
+	result.Lock = lock
+	return result, nil
 }

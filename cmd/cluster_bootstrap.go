@@ -25,7 +25,6 @@ import (
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/di"
-	"github.com/opencenter-cloud/opencenter-cli/internal/resilience"
 	"github.com/opencenter-cloud/opencenter-cli/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -58,6 +57,7 @@ and re-run bootstrap to continue from where it left off.`,
 	cmd.Flags().Bool("restart", false, "rerun all bootstrap steps and ignore saved state")
 	cmd.Flags().String("step", "", "run a single bootstrap step by ID")
 	cmd.Flags().String("from-step", "", "restart bootstrap from the specified step ID")
+	cmd.Flags().Bool("confirm-commit", false, "prompt for confirmation before auto-committing uncommitted changes (default: auto-commit without prompting)")
 
 	return cmd
 }
@@ -86,20 +86,15 @@ func runClusterBootstrap(cmd *cobra.Command, args []string) error {
 		organization = cfg.OpenCenter.Meta.Organization
 	}
 
-	// Acquire lock for bootstrap operation
-	lockMgr, err := resilience.NewLockManager(resilience.DefaultLockConfig)
-	if err != nil {
-		return fmt.Errorf("failed to create lock manager: %w", err)
-	}
-
-	lock, err := lockMgr.AcquireWithMetadata(ctx, name, 1*time.Hour, map[string]string{
+	// Acquire lock for bootstrap operation (with prompt if lock exists)
+	lockResult, err := AcquireLockWithPrompt(ctx, cmd, name, "bootstrap", 1*time.Hour, map[string]string{
 		"operation": "bootstrap",
 		"command":   "cluster bootstrap",
 	})
 	if err != nil {
-		return fmt.Errorf("failed to acquire lock for cluster %q: %w\nAnother operation may be in progress. Wait for it to complete or use 'opencenter cluster info %s' to check lock status", name, err, name)
+		return err
 	}
-	defer lockMgr.Release(lock)
+	defer lockResult.LockManager.Release(lockResult.Lock)
 
 	app, err := di.NewApp(config.ResolveClustersDir())
 	if err != nil {
@@ -118,7 +113,8 @@ func runClusterBootstrap(cmd *cobra.Command, args []string) error {
 	// A dirty tree causes git pull --rebase to fail during the gitea-rebase step.
 	if !opts.DryRun {
 		if gitDir := strings.TrimSpace(cfg.OpenCenter.GitOps.GitDir); gitDir != "" {
-			if err := ensureCleanWorkingTree(ctx, cmd, gitDir); err != nil {
+			confirmCommit, _ := cmd.Flags().GetBool("confirm-commit")
+			if err := ensureCleanWorkingTree(ctx, cmd, gitDir, confirmCommit); err != nil {
 				return err
 			}
 			// Verify the local repo's origin remote points to git_url so the
@@ -222,9 +218,10 @@ func parseBootstrapOptions(cmd *cobra.Command, args []string, clusterName string
 }
 
 // ensureCleanWorkingTree checks whether the GitOps directory has uncommitted
-// changes. If it does, the user is prompted to commit them before proceeding.
+// changes. If confirmCommit is true, the user is prompted before committing.
+// Otherwise, changes are auto-committed without prompting.
 // Returning an error aborts the bootstrap.
-func ensureCleanWorkingTree(ctx context.Context, cmd *cobra.Command, gitDir string) error {
+func ensureCleanWorkingTree(ctx context.Context, cmd *cobra.Command, gitDir string, confirmCommit bool) error {
 	statusCmd := exec.CommandContext(ctx, "git", "-C", gitDir, "status", "--porcelain")
 	output, err := statusCmd.Output()
 	if err != nil {
@@ -237,15 +234,20 @@ func ensureCleanWorkingTree(ctx context.Context, cmd *cobra.Command, gitDir stri
 
 	fmt.Fprintf(cmd.OutOrStdout(), "The GitOps directory has uncommitted changes:\n%s\n", strings.TrimRight(string(output), "\n"))
 
-	testMode := os.Getenv("OPENCENTER_TEST_MODE") != ""
-	prompter := ui.GetPrompter(os.Stdin, cmd.OutOrStdout(), testMode)
+	// If --confirm-commit is set, prompt for confirmation
+	if confirmCommit {
+		testMode := os.Getenv("OPENCENTER_TEST_MODE") != ""
+		prompter := ui.GetPrompter(os.Stdin, cmd.OutOrStdout(), testMode)
 
-	confirmed, err := prompter.Confirm(ctx, "Commit all changes before continuing?")
-	if err != nil {
-		return fmt.Errorf("confirmation prompt failed: %w", err)
-	}
-	if !confirmed {
-		return fmt.Errorf("bootstrap aborted: uncommitted changes in %s\nPlease commit or stash your changes and retry", gitDir)
+		confirmed, err := prompter.Confirm(ctx, "Commit all changes before continuing?")
+		if err != nil {
+			return fmt.Errorf("confirmation prompt failed: %w", err)
+		}
+		if !confirmed {
+			return fmt.Errorf("bootstrap aborted: uncommitted changes in %s\nPlease commit or stash your changes and retry", gitDir)
+		}
+	} else {
+		fmt.Fprintf(cmd.OutOrStdout(), "Auto-committing changes...\n")
 	}
 
 	addCmd := exec.CommandContext(ctx, "git", "-C", gitDir, "add", "-A")
@@ -253,7 +255,7 @@ func ensureCleanWorkingTree(ctx context.Context, cmd *cobra.Command, gitDir stri
 		return fmt.Errorf("git add failed: %s: %w", strings.TrimSpace(string(out)), err)
 	}
 
-	commitCmd := exec.CommandContext(ctx, "git", "-C", gitDir, "commit", "-m", "committing staged changes")
+	commitCmd := exec.CommandContext(ctx, "git", "-C", gitDir, "commit", "-m", "chore: auto-commit before bootstrap")
 	if out, err := commitCmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("git commit failed: %s: %w", strings.TrimSpace(string(out)), err)
 	}

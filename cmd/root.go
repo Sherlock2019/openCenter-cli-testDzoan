@@ -121,6 +121,7 @@ type GlobalFlags struct {
 	LogLevel   string   // --log-level: set log level explicitly
 	Set        []string // --set: override configuration values using dot notation
 	ShowActive bool     // --show-active: display the current active cluster
+	BreakLock  bool     // --break-lock: force removal of existing lock before operation
 }
 
 var rootCmd = &cobra.Command{
@@ -295,6 +296,7 @@ func addGlobalFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().String("log-level", "warn", "set log level explicitly (debug, info, warn, error)")
 	cmd.PersistentFlags().StringArray("set", []string{}, "override configuration values using dot notation (e.g., --set spec.provider=openstack)")
 	cmd.PersistentFlags().Bool("show-active", false, "display the current active cluster")
+	cmd.PersistentFlags().Bool("break-lock", false, "force removal of existing lock before operation (use with caution)")
 }
 
 // parseGlobalFlags extracts global flags from the command.
@@ -304,6 +306,7 @@ func parseGlobalFlags(cmd *cobra.Command) (*GlobalFlags, error) {
 	logLevel, _ := cmd.Flags().GetString("log-level")
 	set, _ := cmd.Flags().GetStringArray("set")
 	showActive, _ := cmd.Flags().GetBool("show-active")
+	breakLock, _ := cmd.Flags().GetBool("break-lock")
 
 	return &GlobalFlags{
 		Config:     config,
@@ -311,6 +314,7 @@ func parseGlobalFlags(cmd *cobra.Command) (*GlobalFlags, error) {
 		LogLevel:   logLevel,
 		Set:        set,
 		ShowActive: showActive,
+		BreakLock:  breakLock,
 	}, nil
 }
 
