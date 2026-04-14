@@ -200,7 +200,7 @@ func generateClusterSelectOutput(clusterName string, shellOverride string) (Clus
 	// Validate that cluster exists first
 	ctx := context.Background()
 	var clusterPaths *paths.ClusterPaths
-	
+
 	// If organization was explicitly provided in the identifier, use Resolve
 	// Otherwise use ResolveWithFallback to search all organizations
 	if strings.Contains(clusterName, "/") {
@@ -361,7 +361,6 @@ func generateExportCommands(clusterPaths *paths.ClusterPaths, shell string) []st
 	return commands
 }
 
-
 // displayClusterSelectOutput displays the enhanced cluster select output.
 func displayClusterSelectOutput(output ClusterSelectOutput, cmd *cobra.Command) {
 	// Display cluster metadata
@@ -455,7 +454,7 @@ Use --clear-persistent to remove the persistent cluster selection.`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			
+
 			// Handle --clear-persistent flag to remove persistent cluster selection
 			if clearPersistent {
 				if err := setActiveCluster(""); err != nil {

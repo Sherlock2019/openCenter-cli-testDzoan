@@ -345,7 +345,7 @@ func generateKeyEntries(count int) []KeyEntry {
 	entries := make([]KeyEntry, count)
 	keyTypes := []KeyType{KeyTypeAge, KeyTypeSSH}
 	statuses := []KeyStatus{KeyStatusActive, KeyStatusArchived, KeyStatusRevoked}
-	
+
 	for i := 0; i < count; i++ {
 		entries[i] = KeyEntry{
 			Cluster:     "test-cluster-" + string(rune('a'+i)),

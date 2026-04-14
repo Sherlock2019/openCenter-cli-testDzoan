@@ -702,7 +702,7 @@ func extractTemplateContext(templatePath string, errorLine, contextRadius int) [
 	// Use default file system for error reporting
 	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
 	fs := utilfs.NewDefaultFileSystem(errorHandler)
-	
+
 	content, err := fs.ReadFile(templatePath)
 	if err != nil {
 		return nil

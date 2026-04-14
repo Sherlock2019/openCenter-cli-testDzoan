@@ -33,11 +33,11 @@ type partialSecretsTestConfig struct {
 		} `yaml:"infrastructure"`
 	} `yaml:"opencenter"`
 	Secrets struct {
-		SopsAgeKeyFile   string                `yaml:"sops_age_key_file"`
-		SSHPrivateKey    string                `yaml:"ssh_private_key_file"`
-		SSHPublicKey     string                `yaml:"ssh_public_key_file"`
-		CertManager      v2.CertManagerSecrets `yaml:"cert_manager"`
-		Keycloak         v2.KeycloakSecrets    `yaml:"keycloak"`
+		SopsAgeKeyFile string                `yaml:"sops_age_key_file"`
+		SSHPrivateKey  string                `yaml:"ssh_private_key_file"`
+		SSHPublicKey   string                `yaml:"ssh_public_key_file"`
+		CertManager    v2.CertManagerSecrets `yaml:"cert_manager"`
+		Keycloak       v2.KeycloakSecrets    `yaml:"keycloak"`
 	} `yaml:"secrets"`
 }
 

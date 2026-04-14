@@ -21,15 +21,15 @@ type ValidationError struct {
 
 // ValidationOutput is the structured JSON output for CI/CD pipelines.
 type ValidationOutput struct {
-	Valid             bool                        `json:"valid"`
-	Summary           ValidationSummary           `json:"summary"`
-	Details           ValidationDetails           `json:"details"`
-	Errors            []ValidationError           `json:"errors,omitempty"`
-	ErrorsBySection   map[string][]ValidationError `json:"errors_by_section,omitempty"`
-	Warnings          []string                    `json:"warnings,omitempty"`
-	Suggestions       []string                    `json:"suggestions,omitempty"`
-	SchemaVersion     string                      `json:"schema_version,omitempty"`
-	DebugConfigPath   string                      `json:"debug_config_path,omitempty"`
+	Valid           bool                         `json:"valid"`
+	Summary         ValidationSummary            `json:"summary"`
+	Details         ValidationDetails            `json:"details"`
+	Errors          []ValidationError            `json:"errors,omitempty"`
+	ErrorsBySection map[string][]ValidationError `json:"errors_by_section,omitempty"`
+	Warnings        []string                     `json:"warnings,omitempty"`
+	Suggestions     []string                     `json:"suggestions,omitempty"`
+	SchemaVersion   string                       `json:"schema_version,omitempty"`
+	DebugConfigPath string                       `json:"debug_config_path,omitempty"`
 }
 
 // ValidationSummary provides a quick count overview.
@@ -49,37 +49,37 @@ type ValidationDetails struct {
 // goStructToYAMLPath converts a Go struct path like "Config.OpenCenter.Meta.Env"
 // to a YAML config path like "opencenter.meta.env".
 var goToYAMLMap = map[string]string{
-	"Config":         "",
-	"OpenCenter":     "opencenter",
-	"Meta":           "meta",
-	"Cluster":        "cluster",
-	"Infrastructure": "infrastructure",
-	"SSH":            "ssh",
-	"Networking":     "networking",
-	"Compute":        "compute",
-	"Storage":        "storage",
-	"Cloud":          "cloud",
-	"OpenStack":      "openstack",
-	"AWS":            "aws",
-	"GCP":            "gcp",
-	"Azure":          "azure",
-	"VMware":         "vmware",
-	"Services":       "services",
+	"Config":          "",
+	"OpenCenter":      "opencenter",
+	"Meta":            "meta",
+	"Cluster":         "cluster",
+	"Infrastructure":  "infrastructure",
+	"SSH":             "ssh",
+	"Networking":      "networking",
+	"Compute":         "compute",
+	"Storage":         "storage",
+	"Cloud":           "cloud",
+	"OpenStack":       "openstack",
+	"AWS":             "aws",
+	"GCP":             "gcp",
+	"Azure":           "azure",
+	"VMware":          "vmware",
+	"Services":        "services",
 	"ManagedServices": "managed_services",
-	"GitOps":         "gitops",
-	"Deployment":     "deployment",
-	"OpenTofu":       "opentofu",
-	"Backend":        "backend",
-	"Secrets":        "secrets",
-	"Security":       "security",
-	"Kubernetes":     "kubernetes",
-	"NetworkPlugin":  "network_plugin",
-	"OIDC":           "oidc",
-	"Bastion":        "bastion",
-	"NodeNaming":     "node_naming",
-	"VLAN":           "vlan",
-	"SOPSConfig":     "sops",
-	"Global":         "global",
+	"GitOps":          "gitops",
+	"Deployment":      "deployment",
+	"OpenTofu":        "opentofu",
+	"Backend":         "backend",
+	"Secrets":         "secrets",
+	"Security":        "security",
+	"Kubernetes":      "kubernetes",
+	"NetworkPlugin":   "network_plugin",
+	"OIDC":            "oidc",
+	"Bastion":         "bastion",
+	"NodeNaming":      "node_naming",
+	"VLAN":            "vlan",
+	"SOPSConfig":      "sops",
+	"Global":          "global",
 }
 
 // fieldNameToYAML converts a Go field name to its YAML equivalent using common patterns.
@@ -272,9 +272,9 @@ func parseSchemaErrors(rawError string, activeProvider string) []ValidationError
 	var errors []ValidationError
 
 	for _, match := range matches {
-		goPath := match[1]  // e.g., "Config.OpenCenter.Meta.Env"
-		field := match[2]   // e.g., "Env"
-		tag := match[3]     // e.g., "oneof"
+		goPath := match[1] // e.g., "Config.OpenCenter.Meta.Env"
+		field := match[2]  // e.g., "Env"
+		tag := match[3]    // e.g., "oneof"
 
 		yamlPath := goPathToYAMLPath(goPath)
 
@@ -436,20 +436,20 @@ func groupBySection(errors []ValidationError) map[string][]ValidationError {
 func sortedSections(grouped map[string][]ValidationError) []string {
 	// Define preferred order for common sections
 	order := map[string]int{
-		"General":                  0,
-		"Meta":                     1,
-		"Cluster":                  2,
-		"Cluster > Kubernetes":     3,
-		"Infrastructure > SSH":     4,
+		"General":                     0,
+		"Meta":                        1,
+		"Cluster":                     2,
+		"Cluster > Kubernetes":        3,
+		"Infrastructure > SSH":        4,
 		"Infrastructure > Networking": 5,
-		"Infrastructure > Compute": 6,
-		"Infrastructure > Storage": 7,
-		"Infrastructure > Cloud":   8,
-		"Gitops":                   9,
-		"Deployment":               10,
-		"Opentofu":                 11,
-		"Opentofu > Backend":       12,
-		"Secrets":                  13,
+		"Infrastructure > Compute":    6,
+		"Infrastructure > Storage":    7,
+		"Infrastructure > Cloud":      8,
+		"Gitops":                      9,
+		"Deployment":                  10,
+		"Opentofu":                    11,
+		"Opentofu > Backend":          12,
+		"Secrets":                     13,
 	}
 
 	sections := make([]string, 0, len(grouped))

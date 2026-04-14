@@ -33,9 +33,9 @@ func TestProperty_LockAcquisitionAndRelease(t *testing.T) {
 
 			lockDir := t.TempDir()
 			config := LockConfig{
-				Backend:        "file",
-				LockDir:        lockDir,
-				DefaultTTL:     time.Duration(ttlSeconds) * time.Second,
+				Backend:    "file",
+				LockDir:    lockDir,
+				DefaultTTL: time.Duration(ttlSeconds) * time.Second,
 				// Keep the acquire timeout well below the minimum generated TTL so a
 				// second acquire attempt cannot succeed simply by waiting for expiry.
 				AcquireTimeout: 100 * time.Millisecond,

@@ -9,5 +9,7 @@ spec:
   url: {{ .OpenCenter.GitOps.GitOpsBaseRepo }}
   ref:
     branch: {{ .OpenCenter.GitOps.GitOpsBranch | default "main" }}
+{{- if not (hasPrefix "https://" .OpenCenter.GitOps.GitOpsBaseRepo) }}
   secretRef:
     name: opencenter-base
+{{- end }}

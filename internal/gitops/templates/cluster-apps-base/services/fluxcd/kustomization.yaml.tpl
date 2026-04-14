@@ -5,7 +5,9 @@ resources:
 {{- if (index .OpenCenter.Services "sources").Enabled }}
   - ./sources.yaml
 {{- end }}
+{{- if (index .OpenCenter.Services "kube-prometheus-stack").Enabled }}
   - ./fluxcd-configs/podmonitor.yaml
+{{- end }}
 {{- if (index .OpenCenter.Services "gateway-api").Enabled }}
   - ./gateway-api.yaml
 {{- end }}

@@ -17,7 +17,6 @@ import (
 	"encoding/json"
 )
 
-
 // ToJSON marshals the configuration to JSON. This is used for generating
 // the JSON schema and for other tools that consume JSON.
 //

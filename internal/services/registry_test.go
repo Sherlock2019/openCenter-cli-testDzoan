@@ -481,9 +481,9 @@ func TestListServices(t *testing.T) {
 func TestNewServiceRegistryWithEngine(t *testing.T) {
 	engine := validation.NewValidationEngine()
 	registry := NewServiceRegistryWithEngine(engine)
-	
+
 	assert.NotNil(t, registry)
-	
+
 	// Verify the engine is set correctly
 	defaultRegistry, ok := registry.(*DefaultServiceRegistry)
 	require.True(t, ok)
@@ -492,16 +492,16 @@ func TestNewServiceRegistryWithEngine(t *testing.T) {
 
 func TestGetEnabledServices(t *testing.T) {
 	registry := NewServiceRegistry()
-	
+
 	// Register some services
 	service1 := ServiceDefinition{Name: "service1", Type: ServiceTypeCore}
 	service2 := ServiceDefinition{Name: "service2", Type: ServiceTypeMonitoring}
-	
+
 	err := registry.RegisterService(service1)
 	require.NoError(t, err)
 	err = registry.RegisterService(service2)
 	require.NoError(t, err)
-	
+
 	// Get enabled services (currently returns all services)
 	enabled := registry.GetEnabledServices(nil)
 	assert.Len(t, enabled, 2)
@@ -529,11 +529,11 @@ func TestExecuteLifecycleHook(t *testing.T) {
 			errorMsg:    "not found",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			registry := NewServiceRegistry()
-			
+
 			// Register a test service
 			plugin := &MockServicePlugin{
 				name:        "test-service",
@@ -547,11 +547,11 @@ func TestExecuteLifecycleHook(t *testing.T) {
 			}
 			err := registry.RegisterService(service)
 			require.NoError(t, err)
-			
+
 			// Execute lifecycle hook
 			ctx := context.Background()
 			err = registry.ExecuteLifecycleHook(ctx, tt.serviceName, tt.hook, nil)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 				if tt.errorMsg != "" {
@@ -604,21 +604,21 @@ func TestExecuteLifecycleHooks(t *testing.T) {
 			errorMsg:    "not found",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			registry := NewServiceRegistry()
-			
+
 			// Register all services
 			for _, service := range tt.services {
 				err := registry.RegisterService(service)
 				require.NoError(t, err)
 			}
-			
+
 			// Execute lifecycle hooks
 			ctx := context.Background()
 			err := registry.ExecuteLifecycleHooks(ctx, tt.execute, tt.hook, nil)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 				if tt.errorMsg != "" {
@@ -633,7 +633,7 @@ func TestExecuteLifecycleHooks(t *testing.T) {
 
 func TestGetValidationEngine(t *testing.T) {
 	registry := NewServiceRegistry()
-	
+
 	engine := registry.GetValidationEngine()
 	assert.NotNil(t, engine)
 }
@@ -657,11 +657,11 @@ func TestValidateService(t *testing.T) {
 			errorMsg:    "not found",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			registry := NewServiceRegistry()
-			
+
 			// Register a test service
 			service := ServiceDefinition{
 				Name:    "test-service",
@@ -670,11 +670,11 @@ func TestValidateService(t *testing.T) {
 			}
 			err := registry.RegisterService(service)
 			require.NoError(t, err)
-			
+
 			// Validate service
 			ctx := context.Background()
 			result, err := registry.ValidateService(ctx, tt.serviceName, nil)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 				if tt.errorMsg != "" {
@@ -693,12 +693,12 @@ func TestBasicServicePlugin(t *testing.T) {
 		name:        "test-plugin",
 		serviceType: ServiceTypeCore,
 	}
-	
+
 	assert.Equal(t, "test-plugin", plugin.Name())
 	assert.Equal(t, ServiceTypeCore, plugin.Type())
 	assert.NoError(t, plugin.Validate(nil))
 	assert.NoError(t, plugin.Render(context.Background(), nil, nil))
-	
+
 	status := plugin.Status(nil)
 	assert.Equal(t, "pending", status.State)
 }

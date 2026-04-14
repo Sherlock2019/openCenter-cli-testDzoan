@@ -65,7 +65,7 @@ func TestConfigIOHandler_MarshalConfig(t *testing.T) {
 		errorMsg    string
 	}{
 		{
-			name: "valid config",
+			name:        "valid config",
 			config:      mustLoaderTestConfig(t, "test-cluster", "openstack"),
 			expectError: false,
 		},
@@ -126,7 +126,7 @@ func TestConfigIOHandler_UnmarshalConfig(t *testing.T) {
 		errorMsg    string
 	}{
 		{
-			name: "valid YAML",
+			name:        "valid YAML",
 			data:        validData,
 			expectError: false,
 		},
@@ -288,7 +288,7 @@ func TestConfigIOHandler_SaveToFile(t *testing.T) {
 		expectError bool
 	}{
 		{
-			name: "save valid config",
+			name:        "save valid config",
 			config:      mustLoaderTestConfig(t, "save-test", "openstack"),
 			filename:    "test-config.yaml",
 			expectError: false,

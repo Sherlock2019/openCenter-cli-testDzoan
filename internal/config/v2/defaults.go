@@ -510,6 +510,12 @@ func applyProviderBehaviorDefaults(cfg *Config) {
 		cfg.OpenCenter.GitOps.Release = ""
 		cfg.OpenCenter.GitOps.BaseRepoRelease = ""
 		cfg.OpenCenter.GitOps.GitOpsBaseRelease = ""
+
+		// The upstream gitops-base repo is public; use HTTPS so no deploy key
+		// or opencenter-base secret is needed inside the Kind cluster.
+		cfg.OpenCenter.GitOps.GitOpsBaseRepo = "https://github.com/opencenter-cloud/openCenter-gitops-base.git"
+		cfg.OpenCenter.GitOps.BaseRepoURL = cfg.OpenCenter.GitOps.GitOpsBaseRepo
+		cfg.OpenCenter.GitOps.URI = cfg.OpenCenter.GitOps.GitOpsBaseRepo
 	case "baremetal":
 		cfg.OpenCenter.Infrastructure.Bastion.Enabled = false
 	case "vmware":
@@ -544,6 +550,31 @@ func defaultServiceMap(clusterFQDN string) ServiceMap {
 				Hostname: fmt.Sprintf("auth.%s", clusterFQDN),
 			},
 		},
+		// Required by keycloak (keycloak-postgres dependsOn postgres-operator-base).
+		"postgres-operator": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		// Required by keycloak (oidc-rbac dependsOn rbac-manager-base).
+		"rbac-manager": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		// The sources FluxCD Kustomization deploys GitRepository objects for all services.
+		"sources": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		// Present (disabled) so template conditionals can safely index the key.
+		"kube-prometheus-stack":    &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"loki":                     &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"harbor":                   &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"velero":                   &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"metallb":                  &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"olm":                      &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"kafka-cluster":            &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"openstack-ccm":            &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"openstack-csi":            &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"vsphere-csi":              &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"weave-gitops":             &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"external-snapshotter":     &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"longhorn":                 &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"mimir":                    &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"opentelemetry-kube-stack": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"kyverno":                  &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"sealed-secrets":           &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"tempo":                    &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
 	}
 }
 

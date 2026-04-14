@@ -277,11 +277,11 @@ func TestCreateTemplateEngine(t *testing.T) {
 	if engine.GetBasicValidator() == nil {
 		t.Error("Expected basic validator to be available")
 	}
-	
+
 	if engine.GetDataValidator() == nil {
 		t.Error("Expected data validator to be available")
 	}
-	
+
 	if engine.GetAdvancedValidator() == nil {
 		t.Error("Expected advanced validator to be available")
 	}

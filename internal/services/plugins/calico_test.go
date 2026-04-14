@@ -32,10 +32,10 @@ func TestCalicoPlugin_Status(t *testing.T) {
 	plugin := NewCalicoPlugin()
 
 	tests := []struct {
-		name           string
-		config         interface{}
-		expectedState  string
-		expectedMsg    string
+		name              string
+		config            interface{}
+		expectedState     string
+		expectedMsg       string
 		shouldHaveDetails bool
 	}{
 		{
@@ -43,8 +43,8 @@ func TestCalicoPlugin_Status(t *testing.T) {
 			config: &services.CalicoConfig{
 				BaseConfig: services.BaseConfig{Enabled: false},
 			},
-			expectedState: "disabled",
-			expectedMsg:   "Service is disabled",
+			expectedState:     "disabled",
+			expectedMsg:       "Service is disabled",
 			shouldHaveDetails: false,
 		},
 		{
@@ -52,25 +52,25 @@ func TestCalicoPlugin_Status(t *testing.T) {
 			config: &services.CalicoConfig{
 				BaseConfig: services.BaseConfig{Enabled: true},
 			},
-			expectedState: "pending",
-			expectedMsg:   "Calico networking service",
+			expectedState:     "pending",
+			expectedMsg:       "Calico networking service",
 			shouldHaveDetails: true,
 		},
 		{
 			name: "Enabled service with kube_api_server",
 			config: &services.CalicoConfig{
-				BaseConfig:     services.BaseConfig{Enabled: true},
-				KubeAPIServer:  "https://api.example.com:6443",
+				BaseConfig:    services.BaseConfig{Enabled: true},
+				KubeAPIServer: "https://api.example.com:6443",
 			},
-			expectedState: "pending",
-			expectedMsg:   "Calico networking service",
+			expectedState:     "pending",
+			expectedMsg:       "Calico networking service",
 			shouldHaveDetails: true,
 		},
 		{
-			name:          "Invalid config type",
-			config:        &services.CertManagerConfig{},
-			expectedState: "failed",
-			expectedMsg:   "Invalid configuration type",
+			name:              "Invalid config type",
+			config:            &services.CertManagerConfig{},
+			expectedState:     "failed",
+			expectedMsg:       "Invalid configuration type",
 			shouldHaveDetails: false,
 		},
 	}

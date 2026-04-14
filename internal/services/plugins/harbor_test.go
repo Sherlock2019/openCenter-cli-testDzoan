@@ -55,10 +55,10 @@ func TestHarborPlugin_Validate(t *testing.T) {
 				BaseConfig: services.BaseConfig{
 					Enabled: true,
 				},
-				ExternalURL:         "https://harbor.example.com",
-				StorageType:         "filesystem",
-				DatabaseType:        "internal",
-				RegistryVolumeSize:  100,
+				ExternalURL:        "https://harbor.example.com",
+				StorageType:        "filesystem",
+				DatabaseType:       "internal",
+				RegistryVolumeSize: 100,
 			},
 			wantErr: false,
 		},
@@ -269,10 +269,10 @@ func TestHarborPlugin_Status(t *testing.T) {
 	plugin := NewHarborPlugin()
 
 	tests := []struct {
-		name       string
-		config     *services.HarborConfig
-		wantState  string
-		wantMsg    string
+		name         string
+		config       *services.HarborConfig
+		wantState    string
+		wantMsg      string
 		checkDetails bool
 	}{
 		{
@@ -282,10 +282,10 @@ func TestHarborPlugin_Status(t *testing.T) {
 					Enabled: true,
 					Status:  "running",
 				},
-				ExternalURL:         "https://harbor.example.com",
-				StorageType:         "s3",
-				DatabaseType:        "external",
-				RegistryVolumeSize:  100,
+				ExternalURL:        "https://harbor.example.com",
+				StorageType:        "s3",
+				DatabaseType:       "external",
+				RegistryVolumeSize: 100,
 			},
 			wantState:    "running",
 			wantMsg:      "Harbor container registry",

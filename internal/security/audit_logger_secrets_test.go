@@ -223,9 +223,9 @@ func TestAuditLogger_LogKeyRevocationFailed(t *testing.T) {
 
 func TestAuditLogger_LogKeyExpired(t *testing.T) {
 	tests := []struct {
-		name            string
-		daysRemaining   int
-		expectedResult  string
+		name           string
+		daysRemaining  int
+		expectedResult string
 	}{
 		{
 			name:           "warning - 7 days remaining",

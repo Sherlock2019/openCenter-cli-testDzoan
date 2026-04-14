@@ -93,7 +93,7 @@ If no cluster name is provided, exports the currently active cluster.`,
 			}
 
 			ctx := cmd.Context()
-			
+
 			// Load config to get organization
 			cfg, err := loadConfig(ctx, name)
 			if err != nil {

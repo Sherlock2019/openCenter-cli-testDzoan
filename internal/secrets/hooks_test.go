@@ -426,7 +426,7 @@ func TestGenerateHookScript(t *testing.T) {
 	assert.Contains(t, script, "applications/overlays/")
 	assert.Contains(t, script, "sops:")
 	assert.Contains(t, script, "opencenter cluster sync-secrets")
-	
+
 	// Verify drift detection is included
 	assert.Contains(t, script, "opencenter cluster validate-secrets")
 	assert.Contains(t, script, "Configuration drift detected")

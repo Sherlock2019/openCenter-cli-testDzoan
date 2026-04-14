@@ -771,8 +771,8 @@ func TestProperty_MultiClusterFailureIsolation(t *testing.T) {
 
 			return true
 		},
-		gen.IntRange(2, 10),  // totalClusters
-		gen.IntRange(0, 9),   // failureIndex (will be validated against totalClusters)
+		gen.IntRange(2, 10), // totalClusters
+		gen.IntRange(0, 9),  // failureIndex (will be validated against totalClusters)
 	))
 
 	properties.Property("Multiple failures are isolated when StopOnError is false", prop.ForAll(
@@ -896,8 +896,8 @@ func TestProperty_MultiClusterFailureIsolation(t *testing.T) {
 
 			return true
 		},
-		gen.IntRange(3, 10),  // totalClusters
-		gen.IntRange(2, 9),   // failureCount (will be validated against totalClusters)
+		gen.IntRange(3, 10), // totalClusters
+		gen.IntRange(2, 9),  // failureCount (will be validated against totalClusters)
 	))
 
 	properties.TestingRun(t)

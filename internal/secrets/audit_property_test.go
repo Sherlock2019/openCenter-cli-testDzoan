@@ -1816,7 +1816,7 @@ func TestProperty_AuditLogIntegrity_Sanity(t *testing.T) {
 
 		lines := strings.Split(string(content), "\n")
 		require.GreaterOrEqual(t, len(lines), 5, "Should have at least 5 lines")
-		
+
 		// Tamper with event at index 1
 		if lines[1] != "" {
 			var event1 security.AuditEvent

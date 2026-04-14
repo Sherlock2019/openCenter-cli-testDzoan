@@ -245,9 +245,9 @@ func TestProperty_ManifestFieldPreservation(t *testing.T) {
 				"apiVersion": metadataGen.APIVersion,
 				"kind":       metadataGen.Kind,
 				"metadata": map[string]interface{}{
-					"name":      metadataGen.Name,
-					"namespace": metadataGen.Namespace,
-					"labels":    metadataGen.Labels,
+					"name":        metadataGen.Name,
+					"namespace":   metadataGen.Namespace,
+					"labels":      metadataGen.Labels,
 					"annotations": metadataGen.Annotations,
 				},
 				"data": map[string]interface{}{
@@ -665,7 +665,7 @@ func genManifestMetadata() gopter.Gen {
 	return gen.Struct(reflect.TypeOf(ManifestMetadataGen{}), map[string]gopter.Gen{
 		"APIVersion": gen.OneConstOf("v1", "v1beta1"),
 		"Kind":       gen.OneConstOf("Secret", "ConfigMap"),
-		"Name":       gen.Identifier().Map(func(s string) string {
+		"Name": gen.Identifier().Map(func(s string) string {
 			if s == "" {
 				return "test-secret"
 			}
@@ -1160,7 +1160,6 @@ func TestProperty_DriftDetectionAccuracy_Sanity(t *testing.T) {
 	})
 }
 
-
 // **Validates: Requirements 2.6, 7.2, 7.3**
 //
 // Property 3: Unencrypted Secret Detection
@@ -1530,7 +1529,6 @@ sops:
 		require.True(t, isEncrypted, "Should identify as encrypted")
 	})
 }
-
 
 // **Validates: Requirements 1.6**
 //

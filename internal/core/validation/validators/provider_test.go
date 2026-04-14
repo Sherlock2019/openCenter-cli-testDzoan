@@ -771,7 +771,6 @@ func TestProviderValidator_OpenStackNetworking(t *testing.T) {
 	}
 }
 
-
 func TestProviderValidator_VMware(t *testing.T) {
 	validator := NewProviderValidator()
 	ctx := context.Background()

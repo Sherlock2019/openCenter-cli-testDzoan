@@ -15,7 +15,7 @@ package config
 
 import (
 	"testing"
-	
+
 	"gopkg.in/yaml.v3"
 )
 

@@ -24,7 +24,7 @@ import (
 // and 'cluster select --export-only' produce identical export commands.
 func TestClusterInfoAndSelectExportConsistency(t *testing.T) {
 	ctx := context.Background()
-	
+
 	// Get first available cluster for testing
 	availableClusters, err := listClusters(ctx)
 	if err != nil || len(availableClusters) == 0 {

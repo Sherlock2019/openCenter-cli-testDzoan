@@ -209,7 +209,7 @@ func displayKeysText(cmd *cobra.Command, keys []secrets.KeyEntry, clusterFilter,
 	// Display keys grouped by cluster
 	for cluster, clusterKeys := range keysByCluster {
 		fmt.Fprintf(cmd.OutOrStdout(), "Cluster: %s\n", cluster)
-		
+
 		// Group by type
 		ageKeys := []secrets.KeyEntry{}
 		sshKeys := []secrets.KeyEntry{}
@@ -278,18 +278,18 @@ func displayKeyEntry(cmd *cobra.Command, key secrets.KeyEntry, indent string) {
 	fmt.Fprintf(cmd.OutOrStdout(), "%s%s [%s]\n", indent, statusIcon, key.Status)
 	fmt.Fprintf(cmd.OutOrStdout(), "%s  Fingerprint: %s\n", indent, key.Fingerprint)
 	fmt.Fprintf(cmd.OutOrStdout(), "%s  Created: %s\n", indent, key.CreatedAt.Format("2006-01-02 15:04:05"))
-	
+
 	// Show expiration for active keys
 	if key.Status == secrets.KeyStatusActive {
 		daysRemaining := int(time.Until(key.ExpiresAt).Hours() / 24)
 		if daysRemaining < 0 {
-			fmt.Fprintf(cmd.OutOrStdout(), "%s  Expires: %s (EXPIRED %d days ago)\n", 
+			fmt.Fprintf(cmd.OutOrStdout(), "%s  Expires: %s (EXPIRED %d days ago)\n",
 				indent, key.ExpiresAt.Format("2006-01-02"), -daysRemaining)
 		} else if daysRemaining < 14 {
-			fmt.Fprintf(cmd.OutOrStdout(), "%s  Expires: %s (⚠️  %d days remaining)\n", 
+			fmt.Fprintf(cmd.OutOrStdout(), "%s  Expires: %s (⚠️  %d days remaining)\n",
 				indent, key.ExpiresAt.Format("2006-01-02"), daysRemaining)
 		} else {
-			fmt.Fprintf(cmd.OutOrStdout(), "%s  Expires: %s (%d days remaining)\n", 
+			fmt.Fprintf(cmd.OutOrStdout(), "%s  Expires: %s (%d days remaining)\n",
 				indent, key.ExpiresAt.Format("2006-01-02"), daysRemaining)
 		}
 	} else {

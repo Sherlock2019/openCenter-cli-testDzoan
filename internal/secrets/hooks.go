@@ -298,10 +298,10 @@ func (h *DefaultHookManager) isManifestFile(filePath string) bool {
 	// Check if path contains the manifest pattern
 	// Pattern: applications/overlays/<cluster>/services/<service>/secret.yaml
 	// We need to find this pattern anywhere in the path (for absolute paths)
-	
+
 	// Split the path and look for the pattern
 	parts := strings.Split(normalizedPath, "/")
-	
+
 	// Find "applications" in the path
 	appIndex := -1
 	for i, part := range parts {
@@ -310,17 +310,17 @@ func (h *DefaultHookManager) isManifestFile(filePath string) bool {
 			break
 		}
 	}
-	
+
 	if appIndex == -1 {
 		return false
 	}
-	
+
 	// Check if we have enough parts after "applications"
 	// Need: applications/overlays/<cluster>/services/<service>/secret.yaml (6 parts total)
 	if len(parts) < appIndex+6 {
 		return false
 	}
-	
+
 	// Verify the pattern from the applications index
 	return parts[appIndex] == "applications" &&
 		parts[appIndex+1] == "overlays" &&

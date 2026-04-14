@@ -539,7 +539,7 @@ func TestProperty_KeyExpirationCalculation(t *testing.T) {
 			// Use time comparison like the implementation does
 			currentTime := time.Now()
 			warnThreshold := currentTime.AddDate(0, 0, warnDays)
-			
+
 			if expiresAt.Before(currentTime) {
 				// Should be expired
 				found := false

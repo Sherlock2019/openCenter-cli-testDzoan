@@ -371,7 +371,7 @@ func TestSyncAll_StopOnError(t *testing.T) {
 
 	opts := MultiClusterSyncOptions{
 		Organization: "org1",
-		Concurrency:  1, // Use single worker to ensure deterministic order
+		Concurrency:  1,    // Use single worker to ensure deterministic order
 		StopOnError:  true, // Stop on first error
 		DryRun:       false,
 	}

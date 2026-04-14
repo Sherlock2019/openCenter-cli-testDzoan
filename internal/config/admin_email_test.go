@@ -15,18 +15,18 @@ package config
 
 import (
 	"testing"
-	
+
 	"gopkg.in/yaml.v3"
 )
 
 // TestAdminEmailDefault verifies that admin_email has a default value
 func TestAdminEmailDefault(t *testing.T) {
 	cfg := NewDefault("test-cluster")
-	
+
 	if cfg.OpenCenter.Cluster.AdminEmail == "" {
 		t.Error("AdminEmail should not be empty - it should have a default value")
 	}
-	
+
 	if cfg.OpenCenter.Cluster.AdminEmail != "admin@example.com" {
 		t.Errorf("expected AdminEmail 'admin@example.com', got '%s'", cfg.OpenCenter.Cluster.AdminEmail)
 	}
@@ -38,17 +38,17 @@ func TestAdminEmailInSchemaDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GenerateDefaultFromSchema failed: %v", err)
 	}
-	
+
 	// Parse the YAML
 	var cfg Config
 	if err := yaml.Unmarshal(yamlBytes, &cfg); err != nil {
 		t.Fatalf("failed to unmarshal schema defaults: %v", err)
 	}
-	
+
 	if cfg.OpenCenter.Cluster.AdminEmail == "" {
 		t.Error("AdminEmail should not be empty in schema-generated defaults")
 	}
-	
+
 	if cfg.OpenCenter.Cluster.AdminEmail != "admin@example.com" {
 		t.Errorf("expected AdminEmail 'admin@example.com' in schema defaults, got '%s'", cfg.OpenCenter.Cluster.AdminEmail)
 	}
@@ -60,17 +60,17 @@ func TestAdminEmailInFullSchemaDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GenerateFullSchemaDefaults failed: %v", err)
 	}
-	
+
 	// Parse the YAML
 	var cfg Config
 	if err := yaml.Unmarshal(yamlBytes, &cfg); err != nil {
 		t.Fatalf("failed to unmarshal full schema defaults: %v", err)
 	}
-	
+
 	if cfg.OpenCenter.Cluster.AdminEmail == "" {
 		t.Error("AdminEmail should not be empty in full schema defaults")
 	}
-	
+
 	if cfg.OpenCenter.Cluster.AdminEmail != "admin@example.com" {
 		t.Errorf("expected AdminEmail 'admin@example.com' in full schema defaults, got '%s'", cfg.OpenCenter.Cluster.AdminEmail)
 	}

@@ -75,7 +75,7 @@ func DefaultPathCache() *PathCache {
 // Returns nil if the entry is not found or has expired.
 func (c *PathCache) Get(clusterName, organization string) *ClusterPaths {
 	c.mu.RLock()
-	
+
 	key := c.makeKey(clusterName, organization)
 	entry, exists := c.entries[key]
 
@@ -103,12 +103,12 @@ func (c *PathCache) Get(clusterName, organization string) *ClusterPaths {
 
 	paths := entry.Paths
 	c.mu.RUnlock()
-	
+
 	// Update hit counter with write lock
 	c.mu.Lock()
 	c.hits++
 	c.mu.Unlock()
-	
+
 	return paths
 }
 

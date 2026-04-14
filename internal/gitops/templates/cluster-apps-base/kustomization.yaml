@@ -4,7 +4,12 @@ kind: Kustomization
 resources:
   - ./flux-system
   - ./services/fluxcd
+{{- range $name, $service := .OpenCenter.ManagedServices }}
+  {{- if $service.Enabled }}
   - ./managed-services/fluxcd
+  {{- break }}
+  {{- end }}
+{{- end }}
 {{- if .OpenCenter.GitOps.OverlayUnits.CustomerManaged.Enabled }}
   - ./customer-managed/fluxcd
 {{- end }}

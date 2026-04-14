@@ -163,4 +163,3 @@ type AllocationStats struct {
 	StringSlicesInPool int
 	MapsInPool         int
 }
-

@@ -296,7 +296,7 @@ func TestRollback(t *testing.T) {
 		// Delete the file and make the directory read-only to cause write failure
 		err = os.Remove(testFile)
 		require.NoError(t, err)
-		
+
 		err = os.Chmod(tmpDir, 0o500)
 		require.NoError(t, err)
 		defer os.Chmod(tmpDir, 0o700) // Restore permissions for cleanup

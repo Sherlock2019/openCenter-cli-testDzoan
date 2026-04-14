@@ -114,4 +114,3 @@ type backendValidationError struct {
 func (e *backendValidationError) Error() string {
 	return "unsupported secrets backend: " + e.backend + " (supported: barbican, sops, file)"
 }
-

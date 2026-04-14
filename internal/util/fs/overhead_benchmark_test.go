@@ -29,11 +29,11 @@ func BenchmarkReadFile_Direct(b *testing.B) {
 	tmpDir := b.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
 	testData := make([]byte, 1024) // 1KB
-	
+
 	if err := os.WriteFile(testFile, testData, 0644); err != nil {
 		b.Fatalf("failed to create test file: %v", err)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := os.ReadFile(testFile)
@@ -49,11 +49,11 @@ func BenchmarkReadFile_Wrapped(b *testing.B) {
 	tmpDir := b.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
 	testData := make([]byte, 1024) // 1KB
-	
+
 	if err := os.WriteFile(testFile, testData, 0644); err != nil {
 		b.Fatalf("failed to create test file: %v", err)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := fs.ReadFile(testFile)
@@ -67,7 +67,7 @@ func BenchmarkReadFile_Wrapped(b *testing.B) {
 func BenchmarkWriteFile_Direct(b *testing.B) {
 	tmpDir := b.TempDir()
 	testData := make([]byte, 1024) // 1KB
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testFile := filepath.Join(tmpDir, "test_"+string(rune('a'+i%26))+".txt")
@@ -83,7 +83,7 @@ func BenchmarkWriteFile_Wrapped(b *testing.B) {
 	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandlerWithoutMasking())
 	tmpDir := b.TempDir()
 	testData := make([]byte, 1024) // 1KB
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testFile := filepath.Join(tmpDir, "test_"+string(rune('a'+i%26))+".txt")
@@ -98,11 +98,11 @@ func BenchmarkWriteFile_Wrapped(b *testing.B) {
 func BenchmarkExists_Direct(b *testing.B) {
 	tmpDir := b.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
-	
+
 	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
 		b.Fatalf("failed to create test file: %v", err)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = os.Stat(testFile)
@@ -114,11 +114,11 @@ func BenchmarkExists_Wrapped(b *testing.B) {
 	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandlerWithoutMasking())
 	tmpDir := b.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
-	
+
 	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
 		b.Fatalf("failed to create test file: %v", err)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = fs.Exists(testFile)
@@ -128,7 +128,7 @@ func BenchmarkExists_Wrapped(b *testing.B) {
 // BenchmarkMkdirAll_Direct benchmarks direct os.MkdirAll
 func BenchmarkMkdirAll_Direct(b *testing.B) {
 	tmpDir := b.TempDir()
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testDir := filepath.Join(tmpDir, "dir"+string(rune('a'+i%26)), "subdir")
@@ -143,7 +143,7 @@ func BenchmarkMkdirAll_Direct(b *testing.B) {
 func BenchmarkMkdirAll_Wrapped(b *testing.B) {
 	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandlerWithoutMasking())
 	tmpDir := b.TempDir()
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testDir := filepath.Join(tmpDir, "dir"+string(rune('a'+i%26)), "subdir")
@@ -159,11 +159,11 @@ func BenchmarkLargeFile_Direct(b *testing.B) {
 	tmpDir := b.TempDir()
 	testFile := filepath.Join(tmpDir, "large.txt")
 	testData := make([]byte, 1024*1024) // 1MB
-	
+
 	if err := os.WriteFile(testFile, testData, 0644); err != nil {
 		b.Fatalf("failed to create test file: %v", err)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := os.ReadFile(testFile)
@@ -179,11 +179,11 @@ func BenchmarkLargeFile_Wrapped(b *testing.B) {
 	tmpDir := b.TempDir()
 	testFile := filepath.Join(tmpDir, "large.txt")
 	testData := make([]byte, 1024*1024) // 1MB
-	
+
 	if err := os.WriteFile(testFile, testData, 0644); err != nil {
 		b.Fatalf("failed to create test file: %v", err)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := fs.ReadFile(testFile)

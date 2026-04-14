@@ -175,7 +175,7 @@ func (r *PathResolver) Resolve(ctx context.Context, clusterName, organization st
 	r.mu.RLock()
 	strategy := r.strategies[0]
 	r.mu.RUnlock()
-	
+
 	canResolve, err := strategy.CanResolve(ctx, clusterName, organization)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check if cluster exists: %w", err)
@@ -248,7 +248,7 @@ func (r *PathResolver) ResolveWithFallback(ctx context.Context, clusterName stri
 	r.mu.RLock()
 	baseDir := r.baseDir
 	r.mu.RUnlock()
-	
+
 	entries, err := os.ReadDir(baseDir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -339,7 +339,7 @@ func (r *PathResolver) DetectStructureType(ctx context.Context, clusterName stri
 	r.mu.RLock()
 	strategy := r.strategies[0]
 	r.mu.RUnlock()
-	
+
 	canResolve, err := strategy.CanResolve(ctx, clusterName, "")
 	if err != nil {
 		return StructureTypeUnknown, err
@@ -363,7 +363,7 @@ func (r *PathResolver) GetOrganization(ctx context.Context, clusterName string) 
 	r.mu.RLock()
 	baseDir := r.baseDir
 	r.mu.RUnlock()
-	
+
 	entries, err := os.ReadDir(baseDir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -435,7 +435,7 @@ func (r *PathResolver) CreateClusterDirectories(ctx context.Context, clusterName
 	strategy := r.strategies[0]
 	validatePaths := r.options.ValidatePaths
 	r.mu.RUnlock()
-	
+
 	paths, err := strategy.Resolve(ctx, clusterName, organization)
 	if err != nil {
 		return fmt.Errorf("failed to resolve paths: %w", err)
@@ -452,9 +452,9 @@ func (r *PathResolver) CreateClusterDirectories(ctx context.Context, clusterName
 		paths.ApplicationsDir,
 		paths.SecretsDir,
 		filepath.Join(paths.SecretsDir, "age"),
-		filepath.Dir(paths.SOPSKeyPath), // age/keys directory
+		filepath.Dir(paths.SOPSKeyPath),        // age/keys directory
 		filepath.Join(paths.SecretsDir, "ssh"), // ssh directory
-		filepath.Dir(paths.SSHKeyPath), // ssh key parent directory
+		filepath.Dir(paths.SSHKeyPath),         // ssh key parent directory
 		paths.InventoryPath,
 		paths.VenvPath,
 		paths.BinPath,

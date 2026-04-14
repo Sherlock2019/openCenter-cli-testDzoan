@@ -18,10 +18,10 @@ package sops
 
 import (
 	"context"
+	"github.com/opencenter-cloud/opencenter-cli/internal/util/crypto"
 	"os"
 	"path/filepath"
 	"testing"
-	"github.com/opencenter-cloud/opencenter-cli/internal/util/crypto"
 )
 
 // TestSOPSValidationMigration_ValidKey tests that ValidationEngine correctly validates a valid SOPS key

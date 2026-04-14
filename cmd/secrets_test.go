@@ -103,7 +103,7 @@ func TestSecretsGetCmd_Flags(t *testing.T) {
 func TestOldCommandsRemoved(t *testing.T) {
 	t.Run("root command has no sops child", func(t *testing.T) {
 		rootCmd := GetRootCmd()
-		
+
 		// Check that sops command does not exist
 		for _, cmd := range rootCmd.Commands() {
 			if cmd.Name() == "sops" {
@@ -114,7 +114,7 @@ func TestOldCommandsRemoved(t *testing.T) {
 
 	t.Run("cluster command has no sync-secrets child", func(t *testing.T) {
 		clusterCmd := NewClusterCmd()
-		
+
 		// Check that sync-secrets command does not exist
 		for _, cmd := range clusterCmd.Commands() {
 			if cmd.Name() == "sync-secrets" {
@@ -125,7 +125,7 @@ func TestOldCommandsRemoved(t *testing.T) {
 
 	t.Run("cluster command has no validate-secrets child", func(t *testing.T) {
 		clusterCmd := NewClusterCmd()
-		
+
 		// Check that validate-secrets command does not exist
 		for _, cmd := range clusterCmd.Commands() {
 			if cmd.Name() == "validate-secrets" {
@@ -136,10 +136,10 @@ func TestOldCommandsRemoved(t *testing.T) {
 
 	t.Run("secrets command has set not put", func(t *testing.T) {
 		secretsCmd := NewSecretsCmd()
-		
+
 		hasSet := false
 		hasPut := false
-		
+
 		for _, cmd := range secretsCmd.Commands() {
 			if cmd.Name() == "set" {
 				hasSet = true
@@ -148,11 +148,11 @@ func TestOldCommandsRemoved(t *testing.T) {
 				hasPut = true
 			}
 		}
-		
+
 		if !hasSet {
 			t.Errorf("secrets command should have 'set' subcommand (Requirement 3.1)")
 		}
-		
+
 		if hasPut {
 			t.Errorf("secrets command should not have 'put' subcommand (Requirement 3.2)")
 		}
@@ -163,27 +163,27 @@ func TestOldCommandsRemoved(t *testing.T) {
 // Requirements: 1.1, 1.2
 func TestSecretsCommandStructure(t *testing.T) {
 	secretsCmd := NewSecretsCmd()
-	
+
 	// Expected subcommands from Requirement 1.1
 	expectedSubcommands := []string{
 		"list", "get", "set", "delete", "describe",
 		"sync", "validate", "encrypt", "decrypt", "status",
 		"keys", "login",
 	}
-	
+
 	// Build map of actual subcommands
 	actualSubcommands := make(map[string]bool)
 	for _, cmd := range secretsCmd.Commands() {
 		actualSubcommands[cmd.Name()] = true
 	}
-	
+
 	// Verify all expected subcommands exist
 	for _, expected := range expectedSubcommands {
 		if !actualSubcommands[expected] {
 			t.Errorf("secrets command missing expected subcommand: %s (Requirement 1.1)", expected)
 		}
 	}
-	
+
 	// Verify no unexpected subcommands exist
 	for actual := range actualSubcommands {
 		found := false
@@ -197,7 +197,7 @@ func TestSecretsCommandStructure(t *testing.T) {
 			t.Errorf("secrets command has unexpected subcommand: %s (Requirement 1.1)", actual)
 		}
 	}
-	
+
 	// Verify exact count
 	if len(actualSubcommands) != len(expectedSubcommands) {
 		t.Errorf("secrets command subcommand count mismatch: expected %d, got %d (Requirement 1.1)",

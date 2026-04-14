@@ -30,11 +30,11 @@ func BenchmarkReadFile(b *testing.B) {
 	tmpDir := b.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
 	testData := make([]byte, 1024) // 1KB
-	
+
 	if err := os.WriteFile(testFile, testData, 0644); err != nil {
 		b.Fatalf("failed to create test file: %v", err)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := fs.ReadFile(testFile)
@@ -49,7 +49,7 @@ func BenchmarkWriteFile(b *testing.B) {
 	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandlerWithoutMasking())
 	tmpDir := b.TempDir()
 	testData := make([]byte, 1024) // 1KB
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testFile := filepath.Join(tmpDir, "test_"+string(rune('a'+i%26))+".txt")
@@ -65,7 +65,7 @@ func BenchmarkWriteFileAtomic(b *testing.B) {
 	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandlerWithoutMasking())
 	tmpDir := b.TempDir()
 	testData := make([]byte, 1024) // 1KB
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testFile := filepath.Join(tmpDir, "test_"+string(rune('a'+i%26))+".txt")
@@ -82,12 +82,12 @@ func BenchmarkWriteFileAtomic_Overwrite(b *testing.B) {
 	tmpDir := b.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
 	testData := make([]byte, 1024) // 1KB
-	
+
 	// Create initial file
 	if err := fs.WriteFileAtomic(testFile, testData, 0644); err != nil {
 		b.Fatalf("failed to create initial file: %v", err)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		err := fs.WriteFileAtomic(testFile, testData, 0644)
@@ -102,11 +102,11 @@ func BenchmarkExists(b *testing.B) {
 	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandlerWithoutMasking())
 	tmpDir := b.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
-	
+
 	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
 		b.Fatalf("failed to create test file: %v", err)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = fs.Exists(testFile)
@@ -118,11 +118,11 @@ func BenchmarkStat(b *testing.B) {
 	fs := NewDefaultFileSystem(errors.NewDefaultErrorHandlerWithoutMasking())
 	tmpDir := b.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
-	
+
 	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
 		b.Fatalf("failed to create test file: %v", err)
 	}
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, err := fs.Stat(testFile)

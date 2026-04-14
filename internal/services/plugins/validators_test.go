@@ -151,12 +151,12 @@ func TestKeycloakValidator(t *testing.T) {
 	validator := NewKeycloakValidator()
 
 	tests := []struct {
-		name        string
-		config      *services.KeycloakConfig
-		wantValid   bool
-		wantErrors  int
+		name         string
+		config       *services.KeycloakConfig
+		wantValid    bool
+		wantErrors   int
 		wantWarnings int
-		errorFields []string
+		errorFields  []string
 	}{
 		{
 			name: "valid production config",
@@ -164,16 +164,16 @@ func TestKeycloakValidator(t *testing.T) {
 				BaseConfig: services.BaseConfig{
 					Enabled: true,
 				},
-				Instances:       2,
-				StartOptimized:  true,
-				FrontendURL:     "https://keycloak.example.com",
-				LogLevel:        "INFO",
-				LogFormat:       "json",
-				CacheStack:      "kubernetes",
-				DBPoolMinSize:   5,
-				DBPoolMaxSize:   20,
-				MinReplicas:     2,
-				MaxReplicas:     10,
+				Instances:      2,
+				StartOptimized: true,
+				FrontendURL:    "https://keycloak.example.com",
+				LogLevel:       "INFO",
+				LogFormat:      "json",
+				CacheStack:     "kubernetes",
+				DBPoolMinSize:  5,
+				DBPoolMaxSize:  20,
+				MinReplicas:    2,
+				MaxReplicas:    10,
 			},
 			wantValid:  true,
 			wantErrors: 0,

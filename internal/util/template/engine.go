@@ -58,7 +58,7 @@ func NewTemplateEngineWithDependencies(renderer TemplateRenderer, validator inte
 		networkPluginHandler: networkHandler,
 		funcMap:              make(template.FuncMap),
 	}
-	
+
 	// Extract validator interfaces
 	if basic, ok := validator.(BasicTemplateValidator); ok {
 		engine.basicValidator = basic
@@ -69,7 +69,7 @@ func NewTemplateEngineWithDependencies(renderer TemplateRenderer, validator inte
 	if advanced, ok := validator.(AdvancedTemplateValidator); ok {
 		engine.advancedValidator = advanced
 	}
-	
+
 	return engine
 }
 
