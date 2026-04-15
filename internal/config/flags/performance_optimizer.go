@@ -19,6 +19,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -279,7 +280,7 @@ type OptimizationRecommendation struct {
 type ProgressIndicator struct {
 	message   string
 	total     int64
-	current   int64
+	current   atomic.Int64
 	startTime time.Time
 	ticker    *time.Ticker
 	done      chan bool
@@ -313,7 +314,7 @@ func (p *ProgressIndicator) Start() {
 
 // Update updates the progress
 func (p *ProgressIndicator) Update(current int64) {
-	p.current = current
+	p.current.Store(current)
 }
 
 // Stop stops the progress indicator
@@ -331,7 +332,8 @@ func (p *ProgressIndicator) display() {
 		return
 	}
 
-	percentage := float64(p.current) / float64(p.total) * 100
+	current := p.current.Load()
+	percentage := float64(current) / float64(p.total) * 100
 	elapsed := time.Since(p.startTime)
 
 	// Create progress bar
