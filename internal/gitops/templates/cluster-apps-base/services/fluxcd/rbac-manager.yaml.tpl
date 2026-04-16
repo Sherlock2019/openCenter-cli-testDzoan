@@ -8,8 +8,10 @@ spec:
   dependsOn:
     - name: sources
       namespace: flux-system
+{{- if (index .OpenCenter.Services "kube-prometheus-stack").Enabled }}
     - name: kube-prometheus-stack-base
       namespace: flux-system
+{{- end }}
   interval: 5m
   retryInterval: 1m
   timeout: 10m

@@ -19,6 +19,8 @@ spec:
   targetNamespace: cert-manager
   prune: true
   wait: true
+  force: {{ adoptionForce "cert-manager" }}
+  suspend: {{ adoptionSuspend "cert-manager" }}
   healthChecks:
     - apiVersion: helm.toolkit.fluxcd.io/v2
       kind: HelmRelease
@@ -54,6 +56,8 @@ spec:
   targetNamespace: cert-manager
   prune: true
   wait: true
+  force: {{ adoptionForce "cert-manager" }}
+  suspend: {{ adoptionSuspend "cert-manager" }}
   healthChecks:
     - apiVersion: helm.toolkit.fluxcd.io/v2
       kind: HelmRelease

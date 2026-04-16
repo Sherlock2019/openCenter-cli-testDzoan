@@ -76,8 +76,8 @@ spec:
     {{- end }}
     - name: spi-connections-http-client-default-connection-timeout-millis
       value: "60000"
-  
-  # Pod topology spread for multi-AZ distribution
+  {{- if ne .OpenCenter.Infrastructure.Provider "kind" }}
+  # Pod topology spread for multi-AZ distribution (not needed for local Kind)
   unsupported:
     podTemplate:
       spec:
@@ -100,5 +100,6 @@ spec:
                 app.kubernetes.io/managed-by: "keycloak-operator"
                 app.kubernetes.io/instance: "keycloak"
                 app.kubernetes.io/component: "server"
+  {{- end }}
 
 

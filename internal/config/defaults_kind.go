@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
 	"gopkg.in/yaml.v3"
 )
 
@@ -107,5 +108,36 @@ func applyKindDefaults(cfg *Config) error {
 		cfg.OpenCenter.GitOps.GitTokenProvider = defaults.Locals.GitTokenProvider
 	}
 
+	// Kind-specific service defaults for local development.
+	// These reduce resource requirements and disable HA features.
+	applyKindServiceDefaults(cfg)
+
 	return nil
+}
+
+// applyKindServiceDefaults configures services for local Kind development.
+// Reduces resource requirements and disables HA features not needed locally.
+func applyKindServiceDefaults(cfg *Config) {
+	// Keycloak: single instance, reduced resources, local cache
+	if svc, ok := cfg.OpenCenter.Services["keycloak"]; ok {
+		if keycloakCfg, ok := svc.(*services.KeycloakConfig); ok {
+			keycloakCfg.Instances = 1
+			keycloakCfg.MinReplicas = 0 // Disable HPA
+			keycloakCfg.MaxReplicas = 0 // Disable HPA
+			keycloakCfg.StartOptimized = false
+			keycloakCfg.CacheEnabled = true
+			keycloakCfg.CacheStack = "local" // Local cache instead of distributed
+			keycloakCfg.ResourceRequestsCPU = "250m"
+			keycloakCfg.ResourceRequestsMemory = "512M"
+			keycloakCfg.ResourceLimitsCPU = "1"
+			keycloakCfg.ResourceLimitsMemory = "1024M"
+			keycloakCfg.DBPoolMinSize = 5
+			keycloakCfg.DBPoolInitialSize = 5
+			keycloakCfg.DBPoolMaxSize = 10
+			keycloakCfg.BackupEnabled = false // No backup for local dev
+		}
+	}
+
+	// Use standard storage class for Kind (local-path provisioner)
+	cfg.OpenCenter.Storage.DefaultStorageClass = "standard"
 }

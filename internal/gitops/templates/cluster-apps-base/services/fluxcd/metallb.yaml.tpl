@@ -19,6 +19,8 @@ spec:
   targetNamespace: metallb-system
   prune: true
   wait: true
+  force: {{ adoptionForce "metallb" }}
+  suspend: {{ adoptionSuspend "metallb" }}
   healthChecks:
     - apiVersion: helm.toolkit.fluxcd.io/v2
       kind: HelmRelease
@@ -50,6 +52,8 @@ spec:
   targetNamespace: metallb-system
   prune: true
   wait: true
+  force: {{ adoptionForce "metallb" }}
+  suspend: {{ adoptionSuspend "metallb" }}
   healthChecks:
     - apiVersion: helm.toolkit.fluxcd.io/v2
       kind: HelmRelease
