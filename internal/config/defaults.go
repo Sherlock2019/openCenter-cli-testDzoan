@@ -55,8 +55,7 @@ func getDefaultEnvironment(cliDefaults *DefaultsConfig) string {
 // values based on the simplified schema. This function can be used to
 // initialise new cluster configurations.
 func defaultConfig(name string) Config {
-	authURL := ""
-	region := "sjc3" // Default region
+	region := "dfw3" // Default region
 	tenantName := ""
 	barbicanAuthURL := ""
 
@@ -117,7 +116,7 @@ func defaultConfig(name string) Config {
 						PublicSubnets:  []string{},
 					},
 					OpenStack: SimplifiedOpenStackCloud{
-						AuthURL:                     authURL,
+						AuthURL:                     fmt.Sprintf("https://keystone.api.%s.rackspacecloud.com/v3/", strings.ToLower(region)),
 						Insecure:                    false,
 						Region:                      region,
 						ApplicationCredentialID:     "",
@@ -125,8 +124,8 @@ func defaultConfig(name string) Config {
 						Domain:                      "",
 						TenantName:                  tenantName,
 						AvailabilityZone:            "az1",
-						ProjectDomainName:           "rackspace_cloud_domain",
-						UserDomainName:              "rackspace_cloud_domain",
+						ProjectDomainName:           "default",
+						UserDomainName:              "default",
 						CA:                          "",
 						ImageID:                     "799dcf97-3656-4361-8187-13ab1b295e33",
 						ImageIDWindows:              "a2083759-f341-445b-b717-dafb5e31fa6b",
@@ -195,9 +194,9 @@ func defaultConfig(name string) Config {
 					APIPort:                  443,
 					KubeVIPEnabled:           true,
 					KubeletRotateServerCerts: false,
-					FlavorBastion:            "gp.0.2.2",
-					FlavorMaster:             "gp.0.4.8",
-					FlavorWorker:             "gp.0.4.16",
+					FlavorBastion:            "gp.5.2.4",
+					FlavorMaster:             "gp.5.4.8",
+					FlavorWorker:             "gp.5.4.16",
 					FlavorWorkerWindows:      "gp.5.4.16",
 					SubnetPods:               "10.42.0.0/16",
 					SubnetServices:           "10.43.0.0/16",
@@ -208,6 +207,9 @@ func defaultConfig(name string) Config {
 					Security: KubernetesSecurityConfig{
 						K8sHardening:          true,
 						PodSecurityExemptions: []string{"trivy-temp", "tigera-operator", "kube-system"},
+						PodSecurityStandards:  "baseline",
+						AuditLogging:          true,
+						EncryptionAtRest:      true,
 					},
 					NetworkPlugin: NetworkPlugin{
 						Calico: CalicoConfig{
@@ -286,12 +288,18 @@ func defaultConfig(name string) Config {
 				},
 			},
 			Storage: StorageConfig{
-				DefaultStorageClass:         "csi-cinder-sc-delete",
-				WorkerVolumeSize:            40,
-				WorkerVolumeDestinationType: "volume",
-				WorkerVolumeSourceType:      "image",
-				WorkerVolumeType:            "HA-Standard",
-				AdditionalBlockDevices:      []map[string]any{},
+				DefaultStorageClass:             "csi-cinder-sc-delete",
+				WorkerVolumeSize:                40,
+				WorkerVolumeDestinationType:     "volume",
+				WorkerVolumeSourceType:          "image",
+				WorkerVolumeType:                "HA-Standard",
+				WorkerVolumeDeleteOnTermination: false,
+				MasterVolumeSize:                40,
+				MasterVolumeDestinationType:     "volume",
+				MasterVolumeSourceType:          "image",
+				MasterVolumeType:                "HA-Standard",
+				MasterVolumeDeleteOnTermination: false,
+				AdditionalBlockDevices:          []map[string]any{},
 			},
 			Talos: nil, // Talos is disabled by default, can be enabled by user
 			ManagedService: ServiceMap{
@@ -488,21 +496,21 @@ func defaultConfig(name string) Config {
 				AWSSecretAccessKey: "",
 			},
 			Loki: LokiSecrets{
-				SwiftPassword: "",
+				SwiftPassword: "CHANGEME",
 			},
 			Keycloak: KeycloakSecrets{
-				ClientSecret:  "",
-				AdminPassword: "",
+				ClientSecret:  "CHANGEME",
+				AdminPassword: "CHANGEME",
 			},
 			Headlamp: HeadlampSecrets{
-				OIDCClientSecret: "",
+				OIDCClientSecret: "CHANGEME",
 			},
 			WeaveGitOps: WeaveGitOpsSecrets{
 				Password:     "",
 				PasswordHash: "",
 			},
 			Grafana: GrafanaSecrets{
-				AdminPassword: "",
+				AdminPassword: "CHANGEME",
 			},
 			Tempo: TempoSecrets{
 				AccessKey: "",

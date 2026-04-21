@@ -232,7 +232,7 @@ func DefaultCLIConfig() *CLIConfig {
 		},
 		Defaults: DefaultsConfig{
 			Provider:    "openstack",
-			Region:      "sjc3",
+			Region:      "dfw3",
 			Environment: "dev",
 		},
 	}

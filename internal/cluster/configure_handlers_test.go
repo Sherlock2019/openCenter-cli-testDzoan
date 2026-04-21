@@ -63,6 +63,9 @@ func TestObjectStorageCapabilityHandlerSkipsS3PromptsWhenConfigIsComplete(t *tes
 		t.Fatalf("NewV2Default() error = %v", err)
 	}
 
+	cfg.OpenCenter.Services["loki"] = &configservices.LokiConfig{
+		BaseConfig:  configservices.BaseConfig{Enabled: false},
+	}
 	cfg.OpenCenter.Services["tempo"] = &configservices.TempoConfig{
 		BaseConfig:       configservices.BaseConfig{Enabled: true},
 		StorageType:      "s3",

@@ -266,7 +266,7 @@ func TestDefaultConfigNewFields(t *testing.T) {
 			t.Errorf("expected BaseDomain 'k8s.opencenter.cloud', got %s", cfg.OpenCenter.Cluster.BaseDomain)
 		}
 
-		expectedFQDN := "test-cluster.sjc3.k8s.opencenter.cloud"
+		expectedFQDN := "test-cluster.dfw3.k8s.opencenter.cloud"
 		if cfg.OpenCenter.Cluster.ClusterFQDN != expectedFQDN {
 			t.Errorf("expected ClusterFQDN '%s', got %s", expectedFQDN, cfg.OpenCenter.Cluster.ClusterFQDN)
 		}
@@ -371,17 +371,18 @@ func TestDefaultConfigNewFields(t *testing.T) {
 		if cfg.Secrets.CertManager.AWSSecretAccessKey != "" {
 			t.Error("expected CertManager.AWSSecretAccessKey to be empty")
 		}
-		if cfg.Secrets.Loki.SwiftPassword != "" {
-			t.Error("expected Loki.SwiftPassword to be empty")
+		// Secrets for enabled services should be set to CHANGEME placeholder
+		if cfg.Secrets.Loki.SwiftPassword != "CHANGEME" {
+			t.Errorf("expected Loki.SwiftPassword to be CHANGEME, got %q", cfg.Secrets.Loki.SwiftPassword)
 		}
-		if cfg.Secrets.Keycloak.ClientSecret != "" {
-			t.Error("expected Keycloak.ClientSecret to be empty")
+		if cfg.Secrets.Keycloak.ClientSecret != "CHANGEME" {
+			t.Errorf("expected Keycloak.ClientSecret to be CHANGEME, got %q", cfg.Secrets.Keycloak.ClientSecret)
 		}
-		if cfg.Secrets.Keycloak.AdminPassword != "" {
-			t.Error("expected Keycloak.AdminPassword to be empty")
+		if cfg.Secrets.Keycloak.AdminPassword != "CHANGEME" {
+			t.Errorf("expected Keycloak.AdminPassword to be CHANGEME, got %q", cfg.Secrets.Keycloak.AdminPassword)
 		}
-		if cfg.Secrets.Headlamp.OIDCClientSecret != "" {
-			t.Error("expected Headlamp.OIDCClientSecret to be empty")
+		if cfg.Secrets.Headlamp.OIDCClientSecret != "CHANGEME" {
+			t.Errorf("expected Headlamp.OIDCClientSecret to be CHANGEME, got %q", cfg.Secrets.Headlamp.OIDCClientSecret)
 		}
 		if cfg.Secrets.WeaveGitOps.Password != "" {
 			t.Error("expected WeaveGitOps.Password to be empty")
@@ -389,8 +390,8 @@ func TestDefaultConfigNewFields(t *testing.T) {
 		if cfg.Secrets.WeaveGitOps.PasswordHash != "" {
 			t.Error("expected WeaveGitOps.PasswordHash to be empty")
 		}
-		if cfg.Secrets.Grafana.AdminPassword != "" {
-			t.Error("expected Grafana.AdminPassword to be empty")
+		if cfg.Secrets.Grafana.AdminPassword != "CHANGEME" {
+			t.Errorf("expected Grafana.AdminPassword to be CHANGEME, got %q", cfg.Secrets.Grafana.AdminPassword)
 		}
 		if cfg.Secrets.AlertProxy.CoreDeviceId != "" {
 			t.Error("expected AlertProxy.CoreDeviceId to be empty")

@@ -7,7 +7,7 @@ import (
 	registrydefaults "github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
 )
 
-const defaultOpenStackRegion = "sjc3"
+const defaultOpenStackRegion = "dfw3"
 
 // NewProviderDefault returns a v2 configuration initialized with provider-aware defaults.
 // It is the shared builder for commands that need a default cluster configuration as a

@@ -5,7 +5,7 @@ metadata:
   name: opencenter-kyverno-ruleset
   namespace: flux-system
 spec:
-  interval: 10m
+  interval: 15m
   {{- $service := index .OpenCenter.Services "kyverno" }}
   url: {{ $service.Uri | default .OpenCenter.GitOps.Repository.URL }}
   ref:

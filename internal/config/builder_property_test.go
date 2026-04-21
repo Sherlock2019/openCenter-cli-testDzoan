@@ -266,16 +266,16 @@ func TestProperty_ProviderSpecificValidation(t *testing.T) {
 
 			errors := builder.Validate()
 
-			// OpenStack requires auth_url
+			// OpenStack auth_url is now set by default, so no auth_url error expected.
+			// Instead verify the config builds without structural errors for openstack.
 			if provider == "openstack" {
-				hasAuthURLError := false
+				// Should have no critical structural errors
 				for _, err := range errors {
-					if err.Field == "opencenter.infrastructure.cloud.openstack.auth_url" {
-						hasAuthURLError = true
-						break
+					if err.Field == "opencenter.infrastructure.provider" {
+						return false // Provider should be valid
 					}
 				}
-				return hasAuthURLError
+				return true
 			}
 
 			// AWS requires region

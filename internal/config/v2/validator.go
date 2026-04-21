@@ -213,7 +213,113 @@ func (v *defaultValidator) ValidateDeployment(cfg *Config) error {
 // ValidateServices validates service dependencies and required secrets.
 // Requirements: 11.5
 func (v *defaultValidator) ValidateServices(cfg *Config) error {
-	// Placeholder for service validation
-	// This will be implemented in subsequent tasks
+	// Placeholder secret validation is intentionally NOT run during the
+	// standard load pipeline. It is invoked explicitly by commands that
+	// gate deployment (validate, setup, bootstrap) via ValidateForDeployment.
 	return nil
+}
+
+// ValidateForDeployment performs all standard validation plus deployment-readiness
+// checks such as detecting placeholder secrets that must be replaced.
+func ValidateForDeployment(cfg *Config) error {
+	v := NewValidator().(*defaultValidator)
+	if err := v.Validate(cfg); err != nil {
+		return err
+	}
+	return v.validatePlaceholderSecrets(cfg)
+}
+
+// PlaceholderSecret is the sentinel value used in default configurations to indicate
+// that a secret must be replaced before deployment.
+const PlaceholderSecret = "CHANGEME"
+
+// validatePlaceholderSecrets checks for any secrets still set to the placeholder value.
+// Returns an error listing all secrets that need to be updated.
+func (v *defaultValidator) validatePlaceholderSecrets(cfg *Config) error {
+	var placeholders []string
+
+	// Keycloak secrets (enabled by default)
+	if isServiceEnabled(cfg, "keycloak") {
+		if cfg.Secrets.Keycloak.ClientSecret == PlaceholderSecret {
+			placeholders = append(placeholders, "secrets.keycloak.client_secret")
+		}
+		if cfg.Secrets.Keycloak.AdminPassword == PlaceholderSecret {
+			placeholders = append(placeholders, "secrets.keycloak.admin_password")
+		}
+	}
+
+	// Headlamp secrets (enabled by default)
+	if isServiceEnabled(cfg, "headlamp") {
+		if cfg.Secrets.Headlamp.OIDCClientSecret == PlaceholderSecret {
+			placeholders = append(placeholders, "secrets.headlamp.oidc_client_secret")
+		}
+	}
+
+	// Grafana secrets (kube-prometheus-stack)
+	if isServiceEnabled(cfg, "kube-prometheus-stack") {
+		if cfg.Secrets.Grafana.AdminPassword == PlaceholderSecret {
+			placeholders = append(placeholders, "secrets.grafana.admin_password")
+		}
+	}
+
+	// Loki secrets
+	if isServiceEnabled(cfg, "loki") {
+		if cfg.Secrets.Loki.SwiftApplicationCredentialSecret == PlaceholderSecret {
+			placeholders = append(placeholders, "secrets.loki.swift_application_credential_secret")
+		}
+		if cfg.Secrets.Loki.S3AccessKeyID == PlaceholderSecret {
+			placeholders = append(placeholders, "secrets.loki.s3_access_key_id")
+		}
+		if cfg.Secrets.Loki.S3SecretAccessKey == PlaceholderSecret {
+			placeholders = append(placeholders, "secrets.loki.s3_secret_access_key")
+		}
+	}
+
+	// Tempo secrets
+	if isServiceEnabled(cfg, "tempo") {
+		if cfg.Secrets.Tempo.SwiftApplicationCredentialSecret == PlaceholderSecret {
+			placeholders = append(placeholders, "secrets.tempo.swift_application_credential_secret")
+		}
+		if cfg.Secrets.Tempo.AccessKey == PlaceholderSecret {
+			placeholders = append(placeholders, "secrets.tempo.access_key")
+		}
+		if cfg.Secrets.Tempo.SecretKey == PlaceholderSecret {
+			placeholders = append(placeholders, "secrets.tempo.secret_key")
+		}
+	}
+
+	// Cert-manager secrets
+	if isServiceEnabled(cfg, "cert-manager") {
+		if cfg.Secrets.CertManager.AWSAccessKey == PlaceholderSecret {
+			placeholders = append(placeholders, "secrets.cert_manager.aws_access_key")
+		}
+		if cfg.Secrets.CertManager.AWSSecretAccessKey == PlaceholderSecret {
+			placeholders = append(placeholders, "secrets.cert_manager.aws_secret_access_key")
+		}
+	}
+
+	// Global AWS secrets
+	if cfg.Secrets.Global.AWS.Infrastructure.AccessKey == PlaceholderSecret {
+		placeholders = append(placeholders, "secrets.global.aws.infrastructure.access_key")
+	}
+	if cfg.Secrets.Global.AWS.Infrastructure.SecretAccessKey == PlaceholderSecret {
+		placeholders = append(placeholders, "secrets.global.aws.infrastructure.secret_access_key")
+	}
+
+	if len(placeholders) > 0 {
+		return fmt.Errorf("the following secrets still have the placeholder value %q and must be updated before deployment:\n  - %s",
+			PlaceholderSecret, strings.Join(placeholders, "\n  - "))
+	}
+
+	return nil
+}
+
+// isServiceEnabled checks if a service is enabled in the config.
+func isServiceEnabled(cfg *Config, serviceName string) bool {
+	if svc, ok := cfg.OpenCenter.Services[serviceName]; ok {
+		if enabler, ok := svc.(interface{ IsEnabled() bool }); ok {
+			return enabler.IsEnabled()
+		}
+	}
+	return false
 }

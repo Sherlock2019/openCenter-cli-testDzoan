@@ -17,7 +17,7 @@ const (
 	defaultSchemaVersion               = "2.0"
 	defaultOrganization                = "opencenter"
 	defaultProvider                    = "openstack"
-	defaultRegion                      = "sjc3"
+	defaultRegion                      = "dfw3"
 	defaultEnvironment                 = "dev"
 	defaultBaseDomain                  = "k8s.opencenter.cloud"
 	defaultGitBranch                   = "main"
@@ -26,7 +26,6 @@ const (
 	defaultGitBaseRepoRelease          = "v0.1.0"
 	defaultDefaultStorageClass         = "standard"
 	defaultWorkerVolumeType            = "standard"
-	defaultOpenStackAuthURLPlaceholder = "https://identity.api.example.com/v3"
 	defaultOpenStackProjectID          = "project-id-placeholder"
 	defaultOpenStackProjectName        = "project-name-placeholder"
 	defaultOpenStackNetworkID          = "network-id-placeholder"
@@ -142,6 +141,7 @@ func NewV2Default(name, provider string) (*Config, error) {
 							Version:       "3.29.2",
 							VXLANMode:     "Always",
 							NetworkPolicy: true,
+							InstallMethod: "helm",
 						},
 					},
 					StoragePlugin: storagePluginDefaults(selectedProvider),
@@ -282,6 +282,22 @@ func NewV2Default(name, provider string) (*Config, error) {
 			},
 			SopsAgeKeyFile: sopsAgeKeyPath,
 			Global:         GlobalSecrets{},
+			Keycloak: KeycloakSecrets{
+				ClientSecret:  PlaceholderSecret,
+				AdminPassword: PlaceholderSecret,
+			},
+			Headlamp: HeadlampSecrets{
+				OIDCClientSecret: PlaceholderSecret,
+			},
+			Grafana: GrafanaSecrets{
+				AdminPassword: PlaceholderSecret,
+			},
+			Loki: LokiSecrets{
+				SwiftApplicationCredentialSecret: PlaceholderSecret,
+			},
+			Tempo: TempoSecrets{
+				SwiftApplicationCredentialSecret: PlaceholderSecret,
+			},
 			SOPSConfig: SOPSConfig{
 				Enabled:        true,
 				AgeKeyFile:     sopsAgeKeyPath,
@@ -417,7 +433,7 @@ func applyProviderCloudDefaults(cfg *Config, availabilityZone string) {
 	switch canonicalInfrastructureProvider(cfg.OpenCenter.Infrastructure.Provider) {
 	case "openstack":
 		cfg.OpenCenter.Infrastructure.Cloud.OpenStack = &OpenStackCloudConfig{
-			AuthURL:                 defaultOpenStackAuthURLPlaceholder,
+			AuthURL:                 fmt.Sprintf("https://keystone.api.%s.rackspacecloud.com/v3/", strings.ToLower(cfg.OpenCenter.Meta.Region)),
 			Region:                  cfg.OpenCenter.Meta.Region,
 			ProjectID:               defaultOpenStackProjectID,
 			ProjectName:             defaultOpenStackProjectName,
@@ -528,12 +544,60 @@ func applyProviderBehaviorDefaults(cfg *Config) {
 				defaultSvc.Enabled = true
 			}
 		}
+		// Disable OpenStack-specific services for Kind provider
+		if svc, ok := cfg.OpenCenter.Services["openstack-ccm"]; ok {
+			if defaultSvc, ok := svc.(*services.DefaultServiceConfig); ok {
+				defaultSvc.Enabled = false
+			}
+		}
+		if svc, ok := cfg.OpenCenter.Services["openstack-csi"]; ok {
+			if defaultSvc, ok := svc.(*services.DefaultServiceConfig); ok {
+				defaultSvc.Enabled = false
+			}
+		}
+		if svc, ok := cfg.OpenCenter.Services["velero"]; ok {
+			if veleroSvc, ok := svc.(*services.VeleroConfig); ok {
+				veleroSvc.Enabled = false
+			}
+		}
 	case "baremetal":
 		cfg.OpenCenter.Infrastructure.Bastion.Enabled = false
+		// Disable OpenStack-specific services for baremetal provider
+		if svc, ok := cfg.OpenCenter.Services["openstack-ccm"]; ok {
+			if defaultSvc, ok := svc.(*services.DefaultServiceConfig); ok {
+				defaultSvc.Enabled = false
+			}
+		}
+		if svc, ok := cfg.OpenCenter.Services["openstack-csi"]; ok {
+			if defaultSvc, ok := svc.(*services.DefaultServiceConfig); ok {
+				defaultSvc.Enabled = false
+			}
+		}
+		if svc, ok := cfg.OpenCenter.Services["velero"]; ok {
+			if veleroSvc, ok := svc.(*services.VeleroConfig); ok {
+				veleroSvc.Enabled = false
+			}
+		}
 	case "vmware":
 		cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.VSphereCsi = &VSphereCsiConfig{
 			Enabled: true,
 			Version: "3.3.0",
+		}
+		// Disable OpenStack-specific services for VMware provider
+		if svc, ok := cfg.OpenCenter.Services["openstack-ccm"]; ok {
+			if defaultSvc, ok := svc.(*services.DefaultServiceConfig); ok {
+				defaultSvc.Enabled = false
+			}
+		}
+		if svc, ok := cfg.OpenCenter.Services["openstack-csi"]; ok {
+			if defaultSvc, ok := svc.(*services.DefaultServiceConfig); ok {
+				defaultSvc.Enabled = false
+			}
+		}
+		if svc, ok := cfg.OpenCenter.Services["velero"]; ok {
+			if veleroSvc, ok := svc.(*services.VeleroConfig); ok {
+				veleroSvc.Enabled = false
+			}
 		}
 	case "openstack":
 		cfg.OpenCenter.Cluster.Kubernetes.StoragePlugin.CinderCsi = &CinderCsiConfig{
@@ -545,11 +609,13 @@ func applyProviderBehaviorDefaults(cfg *Config) {
 
 func defaultServiceMap(clusterFQDN string) ServiceMap {
 	return ServiceMap{
-		"calico":       &services.CalicoConfig{BaseConfig: services.BaseConfig{Enabled: true}, KubeAPIServer: ""},
-		"cert-manager": &services.CertManagerConfig{BaseConfig: services.BaseConfig{Enabled: true}},
-		"fluxcd":       &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
-		"gateway":      &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
-		"gateway-api":  &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"calico":               &services.CalicoConfig{BaseConfig: services.BaseConfig{Enabled: true}, KubeAPIServer: ""},
+		"cert-manager":         &services.CertManagerConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"etcd-backup":          &services.EtcdBackupConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"external-snapshotter": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"fluxcd":               &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"gateway":              &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"gateway-api":          &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
 		"headlamp": &services.HeadlampConfig{
 			BaseConfig: services.BaseConfig{
 				Enabled:  true,
@@ -567,27 +633,26 @@ func defaultServiceMap(clusterFQDN string) ServiceMap {
 		// Required by keycloak (oidc-rbac dependsOn rbac-manager-base).
 		"rbac-manager": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
 		// The sources FluxCD Kustomization deploys GitRepository objects for all services.
-		"sources": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"sources":               &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"kube-prometheus-stack": &services.PrometheusStackConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"kyverno":               &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"loki":                  &services.LokiConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"openstack-ccm":         &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"openstack-csi":         &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"tempo":                 &services.TempoConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"velero":                &services.VeleroConfig{BaseConfig: services.BaseConfig{Enabled: true}},
 		// Present (disabled) so template conditionals can safely index the key.
-		"kube-prometheus-stack": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
-		"loki":                  &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
-		"harbor":                &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
-		"velero":                &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
-		"metallb":               &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"harbor":  &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"metallb": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
 		// Required by keycloak (keycloak-operator is managed by OLM).
 		"olm":                      &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
 		"kafka-cluster":            &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
-		"openstack-ccm":            &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
-		"openstack-csi":            &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
 		"vsphere-csi":              &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
 		"weave-gitops":             &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
-		"external-snapshotter":     &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
 		"longhorn":                 &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
 		"mimir":                    &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
 		"opentelemetry-kube-stack": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
-		"kyverno":                  &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
 		"sealed-secrets":           &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
-		"tempo":                    &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
 	}
 }
 

@@ -197,7 +197,7 @@ func generateCompleteTemplate(provider string) v2.Config {
 
 	// Populate cluster fields
 	cfg.OpenCenter.Cluster.BaseDomain = "k8s.opencenter.cloud"
-	cfg.OpenCenter.Cluster.ClusterFQDN = "example-cluster.sjc3.k8s.opencenter.cloud"
+	cfg.OpenCenter.Cluster.ClusterFQDN = "example-cluster.dfw3.k8s.opencenter.cloud"
 	cfg.OpenCenter.Cluster.AdminEmail = "admin@example.com"
 	cfg.OpenCenter.Infrastructure.SSH.AuthorizedKeys = []string{
 		"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFAKEPLACEHOLDEREXAMPLEKEY opencenter@example",
@@ -245,8 +245,8 @@ func populateOpenStackConfig(cfg *v2.Config) {
 	if cfg.OpenCenter.Infrastructure.Cloud.OpenStack == nil {
 		cfg.OpenCenter.Infrastructure.Cloud.OpenStack = &v2.OpenStackCloudConfig{}
 	}
-	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://identity.api.sjc3.rackspacecloud.com/v3"
-	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Region = "sjc3"
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://keystone.api.dfw3.rackspacecloud.com/v3/"
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Region = "dfw3"
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.Domain = "Default"
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ApplicationCredentialID = "app-credential-id"
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ApplicationCredentialSecret = "app-credential-secret"

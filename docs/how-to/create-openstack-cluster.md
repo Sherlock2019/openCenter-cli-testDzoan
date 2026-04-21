@@ -162,7 +162,7 @@ It also:
 - generates SSH keys for Git and node access
 - generates SOPS Age keys
 - enables OpenTofu with a local backend by default
-- sets `opencenter.gitops.git_dir` to the organization root (`~/.config/opencenter/clusters/my-company`) unless you override it explicitly
+- sets `opencenter.gitops.repository.local_dir` to the organization root (`~/.config/opencenter/clusters/my-company`) unless you override it explicitly
 
 Additional `cluster init` flags:
 
@@ -176,6 +176,8 @@ Additional `cluster init` flags:
 | `--no-sops-keygen` | Skip only SOPS key generation |
 | `--regenerate-keys` | Regenerate keys even if they already exist |
 | `--full-schema` | Generate config with all available fields (useful as a reference) |
+| `--kind-disable-default-cni` | Disable Kind's default CNI so cluster networking is managed by openCenter (Kind provider only) |
+| `--server-pool` | Additional server pool configuration (repeatable) |
 
 You can also override any config value at init time using dotted flag notation:
 
@@ -214,10 +216,11 @@ opencenter:
     admin_email: "platform@example.com"
 
   gitops:
-    git_url: "git@github.com:my-company/prod-cluster-gitops.git"
-    git_branch: main
-    # Optional: move the GitOps working tree out of ~/.config/opencenter/clusters/<org>
-    # git_dir: "/Users/you/src/prod-cluster-gitops"
+    repository:
+      url: "git@github.com:my-company/prod-cluster-gitops.git"
+      branch: main
+      # Optional: move the GitOps working tree out of ~/.config/opencenter/clusters/<org>
+      # local_dir: "/Users/you/src/prod-cluster-gitops"
 
   infrastructure:
     cloud:
@@ -250,7 +253,7 @@ Notes:
 
 - Set **both** `project_name` and `tenant_name` to the same project value. Some generated OpenStack and service templates still read `tenant_name`.
 - Keep the top-level OpenStack network fields and the nested `openstack.networking` block in sync. Current validation reads the top-level fields, while some rendered OpenTofu templates still consume the nested block. The guided flow handles this automatically.
-- Replace the default `git_url` placeholder before `cluster setup` or `cluster bootstrap`.
+- Replace the default `repository.url` placeholder before `cluster setup` or `cluster bootstrap`.
 
 ### 3. Tune compute, storage, and networking
 
@@ -360,7 +363,7 @@ opencenter cluster validate prod-cluster
 
 Current behavior is worth knowing:
 
-- `cluster preflight` checks that `git`, `kubectl`, `talosctl`, and `openstack` are on `PATH`, and warns if `auth_url` is empty.
+- `cluster preflight` checks that `git`, `kubectl`, and `talosctl` are on `PATH`. For OpenStack clusters, it also checks for the `openstack` CLI and warns if `auth_url` is empty.
 - `cluster validate` validates the v2 config shape and required provider fields such as `project_id`, `image_id`, and `network_id`. It performs schema validation, required field validation, and cross-field dependency validation.
 
 Additional `cluster validate` flags:
@@ -369,9 +372,11 @@ Additional `cluster validate` flags:
 |---|---|
 | `--check-connectivity` | Check connectivity to the cloud provider |
 | `--check-provider` | Perform provider-specific validation |
+| `--config` | Path to a configuration file to validate (instead of a named cluster) |
 | `--json` | Output validation results as JSON (for CI/CD pipelines) |
 | `-v`, `--verbose` | Verbose output |
 | `--generate-debug-config` | Generate a complete config for debugging |
+| `--output-dir` | Directory to save debug config (defaults to current directory) |
 
 `cluster preflight` does **not** authenticate to Keystone, so keep using the OpenStack CLI for the real connectivity check:
 
@@ -408,6 +413,9 @@ For iterative development, `cluster render` is an alternative that renders templ
 # Re-render all services and infrastructure
 opencenter cluster render prod-cluster --all --force
 
+# Re-render all services only (no infrastructure)
+opencenter cluster render prod-cluster --services --force
+
 # Re-render infrastructure templates only
 opencenter cluster render prod-cluster --infra
 
@@ -443,7 +451,7 @@ If the repository already has an `origin`, update it instead:
 git -C "$GITOPS_DIR" remote set-url origin git@github.com:my-company/prod-cluster-gitops.git
 ```
 
-`cluster bootstrap` checks that the local `origin` matches `opencenter.gitops.git_url`, so keep those values aligned.
+`cluster bootstrap` checks that the local `origin` matches `opencenter.gitops.repository.url`, so keep those values aligned.
 
 ### 8. Bootstrap the cluster
 
@@ -478,6 +486,7 @@ Bootstrap flags:
 | `--confirm-commit` | Prompt for confirmation before auto-committing uncommitted changes |
 | `--kubeconfig` | Path to kubeconfig (defaults to the cluster-owned kubeconfig path) |
 | `--log` | Log file path (defaults to `<state_dir>/logs/bootstrap/<org>/<name>/bootstrap-<timestamp>.log`) |
+| `--container-runtime` | Container runtime for Kind clusters: `docker` or `podman` (Kind provider only) |
 
 Examples:
 
@@ -516,15 +525,27 @@ Expected state:
 
 ## Cleanup
 
-Destroy the cluster and local artifacts:
+Destroy the cluster infrastructure:
 
 ```bash
 opencenter cluster destroy prod-cluster --force
 ```
 
-`cluster destroy` acquires a lock, removes the GitOps directory, the cluster configuration directory, the applications overlay directory, and the config file. It also clears the active cluster marker if the destroyed cluster was active.
+By default, `cluster destroy --force` destroys cloud infrastructure (via OpenTofu) but preserves local configuration and GitOps files for inspection or recovery. The `--force` flag skips the interactive confirmation prompt.
 
-The Git remote is not deleted automatically. Remove it manually if you no longer need it.
+To also remove local files (GitOps directory, cluster config directory, applications overlay, and the config file):
+
+```bash
+opencenter cluster destroy prod-cluster --force --remove-files
+```
+
+To skip infrastructure destruction and only remove local files:
+
+```bash
+opencenter cluster destroy prod-cluster --force --skip-infrastructure --remove-files
+```
+
+`cluster destroy` acquires a lock before running. If the destroyed cluster was the active cluster, the active marker is cleared. The Git remote is not deleted automatically — remove it manually if you no longer need it.
 
 Confirm the OpenStack resources are gone:
 

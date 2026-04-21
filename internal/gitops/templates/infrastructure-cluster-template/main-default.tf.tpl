@@ -115,10 +115,10 @@ locals {
   #Kubespray Settings
   kubespray_version                       = "{{ .Deployment.Kubespray.Version | default "v2.29.1" }}"
   kubernetes_version                      = "{{ .OpenCenter.Cluster.Kubernetes.Version | default "1.33.7" }}"
-  # CNI install_method: "kubespray" (default) installs CNI during cluster bootstrap
-  #                     "helm" skips CNI in Kubespray, CNI will be installed via GitOps/Helm after cluster is up
+  # CNI install_method: "helm" (default) skips CNI in Kubespray, CNI will be installed via GitOps/Helm after cluster is up
+  #                     "kubespray" installs CNI during cluster bootstrap
   # When install_method is "helm", network_plugin is set to "none" so Kubespray skips CNI installation
-  network_plugin                          = "{{- if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled }}{{- if eq (.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.InstallMethod | default "kubespray") "helm" }}none{{- else }}calico{{- end }}{{- else if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled }}{{- if eq (.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.InstallMethod | default "kubespray") "helm" }}none{{- else }}cilium{{- end }}{{- else if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Enabled }}{{- if eq (.OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.InstallMethod | default "kubespray") "helm" }}none{{- else }}kube-ovn{{- end }}{{- else }}calico{{- end }}"
+  network_plugin                          = "{{- if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled }}{{- if eq (.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.InstallMethod | default "helm") "helm" }}none{{- else }}calico{{- end }}{{- else if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled }}{{- if eq (.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.InstallMethod | default "helm") "helm" }}none{{- else }}cilium{{- end }}{{- else if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Enabled }}{{- if eq (.OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.InstallMethod | default "helm") "helm" }}none{{- else }}kube-ovn{{- end }}{{- else }}none{{- end }}"
   deploy_cluster                          = {{ .Deployment.AutoDeploy | default true }}
   #kub-vip settings
   kube_vip_enabled                        = {{ .OpenCenter.Cluster.Kubernetes.KubeVIPEnabled | default true }}
@@ -365,8 +365,8 @@ module "kubespray-cluster" {
 }
 
 
-{{- /* Only include Calico Terraform module when install_method is "kubespray" (default) */}}
-{{- if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled (ne (.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.InstallMethod | default "kubespray") "helm") }}
+{{- /* Only include Calico Terraform module when install_method is explicitly "kubespray" */}}
+{{- if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled (eq (.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.InstallMethod | default "helm") "kubespray") }}
 module "calico" {
   source = "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/calico?ref=main"
 
@@ -390,8 +390,8 @@ module "calico" {
 }
 {{- end }}
 
-{{- /* Only include Cilium Terraform module when install_method is "kubespray" (default) */}}
-{{- if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled (ne (.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.InstallMethod | default "kubespray") "helm") }}
+{{- /* Only include Cilium Terraform module when install_method is explicitly "kubespray" */}}
+{{- if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled (eq (.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.InstallMethod | default "helm") "kubespray") }}
 module "cilium" {
   source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Modules.Cilium.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/cilium?ref=main" }}"
 
@@ -407,8 +407,8 @@ module "cilium" {
 }
 {{- end }}
 
-{{- /* Only include Kube-OVN Terraform module when install_method is "kubespray" (default) */}}
-{{- if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Enabled (ne (.OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.InstallMethod | default "kubespray") "helm") }}
+{{- /* Only include Kube-OVN Terraform module when install_method is explicitly "kubespray" */}}
+{{- if and .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Enabled (eq (.OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.InstallMethod | default "helm") "kubespray") }}
 module "kube-ovn" {
   source = "{{ .OpenCenter.Cluster.Kubernetes.NetworkPlugin.KubeOVN.Modules.KubeOVN.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/cni/kube-ovn?ref=main" }}"
 

@@ -83,5 +83,6 @@ testdata/*
 tests/features/steps/tmp/
 .mygitignore
 .vscode/
+.worktrees/
 
 *.test

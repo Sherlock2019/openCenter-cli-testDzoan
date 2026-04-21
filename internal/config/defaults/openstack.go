@@ -66,9 +66,9 @@ func newOpenStackSJC3Defaults() ProviderDefaults {
 		dnsNameservers: []string{"8.8.8.8", "8.8.4.4"},
 		storageClass:   "csi-cinder-sc-delete",
 		flavors: FlavorDefaults{
-			Bastion:       "gp.0.2.2",
-			Master:        "gp.0.4.8",
-			Worker:        "gp.0.4.16",
+			Bastion:       "gp.5.2.4",
+			Master:        "gp.5.4.8",
+			Worker:        "gp.5.4.16",
 			WorkerWindows: "gp.5.4.16",
 		},
 	}
@@ -79,7 +79,7 @@ func newOpenStackDFW3Defaults() ProviderDefaults {
 	return &openstackDefaults{
 		imageIDs: map[string]string{
 			"22": "b2c3d4e5-2345-6789-01bc-def123456789", // Ubuntu 22.04
-			"24": "8a9dcf97-4567-5472-9298-24bc1b396e44", // Ubuntu 24.04
+			"24": "799dcf97-3656-4361-8187-13ab1b295e33", // Ubuntu 24.04
 		},
 		availabilityZones: []string{"az1", "az2", "az3"},
 		ntpServers: []string{
@@ -89,9 +89,9 @@ func newOpenStackDFW3Defaults() ProviderDefaults {
 		dnsNameservers: []string{"8.8.8.8", "8.8.4.4"},
 		storageClass:   "csi-cinder-sc-delete",
 		flavors: FlavorDefaults{
-			Bastion:       "gp.0.2.2",
-			Master:        "gp.0.4.8",
-			Worker:        "gp.0.4.16",
+			Bastion:       "gp.5.2.4",
+			Master:        "gp.5.4.8",
+			Worker:        "gp.5.4.16",
 			WorkerWindows: "gp.5.4.16",
 		},
 	}
@@ -112,9 +112,9 @@ func newOpenStackIAD3Defaults() ProviderDefaults {
 		dnsNameservers: []string{"8.8.8.8", "8.8.4.4"},
 		storageClass:   "csi-cinder-sc-delete",
 		flavors: FlavorDefaults{
-			Bastion:       "gp.0.2.2",
-			Master:        "gp.0.4.8",
-			Worker:        "gp.0.4.16",
+			Bastion:       "gp.5.2.4",
+			Master:        "gp.5.4.8",
+			Worker:        "gp.5.4.16",
 			WorkerWindows: "gp.5.4.16",
 		},
 	}
@@ -135,9 +135,9 @@ func newOpenStackORD1Defaults() ProviderDefaults {
 		dnsNameservers: []string{"8.8.8.8", "8.8.4.4"},
 		storageClass:   "csi-cinder-sc-delete",
 		flavors: FlavorDefaults{
-			Bastion:       "gp.0.2.2",
-			Master:        "gp.0.4.8",
-			Worker:        "gp.0.4.16",
+			Bastion:       "gp.5.2.4",
+			Master:        "gp.5.4.8",
+			Worker:        "gp.5.4.16",
 			WorkerWindows: "gp.5.4.16",
 		},
 	}

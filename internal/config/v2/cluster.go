@@ -53,7 +53,7 @@ type CalicoConfig struct {
 	VXLANMode     string `yaml:"vxlan_mode,omitempty" json:"vxlan_mode,omitempty" validate:"omitempty,oneof=Always CrossSubnet Never"`
 	NetworkPolicy bool   `yaml:"network_policy" json:"network_policy"`
 	// InstallMethod specifies how the CNI should be installed.
-	// Valid values: "kubespray" (default, installed during cluster bootstrap) or "helm" (installed via GitOps/Helm after cluster is up)
+	// Valid values: "helm" (default, installed via GitOps/Helm after cluster is up) or "kubespray" (installed during cluster bootstrap)
 	InstallMethod string `yaml:"install_method,omitempty" json:"install_method,omitempty" validate:"omitempty,oneof=kubespray helm"`
 }
 
@@ -65,7 +65,7 @@ type CiliumConfig struct {
 	Hubble        bool   `yaml:"hubble" json:"hubble"`
 	NetworkPolicy bool   `yaml:"network_policy" json:"network_policy"`
 	// InstallMethod specifies how the CNI should be installed.
-	// Valid values: "kubespray" (default, installed during cluster bootstrap) or "helm" (installed via GitOps/Helm after cluster is up)
+	// Valid values: "helm" (default, installed via GitOps/Helm after cluster is up) or "kubespray" (installed during cluster bootstrap)
 	InstallMethod string `yaml:"install_method,omitempty" json:"install_method,omitempty" validate:"omitempty,oneof=kubespray helm"`
 }
 
@@ -75,7 +75,7 @@ type KubeOVNConfig struct {
 	Version       string `yaml:"version,omitempty" json:"version,omitempty"`
 	NetworkPolicy bool   `yaml:"network_policy" json:"network_policy"`
 	// InstallMethod specifies how the CNI should be installed.
-	// Valid values: "kubespray" (default, installed during cluster bootstrap) or "helm" (installed via GitOps/Helm after cluster is up)
+	// Valid values: "helm" (default, installed via GitOps/Helm after cluster is up) or "kubespray" (installed during cluster bootstrap)
 	InstallMethod string `yaml:"install_method,omitempty" json:"install_method,omitempty" validate:"omitempty,oneof=kubespray helm"`
 }
 
