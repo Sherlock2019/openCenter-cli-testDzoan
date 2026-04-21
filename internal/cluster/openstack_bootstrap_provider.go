@@ -87,6 +87,11 @@ func validateOpenStackBootstrap(creds *credentials.OpenStackCredentials) error {
 		return fmt.Errorf("openstack credentials are incomplete; set auth_url and application credentials or username/password before bootstrap")
 	}
 
+	// Reject placeholder credentials
+	if creds.ApplicationCredentialID == "CHANGEME" || creds.ApplicationCredentialSecret == "CHANGEME" {
+		return fmt.Errorf("openstack credentials are incomplete; application_credential_id and application_credential_secret must be replaced before bootstrap")
+	}
+
 	for _, warning := range openstackprovider.PreflightOpenStack(creds.AuthURL) {
 		if strings.Contains(warning, "auth_url is empty") {
 			return fmt.Errorf("%s", warning)

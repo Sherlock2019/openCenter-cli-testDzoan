@@ -306,6 +306,17 @@ func (v *defaultValidator) validatePlaceholderSecrets(cfg *Config) error {
 		placeholders = append(placeholders, "secrets.global.aws.infrastructure.secret_access_key")
 	}
 
+	// OpenStack application credentials
+	provider := strings.TrimSpace(cfg.OpenCenter.Infrastructure.Provider)
+	if strings.EqualFold(provider, "openstack") && cfg.OpenCenter.Infrastructure.Cloud.OpenStack != nil {
+		if cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ApplicationCredentialID == PlaceholderSecret {
+			placeholders = append(placeholders, "opencenter.infrastructure.cloud.openstack.application_credential_id")
+		}
+		if cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ApplicationCredentialSecret == PlaceholderSecret {
+			placeholders = append(placeholders, "opencenter.infrastructure.cloud.openstack.application_credential_secret")
+		}
+	}
+
 	if len(placeholders) > 0 {
 		return fmt.Errorf("the following secrets still have the placeholder value %q and must be updated before deployment:\n  - %s",
 			PlaceholderSecret, strings.Join(placeholders, "\n  - "))
