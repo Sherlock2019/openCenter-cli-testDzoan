@@ -65,6 +65,12 @@ and re-run bootstrap to continue from where it left off.`,
 func runClusterBootstrap(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
+	// Apply log-level flag (already parsed by PersistentPreRunE, but ensure
+	// it is honoured when the caller passes --log-level explicitly).
+	if logLevel, _ := cmd.Flags().GetString("log-level"); logLevel != "" {
+		_ = config.SetLogLevel(logLevel)
+	}
+
 	// Resolve cluster name from args or active cluster
 	name, err := resolveClusterName(args, true)
 	if err != nil {
@@ -101,6 +107,7 @@ func runClusterBootstrap(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("initialize application graph: %w", err)
 	}
 	bootstrapService := app.BootstrapService
+	bootstrapService.SetOutput(cmd.OutOrStdout())
 
 	// Parse command-line options
 	opts, err := parseBootstrapOptions(cmd, args, actualClusterName)

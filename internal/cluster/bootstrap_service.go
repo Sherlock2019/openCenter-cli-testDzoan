@@ -72,6 +72,21 @@ type BootstrapService struct {
 	fileSystem       fs.FileSystem
 	runner           lifecycleCommandRunner
 	commandRunner    security.CommandRunner
+	output           io.Writer
+}
+
+// SetOutput sets the writer used for user-facing progress messages.
+// When nil, progress messages are suppressed.
+func (s *BootstrapService) SetOutput(w io.Writer) {
+	s.output = w
+}
+
+// progress writes a user-facing progress line to the configured output writer.
+func (s *BootstrapService) progress(format string, args ...interface{}) {
+	if s.output == nil {
+		return
+	}
+	fmt.Fprintf(s.output, format+"\n", args...)
 }
 
 // NewBootstrapService creates a new BootstrapService
@@ -209,14 +224,22 @@ func (s *BootstrapService) Bootstrap(ctx context.Context, opts BootstrapOptions)
 		defer logFile.Close()
 
 		ctx = withBootstrapLogWriter(ctx, logFile)
+		s.progress("Bootstrap started for %s", opts.ClusterName)
+		s.progress("Log file: %s", runtimePaths.LogPath)
+		config.Debugf("bootstrap: log file at %s", runtimePaths.LogPath)
+		config.Debugf("bootstrap: state file at %s", runtimePaths.StatePath)
 		logBootstrapMessage(ctx, "bootstrap started for %s/%s", cfg.Organization(), cfg.ClusterName())
 	}
 
 	if !opts.SkipValidation {
+		s.progress("Validating bootstrap configuration...")
+		config.Debug("bootstrap: running configuration validation")
 		if err := s.validateBootstrapConfig(&cfg); err != nil {
 			logBootstrapMessage(ctx, "bootstrap validation failed: %v", err)
 			return result, fmt.Errorf("validation failed: %w", err)
 		}
+		s.progress("✓ Configuration valid")
+		config.Debug("bootstrap: configuration validation passed")
 	}
 
 	// Set default timeout if not specified
@@ -227,26 +250,38 @@ func (s *BootstrapService) Bootstrap(ctx context.Context, opts BootstrapOptions)
 		opts.KubeconfigPath = clusterPaths.KubeconfigPath
 	}
 
+	provider := strings.ToLower(strings.TrimSpace(cfg.Provider()))
+	config.Debugf("bootstrap: provider=%s cluster=%s org=%s", provider, opts.ClusterName, opts.Organization)
+	config.Debugf("bootstrap: kubeconfig=%s timeout=%s", opts.KubeconfigPath, opts.Timeout)
+
 	// Provision infrastructure
 	if !opts.DryRun {
+		s.progress("\nProvisioning infrastructure (%s)...", provider)
+		config.Debugf("bootstrap: starting infrastructure provisioning for provider %s", provider)
 		if err := s.provisionInfrastructure(ctx, &cfg, clusterPaths, &opts, runtimePaths, result); err != nil {
 			logBootstrapMessage(ctx, "bootstrap failed during infrastructure provisioning: %v", err)
 			return result, fmt.Errorf("provisioning infrastructure: %w", err)
 		}
 		result.InfrastructureProvisioned = true
+		s.progress("✓ Infrastructure provisioned")
 	}
 
 	// Deploy cluster
 	if !opts.DryRun {
+		s.progress("\nDeploying cluster...")
+		config.Debug("bootstrap: starting cluster deployment")
 		if err := s.deployCluster(ctx, &cfg, clusterPaths, &opts, result); err != nil {
 			logBootstrapMessage(ctx, "bootstrap failed during cluster deployment: %v", err)
 			return result, fmt.Errorf("deploying cluster: %w", err)
 		}
 		result.ClusterDeployed = true
+		s.progress("✓ Cluster deployed")
 	}
 
 	// Wait for cluster to be ready
 	if !opts.DryRun {
+		s.progress("\nWaiting for cluster readiness (timeout: %s)...", opts.Timeout)
+		config.Debugf("bootstrap: waiting for cluster readiness, timeout=%s", opts.Timeout)
 		endpoint, err := s.waitForReady(ctx, &cfg, opts.Timeout, opts.KubeconfigPath)
 		if err != nil {
 			logBootstrapMessage(ctx, "bootstrap failed while waiting for readiness: %v", err)
@@ -254,6 +289,7 @@ func (s *BootstrapService) Bootstrap(ctx context.Context, opts BootstrapOptions)
 		}
 		result.ClusterReady = true
 		result.Endpoint = endpoint
+		s.progress("✓ Cluster ready at %s", endpoint)
 	}
 
 	result.Duration = time.Since(startTime)
@@ -362,10 +398,15 @@ func (s *BootstrapService) provisionInfrastructure(ctx context.Context, cfg *v2.
 	// Filter steps based on options
 	selectedSteps, ignoreState := s.filterSteps(steps, opts)
 
+	totalSteps := len(selectedSteps)
+	config.Debugf("bootstrap: executing %d step(s) (ignoreState=%v)", totalSteps, ignoreState)
+
 	// Execute steps
-	for _, step := range selectedSteps {
+	for i, step := range selectedSteps {
 		// Skip if already completed (unless ignoring state)
 		if !ignoreState && stateEnabled && s.isStepSuccess(state, step.ID) {
+			s.progress("  [%d/%d] ⏭ %s (already completed)", i+1, totalSteps, step.Description)
+			config.Debugf("bootstrap: step %s skipped (already completed in saved state)", step.ID)
 			logBootstrapMessage(ctx, "step skipped from saved state: %s", step.ID)
 			continue
 		}
@@ -377,10 +418,15 @@ func (s *BootstrapService) provisionInfrastructure(ctx context.Context, cfg *v2.
 				return err
 			}
 		}
+		s.progress("  [%d/%d] → %s...", i+1, totalSteps, step.Description)
+		config.Debugf("bootstrap: step %s started - %s", step.ID, step.Description)
 		logBootstrapMessage(ctx, "step started: %s - %s", step.ID, step.Description)
+
+		stepStart := time.Now()
 
 		// Execute step
 		if err := step.Run(ctx); err != nil {
+			stepDuration := time.Since(stepStart).Round(time.Millisecond)
 			// Mark step as failed
 			if stateEnabled && !opts.DryRun {
 				s.setStepStatus(state, step.ID, bootstrapStatusFailed, err.Error())
@@ -390,9 +436,13 @@ func (s *BootstrapService) provisionInfrastructure(ctx context.Context, cfg *v2.
 			}
 			result.StepsFailed = append(result.StepsFailed, step.ID)
 			result.ResumeStatePath = statePath
+			s.progress("  [%d/%d] ✗ %s failed after %s: %v", i+1, totalSteps, step.Description, stepDuration, err)
+			config.Debugf("bootstrap: step %s failed after %s: %v", step.ID, stepDuration, err)
 			logBootstrapMessage(ctx, "step failed: %s: %v", step.ID, err)
 			return fmt.Errorf("step %q failed: %w", step.ID, err)
 		}
+
+		stepDuration := time.Since(stepStart).Round(time.Millisecond)
 
 		// Mark step as successful
 		if stateEnabled && !opts.DryRun {
@@ -402,6 +452,8 @@ func (s *BootstrapService) provisionInfrastructure(ctx context.Context, cfg *v2.
 			}
 		}
 		result.StepsCompleted = append(result.StepsCompleted, step.ID)
+		s.progress("  [%d/%d] ✓ %s (%s)", i+1, totalSteps, step.Description, stepDuration)
+		config.Debugf("bootstrap: step %s completed in %s", step.ID, stepDuration)
 		logBootstrapMessage(ctx, "step completed: %s", step.ID)
 	}
 
@@ -474,12 +526,16 @@ func (s *BootstrapService) waitForCloudCluster(ctx context.Context, cfg *v2.Conf
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
+	attempt := 0
 	for {
 		select {
 		case <-ctx.Done():
 			return "", fmt.Errorf("timeout waiting for cluster to be ready: %w", ctx.Err())
 
 		case <-ticker.C:
+			attempt++
+			config.Debugf("bootstrap: cluster readiness check attempt %d", attempt)
+			s.progress("  Checking cluster readiness (attempt %d)...", attempt)
 			// Check if cluster API is accessible
 			args := []string{}
 			if strings.TrimSpace(kubeconfigPath) != "" {
