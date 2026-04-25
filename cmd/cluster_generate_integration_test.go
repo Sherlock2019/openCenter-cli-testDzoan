@@ -121,6 +121,9 @@ func TestClusterGenerateIntegrationKindProvider(t *testing.T) {
 	if err := setupCmd.Execute(); err != nil {
 		t.Fatalf("cluster generate failed: %v\nstderr: %s", err, stderr.String())
 	}
+	if !strings.Contains(stdout.String(), "Next: opencenter cluster deploy kind-setup-int") {
+		t.Fatalf("expected deploy next step in generate output, got:\n%s", stdout.String())
+	}
 
 	clusterDir := filepath.Join(dir, "clusters", "opencenter", "infrastructure", "clusters", "kind-setup-int")
 	kindConfigPath := filepath.Join(clusterDir, "kind-config.yaml")

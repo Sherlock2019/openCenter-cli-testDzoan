@@ -121,6 +121,42 @@ func TestClusterGenerateNoClusterArg(t *testing.T) {
 	}
 }
 
+func TestClusterMissingActiveClusterErrorShape(t *testing.T) {
+	cfgDir := t.TempDir()
+	prepareCommandTestEnv(t, cfgDir)
+
+	expected := `no active cluster is set
+
+Fix:
+  opencenter cluster list
+  opencenter cluster use <org/name>
+
+Or pass a cluster explicitly:
+  opencenter cluster validate <org/name>`
+
+	for name, resolve := range map[string]func() (string, error){
+		"args": func() (string, error) {
+			return resolveClusterName(nil, true)
+		},
+		"flag": func() (string, error) {
+			return resolveClusterNameFromFlag("", true)
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			gotName, err := resolve()
+			if err == nil {
+				t.Fatal("expected missing active cluster error")
+			}
+			if gotName != "" {
+				t.Fatalf("expected no resolved cluster name, got %q", gotName)
+			}
+			if err.Error() != expected {
+				t.Fatalf("unexpected missing-active error:\n%s", err.Error())
+			}
+		})
+	}
+}
+
 // TestClusterGenerateDryRunSkipsCommit verifies that dry-run generation
 // and does not produce a commit hash.
 // Requirements: 2.2, 2.3

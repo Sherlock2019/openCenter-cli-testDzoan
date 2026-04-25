@@ -40,43 +40,37 @@ and managing cluster configurations. It supports organization-based multi-tenanc
 and integrates with GitOps workflows.
 
 Common Workflow:
-  1. Initialize a new cluster configuration
-  2. Validate the configuration
-  3. Run doctor checks
-  4. Generate infrastructure and GitOps repository assets
+  1. Create a cluster config
+     opencenter cluster init prod --org acme
+  2. Complete provider-specific settings
+     opencenter cluster configure acme/prod
+  3. Validate config and prerequisites
+     opencenter cluster validate acme/prod
+     opencenter cluster doctor acme/prod
+  4. Generate GitOps assets
+     opencenter cluster generate acme/prod
   5. Deploy the cluster
+     opencenter cluster deploy acme/prod
 
 Configuration files are stored in organization-based directories:
   ~/.config/opencenter/clusters/<organization>/<cluster>/`,
-		Example: `  # Initialize a new cluster
-  opencenter cluster init my-cluster
+		Example: `  # Create a cluster config
+  opencenter cluster init prod --org acme
 
-  # Initialize with organization
-  opencenter cluster init my-cluster --org myorg
-
-  # Backward-compatible organization alias
-  opencenter cluster init my-cluster --opencenter.meta.organization=myorg
-
-  # Validate configuration
-  opencenter cluster validate my-cluster
-
-  # List all clusters
-  opencenter cluster list
-
-  # Set active cluster (session-scoped)
-  opencenter cluster use my-cluster
-
-  # Set cluster persistently (all terminals)
-  opencenter cluster use my-cluster --persistent
-
-  # Export cluster environment
-  eval "$(opencenter cluster env)"
-
-  # Clear persistent cluster selection
-  opencenter cluster use --clear-persistent
+  # Set active cluster
+  opencenter cluster use acme/prod
 
   # Show active cluster
-  opencenter cluster active`,
+  opencenter cluster active
+
+  # Generate GitOps assets
+  opencenter cluster generate acme/prod
+
+  # Deploy the cluster
+  opencenter cluster deploy acme/prod
+
+  # Describe configuration and state
+  opencenter cluster describe acme/prod`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},
@@ -108,6 +102,10 @@ Configuration files are stored in organization-based directories:
 	cmd.AddCommand(newClusterUnlockCmd())
 	cmd.AddCommand(newClusterImportCmd())
 	return cmd
+}
+
+func missingActiveClusterError(command string) error {
+	return fmt.Errorf("no active cluster is set\n\nFix:\n  opencenter cluster list\n  opencenter cluster use <org/name>\n\nOr pass a cluster explicitly:\n  %s <org/name>", command)
 }
 
 // resolveClusterName resolves the cluster name from command arguments or active cluster.
@@ -159,7 +157,7 @@ func resolveClusterName(args []string, requireActive bool) (string, error) {
 
 	if activeName == "" {
 		if requireActive {
-			return "", fmt.Errorf("no active cluster set. Use 'opencenter cluster use <cluster>' or provide cluster name as argument")
+			return "", missingActiveClusterError("opencenter cluster validate")
 		}
 		return "", nil
 	}
@@ -216,7 +214,7 @@ func resolveClusterNameFromFlag(flagValue string, requireActive bool) (string, e
 
 	if activeName == "" {
 		if requireActive {
-			return "", fmt.Errorf("no active cluster set. Use 'opencenter cluster use <cluster>' or provide --cluster flag")
+			return "", missingActiveClusterError("opencenter cluster validate")
 		}
 		return "", nil
 	}

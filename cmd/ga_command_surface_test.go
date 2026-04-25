@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 
@@ -115,6 +116,61 @@ func TestGAClusterCommandSurface(t *testing.T) {
 	}
 	for _, path := range removedClusterCommands {
 		requireNoCommandPath(t, root, path...)
+	}
+}
+
+func TestGAClusterParentHelpShowsWorkflowAndGAExamples(t *testing.T) {
+	root := newGARootForCommandSurfaceTest()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"cluster", "--help"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("cluster help failed: %v", err)
+	}
+
+	help := out.String()
+	expectedWorkflow := `Common Workflow:
+  1. Create a cluster config
+     opencenter cluster init prod --org acme
+  2. Complete provider-specific settings
+     opencenter cluster configure acme/prod
+  3. Validate config and prerequisites
+     opencenter cluster validate acme/prod
+     opencenter cluster doctor acme/prod
+  4. Generate GitOps assets
+     opencenter cluster generate acme/prod
+  5. Deploy the cluster
+     opencenter cluster deploy acme/prod`
+	if !strings.Contains(help, expectedWorkflow) {
+		t.Fatalf("expected GA workflow block in cluster help, got:\n%s", help)
+	}
+
+	for _, example := range []string{
+		"opencenter cluster use acme/prod",
+		"opencenter cluster active",
+		"opencenter cluster generate acme/prod",
+		"opencenter cluster deploy acme/prod",
+		"opencenter cluster describe acme/prod",
+	} {
+		if !strings.Contains(help, example) {
+			t.Fatalf("expected help example %q, got:\n%s", example, help)
+		}
+	}
+
+	for _, oldCommand := range []string{
+		"opencenter cluster select",
+		"opencenter cluster current",
+		"opencenter cluster setup",
+		"opencenter cluster bootstrap",
+		"opencenter cluster preflight",
+		"opencenter cluster info",
+		"opencenter cluster render",
+	} {
+		if strings.Contains(help, oldCommand) {
+			t.Fatalf("cluster help still references old command %q:\n%s", oldCommand, help)
+		}
 	}
 }
 

@@ -615,8 +615,8 @@ func TestClusterServiceNoActiveCluster(t *testing.T) {
 		return
 	}
 
-	if !strings.Contains(err.Error(), "no active cluster set") {
-		t.Errorf("expected 'no active cluster set' error, got: %v", err)
+	if !strings.Contains(err.Error(), "no active cluster is set") {
+		t.Errorf("expected missing active cluster error, got: %v", err)
 	}
 }
 
@@ -825,7 +825,7 @@ func TestClusterServiceStatus(t *testing.T) {
 			clusterName: "",
 			setupFunc:   nil,
 			expectError: true,
-			errorMsg:    "no active cluster set",
+			errorMsg:    "no active cluster is set",
 			validate:    nil,
 		},
 	}

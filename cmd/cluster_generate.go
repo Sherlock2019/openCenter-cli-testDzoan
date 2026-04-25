@@ -137,6 +137,7 @@ func runClusterGenerate(cmd *cobra.Command, args []string) error {
 		if err := config.UpdateStatus(name, config.StageSetup, config.StatusSuccess); err != nil {
 			fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
 		}
+		fmt.Fprintf(cmd.OutOrStdout(), "Next: opencenter cluster deploy %s\n", name)
 	}
 
 	return nil

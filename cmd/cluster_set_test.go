@@ -41,6 +41,9 @@ func TestClusterSetUpdatesExplicitField(t *testing.T) {
 	if !strings.Contains(out.String(), "Updated cluster configuration set-cluster") {
 		t.Fatalf("expected update summary, got:\n%s", out.String())
 	}
+	if !strings.Contains(out.String(), "Next: opencenter cluster validate set-cluster") {
+		t.Fatalf("expected validate next step, got:\n%s", out.String())
+	}
 }
 
 func TestClusterSetDryRunDoesNotWrite(t *testing.T) {
@@ -71,6 +74,9 @@ func TestClusterSetDryRunDoesNotWrite(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "Would update cluster configuration dry-run-set") {
 		t.Fatalf("expected dry-run summary, got:\n%s", out.String())
+	}
+	if strings.Contains(out.String(), "Next:") {
+		t.Fatalf("dry-run should not print next step, got:\n%s", out.String())
 	}
 }
 

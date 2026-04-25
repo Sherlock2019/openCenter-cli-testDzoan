@@ -168,6 +168,7 @@ func runClusterDeploy(cmd *cobra.Command, args []string) error {
 		if err := config.UpdateStatus(name, config.StageBootstrap, config.StatusSuccess); err != nil {
 			fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
 		}
+		fmt.Fprintf(cmd.OutOrStdout(), "Next: opencenter cluster status %s\n", name)
 	}
 
 	return nil

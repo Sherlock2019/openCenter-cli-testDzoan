@@ -80,6 +80,7 @@ Fields use native v2 dot notation, for example:
 				return err
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "Updated cluster configuration %s\n", name)
+			fmt.Fprintf(cmd.OutOrStdout(), "Next: opencenter cluster validate %s\n", name)
 			return nil
 		},
 	}
