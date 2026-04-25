@@ -63,18 +63,18 @@ func (v *ConfigStructureValidator) Validate(ctx context.Context, value interface
 		}
 	}
 
-	// Check for unsupported legacy field locations.
-	v.checkV1FieldLocations(result, configMap)
+	// Check for unsupported schema 2 field locations.
+	v.checkUnsupportedFieldLocations(result, configMap)
 
 	return result, nil
 }
 
-// checkV1FieldLocations checks for unsupported legacy field locations in the configuration.
-func (v *ConfigStructureValidator) checkV1FieldLocations(result *validation.ValidationResult, configMap map[string]interface{}) {
-	// Check for opencenter.cluster.networking (legacy location)
+// checkUnsupportedFieldLocations checks for unsupported schema 2 field locations in the configuration.
+func (v *ConfigStructureValidator) checkUnsupportedFieldLocations(result *validation.ValidationResult, configMap map[string]interface{}) {
+	// Check for opencenter.cluster.networking (unsupported location).
 	if opencenter, ok := configMap["opencenter"].(map[string]interface{}); ok {
 		if cluster, ok := opencenter["cluster"].(map[string]interface{}); ok {
-			// Check for legacy networking location.
+			// Check for unsupported networking location.
 			if networking, ok := cluster["networking"].(map[string]interface{}); ok {
 				if vrrpIP, exists := networking["vrrp_ip"]; exists && vrrpIP != nil {
 					result.AddError("config-structure",
@@ -84,15 +84,15 @@ func (v *ConfigStructureValidator) checkV1FieldLocations(result *validation.Vali
 				}
 			}
 
-			// Check for legacy kubernetes flavor fields.
+			// Check for unsupported kubernetes flavor fields.
 			if kubernetes, ok := cluster["kubernetes"].(map[string]interface{}); ok {
-				v1FlavorFields := []string{
+				unsupportedFlavorFields := []string{
 					"flavor_control_plane",
 					"flavor_worker",
 					"flavor_etcd",
 				}
 
-				for _, field := range v1FlavorFields {
+				for _, field := range unsupportedFlavorFields {
 					if value, exists := kubernetes[field]; exists && value != nil {
 						result.AddError("config-structure",
 							fmt.Sprintf("Unsupported field location: opencenter.cluster.kubernetes.%s", field),
@@ -103,7 +103,7 @@ func (v *ConfigStructureValidator) checkV1FieldLocations(result *validation.Vali
 			}
 		}
 
-		// Check for legacy storage location (top-level under opencenter).
+		// Check for unsupported storage location (top-level under opencenter).
 		if storage, ok := opencenter["storage"].(map[string]interface{}); ok {
 			// Check if storage has any non-empty values
 			if hasNonEmptyValues(storage) {
@@ -115,7 +115,7 @@ func (v *ConfigStructureValidator) checkV1FieldLocations(result *validation.Vali
 		}
 	}
 
-	// Check for top-level storage field (another legacy pattern).
+	// Check for top-level storage field (another unsupported pattern).
 	if storage, ok := configMap["storage"].(map[string]interface{}); ok {
 		if hasNonEmptyValues(storage) {
 			result.AddError("config-structure",

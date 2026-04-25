@@ -55,13 +55,13 @@ func TestConfigStructureValidator_ValidV2Structure(t *testing.T) {
 	assert.Empty(t, result.Errors)
 }
 
-func TestConfigStructureValidator_RejectsV1NetworkingLocation(t *testing.T) {
+func TestConfigStructureValidator_RejectsClusterNetworkingLocation(t *testing.T) {
 	validator := NewConfigStructureValidator()
 	ctx := context.Background()
 
-	// v1 structure with networking under cluster
+	// Invalid schema 2 structure with networking under cluster.
 	config := map[string]interface{}{
-		"schema_version": "1.0",
+		"schema_version": "2.0",
 		"opencenter": map[string]interface{}{
 			"cluster": map[string]interface{}{
 				"networking": map[string]interface{}{
@@ -81,13 +81,13 @@ func TestConfigStructureValidator_RejectsV1NetworkingLocation(t *testing.T) {
 	assert.Contains(t, result.Errors[0].Suggestions[1], "opencenter.infrastructure.networking.vrrp_ip")
 }
 
-func TestConfigStructureValidator_RejectsV1KubernetesFlavorFields(t *testing.T) {
+func TestConfigStructureValidator_RejectsKubernetesFlavorFields(t *testing.T) {
 	validator := NewConfigStructureValidator()
 	ctx := context.Background()
 
-	// v1 structure with flavor fields under kubernetes
+	// Invalid schema 2 structure with flavor fields under kubernetes.
 	config := map[string]interface{}{
-		"schema_version": "1.0",
+		"schema_version": "2.0",
 		"opencenter": map[string]interface{}{
 			"cluster": map[string]interface{}{
 				"kubernetes": map[string]interface{}{
@@ -115,13 +115,13 @@ func TestConfigStructureValidator_RejectsV1KubernetesFlavorFields(t *testing.T) 
 	assert.Contains(t, errorMessages[2], "flavor_etcd")
 }
 
-func TestConfigStructureValidator_RejectsV1StorageLocation(t *testing.T) {
+func TestConfigStructureValidator_RejectsOpenCenterStorageLocation(t *testing.T) {
 	validator := NewConfigStructureValidator()
 	ctx := context.Background()
 
-	// v1 structure with storage under opencenter (not infrastructure)
+	// Invalid schema 2 structure with storage under opencenter (not infrastructure).
 	config := map[string]interface{}{
-		"schema_version": "1.0",
+		"schema_version": "2.0",
 		"opencenter": map[string]interface{}{
 			"storage": map[string]interface{}{
 				"type": "ceph",
@@ -144,9 +144,9 @@ func TestConfigStructureValidator_RejectsTopLevelStorageLocation(t *testing.T) {
 	validator := NewConfigStructureValidator()
 	ctx := context.Background()
 
-	// v1 structure with top-level storage
+	// Invalid schema 2 structure with top-level storage.
 	config := map[string]interface{}{
-		"schema_version": "1.0",
+		"schema_version": "2.0",
 		"storage": map[string]interface{}{
 			"type": "ceph",
 			"size": "100Gi",
@@ -163,11 +163,11 @@ func TestConfigStructureValidator_RejectsTopLevelStorageLocation(t *testing.T) {
 	assert.Contains(t, result.Errors[0].Suggestions[1], "opencenter.infrastructure.storage")
 }
 
-func TestConfigStructureValidator_IgnoresEmptyV1Fields(t *testing.T) {
+func TestConfigStructureValidator_IgnoresEmptyUnsupportedFields(t *testing.T) {
 	validator := NewConfigStructureValidator()
 	ctx := context.Background()
 
-	// v1 structure with empty storage (should not trigger error)
+	// Invalid schema 2 structure with empty unsupported fields (should not trigger error).
 	config := map[string]interface{}{
 		"schema_version": "2.0",
 		"opencenter": map[string]interface{}{
@@ -181,13 +181,13 @@ func TestConfigStructureValidator_IgnoresEmptyV1Fields(t *testing.T) {
 	assert.Empty(t, result.Errors)
 }
 
-func TestConfigStructureValidator_MultipleV1Violations(t *testing.T) {
+func TestConfigStructureValidator_MultipleUnsupportedFieldLocations(t *testing.T) {
 	validator := NewConfigStructureValidator()
 	ctx := context.Background()
 
-	// v1 structure with multiple violations
+	// Invalid schema 2 structure with multiple unsupported field locations.
 	config := map[string]interface{}{
-		"schema_version": "1.0",
+		"schema_version": "2.0",
 		"opencenter": map[string]interface{}{
 			"cluster": map[string]interface{}{
 				"networking": map[string]interface{}{
