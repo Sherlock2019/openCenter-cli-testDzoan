@@ -21,10 +21,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newClusterCurrentCmd() *cobra.Command {
+func newClusterActiveCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "current",
-		Short: "Show the current active cluster",
+		Use:   "active",
+		Short: "Show the active cluster",
 		Long: `Show the current active cluster with its selection source.
 
 The cluster selection follows this precedence:
@@ -34,10 +34,10 @@ The cluster selection follows this precedence:
 
 Use --quiet to output only the cluster name without source information.`,
 		Example: `  # Show current cluster with source
-  opencenter cluster current
+  opencenter cluster active
 
   # Show only cluster name (for scripting)
-  opencenter cluster current --quiet`,
+  opencenter cluster active --quiet`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name, err := getActiveCluster()
 			if err != nil {

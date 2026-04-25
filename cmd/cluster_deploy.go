@@ -29,40 +29,32 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newClusterBootstrapCmd() *cobra.Command {
+func newClusterDeployCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "bootstrap [name]",
-		Short: "Run provider-specific bootstrap actions for a cluster",
-		Long: `Run provider-specific bootstrap actions for a cluster.
+		Use:   "deploy [name]",
+		Short: "Deploy a cluster from its openCenter configuration",
+		Long: `Deploy a cluster from its openCenter configuration.
 
-This command provisions infrastructure and deploys the Kubernetes cluster
-based on the cluster configuration. The bootstrap process varies by provider:
-
-- OpenStack/VMware: Runs provider-specific infrastructure bootstrap
-- Kind: Creates a local Kubernetes cluster using kind
-
-Only v2 configurations (schema_version: "2.0") are supported.
-Configurations with any other schema version are invalid.
-
-The bootstrap process is resumable - if a step fails, you can fix the issue
-and re-run bootstrap to continue from where it left off.`,
+This command provisions infrastructure and deploys Kubernetes based on the
+cluster configuration. The process is resumable; if a step fails, fix the issue
+and re-run deploy to continue from the saved state.`,
 		Args: cobra.MaximumNArgs(1),
-		RunE: runClusterBootstrap,
+		RunE: runClusterDeploy,
 	}
 
-	cmd.Flags().Bool("dry-run", false, "show planned actions without executing")
-	cmd.Flags().String("kubeconfig", "", "path to kubeconfig used by bootstrap actions (defaults to the cluster-owned kubeconfig path)")
+	cmd.Flags().String("kubeconfig", "", "path to kubeconfig used by deploy actions (defaults to the cluster-owned kubeconfig path)")
 	cmd.Flags().String("log", "", "log file path (defaults to <state_dir>/logs/bootstrap/<org>/<name>/bootstrap-YYYYMMDDTHHMMSSZ.log)")
 	cmd.Flags().String("container-runtime", "", "container runtime for kind clusters (docker or podman)")
-	cmd.Flags().Bool("restart", false, "rerun all bootstrap steps and ignore saved state")
-	cmd.Flags().String("step", "", "run a single bootstrap step by ID")
-	cmd.Flags().String("from-step", "", "restart bootstrap from the specified step ID")
-	cmd.Flags().Bool("confirm-commit", false, "prompt for confirmation before auto-committing uncommitted changes (default: auto-commit without prompting)")
+	cmd.Flags().Bool("restart", false, "rerun all deploy steps and ignore saved state")
+	cmd.Flags().String("step", "", "run a single deploy step by ID")
+	cmd.Flags().String("from-step", "", "restart deploy from the specified step ID")
+	cmd.Flags().Bool("confirm-commit", false, "prompt for confirmation before auto-committing uncommitted changes")
+	cmd.Flags().Bool("break-lock", false, "force removal of an existing operation lock before deploying")
 
 	return cmd
 }
 
-func runClusterBootstrap(cmd *cobra.Command, args []string) error {
+func runClusterDeploy(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	// Apply log-level flag (already parsed by PersistentPreRunE, but ensure
@@ -92,10 +84,10 @@ func runClusterBootstrap(cmd *cobra.Command, args []string) error {
 		organization = cfg.OpenCenter.Meta.Organization
 	}
 
-	// Acquire lock for bootstrap operation (with prompt if lock exists)
-	lockResult, err := AcquireLockWithPrompt(ctx, cmd, name, "bootstrap", 1*time.Hour, map[string]string{
-		"operation": "bootstrap",
-		"command":   "cluster bootstrap",
+	// Acquire lock for deploy operation (with prompt if lock exists)
+	lockResult, err := AcquireLockWithPrompt(ctx, cmd, name, "deploy", 1*time.Hour, map[string]string{
+		"operation": "deploy",
+		"command":   "cluster deploy",
 	})
 	if err != nil {
 		return err
@@ -140,7 +132,7 @@ func runClusterBootstrap(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Execute bootstrap
+	// Execute deploy
 	result, err := bootstrapService.Bootstrap(ctx, opts)
 	if err != nil {
 		if !opts.DryRun {
@@ -160,7 +152,7 @@ func runClusterBootstrap(cmd *cobra.Command, args []string) error {
 	}
 
 	// Display results
-	fmt.Fprintf(cmd.OutOrStdout(), "Bootstrap complete in %v\n", result.Duration.Round(time.Second))
+	fmt.Fprintf(cmd.OutOrStdout(), "Deploy complete in %v\n", result.Duration.Round(time.Second))
 	if result.Endpoint != "" {
 		fmt.Fprintf(cmd.OutOrStdout(), "Cluster endpoint: %s\n", result.Endpoint)
 	}
@@ -208,7 +200,7 @@ func parseBootstrapOptions(cmd *cobra.Command, args []string, clusterName string
 	}
 
 	// Parse flags
-	opts.DryRun, _ = cmd.Flags().GetBool("dry-run")
+	opts.DryRun = getGlobalOptions(cmd).DryRun
 	opts.KubeconfigPath, _ = cmd.Flags().GetString("kubeconfig")
 	opts.LogPath, _ = cmd.Flags().GetString("log")
 	opts.ContainerRuntime, _ = cmd.Flags().GetString("container-runtime")

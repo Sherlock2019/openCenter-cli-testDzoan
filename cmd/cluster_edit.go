@@ -91,7 +91,7 @@ Examples:
 					return fmt.Errorf("failed to get active cluster: %w", err)
 				}
 				if active == "" {
-					return fmt.Errorf("no cluster selected. Use 'opencenter cluster select' to select a cluster or provide a cluster name")
+					return fmt.Errorf("no cluster selected. Use 'opencenter cluster use' to select a cluster or provide a cluster name")
 				}
 				clusterName = active
 

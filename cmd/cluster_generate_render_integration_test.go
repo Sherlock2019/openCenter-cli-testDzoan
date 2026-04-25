@@ -38,7 +38,7 @@ func TestRenderClusterTemplatesIntegration(t *testing.T) {
 	cfg.OpenCenter.GitOps.Repository.LocalDir = tempDir
 
 	// Create a mock cobra command for output
-	cmd := newClusterRenderCmd()
+	cmd := newClusterGenerateCmd()
 	var stdout, stderr bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)

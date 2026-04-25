@@ -516,7 +516,7 @@ func (f *DefaultErrorFormatter) initializeErrorRegistry() {
 		Description: "An error occurred while communicating with the OpenStack API.",
 		Fix:         "Verify OpenStack credentials and connectivity:",
 		FixCommand:  "openstack server list",
-		Hint:        "Run preflight checks: opencenter cluster preflight {cluster}",
+		Hint:        "Run preflight checks: opencenter cluster doctor {cluster}",
 		DocsURL:     "https://docs.opencenter.cloud/errors/E5001",
 		Severity:    SeverityCritical,
 	}
@@ -548,7 +548,7 @@ func (f *DefaultErrorFormatter) initializeErrorRegistry() {
 		Title:       "Drift detection failed",
 		Description: "Unable to detect configuration drift for the cluster.",
 		Fix:         "Verify cluster is accessible:",
-		FixCommand:  "opencenter cluster info {cluster}",
+		FixCommand:  "opencenter cluster describe {cluster}",
 		Hint:        "Check cloud provider connectivity",
 		DocsURL:     "https://docs.opencenter.cloud/errors/E6001",
 		Severity:    SeverityWarning,

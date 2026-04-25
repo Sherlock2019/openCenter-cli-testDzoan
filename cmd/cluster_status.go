@@ -47,7 +47,7 @@ This command displays:
 - Key file paths (with --paths flag)
 
 If no cluster is requested and no cluster is active, it will show available clusters
-and suggest using 'opencenter cluster select' to set one.`,
+and suggest using 'opencenter cluster use' to set one.`,
 		Example: `  # Show active cluster status
   opencenter cluster status
 
@@ -94,7 +94,7 @@ and suggest using 'opencenter cluster select' to set one.`,
 					for _, cluster := range clusters {
 						fmt.Fprintf(cmd.OutOrStdout(), "  - %s\n", cluster)
 					}
-					fmt.Fprintf(cmd.OutOrStdout(), "\nUse 'opencenter cluster select <name>' to set an active cluster\n")
+					fmt.Fprintf(cmd.OutOrStdout(), "\nUse 'opencenter cluster use <name>' to set an active cluster\n")
 				} else {
 					fmt.Fprintf(cmd.OutOrStdout(), "No clusters found. Use 'opencenter cluster init <name>' to create one.\n")
 				}
@@ -238,36 +238,36 @@ func nextStepsForCluster(clusterName, stage, status string) []string {
 			}
 		}
 		return []string{
-			fmt.Sprintf("Run 'opencenter cluster setup %s' to generate the GitOps repository", clusterName),
+			fmt.Sprintf("Run 'opencenter cluster generate %s' to generate the GitOps repository", clusterName),
 			fmt.Sprintf("Run 'opencenter cluster validate %s' to validate configuration", clusterName),
 		}
 	case stage == config.StageSetup:
 		if status == config.StatusRunning {
 			return []string{
-				fmt.Sprintf("Wait for 'opencenter cluster setup %s' to finish", clusterName),
+				fmt.Sprintf("Wait for 'opencenter cluster generate %s' to finish", clusterName),
 			}
 		}
 		if status == config.StatusFailed {
 			return []string{
-				fmt.Sprintf("Fix the setup error and rerun 'opencenter cluster setup %s'", clusterName),
+				fmt.Sprintf("Fix the generate error and rerun 'opencenter cluster generate %s'", clusterName),
 			}
 		}
 		return []string{
-			fmt.Sprintf("Run 'opencenter cluster bootstrap %s' to provision the cluster", clusterName),
+			fmt.Sprintf("Run 'opencenter cluster deploy %s' to provision the cluster", clusterName),
 		}
 	case stage == config.StageBootstrap:
 		if status == config.StatusRunning {
 			return []string{
-				fmt.Sprintf("Wait for 'opencenter cluster bootstrap %s' to finish", clusterName),
+				fmt.Sprintf("Wait for 'opencenter cluster deploy %s' to finish", clusterName),
 			}
 		}
 		if status == config.StatusFailed {
 			return []string{
-				fmt.Sprintf("Fix the bootstrap error and rerun 'opencenter cluster bootstrap %s'", clusterName),
+				fmt.Sprintf("Fix the deploy error and rerun 'opencenter cluster deploy %s'", clusterName),
 			}
 		}
 		return []string{
-			fmt.Sprintf("Run 'eval $(opencenter cluster select %s --export-only)' or set KUBECONFIG to the cluster-owned kubeconfig", clusterName),
+			fmt.Sprintf("Run 'eval $(opencenter cluster env %s)' or set KUBECONFIG to the cluster-owned kubeconfig", clusterName),
 			"Use 'kubectl' to interact with the cluster",
 		}
 	default:

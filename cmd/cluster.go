@@ -42,9 +42,9 @@ and integrates with GitOps workflows.
 Common Workflow:
   1. Initialize a new cluster configuration
   2. Validate the configuration
-  3. Run preflight checks
-  4. Set up infrastructure and GitOps repository
-  5. Bootstrap the cluster with Flux
+  3. Run doctor checks
+  4. Generate infrastructure and GitOps repository assets
+  5. Deploy the cluster
 
 Configuration files are stored in organization-based directories:
   ~/.config/opencenter/clusters/<organization>/<cluster>/`,
@@ -63,65 +63,46 @@ Configuration files are stored in organization-based directories:
   # List all clusters
   opencenter cluster list
 
-  # Select active cluster (session-scoped)
-  opencenter cluster select my-cluster
+  # Set active cluster (session-scoped)
+  opencenter cluster use my-cluster
 
-  # Select cluster persistently (all terminals)
-  opencenter cluster select my-cluster --persistent
+  # Set cluster persistently (all terminals)
+  opencenter cluster use my-cluster --persistent
 
   # Export cluster environment
   eval "$(opencenter cluster env)"
 
-  # Select and activate cluster environment
-  eval "$(opencenter cluster select my-cluster --activate --export-only)"
-
-  # Deactivate cluster environment
-  eval "$(opencenter cluster select --clear --export-only)"
-
   # Clear persistent cluster selection
-  opencenter cluster select --clear-persistent
+  opencenter cluster use --clear-persistent
 
-  # Show current cluster
-  opencenter cluster current`,
+  # Show active cluster
+  opencenter cluster active`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},
 	}
 	// Add subcommands
 	cmd.AddCommand(newClusterListCmd())
-	cmd.AddCommand(newClusterSelectCmd())
-	cmd.AddCommand(newClusterCurrentCmd())
+	cmd.AddCommand(newClusterUseCmd())
+	cmd.AddCommand(newClusterActiveCmd())
 	cmd.AddCommand(newClusterEnvCmd())
 	cmd.AddCommand(newClusterStatusCmd())
-	cmd.AddCommand(newClusterInfoCmd())
+	cmd.AddCommand(newClusterDescribeCmd())
 	cmd.AddCommand(newClusterInitCmd())
 	cmd.AddCommand(newClusterConfigureCmd())
 	cmd.AddCommand(newClusterEditCmd())
 	cmd.AddCommand(newClusterValidateCmd())
-	cmd.AddCommand(newClusterPreflightCmd())
-
-	cmd.AddCommand(newClusterRenderCmd())
-	cmd.AddCommand(newClusterBootstrapCmd())
+	cmd.AddCommand(newClusterDoctorCmd())
+	cmd.AddCommand(newClusterGenerateCmd())
+	cmd.AddCommand(newClusterDeployCmd())
 	cmd.AddCommand(newClusterSchemaCmd())
 	cmd.AddCommand(newClusterTemplateCmd())
 	cmd.AddCommand(newClusterDestroyCmd())
-	cmd.AddCommand(newClusterUpdateCmd())
 	cmd.AddCommand(newClusterServiceCmd())
-	cmd.AddCommand(newClusterCredentialsCmd())
 	cmd.AddCommand(newClusterDriftCmd())
 	cmd.AddCommand(newClusterBackupCmd())
 	cmd.AddCommand(newClusterLockCmd())
 	cmd.AddCommand(newClusterUnlockCmd())
-	cmd.AddCommand(newClusterConfigCmd())
-	cmd.AddCommand(newClusterValidateManifestsCmd())
-	cmd.AddCommand(newClusterRotateKeysCmd())
-	cmd.AddCommand(newClusterCheckKeysCmd())
-	cmd.AddCommand(newClusterAuditLogCmd())
-	cmd.AddCommand(newClusterRevokeKeyCmd())
-	cmd.AddCommand(newClusterInstallHooksCmd())
-	cmd.AddCommand(newClusterKeysCmd())
-	cmd.AddCommand(newClusterSetupCmd())
-	cmd.AddCommand(newClusterSyncStatusCmd())
 	cmd.AddCommand(newClusterImportCmd())
 	return cmd
 }
@@ -175,7 +156,7 @@ func resolveClusterName(args []string, requireActive bool) (string, error) {
 
 	if activeName == "" {
 		if requireActive {
-			return "", fmt.Errorf("no active cluster set. Use 'opencenter cluster select <cluster>' or provide cluster name as argument")
+			return "", fmt.Errorf("no active cluster set. Use 'opencenter cluster use <cluster>' or provide cluster name as argument")
 		}
 		return "", nil
 	}
@@ -232,7 +213,7 @@ func resolveClusterNameFromFlag(flagValue string, requireActive bool) (string, e
 
 	if activeName == "" {
 		if requireActive {
-			return "", fmt.Errorf("no active cluster set. Use 'opencenter cluster select <cluster>' or provide --cluster flag")
+			return "", fmt.Errorf("no active cluster set. Use 'opencenter cluster use <cluster>' or provide --cluster flag")
 		}
 		return "", nil
 	}
@@ -339,7 +320,7 @@ func AcquireLockWithPrompt(ctx context.Context, cmd *cobra.Command, resource str
 	// Now acquire the lock
 	lock, err := lockMgr.AcquireWithMetadata(ctx, resource, ttl, metadata)
 	if err != nil {
-		return nil, fmt.Errorf("failed to acquire lock for cluster %q: %w\nAnother operation may be in progress. Wait for it to complete or use 'opencenter cluster info %s' to check lock status", resource, err, resource)
+		return nil, fmt.Errorf("failed to acquire lock for cluster %q: %w\nAnother operation may be in progress. Wait for it to complete or use 'opencenter cluster describe %s' to check lock status", resource, err, resource)
 	}
 
 	result.Lock = lock

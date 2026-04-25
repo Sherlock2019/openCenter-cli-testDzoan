@@ -71,7 +71,7 @@ func newSecretsLoginCmd() *cobra.Command {
 					return fmt.Errorf("no cluster specified and failed to get active cluster: %w", err)
 				}
 				if activeCluster == "" {
-					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster select' to set an active cluster")
+					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster use' to set an active cluster")
 				}
 				clusterName = activeCluster
 			}
@@ -138,7 +138,7 @@ func newSecretsListCmd() *cobra.Command {
 					return fmt.Errorf("no cluster specified and failed to get active cluster: %w", err)
 				}
 				if activeCluster == "" {
-					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster select' to set an active cluster")
+					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster use' to set an active cluster")
 				}
 				clusterName = activeCluster
 			}
@@ -221,7 +221,7 @@ func newSecretsDescribeCmd() *cobra.Command {
 					return fmt.Errorf("no cluster specified and failed to get active cluster: %w", err)
 				}
 				if activeCluster == "" {
-					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster select' to set an active cluster")
+					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster use' to set an active cluster")
 				}
 				clusterName = activeCluster
 			}
@@ -305,7 +305,7 @@ func newSecretsGetCmd() *cobra.Command {
 					return fmt.Errorf("no cluster specified and failed to get active cluster: %w", err)
 				}
 				if activeCluster == "" {
-					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster select' to set an active cluster")
+					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster use' to set an active cluster")
 				}
 				clusterName = activeCluster
 			}
@@ -417,7 +417,7 @@ func newSecretsSetCmd() *cobra.Command {
 					return fmt.Errorf("no cluster specified and failed to get active cluster: %w", err)
 				}
 				if activeCluster == "" {
-					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster select' to set an active cluster")
+					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster use' to set an active cluster")
 				}
 				clusterName = activeCluster
 			}
@@ -515,7 +515,7 @@ func newSecretsDeleteCmd() *cobra.Command {
 					return fmt.Errorf("no cluster specified and failed to get active cluster: %w", err)
 				}
 				if activeCluster == "" {
-					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster select' to set an active cluster")
+					return fmt.Errorf("no cluster specified and no active cluster set. Use --cluster flag or 'opencenter cluster use' to set an active cluster")
 				}
 				clusterName = activeCluster
 			}

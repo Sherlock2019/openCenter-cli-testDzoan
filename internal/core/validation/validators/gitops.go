@@ -125,7 +125,7 @@ func (v *GitOpsValidator) Validate(ctx context.Context, value interface{}) (*val
 	} else if os.IsNotExist(err) {
 		result.AddWarning("gitops.git_dir",
 			fmt.Sprintf("GitOps directory does not exist: %s", gitDir),
-			"Run 'opencenter cluster setup' to create the GitOps repository structure",
+			"Run 'opencenter cluster generate' to create the GitOps repository structure",
 			"Or create the directory manually and populate it with required files")
 	} else {
 		result.AddError("gitops.git_dir",
@@ -160,7 +160,7 @@ func (v *GitOpsValidator) validateRepositoryStructure(result *validation.Validat
 			result.AddError("gitops.structure",
 				fmt.Sprintf("required directory missing: %s", dir),
 				fmt.Sprintf("Create the directory: mkdir -p %s", dirPath),
-				"Run 'opencenter cluster setup' to generate the complete structure")
+				"Run 'opencenter cluster generate' to generate the complete structure")
 		}
 	}
 
@@ -171,7 +171,7 @@ func (v *GitOpsValidator) validateRepositoryStructure(result *validation.Validat
 			result.AddError("gitops.structure",
 				fmt.Sprintf("required file missing: %s", file),
 				fmt.Sprintf("Create the file: touch %s", filePath),
-				"Run 'opencenter cluster setup' to generate required files")
+				"Run 'opencenter cluster generate' to generate required files")
 		} else if err == nil {
 			// File exists, validate it's a valid kustomization file
 			v.validateKustomizationFile(result, filePath)

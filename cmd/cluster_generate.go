@@ -22,48 +22,47 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// newClusterSetupCmd creates the command for setting up a cluster's GitOps repository.
-func newClusterSetupCmd() *cobra.Command {
+// newClusterGenerateCmd creates the command for generating a cluster's GitOps repository.
+func newClusterGenerateCmd() *cobra.Command {
+	var renderOnly bool
+
 	cmd := &cobra.Command{
-		Use:   "setup [name]",
-		Short: "Generate the customer GitOps repository structure",
-		Long: `Generate the customer GitOps repository structure for a cluster.
+		Use:   "generate [name]",
+		Short: "Generate the GitOps repository and rendered manifests",
+		Long: `Generate the customer GitOps repository and rendered manifests for a cluster.
 
-This command invokes the SetupService to generate infrastructure templates,
-FluxCD manifests, and application overlays based on the cluster configuration.
-The generated repository follows the openCenter GitOps pattern with
-infrastructure/, applications/, and secrets/ directories.
+This command creates or updates the repository structure, infrastructure templates,
+Flux manifests, and application overlays based on the cluster configuration.
 
-Only v2 configurations (schema_version: "2.0") are supported.
-Configurations with any other schema version are invalid.
+Use --render-only to render templates without running the full repository setup flow.`,
+		Example: `  # Generate assets for the active cluster
+  opencenter cluster generate
 
-If no cluster name is provided, the currently active cluster is used.`,
-		Example: `  # Set up the active cluster
-  opencenter cluster setup
-
-  # Set up a specific cluster
-  opencenter cluster setup my-cluster
+  # Generate assets for a specific cluster
+  opencenter cluster generate my-cluster
 
   # Preview what would be generated
-  opencenter cluster setup my-cluster --dry-run
+  opencenter cluster generate my-cluster --dry-run
 
-  # Force overwrite existing GitOps repository
-  opencenter cluster setup my-cluster --force
-
-  # Skip configuration validation
-  opencenter cluster setup my-cluster --skip-validation`,
+  # Render templates only
+  opencenter cluster generate my-cluster --render-only`,
 		Args: cobra.MaximumNArgs(1),
-		RunE: runClusterSetup,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if renderOnly {
+				return runClusterGenerateRenderOnly(cmd, args)
+			}
+			return runClusterGenerate(cmd, args)
+		},
 	}
 
 	cmd.Flags().Bool("force", false, "overwrite existing GitOps repository")
-	cmd.Flags().Bool("dry-run", false, "show what would be generated without writing files")
-	cmd.Flags().Bool("skip-validation", false, "skip configuration validation before setup")
+	cmd.Flags().Bool("skip-validation", false, "skip configuration validation before generation")
+	cmd.Flags().BoolVar(&renderOnly, "render-only", false, "render templates without running repository setup")
 
 	return cmd
 }
 
-func runClusterSetup(cmd *cobra.Command, args []string) error {
+func runClusterGenerate(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 
 	// Resolve cluster name from args or active cluster
@@ -94,7 +93,7 @@ func runClusterSetup(cmd *cobra.Command, args []string) error {
 
 	// Parse flags into SetupOptions
 	force, _ := cmd.Flags().GetBool("force")
-	dryRun, _ := cmd.Flags().GetBool("dry-run")
+	dryRun := getGlobalOptions(cmd).DryRun
 	skipValidation, _ := cmd.Flags().GetBool("skip-validation")
 
 	opts := cluster.SetupOptions{
@@ -124,9 +123,9 @@ func runClusterSetup(cmd *cobra.Command, args []string) error {
 
 	// Print result summary
 	if dryRun {
-		fmt.Fprintf(cmd.OutOrStdout(), "Dry run complete\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "Generate dry-run complete\n")
 	} else {
-		fmt.Fprintf(cmd.OutOrStdout(), "Setup complete\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "Generate complete\n")
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "GitOps path:     %s\n", result.GitOpsPath)
 	fmt.Fprintf(cmd.OutOrStdout(), "Manifests created: %d\n", result.ManifestsCreated)

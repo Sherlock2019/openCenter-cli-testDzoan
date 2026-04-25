@@ -41,7 +41,7 @@ func newKindBootstrapProvider(runner lifecycleCommandRunner) lifecycleBootstrapP
 //
 // The sequence mirrors the production OpenStack workflow: provision
 // infrastructure, attach the Git remote, push the GitOps tree, and
-// bootstrap FluxCD — all within a single `opencenter cluster bootstrap`
+// bootstrap FluxCD — all within a single `opencenter cluster deploy`
 // invocation.
 func (p *kindBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *paths.ClusterPaths, opts *BootstrapOptions) ([]bootstrapStep, error) {
 	kindProvider := kindprovider.NewProvider()
@@ -66,7 +66,7 @@ func (p *kindBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *paths.C
 			Run: func(ctx context.Context) error {
 				if _, err := os.Stat(kindConfigPath); err != nil {
 					if os.IsNotExist(err) {
-						return fmt.Errorf("kind config not found at %s; run 'opencenter cluster setup %s' first", kindConfigPath, cfg.ClusterName())
+						return fmt.Errorf("kind config not found at %s; run 'opencenter cluster generate %s' first", kindConfigPath, cfg.ClusterName())
 					}
 					return fmt.Errorf("stat kind config: %w", err)
 				}

@@ -193,13 +193,14 @@ else
 fi
 
 # Check for active cluster
-if [[ -f "${HOME}/.config/opencenter/.active" ]]; then
-    ACTIVE_CLUSTER=$(cat "${HOME}/.config/opencenter/.active" 2>/dev/null || echo "")
-    if [[ -n "$ACTIVE_CLUSTER" ]]; then
-        print_success "Active cluster: $ACTIVE_CLUSTER"
-    fi
+ACTIVE_CLUSTER=""
+if command -v opencenter >/dev/null 2>&1; then
+    ACTIVE_CLUSTER=$(opencenter cluster active --quiet 2>/dev/null || echo "")
+fi
+if [[ -n "$ACTIVE_CLUSTER" ]]; then
+    print_success "Active cluster: $ACTIVE_CLUSTER"
 else
-    echo "  No active cluster set (use: opencenter cluster select)"
+    echo "  No active cluster set (use: opencenter cluster use)"
 fi
 
 echo ""

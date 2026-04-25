@@ -31,20 +31,20 @@ import (
 	"github.com/opencenter-cloud/opencenter-cli/internal/di"
 )
 
-// TestClusterBootstrapIntegration tests the cluster bootstrap command with DI container
+// TestClusterDeployIntegration tests the cluster deploy command with DI container
 // broken: full-suite run fails on generated GitOps source contracts (repo casing, ref strategy,
 // sync interval, and cert-manager kustomization indentation); see docs/test-results.md.
-func TestClusterBootstrapIntegration(t *testing.T) {
+func TestClusterDeployIntegration(t *testing.T) {
 	dir, stateDir, clusterDir := prepareKindBootstrapFixture(t, "kind-bootstrap-int")
 
-	cmd := newClusterBootstrapCmd()
+	cmd := newClusterDeployCmd()
 	var stdout, stderr bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
 	cmd.SetArgs([]string{"kind-bootstrap-int"})
 
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("bootstrap command failed: %v\nstderr: %s", err, stderr.String())
+		t.Fatalf("deploy command failed: %v\nstderr: %s", err, stderr.String())
 	}
 
 	kubeconfigPath := filepath.Join(clusterDir, "kubeconfig.yaml")
@@ -88,8 +88,8 @@ func TestClusterBootstrapIntegration(t *testing.T) {
 	}
 }
 
-// TestClusterBootstrapWithDIContainer tests that the DI container is properly set up
-func TestClusterBootstrapWithDIContainer(t *testing.T) {
+// TestClusterDeployWithDIContainer tests that the DI container is properly set up
+func TestClusterDeployWithDIContainer(t *testing.T) {
 	// Set up temporary config directory
 	dir := t.TempDir()
 	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
@@ -127,8 +127,8 @@ func TestClusterBootstrapWithDIContainer(t *testing.T) {
 	}
 }
 
-// TestClusterBootstrapServiceIntegration tests the BootstrapService directly
-func TestClusterBootstrapServiceIntegration(t *testing.T) {
+// TestClusterDeployServiceIntegration tests the BootstrapService directly
+func TestClusterDeployServiceIntegration(t *testing.T) {
 	// Set up temporary config directory
 	dir := t.TempDir()
 	os.Setenv("OPENCENTER_CONFIG_DIR", dir)
@@ -182,7 +182,7 @@ func TestClusterBootstrapServiceIntegration(t *testing.T) {
 
 	result, err := bootstrapService.Bootstrap(context.Background(), opts)
 	if err != nil {
-		t.Fatalf("bootstrap failed: %v", err)
+		t.Fatalf("deploy failed: %v", err)
 	}
 
 	// Verify result
@@ -202,8 +202,8 @@ func TestClusterBootstrapServiceIntegration(t *testing.T) {
 	}
 }
 
-// TestClusterBootstrapOptions tests the parseBootstrapOptions function
-func TestClusterBootstrapOptions(t *testing.T) {
+// TestClusterDeployOptions tests the parseBootstrapOptions function
+func TestClusterDeployOptions(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        []string
@@ -226,8 +226,8 @@ func TestClusterBootstrapOptions(t *testing.T) {
 			},
 		},
 		{
-			name:        "dry-run option",
-			args:        []string{"--dry-run"},
+			name:        "global dry-run option",
+			args:        []string{},
 			clusterName: "test-cluster",
 			expectError: false,
 			checkFunc: func(t *testing.T, opts cluster.BootstrapOptions) {
@@ -292,7 +292,12 @@ func TestClusterBootstrapOptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create command
-			cmd := newClusterBootstrapCmd()
+			cmd := newClusterDeployCmd()
+			globalOpts := GlobalOptions{Output: OutputText}
+			if tt.name == "global dry-run option" {
+				globalOpts.DryRun = true
+			}
+			cmd.SetContext(context.WithValue(context.Background(), globalOptionsContextKey{}, globalOpts))
 			cmd.SetArgs(tt.args)
 
 			// Parse flags
@@ -323,18 +328,18 @@ func TestClusterBootstrapOptions(t *testing.T) {
 	}
 }
 
-// TestClusterBootstrapWithExistingCluster tests bootstrap with an existing cluster
+// TestClusterDeployWithExistingCluster tests bootstrap with an existing cluster
 // broken: full-suite run fails on generated GitOps source contracts (repo casing, ref strategy,
 // sync interval, and cert-manager kustomization indentation); see docs/test-results.md.
-func TestClusterBootstrapWithExistingCluster(t *testing.T) {
+func TestClusterDeployWithExistingCluster(t *testing.T) {
 	_, stateDir, _ := prepareKindBootstrapFixture(t, "kind-existing-int")
 
-	firstRun := newClusterBootstrapCmd()
+	firstRun := newClusterDeployCmd()
 	firstRun.SetOut(&bytes.Buffer{})
 	firstRun.SetErr(&bytes.Buffer{})
 	firstRun.SetArgs([]string{"kind-existing-int"})
 	if err := firstRun.Execute(); err != nil {
-		t.Fatalf("first bootstrap failed: %v", err)
+		t.Fatalf("first deploy failed: %v", err)
 	}
 
 	if err := os.WriteFile(filepath.Join(stateDir, "kind.log"), nil, 0o644); err != nil {
@@ -342,13 +347,13 @@ func TestClusterBootstrapWithExistingCluster(t *testing.T) {
 	}
 	resetCommandStateForTests()
 
-	secondRun := newClusterBootstrapCmd()
+	secondRun := newClusterDeployCmd()
 	var stdout, stderr bytes.Buffer
 	secondRun.SetOut(&stdout)
 	secondRun.SetErr(&stderr)
 	secondRun.SetArgs([]string{"kind-existing-int", "--restart"})
 	if err := secondRun.Execute(); err != nil {
-		t.Fatalf("second bootstrap failed: %v\nstderr: %s", err, stderr.String())
+		t.Fatalf("second deploy failed: %v\nstderr: %s", err, stderr.String())
 	}
 
 	kindLog, err := os.ReadFile(filepath.Join(stateDir, "kind.log"))
@@ -391,22 +396,22 @@ func TestKindLifecycleSmoke(t *testing.T) {
 
 	resetCommandStateForTests()
 
-	setupCmd := newClusterSetupCmd()
+	setupCmd := newClusterGenerateCmd()
 	setupCmd.SetOut(&bytes.Buffer{})
 	setupCmd.SetErr(&bytes.Buffer{})
 	setupCmd.SetArgs([]string{clusterName})
 	if err := setupCmd.Execute(); err != nil {
-		t.Fatalf("cluster setup failed: %v", err)
+		t.Fatalf("cluster generate failed: %v", err)
 	}
 
 	resetCommandStateForTests()
 
-	bootstrapCmd := newClusterBootstrapCmd()
+	bootstrapCmd := newClusterDeployCmd()
 	bootstrapCmd.SetOut(&bytes.Buffer{})
 	bootstrapCmd.SetErr(&bytes.Buffer{})
 	bootstrapCmd.SetArgs([]string{clusterName})
 	if err := bootstrapCmd.Execute(); err != nil {
-		t.Fatalf("cluster bootstrap failed: %v", err)
+		t.Fatalf("cluster deploy failed: %v", err)
 	}
 
 	resetCommandStateForTests()
@@ -459,12 +464,12 @@ func prepareKindBootstrapFixture(t *testing.T, clusterName string) (string, stri
 
 	resetCommandStateForTests()
 
-	setupCmd := newClusterSetupCmd()
+	setupCmd := newClusterGenerateCmd()
 	setupCmd.SetOut(&bytes.Buffer{})
 	setupCmd.SetErr(&bytes.Buffer{})
 	setupCmd.SetArgs([]string{clusterName})
 	if err := setupCmd.Execute(); err != nil {
-		t.Fatalf("cluster setup failed: %v", err)
+		t.Fatalf("cluster generate failed: %v", err)
 	}
 
 	resetCommandStateForTests()

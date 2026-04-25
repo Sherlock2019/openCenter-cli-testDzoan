@@ -26,7 +26,7 @@ opencenter_current_cluster() {
     elif [[ -f "$OPENCENTER_SESSION_FILE" ]]; then
         cat "$OPENCENTER_SESSION_FILE" 2>/dev/null | tr -d '\n'
     else
-        opencenter cluster current --quiet 2>/dev/null || echo ""
+        opencenter cluster active --quiet 2>/dev/null || echo ""
     fi
 }
 
@@ -38,36 +38,21 @@ opencenter_current_cluster_short() {
     fi
 }
 
-# Wrapper for 'opencenter cluster select' that evaluates the output
+# Wrapper for 'opencenter cluster use' that evaluates the output
 opencenter() {
-    # Check if this is 'cluster select' with --export-only flag
-    local has_export_only=0
-    for arg in "$@"; do
-        if [[ "$arg" == "--export-only" ]]; then
-            has_export_only=1
-            break
-        fi
-    done
-    
-    # If --export-only is present, pass through without interception
-    if [[ $has_export_only -eq 1 ]]; then
-        command opencenter "$@"
-        return $?
-    fi
-    
-    if [[ "$1" == "cluster" && "$2" == "select" && -n "$OPENCENTER_SESSION_FILE" ]]; then
+    if [[ "$1" == "cluster" && "$2" == "use" && -n "$OPENCENTER_SESSION_FILE" ]]; then
         # Capture the output and evaluate it to set environment variable
         local output
         output=$(command opencenter "$@" 2>&1)
         local exit_code=$?
         
-        # Evaluate any export commands
+        # Evaluate shell environment commands
         if [[ $exit_code -eq 0 ]]; then
-            echo "$output" | grep -E '^export ' | while read -r line; do
+            echo "$output" | grep -E '^(export|unset) ' | while read -r line; do
                 eval "$line"
             done
-            # Print non-export lines to stderr
-            echo "$output" | grep -v '^export ' >&2
+            # Print non-shell lines to stderr
+            echo "$output" | grep -vE '^(export|unset) ' >&2
         else
             echo "$output" >&2
             return $exit_code

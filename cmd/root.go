@@ -137,7 +137,7 @@ Key Features:
   • Automatic GitOps repository scaffolding
   • SOPS integration for secrets management
   • Multi-cloud provider support (OpenStack, VMware, Kind, Baremetal)
-  • Comprehensive validation and preflight checks
+  • Comprehensive validation and doctor checks
   • Organization-based multi-tenancy support
 
 Documentation: https://docs.opencenter.cloud
@@ -154,8 +154,14 @@ Support: https://github.com/opencenter-cloud/opencenter-cli/issues`,
   # List all clusters
   opencenter cluster list
 
-  # Bootstrap a cluster with GitOps
-  opencenter cluster bootstrap my-cluster`,
+  # Generate GitOps assets
+  opencenter cluster generate my-cluster
+
+  # Deploy a cluster
+  opencenter cluster deploy my-cluster
+
+  # Show the active cluster
+  opencenter cluster active`,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return applyGlobalOptions(cmd, args)
 	},

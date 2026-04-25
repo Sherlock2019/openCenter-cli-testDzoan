@@ -43,7 +43,7 @@ func writeTestConfig(t *testing.T, dir, name, provider, gitDir string) {
 	}
 }
 
-func TestClusterBootstrapDryRunMake(t *testing.T) {
+func TestClusterDeployDryRunMake(t *testing.T) {
 	t.Setenv("CONTAINER_RUNTIME", "")
 
 	cfgDir := t.TempDir()
@@ -56,48 +56,50 @@ func TestClusterBootstrapDryRunMake(t *testing.T) {
 	writeTestConfig(t, cfgDir, "demo", "openstack", gitDir)
 	prepareCommandTestEnv(t, cfgDir)
 
-	cmd := newClusterBootstrapCmd()
+	cmd := newClusterDeployCmd()
+	cmd.SetContext(context.WithValue(context.Background(), globalOptionsContextKey{}, GlobalOptions{DryRun: true, Output: OutputText}))
 	out := &bytes.Buffer{}
 	errOut := &bytes.Buffer{}
 	cmd.SetOut(out)
 	cmd.SetErr(errOut)
-	cmd.SetArgs([]string{"demo", "--dry-run"})
+	cmd.SetArgs([]string{"demo"})
 
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("bootstrap command failed: %v", err)
+		t.Fatalf("deploy command failed: %v", err)
 	}
 
 	output := out.String()
-	if !strings.Contains(output, "Bootstrap complete in") {
+	if !strings.Contains(output, "Deploy complete in") {
 		t.Fatalf("expected completion message in output, got: %s", output)
 	}
 }
 
-func TestClusterBootstrapDryRunKind(t *testing.T) {
+func TestClusterDeployDryRunKind(t *testing.T) {
 	cfgDir := t.TempDir()
 	gitDir := filepath.Join(t.TempDir(), "repo")
 	writeTestConfig(t, cfgDir, "demo", "kind", gitDir)
 	prepareCommandTestEnv(t, cfgDir)
 	t.Setenv("CONTAINER_RUNTIME", "docker")
 
-	cmd := newClusterBootstrapCmd()
+	cmd := newClusterDeployCmd()
+	cmd.SetContext(context.WithValue(context.Background(), globalOptionsContextKey{}, GlobalOptions{DryRun: true, Output: OutputText}))
 	out := &bytes.Buffer{}
 	errOut := &bytes.Buffer{}
 	cmd.SetOut(out)
 	cmd.SetErr(errOut)
-	cmd.SetArgs([]string{"demo", "--dry-run"})
+	cmd.SetArgs([]string{"demo"})
 
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("bootstrap command failed: %v", err)
+		t.Fatalf("deploy command failed: %v", err)
 	}
 
 	output := out.String()
-	if !strings.Contains(output, "Bootstrap complete in") {
+	if !strings.Contains(output, "Deploy complete in") {
 		t.Fatalf("expected completion message in output, got: %s", output)
 	}
 }
 
-func TestClusterBootstrapFailurePrintsLogAndResumeState(t *testing.T) {
+func TestClusterDeployFailurePrintsLogAndResumeState(t *testing.T) {
 	cfgDir := t.TempDir()
 	gitDir := filepath.Join(t.TempDir(), "repo")
 	clusterDir := filepath.Join(gitDir, "infrastructure", "clusters", "demo")
@@ -108,7 +110,7 @@ func TestClusterBootstrapFailurePrintsLogAndResumeState(t *testing.T) {
 	writeTestConfig(t, cfgDir, "demo", "openstack", gitDir)
 	prepareCommandTestEnv(t, cfgDir)
 
-	cmd := newClusterBootstrapCmd()
+	cmd := newClusterDeployCmd()
 	out := &bytes.Buffer{}
 	errOut := &bytes.Buffer{}
 	cmd.SetOut(out)
@@ -117,10 +119,10 @@ func TestClusterBootstrapFailurePrintsLogAndResumeState(t *testing.T) {
 
 	err := cmd.Execute()
 	if err == nil {
-		t.Fatal("expected bootstrap command to fail")
+		t.Fatal("expected deploy command to fail")
 	}
 	if !strings.Contains(err.Error(), "openstack credentials are incomplete") {
-		t.Fatalf("unexpected bootstrap error: %v", err)
+		t.Fatalf("unexpected deploy error: %v", err)
 	}
 
 	stateRoot := filepath.Join(cfgDir, ".local", "state", "opencenter")

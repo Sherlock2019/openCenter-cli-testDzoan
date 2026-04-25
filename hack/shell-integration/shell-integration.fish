@@ -2,25 +2,20 @@
 # Save this as ~/.config/fish/conf.d/opencenter.fish or source it in your config.fish
 
 set -g OPENCENTER_CACHE_FILE "$HOME/.cache/openCenter/active_cluster"
-set -g OPENCENTER_ACTIVE_FILE "$HOME/.config/openCenter/.active"
 
 # Ensure cache directory exists
 mkdir -p (dirname $OPENCENTER_CACHE_FILE)
 
 # Function to get active cluster (cached)
 function opencenter_active
-    # Check if active file exists and is newer than cache
-    if test -f $OPENCENTER_ACTIVE_FILE
-        if not test -f $OPENCENTER_CACHE_FILE; or test $OPENCENTER_ACTIVE_FILE -nt $OPENCENTER_CACHE_FILE
-            # Update cache
-            cat $OPENCENTER_ACTIVE_FILE 2>/dev/null > $OPENCENTER_CACHE_FILE
-        end
-        cat $OPENCENTER_CACHE_FILE 2>/dev/null | tr -d '\n'
-    else
-        # No active cluster, clear cache
-        rm -f $OPENCENTER_CACHE_FILE 2>/dev/null
-        return 1
+    set -l cluster (opencenter cluster active --quiet 2>/dev/null | tr -d '\n')
+    if test $status -eq 0; and test -n "$cluster"
+        printf "%s" "$cluster" > $OPENCENTER_CACHE_FILE
+        printf "%s" "$cluster"
+        return 0
     end
+    rm -f $OPENCENTER_CACHE_FILE 2>/dev/null
+    return 1
 end
 
 # Function to get active cluster for prompt (with formatting)
@@ -42,7 +37,7 @@ end
 # Convenient aliases
 alias oc-active='opencenter_active'
 alias oc-status='openCenter cluster status'
-alias oc-select='openCenter cluster select'
+alias oc-select='opencenter cluster use'
 alias oc-list='openCenter cluster list'
 
 # Environment variable for current active cluster

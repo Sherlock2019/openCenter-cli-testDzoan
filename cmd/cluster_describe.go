@@ -31,11 +31,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newClusterInfoCmd() *cobra.Command {
+func newClusterDescribeCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "info [name]",
-		Short: "Show configuration for a cluster",
-		Long: `Show configuration for a cluster.
+		Use:   "describe [name]",
+		Short: "Describe cluster configuration, paths, locks, and state",
+		Long: `Describe cluster configuration, paths, locks, and state.
 
 The cluster name can be specified in two formats:
   - cluster-name (uses organization from config)
@@ -57,13 +57,6 @@ The cluster name can be specified in two formats:
 			cfg, clusterName, organization, err := loadConfigWithIdentifier(ctx, identifier)
 			if err != nil {
 				return err
-			}
-
-			// Handle --export-only flag
-			exportOnly, _ := cmd.Flags().GetBool("export-only")
-			if exportOnly {
-				shellOverride, _ := cmd.Flags().GetString("shell")
-				return handleExportOnly(cmd, clusterName, shellOverride)
 			}
 
 			// Handle --validate flag
@@ -103,8 +96,7 @@ The cluster name can be specified in two formats:
 			}
 
 			// Output format
-			asJSON, _ := cmd.Flags().GetBool("json")
-			if asJSON {
+			if getGlobalOptions(cmd).Output == OutputJSON {
 				// Print full config in JSON format including cluster_name
 				output := map[string]any{
 					"config_path":  configPath,
@@ -257,26 +249,7 @@ The cluster name can be specified in two formats:
 		},
 	}
 	cmd.Flags().Bool("validate", false, "validate cluster configuration invariants")
-	cmd.Flags().Bool("json", false, "output JSON instead of YAML")
-	cmd.Flags().Bool("export-only", false, "only output export commands for shell evaluation")
-	cmd.Flags().String("shell", "", "override shell detection (bash, zsh, fish, powershell)")
 	return cmd
-}
-
-// handleExportOnly handles the --export-only flag for cluster info command.
-func handleExportOnly(cmd *cobra.Command, clusterName string, shellOverride string) error {
-	// Generate cluster select output to get export commands
-	output, err := generateClusterSelectOutput(clusterName, shellOverride)
-	if err != nil {
-		return err
-	}
-
-	// Only output export commands
-	for _, command := range output.ExportCommands {
-		fmt.Fprintln(cmd.OutOrStdout(), command)
-	}
-
-	return nil
 }
 
 // printEnabledServices prints the list of enabled services from the configuration

@@ -29,8 +29,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// TestClusterSetupIntegration tests the full cluster setup workflow
-func TestClusterSetupIntegration(t *testing.T) {
+// TestClusterGenerateIntegration tests the full cluster generate workflow
+func TestClusterGenerateIntegration(t *testing.T) {
 	// Set up temporary config directory
 	dir := t.TempDir()
 
@@ -80,7 +80,7 @@ func TestClusterSetupIntegration(t *testing.T) {
 
 	result, err := setupService.Setup(context.Background(), opts)
 	if err != nil {
-		t.Fatalf("setup failed: %v", err)
+		t.Fatalf("generate failed: %v", err)
 	}
 
 	if result == nil {
@@ -95,7 +95,7 @@ func TestClusterSetupIntegration(t *testing.T) {
 
 // broken: full-suite run fails on generated GitOps source contracts (repo casing, ref strategy,
 // sync interval, and cert-manager kustomization indentation); see docs/test-results.md.
-func TestClusterSetupIntegrationKindProvider(t *testing.T) {
+func TestClusterGenerateIntegrationKindProvider(t *testing.T) {
 	dir := t.TempDir()
 	prepareCommandTestEnv(t, dir)
 
@@ -113,13 +113,13 @@ func TestClusterSetupIntegrationKindProvider(t *testing.T) {
 
 	resetCommandStateForTests()
 
-	setupCmd := newClusterSetupCmd()
+	setupCmd := newClusterGenerateCmd()
 	var stdout, stderr bytes.Buffer
 	setupCmd.SetOut(&stdout)
 	setupCmd.SetErr(&stderr)
 	setupCmd.SetArgs([]string{"kind-setup-int"})
 	if err := setupCmd.Execute(); err != nil {
-		t.Fatalf("cluster setup failed: %v\nstderr: %s", err, stderr.String())
+		t.Fatalf("cluster generate failed: %v\nstderr: %s", err, stderr.String())
 	}
 
 	clusterDir := filepath.Join(dir, "clusters", "opencenter", "infrastructure", "clusters", "kind-setup-int")
@@ -145,7 +145,7 @@ func TestClusterSetupIntegrationKindProvider(t *testing.T) {
 	}
 }
 
-func TestClusterSetupIntegrationKindProviderDisableDefaultCNI(t *testing.T) {
+func TestClusterGenerateIntegrationKindProviderDisableDefaultCNI(t *testing.T) {
 	dir := t.TempDir()
 	prepareCommandTestEnv(t, dir)
 
@@ -163,13 +163,13 @@ func TestClusterSetupIntegrationKindProviderDisableDefaultCNI(t *testing.T) {
 
 	resetCommandStateForTests()
 
-	setupCmd := newClusterSetupCmd()
+	setupCmd := newClusterGenerateCmd()
 	var stdout, stderr bytes.Buffer
 	setupCmd.SetOut(&stdout)
 	setupCmd.SetErr(&stderr)
 	setupCmd.SetArgs([]string{"kind-setup-cni-int"})
 	if err := setupCmd.Execute(); err != nil {
-		t.Fatalf("cluster setup failed: %v\nstderr: %s", err, stderr.String())
+		t.Fatalf("cluster generate failed: %v\nstderr: %s", err, stderr.String())
 	}
 
 	clusterDir := filepath.Join(dir, "clusters", "opencenter", "infrastructure", "clusters", "kind-setup-cni-int")
@@ -183,8 +183,8 @@ func TestClusterSetupIntegrationKindProviderDisableDefaultCNI(t *testing.T) {
 	}
 }
 
-// TestClusterSetupWithDIContainer tests that the DI container is properly set up
-func TestClusterSetupWithDIContainer(t *testing.T) {
+// TestClusterGenerateWithDIContainer tests that the DI container is properly set up
+func TestClusterGenerateWithDIContainer(t *testing.T) {
 	dir := t.TempDir()
 	prepareCommandTestEnv(t, dir)
 	resetContainerForTests()
@@ -216,8 +216,8 @@ func TestClusterSetupWithDIContainer(t *testing.T) {
 	}
 }
 
-// TestClusterSetupServiceIntegration tests the SetupService directly
-func TestClusterSetupServiceIntegration(t *testing.T) {
+// TestClusterGenerateServiceIntegration tests the SetupService directly
+func TestClusterGenerateServiceIntegration(t *testing.T) {
 	// Set up temporary config directory
 	dir := t.TempDir()
 
@@ -267,7 +267,7 @@ func TestClusterSetupServiceIntegration(t *testing.T) {
 
 	result, err := setupService.Setup(context.Background(), opts)
 	if err != nil {
-		t.Fatalf("setup failed: %v", err)
+		t.Fatalf("generate failed: %v", err)
 	}
 
 	if result == nil {
@@ -280,8 +280,8 @@ func TestClusterSetupServiceIntegration(t *testing.T) {
 	}
 }
 
-// TestClusterSetupForceOverwrite tests the --force flag
-func TestClusterSetupForceOverwrite(t *testing.T) {
+// TestClusterGenerateForceOverwrite tests the --force flag
+func TestClusterGenerateForceOverwrite(t *testing.T) {
 	// Set up temporary config directory
 	dir := t.TempDir()
 
@@ -331,7 +331,7 @@ func TestClusterSetupForceOverwrite(t *testing.T) {
 
 	_, err := setupService.Setup(context.Background(), opts)
 	if err != nil {
-		t.Fatalf("first setup failed: %v", err)
+		t.Fatalf("first generate failed: %v", err)
 	}
 
 	// Run setup again with force flag
@@ -346,8 +346,8 @@ func TestClusterSetupForceOverwrite(t *testing.T) {
 	}
 }
 
-// TestClusterSetupDryRun tests the --dry-run flag
-func TestClusterSetupDryRun(t *testing.T) {
+// TestClusterGenerateDryRun tests the --dry-run flag
+func TestClusterGenerateDryRun(t *testing.T) {
 	// Set up temporary config directory
 	dir := t.TempDir()
 
@@ -403,8 +403,8 @@ func TestClusterSetupDryRun(t *testing.T) {
 	// (depending on implementation, this may vary)
 }
 
-// TestClusterSetupSkipValidation tests the --skip-validation flag
-func TestClusterSetupSkipValidation(t *testing.T) {
+// TestClusterGenerateSkipValidation tests the --skip-validation flag
+func TestClusterGenerateSkipValidation(t *testing.T) {
 	// Set up temporary config directory
 	dir := t.TempDir()
 

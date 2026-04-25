@@ -29,7 +29,7 @@ function opencenter_current_cluster
     else if test -f "$OPENCENTER_SESSION_FILE"
         cat "$OPENCENTER_SESSION_FILE" 2>/dev/null | tr -d '\n'
     else
-        opencenter cluster current --quiet 2>/dev/null; or echo ""
+        opencenter cluster active --quiet 2>/dev/null; or echo ""
     end
 end
 
@@ -42,15 +42,15 @@ function opencenter_current_cluster_short
     end
 end
 
-# Wrapper for 'opencenter cluster select' that evaluates the output
+# Wrapper for 'opencenter cluster use' that evaluates the output
 function opencenter
-    if test "$argv[1]" = "cluster"; and test "$argv[2]" = "select"; and test -n "$OPENCENTER_SESSION_FILE"
+    if test "$argv[1]" = "cluster"; and test "$argv[2]" = "use"; and test -n "$OPENCENTER_SESSION_FILE"
         # Capture the output
         set -l output (command opencenter $argv 2>&1)
         set -l exit_code $status
         
         if test $exit_code -eq 0
-            # Evaluate any export commands
+            # Evaluate shell environment commands
             for line in $output
                 if string match -q -r '^export ' -- $line
                     # Parse export command: export VAR=value
@@ -58,6 +58,9 @@ function opencenter
                     set -l var (string split -m 1 '=' -- $var_value)[1]
                     set -l value (string split -m 1 '=' -- $var_value)[2]
                     set -gx $var $value
+                else if string match -q -r '^unset ' -- $line
+                    set -l var (string replace 'unset ' '' -- $line)
+                    set -e $var
                 else
                     echo $line >&2
                 end

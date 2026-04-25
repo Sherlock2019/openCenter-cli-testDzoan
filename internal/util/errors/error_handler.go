@@ -224,7 +224,7 @@ func (h *DefaultErrorHandler) GetSuggestions(err error) []string {
 	if strings.Contains(errorMsg, "template") {
 		suggestions = h.addUnique(suggestions, "Check template syntax for Go template errors")
 		suggestions = h.addUnique(suggestions, "Verify all template variables are defined")
-		suggestions = h.addUnique(suggestions, "Test template rendering with: opencenter cluster render")
+		suggestions = h.addUnique(suggestions, "Test template rendering with: opencenter cluster generate --render-only")
 		suggestions = h.addUnique(suggestions, "Review template documentation for required variables")
 	}
 
@@ -233,13 +233,13 @@ func (h *DefaultErrorHandler) GetSuggestions(err error) []string {
 		suggestions = h.addUnique(suggestions, "Verify cloud credentials are set correctly")
 		suggestions = h.addUnique(suggestions, "Check credential environment variables")
 		suggestions = h.addUnique(suggestions, "Test API connectivity with provider CLI tools")
-		suggestions = h.addUnique(suggestions, "Run preflight checks: opencenter cluster preflight")
+		suggestions = h.addUnique(suggestions, "Run preflight checks: opencenter cluster doctor")
 	}
 
 	// Configuration errors
 	if strings.Contains(errorMsg, "config") {
 		suggestions = h.addUnique(suggestions, "Edit configuration: opencenter cluster edit")
-		suggestions = h.addUnique(suggestions, "View current config: opencenter cluster info")
+		suggestions = h.addUnique(suggestions, "View current config: opencenter cluster describe")
 		suggestions = h.addUnique(suggestions, "Validate configuration: opencenter cluster validate")
 		suggestions = h.addUnique(suggestions, "Check configuration schema: opencenter cluster schema")
 	}
@@ -401,7 +401,7 @@ func (h *DefaultErrorHandler) initializeSuggestions() {
 	h.suggestionMap[TemplateError] = []string{
 		"Check template syntax for Go template errors",
 		"Verify all template variables are defined",
-		"Test template rendering: opencenter cluster render",
+		"Test template rendering: opencenter cluster generate --render-only",
 	}
 
 	h.suggestionMap[SOPSError] = []string{
@@ -414,7 +414,7 @@ func (h *DefaultErrorHandler) initializeSuggestions() {
 	h.suggestionMap[ConfigError] = []string{
 		"Edit configuration: opencenter cluster edit",
 		"Validate configuration: opencenter cluster validate",
-		"View current config: opencenter cluster info",
+		"View current config: opencenter cluster describe",
 	}
 
 	h.suggestionMap[NetworkError] = []string{
@@ -439,7 +439,7 @@ func (h *DefaultErrorHandler) initializeSuggestions() {
 	h.suggestionMap[CloudError] = []string{
 		"Verify cloud credentials are set correctly",
 		"Test API connectivity with provider CLI tools",
-		"Run preflight checks: opencenter cluster preflight",
+		"Run preflight checks: opencenter cluster doctor",
 		"Check cloud provider service status",
 	}
 
@@ -634,7 +634,7 @@ func CreateCloudError(provider, operation, message string, cause error) *Structu
 	suggestions := []string{
 		fmt.Sprintf("Verify %s credentials: check environment variables", provider),
 		fmt.Sprintf("Test %s API connectivity with provider CLI", provider),
-		"Run preflight checks: opencenter cluster preflight",
+		"Run preflight checks: opencenter cluster doctor",
 		fmt.Sprintf("Check %s service status page", provider),
 		"Verify network connectivity to cloud APIs",
 	}
@@ -698,7 +698,7 @@ func CreateTemplateError(templatePath string, lineNumber int, message string, ca
 		"Verify template syntax is correct",
 		"Check that all required variables are provided",
 		fmt.Sprintf("Review template file: cat %s", templatePath),
-		"Test template rendering: opencenter cluster render",
+		"Test template rendering: opencenter cluster generate --render-only",
 	}
 
 	return &StructuredError{
@@ -720,7 +720,7 @@ func CreateTemplateErrorWithColumn(templatePath string, lineNumber, columnNumber
 		"Verify template syntax is correct",
 		"Check that all required variables are provided",
 		fmt.Sprintf("Review template file: cat %s", templatePath),
-		"Test template rendering: opencenter cluster render",
+		"Test template rendering: opencenter cluster generate --render-only",
 	}
 
 	return &StructuredError{

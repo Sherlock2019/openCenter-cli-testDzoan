@@ -20,119 +20,27 @@ import (
 	"strings"
 	"time"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/gitops"
 	"github.com/opencenter-cloud/opencenter-cli/internal/tofu"
 	"github.com/spf13/cobra"
 )
 
-// newClusterRenderCmd creates the command for rendering GitOps templates.
-//
-// This command handles template rendering with full organization-based structure support.
-// It always renders templates (no skip logic) making it ideal for iterative development.
-// Unlike `setup`, it does not perform Git operations or initialization checks.
-//
-// Returns:
-//   - *cobra.Command: A pointer to the configured `render` command.
-func newClusterRenderCmd() *cobra.Command {
-	var (
-		force       bool
-		all         bool
-		infra       bool
-		services    bool
-		serviceName string
-	)
+func runClusterGenerateRenderOnly(cmd *cobra.Command, args []string) error {
+	force, _ := cmd.Flags().GetBool("force")
+	dryRun := getGlobalOptions(cmd).DryRun
 
-	cmd := &cobra.Command{
-		Use:   "render [name] [service]",
-		Short: "Render templates into the GitOps directory",
-		Long: `Render cluster templates into the GitOps directory structure.
-
-This command renders templates with safety checks to prevent accidental overwrites.
-It handles organization-based directory structures and creates backups before overwriting.
-
-Modes:
-- No args: Checks if services already rendered, exits with instructions
-- --all: Renders all services and infrastructure (requires --force if already rendered)
-- --services: Renders all services only, no infrastructure (requires --force if already rendered)
-- --infra: Renders infrastructure templates only (creates backups)
-- <service>: Renders specific service (requires --force if already rendered)
-
-Unlike 'cluster setup', this command:
-- Performs safety checks before rendering
-- Creates timestamped backups before overwriting
-- Does not perform Git operations
-- Ideal for iterative development and updates
-
-Global Flags:
-- --log-level: Set log level (debug, info, warn, error)
-- --dry-run: Preview operations without making changes`,
-		Args: cobra.MaximumNArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// Parse global flags for logging and dry-run
-			globalFlags, err := parseGlobalFlags(cmd)
-			if err != nil {
-				return fmt.Errorf("failed to parse global flags: %w", err)
-			}
-
-			// Apply log level override
-			if globalFlags.LogLevel != "" {
-				if err := config.SetLogLevel(globalFlags.LogLevel); err != nil {
-					return fmt.Errorf("failed to set log level: %w", err)
-				}
-			}
-
-			// Log dry-run mode if enabled
-			if globalFlags.DryRun {
-				config.Info("🧪 DRY RUN MODE: No files will be modified")
-			}
-
-			// Resolve cluster name from args or active cluster
-			name, err := resolveClusterName(args, true)
-			if err != nil {
-				return err
-			}
-
-			// Check if service name provided as second arg
-			if len(args) > 1 {
-				serviceName = args[1]
-			}
-
-			// Load configuration
-			cfg, _, _, _, err := loadNativeV2ConfigWithIdentifier(cmd.Context(), name)
-			if err != nil {
-				return err
-			}
-
-			// Handle different render modes
-			if infra {
-				return renderInfrastructureOnly(cfg, globalFlags.DryRun, cmd)
-			}
-
-			if services {
-				return renderServicesOnly(cfg, force, globalFlags.DryRun, cmd)
-			}
-
-			if serviceName != "" {
-				return renderSingleService(cfg, serviceName, force, globalFlags.DryRun, cmd)
-			}
-
-			if all {
-				return renderAllServices(cfg, force, globalFlags.DryRun, cmd)
-			}
-
-			// Default: check if already rendered
-			return checkRenderStatus(cfg, cmd)
-		},
+	name, err := resolveClusterName(args, true)
+	if err != nil {
+		return err
 	}
 
-	cmd.Flags().BoolVar(&force, "force", false, "Force overwrite existing files (creates backups)")
-	cmd.Flags().BoolVar(&all, "all", false, "Render all services and infrastructure")
-	cmd.Flags().BoolVar(&services, "services", false, "Render all services only (no infrastructure)")
-	cmd.Flags().BoolVar(&infra, "infra", false, "Render infrastructure templates only")
+	cfg, _, _, _, err := loadNativeV2ConfigWithIdentifier(cmd.Context(), name)
+	if err != nil {
+		return err
+	}
 
-	return cmd
+	return renderAllServices(cfg, force, dryRun, cmd)
 }
 
 // checkRenderStatus checks if services have already been rendered
@@ -144,14 +52,8 @@ func checkRenderStatus(cfg *v2.Config, cmd *cobra.Command) error {
 	if _, err := os.Stat(kustomizationPath); err == nil {
 		fmt.Fprintln(cmd.OutOrStdout(), "Render complete")
 		fmt.Fprintf(cmd.OutOrStdout(), "Services have already been rendered for cluster '%s'.\n\n", clusterName)
-		fmt.Fprintf(cmd.OutOrStdout(), "To render all services and infrastructure (with backups), use:\n")
-		fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster render %s --all --force\n\n", clusterName)
-		fmt.Fprintf(cmd.OutOrStdout(), "To render all services only (with backups), use:\n")
-		fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster render %s --services --force\n\n", clusterName)
-		fmt.Fprintf(cmd.OutOrStdout(), "To render a specific service, use:\n")
-		fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster render %s <service-name> --force\n\n", clusterName)
-		fmt.Fprintf(cmd.OutOrStdout(), "To render infrastructure only, use:\n")
-		fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster render %s --infra\n", clusterName)
+		fmt.Fprintf(cmd.OutOrStdout(), "To re-render generated assets with backups, use:\n")
+		fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster generate %s --render-only --force\n", clusterName)
 		return nil
 	}
 

@@ -29,45 +29,48 @@ import (
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation/validators"
 )
 
-// TestClusterSetupCommandRegistration verifies that NewClusterCmd() includes the "setup" subcommand.
+// TestClusterGenerateCommandRegistration verifies that NewClusterCmd() includes the "generate" subcommand.
 // Requirements: 2.1
-func TestClusterSetupCommandRegistration(t *testing.T) {
+func TestClusterGenerateCommandRegistration(t *testing.T) {
 	cmd := NewClusterCmd()
 
 	found := false
 	for _, sub := range cmd.Commands() {
-		if sub.Name() == "setup" {
+		if sub.Name() == "generate" {
 			found = true
 			break
 		}
 	}
 
 	if !found {
-		t.Error("expected 'setup' subcommand to be registered under 'cluster'")
+		t.Error("expected 'generate' subcommand to be registered under 'cluster'")
 	}
 }
 
-// TestClusterSetupCommandStructure verifies the setup command's Use, flags, and args.
+// TestClusterGenerateCommandStructure verifies the generate command's Use, flags, and args.
 // Requirements: 2.1, 2.2
-func TestClusterSetupCommandStructure(t *testing.T) {
-	cmd := newClusterSetupCmd()
+func TestClusterGenerateCommandStructure(t *testing.T) {
+	cmd := newClusterGenerateCmd()
 
-	if cmd.Use != "setup [name]" {
-		t.Errorf("expected Use='setup [name]', got %q", cmd.Use)
+	if cmd.Use != "generate [name]" {
+		t.Errorf("expected Use='generate [name]', got %q", cmd.Use)
 	}
 
 	// Verify flags exist
-	flags := []string{"force", "dry-run", "skip-validation"}
+	flags := []string{"force", "skip-validation", "render-only"}
 	for _, name := range flags {
 		if cmd.Flags().Lookup(name) == nil {
 			t.Errorf("expected flag %q to be registered", name)
 		}
 	}
+	if cmd.Flags().Lookup("dry-run") != nil {
+		t.Error("expected dry-run to be global, not command-local")
+	}
 }
 
-// TestClusterSetupMissingConfig verifies that running setup for a non-existent cluster returns an error.
+// TestClusterGenerateMissingConfig verifies that running generate for a non-existent cluster returns an error.
 // Requirements: 2.3
-func TestClusterSetupMissingConfig(t *testing.T) {
+func TestClusterGenerateMissingConfig(t *testing.T) {
 	cfgDir := t.TempDir()
 
 	oldEnv := os.Getenv("OPENCENTER_CONFIG_DIR")
@@ -80,7 +83,7 @@ func TestClusterSetupMissingConfig(t *testing.T) {
 		}
 	}()
 
-	cmd := newClusterSetupCmd()
+	cmd := newClusterGenerateCmd()
 	out := &bytes.Buffer{}
 	errOut := &bytes.Buffer{}
 	cmd.SetOut(out)
@@ -93,15 +96,15 @@ func TestClusterSetupMissingConfig(t *testing.T) {
 	}
 }
 
-// TestClusterSetupNoClusterArg verifies that running setup without an argument and no active cluster returns an error.
+// TestClusterGenerateNoClusterArg verifies that running generate without an argument and no active cluster returns an error.
 // Requirements: 2.2
 // broken: full-suite run resolves a load-test cluster path instead of reporting no active cluster;
 // see docs/test-results.md.
-func TestClusterSetupNoClusterArg(t *testing.T) {
+func TestClusterGenerateNoClusterArg(t *testing.T) {
 	cfgDir := t.TempDir()
 	prepareCommandTestEnv(t, cfgDir)
 
-	cmd := newClusterSetupCmd()
+	cmd := newClusterGenerateCmd()
 	out := &bytes.Buffer{}
 	errOut := &bytes.Buffer{}
 	cmd.SetOut(out)
@@ -118,10 +121,10 @@ func TestClusterSetupNoClusterArg(t *testing.T) {
 	}
 }
 
-// TestClusterSetupDryRunSkipsCommit verifies that --dry-run produces "Dry run complete" output
+// TestClusterGenerateDryRunSkipsCommit verifies that dry-run generation
 // and does not produce a commit hash.
 // Requirements: 2.2, 2.3
-func TestClusterSetupDryRunSkipsCommit(t *testing.T) {
+func TestClusterGenerateDryRunSkipsCommit(t *testing.T) {
 	cfgDir := t.TempDir()
 
 	oldEnv := os.Getenv("OPENCENTER_CONFIG_DIR")
@@ -134,7 +137,7 @@ func TestClusterSetupDryRunSkipsCommit(t *testing.T) {
 		}
 	}()
 
-	clusterName := "test-dryrun-setup"
+	clusterName := "test-dryrun-generate"
 	organization := "test-org"
 	clustersDir := filepath.Join(cfgDir, "clusters")
 
@@ -184,7 +187,7 @@ func TestClusterSetupDryRunSkipsCommit(t *testing.T) {
 
 	result, err := setupService.Setup(context.Background(), opts)
 	if err != nil {
-		t.Fatalf("dry-run setup failed: %v", err)
+		t.Fatalf("dry-run generate failed: %v", err)
 	}
 
 	// In dry-run mode, CommitHash should be empty (commit is skipped)

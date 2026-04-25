@@ -435,8 +435,8 @@ func installShellIntegration(cmd *cobra.Command) error {
 	fmt.Printf("✅ Shell integration installed to %s\n", rcFile)
 	fmt.Printf("🔄 Run 'source %s' or restart your shell to activate\n", rcFile)
 	fmt.Println("\n📖 Usage:")
-	fmt.Println("  opencenter cluster select <cluster>  # Switch cluster in current session")
-	fmt.Println("  opencenter cluster current           # Show current cluster and source")
+	fmt.Println("  opencenter cluster use <cluster>     # Switch cluster in current session")
+	fmt.Println("  opencenter cluster active            # Show current cluster and source")
 	fmt.Println("\n💡 Tip: Uncomment prompt integration in the shell script to show cluster in your prompt")
 
 	return nil

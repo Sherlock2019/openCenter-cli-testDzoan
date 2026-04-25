@@ -4,25 +4,25 @@
 
 # Cache file for active cluster to avoid repeated file reads
 OPENCENTER_CACHE_FILE="${HOME}/.cache/opencenter/active_cluster"
-OPENCENTER_ACTIVE_FILE="${HOME}/.config/opencenter/.active"
 
 # Ensure cache directory exists
 mkdir -p "$(dirname "$OPENCENTER_CACHE_FILE")"
 
 # Function to get active cluster (cached)
 opencenter_active() {
-    # Check if active file exists and is newer than cache
-    if [[ -f "$OPENCENTER_ACTIVE_FILE" ]]; then
-        if [[ ! -f "$OPENCENTER_CACHE_FILE" ]] || [[ "$OPENCENTER_ACTIVE_FILE" -nt "$OPENCENTER_CACHE_FILE" ]]; then
-            # Update cache
-            cat "$OPENCENTER_ACTIVE_FILE" 2>/dev/null > "$OPENCENTER_CACHE_FILE"
+    local cluster
+    if cluster=$(opencenter cluster active --quiet 2>/dev/null); then
+        cluster=$(printf "%s" "$cluster" | tr -d '\n')
+        if [[ -n "$cluster" ]]; then
+            printf "%s" "$cluster" > "$OPENCENTER_CACHE_FILE"
+            printf "%s" "$cluster"
+            return 0
         fi
-        cat "$OPENCENTER_CACHE_FILE" 2>/dev/null | tr -d '\n'
     else
-        # No active cluster, clear cache
         rm -f "$OPENCENTER_CACHE_FILE" 2>/dev/null
-        return 1
     fi
+    rm -f "$OPENCENTER_CACHE_FILE" 2>/dev/null
+    return 1
 }
 
 # Function to get active cluster for prompt (with formatting)
@@ -46,7 +46,7 @@ opencenter_active_short() {
 # Convenient aliases
 alias oc-active='opencenter_active'
 alias oc-status='opencenter cluster status'
-alias oc-select='opencenter cluster select'
+alias oc-select='opencenter cluster use'
 alias oc-list='opencenter cluster list'
 
 # Environment variable for current active cluster (updated on each prompt)

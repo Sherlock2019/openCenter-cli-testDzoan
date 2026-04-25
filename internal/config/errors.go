@@ -241,7 +241,7 @@ func NewParseError(filePath string, lineNumber, columnNumber int, cause error) *
 func NewConfigError(operation, message string, cause error) *errors.StructuredError {
 	suggestions := []string{
 		"Run: opencenter cluster validate to check configuration",
-		"View current config: opencenter cluster info",
+		"View current config: opencenter cluster describe",
 		"Edit configuration: opencenter cluster edit",
 		"Check documentation at: https://docs.opencenter.io",
 	}

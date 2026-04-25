@@ -26,7 +26,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
-	"github.com/opencenter-cloud/opencenter-cli/internal/credentials"
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +36,7 @@ var (
 	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
 )
 
-// ClusterMetadata represents cluster metadata for display in cluster select.
+// ClusterMetadata represents cluster metadata for display in cluster use.
 type ClusterMetadata struct {
 	Name         string `yaml:"name"`
 	Environment  string `yaml:"env"`
@@ -46,7 +45,7 @@ type ClusterMetadata struct {
 	Organization string `yaml:"organization"`
 }
 
-// ClusterSelectOutput represents the complete output for cluster select command.
+// ClusterSelectOutput represents the complete output for cluster use command.
 type ClusterSelectOutput struct {
 	Metadata       ClusterMetadata
 	Paths          *paths.ClusterPaths
@@ -168,7 +167,7 @@ func loadClusterMetadata(ctx context.Context, clusterName string) (ClusterMetada
 	return metadata, nil
 }
 
-// generateClusterSelectOutput generates the complete output for cluster select command.
+// generateClusterSelectOutput generates the complete output for cluster use command.
 // The clusterName parameter can be in "cluster" or "organization/cluster" format.
 // The shellOverride parameter allows overriding automatic shell detection (empty string for auto-detect).
 func generateClusterSelectOutput(clusterName string, shellOverride string) (ClusterSelectOutput, error) {
@@ -361,7 +360,7 @@ func generateExportCommands(clusterPaths *paths.ClusterPaths, shell string) []st
 	return commands
 }
 
-// displayClusterSelectOutput displays the enhanced cluster select output.
+// displayClusterSelectOutput displays the enhanced cluster use output.
 func displayClusterSelectOutput(output ClusterSelectOutput, cmd *cobra.Command) {
 	// Display cluster metadata
 	fmt.Fprintf(cmd.OutOrStdout(), "Cluster Information:\n")
@@ -400,7 +399,7 @@ func displayClusterSelectOutput(output ClusterSelectOutput, cmd *cobra.Command) 
 	}
 }
 
-// newClusterSelectCmd creates the enhanced command for selecting the active cluster.
+// newClusterUseCmd creates the enhanced command for setting the active cluster.
 //
 // This command allows the user to set the active cluster and displays comprehensive
 // information about the cluster including metadata, GitOps paths, and environment
@@ -423,18 +422,17 @@ func displayClusterSelectOutput(output ClusterSelectOutput, cmd *cobra.Command) 
 // The --activate flag can be used to automatically activate the cluster environment.
 //
 // Returns:
-//   - *cobra.Command: A pointer to the configured `select` command.
-func newClusterSelectCmd() *cobra.Command {
-	var showExportOnly bool
+//   - *cobra.Command: A pointer to the configured `use` command.
+func newClusterUseCmd() *cobra.Command {
 	var shellOverride string
 	var clearActive bool
 	var clearPersistent bool
 	var persistentSelection bool
 
 	cmd := &cobra.Command{
-		Use:   "select [name]",
-		Short: "Select the active cluster for the current session",
-		Long: `Select the active cluster and display comprehensive information including:
+		Use:   "use [name]",
+		Short: "Set the active cluster",
+		Long: `Set the active cluster and display comprehensive information including:
 - Cluster metadata (name, environment, region, status, organization)
 - GitOps repository paths and structure
 - Cluster-specific paths (SOPS keys, configuration files)
@@ -466,55 +464,24 @@ Use --clear-persistent to remove the persistent cluster selection.`,
 
 			// Handle --clear flag to deactivate current cluster
 			if clearActive {
-				// Unset AWS credentials
-				var deactivateOutput strings.Builder
-				awsVars := credentials.GetAWSEnvVars()
-				for _, envVar := range awsVars {
-					deactivateOutput.WriteString(fmt.Sprintf("unset %s\n", envVar))
-				}
-
-				// Unset OpenStack credentials
-				osVars := credentials.GetOpenStackEnvVars()
-				for _, envVar := range osVars {
-					deactivateOutput.WriteString(fmt.Sprintf("unset %s\n", envVar))
-				}
-
-				// Unset cluster-specific environment variables
-				deactivateOutput.WriteString("unset BIN\n")
-				deactivateOutput.WriteString("unset KUBECONFIG\n")
-				deactivateOutput.WriteString("unset OPENCENTER_ACTIVE_CLUSTER\n")
-
-				// Clear active cluster
-				if err := setActiveCluster(""); err != nil {
-					return fmt.Errorf("failed to clear active cluster: %w", err)
-				}
-
-				if showExportOnly {
-					// Output deactivation commands for shell evaluation
-					fmt.Fprint(cmd.OutOrStdout(), deactivateOutput.String())
+				if sessionFile := os.Getenv("OPENCENTER_SESSION_FILE"); sessionFile != "" {
+					if err := os.Remove(sessionFile); err != nil && !errors.Is(err, os.ErrNotExist) {
+						return fmt.Errorf("failed to clear session cluster: %w", err)
+					}
+					fmt.Fprintln(cmd.OutOrStdout(), "unset OPENCENTER_CLUSTER")
 				} else {
-					fmt.Fprintf(cmd.OutOrStdout(), "Active cluster cleared\n\n")
-					fmt.Fprintf(cmd.OutOrStdout(), "To deactivate the cluster environment, run:\n")
-					fmt.Fprintf(cmd.OutOrStdout(), "  eval $(opencenter cluster select --clear --export-only)\n")
+					if err := setActiveCluster(""); err != nil {
+						return fmt.Errorf("failed to clear active cluster: %w", err)
+					}
 				}
+
+				fmt.Fprintf(cmd.OutOrStdout(), "Active cluster cleared\n")
 				return nil
 			}
 
 			var name string
 			if len(args) > 0 {
 				name = args[0]
-			}
-
-			// If name not provided and --export-only is used, try to get active cluster
-			if name == "" && showExportOnly {
-				activeCluster, err := getActiveCluster()
-				if err != nil {
-					return fmt.Errorf("no cluster specified and failed to get active cluster: %w", err)
-				}
-				if activeCluster == "" {
-					return errors.New("no cluster specified and no active cluster set")
-				}
-				name = activeCluster
 			}
 
 			// If name not provided, prompt with interactive selection
@@ -579,7 +546,7 @@ Use --clear-persistent to remove the persistent cluster selection.`,
 				return nil
 			}
 
-			// Generate enhanced cluster select output
+			// Generate enhanced cluster use output
 			output, err := generateClusterSelectOutput(name, shellOverride)
 			if err != nil {
 				return err
@@ -609,93 +576,36 @@ Use --clear-persistent to remove the persistent cluster selection.`,
 						return fmt.Errorf("failed to update session: %w", err)
 					}
 
-					// Output for shell to evaluate (export command)
-					if !showExportOnly {
-						fmt.Fprintf(cmd.OutOrStdout(), "export OPENCENTER_CLUSTER=%s\n", name)
-					}
+					fmt.Fprintf(cmd.OutOrStdout(), "export OPENCENTER_CLUSTER=%s\n", name)
 				}
 			}
 
-			// Display output based on flags
-			if showExportOnly {
-				// Load cluster configuration to extract credentials
-				cfg, err := loadConfig(cmd.Context(), name)
-				if err != nil {
-					return fmt.Errorf("failed to load cluster configuration: %w", err)
-				}
+			// Show full enhanced output
+			scope := "session"
+			if persistentSelection {
+				scope = "persistent"
+			} else if os.Getenv("OPENCENTER_SESSION_FILE") == "" {
+				scope = "persistent (no shell integration)"
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "Active cluster set to %s (%s)\n\n", name, scope)
+			displayClusterSelectOutput(output, cmd)
 
-				// Detect shell (or use override)
-				shell := shellOverride
-				if shell == "" {
-					shell = detectShell()
-				}
-
-				// Create credentials extractor
-				extractor := credentials.NewExtractor(cfg)
-
-				var exportOutput strings.Builder
-
-				// Export cloud provider credentials with shell-specific syntax
-				awsCreds, awsErr := extractor.ExtractAWS()
-				osCreds, osErr := extractor.ExtractOpenStack()
-
-				hasAWS := awsErr == nil && !awsCreds.IsEmpty()
-				hasOS := osErr == nil && !osCreds.IsEmpty()
-
-				if hasAWS {
-					exportOutput.WriteString(awsCreds.ToEnvVarsForShell(shell))
-				}
-				if hasOS {
-					if hasAWS {
-						exportOutput.WriteString("\n")
-					}
-					exportOutput.WriteString(osCreds.ToEnvVarsForShell(shell))
-				}
-
-				// Add cluster-specific environment variables
-				if hasAWS || hasOS {
-					exportOutput.WriteString("\n")
-				}
-
-				// Add export commands from output (KUBECONFIG, PATH, etc.)
-				for _, command := range output.ExportCommands {
-					exportOutput.WriteString(fmt.Sprintf("%s\n", command))
-				}
-
-				// Output everything
-				fmt.Fprint(cmd.OutOrStdout(), exportOutput.String())
-			} else {
-				// Show full enhanced output
-				scope := "session"
-				if persistentSelection {
-					scope = "persistent"
-				} else if os.Getenv("OPENCENTER_SESSION_FILE") == "" {
-					scope = "persistent (no shell integration)"
-				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Active cluster set to %s (%s)\n\n", name, scope)
-				displayClusterSelectOutput(output, cmd)
-
-				// Inform user about exporting environment (only if commands are available)
-				if len(output.ExportCommands) > 0 {
-					fmt.Fprintf(cmd.OutOrStdout(), "\nTo export ALL cluster environment (credentials + paths), run:\n")
-					// Provide shell-specific instructions
-					switch output.Shell {
-					case "fish":
-						fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster select %s --export-only | source\n", name)
-					case "powershell":
-						fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster select %s --export-only | Invoke-Expression\n", name)
-					default:
-						fmt.Fprintf(cmd.OutOrStdout(), "  eval $(opencenter cluster select %s --export-only)\n", name)
-					}
+			// Inform user about exporting environment (only if commands are available)
+			if len(output.ExportCommands) > 0 {
+				fmt.Fprintf(cmd.OutOrStdout(), "\nTo export ALL cluster environment (credentials + paths), run:\n")
+				switch output.Shell {
+				case "fish":
+					fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster env %s --shell fish | source\n", name)
+				case "powershell":
+					fmt.Fprintf(cmd.OutOrStdout(), "  opencenter cluster env %s --shell powershell | Invoke-Expression\n", name)
+				default:
+					fmt.Fprintf(cmd.OutOrStdout(), "  eval $(opencenter cluster env %s)\n", name)
 				}
 			}
 
 			return nil
 		},
 	}
-
-	// Add flag for export-only mode (useful for shell evaluation)
-	cmd.Flags().BoolVar(&showExportOnly, "export-only", false, "Only output export commands for shell evaluation")
 
 	// Add flag to override shell detection
 	cmd.Flags().StringVar(&shellOverride, "shell", "", "Override shell detection (bash, zsh, fish, powershell)")

@@ -22,10 +22,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newClusterPreflightCmd() *cobra.Command {
+func newClusterDoctorCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "preflight [name]",
-		Short: "Run preflight checks for tools and provider requirements",
+		Use:   "doctor [name]",
+		Short: "Check local tools, credentials, and provider readiness",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -64,7 +64,7 @@ func newClusterPreflightCmd() *cobra.Command {
 				fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
 			}
 
-			fmt.Fprintln(cmd.OutOrStdout(), "Preflight complete.")
+			fmt.Fprintln(cmd.OutOrStdout(), "Doctor checks complete.")
 			return nil
 		},
 	}
