@@ -330,6 +330,20 @@ func TestExpandPath(t *testing.T) {
 			},
 		},
 		{
+			name:  "allowlisted cluster dir expansion",
+			input: "${OPENCENTER_CLUSTER_DIR}/test",
+			validate: func(t *testing.T, result string) {
+				clusterDir := t.TempDir()
+				t.Setenv("OPENCENTER_CLUSTER_DIR", clusterDir)
+
+				expected := filepath.Join(clusterDir, "test")
+				actual := ExpandPath("${OPENCENTER_CLUSTER_DIR}/test")
+				if actual != expected {
+					t.Errorf("ExpandPath() = %s, want %s", actual, expected)
+				}
+			},
+		},
+		{
 			name:  "allowlisted state dir expansion",
 			input: "${OPENCENTER_STATE_DIR}/test",
 			validate: func(t *testing.T, result string) {

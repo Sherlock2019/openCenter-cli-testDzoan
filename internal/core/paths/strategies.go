@@ -22,10 +22,11 @@ import (
 )
 
 var allowedPathVariables = map[string]struct{}{
-	"HOME":                  {},
-	"OPENCENTER_CONFIG_DIR": {},
-	"OPENCENTER_STATE_DIR":  {},
-	"XDG_STATE_HOME":        {},
+	"HOME":                   {},
+	"OPENCENTER_CLUSTER_DIR": {},
+	"OPENCENTER_CONFIG_DIR":  {},
+	"OPENCENTER_STATE_DIR":   {},
+	"XDG_STATE_HOME":         {},
 }
 
 var pathVariablePattern = regexp.MustCompile(`\$(\w+)|\$\{([^}]+)\}`)

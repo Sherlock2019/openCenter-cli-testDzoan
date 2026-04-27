@@ -174,6 +174,23 @@ func TestListEmptyDirectory(t *testing.T) {
 	}
 }
 
+func TestResolveClustersDirUsesIndependentClusterDir(t *testing.T) {
+	configDir := filepath.Join(t.TempDir(), "config")
+	clusterDir := filepath.Join(t.TempDir(), "cluster-store")
+
+	t.Setenv("OPENCENTER_CONFIG_DIR", configDir)
+	t.Setenv("OPENCENTER_CLUSTER_DIR", clusterDir)
+
+	got := ResolveClustersDir()
+	if got != clusterDir {
+		t.Fatalf("ResolveClustersDir() = %q, want %q", got, clusterDir)
+	}
+
+	if _, err := os.Stat(filepath.Join(clusterDir, "config.yaml")); !os.IsNotExist(err) {
+		t.Fatalf("cluster dir config.yaml stat error = %v, want not exist", err)
+	}
+}
+
 func TestActiveClusterOperations(t *testing.T) {
 	dir := t.TempDir()
 	oldConfigDir := os.Getenv("OPENCENTER_CONFIG_DIR")

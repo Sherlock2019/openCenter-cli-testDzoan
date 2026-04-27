@@ -2,10 +2,16 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
+	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
+	testhelpers "github.com/opencenter-cloud/opencenter-cli/internal/testing"
 	"github.com/spf13/cobra"
 )
 
@@ -69,5 +75,48 @@ func TestClusterListRejectsDryRun(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), `--dry-run has no effect for read-only command "opencenter cluster list"`) {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestClusterListUsesIndependentClusterDir(t *testing.T) {
+	configDir := filepath.Join(t.TempDir(), "config-root")
+	clusterDir := filepath.Join(t.TempDir(), "cluster-root")
+
+	prepareCommandTestEnv(t, configDir)
+	t.Setenv("OPENCENTER_CLUSTER_DIR", clusterDir)
+
+	resolver := paths.NewPathResolver(clusterDir)
+	if err := resolver.CreateClusterDirectories(context.Background(), "external", "opencenter"); err != nil {
+		t.Fatalf("create cluster directories: %v", err)
+	}
+	clusterPaths, err := resolver.Resolve(context.Background(), "external", "opencenter")
+	if err != nil {
+		t.Fatalf("resolve cluster paths: %v", err)
+	}
+	cfgPtr, err := v2.NewV2Default("external", "kind")
+	if err != nil {
+		t.Fatalf("create v2 default: %v", err)
+	}
+	cfg := *cfgPtr
+	cfg.OpenCenter.Meta.Organization = "opencenter"
+	cfg.OpenCenter.GitOps.Repository.LocalDir = clusterPaths.GitOpsDir
+	testhelpers.SaveConfigWithPathResolver(t, cfg, resolver)
+	resetCommandStateForTests()
+
+	root := newOutputRootForCommandTest()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetArgs([]string{"cluster", "list"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("cluster list failed: %v", err)
+	}
+
+	if got := strings.TrimSpace(out.String()); got != "external" {
+		t.Fatalf("cluster list output = %q, want external", got)
+	}
+
+	if _, err := os.Stat(filepath.Join(clusterDir, "config.yaml")); !os.IsNotExist(err) {
+		t.Fatalf("cluster dir config.yaml stat error = %v, want not exist", err)
 	}
 }

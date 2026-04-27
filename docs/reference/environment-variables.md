@@ -47,9 +47,40 @@ opencenter cluster init my-cluster
 ```
 
 **What it affects:**
-- Cluster configuration location
-- Secrets storage location
+- Default cluster configuration location when `OPENCENTER_CLUSTER_DIR` and `paths.clustersDir` are unset
+- Default per-cluster secrets storage location when `OPENCENTER_CLUSTER_DIR` and `paths.clustersDir` are unset
 - CLI defaults location
+
+### OPENCENTER_CLUSTER_DIR
+
+Cluster storage directory location.
+
+**Default:** `${OPENCENTER_CONFIG_DIR:-~/.config/opencenter}/clusters`
+
+**Usage:**
+```bash
+export OPENCENTER_CONFIG_DIR=/custom/opencenter-config
+export OPENCENTER_CLUSTER_DIR=/data/opencenter-clusters
+opencenter cluster list
+```
+
+**What it affects:**
+- Organization and cluster configuration discovery
+- Per-cluster secrets storage
+- Generated per-cluster infrastructure and application paths
+
+**Example:**
+```bash
+export OPENCENTER_CONFIG_DIR=/tmp/opencenter-config
+export OPENCENTER_CLUSTER_DIR=/srv/opencenter-clusters
+opencenter cluster init test-cluster
+
+# CLI config created at:
+# /tmp/opencenter-config/config.yaml
+#
+# Cluster config created at:
+# /srv/opencenter-clusters/opencenter/.test-cluster-config.yaml
+```
 
 ### OPENCENTER_STATE_DIR
 
@@ -563,10 +594,12 @@ export OS_PASSWORD="env-password"
 ```bash
 # Set for current session
 export OPENCENTER_CONFIG_DIR=/tmp/opencenter
+export OPENCENTER_CLUSTER_DIR=/tmp/opencenter-clusters
 opencenter cluster init test-cluster
 
 # Unset after use
 unset OPENCENTER_CONFIG_DIR
+unset OPENCENTER_CLUSTER_DIR
 ```
 
 ### Permanent (Shell Profile)
@@ -574,6 +607,7 @@ unset OPENCENTER_CONFIG_DIR
 ```bash
 # Add to ~/.bashrc or ~/.zshrc
 echo 'export OPENCENTER_CONFIG_DIR=~/opencenter' >> ~/.bashrc
+echo 'export OPENCENTER_CLUSTER_DIR=~/opencenter-clusters' >> ~/.bashrc
 source ~/.bashrc
 
 # Or add to ~/.profile
@@ -635,6 +669,7 @@ variables:
 ```bash
 # Check variable is set
 echo $OPENCENTER_CONFIG_DIR
+echo $OPENCENTER_CLUSTER_DIR
 
 # Check variable name (case-sensitive)
 env | grep OPENCENTER
@@ -644,11 +679,14 @@ env | grep OPENCENTER
 ```bash
 # Ensure correct variable name
 export OPENCENTER_CONFIG_DIR=/custom/path  # Correct
+export OPENCENTER_CLUSTER_DIR=/custom/clusters  # Correct
 export opencenter_config_dir=/custom/path  # Wrong (lowercase)
 
 # Verify variable is exported
 export OPENCENTER_CONFIG_DIR=/custom/path
 echo $OPENCENTER_CONFIG_DIR
+export OPENCENTER_CLUSTER_DIR=/custom/clusters
+echo $OPENCENTER_CLUSTER_DIR
 ```
 
 ### Precedence Issues

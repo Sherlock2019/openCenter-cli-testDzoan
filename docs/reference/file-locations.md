@@ -39,11 +39,12 @@ openCenter CLI separates persistent configuration from mutable runtime state:
 └── plugins/                 # CLI plugins
 ```
 
-**Environment variable:** `OPENCENTER_CONFIG_DIR`
+**Environment variables:** `OPENCENTER_CONFIG_DIR`, `OPENCENTER_CLUSTER_DIR`
 
 **Override:**
 ```bash
-export OPENCENTER_CONFIG_DIR=/custom/path
+export OPENCENTER_CONFIG_DIR=/custom/opencenter-config
+export OPENCENTER_CLUSTER_DIR=/custom/opencenter-clusters
 ```
 
 ### CLI Defaults
@@ -400,11 +401,13 @@ Supported location overrides:
 | Location | Environment Variable | Default |
 |----------|---------------------|---------|
 | Config directory | `OPENCENTER_CONFIG_DIR` | `~/.config/opencenter` |
+| Cluster directory | `OPENCENTER_CLUSTER_DIR` | `${OPENCENTER_CONFIG_DIR:-~/.config/opencenter}/clusters` |
 | State directory | `OPENCENTER_STATE_DIR` | `${XDG_STATE_HOME:-~/.local/state}/opencenter` |
 
 **Example:**
 ```bash
 export OPENCENTER_CONFIG_DIR=/custom/config
+export OPENCENTER_CLUSTER_DIR=/custom/clusters
 export OPENCENTER_STATE_DIR=/custom/state
 ```
 

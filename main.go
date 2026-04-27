@@ -41,14 +41,8 @@ func main() {
 	cmd.GitTag = gitTag
 	cmd.BuildDate = buildDate
 
-	// Get base directory for path resolver
-	baseDir := os.Getenv("OPENCENTER_CONFIG_DIR")
-	if baseDir == "" {
-		// Load from CLI config
-		baseDir = config.GetClustersDir()
-	} else {
-		baseDir = baseDir + "/clusters"
-	}
+	// Get base directory for path resolver.
+	baseDir := config.ResolveClustersDir()
 
 	// Create and initialize DI container
 	container, err := di.SetupContainer(baseDir)
