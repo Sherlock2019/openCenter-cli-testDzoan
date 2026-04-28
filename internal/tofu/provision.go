@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/provision"
@@ -29,6 +31,10 @@ func Provision(cfg v2.Config) error {
 	clusterDir := filepath.Join(cfg.GitDir(), "infrastructure", "clusters", cfg.ClusterName())
 	if err := os.MkdirAll(clusterDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create cluster iac directory: %w", err)
+	}
+
+	if err := writeOpenStackCredentialTfvars(clusterDir, cfg); err != nil {
+		return fmt.Errorf("failed to write OpenStack credential variables: %w", err)
 	}
 
 	// Validate template data before rendering
@@ -63,4 +69,25 @@ func Provision(cfg v2.Config) error {
 		return fmt.Errorf("failed to execute %s template: %w", templateName, err)
 	}
 	return pf.Close()
+}
+
+func writeOpenStackCredentialTfvars(clusterDir string, cfg v2.Config) error {
+	openstack := cfg.OpenCenter.Infrastructure.Cloud.OpenStack
+	if openstack == nil {
+		return nil
+	}
+
+	var content strings.Builder
+	if strings.TrimSpace(openstack.ApplicationCredentialID) != "" {
+		fmt.Fprintf(&content, "os_application_credential_id = %s\n", strconv.Quote(openstack.ApplicationCredentialID))
+	}
+	if strings.TrimSpace(openstack.ApplicationCredentialSecret) != "" {
+		fmt.Fprintf(&content, "os_application_credential_secret = %s\n", strconv.Quote(openstack.ApplicationCredentialSecret))
+	}
+	if content.Len() == 0 {
+		return nil
+	}
+
+	path := filepath.Join(clusterDir, "terraform.tfvars")
+	return os.WriteFile(path, []byte(content.String()), 0o600)
 }

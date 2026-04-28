@@ -36,6 +36,8 @@ func TestRenderClusterTemplatesIntegration(t *testing.T) {
 	}
 	cfg := *cfgPtr
 	cfg.OpenCenter.GitOps.Repository.LocalDir = tempDir
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ApplicationCredentialID = "test-app-cred-id"
+	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ApplicationCredentialSecret = "test-app-cred-secret"
 
 	// Create a mock cobra command for output
 	cmd := newClusterGenerateCmd()
@@ -66,6 +68,19 @@ func TestRenderClusterTemplatesIntegration(t *testing.T) {
 	clusterAppsPath := filepath.Join(tempDir, "applications", "overlays", "test-render-integration")
 	if _, err := os.Stat(clusterAppsPath); os.IsNotExist(err) {
 		t.Errorf("Expected cluster apps directory to be created at %s", clusterAppsPath)
+	}
+
+	tfvarsPath := filepath.Join(tempDir, "infrastructure", "clusters", "test-render-integration", "terraform.tfvars")
+	tfvars, err := os.ReadFile(tfvarsPath)
+	if err != nil {
+		t.Fatalf("Expected terraform.tfvars to be created at %s: %v", tfvarsPath, err)
+	}
+	tfvarsContent := string(tfvars)
+	if !bytes.Contains(tfvars, []byte(`os_application_credential_id = "test-app-cred-id"`)) {
+		t.Fatalf("terraform.tfvars missing application credential ID:\n%s", tfvarsContent)
+	}
+	if !bytes.Contains(tfvars, []byte(`os_application_credential_secret = "test-app-cred-secret"`)) {
+		t.Fatalf("terraform.tfvars missing application credential secret:\n%s", tfvarsContent)
 	}
 
 	// Verify output contains success message
