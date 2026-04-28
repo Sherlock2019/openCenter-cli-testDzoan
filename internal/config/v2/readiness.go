@@ -184,7 +184,9 @@ func (r *readinessBuilder) validateGitOpsHTTPS(parsed *url.URL, auth GitOpsAuth)
 		r.addError(CategoryGitOps, "opencenter.gitops.auth.token", "HTTPS GitOps repository requires token auth.", "Configure gitops.auth.token for HTTPS repositories.")
 		return
 	}
-	r.requireNonPlaceholder(CategoryGitOps, "opencenter.gitops.auth.token.token_file", auth.Token.TokenFile, "HTTPS GitOps repository requires token_file.", "Set gitops.auth.token.token_file to a file containing the provider token.")
+	if isMissingSecret(auth.Token.Token) && isMissingSecret(auth.Token.TokenFile) {
+		r.addError(CategoryGitOps, "opencenter.gitops.auth.token.token", "HTTPS GitOps repository requires a token value or token_file.", "Set gitops.auth.token.token or gitops.auth.token.token_file.")
+	}
 	expectedProvider := gitProviderForHost(parsed.Hostname())
 	if expectedProvider != "" && strings.ToLower(strings.TrimSpace(auth.Token.Provider)) != expectedProvider {
 		r.addError(CategoryGitOps, "opencenter.gitops.auth.token.provider", fmt.Sprintf("GitOps token provider must be %q for host %q.", expectedProvider, parsed.Hostname()), "Set gitops.auth.token.provider to match the repository host.")

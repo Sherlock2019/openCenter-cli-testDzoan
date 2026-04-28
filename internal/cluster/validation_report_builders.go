@@ -150,8 +150,11 @@ func gitOpsAuthStatus(cfg *v2.Config) (CheckStatus, string) {
 		return CheckStatusPass, "ssh"
 	}
 	if auth.Token != nil {
-		if strings.TrimSpace(auth.Token.TokenFile) == "" || strings.EqualFold(strings.TrimSpace(auth.Token.TokenFile), v2.PlaceholderSecret) {
-			return CheckStatusFail, "missing token file"
+		token := strings.TrimSpace(auth.Token.Token)
+		tokenFile := strings.TrimSpace(auth.Token.TokenFile)
+		if (token == "" || strings.EqualFold(token, v2.PlaceholderSecret)) &&
+			(tokenFile == "" || strings.EqualFold(tokenFile, v2.PlaceholderSecret)) {
+			return CheckStatusFail, "missing token"
 		}
 		return CheckStatusPass, "token"
 	}

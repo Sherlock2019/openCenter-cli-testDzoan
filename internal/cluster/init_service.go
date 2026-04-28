@@ -392,23 +392,51 @@ func (s *InitService) updateConfigPaths(cfg *v2.Config, configMap map[string]any
 	setNestedConfigValue(configMap, sshKeyPath, "secrets", "ssh_key", "private")
 	setNestedConfigValue(configMap, sshKeyPath+".pub", "secrets", "ssh_key", "public")
 
-	provider := strings.ToLower(strings.TrimSpace(cfg.OpenCenter.Infrastructure.Provider))
-	if provider == "kind" {
-		// Kind uses token-based HTTPS auth against local Gitea.
-		// SSH key fields are not needed for gitops; clear them.
-		cfg.OpenCenter.GitOps.Auth.SSH = nil
-		cfg.OpenCenter.GitOps.Auth.Token = &v2.GitOpsTokenAuth{
-			Provider: "gitea",
+	authMethod := s.effectiveTopsAuthMethod()
+	if hasExplicitConfigValue(configMap, opts, "opencenter", "gitops", "auth", "ssh") {
+		authMethod = config.TopsAuthMethodSSH
+	}
+	if hasExplicitConfigValue(configMap, opts, "opencenter", "gitops", "auth", "token") {
+		authMethod = config.TopsAuthMethodToken
+	}
+
+	if authMethod == config.TopsAuthMethodSSH {
+		if !hasExplicitConfigValue(configMap, opts, "opencenter", "gitops", "repository", "url") {
+			cfg.OpenCenter.GitOps.Repository.URL = "ssh://git@example.com/opencenter/cluster-config.git"
+			setNestedConfigValue(configMap, cfg.OpenCenter.GitOps.Repository.URL, "opencenter", "gitops", "repository", "url")
 		}
-		setNestedConfigValue(configMap, nil, "opencenter", "gitops", "auth", "ssh")
-		setNestedConfigValue(configMap, "gitea", "opencenter", "gitops", "auth", "token", "provider")
-	} else {
 		cfg.OpenCenter.GitOps.Auth.SSH = &v2.GitOpsSSHAuth{
 			PrivateKey: sshKeyPath,
 			PublicKey:  sshKeyPath + ".pub",
 		}
+		cfg.OpenCenter.GitOps.Auth.Token = nil
 		setNestedConfigValue(configMap, sshKeyPath, "opencenter", "gitops", "auth", "ssh", "private_key")
 		setNestedConfigValue(configMap, sshKeyPath+".pub", "opencenter", "gitops", "auth", "ssh", "public_key")
+		setNestedConfigValue(configMap, nil, "opencenter", "gitops", "auth", "token")
+	} else {
+		if !hasExplicitConfigValue(configMap, opts, "opencenter", "gitops", "repository", "url") {
+			cfg.OpenCenter.GitOps.Repository.URL = "https://github.com/opencenter/cluster-config.git"
+			setNestedConfigValue(configMap, cfg.OpenCenter.GitOps.Repository.URL, "opencenter", "gitops", "repository", "url")
+		}
+		if cfg.OpenCenter.GitOps.Auth.Token == nil {
+			cfg.OpenCenter.GitOps.Auth.Token = &v2.GitOpsTokenAuth{}
+		}
+		if !hasExplicitConfigValue(configMap, opts, "opencenter", "gitops", "auth", "token", "provider") {
+			cfg.OpenCenter.GitOps.Auth.Token.Provider = "github"
+			setNestedConfigValue(configMap, "github", "opencenter", "gitops", "auth", "token", "provider")
+		}
+		tokenExplicit := hasExplicitConfigValue(configMap, opts, "opencenter", "gitops", "auth", "token", "token")
+		tokenFileExplicit := hasExplicitConfigValue(configMap, opts, "opencenter", "gitops", "auth", "token", "token_file")
+		if !tokenExplicit && tokenFileExplicit {
+			cfg.OpenCenter.GitOps.Auth.Token.Token = ""
+			setNestedConfigValue(configMap, "", "opencenter", "gitops", "auth", "token", "token")
+		}
+		if !tokenExplicit && !tokenFileExplicit {
+			cfg.OpenCenter.GitOps.Auth.Token.Token = v2.PlaceholderSecret
+			setNestedConfigValue(configMap, v2.PlaceholderSecret, "opencenter", "gitops", "auth", "token", "token")
+		}
+		cfg.OpenCenter.GitOps.Auth.SSH = nil
+		setNestedConfigValue(configMap, nil, "opencenter", "gitops", "auth", "ssh")
 	}
 
 	// Update SOPS key path
@@ -429,6 +457,16 @@ func (s *InitService) updateConfigPaths(cfg *v2.Config, configMap map[string]any
 	cfg.Secrets.SOPSConfig.AgeKeyFile = clusterPaths.SOPSKeyPath
 	setNestedConfigValue(configMap, clusterPaths.SOPSKeyPath, "secrets", "sops_age_key_file")
 	setNestedConfigValue(configMap, clusterPaths.SOPSKeyPath, "secrets", "sops", "age_key_file")
+}
+
+func (s *InitService) effectiveTopsAuthMethod() string {
+	if s != nil && s.configManager != nil {
+		method := strings.ToLower(strings.TrimSpace(s.configManager.GetConfig().ClusterDefaults.TopsAuthMethod))
+		if method == config.TopsAuthMethodSSH || method == config.TopsAuthMethodToken {
+			return method
+		}
+	}
+	return config.TopsAuthMethodToken
 }
 
 // validateConfig validates the configuration

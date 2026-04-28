@@ -469,8 +469,12 @@ func validOpenStackConfigForValidation(t *testing.T) *v2.Config {
 	cfg.Secrets.Grafana.AdminPassword = "grafana-admin-password"
 	cfg.Secrets.Loki.SwiftApplicationCredentialSecret = "loki-swift-secret"
 	cfg.Secrets.Tempo.SwiftApplicationCredentialSecret = "tempo-swift-secret"
-	cfg.OpenCenter.GitOps.Auth.SSH.PrivateKey = "secrets/gitops/id_ed25519"
-	cfg.OpenCenter.GitOps.Auth.SSH.PublicKey = "secrets/gitops/id_ed25519.pub"
+	cfg.OpenCenter.GitOps.Repository.URL = "ssh://git@github.com/example/openstack-validation.git"
+	cfg.OpenCenter.GitOps.Auth.Token = nil
+	cfg.OpenCenter.GitOps.Auth.SSH = &v2.GitOpsSSHAuth{
+		PrivateKey: "secrets/gitops/id_ed25519",
+		PublicKey:  "secrets/gitops/id_ed25519.pub",
+	}
 
 	osCfg := cfg.OpenCenter.Infrastructure.Cloud.OpenStack
 	osCfg.ApplicationCredentialID = "app-cred-id"

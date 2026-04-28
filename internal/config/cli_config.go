@@ -70,6 +70,9 @@ type BehaviorConfig struct {
 const (
 	ValidationModeOffline = "offline"
 	ValidationModeOnline  = "online"
+
+	TopsAuthMethodSSH   = "ssh"
+	TopsAuthMethodToken = "token"
 )
 
 // ClusterDefaultsConfig contains default values applied when generating new cluster
@@ -79,6 +82,7 @@ type ClusterDefaultsConfig struct {
 	Provider          string   `yaml:"provider"`
 	Region            string   `yaml:"region"`
 	Environment       string   `yaml:"environment"`
+	TopsAuthMethod    string   `yaml:"tops_auth_method"`
 	SSHAuthorizedKeys []string `yaml:"ssh_authorized_keys,omitempty"`
 	BaseDomain        string   `yaml:"base_domain,omitempty"`
 	AdminEmail        string   `yaml:"admin_email,omitempty"`
@@ -252,9 +256,10 @@ func DefaultCLIConfig() *CLIConfig {
 			Validation:  ValidationModeOffline,
 		},
 		ClusterDefaults: ClusterDefaultsConfig{
-			Provider:    "openstack",
-			Region:      "dfw3",
-			Environment: "dev",
+			Provider:       "openstack",
+			Region:         "dfw3",
+			Environment:    "dev",
+			TopsAuthMethod: TopsAuthMethodToken,
 		},
 	}
 }
@@ -418,6 +423,9 @@ func (cm *ConfigManager) mergeWithDefaults(config *CLIConfig) *CLIConfig {
 	}
 	if config.ClusterDefaults.Environment != "" {
 		merged.ClusterDefaults.Environment = config.ClusterDefaults.Environment
+	}
+	if config.ClusterDefaults.TopsAuthMethod != "" {
+		merged.ClusterDefaults.TopsAuthMethod = config.ClusterDefaults.TopsAuthMethod
 	}
 	if len(config.ClusterDefaults.SSHAuthorizedKeys) > 0 {
 		merged.ClusterDefaults.SSHAuthorizedKeys = config.ClusterDefaults.SSHAuthorizedKeys
@@ -1030,6 +1038,26 @@ func (cm *ConfigManager) setClusterDefaultsValue(defaults *ClusterDefaultsConfig
 				Message: "environment must be a string",
 			}
 		}
+	case "tops_auth_method":
+		str, ok := value.(string)
+		if !ok {
+			return &ConfigError{
+				Type:    "validation",
+				Field:   "cluster_defaults.tops_auth_method",
+				Value:   value,
+				Message: "tops_auth_method must be a string",
+			}
+		}
+		str = strings.ToLower(strings.TrimSpace(str))
+		if err := ValidateTopsAuthMethod(str); err != nil {
+			return &ConfigError{
+				Type:    "validation",
+				Field:   "cluster_defaults.tops_auth_method",
+				Value:   value,
+				Message: err.Error(),
+			}
+		}
+		defaults.TopsAuthMethod = str
 	case "base_domain":
 		if str, ok := value.(string); ok {
 			defaults.BaseDomain = str
@@ -1237,6 +1265,8 @@ func (cm *ConfigManager) getClusterDefaultsValue(defaults *ClusterDefaultsConfig
 		return defaults.Region, nil
 	case "environment":
 		return defaults.Environment, nil
+	case "tops_auth_method":
+		return defaults.TopsAuthMethod, nil
 	case "ssh_authorized_keys":
 		return defaults.SSHAuthorizedKeys, nil
 	case "base_domain":
@@ -1681,6 +1711,16 @@ func ValidateBehaviorValidationMode(mode string) error {
 	}
 }
 
+func ValidateTopsAuthMethod(method string) error {
+	method = strings.ToLower(strings.TrimSpace(method))
+	switch method {
+	case TopsAuthMethodSSH, TopsAuthMethodToken:
+		return nil
+	default:
+		return fmt.Errorf("invalid cluster_defaults.tops_auth_method %q; expected ssh or token", method)
+	}
+}
+
 // validateDefaultsWithResult validates the defaults configuration.
 func (cv *ConfigValidator) validateClusterDefaultsWithResult(defaults *ClusterDefaultsConfig, result *ValidationResult) {
 	// Validate provider
@@ -1712,6 +1752,18 @@ func (cv *ConfigValidator) validateClusterDefaultsWithResult(defaults *ClusterDe
 			Field:   "cluster_defaults.environment",
 			Value:   defaults.Environment,
 			Message: fmt.Sprintf("uncommon environment '%s', common environments: %s", defaults.Environment, strings.Join(commonEnvs, ", ")),
+		})
+	}
+
+	if defaults.TopsAuthMethod == "" {
+		defaults.TopsAuthMethod = TopsAuthMethodToken
+	}
+	if err := ValidateTopsAuthMethod(defaults.TopsAuthMethod); err != nil {
+		result.Errors = append(result.Errors, &ConfigError{
+			Type:    "validation",
+			Field:   "cluster_defaults.tops_auth_method",
+			Value:   defaults.TopsAuthMethod,
+			Message: err.Error(),
 		})
 	}
 

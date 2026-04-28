@@ -156,7 +156,7 @@ It also:
 For HTTPS repository URLs:
 
 - token auth must be configured
-- `gitops.auth.token.token_file` must be set
+- `gitops.auth.token.token` or `gitops.auth.token.token_file` must be set
 - token provider must match the repository host:
   - `github.com` requires `github`
   - GitLab hosts require `gitlab`

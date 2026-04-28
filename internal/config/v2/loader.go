@@ -265,6 +265,7 @@ func (cl *ConfigLoader) SaveToFile(cfg *Config, filePath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal configuration: %w", err)
 	}
+	data = ensureDocumentStart(data)
 
 	// Write to file with secure permissions using atomic write
 	if err := cl.fileSystem.WriteFileAtomic(filePath, data, 0600); err != nil {
@@ -272,6 +273,14 @@ func (cl *ConfigLoader) SaveToFile(cfg *Config, filePath string) error {
 	}
 
 	return nil
+}
+
+func ensureDocumentStart(data []byte) []byte {
+	trimmed := strings.TrimLeft(string(data), "\ufeff \t\r\n")
+	if strings.HasPrefix(trimmed, "---\n") || strings.HasPrefix(trimmed, "---\r\n") {
+		return data
+	}
+	return append([]byte("---\n"), data...)
 }
 
 // ExportEffectiveConfig exports the configuration with applied defaults as comments.

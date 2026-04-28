@@ -186,7 +186,7 @@ func (c Config) GitDir() string {
 // to something other than the schema default placeholder.
 func (c Config) ConfiguredGitURL() string {
 	value := strings.TrimSpace(c.OpenCenter.GitOps.Repository.URL)
-	if value == "" || value == defaultGitURLPlaceholder {
+	if value == "" || value == defaultGitURLPlaceholder || value == defaultHTTPSGitURLPlaceholder {
 		return ""
 	}
 	return value

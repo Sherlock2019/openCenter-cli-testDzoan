@@ -1,6 +1,7 @@
 package v2
 
 import (
+	cryptorand "crypto/rand"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -22,8 +23,10 @@ const (
 	defaultBaseDomain                 = "k8s.opencenter.cloud"
 	defaultGitBranch                  = "main"
 	defaultGitURLPlaceholder          = "ssh://git@example.com/opencenter/cluster-config.git"
+	defaultHTTPSGitURLPlaceholder     = "https://github.com/opencenter/cluster-config.git"
 	defaultGitBaseRepoURL             = "ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git"
 	defaultGitBaseRepoRelease         = "v0.1.0"
+	defaultTopsAuthMethod             = "token"
 	defaultDefaultStorageClass        = "standard"
 	defaultWorkerVolumeType           = "standard"
 	defaultOpenStackProjectID         = "project-id-placeholder"
@@ -58,6 +61,7 @@ type cliDefaults struct {
 	Provider          string   `yaml:"provider"`
 	Region            string   `yaml:"region"`
 	Environment       string   `yaml:"environment"`
+	TopsAuthMethod    string   `yaml:"tops_auth_method"`
 	SSHAuthorizedKeys []string `yaml:"ssh_authorized_keys"`
 	BaseDomain        string   `yaml:"base_domain"`
 	AdminEmail        string   `yaml:"admin_email"`
@@ -108,6 +112,11 @@ func NewV2Default(name, provider string) (*Config, error) {
 	bastionFlavor := defaultFlavorForProvider(selectedProvider, region, "bastion")
 	if bastionFlavor == "" {
 		bastionEnabled = false
+	}
+
+	grafanaAdminPassword, err := randomSecret(16)
+	if err != nil {
+		return nil, fmt.Errorf("generating grafana admin password: %w", err)
 	}
 
 	cfg := &Config{
@@ -230,7 +239,6 @@ func NewV2Default(name, provider string) (*Config, error) {
 			},
 			GitOps: GitOpsConfig{
 				Repository: GitOpsRepository{
-					URL:      defaultGitURLPlaceholder,
 					Branch:   defaultGitBranch,
 					Path:     filepath.ToSlash(filepath.Join("clusters", name)),
 					LocalDir: filepath.ToSlash(filepath.Join("clusters", defaultOrganization)),
@@ -240,12 +248,7 @@ func NewV2Default(name, provider string) (*Config, error) {
 					Release: defaultGitBaseRepoRelease,
 					Branch:  defaultGitBranch,
 				},
-				Auth: GitOpsAuth{
-					SSH: &GitOpsSSHAuth{
-						PrivateKey: sshKeyPath,
-						PublicKey:  sshKeyPath + ".pub",
-					},
-				},
+				Auth: GitOpsAuth{},
 				Flux: GitOpsFluxConfig{
 					Interval: "5m",
 					Prune:    true,
@@ -302,7 +305,7 @@ func NewV2Default(name, provider string) (*Config, error) {
 				OIDCClientSecret: PlaceholderSecret,
 			},
 			Grafana: GrafanaSecrets{
-				AdminPassword: PlaceholderSecret,
+				AdminPassword: grafanaAdminPassword,
 			},
 			Loki: LokiSecrets{
 				SwiftApplicationCredentialSecret: PlaceholderSecret,
@@ -320,6 +323,7 @@ func NewV2Default(name, provider string) (*Config, error) {
 
 	applyProviderCloudDefaults(cfg, availabilityZone)
 	applyProviderBehaviorDefaults(cfg)
+	applyGitOpsAuthDefaults(cfg, defaults.TopsAuthMethod, sshKeyPath)
 
 	return cfg, nil
 }
@@ -438,7 +442,7 @@ func RenderFullTemplateYAMLFromConfig(cfg *Config) ([]byte, error) {
 		"",
 	}, "\n")
 
-	return append([]byte(header), data...), nil
+	return append([]byte(header), ensureDocumentStart(data)...), nil
 }
 
 func applyProviderCloudDefaults(cfg *Config, availabilityZone string) {
@@ -621,6 +625,36 @@ func applyProviderBehaviorDefaults(cfg *Config) {
 	}
 }
 
+func applyGitOpsAuthDefaults(cfg *Config, authMethod, sshKeyPath string) {
+	switch normalizeTopsAuthMethod(authMethod) {
+	case "ssh":
+		cfg.OpenCenter.GitOps.Repository.URL = defaultGitURLPlaceholder
+		cfg.OpenCenter.GitOps.Auth.SSH = &GitOpsSSHAuth{
+			PrivateKey: sshKeyPath,
+			PublicKey:  sshKeyPath + ".pub",
+		}
+		cfg.OpenCenter.GitOps.Auth.Token = nil
+	default:
+		cfg.OpenCenter.GitOps.Repository.URL = defaultHTTPSGitURLPlaceholder
+		cfg.OpenCenter.GitOps.Auth.SSH = nil
+		cfg.OpenCenter.GitOps.Auth.Token = &GitOpsTokenAuth{
+			Provider: "github",
+			Token:    PlaceholderSecret,
+		}
+	}
+}
+
+func normalizeTopsAuthMethod(authMethod string) string {
+	switch strings.ToLower(strings.TrimSpace(authMethod)) {
+	case "ssh":
+		return "ssh"
+	case "token", "":
+		return "token"
+	default:
+		return defaultTopsAuthMethod
+	}
+}
+
 func defaultServiceMap(clusterFQDN string) ServiceMap {
 	return ServiceMap{
 		"calico":               &services.CalicoConfig{BaseConfig: services.BaseConfig{Enabled: true}, KubeAPIServer: ""},
@@ -687,9 +721,10 @@ func storagePluginDefaults(provider string) StoragePluginConfig {
 
 func loadCLIDefaults() cliDefaults {
 	defaults := cliDefaults{
-		Provider:    defaultProvider,
-		Region:      defaultRegion,
-		Environment: defaultEnvironment,
+		Provider:       defaultProvider,
+		Region:         defaultRegion,
+		Environment:    defaultEnvironment,
+		TopsAuthMethod: defaultTopsAuthMethod,
 	}
 
 	configPath, err := defaultCLIConfigPath()
@@ -715,6 +750,9 @@ func loadCLIDefaults() cliDefaults {
 	}
 	if strings.TrimSpace(cfg.ClusterDefaults.Environment) != "" {
 		defaults.Environment = cfg.ClusterDefaults.Environment
+	}
+	if strings.TrimSpace(cfg.ClusterDefaults.TopsAuthMethod) != "" {
+		defaults.TopsAuthMethod = normalizeTopsAuthMethod(cfg.ClusterDefaults.TopsAuthMethod)
 	}
 	if len(cfg.ClusterDefaults.SSHAuthorizedKeys) > 0 {
 		defaults.SSHAuthorizedKeys = cfg.ClusterDefaults.SSHAuthorizedKeys
@@ -891,6 +929,24 @@ func defaultAuthorizedKeys(defaults cliDefaults) []string {
 		return append([]string(nil), defaults.SSHAuthorizedKeys...)
 	}
 	return []string{defaultSSHKeyPlaceholder}
+}
+
+func randomSecret(length int) (string, error) {
+	if length < 16 {
+		length = 16
+	}
+
+	const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	randomBytes := make([]byte, length)
+	if _, err := cryptorand.Read(randomBytes); err != nil {
+		return "", err
+	}
+
+	out := make([]byte, length)
+	for i, b := range randomBytes {
+		out[i] = alphabet[int(b)%len(alphabet)]
+	}
+	return string(out), nil
 }
 
 func currentUser() string {

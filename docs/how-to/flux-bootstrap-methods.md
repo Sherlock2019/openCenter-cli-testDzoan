@@ -204,12 +204,12 @@ opencenter:
       branch: "main"
     auth:
       token:
-        token_file: "~/.config/opencenter/clusters/my-org/secrets/git-token.txt"
         provider: "github"  # or "gitlab", "gitea"
+        token: "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         owner: "my-org"     # optional: overrides owner extracted from URL
 ```
 
-The token `owner` field is optional. If not specified, openCenter extracts the owner from the repository URL. Use `owner` when:
+Set either `token` or `token_file: "~/.config/opencenter/clusters/my-org/secrets/git-token.txt"`. The default `cluster init` template uses `token: "CHANGEME"` so generated configs are actionable without guessing the field name; replace it before deployment. The token `owner` field is optional. If not specified, openCenter extracts the owner from the repository URL. Use `owner` when:
 - The URL owner differs from the token owner (e.g., organization vs personal account)
 - Using a personal token with `--personal` flag for GitHub
 

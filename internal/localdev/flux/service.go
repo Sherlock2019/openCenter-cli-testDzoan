@@ -113,10 +113,7 @@ func (s *Service) Bootstrap(ctx context.Context, clusterIdentifier string) (*Boo
 		return nil, fmt.Errorf("cluster %q does not define git_url and no routable host IP was found for local Gitea", clusterIdentifier)
 	}
 
-	tokenProvider := resolveGitTokenProvider(cluster.Config)
-	if tokenProvider == "" {
-		tokenProvider = "gitea"
-	}
+	tokenProvider := resolveGitTokenProviderForURL(cluster.Config, repoURL)
 
 	tokenPath, err := resolveTokenPath(resolveGitTokenFile(cluster.Config), status.UserTokenPath, status.UserTokenExists)
 	if err != nil {
@@ -327,6 +324,39 @@ func resolveGitTokenProvider(cfg *v2.Config) string {
 		return strings.ToLower(strings.TrimSpace(cfg.OpenCenter.GitOps.Auth.Token.Provider))
 	}
 	return ""
+}
+
+func resolveGitTokenProviderForURL(cfg *v2.Config, repoURL string) string {
+	configured := resolveGitTokenProvider(cfg)
+	inferred := inferGitTokenProvider(repoURL)
+	if inferred == "gitea" && configured == "github" {
+		return inferred
+	}
+	if configured != "" {
+		return configured
+	}
+	if inferred != "" {
+		return inferred
+	}
+	return "gitea"
+}
+
+func inferGitTokenProvider(repoURL string) string {
+	parsed, err := url.Parse(strings.TrimSpace(repoURL))
+	if err != nil {
+		return ""
+	}
+	host := strings.ToLower(parsed.Hostname())
+	switch {
+	case host == "github.com" || strings.Contains(host, "github"):
+		return "github"
+	case host == "gitlab.com" || strings.Contains(host, "gitlab"):
+		return "gitlab"
+	case host != "":
+		return "gitea"
+	default:
+		return ""
+	}
 }
 
 // resolveGitTokenFile extracts the token file path from the GitOps config.

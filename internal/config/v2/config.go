@@ -309,6 +309,9 @@ type GitOpsTokenAuth struct {
 	// Provider is the Git provider: github, gitlab, gitea.
 	Provider string `yaml:"provider" json:"provider" validate:"required,oneof=github gitlab gitea"`
 
+	// Token is an inline access token value.
+	Token string `yaml:"token,omitempty" json:"token,omitempty"`
+
 	// TokenFile is the path to the file containing the access token.
 	// Required when using token authentication for bootstrap.
 	TokenFile string `yaml:"token_file,omitempty" json:"token_file,omitempty"`

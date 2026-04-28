@@ -57,6 +57,10 @@ func TestDefaultCLIConfig(t *testing.T) {
 		t.Errorf("Expected default provider 'openstack', got '%s'", config.ClusterDefaults.Provider)
 	}
 
+	if config.ClusterDefaults.TopsAuthMethod != "token" {
+		t.Errorf("Expected default tops auth method 'token', got '%s'", config.ClusterDefaults.TopsAuthMethod)
+	}
+
 	if config.Paths.StateDir == "" {
 		t.Error("Expected default stateDir to be populated")
 	}
@@ -215,6 +219,7 @@ func TestConfigManagerSetGetValue(t *testing.T) {
 		{"behavior.dryRun", true},
 		{"behavior.validation", "online"},
 		{"cluster_defaults.provider", "aws"},
+		{"cluster_defaults.tops_auth_method", "ssh"},
 		{"logging.file.maxSize", 200},
 		{"paths.stateDir", filepath.Join(tmpDir, "state")},
 	}
@@ -268,6 +273,34 @@ func TestConfigManagerBehaviorValidationModeValidation(t *testing.T) {
 
 	if err := cm.SetValue("behavior.autoConfirm", true); err != nil {
 		t.Fatalf("existing behavior boolean field should still set: %v", err)
+	}
+}
+
+func TestConfigManagerTopsAuthMethodValidation(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.yaml")
+
+	cm, err := NewConfigManager(configPath)
+	if err != nil {
+		t.Fatalf("Failed to create config manager: %v", err)
+	}
+
+	if err := cm.SetValue("cluster_defaults.tops_auth_method", "ssh"); err != nil {
+		t.Fatalf("SetValue(cluster_defaults.tops_auth_method=ssh) error = %v", err)
+	}
+
+	got, err := cm.GetValue("cluster_defaults.tops_auth_method")
+	if err != nil {
+		t.Fatalf("GetValue(cluster_defaults.tops_auth_method) error = %v", err)
+	}
+	if got != "ssh" {
+		t.Fatalf("cluster_defaults.tops_auth_method = %v, want ssh", got)
+	}
+
+	if err := cm.SetValue("cluster_defaults.tops_auth_method", "password"); err == nil {
+		t.Fatal("expected invalid cluster_defaults.tops_auth_method to fail")
+	} else if !strings.Contains(err.Error(), `invalid cluster_defaults.tops_auth_method "password"; expected ssh or token`) {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 

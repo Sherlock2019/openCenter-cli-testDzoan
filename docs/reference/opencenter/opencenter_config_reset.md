@@ -22,6 +22,7 @@ Default values:
   - cluster_defaults.provider: openstack
   - cluster_defaults.region: dfw3
   - cluster_defaults.environment: dev
+  - cluster_defaults.tops_auth_method: token
 
 ```
 opencenter config reset [flags]

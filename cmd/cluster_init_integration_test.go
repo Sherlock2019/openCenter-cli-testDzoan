@@ -218,6 +218,94 @@ func TestClusterInitIntegrationKindProvider(t *testing.T) {
 	}
 }
 
+func TestClusterInitUsesDefaultTokenAuthAndGeneratedSecrets(t *testing.T) {
+	dir := t.TempDir()
+	prepareCommandTestEnv(t, dir)
+
+	cmd := newClusterInitCmd()
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"token-init", "--org", "opencenter", "--no-keygen"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("cluster init failed: %v\nstderr: %s", err, stderr.String())
+	}
+
+	configPath := filepath.Join(dir, "clusters", "opencenter", ".token-init-config.yaml")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	if !strings.HasPrefix(string(data), "---\n") {
+		t.Fatalf("expected generated config to start with YAML document marker, got:\n%s", string(data[:min(len(data), 80)]))
+	}
+
+	cfg := loadV2ConfigForTest(t, configPath)
+	if cfg.OpenCenter.GitOps.Auth.SSH != nil {
+		t.Fatalf("expected token auth default to omit ssh auth, got %#v", cfg.OpenCenter.GitOps.Auth.SSH)
+	}
+	if cfg.OpenCenter.GitOps.Auth.Token == nil {
+		t.Fatal("expected token auth default to be configured")
+	}
+	if got := cfg.OpenCenter.GitOps.Auth.Token.Provider; got != "github" {
+		t.Fatalf("token provider = %q, want github", got)
+	}
+	if got := cfg.OpenCenter.GitOps.Auth.Token.Token; got != v2.PlaceholderSecret {
+		t.Fatalf("token value = %q, want %q", got, v2.PlaceholderSecret)
+	}
+	if !strings.HasPrefix(cfg.OpenCenter.GitOps.Repository.URL, "https://github.com/") {
+		t.Fatalf("expected token auth to use an HTTPS GitHub repository URL, got %q", cfg.OpenCenter.GitOps.Repository.URL)
+	}
+	if got := cfg.Secrets.Grafana.AdminPassword; len(got) < 16 || got == v2.PlaceholderSecret {
+		t.Fatalf("expected generated Grafana password at least 16 chars and not placeholder, got %q", got)
+	}
+}
+
+func TestClusterInitUsesSSHAuthWhenConfigured(t *testing.T) {
+	dir := t.TempDir()
+	prepareCommandTestEnv(t, dir)
+
+	cm, err := config.NewConfigManager("")
+	if err != nil {
+		t.Fatalf("create config manager: %v", err)
+	}
+	if err := cm.SetValue("cluster_defaults.tops_auth_method", "ssh"); err != nil {
+		t.Fatalf("set tops auth method: %v", err)
+	}
+	if err := cm.Save(); err != nil {
+		t.Fatalf("save config: %v", err)
+	}
+	resetCommandStateForTests()
+
+	cmd := newClusterInitCmd()
+	var stderr bytes.Buffer
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"ssh-init", "--org", "opencenter", "--no-keygen"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("cluster init failed: %v\nstderr: %s", err, stderr.String())
+	}
+
+	configPath := filepath.Join(dir, "clusters", "opencenter", ".ssh-init-config.yaml")
+	cfg := loadV2ConfigForTest(t, configPath)
+	if cfg.OpenCenter.GitOps.Auth.Token != nil {
+		t.Fatalf("expected ssh auth to omit token auth, got %#v", cfg.OpenCenter.GitOps.Auth.Token)
+	}
+	if cfg.OpenCenter.GitOps.Auth.SSH == nil {
+		t.Fatal("expected ssh auth to be configured")
+	}
+	wantKey := filepath.Join(dir, "clusters", "opencenter", "secrets", "ssh", "ssh-init")
+	if got := cfg.OpenCenter.GitOps.Auth.SSH.PrivateKey; got != wantKey {
+		t.Fatalf("private key = %q, want %q", got, wantKey)
+	}
+	if got := cfg.OpenCenter.GitOps.Auth.SSH.PublicKey; got != wantKey+".pub" {
+		t.Fatalf("public key = %q, want %q", got, wantKey+".pub")
+	}
+	if !strings.HasPrefix(cfg.OpenCenter.GitOps.Repository.URL, "ssh://") {
+		t.Fatalf("expected ssh auth to use an SSH repository URL, got %q", cfg.OpenCenter.GitOps.Repository.URL)
+	}
+}
+
 func TestClusterInitKindDisableDefaultCNIFlag(t *testing.T) {
 	dir := t.TempDir()
 	prepareCommandTestEnv(t, dir)

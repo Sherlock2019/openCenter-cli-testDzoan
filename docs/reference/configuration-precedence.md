@@ -105,9 +105,10 @@ Hard-coded in the Go source. Applied when no other source provides a value:
 |---------|---------|--------|
 | `logging.level` | `warn` | `DefaultCLIConfig()` |
 | `logging.format` | `text` | `DefaultCLIConfig()` |
-| `defaults.provider` | `openstack` | `DefaultCLIConfig()` |
-| `defaults.region` | `dfw3` | `DefaultCLIConfig()` |
-| `defaults.environment` | `dev` | `DefaultCLIConfig()` |
+| `cluster_defaults.provider` | `openstack` | `DefaultCLIConfig()` |
+| `cluster_defaults.region` | `dfw3` | `DefaultCLIConfig()` |
+| `cluster_defaults.environment` | `dev` | `DefaultCLIConfig()` |
+| `cluster_defaults.tops_auth_method` | `token` | `DefaultCLIConfig()` |
 | `gitops.repository.branch` | `main` | `normalize()` in loader |
 | `gitops.flux.interval` | `5m` | `normalize()` in loader |
 
