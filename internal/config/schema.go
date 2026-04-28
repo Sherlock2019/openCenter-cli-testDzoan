@@ -1153,6 +1153,38 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 		},
 	}
 
+	identity := map[string]any{
+		"type":        "object",
+		"description": "Identity provider configuration",
+		"properties": map[string]any{
+			"oidc": map[string]any{
+				"type":        "object",
+				"description": "OIDC identity provider settings",
+				"properties": map[string]any{
+					"enabled": map[string]any{
+						"type":        "boolean",
+						"description": "Enable OIDC authentication",
+						"default":     true,
+					},
+					"source": map[string]any{
+						"type":        "string",
+						"description": "OIDC provider source",
+						"enum":        []string{OIDCSourceInternal, OIDCSourceExternal},
+						"default":     OIDCSourceInternal,
+					},
+					"provider": map[string]any{
+						"type":        "string",
+						"description": "OIDC provider implementation",
+						"enum":        []string{OIDCProviderKeycloak, OIDCProviderEntra, OIDCProviderGeneric},
+						"default":     OIDCProviderKeycloak,
+					},
+				},
+				"additionalProperties": false,
+			},
+		},
+		"additionalProperties": false,
+	}
+
 	managedService := map[string]any{
 		"type": "object",
 		"properties": map[string]any{
@@ -1248,6 +1280,7 @@ func GenerateSchema(pretty bool) ([]byte, error) {
 					"infrastructure": infrastructure,
 					"cluster":        cluster,
 					"gitops":         gitops,
+					"identity":       identity,
 					"storage": map[string]any{
 						"type":        "object",
 						"description": "Storage configuration for the cluster",

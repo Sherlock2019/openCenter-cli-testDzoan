@@ -341,6 +341,21 @@ opencenter:
         worker_node_bfv_type_windows: ""
 ```
 
+### opencenter.identity
+
+Identity provider configuration for services that consume OIDC.
+
+```yaml
+opencenter:
+  identity:
+    oidc:
+      enabled: true
+      source: internal      # internal or external
+      provider: keycloak    # keycloak, entra, or generic
+```
+
+When `source: internal` and `provider: keycloak`, OIDC client secrets are created by the OpenCenter Keycloak bootstrap flow and are not required before that bootstrap completes. `secrets.keycloak.admin_password` is still user-provided for now.
+
 ### opencenter.gitops
 
 GitOps repository configuration.
@@ -507,10 +522,10 @@ secrets:
   loki:
     swift_password: ""
   keycloak:
-    client_secret: ""
-    admin_password: ""
+    client_secret: ""      # internal OIDC bootstrap may create this later
+    admin_password: ""     # user-provided for now
   headlamp:
-    oidc_client_secret: ""
+    oidc_client_secret: "" # internal OIDC bootstrap may create this later
   weave_gitops:
     password: ""
     password_hash: ""

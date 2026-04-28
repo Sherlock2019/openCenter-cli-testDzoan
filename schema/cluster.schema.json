@@ -913,9 +913,49 @@
         }
       },
       "additionalProperties": false,
+      "type": "object"
+    },
+    "IdentityConfig": {
+      "properties": {
+        "oidc": {
+          "$ref": "#/$defs/IdentityOIDCConfig",
+          "description": "OIDC identity provider settings"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "IdentityOIDCConfig": {
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable OIDC authentication",
+          "default": true
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "internal",
+            "external"
+          ],
+          "description": "OIDC provider source",
+          "default": "internal"
+        },
+        "provider": {
+          "type": "string",
+          "enum": [
+            "keycloak",
+            "entra",
+            "generic"
+          ],
+          "description": "OIDC provider implementation",
+          "default": "keycloak"
+        }
+      },
+      "additionalProperties": false,
       "type": "object",
       "required": [
-        "oidc_client_secret"
+        "enabled"
       ]
     },
     "Infrastructure": {
@@ -982,7 +1022,6 @@
       "additionalProperties": false,
       "type": "object",
       "required": [
-        "client_secret",
         "admin_password"
       ]
     },
@@ -1723,8 +1762,6 @@
         "global",
         "cert_manager",
         "loki",
-        "keycloak",
-        "headlamp",
         "weave_gitops",
         "grafana",
         "tempo",
@@ -1785,6 +1822,9 @@
         },
         "gitops": {
           "$ref": "#/$defs/GitOpsConfig"
+        },
+        "identity": {
+          "$ref": "#/$defs/IdentityConfig"
         },
         "gateway": {
           "$ref": "#/$defs/GatewayGlobalConfig"

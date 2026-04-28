@@ -150,9 +150,7 @@ func TestValidateService_ValidateFailsForEnabledServicePlaceholders(t *testing.T
 
 	errMsg := strings.Join(result.Errors, "\n")
 	for _, want := range []string{
-		"secrets.keycloak.client_secret",
 		"secrets.keycloak.admin_password",
-		"secrets.headlamp.oidc_client_secret",
 	} {
 		if !strings.Contains(errMsg, want) {
 			t.Fatalf("expected validation errors to contain %q, got:\n%s", want, errMsg)

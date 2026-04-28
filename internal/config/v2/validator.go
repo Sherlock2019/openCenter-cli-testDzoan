@@ -240,7 +240,7 @@ func (v *defaultValidator) validatePlaceholderSecrets(cfg *Config) error {
 
 	// Keycloak secrets (enabled by default)
 	if isServiceEnabled(cfg, "keycloak") {
-		if cfg.Secrets.Keycloak.ClientSecret == PlaceholderSecret {
+		if !oidcClientSecretsProvidedInternally(cfg) && cfg.Secrets.Keycloak.ClientSecret == PlaceholderSecret {
 			placeholders = append(placeholders, "secrets.keycloak.client_secret")
 		}
 		if cfg.Secrets.Keycloak.AdminPassword == PlaceholderSecret {
@@ -249,7 +249,7 @@ func (v *defaultValidator) validatePlaceholderSecrets(cfg *Config) error {
 	}
 
 	// Headlamp secrets (enabled by default)
-	if isServiceEnabled(cfg, "headlamp") {
+	if isServiceEnabled(cfg, "headlamp") && !oidcClientSecretsProvidedInternally(cfg) {
 		if cfg.Secrets.Headlamp.OIDCClientSecret == PlaceholderSecret {
 			placeholders = append(placeholders, "secrets.headlamp.oidc_client_secret")
 		}

@@ -93,6 +93,13 @@ func defaultConfig(name string) Config {
 					CACert:            "",
 				},
 			},
+			Identity: IdentityConfig{
+				OIDC: IdentityOIDCConfig{
+					Enabled:  true,
+					Source:   OIDCSourceInternal,
+					Provider: OIDCProviderKeycloak,
+				},
+			},
 			Infrastructure: Infrastructure{
 				Provider:            getDefaultProvider(cliDefaults),
 				SSHUser:             "ubuntu",

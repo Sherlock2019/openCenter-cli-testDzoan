@@ -14,36 +14,36 @@ import (
 )
 
 const (
-	defaultSchemaVersion               = "2.0"
-	defaultOrganization                = "opencenter"
-	defaultProvider                    = "openstack"
-	defaultRegion                      = "dfw3"
-	defaultEnvironment                 = "dev"
-	defaultBaseDomain                  = "k8s.opencenter.cloud"
-	defaultGitBranch                   = "main"
-	defaultGitURLPlaceholder           = "ssh://git@example.com/opencenter/cluster-config.git"
-	defaultGitBaseRepoURL              = "ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git"
-	defaultGitBaseRepoRelease          = "v0.1.0"
-	defaultDefaultStorageClass         = "standard"
-	defaultWorkerVolumeType            = "standard"
-	defaultOpenStackProjectID          = "project-id-placeholder"
-	defaultOpenStackProjectName        = "project-name-placeholder"
-	defaultOpenStackNetworkID          = "network-id-placeholder"
-	defaultOpenStackSubnetID           = "subnet-id-placeholder"
-	defaultOpenStackExternalNetworkID  = "external-network-id-placeholder"
-	defaultOpenStackFloatingPool       = "PUBLICNET"
-	defaultOpenStackImageID            = "image-id-placeholder"
-	defaultVMwareVCenter               = "vcenter.example.com"
-	defaultVMwareDatacenter            = "Datacenter1"
-	defaultVMwareCluster               = "Cluster1"
-	defaultVMwareDatastore             = "datastore1"
-	defaultVMwareNetwork               = "VM Network"
-	defaultVMwareTemplate              = "ubuntu-2404-template"
-	defaultSSHKeyPlaceholder           = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExamplePublicKeyDataHere user@example.com"
-	defaultAllocationPoolStart         = "10.2.128.10"
-	defaultAllocationPoolEnd           = "10.2.131.250"
-	defaultGateway                     = "10.2.128.1"
-	defaultVRRPIP                      = "10.2.128.5"
+	defaultSchemaVersion              = "2.0"
+	defaultOrganization               = "opencenter"
+	defaultProvider                   = "openstack"
+	defaultRegion                     = "dfw3"
+	defaultEnvironment                = "dev"
+	defaultBaseDomain                 = "k8s.opencenter.cloud"
+	defaultGitBranch                  = "main"
+	defaultGitURLPlaceholder          = "ssh://git@example.com/opencenter/cluster-config.git"
+	defaultGitBaseRepoURL             = "ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git"
+	defaultGitBaseRepoRelease         = "v0.1.0"
+	defaultDefaultStorageClass        = "standard"
+	defaultWorkerVolumeType           = "standard"
+	defaultOpenStackProjectID         = "project-id-placeholder"
+	defaultOpenStackProjectName       = "project-name-placeholder"
+	defaultOpenStackNetworkID         = "network-id-placeholder"
+	defaultOpenStackSubnetID          = "subnet-id-placeholder"
+	defaultOpenStackExternalNetworkID = "external-network-id-placeholder"
+	defaultOpenStackFloatingPool      = "PUBLICNET"
+	defaultOpenStackImageID           = "image-id-placeholder"
+	defaultVMwareVCenter              = "vcenter.example.com"
+	defaultVMwareDatacenter           = "Datacenter1"
+	defaultVMwareCluster              = "Cluster1"
+	defaultVMwareDatastore            = "datastore1"
+	defaultVMwareNetwork              = "VM Network"
+	defaultVMwareTemplate             = "ubuntu-2404-template"
+	defaultSSHKeyPlaceholder          = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExamplePublicKeyDataHere user@example.com"
+	defaultAllocationPoolStart        = "10.2.128.10"
+	defaultAllocationPoolEnd          = "10.2.131.250"
+	defaultGateway                    = "10.2.128.1"
+	defaultVRRPIP                     = "10.2.128.5"
 
 	// Kind provider defaults — kept in sync with internal/config/defaults/kind.yaml.
 	kindDefaultKubernetesVersion = "1.33.7"
@@ -128,6 +128,13 @@ func NewV2Default(name, provider string) (*Config, error) {
 			},
 			Secrets: OpenCenterSecrets{
 				Backend: "sops",
+			},
+			Identity: IdentityConfig{
+				OIDC: IdentityOIDCConfig{
+					Enabled:  true,
+					Source:   OIDCSourceInternal,
+					Provider: OIDCProviderKeycloak,
+				},
 			},
 			Cluster: ClusterConfig{
 				ClusterName: name,

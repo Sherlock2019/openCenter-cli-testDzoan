@@ -220,10 +220,12 @@ func gitProviderForHost(host string) string {
 
 func (r *readinessBuilder) validateServiceSecrets(cfg *Config) {
 	if serviceEnabled(cfg, "keycloak") {
-		r.requireSecret("secrets.keycloak.client_secret", cfg.Secrets.Keycloak.ClientSecret, "Keycloak client secret is required when keycloak is enabled.")
+		if !oidcClientSecretsProvidedInternally(cfg) {
+			r.requireSecret("secrets.keycloak.client_secret", cfg.Secrets.Keycloak.ClientSecret, "Keycloak client secret is required when keycloak is enabled.")
+		}
 		r.requireSecret("secrets.keycloak.admin_password", cfg.Secrets.Keycloak.AdminPassword, "Keycloak admin password is required when keycloak is enabled.")
 	}
-	if serviceEnabled(cfg, "headlamp") && headlampUsesOIDC(cfg) {
+	if serviceEnabled(cfg, "headlamp") && headlampUsesOIDC(cfg) && !oidcClientSecretsProvidedInternally(cfg) {
 		r.requireSecret("secrets.headlamp.oidc_client_secret", cfg.Secrets.Headlamp.OIDCClientSecret, "Headlamp OIDC client secret is required when Headlamp OIDC is enabled.")
 	}
 	if serviceEnabled(cfg, "kube-prometheus-stack") {
@@ -332,6 +334,9 @@ func serviceEnabledInMap(servicesMap ServiceMap, serviceName string) bool {
 }
 
 func headlampUsesOIDC(cfg *Config) bool {
+	if cfg.OpenCenter.Identity.OIDC.Enabled {
+		return true
+	}
 	if cfg.OpenCenter.Cluster.Kubernetes.OIDC.Enabled {
 		return true
 	}
@@ -340,6 +345,22 @@ func headlampUsesOIDC(cfg *Config) bool {
 		return false
 	}
 	return strings.TrimSpace(headlamp.OIDCIssuerURL) != "" || strings.TrimSpace(headlamp.OIDCClientID) != "" || serviceEnabled(cfg, "keycloak")
+}
+
+func oidcClientSecretsProvidedInternally(cfg *Config) bool {
+	oidc := cfg.OpenCenter.Identity.OIDC
+	if !oidc.Enabled {
+		return false
+	}
+	source := strings.ToLower(strings.TrimSpace(oidc.Source))
+	if source == "" {
+		source = OIDCSourceInternal
+	}
+	provider := strings.ToLower(strings.TrimSpace(oidc.Provider))
+	if provider == "" {
+		provider = OIDCProviderKeycloak
+	}
+	return source == OIDCSourceInternal && provider == OIDCProviderKeycloak && serviceEnabled(cfg, "keycloak")
 }
 
 func vsphereCSIEnabled(cfg *Config) bool {

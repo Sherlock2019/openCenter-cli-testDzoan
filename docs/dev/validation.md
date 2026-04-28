@@ -172,8 +172,8 @@ Only enabled services are checked. Empty strings and `CHANGEME` are treated as m
 
 The v2-native secret map currently covers:
 
-- Keycloak client secret and admin password
-- Headlamp OIDC client secret when Headlamp OIDC is in use
+- Keycloak admin password whenever Keycloak is enabled
+- Keycloak and Headlamp OIDC client secrets when OIDC is external; internal Keycloak OIDC generates them during bootstrap
 - Grafana admin password when `kube-prometheus-stack` is enabled
 - Loki Swift or S3 credentials when the selected storage mode requires them
 - Tempo Swift or S3 credentials when the selected storage mode requires them

@@ -76,6 +76,76 @@ func TestValidateReadinessServiceSecretsOnlyForEnabledServices(t *testing.T) {
 	assertNoIssue(t, report, "secrets.grafana.admin_password")
 }
 
+func TestValidateReadinessInternalOIDCDefersBootstrapGeneratedClientSecrets(t *testing.T) {
+	cfg := validReadinessConfig(t, "kind")
+	cfg.OpenCenter.Identity.OIDC.Enabled = true
+	cfg.OpenCenter.Identity.OIDC.Source = OIDCSourceInternal
+	cfg.OpenCenter.Identity.OIDC.Provider = OIDCProviderKeycloak
+	cfg.Secrets.Keycloak.ClientSecret = ""
+	cfg.Secrets.Keycloak.AdminPassword = ""
+	cfg.Secrets.Headlamp.OIDCClientSecret = ""
+
+	report := ValidateReadiness(cfg)
+
+	assertNoIssue(t, report, "secrets.keycloak.client_secret")
+	assertNoIssue(t, report, "secrets.headlamp.oidc_client_secret")
+	assertIssue(t, report, SeverityError, CategoryServices, "secrets.keycloak.admin_password")
+}
+
+func TestValidateReadinessExternalOIDCRequiresOperatorProvidedClientSecrets(t *testing.T) {
+	cfg := validReadinessConfig(t, "kind")
+	cfg.OpenCenter.Identity.OIDC.Enabled = true
+	cfg.OpenCenter.Identity.OIDC.Source = OIDCSourceExternal
+	cfg.OpenCenter.Identity.OIDC.Provider = OIDCProviderGeneric
+	cfg.Secrets.Keycloak.ClientSecret = ""
+	cfg.Secrets.Headlamp.OIDCClientSecret = ""
+
+	report := ValidateReadiness(cfg)
+
+	assertIssue(t, report, SeverityError, CategoryServices, "secrets.keycloak.client_secret")
+	assertIssue(t, report, SeverityError, CategoryServices, "secrets.headlamp.oidc_client_secret")
+	assertNoIssue(t, report, "secrets.keycloak.admin_password")
+}
+
+func TestValidateForDeploymentInternalOIDCSkipsBootstrapClientSecretPlaceholders(t *testing.T) {
+	cfg := validReadinessConfig(t, "kind")
+	cfg.OpenCenter.Identity.OIDC.Enabled = true
+	cfg.OpenCenter.Identity.OIDC.Source = OIDCSourceInternal
+	cfg.OpenCenter.Identity.OIDC.Provider = OIDCProviderKeycloak
+	cfg.Secrets.Keycloak.ClientSecret = PlaceholderSecret
+	cfg.Secrets.Headlamp.OIDCClientSecret = PlaceholderSecret
+
+	if err := ValidateForDeployment(cfg); err != nil {
+		t.Fatalf("ValidateForDeployment() returned unexpected error: %v", err)
+	}
+}
+
+func TestValidateForDeploymentExternalOIDCRequiresClientSecretPlaceholders(t *testing.T) {
+	cfg := validReadinessConfig(t, "kind")
+	cfg.OpenCenter.Identity.OIDC.Enabled = true
+	cfg.OpenCenter.Identity.OIDC.Source = OIDCSourceExternal
+	cfg.OpenCenter.Identity.OIDC.Provider = OIDCProviderGeneric
+	cfg.Secrets.Keycloak.ClientSecret = PlaceholderSecret
+	cfg.Secrets.Headlamp.OIDCClientSecret = PlaceholderSecret
+
+	err := ValidateForDeployment(cfg)
+	if err == nil {
+		t.Fatal("expected ValidateForDeployment() to fail for external OIDC client secret placeholders")
+	}
+	errMsg := err.Error()
+	for _, want := range []string{
+		"secrets.keycloak.client_secret",
+		"secrets.headlamp.oidc_client_secret",
+	} {
+		if !strings.Contains(errMsg, want) {
+			t.Fatalf("expected error to contain %q, got: %v", want, err)
+		}
+	}
+	if strings.Contains(errMsg, "secrets.keycloak.admin_password") {
+		t.Fatalf("did not expect admin password placeholder error, got: %v", err)
+	}
+}
+
 func validReadinessConfig(t *testing.T, provider string) *Config {
 	t.Helper()
 

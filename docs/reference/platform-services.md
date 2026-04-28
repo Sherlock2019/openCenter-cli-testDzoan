@@ -163,8 +163,8 @@ opencenter:
 ```yaml
 secrets:
   keycloak:
-    client_secret: ""
-    admin_password: ""
+    client_secret: ""   # internal OIDC bootstrap may create this later
+    admin_password: ""  # user-provided for now
 ```
 
 ### kyverno
@@ -601,7 +601,7 @@ opencenter:
 ```yaml
 secrets:
   headlamp:
-    oidc_client_secret: ""
+    oidc_client_secret: "" # internal OIDC bootstrap may create this later
 ```
 
 ### olm

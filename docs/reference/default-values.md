@@ -141,6 +141,14 @@ All new configurations use schema version 2.0.
 | `opencenter.cluster.kubernetes.oidc.kube_oidc_groups_claim` | `"groups"` | Groups claim |
 | `opencenter.cluster.kubernetes.oidc.kube_oidc_groups_prefix` | `"oidc:"` | Groups prefix |
 
+## Identity OIDC Configuration
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `opencenter.identity.oidc.enabled` | `true` | Enable service OIDC identity configuration |
+| `opencenter.identity.oidc.source` | `"internal"` | OIDC provider source (`internal` or `external`) |
+| `opencenter.identity.oidc.provider` | `"keycloak"` | OIDC provider implementation (`keycloak`, `entra`, or `generic`) |
+
 ## Windows Workers
 
 | Field | Default | Description |

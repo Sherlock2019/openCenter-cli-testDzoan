@@ -43,6 +43,7 @@ type OpenCenterConfig struct {
 	Cluster         ClusterConfig        `yaml:"cluster" json:"cluster" validate:"required"`
 	Infrastructure  InfrastructureConfig `yaml:"infrastructure" json:"infrastructure" validate:"required"`
 	Secrets         OpenCenterSecrets    `yaml:"secrets,omitempty" json:"secrets,omitempty"`
+	Identity        IdentityConfig       `yaml:"identity,omitempty" json:"identity,omitempty"`
 	Services        ServiceMap           `yaml:"services,omitempty" json:"services,omitempty"`
 	ManagedServices ServiceMap           `yaml:"managed_services,omitempty" json:"managed_services,omitempty"`
 	LegacyManaged   ServiceMap           `yaml:"managed-service,omitempty" json:"managed-service,omitempty"`
@@ -206,6 +207,25 @@ type SOPSConfig struct {
 type OpenCenterSecrets struct {
 	Backend  string         `yaml:"backend,omitempty" json:"backend,omitempty"`
 	Barbican BarbicanConfig `yaml:"barbican,omitempty" json:"barbican,omitempty"`
+}
+
+const (
+	OIDCSourceInternal = "internal"
+	OIDCSourceExternal = "external"
+
+	OIDCProviderKeycloak = "keycloak"
+	OIDCProviderEntra    = "entra"
+	OIDCProviderGeneric  = "generic"
+)
+
+type IdentityConfig struct {
+	OIDC IdentityOIDCConfig `yaml:"oidc,omitempty" json:"oidc,omitempty"`
+}
+
+type IdentityOIDCConfig struct {
+	Enabled  bool   `yaml:"enabled" json:"enabled"`
+	Source   string `yaml:"source,omitempty" json:"source,omitempty" validate:"omitempty,oneof=internal external"`
+	Provider string `yaml:"provider,omitempty" json:"provider,omitempty" validate:"omitempty,oneof=keycloak entra generic"`
 }
 
 type BarbicanConfig struct {

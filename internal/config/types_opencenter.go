@@ -26,12 +26,34 @@ type SimplifiedOpenCenter struct {
 	Infrastructure Infrastructure      `yaml:"infrastructure" json:"infrastructure" validate:"required"`
 	Cluster        ClusterConfig       `yaml:"cluster" json:"cluster" validate:"required"`
 	GitOps         GitOpsConfig        `yaml:"gitops" json:"gitops" validate:"required"`
+	Identity       IdentityConfig      `yaml:"identity,omitempty" json:"identity,omitempty"`
 	Gateway        GatewayGlobalConfig `yaml:"gateway,omitempty" json:"gateway,omitempty"`
 	OIDC           GlobalOIDCConfig    `yaml:"oidc,omitempty" json:"oidc,omitempty"`
 	Storage        StorageConfig       `yaml:"storage,omitempty" json:"storage,omitempty" validate:"required"`
 	Talos          *TalosConfig        `yaml:"talos,omitempty" json:"talos,omitempty"`
 	ManagedService ServiceMap          `yaml:"managed-service" json:"managed-service"`
 	Services       ServiceMap          `yaml:"services" json:"services"`
+}
+
+const (
+	OIDCSourceInternal = "internal"
+	OIDCSourceExternal = "external"
+
+	OIDCProviderKeycloak = "keycloak"
+	OIDCProviderEntra    = "entra"
+	OIDCProviderGeneric  = "generic"
+)
+
+// IdentityConfig holds cluster identity provider settings.
+type IdentityConfig struct {
+	OIDC IdentityOIDCConfig `yaml:"oidc,omitempty" json:"oidc,omitempty" jsonschema:"description=OIDC identity provider settings"`
+}
+
+// IdentityOIDCConfig describes where OIDC authentication is provided from.
+type IdentityOIDCConfig struct {
+	Enabled  bool   `yaml:"enabled" json:"enabled" jsonschema:"description=Enable OIDC authentication,default=true"`
+	Source   string `yaml:"source,omitempty" json:"source,omitempty" jsonschema:"description=OIDC provider source,enum=internal,enum=external,default=internal"`
+	Provider string `yaml:"provider,omitempty" json:"provider,omitempty" jsonschema:"description=OIDC provider implementation,enum=keycloak,enum=entra,enum=generic,default=keycloak"`
 }
 
 // GatewayGlobalConfig holds global gateway configuration

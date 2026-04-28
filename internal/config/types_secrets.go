@@ -13,8 +13,8 @@ type Secrets struct {
 	// Service-specific secrets
 	CertManager  CertManagerSecrets `yaml:"cert_manager" json:"cert_manager"`
 	Loki         LokiSecrets        `yaml:"loki" json:"loki"`
-	Keycloak     KeycloakSecrets    `yaml:"keycloak" json:"keycloak"`
-	Headlamp     HeadlampSecrets    `yaml:"headlamp" json:"headlamp"`
+	Keycloak     KeycloakSecrets    `yaml:"keycloak,omitempty" json:"keycloak,omitempty"`
+	Headlamp     HeadlampSecrets    `yaml:"headlamp,omitempty" json:"headlamp,omitempty"`
 	WeaveGitOps  WeaveGitOpsSecrets `yaml:"weave_gitops" json:"weave_gitops"`
 	Grafana      GrafanaSecrets     `yaml:"grafana" json:"grafana"`
 	Tempo        TempoSecrets       `yaml:"tempo" json:"tempo"`
@@ -83,13 +83,13 @@ type LokiSecrets struct {
 
 // KeycloakSecrets holds Keycloak secret values
 type KeycloakSecrets struct {
-	ClientSecret  string `yaml:"client_secret" json:"client_secret" jsonschema:"secret=true,description=Keycloak OIDC client secret"`
+	ClientSecret  string `yaml:"client_secret,omitempty" json:"client_secret,omitempty" jsonschema:"secret=true,description=Keycloak OIDC client secret"`
 	AdminPassword string `yaml:"admin_password" json:"admin_password" jsonschema:"secret=true,description=Keycloak admin user password"`
 }
 
 // HeadlampSecrets holds Headlamp secret values
 type HeadlampSecrets struct {
-	OIDCClientSecret string `yaml:"oidc_client_secret" json:"oidc_client_secret" jsonschema:"secret=true,description=Headlamp OIDC client secret"`
+	OIDCClientSecret string `yaml:"oidc_client_secret,omitempty" json:"oidc_client_secret,omitempty" jsonschema:"secret=true,description=Headlamp OIDC client secret"`
 }
 
 // WeaveGitOpsSecrets holds Weave GitOps secret values
