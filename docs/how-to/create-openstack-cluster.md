@@ -369,8 +369,7 @@ Additional `cluster validate` flags:
 
 | Flag | Description |
 |---|---|
-| `--check-connectivity` | Check connectivity to the cloud provider |
-| `--check-provider` | Perform provider-specific validation |
+| `--validation online` | Run provider connectivity, provider discovery, and Git remote checks |
 | `--output json` | Output validation results as JSON (for CI/CD pipelines) |
 | `-v`, `--verbose` | Verbose output |
 | `--generate-debug-config` | Generate a complete config for debugging |

@@ -62,9 +62,15 @@ type PathsConfig struct {
 
 // BehaviorConfig controls CLI behavior settings.
 type BehaviorConfig struct {
-	AutoConfirm bool `yaml:"autoConfirm"`
-	DryRun      bool `yaml:"dryRun"`
+	AutoConfirm bool   `yaml:"autoConfirm"`
+	DryRun      bool   `yaml:"dryRun"`
+	Validation  string `yaml:"validation"`
 }
+
+const (
+	ValidationModeOffline = "offline"
+	ValidationModeOnline  = "online"
+)
 
 // ClusterDefaultsConfig contains default values applied when generating new cluster
 // configurations via "opencenter cluster init". These values are injected into the
@@ -243,6 +249,7 @@ func DefaultCLIConfig() *CLIConfig {
 		Behavior: BehaviorConfig{
 			AutoConfirm: false,
 			DryRun:      false,
+			Validation:  ValidationModeOffline,
 		},
 		ClusterDefaults: ClusterDefaultsConfig{
 			Provider:    "openstack",
@@ -398,6 +405,9 @@ func (cm *ConfigManager) mergeWithDefaults(config *CLIConfig) *CLIConfig {
 	// Merge behavior configuration
 	merged.Behavior.AutoConfirm = config.Behavior.AutoConfirm
 	merged.Behavior.DryRun = config.Behavior.DryRun
+	if config.Behavior.Validation != "" {
+		merged.Behavior.Validation = config.Behavior.Validation
+	}
 
 	// Merge cluster defaults configuration
 	if config.ClusterDefaults.Provider != "" {
@@ -944,6 +954,26 @@ func (cm *ConfigManager) setBehaviorValue(behavior *BehaviorConfig, parts []stri
 				Message: "dryRun must be a boolean",
 			}
 		}
+	case "validation":
+		str, ok := value.(string)
+		if !ok {
+			return &ConfigError{
+				Type:    "validation",
+				Field:   "behavior.validation",
+				Value:   value,
+				Message: "validation must be a string",
+			}
+		}
+		str = strings.ToLower(strings.TrimSpace(str))
+		if err := ValidateBehaviorValidationMode(str); err != nil {
+			return &ConfigError{
+				Type:    "validation",
+				Field:   "behavior.validation",
+				Value:   value,
+				Message: err.Error(),
+			}
+		}
+		behavior.Validation = str
 	default:
 		return &ConfigError{
 			Type:    "validation",
@@ -1183,6 +1213,8 @@ func (cm *ConfigManager) getBehaviorValue(behavior *BehaviorConfig, parts []stri
 		return behavior.AutoConfirm, nil
 	case "dryRun":
 		return behavior.DryRun, nil
+	case "validation":
+		return behavior.Validation, nil
 	default:
 		return nil, &ConfigError{
 			Type:    "validation",
@@ -1625,6 +1657,27 @@ func (cv *ConfigValidator) validateBehaviorWithResult(behavior *BehaviorConfig, 
 			Value:   behavior.AutoConfirm,
 			Message: "autoConfirm is enabled without dryRun, this may lead to unintended actions",
 		})
+	}
+	if behavior.Validation == "" {
+		behavior.Validation = ValidationModeOffline
+	}
+	if err := ValidateBehaviorValidationMode(behavior.Validation); err != nil {
+		result.Errors = append(result.Errors, &ConfigError{
+			Type:    "validation",
+			Field:   "behavior.validation",
+			Value:   behavior.Validation,
+			Message: err.Error(),
+		})
+	}
+}
+
+func ValidateBehaviorValidationMode(mode string) error {
+	mode = strings.ToLower(strings.TrimSpace(mode))
+	switch mode {
+	case ValidationModeOffline, ValidationModeOnline:
+		return nil
+	default:
+		return fmt.Errorf("invalid behavior.validation %q; expected offline or online", mode)
 	}
 }
 

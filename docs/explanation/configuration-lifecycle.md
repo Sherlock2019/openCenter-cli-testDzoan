@@ -445,7 +445,7 @@ Available images: [list of valid images]
 
 ```bash
 # Enable connectivity validation
-opencenter cluster validate my-cluster --check-connectivity
+opencenter cluster validate my-cluster --validation online
 ```
 
 **Checks:**

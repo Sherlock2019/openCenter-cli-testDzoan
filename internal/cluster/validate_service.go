@@ -26,8 +26,7 @@ type ValidateOptions struct {
 	ClusterName         string
 	Organization        string
 	ConfigPath          string // Optional: direct path to config file
-	CheckConnectivity   bool
-	CheckProvider       bool
+	ValidationMode      string
 	GenerateDebugConfig bool
 	OutputDir           string
 	Verbose             bool
@@ -48,6 +47,13 @@ type ValidationResult struct {
 	Provider          string
 	SchemaVersion     string // normalized schema identifier
 	DebugConfigPath   string // Path to generated debug config (if requested)
+	Target            ValidationTarget
+	ValidationMode    string
+	CheckSummary      ValidationCheckSummary
+	ServiceReports    []ValidationServiceReport
+	GitOpsReport      ValidationGitOpsReport
+	Missing           []ValidationMissing
+	ActionItems       []string
 }
 
 // ValidateService handles cluster validation business logic
@@ -103,12 +109,18 @@ func NewValidateServiceWithConfigMgr(
 
 // Validate performs cluster validation
 func (s *ValidateService) Validate(ctx context.Context, opts ValidateOptions) (*ValidationResult, error) {
+	mode, err := NormalizeValidationMode(opts.ValidationMode, "behavior.validation")
+	if err != nil {
+		return nil, err
+	}
+
 	result := &ValidationResult{
 		Valid:             true,
 		ConfigValid:       true,
 		ConnectivityValid: true,
 		ProviderValid:     true,
 		Provider:          strings.TrimSpace(opts.Provider),
+		ValidationMode:    mode,
 	}
 
 	var configPath string
@@ -117,6 +129,7 @@ func (s *ValidateService) Validate(ctx context.Context, opts ValidateOptions) (*
 	if opts.ConfigPath != "" {
 		// Direct config file path provided
 		configPath = opts.ConfigPath
+		result.Target.ConfigPath = configPath
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
 			result.Valid = false
 			result.ConfigValid = false
@@ -139,6 +152,9 @@ func (s *ValidateService) Validate(ctx context.Context, opts ValidateOptions) (*
 			return nil, fmt.Errorf("resolving cluster paths: %w", err)
 		}
 		configPath = clusterPaths.ConfigPath
+		result.Target.Cluster = clusterName
+		result.Target.Organization = organization
+		result.Target.ConfigPath = configPath
 
 		// Check if config file exists
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
@@ -187,17 +203,22 @@ func (s *ValidateService) validateV2Config(ctx context.Context, configPath strin
 	}
 
 	result.Provider = strings.TrimSpace(cfg.OpenCenter.Infrastructure.Provider)
+	result.Target.Cluster = firstNonEmptyValidation(result.Target.Cluster, cfg.OpenCenter.Meta.Name, cfg.ClusterName())
+	result.Target.Organization = firstNonEmptyValidation(result.Target.Organization, cfg.OpenCenter.Meta.Organization)
+	result.Target.Provider = result.Provider
+	result.Target.ConfigPath = configPath
 
 	report := v2.ValidateReadiness(cfg)
 	for _, issue := range report.Issues {
 		result.addIssue(issue)
 	}
 
-	if opts.CheckProvider {
-		s.validateProviderSpecific(ctx, cfg, result)
-	} else if opts.CheckConnectivity {
+	if result.ValidationMode == ValidationModeOnline {
 		s.validateConnectivity(ctx, cfg, result)
+		s.validateProviderSpecific(ctx, cfg, result)
 	}
+
+	s.populateOperatorReport(ctx, cfg, result)
 
 	// Generate debug config if requested
 	if opts.GenerateDebugConfig || os.Getenv("OPENCENTER_DEBUG") != "" {
@@ -221,6 +242,15 @@ func (s *ValidateService) validateV2Config(ctx context.Context, configPath strin
 	}
 
 	return result, nil
+}
+
+func firstNonEmptyValidation(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
 }
 
 // validateConnectivity checks connectivity to required services

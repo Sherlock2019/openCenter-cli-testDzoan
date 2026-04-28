@@ -76,6 +76,19 @@ func TestValidateCommandV2Support(t *testing.T) {
 	if outputDirFlag == nil {
 		t.Error("output-dir flag should exist")
 	}
+
+	validationFlag := cmd.Flags().Lookup("validation")
+	if validationFlag == nil {
+		t.Error("validation flag should exist")
+	}
+
+	if cmd.Flags().Lookup("check-connectivity") != nil {
+		t.Error("check-connectivity flag should not exist")
+	}
+
+	if cmd.Flags().Lookup("check-provider") != nil {
+		t.Error("check-provider flag should not exist")
+	}
 }
 
 // TestValidateV2ConfigIntegration tests end-to-end v2 configuration validation.

@@ -20,6 +20,12 @@ This reference documents all default values used when initializing cluster confi
 
 All new configurations use schema version 2.0.
 
+## CLI Behavior Defaults
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `behavior.validation` | `"offline"` | Default `cluster validate` mode. Offline validation does not contact providers, Git remotes, Kubernetes APIs, or external services. |
+
 ## Cluster Metadata
 
 | Field | Default | Description |

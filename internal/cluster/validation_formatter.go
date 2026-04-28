@@ -26,8 +26,15 @@ type ValidationError struct {
 // ValidationOutput is the structured JSON output for CI/CD pipelines.
 type ValidationOutput struct {
 	Valid           bool                         `json:"valid"`
+	Target          ValidationTarget             `json:"target"`
+	Mode            string                       `json:"mode"`
 	Summary         ValidationSummary            `json:"summary"`
+	Checks          ValidationCheckSummary       `json:"checks"`
 	Details         ValidationDetails            `json:"details"`
+	Services        []ValidationServiceReport    `json:"services"`
+	GitOps          ValidationGitOpsReport       `json:"gitops"`
+	Missing         []ValidationMissing          `json:"missing"`
+	ActionItems     []string                     `json:"action_items"`
 	Errors          []ValidationError            `json:"errors,omitempty"`
 	ErrorsBySection map[string][]ValidationError `json:"errors_by_section,omitempty"`
 	Warnings        []string                     `json:"warnings,omitempty"`
@@ -523,7 +530,13 @@ func (s *ValidateService) FormatResultGrouped(result *ValidationResult, provider
 
 	if result.Valid {
 		out.WriteString("✓ Validation successful\n")
-		out.WriteString(s.formatDetails(result))
+	} else {
+		out.WriteString("✗ Validation failed\n")
+	}
+
+	out.WriteString(s.formatOperatorReport(result))
+
+	if result.Valid {
 		if len(result.Warnings) > 0 {
 			out.WriteString(s.formatWarnings(result.Warnings))
 		}
@@ -537,10 +550,6 @@ func (s *ValidateService) FormatResultGrouped(result *ValidationResult, provider
 	parsed := validationErrorsForResult(result, provider)
 	grouped := groupBySection(parsed)
 	sections := sortedSections(grouped)
-
-	// Header
-	out.WriteString("✗ Validation failed\n")
-	out.WriteString(s.formatDetails(result))
 
 	// Summary counts
 	sectionCounts := make(map[string]int)
@@ -569,7 +578,12 @@ func (s *ValidateService) FormatResultGrouped(result *ValidationResult, provider
 	}
 
 	// Suggestions
-	if len(result.Suggestions) > 0 {
+	if len(result.ActionItems) > 0 {
+		out.WriteString("\nAction Items:\n")
+		for i, item := range result.ActionItems {
+			out.WriteString(fmt.Sprintf("  %d. %s\n", i+1, item))
+		}
+	} else if len(result.Suggestions) > 0 {
 		out.WriteString("\nSuggestions:\n")
 		seen := make(map[string]bool)
 		for _, suggestion := range result.Suggestions {
@@ -581,6 +595,114 @@ func (s *ValidateService) FormatResultGrouped(result *ValidationResult, provider
 	}
 
 	return out.String()
+}
+
+func (s *ValidateService) formatOperatorReport(result *ValidationResult) string {
+	var out strings.Builder
+	if result.Target.Cluster != "" || result.Target.Organization != "" || result.Target.Provider != "" || result.ValidationMode != "" {
+		out.WriteString("\n")
+		if result.Target.Cluster != "" {
+			clusterName := result.Target.Cluster
+			if result.Target.Organization != "" && !strings.Contains(clusterName, "/") {
+				clusterName = result.Target.Organization + "/" + clusterName
+			}
+			out.WriteString(fmt.Sprintf("Cluster: %s\n", clusterName))
+		}
+		if result.Target.Organization != "" {
+			out.WriteString(fmt.Sprintf("Organization: %s\n", result.Target.Organization))
+		}
+		if firstNonEmptyFormatter(result.Target.Provider, result.Provider) != "" {
+			out.WriteString(fmt.Sprintf("Provider: %s\n", firstNonEmptyFormatter(result.Target.Provider, result.Provider)))
+		}
+		if result.ValidationMode != "" {
+			out.WriteString(fmt.Sprintf("Validation mode: %s\n", result.ValidationMode))
+		}
+	}
+
+	if result.CheckSummary.Total() > 0 {
+		out.WriteString(fmt.Sprintf("\nSummary: %s\n", validationSummaryWord(result.Valid)))
+		out.WriteString(fmt.Sprintf("Checks: %d passed, %d failed, %d warning, %d skipped\n",
+			result.CheckSummary.Passed,
+			result.CheckSummary.Failed,
+			result.CheckSummary.Warnings,
+			result.CheckSummary.Skipped,
+		))
+	}
+
+	if len(result.ServiceReports) > 0 {
+		out.WriteString("\nServices:\n")
+		for _, service := range result.ServiceReports {
+			line := fmt.Sprintf("  %s %s", checkStatusIcon(service.Status), service.Name)
+			if service.Message != "" {
+				line += " " + service.Message
+			}
+			out.WriteString(line + "\n")
+		}
+	}
+
+	if len(result.GitOpsReport.Checks) > 0 {
+		out.WriteString("\nGitOps:\n")
+		if result.GitOpsReport.RepositoryURL != "" {
+			out.WriteString(fmt.Sprintf("  Repository: %s\n", result.GitOpsReport.RepositoryURL))
+		}
+		if result.GitOpsReport.LocalPath != "" {
+			out.WriteString(fmt.Sprintf("  Local path: %s\n", result.GitOpsReport.LocalPath))
+		}
+		for _, check := range result.GitOpsReport.Checks {
+			line := fmt.Sprintf("  %s %s", checkStatusIcon(check.Status), check.Name)
+			switch {
+			case check.Message != "":
+				line += " " + check.Message
+			case check.Detail != "":
+				line += " " + check.Detail
+			}
+			out.WriteString(line + "\n")
+		}
+	}
+
+	if len(result.Missing) > 0 {
+		out.WriteString("\nMissing:\n")
+		for _, missing := range result.Missing {
+			line := "  - " + missing.Path
+			if missing.Message != "" {
+				line += " — " + missing.Message
+			}
+			out.WriteString(line + "\n")
+		}
+	}
+
+	return out.String()
+}
+
+func validationSummaryWord(valid bool) string {
+	if valid {
+		return "passed"
+	}
+	return "failed"
+}
+
+func checkStatusIcon(status CheckStatus) string {
+	switch status {
+	case CheckStatusPass:
+		return "✓"
+	case CheckStatusFail:
+		return "✗"
+	case CheckStatusWarn:
+		return "⚠"
+	case CheckStatusSkip:
+		return "-"
+	default:
+		return "-"
+	}
+}
+
+func firstNonEmptyFormatter(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
 }
 
 func (s *ValidateService) formatDetails(result *ValidationResult) string {
@@ -626,17 +748,24 @@ func (s *ValidateService) FormatResultJSON(result *ValidationResult, provider st
 	}
 
 	output := ValidationOutput{
-		Valid: result.Valid,
+		Valid:  result.Valid,
+		Target: result.Target,
+		Mode:   result.ValidationMode,
 		Summary: ValidationSummary{
 			TotalErrors:   len(parsed),
 			TotalWarnings: len(result.Warnings),
 			BySection:     sectionCounts,
 		},
+		Checks: result.CheckSummary,
 		Details: ValidationDetails{
 			Configuration: result.ConfigValid,
 			Connectivity:  result.ConnectivityValid,
 			Provider:      result.ProviderValid,
 		},
+		Services:        result.ServiceReports,
+		GitOps:          result.GitOpsReport,
+		Missing:         result.Missing,
+		ActionItems:     result.ActionItems,
 		Errors:          parsed,
 		ErrorsBySection: grouped,
 		Warnings:        result.Warnings,

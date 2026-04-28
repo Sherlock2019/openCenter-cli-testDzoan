@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -158,5 +159,130 @@ func TestFormatResultGrouped_YAMLFieldErrors(t *testing.T) {
 	// Should NOT contain the old single-line dump format
 	if strings.Contains(output, "[line 12:") {
 		t.Error("output still contains old bracket-delimited format")
+	}
+}
+
+func TestFormatResultGrouped_OperatorReportShape(t *testing.T) {
+	service := &ValidateService{}
+	result := &ValidationResult{
+		Valid:             false,
+		ConfigValid:       false,
+		ConnectivityValid: true,
+		ProviderValid:     true,
+		Provider:          "openstack",
+		Target: ValidationTarget{
+			Cluster:      "prod",
+			Organization: "acme",
+			Provider:     "openstack",
+			ConfigPath:   "/tmp/prod.yaml",
+		},
+		ValidationMode: "offline",
+		CheckSummary: ValidationCheckSummary{
+			Passed:   2,
+			Failed:   2,
+			Warnings: 1,
+			Skipped:  1,
+		},
+		ServiceReports: []ValidationServiceReport{
+			{Name: "cert-manager", Status: CheckStatusPass},
+			{Name: "keycloak", Status: CheckStatusFail, Message: "missing admin password", Missing: []string{"secrets.keycloak.admin_password"}},
+		},
+		GitOpsReport: ValidationGitOpsReport{
+			RepositoryURL: "ssh://git@github.com/acme/prod.git",
+			LocalPath:     "/tmp/gitops",
+			Checks: []ValidationCheck{
+				{Name: "Repository URL", Status: CheckStatusPass, Detail: "ssh://git@github.com/acme/prod.git"},
+				{Name: "Local git", Status: CheckStatusWarn, Message: "dirty, 1 modified"},
+				{Name: "Remote checks", Status: CheckStatusSkip, Message: "skipped in offline mode"},
+			},
+		},
+		Missing: []ValidationMissing{
+			{Path: "secrets.keycloak.admin_password"},
+		},
+		ActionItems: []string{
+			"Set secrets.keycloak.admin_password.",
+			"Commit or stash local GitOps repository changes before deploy.",
+		},
+	}
+
+	output := service.FormatResultGrouped(result, result.Provider)
+
+	for _, want := range []string{
+		"Cluster: acme/prod",
+		"Organization: acme",
+		"Provider: openstack",
+		"Validation mode: offline",
+		"Summary: failed",
+		"Checks: 2 passed, 2 failed, 1 warning, 1 skipped",
+		"Services:",
+		"✓ cert-manager",
+		"✗ keycloak",
+		"GitOps:",
+		"⚠ Local git",
+		"- Remote checks",
+		"Missing:",
+		"secrets.keycloak.admin_password",
+		"Action Items:",
+		"1. Set secrets.keycloak.admin_password.",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("output missing %q:\n%s", want, output)
+		}
+	}
+
+	if strings.Index(output, "Missing:") < strings.Index(output, "GitOps:") {
+		t.Fatalf("Missing section should appear after GitOps:\n%s", output)
+	}
+	if strings.Index(output, "Action Items:") < strings.Index(output, "Missing:") {
+		t.Fatalf("Action Items should appear after Missing:\n%s", output)
+	}
+}
+
+func TestFormatResultJSON_IncludesOperatorReportFields(t *testing.T) {
+	service := &ValidateService{}
+	result := &ValidationResult{
+		Valid:             true,
+		ConfigValid:       true,
+		ConnectivityValid: true,
+		ProviderValid:     true,
+		Target: ValidationTarget{
+			Cluster:      "prod",
+			Organization: "acme",
+			Provider:     "kind",
+			ConfigPath:   "/tmp/prod.yaml",
+		},
+		ValidationMode: "online",
+		CheckSummary: ValidationCheckSummary{
+			Passed: 3,
+		},
+		ServiceReports: []ValidationServiceReport{
+			{Name: "fluxcd", Status: CheckStatusPass},
+		},
+		GitOpsReport: ValidationGitOpsReport{
+			Checks: []ValidationCheck{
+				{Name: "Repository URL", Status: CheckStatusPass},
+			},
+		},
+		ActionItems: []string{"No action required."},
+	}
+
+	jsonStr, err := service.FormatResultJSON(result, result.Provider)
+	if err != nil {
+		t.Fatalf("FormatResultJSON() error = %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(jsonStr), &payload); err != nil {
+		t.Fatalf("invalid JSON: %v\n%s", err, jsonStr)
+	}
+
+	for _, key := range []string{"target", "mode", "checks", "services", "gitops", "missing", "action_items"} {
+		if _, ok := payload[key]; !ok {
+			t.Fatalf("expected JSON key %q in %s", key, jsonStr)
+		}
+	}
+
+	if payload["mode"] != "online" {
+		t.Fatalf("mode = %v, want online", payload["mode"])
 	}
 }

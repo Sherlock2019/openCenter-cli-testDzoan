@@ -477,7 +477,7 @@ Severity: info
 opencenter cluster validate my-cluster
 
 # Validate with connectivity checks
-opencenter cluster validate my-cluster --check-connectivity
+opencenter cluster validate my-cluster --validation online
 
 # Validate specific configuration file
 opencenter cluster validate my-cluster

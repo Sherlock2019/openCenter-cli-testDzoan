@@ -103,6 +103,7 @@ Examples:
   opencenter config set paths.pluginsDir ~/my-plugins
   opencenter config set paths.stateDir ~/.local/state/opencenter
   opencenter config set behavior.autoConfirm true
+  opencenter config set behavior.validation online
   opencenter config set cluster_defaults.provider openstack
   opencenter config set cluster_defaults.base_domain k8s.example.com
   opencenter config set cluster_defaults.kubernetes_version 1.34.3
@@ -121,6 +122,7 @@ Supported configuration sections:
   - paths.stateDir (string)
   - behavior.autoConfirm (boolean)
   - behavior.dryRun (boolean)
+  - behavior.validation (string: offline, online)
   - cluster_defaults.provider (string)
   - cluster_defaults.region (string)
   - cluster_defaults.environment (string)
@@ -311,6 +313,12 @@ func convertConfigValue(key, value string) (interface{}, error) {
 		}
 		// For file paths, just return as string - validation will happen in ConfigManager
 		return value, nil
+	case key == "behavior.validation":
+		mode := strings.ToLower(strings.TrimSpace(value))
+		if err := config.ValidateBehaviorValidationMode(mode); err != nil {
+			return nil, err
+		}
+		return mode, nil
 	case strings.HasSuffix(key, ".compress") ||
 		strings.HasPrefix(key, "behavior."):
 		// Boolean fields

@@ -32,17 +32,20 @@ This performs:
 - Schema validation against JSON schema
 - Required field validation
 - Cross-field dependency validation
+- GitOps configuration and local repository validation
 - Network configuration validation
 - SOPS key validation
 
 Expected output for valid configuration:
 ```
-✓ Schema validation passed
-✓ Required fields present
-✓ Network configuration valid
-✓ SOPS configuration valid
+✓ Validation successful
 
-Configuration is valid
+Cluster: opencenter/my-cluster
+Organization: opencenter
+Provider: openstack
+Validation mode: offline
+
+Summary: passed
 ```
 
 ## Validate Specific Cluster
@@ -59,32 +62,33 @@ Or validate a specific configuration file:
 opencenter cluster validate my-cluster
 ```
 
-## Validation with Connectivity Checks
+## Validation Modes
 
-Check connectivity to cloud provider APIs:
-
-```bash
-opencenter cluster validate --check-connectivity
-```
-
-This validates:
-- Cloud provider credentials are correct
-- API endpoints are reachable
-- Required permissions are granted
-- Quotas are sufficient
-
-## Provider-Specific Validation
-
-Perform provider-specific validation checks:
+Validation uses one mode per run. The default comes from global CLI config:
 
 ```bash
-opencenter cluster validate --check-provider
+opencenter config get behavior.validation
 ```
 
-This validates:
-- OpenStack: Image IDs exist, flavors available, networks accessible
-- VMware: vCenter connectivity, datastore access, VM templates exist
-- AWS: VPC configuration, subnet availability, security groups
+The default is `offline`, which never contacts cloud providers, Git remotes,
+Kubernetes APIs, or other external services. Offline validation covers schema
+rules, required fields, readiness rules, enabled-service settings, GitOps URL
+and auth shape, local GitOps path checks, and local git status.
+
+Use `online` for one run when you want provider and Git remote checks:
+
+```bash
+opencenter cluster validate --validation online
+```
+
+To change the default mode for future runs:
+
+```bash
+opencenter config set behavior.validation online
+```
+
+Online validation runs the offline profile plus provider discovery/connectivity
+and Git remote checks.
 
 ## Verbose Output
 
@@ -280,22 +284,17 @@ Recommended validation workflow before deployment:
 
 2. **Fix any errors** shown in output
 
-3. **Validate with connectivity:**
+3. **Run online validation when credentials and network access are available:**
    ```bash
-   opencenter cluster validate --check-connectivity
+   opencenter cluster validate --validation online
    ```
 
-4. **Provider-specific checks:**
-   ```bash
-   opencenter cluster validate --check-provider
-   ```
-
-5. **Generate debug config** (if needed):
+4. **Generate debug config** (if needed):
    ```bash
    opencenter cluster validate --generate-debug-config
    ```
 
-6. **Proceed to setup:**
+5. **Proceed to setup:**
    ```bash
    opencenter cluster generate
    ```
@@ -311,9 +310,9 @@ set -e
 # Validate configuration
 opencenter cluster validate my-cluster
 
-# Validate connectivity (if credentials available)
+# Run online checks if credentials and network access are available
 if [ -n "$OPENSTACK_APPLICATION_CREDENTIAL_ID" ]; then
-  opencenter cluster validate my-cluster --check-connectivity
+  opencenter cluster validate my-cluster --validation online
 fi
 
 # Generate debug config for artifacts
@@ -328,11 +327,11 @@ opencenter cluster validate my-cluster \
 
 **Problem:** Validation command appears stuck
 
-**Cause:** Connectivity check timing out
+**Cause:** Online validation is waiting on provider or Git remote checks
 
-**Solution:** Skip connectivity checks:
+**Solution:** Use offline validation:
 ```bash
-opencenter cluster validate  # Without --check-connectivity
+opencenter cluster validate --validation offline
 ```
 
 ### False Positive Errors

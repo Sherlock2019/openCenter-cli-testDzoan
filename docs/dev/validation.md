@@ -17,8 +17,7 @@ opencenter cluster validate
 opencenter cluster validate <cluster>
 opencenter cluster validate <organization>/<cluster>
 opencenter cluster validate --config-file <path>
-opencenter cluster validate --check-connectivity
-opencenter cluster validate --check-provider
+opencenter cluster validate --validation online
 opencenter cluster validate --manifests
 ```
 
@@ -28,13 +27,13 @@ Only v2 configs with `schema_version: "2.0"` are supported.
 
 | File | Responsibility |
 |---|---|
-| `cmd/cluster_validate.go` | Cobra command, flag parsing, active-cluster fallback, output selection. |
+| `cmd/cluster_validate.go` | Cobra command, validation-mode resolution, active-cluster fallback, output selection. |
 | `cmd/cluster_validate_manifests.go` | Alternate `--manifests` path for generated GitOps manifest checks. |
-| `internal/cluster/validate_service.go` | Config path resolution, v2 loading, readiness checks, optional live checks, debug config export. |
-| `internal/cluster/validation_formatter.go` | Text and JSON formatting from structured validation issues. |
+| `internal/cluster/validate_service.go` | Config path resolution, v2 loading, readiness checks, mode-gated online checks, debug config export. |
+| `internal/cluster/validation_formatter.go` | Text and JSON formatting from the operator report and structured validation issues. |
 | `internal/config/v2/loader.go` | Native v2 load pipeline: YAML parsing, normalization, defaults, reference resolution, schema validation. |
 | `internal/config/v2/readiness.go` | Offline deployment-readiness rules for provider config, GitOps auth, and enabled-service secrets. |
-| `internal/cloud/openstack/discovery.go` | Live OpenStack catalog discovery used only by `--check-provider`. |
+| `internal/cloud/openstack/discovery.go` | Live OpenStack catalog discovery used only by online validation. |
 
 ## Command Flow
 
@@ -50,6 +49,8 @@ cmd/cluster_validate.go
         +-- resolve input source:
         |      --config-file path, positional cluster, or active cluster
         |
+        +-- resolve validation mode:
+        |      --validation, behavior.validation, or offline default
         +-- build cluster.ValidateOptions
         |
         v
@@ -58,7 +59,10 @@ internal/cluster.ValidateService.Validate(...)
         +-- resolve named cluster path, if needed
         +-- load v2 config exactly once
         +-- run offline readiness checks
-        +-- optionally run connectivity or live provider checks
+        +-- run local GitOps checks
+        +-- if mode is online:
+        |      run provider connectivity, provider discovery, and Git remote checks
+        +-- build operator report
         +-- optionally export debug config
         |
         v
@@ -182,15 +186,15 @@ The v2-native secret map currently covers:
 - alert-proxy account/device credentials
 - vSphere CSI credentials when the vSphere CSI service or storage plugin is enabled
 
-### 3. Optional Connectivity Checks
+### 3. Online Connectivity Checks
 
-`--check-connectivity` is offline by default until explicitly requested. For OpenStack, it validates that the Keystone auth URL is syntactically valid and reachable. Server-side 5xx responses fail connectivity validation; auth-oriented responses such as 401 or method responses do not fail the URL reachability check by themselves.
+`behavior.validation: online` or `--validation online` enables checks that can contact external systems. For OpenStack, it validates that the Keystone auth URL is syntactically valid and reachable. Server-side 5xx responses fail connectivity validation; auth-oriented responses such as 401 or method responses do not fail the URL reachability check by themselves.
 
 Connectivity findings use category `connectivity` and set `ValidationResult.ConnectivityValid` false when they are errors.
 
-### 4. Optional Live Provider Checks
+### 4. Online Live Provider Checks
 
-`--check-provider` is opt-in. For OpenStack, it authenticates and discovers a provider catalog through `internal/cloud/openstack.DiscoveryClient`.
+Online validation authenticates and discovers a provider catalog through `internal/cloud/openstack.DiscoveryClient` for OpenStack.
 
 The live catalog check validates configured:
 
@@ -202,7 +206,7 @@ The live catalog check validates configured:
 - availability zones
 - Designate availability when Designate is enabled
 
-OpenStack API, auth, discovery, or missing-resource failures are returned as structured provider issues. No live provider checks run during default validation.
+OpenStack API, auth, discovery, or missing-resource failures are returned as structured provider issues. No live provider checks run during offline validation.
 
 ## ValidationResult Fields
 

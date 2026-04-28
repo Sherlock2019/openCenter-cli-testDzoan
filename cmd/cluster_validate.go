@@ -32,9 +32,15 @@ This command performs comprehensive validation including:
   • Schema validation against JSON schema
   • Required field validation
   • Cross-field dependency validation
-  • Cloud provider credential validation (optional)
+  • GitOps configuration and local repository validation
   • Network configuration validation
   • SOPS key validation
+
+Validation mode is selected from global CLI config behavior.validation
+(default: offline) and can be overridden for one run with --validation.
+Offline mode does not contact providers, Git remotes, Kubernetes APIs, or
+external services. Online mode adds provider discovery/connectivity and Git
+remote checks.
 
 Only v2 configurations (schema_version: "2.0") are supported.
 Configurations with any other schema version are invalid.
@@ -49,8 +55,8 @@ If no cluster name is provided, validates the currently active cluster.`,
   # Validate with organization/cluster-name format
   opencenter cluster validate my-org/my-cluster
 
-  # Validate with connectivity checks
-  opencenter cluster validate my-cluster --check-connectivity
+  # Validate with online provider and Git remote checks
+  opencenter cluster validate my-cluster --validation online
 
   # Validate generated GitOps manifests
   opencenter cluster validate my-cluster --manifests
@@ -65,6 +71,16 @@ If no cluster name is provided, validates the currently active cluster.`,
 			validateManifests, _ := cmd.Flags().GetBool("manifests")
 			if validateManifests {
 				return runClusterValidateManifests(cmd, args)
+			}
+
+			validationMode := ""
+			if cmd.Flags().Changed("validation") {
+				rawMode, _ := cmd.Flags().GetString("validation")
+				mode, err := cluster.NormalizeValidationMode(rawMode, "--validation")
+				if err != nil {
+					return err
+				}
+				validationMode = mode
 			}
 
 			app, err := GetApp(cmd.Context())
@@ -100,9 +116,18 @@ If no cluster name is provided, validates the currently active cluster.`,
 				}
 			}
 
+			if validationMode == "" {
+				if app.ConfigManager != nil && app.ConfigManager.GetConfig() != nil {
+					validationMode = app.ConfigManager.GetConfig().Behavior.Validation
+				}
+				mode, err := cluster.NormalizeValidationMode(validationMode, "behavior.validation")
+				if err != nil {
+					return err
+				}
+				validationMode = mode
+			}
+
 			// Get validation options from flags
-			checkConnectivity, _ := cmd.Flags().GetBool("check-connectivity")
-			checkProvider, _ := cmd.Flags().GetBool("check-provider")
 			generateDebug, _ := cmd.Flags().GetBool("generate-debug-config")
 			outputDir, _ := cmd.Flags().GetString("output-dir")
 			verbose, _ := cmd.Flags().GetBool("verbose")
@@ -113,8 +138,7 @@ If no cluster name is provided, validates the currently active cluster.`,
 				ClusterName:         clusterName,
 				Organization:        organization,
 				ConfigPath:          configFile,
-				CheckConnectivity:   checkConnectivity,
-				CheckProvider:       checkProvider,
+				ValidationMode:      validationMode,
 				GenerateDebugConfig: generateDebug,
 				OutputDir:           outputDir,
 				Verbose:             verbose,
@@ -153,8 +177,7 @@ If no cluster name is provided, validates the currently active cluster.`,
 		},
 	}
 
-	cmd.Flags().Bool("check-connectivity", false, "check connectivity to cloud provider")
-	cmd.Flags().Bool("check-provider", false, "perform provider-specific validation")
+	cmd.Flags().String("validation", "", "validation mode for this run: offline or online")
 	cmd.Flags().Bool("generate-debug-config", false, "generate complete config for debugging")
 	cmd.Flags().Bool("manifests", false, "validate generated GitOps manifests")
 	cmd.Flags().String("config-file", "", "path to configuration file to validate")

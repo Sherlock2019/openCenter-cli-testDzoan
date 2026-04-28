@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -30,10 +31,9 @@ func TestValidateService_Validate(t *testing.T) {
 				return setupTestCluster(t, "valid-cluster", validTestConfig())
 			},
 			opts: ValidateOptions{
-				ClusterName:       "valid-cluster",
-				Organization:      "opencenter",
-				CheckConnectivity: false,
-				CheckProvider:     false,
+				ClusterName:    "valid-cluster",
+				Organization:   "opencenter",
+				ValidationMode: "offline",
 			},
 			wantErr:        false,
 			wantConfigFile: true,
@@ -223,9 +223,8 @@ func TestValidateService_CheckProviderUsesOpenStackDiscovery(t *testing.T) {
 	service.openStackDiscovery = fake
 
 	result, err := service.Validate(context.Background(), ValidateOptions{
-		ConfigPath:        configPath,
-		CheckProvider:     true,
-		CheckConnectivity: true,
+		ConfigPath:     configPath,
+		ValidationMode: "online",
 	})
 	if err != nil {
 		t.Fatalf("Validate() returned unexpected error: %v", err)
@@ -251,6 +250,86 @@ func TestValidateService_CheckProviderUsesOpenStackDiscovery(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("expected missing worker flavor provider issue, got: %#v", result.Issues)
+	}
+}
+
+func TestValidateService_OfflineSkipsOpenStackDiscovery(t *testing.T) {
+	cfg := validOpenStackConfigForValidation(t)
+	configPath := writeV2Config(t, cfg)
+
+	fake := &fakeOpenStackDiscovery{
+		catalog: &openstackcloud.DiscoveryCatalog{},
+	}
+	service := NewValidateService(paths.NewPathResolver(t.TempDir()), validation.NewValidationEngine(), nil)
+	service.openStackDiscovery = fake
+
+	result, err := service.Validate(context.Background(), ValidateOptions{
+		ConfigPath:     configPath,
+		ValidationMode: "offline",
+	})
+	if err != nil {
+		t.Fatalf("Validate() returned unexpected error: %v", err)
+	}
+	if result == nil {
+		t.Fatal("Validate() returned nil result")
+	}
+	if fake.called {
+		t.Fatal("offline validation must not call OpenStack discovery")
+	}
+	if result.ValidationMode != "offline" {
+		t.Fatalf("ValidationMode = %q, want offline", result.ValidationMode)
+	}
+}
+
+func TestValidateService_OfflineReportsLocalGitOpsDirtyState(t *testing.T) {
+	cfg, err := v2.NewV2Default("gitops-dirty", "kind")
+	if err != nil {
+		t.Fatalf("create config: %v", err)
+	}
+	cfg.OpenCenter.GitOps.Repository.URL = "ssh://git@github.com/example/gitops-dirty.git"
+	cfg.OpenCenter.GitOps.Auth.Token = nil
+	cfg.OpenCenter.GitOps.Auth.SSH = &v2.GitOpsSSHAuth{
+		PrivateKey: "secrets/gitops/id_ed25519",
+		PublicKey:  "secrets/gitops/id_ed25519.pub",
+	}
+	cfg.Secrets.Keycloak.ClientSecret = "keycloak-client-secret"
+	cfg.Secrets.Keycloak.AdminPassword = "keycloak-admin-password"
+	cfg.Secrets.Headlamp.OIDCClientSecret = "headlamp-oidc-secret"
+	cfg.Secrets.Grafana.AdminPassword = "grafana-admin-password"
+
+	gitDir := t.TempDir()
+	runGitTest(t, gitDir, "init")
+	if err := os.WriteFile(filepath.Join(gitDir, "untracked.yaml"), []byte("kind: List\n"), 0600); err != nil {
+		t.Fatalf("write untracked file: %v", err)
+	}
+	cfg.OpenCenter.GitOps.Repository.LocalDir = gitDir
+
+	configPath := writeV2Config(t, cfg)
+	service := NewValidateService(paths.NewPathResolver(t.TempDir()), validation.NewValidationEngine(), nil)
+
+	result, err := service.Validate(context.Background(), ValidateOptions{
+		ConfigPath:     configPath,
+		ValidationMode: "offline",
+	})
+	if err != nil {
+		t.Fatalf("Validate() returned unexpected error: %v", err)
+	}
+
+	var found bool
+	for _, check := range result.GitOpsReport.Checks {
+		if check.Name == "Local git" && check.Status == CheckStatusWarn && strings.Contains(check.Message, "dirty") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected dirty local git warning, got %#v", result.GitOpsReport.Checks)
+	}
+
+	for _, check := range result.GitOpsReport.Checks {
+		if check.Name == "Remote checks" && check.Status != CheckStatusSkip {
+			t.Fatalf("offline remote checks should be skipped, got %#v", check)
+		}
 	}
 }
 
@@ -402,6 +481,15 @@ func validOpenStackConfigForValidation(t *testing.T) *v2.Config {
 	osCfg.AvailabilityZone = "az1"
 	osCfg.AvailabilityZones = []string{"az1"}
 	return cfg
+}
+
+func runGitTest(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %s failed: %v\n%s", strings.Join(args, " "), err, output)
+	}
 }
 
 type fakeOpenStackDiscovery struct {
@@ -602,7 +690,7 @@ func TestValidateService_formatStatus(t *testing.T) {
 	}
 }
 
-func TestValidateService_Validate_WithConnectivity(t *testing.T) {
+func TestValidateService_Validate_WithOnlineMode(t *testing.T) {
 	clusterName, configDir := setupTestCluster(t, "connectivity-cluster", validTestConfig())
 	defer os.RemoveAll(configDir)
 
@@ -616,10 +704,9 @@ func TestValidateService_Validate_WithConnectivity(t *testing.T) {
 	service := NewValidateService(pathResolver, validationEngine, configManager)
 
 	opts := ValidateOptions{
-		ClusterName:       clusterName,
-		Organization:      "opencenter",
-		CheckConnectivity: true,
-		CheckProvider:     false,
+		ClusterName:    clusterName,
+		Organization:   "opencenter",
+		ValidationMode: "online",
 	}
 
 	result, err := service.Validate(context.Background(), opts)
@@ -632,7 +719,7 @@ func TestValidateService_Validate_WithConnectivity(t *testing.T) {
 	}
 }
 
-func TestValidateService_Validate_WithProvider(t *testing.T) {
+func TestValidateService_Validate_WithOfflineMode(t *testing.T) {
 	clusterName, configDir := setupTestCluster(t, "provider-cluster", validTestConfig())
 	defer os.RemoveAll(configDir)
 
@@ -646,10 +733,9 @@ func TestValidateService_Validate_WithProvider(t *testing.T) {
 	service := NewValidateService(pathResolver, validationEngine, configManager)
 
 	opts := ValidateOptions{
-		ClusterName:       clusterName,
-		Organization:      "opencenter",
-		CheckConnectivity: false,
-		CheckProvider:     true,
+		ClusterName:    clusterName,
+		Organization:   "opencenter",
+		ValidationMode: "offline",
 	}
 
 	result, err := service.Validate(context.Background(), opts)

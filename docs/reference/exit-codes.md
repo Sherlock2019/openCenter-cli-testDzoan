@@ -122,7 +122,7 @@ Network connectivity error.
 
 **Example:**
 ```bash
-opencenter cluster validate my-cluster --check-connectivity
+opencenter cluster validate my-cluster --validation online
 echo $?  # Output: 4
 ```
 

@@ -108,8 +108,14 @@ func TestClusterValidateWithFlags(t *testing.T) {
 		if !strings.Contains(output, "Validate cluster configuration") {
 			t.Error("expected help output to contain description")
 		}
-		if !strings.Contains(output, "--check-connectivity") {
-			t.Error("expected help output to contain --check-connectivity flag")
+		if !strings.Contains(output, "--validation") {
+			t.Error("expected help output to contain --validation flag")
+		}
+		if strings.Contains(output, "--check-connectivity") {
+			t.Error("expected help output not to contain removed --check-connectivity flag")
+		}
+		if strings.Contains(output, "--check-provider") {
+			t.Error("expected help output not to contain removed --check-provider flag")
 		}
 		if !strings.Contains(output, "--generate-debug-config") {
 			t.Error("expected help output to contain --generate-debug-config flag")
@@ -136,8 +142,7 @@ func TestClusterValidateCommandStructure(t *testing.T) {
 
 	// Verify flags exist
 	flags := []string{
-		"check-connectivity",
-		"check-provider",
+		"validation",
 		"generate-debug-config",
 		"manifests",
 		"output-dir",
@@ -149,6 +154,44 @@ func TestClusterValidateCommandStructure(t *testing.T) {
 		if flag == nil {
 			t.Errorf("expected flag %q to exist", flagName)
 		}
+	}
+
+	for _, removed := range []string{"check-connectivity", "check-provider"} {
+		if flag := cmd.Flags().Lookup(removed); flag != nil {
+			t.Errorf("expected removed flag %q not to exist", removed)
+		}
+	}
+}
+
+func TestClusterValidateRemovedFlagsAreUnknown(t *testing.T) {
+	for _, removedFlag := range []string{"--check-connectivity", "--check-provider"} {
+		t.Run(removedFlag, func(t *testing.T) {
+			cmd := newClusterValidateCmd()
+			cmd.SetContext(context.Background())
+			cmd.SetArgs([]string{removedFlag})
+
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatalf("expected %s to be rejected", removedFlag)
+			}
+			if !strings.Contains(err.Error(), "unknown flag") {
+				t.Fatalf("expected unknown flag error, got: %v", err)
+			}
+		})
+	}
+}
+
+func TestClusterValidateInvalidValidationModeFailsEarly(t *testing.T) {
+	cmd := newClusterValidateCmd()
+	cmd.SetContext(context.Background())
+	cmd.SetArgs([]string{"--validation", "remote", "--config-file", "does-not-matter.yaml"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected invalid validation mode to fail")
+	}
+	if !strings.Contains(err.Error(), `invalid --validation "remote"; expected offline or online`) {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 

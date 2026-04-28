@@ -41,6 +41,10 @@ func TestDefaultCLIConfig(t *testing.T) {
 		t.Errorf("Expected default log format 'text', got '%s'", config.Logging.Format)
 	}
 
+	if config.Behavior.Validation != "offline" {
+		t.Errorf("Expected default behavior.validation 'offline', got '%s'", config.Behavior.Validation)
+	}
+
 	if config.Logging.Output != "stderr" {
 		t.Errorf("Expected default log output 'stderr', got '%s'", config.Logging.Output)
 	}
@@ -209,6 +213,7 @@ func TestConfigManagerSetGetValue(t *testing.T) {
 		{"logging.level", "debug"},
 		{"logging.format", "json"},
 		{"behavior.dryRun", true},
+		{"behavior.validation", "online"},
 		{"cluster_defaults.provider", "aws"},
 		{"logging.file.maxSize", 200},
 		{"paths.stateDir", filepath.Join(tmpDir, "state")},
@@ -231,6 +236,38 @@ func TestConfigManagerSetGetValue(t *testing.T) {
 		if result != test.value {
 			t.Errorf("GetValue(%s) = %v, expected %v", test.key, result, test.value)
 		}
+	}
+}
+
+func TestConfigManagerBehaviorValidationModeValidation(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, "config.yaml")
+
+	cm, err := NewConfigManager(configPath)
+	if err != nil {
+		t.Fatalf("Failed to create config manager: %v", err)
+	}
+
+	if err := cm.SetValue("behavior.validation", "online"); err != nil {
+		t.Fatalf("SetValue(behavior.validation=online) error = %v", err)
+	}
+
+	got, err := cm.GetValue("behavior.validation")
+	if err != nil {
+		t.Fatalf("GetValue(behavior.validation) error = %v", err)
+	}
+	if got != "online" {
+		t.Fatalf("behavior.validation = %v, want online", got)
+	}
+
+	if err := cm.SetValue("behavior.validation", "remote"); err == nil {
+		t.Fatal("expected invalid behavior.validation to fail")
+	} else if !strings.Contains(err.Error(), `invalid behavior.validation "remote"; expected offline or online`) {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if err := cm.SetValue("behavior.autoConfirm", true); err != nil {
+		t.Fatalf("existing behavior boolean field should still set: %v", err)
 	}
 }
 
