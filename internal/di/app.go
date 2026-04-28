@@ -2,7 +2,6 @@ package di
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/cluster"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
@@ -56,7 +55,7 @@ func NewApp(baseDir string) (*App, error) {
 		return nil, fmt.Errorf("provide logger: %w", err)
 	}
 
-	configManager, err := config.NewConfigManager(deriveCLIConfigPath(baseDir))
+	configManager, err := config.NewConfigManager("")
 	if err != nil {
 		return nil, fmt.Errorf("provide ConfigManager: %w", err)
 	}
@@ -141,12 +140,4 @@ func NewApp(baseDir string) (*App, error) {
 		SetupService:     setupService,
 		BootstrapService: bootstrapService,
 	}, nil
-}
-
-func deriveCLIConfigPath(baseDir string) string {
-	cleanBaseDir := filepath.Clean(baseDir)
-	if filepath.Base(cleanBaseDir) == "clusters" {
-		return filepath.Join(filepath.Dir(cleanBaseDir), "config.yaml")
-	}
-	return filepath.Join(cleanBaseDir, "config.yaml")
 }
