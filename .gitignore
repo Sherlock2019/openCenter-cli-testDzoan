@@ -80,6 +80,9 @@ godoc.log
 .gitea_newuser_token
 testdata/*
 !testdata/.gitkeep
+!testdata/config/
+!testdata/config/v2/
+!testdata/config/v2/**
 !testdata/example-inc/
 !testdata/example-inc/**
 tests/features/steps/tmp/

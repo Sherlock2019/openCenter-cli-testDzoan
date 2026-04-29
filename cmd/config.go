@@ -52,6 +52,7 @@ The cluster_defaults section controls values injected into new cluster configs d
 	cmd.AddCommand(newConfigPathCmd())
 	cmd.AddCommand(newConfigEditCmd())
 	cmd.AddCommand(newConfigExplainCmd())
+	cmd.AddCommand(newConfigIDECmd())
 
 	return cmd
 }

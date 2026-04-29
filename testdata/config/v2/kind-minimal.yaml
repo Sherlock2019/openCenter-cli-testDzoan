@@ -1,0 +1,88 @@
+schema_version: "2.0"
+metadata:
+  created_at: "2026-04-29T00:00:00Z"
+  updated_at: "2026-04-29T00:00:00Z"
+  created_by: "opencenter"
+opencenter:
+  meta:
+    name: example-kind
+    organization: opencenter
+    env: dev
+    region: local
+  cluster:
+    cluster_name: example-kind
+    base_domain: example.test
+    cluster_fqdn: example-kind.example.test
+    admin_email: admin@example.test
+    kubernetes:
+      version: 1.33.7
+      api_port: 6443
+      subnet_pods: 10.244.0.0/16
+      subnet_services: 10.96.0.0/16
+      network_plugin:
+        calico:
+          enabled: true
+          version: 3.29.2
+          network_policy: true
+  infrastructure:
+    provider: kind
+    ssh:
+      authorized_keys:
+        - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExamplePublicKeyDataHere user@example.com
+      username: ubuntu
+    os_version: "24"
+    networking:
+      subnet_nodes: 10.2.128.0/22
+      allocation_pool_start: 10.2.128.10
+      allocation_pool_end: 10.2.131.250
+      vrrp_ip: 10.2.128.5
+      vrrp_enabled: false
+      loadbalancer_provider: ovn
+      use_designate: false
+      dns_zone_name: example-kind.example.test
+      dns_nameservers:
+        - 8.8.8.8
+      ntp_servers:
+        - time.google.com
+    compute:
+      master_count: 1
+      worker_count: 2
+      worker_count_windows: 0
+    storage:
+      default_storage_class: standard
+      worker_volume_size: 40
+      worker_volume_destination_type: volume
+      worker_volume_source_type: image
+      worker_volume_type: standard
+      master_volume_size: 40
+    cloud: {}
+    kind:
+      cluster_name: example-kind
+      kubernetes_version: 1.33.7
+      control_plane_count: 1
+      worker_count: 2
+      api_server_address: 127.0.0.1
+      api_server_port: 6443
+      pod_subnet: 10.244.0.0/16
+      service_subnet: 10.96.0.0/16
+      disable_default_cni: false
+  gitops:
+    repository:
+      url: https://github.com/opencenter-cloud/example-kind.git
+      branch: main
+      path: clusters/example-kind
+    flux:
+      interval: 5m
+      prune: true
+deployment:
+  auto_deploy: false
+  method: kubespray
+opentofu:
+  enabled: false
+  path: opentofu
+  backend:
+    type: local
+    local:
+      path: .opentofu-local-example-kind/terraform.tfstate
+secrets:
+  global: {}
