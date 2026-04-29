@@ -58,11 +58,25 @@ func (p *kindBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *paths.C
 	if org := strings.TrimSpace(cfg.Organization()); org != "" {
 		clusterIdentifier = org + "/" + clusterIdentifier
 	}
+	gitDir, gitDirErr := resolveGitDir(cfg, clusterPaths)
 
 	return []bootstrapStep{
 		{
 			ID:          "kind-create",
 			Description: "Create Kind cluster",
+			Plan: BootstrapPlanStep{
+				ID:         "kind-create",
+				Action:     "Create Kind cluster",
+				WorkingDir: clusterPaths.ClusterDir,
+				Commands: []BootstrapPlanCommand{
+					commandPlan("kind", "get", "clusters"),
+					commandPlan("kind", "create", "cluster", "--name", kindClusterName, "--config", kindConfigPath),
+				},
+				Reads:       []string{kindConfigPath},
+				Writes:      []string{fmt.Sprintf("local Kind cluster %q", kindClusterName)},
+				Environment: kindPlanEnv(env),
+				Notes:       []string{"Plan only; kind availability and config file existence were not checked."},
+			},
 			Run: func(ctx context.Context) error {
 				if _, err := os.Stat(kindConfigPath); err != nil {
 					if os.IsNotExist(err) {
@@ -76,6 +90,17 @@ func (p *kindBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *paths.C
 		{
 			ID:          "kind-export-kubeconfig",
 			Description: "Export Kind kubeconfig",
+			Plan: BootstrapPlanStep{
+				ID:         "kind-export-kubeconfig",
+				Action:     "Export Kind kubeconfig",
+				WorkingDir: clusterPaths.ClusterDir,
+				Commands: []BootstrapPlanCommand{
+					commandPlan("kind", "export", "kubeconfig", "--name", kindClusterName, "--kubeconfig", opts.KubeconfigPath),
+				},
+				Writes:      []string{filepath.Dir(opts.KubeconfigPath), opts.KubeconfigPath},
+				Environment: kindPlanEnv(env),
+				Notes:       []string{"Plan only; kubeconfig directory creation and kind availability were not checked."},
+			},
 			Run: func(ctx context.Context) error {
 				return kindProvider.ExportKubeconfig(ctx, kindClusterName, opts.KubeconfigPath, env)
 			},
@@ -83,6 +108,14 @@ func (p *kindBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *paths.C
 		{
 			ID:          "gitea-attach-kind",
 			Description: "Attach local Gitea to the Kind network",
+			Plan: BootstrapPlanStep{
+				ID:          "gitea-attach-kind",
+				Action:      "Attach local Gitea to the Kind network",
+				WorkingDir:  clusterPaths.ClusterDir,
+				Environment: kindPlanEnv(env),
+				Writes:      []string{"local Gitea container network attachments"},
+				Notes:       []string{"Plan only; local Gitea status and container runtime availability were not checked."},
+			},
 			Run: func(ctx context.Context) error {
 				if os.Getenv("OPENCENTER_TEST_MODE") != "" {
 					return nil
@@ -107,6 +140,17 @@ func (p *kindBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *paths.C
 		{
 			ID:          "flux-bootstrap",
 			Description: "Bootstrap FluxCD from local Gitea",
+			Plan: BootstrapPlanStep{
+				ID:         "flux-bootstrap",
+				Action:     "Bootstrap FluxCD from local Gitea",
+				WorkingDir: gitDir,
+				Commands: []BootstrapPlanCommand{
+					commandPlan("flux", "bootstrap", "<provider-specific>", "--path=applications/overlays/"+cfg.ClusterName()),
+				},
+				Environment: []BootstrapPlanEnv{{Name: "KUBECONFIG", Value: opts.KubeconfigPath}},
+				Writes:      []string{"Flux bootstrap manifests and commits in the GitOps repository", "Flux resources in the Kind cluster"},
+				Notes:       appendPlanNotes([]string{"Plan only; local Gitea status, token files, current branch, and kubeconfig were not checked."}, gitDirErr),
+			},
 			Run: func(ctx context.Context) error {
 				if os.Getenv("OPENCENTER_TEST_MODE") != "" {
 					return nil
@@ -124,6 +168,20 @@ func (p *kindBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *paths.C
 		{
 			ID:          "gitea-rebase",
 			Description: "Rebase local checkout with Flux bootstrap commits from Gitea",
+			Plan: BootstrapPlanStep{
+				ID:         "gitea-rebase",
+				Action:     "Rebase local checkout with Flux bootstrap commits from Gitea",
+				WorkingDir: gitDir,
+				Commands: []BootstrapPlanCommand{
+					commandPlan("git", "status", "--porcelain"),
+					commandPlan("git", "add", "-A"),
+					commandPlan("git", "commit", "-m", "stage local changes before rebase"),
+					commandPlan("git", "pull", "--rebase", "origin", "<current-branch>"),
+				},
+				Reads:  []string{gitDir},
+				Writes: []string{"local GitOps checkout history and working tree"},
+				Notes:  appendPlanNotes([]string{"Plan only; Git remotes, token files, branch, and local working tree state were not checked."}, gitDirErr),
+			},
 			Run: func(ctx context.Context) error {
 				if os.Getenv("OPENCENTER_TEST_MODE") != "" {
 					return nil
@@ -145,6 +203,17 @@ func (p *kindBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *paths.C
 		{
 			ID:          "gitops-push",
 			Description: "Push GitOps repository to local Gitea",
+			Plan: BootstrapPlanStep{
+				ID:         "gitops-push",
+				Action:     "Push GitOps repository to local Gitea",
+				WorkingDir: gitDir,
+				Commands: []BootstrapPlanCommand{
+					commandPlan("git", "push", "-u", "origin", "<current-branch>"),
+				},
+				Reads:  []string{gitDir},
+				Writes: []string{"local Gitea Git repository"},
+				Notes:  appendPlanNotes([]string{"Plan only; local Gitea status, token files, Git remote, and current branch were not checked."}, gitDirErr),
+			},
 			Run: func(ctx context.Context) error {
 				if os.Getenv("OPENCENTER_TEST_MODE") != "" {
 					return nil
@@ -162,6 +231,19 @@ func (p *kindBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *paths.C
 		{
 			ID:          "flux-verify",
 			Description: "Verify Flux installation and source reconciliation",
+			Plan: BootstrapPlanStep{
+				ID:         "flux-verify",
+				Action:     "Verify Flux installation and source reconciliation",
+				WorkingDir: clusterPaths.ClusterDir,
+				Commands: []BootstrapPlanCommand{
+					commandPlan("flux", "check"),
+					commandPlan("flux", "get", "sources", "git", "-n", "flux-system"),
+					commandPlan("flux", "get", "kustomizations", "-n", "flux-system"),
+				},
+				Environment: []BootstrapPlanEnv{{Name: "KUBECONFIG", Value: opts.KubeconfigPath}},
+				Reads:       []string{opts.KubeconfigPath},
+				Notes:       []string{"Plan only; Flux installation and source reconciliation were not checked."},
+			},
 			Run: func(ctx context.Context) error {
 				if os.Getenv("OPENCENTER_TEST_MODE") != "" {
 					return nil

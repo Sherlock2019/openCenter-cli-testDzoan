@@ -30,56 +30,113 @@ func (p *openstackBootstrapProvider) BuildSteps(cfg *v2.Config, _ *paths.Cluster
 		return nil, fmt.Errorf("opentofu must be enabled for openstack bootstrap")
 	}
 
-	if _, err := os.Stat(clusterDir); err != nil {
-		return nil, fmt.Errorf("cluster infrastructure directory not found in GitOps repository: %s", clusterDir)
-	}
-
-	extractor := credentials.NewExtractor(*cfg)
-	creds, err := extractor.ExtractOpenStack()
-	if err != nil {
-		return nil, fmt.Errorf("extract openstack credentials: %w", err)
-	}
-
-	env := buildBootstrapEnvironment(opts.KubeconfigPath)
-	mergeBootstrapEnvironment(env, creds.ToEnvMap())
-
 	openTofuPath := strings.TrimSpace(cfg.OpenTofu.Path)
 	if openTofuPath == "" {
 		openTofuPath = "opentofu"
 	}
+	planEnv := openStackPlanEnv(opts.KubeconfigPath)
 
 	return []bootstrapStep{
 		{
 			ID:          "openstack-preflight",
 			Description: "Validate OpenStack credentials and bootstrap prerequisites",
+			Plan: BootstrapPlanStep{
+				ID:         "openstack-preflight",
+				Action:     "Validate OpenStack credentials and bootstrap prerequisites",
+				WorkingDir: clusterDir,
+				Reads:      []string{clusterDir},
+				Notes:      []string{"Plan only; OpenStack credentials, infrastructure directory, and OpenTofu availability were not checked."},
+			},
 			Run: func(ctx context.Context) error {
+				if _, err := os.Stat(clusterDir); err != nil {
+					return fmt.Errorf("cluster infrastructure directory not found in GitOps repository: %s", clusterDir)
+				}
+				creds, err := extractOpenStackBootstrapCredentials(cfg)
+				if err != nil {
+					return err
+				}
 				return validateOpenStackBootstrap(creds)
 			},
 		},
 		{
 			ID:          "opentofu-init",
 			Description: "Initialize OpenTofu",
+			Plan: BootstrapPlanStep{
+				ID:          "opentofu-init",
+				Action:      "Initialize OpenTofu",
+				WorkingDir:  clusterDir,
+				Commands:    []BootstrapPlanCommand{commandPlan(openTofuPath, "init")},
+				Environment: planEnv,
+				Reads:       []string{clusterDir},
+				Writes:      []string{filepath.Join(clusterDir, ".terraform")},
+				Notes:       []string{"Plan only; OpenTofu binary, backend access, and provider initialization were not checked."},
+			},
 			Run: func(ctx context.Context) error {
-				_, err := p.runner.Run(ctx, clusterDir, env, openTofuPath, "init")
-				return err
+				env, err := buildOpenStackBootstrapEnvironment(cfg, opts.KubeconfigPath)
+				if err != nil {
+					return err
+				}
+				_, runErr := p.runner.Run(ctx, clusterDir, env, openTofuPath, "init")
+				return runErr
 			},
 		},
 		{
 			ID:          "opentofu-apply",
 			Description: "Apply OpenTofu infrastructure",
+			Plan: BootstrapPlanStep{
+				ID:          "opentofu-apply",
+				Action:      "Apply OpenTofu infrastructure",
+				WorkingDir:  clusterDir,
+				Commands:    []BootstrapPlanCommand{commandPlan(openTofuPath, "apply", "-auto-approve")},
+				Environment: planEnv,
+				Reads:       []string{clusterDir},
+				Writes:      []string{"OpenStack infrastructure resources", filepath.Join(clusterDir, "terraform.tfstate")},
+				Notes:       []string{"Plan only; OpenStack API access and infrastructure changes were not simulated."},
+			},
 			Run: func(ctx context.Context) error {
-				_, err := p.runner.Run(ctx, clusterDir, env, openTofuPath, "apply", "-auto-approve")
-				return err
+				env, err := buildOpenStackBootstrapEnvironment(cfg, opts.KubeconfigPath)
+				if err != nil {
+					return err
+				}
+				_, runErr := p.runner.Run(ctx, clusterDir, env, openTofuPath, "apply", "-auto-approve")
+				return runErr
 			},
 		},
 		{
 			ID:          "openstack-normalize-kubeconfig",
 			Description: "Normalize kubeconfig into the cluster-owned path",
+			Plan: BootstrapPlanStep{
+				ID:         "openstack-normalize-kubeconfig",
+				Action:     "Normalize kubeconfig into the cluster-owned path",
+				WorkingDir: clusterDir,
+				Reads:      kubeconfigCandidatePaths(clusterDir, opts.KubeconfigPath),
+				Writes:     []string{opts.KubeconfigPath},
+				Notes:      []string{"Plan only; kubeconfig candidates were not checked."},
+			},
 			Run: func(ctx context.Context) error {
 				return normalizeOpenStackKubeconfig(clusterDir, opts.KubeconfigPath)
 			},
 		},
 	}, nil
+}
+
+func extractOpenStackBootstrapCredentials(cfg *v2.Config) (*credentials.OpenStackCredentials, error) {
+	extractor := credentials.NewExtractor(*cfg)
+	creds, err := extractor.ExtractOpenStack()
+	if err != nil {
+		return nil, fmt.Errorf("extract openstack credentials: %w", err)
+	}
+	return creds, nil
+}
+
+func buildOpenStackBootstrapEnvironment(cfg *v2.Config, kubeconfigPath string) (map[string]string, error) {
+	creds, err := extractOpenStackBootstrapCredentials(cfg)
+	if err != nil {
+		return nil, err
+	}
+	env := buildBootstrapEnvironment(kubeconfigPath)
+	mergeBootstrapEnvironment(env, creds.ToEnvMap())
+	return env, nil
 }
 
 func validateOpenStackBootstrap(creds *credentials.OpenStackCredentials) error {

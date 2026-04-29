@@ -62,6 +62,7 @@ type BootstrapResult struct {
 	ResumeStatePath           string
 	StepsCompleted            []string
 	StepsFailed               []string
+	Plan                      *BootstrapPlan
 }
 
 // BootstrapService handles cluster bootstrap business logic
@@ -130,6 +131,7 @@ func NewBootstrapServiceWithConfigMgr(
 type bootstrapStep struct {
 	ID          string
 	Description string
+	Plan        BootstrapPlanStep
 	Run         func(ctx context.Context) error
 }
 
@@ -209,14 +211,13 @@ func (s *BootstrapService) Bootstrap(ctx context.Context, opts BootstrapOptions)
 		StepsFailed:    []string{},
 	}
 
-	var runtimePaths *bootstrapRuntimePaths
-	if !opts.DryRun {
-		runtimePaths, err = resolveBootstrapRuntimePaths(&cfg, opts.LogPath, startTime)
-		if err != nil {
-			return result, fmt.Errorf("resolving bootstrap runtime paths: %w", err)
-		}
-		result.LogPath = runtimePaths.LogPath
+	runtimePaths, err := resolveBootstrapRuntimePaths(&cfg, opts.LogPath, startTime)
+	if err != nil {
+		return result, fmt.Errorf("resolving bootstrap runtime paths: %w", err)
+	}
+	result.LogPath = runtimePaths.LogPath
 
+	if !opts.DryRun {
 		logFile, err := openBootstrapLogFile(runtimePaths.LogPath)
 		if err != nil {
 			return result, err
@@ -232,13 +233,17 @@ func (s *BootstrapService) Bootstrap(ctx context.Context, opts BootstrapOptions)
 	}
 
 	if !opts.SkipValidation {
-		s.progress("Validating bootstrap configuration...")
+		if !opts.DryRun {
+			s.progress("Validating bootstrap configuration...")
+		}
 		config.Debug("bootstrap: running configuration validation")
 		if err := s.validateBootstrapConfig(&cfg); err != nil {
 			logBootstrapMessage(ctx, "bootstrap validation failed: %v", err)
 			return result, fmt.Errorf("validation failed: %w", err)
 		}
-		s.progress("✓ Configuration valid")
+		if !opts.DryRun {
+			s.progress("✓ Configuration valid")
+		}
 		config.Debug("bootstrap: configuration validation passed")
 	}
 
@@ -254,70 +259,67 @@ func (s *BootstrapService) Bootstrap(ctx context.Context, opts BootstrapOptions)
 	config.Debugf("bootstrap: provider=%s cluster=%s org=%s", provider, opts.ClusterName, opts.Organization)
 	config.Debugf("bootstrap: kubeconfig=%s timeout=%s", opts.KubeconfigPath, opts.Timeout)
 
-	// Provision infrastructure
-	if !opts.DryRun {
-		s.progress("\nProvisioning infrastructure (%s)...", provider)
-		config.Debugf("bootstrap: starting infrastructure provisioning for provider %s", provider)
-		if err := s.provisionInfrastructure(ctx, &cfg, clusterPaths, &opts, runtimePaths, result); err != nil {
-			logBootstrapMessage(ctx, "bootstrap failed during infrastructure provisioning: %v", err)
-			return result, fmt.Errorf("provisioning infrastructure: %w", err)
+	if opts.DryRun {
+		steps, err := s.buildBootstrapSteps(&cfg, clusterPaths, &opts)
+		if err != nil {
+			return result, err
 		}
-		result.InfrastructureProvisioned = true
-		s.progress("✓ Infrastructure provisioned")
+		selectedSteps, ignoreState, err := s.filterSteps(steps, &opts)
+		if err != nil {
+			return result, err
+		}
+		result.Plan = s.buildDryRunPlan(&cfg, clusterPaths, runtimePaths, &opts, selectedSteps, filterDescription(&opts, ignoreState))
+		result.ResumeStatePath = runtimePaths.StatePath
+		result.Duration = time.Since(startTime)
+		return result, nil
 	}
+
+	// Provision infrastructure
+	s.progress("\nProvisioning infrastructure (%s)...", provider)
+	config.Debugf("bootstrap: starting infrastructure provisioning for provider %s", provider)
+	if err := s.provisionInfrastructure(ctx, &cfg, clusterPaths, &opts, runtimePaths, result); err != nil {
+		logBootstrapMessage(ctx, "bootstrap failed during infrastructure provisioning: %v", err)
+		return result, fmt.Errorf("provisioning infrastructure: %w", err)
+	}
+	result.InfrastructureProvisioned = true
+	s.progress("✓ Infrastructure provisioned")
 
 	// Deploy cluster
-	if !opts.DryRun {
-		s.progress("\nDeploying cluster...")
-		config.Debug("bootstrap: starting cluster deployment")
-		if err := s.deployCluster(ctx, &cfg, clusterPaths, &opts, result); err != nil {
-			logBootstrapMessage(ctx, "bootstrap failed during cluster deployment: %v", err)
-			return result, fmt.Errorf("deploying cluster: %w", err)
-		}
-		result.ClusterDeployed = true
-		s.progress("✓ Cluster deployed")
+	s.progress("\nDeploying cluster...")
+	config.Debug("bootstrap: starting cluster deployment")
+	if err := s.deployCluster(ctx, &cfg, clusterPaths, &opts, result); err != nil {
+		logBootstrapMessage(ctx, "bootstrap failed during cluster deployment: %v", err)
+		return result, fmt.Errorf("deploying cluster: %w", err)
 	}
+	result.ClusterDeployed = true
+	s.progress("✓ Cluster deployed")
 
 	// Wait for cluster to be ready
-	if !opts.DryRun {
-		s.progress("\nWaiting for cluster readiness (timeout: %s)...", opts.Timeout)
-		config.Debugf("bootstrap: waiting for cluster readiness, timeout=%s", opts.Timeout)
-		endpoint, err := s.waitForReady(ctx, &cfg, opts.Timeout, opts.KubeconfigPath)
-		if err != nil {
-			logBootstrapMessage(ctx, "bootstrap failed while waiting for readiness: %v", err)
-			return result, fmt.Errorf("waiting for cluster ready: %w", err)
-		}
-		result.ClusterReady = true
-		result.Endpoint = endpoint
-		s.progress("✓ Cluster ready at %s", endpoint)
+	s.progress("\nWaiting for cluster readiness (timeout: %s)...", opts.Timeout)
+	config.Debugf("bootstrap: waiting for cluster readiness, timeout=%s", opts.Timeout)
+	endpoint, err := s.waitForReady(ctx, &cfg, opts.Timeout, opts.KubeconfigPath)
+	if err != nil {
+		logBootstrapMessage(ctx, "bootstrap failed while waiting for readiness: %v", err)
+		return result, fmt.Errorf("waiting for cluster ready: %w", err)
 	}
+	result.ClusterReady = true
+	result.Endpoint = endpoint
+	s.progress("✓ Cluster ready at %s", endpoint)
 
 	result.Duration = time.Since(startTime)
-	if !opts.DryRun {
-		if err := s.removeBootstrapState(runtimePaths.StatePath); err != nil {
-			logBootstrapMessage(ctx, "warning: failed to remove bootstrap state %s: %v", runtimePaths.StatePath, err)
-		}
-		if err := s.removeBootstrapState(runtimePaths.LegacyStatePath); err != nil {
-			logBootstrapMessage(ctx, "warning: failed to remove legacy bootstrap state %s: %v", runtimePaths.LegacyStatePath, err)
-		}
-		result.ResumeStatePath = ""
-		logBootstrapMessage(ctx, "bootstrap completed in %s", result.Duration.Round(time.Second))
+	if err := s.removeBootstrapState(runtimePaths.StatePath); err != nil {
+		logBootstrapMessage(ctx, "warning: failed to remove bootstrap state %s: %v", runtimePaths.StatePath, err)
 	}
+	if err := s.removeBootstrapState(runtimePaths.LegacyStatePath); err != nil {
+		logBootstrapMessage(ctx, "warning: failed to remove legacy bootstrap state %s: %v", runtimePaths.LegacyStatePath, err)
+	}
+	result.ResumeStatePath = ""
+	logBootstrapMessage(ctx, "bootstrap completed in %s", result.Duration.Round(time.Second))
 	return result, nil
 }
 
 // provisionInfrastructure provisions the infrastructure for the cluster
 func (s *BootstrapService) provisionInfrastructure(ctx context.Context, cfg *v2.Config, clusterPaths *paths.ClusterPaths, opts *BootstrapOptions, runtimePaths *bootstrapRuntimePaths, result *BootstrapResult) error {
-	provider := strings.ToLower(strings.TrimSpace(cfg.Provider()))
-	if provider == "" {
-		provider = "openstack"
-	}
-
-	clusterDir, err := infrastructureClusterDir(cfg)
-	if err != nil {
-		return err
-	}
-
 	statePath := ""
 	legacyStatePath := ""
 	if runtimePaths != nil {
@@ -346,24 +348,52 @@ func (s *BootstrapService) provisionInfrastructure(ctx context.Context, cfg *v2.
 		}
 	}
 
-	// Build steps based on provider
-	var steps []bootstrapStep
+	steps, err := s.buildBootstrapSteps(cfg, clusterPaths, opts)
+	if err != nil {
+		return err
+	}
+
+	// Filter steps based on options
+	selectedSteps, ignoreState, err := s.filterSteps(steps, opts)
+	if err != nil {
+		return err
+	}
+
+	return s.executeBootstrapSteps(ctx, selectedSteps, ignoreState, stateEnabled, statePath, state, result)
+}
+
+func (s *BootstrapService) buildBootstrapSteps(cfg *v2.Config, clusterPaths *paths.ClusterPaths, opts *BootstrapOptions) ([]bootstrapStep, error) {
+	provider := strings.ToLower(strings.TrimSpace(cfg.Provider()))
+	if provider == "" {
+		provider = "openstack"
+	}
 
 	switch provider {
 	case "openstack":
 		providerImpl := newOpenStackBootstrapProvider(s.runner)
-		steps, err = providerImpl.BuildSteps(cfg, clusterPaths, opts)
-		if err != nil {
-			return err
-		}
+		return providerImpl.BuildSteps(cfg, clusterPaths, opts)
 
 	case "aws", "gcp", "azure":
+		clusterDir, err := infrastructureClusterDir(cfg)
+		if err != nil {
+			return nil, err
+		}
 		env := buildBootstrapEnvironment(opts.KubeconfigPath)
 
-		steps = []bootstrapStep{
+		return []bootstrapStep{
 			{
 				ID:          "make-terraform",
 				Description: "Run make terraform",
+				Plan: BootstrapPlanStep{
+					ID:         "make-terraform",
+					Action:     "Run make terraform",
+					WorkingDir: clusterDir,
+					Commands:   []BootstrapPlanCommand{commandPlan("make", "terraform")},
+					Environment: envPlanFromMap(map[string]string{
+						"KUBECONFIG": opts.KubeconfigPath,
+						"PATH":       "<current PATH>",
+					}, nil),
+				},
 				Run: func(ctx context.Context) error {
 					return s.runCommand(ctx, clusterDir, env, "make", "terraform")
 				},
@@ -371,6 +401,13 @@ func (s *BootstrapService) provisionInfrastructure(ctx context.Context, cfg *v2.
 			{
 				ID:          "terraform-init",
 				Description: "Initialize Terraform",
+				Plan: BootstrapPlanStep{
+					ID:          "terraform-init",
+					Action:      "Initialize Terraform",
+					WorkingDir:  clusterDir,
+					Commands:    []BootstrapPlanCommand{commandPlan("terraform", "init")},
+					Environment: envPlanFromMap(map[string]string{"KUBECONFIG": opts.KubeconfigPath, "PATH": "<current PATH>"}, nil),
+				},
 				Run: func(ctx context.Context) error {
 					return s.runCommand(ctx, clusterDir, env, "terraform", "init")
 				},
@@ -378,26 +415,32 @@ func (s *BootstrapService) provisionInfrastructure(ctx context.Context, cfg *v2.
 			{
 				ID:          "terraform-apply",
 				Description: "Apply Terraform configuration",
+				Plan: BootstrapPlanStep{
+					ID:          "terraform-apply",
+					Action:      "Apply Terraform configuration",
+					WorkingDir:  clusterDir,
+					Commands:    []BootstrapPlanCommand{commandPlan("terraform", "apply", "-auto-approve")},
+					Environment: envPlanFromMap(map[string]string{"KUBECONFIG": opts.KubeconfigPath, "PATH": "<current PATH>"}, nil),
+				},
 				Run: func(ctx context.Context) error {
 					return s.runCommand(ctx, clusterDir, env, "terraform", "apply", "-auto-approve")
 				},
 			},
-		}
+		}, nil
 
 	case "kind":
 		providerImpl := newKindBootstrapProvider(s.runner)
-		steps, err = providerImpl.BuildSteps(cfg, clusterPaths, opts)
-		if err != nil {
-			return err
-		}
+		return providerImpl.BuildSteps(cfg, clusterPaths, opts)
 
 	default:
-		return fmt.Errorf("unsupported provider %q", provider)
+		if opts.DryRun {
+			return nil, fmt.Errorf("deploy planning is not available for provider %q", provider)
+		}
+		return nil, fmt.Errorf("unsupported provider %q", provider)
 	}
+}
 
-	// Filter steps based on options
-	selectedSteps, ignoreState := s.filterSteps(steps, opts)
-
+func (s *BootstrapService) executeBootstrapSteps(ctx context.Context, selectedSteps []bootstrapStep, ignoreState bool, stateEnabled bool, statePath string, state *bootstrapState, result *BootstrapResult) error {
 	totalSteps := len(selectedSteps)
 	config.Debugf("bootstrap: executing %d step(s) (ignoreState=%v)", totalSteps, ignoreState)
 
@@ -412,7 +455,7 @@ func (s *BootstrapService) provisionInfrastructure(ctx context.Context, cfg *v2.
 		}
 
 		// Mark step as running
-		if stateEnabled && !opts.DryRun {
+		if stateEnabled {
 			s.setStepStatus(state, step.ID, bootstrapStatusRunning, "")
 			if err := s.saveBootstrapState(statePath, state); err != nil {
 				return err
@@ -428,7 +471,7 @@ func (s *BootstrapService) provisionInfrastructure(ctx context.Context, cfg *v2.
 		if err := step.Run(ctx); err != nil {
 			stepDuration := time.Since(stepStart).Round(time.Millisecond)
 			// Mark step as failed
-			if stateEnabled && !opts.DryRun {
+			if stateEnabled {
 				s.setStepStatus(state, step.ID, bootstrapStatusFailed, err.Error())
 				if saveErr := s.saveBootstrapState(statePath, state); saveErr != nil {
 					return saveErr
@@ -445,7 +488,7 @@ func (s *BootstrapService) provisionInfrastructure(ctx context.Context, cfg *v2.
 		stepDuration := time.Since(stepStart).Round(time.Millisecond)
 
 		// Mark step as successful
-		if stateEnabled && !opts.DryRun {
+		if stateEnabled {
 			s.setStepStatus(state, step.ID, bootstrapStatusSuccess, "")
 			if err := s.saveBootstrapState(statePath, state); err != nil {
 				return err
@@ -589,7 +632,7 @@ func (s *BootstrapService) validateBootstrapConfig(cfg *v2.Config) error {
 }
 
 // filterSteps filters bootstrap steps based on options
-func (s *BootstrapService) filterSteps(steps []bootstrapStep, opts *BootstrapOptions) ([]bootstrapStep, bool) {
+func (s *BootstrapService) filterSteps(steps []bootstrapStep, opts *BootstrapOptions) ([]bootstrapStep, bool, error) {
 	// Build step index
 	stepIndex := make(map[string]int)
 	for i, step := range steps {
@@ -602,21 +645,21 @@ func (s *BootstrapService) filterSteps(steps []bootstrapStep, opts *BootstrapOpt
 	if strings.TrimSpace(opts.OnlyStep) != "" {
 		idx, ok := stepIndex[opts.OnlyStep]
 		if !ok {
-			return nil, true
+			return nil, true, missingStepError(opts.OnlyStep, steps)
 		}
-		return []bootstrapStep{steps[idx]}, true
+		return []bootstrapStep{steps[idx]}, true, nil
 	}
 
 	// Filter from step onwards
 	if strings.TrimSpace(opts.FromStep) != "" {
 		idx, ok := stepIndex[opts.FromStep]
 		if !ok {
-			return nil, true
+			return nil, true, missingStepError(opts.FromStep, steps)
 		}
-		return steps[idx:], true
+		return steps[idx:], true, nil
 	}
 
-	return steps, ignoreState
+	return steps, ignoreState, nil
 }
 
 // runCommand executes a command in the specified directory

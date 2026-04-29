@@ -1,5 +1,5 @@
-Feature: Cluster selection, listing, and inspection
-  Verifies cluster list, use (select), describe (info), and active cluster behaviour.
+Feature: Cluster use, listing, and inspection
+  Verifies cluster list, use, describe, and active cluster behaviour.
 
   Background:
     Given an empty directory "<<tmp>>/conf"

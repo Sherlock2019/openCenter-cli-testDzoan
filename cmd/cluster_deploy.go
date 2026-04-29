@@ -84,15 +84,24 @@ func runClusterDeploy(cmd *cobra.Command, args []string) error {
 		organization = cfg.OpenCenter.Meta.Organization
 	}
 
-	// Acquire lock for deploy operation (with prompt if lock exists)
-	lockResult, err := AcquireLockWithPrompt(ctx, cmd, name, "deploy", 1*time.Hour, map[string]string{
-		"operation": "deploy",
-		"command":   "cluster deploy",
-	})
+	// Parse command-line options
+	opts, err := parseBootstrapOptions(cmd, args, actualClusterName)
 	if err != nil {
 		return err
 	}
-	defer lockResult.LockManager.Release(lockResult.Lock)
+	opts.Organization = organization
+
+	if !opts.DryRun {
+		// Acquire lock for deploy operation (with prompt if lock exists)
+		lockResult, err := AcquireLockWithPrompt(ctx, cmd, name, "deploy", 1*time.Hour, map[string]string{
+			"operation": "deploy",
+			"command":   "cluster deploy",
+		})
+		if err != nil {
+			return err
+		}
+		defer lockResult.LockManager.Release(lockResult.Lock)
+	}
 
 	app, err := di.NewApp(config.ResolveClustersDir())
 	if err != nil {
@@ -100,13 +109,6 @@ func runClusterDeploy(cmd *cobra.Command, args []string) error {
 	}
 	bootstrapService := app.BootstrapService
 	bootstrapService.SetOutput(cmd.OutOrStdout())
-
-	// Parse command-line options
-	opts, err := parseBootstrapOptions(cmd, args, actualClusterName)
-	if err != nil {
-		return err
-	}
-	opts.Organization = organization
 
 	// Pre-check: ensure the GitOps working tree is clean before bootstrap.
 	// A dirty tree causes git pull --rebase to fail during the gitea-rebase step.
@@ -140,7 +142,7 @@ func runClusterDeploy(cmd *cobra.Command, args []string) error {
 				fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", statusErr)
 			}
 		}
-		if result != nil {
+		if !opts.DryRun && result != nil {
 			if strings.TrimSpace(result.LogPath) != "" {
 				fmt.Fprintf(cmd.ErrOrStderr(), "Bootstrap log: %s\n", result.LogPath)
 			}
@@ -149,6 +151,11 @@ func runClusterDeploy(cmd *cobra.Command, args []string) error {
 			}
 		}
 		return err
+	}
+
+	if opts.DryRun {
+		printClusterDeployPlan(cmd.OutOrStdout(), result.Plan)
+		return nil
 	}
 
 	// Display results

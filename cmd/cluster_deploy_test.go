@@ -11,6 +11,7 @@ import (
 
 	configdefaults "github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
+	"github.com/opencenter-cloud/opencenter-cli/internal/resilience"
 )
 
 func writeTestConfig(t *testing.T, dir, name, provider, gitDir string) {
@@ -69,8 +70,21 @@ func TestClusterDeployDryRunMake(t *testing.T) {
 	}
 
 	output := out.String()
-	if !strings.Contains(output, "Deploy complete in") {
-		t.Fatalf("expected completion message in output, got: %s", output)
+	for _, want := range []string{
+		"Deploy plan only (dry-run)",
+		"No commands will be run, no files will be written, and prerequisites are not fully validated.",
+		"Provider: openstack",
+		"opentofu-init",
+		"Command: opentofu init",
+		"Working dir: " + clusterDir,
+		"OS_APPLICATION_CREDENTIAL_SECRET=<redacted>",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("expected dry-run output to contain %q, got:\n%s", want, output)
+		}
+	}
+	if strings.Contains(output, "Deploy complete") {
+		t.Fatalf("dry-run should not report deploy completion, got:\n%s", output)
 	}
 }
 
@@ -94,8 +108,72 @@ func TestClusterDeployDryRunKind(t *testing.T) {
 	}
 
 	output := out.String()
-	if !strings.Contains(output, "Deploy complete in") {
-		t.Fatalf("expected completion message in output, got: %s", output)
+	for _, want := range []string{
+		"Deploy plan only (dry-run)",
+		"Provider: kind",
+		"Config:",
+		"GitOps dir:",
+		"Cluster dir:",
+		"Kubeconfig:",
+		"kind-create",
+		"Command: kind get clusters",
+		"Command: kind create cluster --name demo --config",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("expected dry-run output to contain %q, got:\n%s", want, output)
+		}
+	}
+	if strings.Contains(output, "Deploy complete") {
+		t.Fatalf("dry-run should not report deploy completion, got:\n%s", output)
+	}
+}
+
+func TestClusterDeployDryRunDoesNotAcquireDeployLock(t *testing.T) {
+	cfgDir := t.TempDir()
+	lockDir := filepath.Join(t.TempDir(), "locks")
+	if err := os.MkdirAll(lockDir, 0o755); err != nil {
+		t.Fatalf("mkdir lock dir: %v", err)
+	}
+
+	origConfig := resilience.DefaultLockConfig
+	resilience.DefaultLockConfig.LockDir = lockDir
+	defer func() { resilience.DefaultLockConfig = origConfig }()
+
+	lockPath := filepath.Join(lockDir, "demo.lock")
+	lockContent := `owner=other-host:99999
+acquired=2026-04-14T01:00:00Z
+expires=2099-04-14T02:00:00Z
+ttl=1h0m0s
+operation=deploy
+command=cluster deploy
+`
+	if err := os.WriteFile(lockPath, []byte(lockContent), 0o644); err != nil {
+		t.Fatalf("write lock: %v", err)
+	}
+
+	writeTestConfig(t, cfgDir, "demo", "kind", filepath.Join(t.TempDir(), "repo"))
+	prepareCommandTestEnv(t, cfgDir)
+
+	cmd := newClusterDeployCmd()
+	cmd.SetContext(context.WithValue(context.Background(), globalOptionsContextKey{}, GlobalOptions{DryRun: true, Output: OutputText}))
+	out := &bytes.Buffer{}
+	errOut := &bytes.Buffer{}
+	cmd.SetOut(out)
+	cmd.SetErr(errOut)
+	cmd.SetArgs([]string{"demo"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("dry-run deploy should ignore existing locks, got: %v", err)
+	}
+	data, err := os.ReadFile(lockPath)
+	if err != nil {
+		t.Fatalf("dry-run should leave existing lock in place: %v", err)
+	}
+	if string(data) != lockContent {
+		t.Fatalf("dry-run mutated lock file:\n%s", string(data))
+	}
+	if strings.Contains(out.String(), "Broke existing lock") {
+		t.Fatalf("dry-run should not break locks, got:\n%s", out.String())
 	}
 }
 

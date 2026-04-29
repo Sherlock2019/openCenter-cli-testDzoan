@@ -68,7 +68,7 @@ Steps that would run:
      Working dir: /.../clusters/opencenter/infrastructure/clusters/demo
      Commands:
        - kind get clusters
-       - kind create cluster --name demo --config /.../kind-config.yaml
+      - kind create cluster --name demo <kind config flag> /.../kind-config.yaml
      Reads:
        - /.../kind-config.yaml
      Writes:
@@ -119,7 +119,7 @@ Provider type must drive the planned steps and details.
 Kind dry-run should plan these steps:
 
 - `kind-create`
-  - Commands: `kind get clusters`, then `kind create cluster --name <cluster> --config <clusterDir>/kind-config.yaml` when the cluster is absent
+  - Commands: `kind get clusters`, then `kind create cluster --name <cluster> <kind config flag> <clusterDir>/kind-config.yaml` when the cluster is absent
   - Reads: `<clusterDir>/kind-config.yaml`
   - Writes: local Kind cluster
 - `kind-export-kubeconfig`

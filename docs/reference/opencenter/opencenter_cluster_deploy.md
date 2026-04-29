@@ -10,6 +10,10 @@ This command provisions infrastructure and deploys Kubernetes based on the
 cluster configuration. The process is resumable; if a step fails, fix the issue
 and re-run deploy to continue from the saved state.
 
+When used with the global `--dry-run` flag, deploy prints a provider-specific
+plan only. No commands are run, no files are written, locks are not acquired,
+and local or remote prerequisites are not fully validated.
+
 ```
 opencenter cluster deploy [name] [flags]
 ```
@@ -27,6 +31,13 @@ opencenter cluster deploy [name] [flags]
       --restart                    rerun all deploy steps and ignore saved state
       --step string                run a single deploy step by ID
 ```
+
+### Dry Run
+
+`opencenter cluster deploy <name> --dry-run` prints the resolved cluster paths,
+runtime artifact paths, and provider-specific steps that would run during a real
+deploy. This is a planning aid, not a full simulation of Kind, Flux, Git,
+OpenTofu, Kubernetes, or cloud-provider behavior.
 
 ### SEE ALSO
 
