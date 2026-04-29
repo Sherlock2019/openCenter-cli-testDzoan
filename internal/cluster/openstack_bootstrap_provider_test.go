@@ -73,6 +73,10 @@ func TestOpenStackBootstrapProviderUsesOpenTofuAndNormalizesKubeconfig(t *testin
 		},
 	}
 
+	// Default config uses deployment method "kubespray", so BuildSteps
+	// produces the kubespray venv/pip/ansible-playbook steps in addition
+	// to the opentofu steps.
+	venvDir := filepath.Join(clusterDir, "venv")
 	provider := &openstackBootstrapProvider{runner: fakeRunner}
 	steps, err := provider.BuildSteps(&cfg, nil, &BootstrapOptions{KubeconfigPath: targetKubeconfig})
 	if err != nil {
@@ -85,8 +89,10 @@ func TestOpenStackBootstrapProviderUsesOpenTofuAndNormalizesKubeconfig(t *testin
 		}
 	}
 
-	if len(fakeRunner.calls) != 2 {
-		t.Fatalf("expected 2 lifecycle commands, got %d", len(fakeRunner.calls))
+	// Expect 5 runner calls: opentofu init, opentofu apply,
+	// python3 -m venv, pip install, ansible-playbook.
+	if len(fakeRunner.calls) != 5 {
+		t.Fatalf("expected 5 lifecycle commands, got %d", len(fakeRunner.calls))
 	}
 	if fakeRunner.calls[0].name != "opentofu" || len(fakeRunner.calls[0].args) == 0 || fakeRunner.calls[0].args[0] != "init" {
 		t.Fatalf("expected first command to be opentofu init, got %#v", fakeRunner.calls[0])
@@ -94,6 +100,33 @@ func TestOpenStackBootstrapProviderUsesOpenTofuAndNormalizesKubeconfig(t *testin
 	if fakeRunner.calls[1].name != "opentofu" || len(fakeRunner.calls[1].args) < 2 || fakeRunner.calls[1].args[0] != "apply" || fakeRunner.calls[1].args[1] != "-auto-approve" {
 		t.Fatalf("expected second command to be opentofu apply -auto-approve, got %#v", fakeRunner.calls[1])
 	}
+
+	// Verify kubespray venv creation uses python3 directly (no shell).
+	if fakeRunner.calls[2].name != "python3" || len(fakeRunner.calls[2].args) < 3 || fakeRunner.calls[2].args[1] != "venv" {
+		t.Fatalf("expected third command to be python3 -m venv, got %#v", fakeRunner.calls[2])
+	}
+
+	// Verify pip install uses the venv binary path, not a bare "pip".
+	expectedPip := filepath.Join(venvDir, "bin", "pip")
+	if fakeRunner.calls[3].name != expectedPip {
+		t.Fatalf("expected pip command to use venv path %q, got %q", expectedPip, fakeRunner.calls[3].name)
+	}
+	if fakeRunner.calls[3].env["VIRTUAL_ENV"] != venvDir {
+		t.Fatalf("expected VIRTUAL_ENV=%q in pip env, got %q", venvDir, fakeRunner.calls[3].env["VIRTUAL_ENV"])
+	}
+
+	// Verify ansible-playbook uses the venv binary path.
+	expectedAnsible := filepath.Join(venvDir, "bin", "ansible-playbook")
+	if fakeRunner.calls[4].name != expectedAnsible {
+		t.Fatalf("expected ansible-playbook command to use venv path %q, got %q", expectedAnsible, fakeRunner.calls[4].name)
+	}
+	if fakeRunner.calls[4].env["VIRTUAL_ENV"] != venvDir {
+		t.Fatalf("expected VIRTUAL_ENV=%q in ansible env, got %q", venvDir, fakeRunner.calls[4].env["VIRTUAL_ENV"])
+	}
+	if fakeRunner.calls[4].env["ANSIBLE_HOST_KEY_CHECKING"] != "False" {
+		t.Fatalf("expected ANSIBLE_HOST_KEY_CHECKING=False, got %q", fakeRunner.calls[4].env["ANSIBLE_HOST_KEY_CHECKING"])
+	}
+
 	if fakeRunner.calls[0].env["OS_AUTH_URL"] != "https://keystone.example.com/v3" {
 		t.Fatalf("expected OS_AUTH_URL in env, got %#v", fakeRunner.calls[0].env)
 	}
@@ -173,8 +206,8 @@ func TestBootstrapServiceOpenStackProvisionInfrastructureHonorsSavedState(t *tes
 		t.Fatalf("provisionInfrastructure() error = %v", err)
 	}
 
-	if len(fakeRunner.calls) != 1 {
-		t.Fatalf("expected only the apply command to run after resuming, got %#v", fakeRunner.calls)
+	if len(fakeRunner.calls) != 4 {
+		t.Fatalf("expected apply + 3 kubespray commands to run after resuming, got %d calls", len(fakeRunner.calls))
 	}
 	if len(fakeRunner.calls[0].args) == 0 || fakeRunner.calls[0].args[0] != "apply" {
 		t.Fatalf("expected resumed command to be opentofu apply, got %#v", fakeRunner.calls[0])

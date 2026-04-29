@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
@@ -259,6 +260,63 @@ func TestBootstrapService_filterSteps(t *testing.T) {
 	}
 }
 
+func TestBootstrapService_executeBootstrapStepsPrintsDebugPreambleBeforeStepRun(t *testing.T) {
+	pathResolver := paths.NewPathResolver(t.TempDir())
+	bootstrapService := NewBootstrapService(pathResolver, validation.NewValidationEngine())
+	out := &bytes.Buffer{}
+	bootstrapService.SetOutput(out)
+
+	var runOutput string
+	steps := []bootstrapStep{
+		{
+			ID:          "terraform-init",
+			Description: "Initialize Terraform",
+			Plan: BootstrapPlanStep{
+				ID:         "terraform-init",
+				Action:     "Initialize Terraform",
+				WorkingDir: "/tmp/opencenter/cluster",
+				Commands: []BootstrapPlanCommand{
+					commandPlan("terraform", "init"),
+				},
+				Environment: []BootstrapPlanEnv{
+					{Name: "KUBECONFIG", Value: "/tmp/opencenter/kubeconfig"},
+					{Name: "OS_PASSWORD", Redacted: true},
+					{Name: "PATH", Value: "/usr/local/bin:/usr/bin"},
+				},
+			},
+			Run: func(ctx context.Context) error {
+				runOutput = out.String()
+				return nil
+			},
+		},
+	}
+
+	result := &BootstrapResult{}
+	state := bootstrapService.newBootstrapState()
+	err := bootstrapService.executeBootstrapSteps(context.Background(), steps, false, false, "", state, result, &BootstrapOptions{Debug: true})
+	if err != nil {
+		t.Fatalf("executeBootstrapSteps() error = %v", err)
+	}
+
+	for _, want := range []string{
+		"-----",
+		`Step: "Initialize Terraform"`,
+		"Environment:",
+		"  KUBECONFIG=/tmp/opencenter/kubeconfig",
+		"  OS_PASSWORD=<redacted>",
+		"  PATH=/usr/local/bin:/usr/bin",
+		"PATH: /tmp/opencenter/cluster",
+		"Command: terraform init",
+	} {
+		if !strings.Contains(runOutput, want) {
+			t.Fatalf("expected debug preamble before step run to contain %q, got:\n%s", want, runOutput)
+		}
+	}
+	if strings.Contains(runOutput, "✓ Initialize Terraform") {
+		t.Fatalf("debug preamble should be printed before the step completes, got:\n%s", runOutput)
+	}
+}
+
 func TestBootstrapService_OpenStackDryRunDoesNotUseLegacyConfigValidator(t *testing.T) {
 	tmpDir := t.TempDir()
 	clusterName := "openstack-bootstrap"
@@ -376,7 +434,7 @@ func TestBootstrapService_DryRunOpenStackBuildsPlanWithoutPrerequisites(t *testi
 	if result.Plan == nil {
 		t.Fatal("expected dry-run plan")
 	}
-	wantIDs := []string{"openstack-preflight", "opentofu-init", "opentofu-apply", "openstack-normalize-kubeconfig"}
+	wantIDs := []string{"openstack-preflight", "opentofu-init", "opentofu-apply", "kubespray-venv-create", "kubespray-pip-install", "kubespray-ansible-playbook", "openstack-normalize-kubeconfig"}
 	if got := planStepIDs(result.Plan); strings.Join(got, ",") != strings.Join(wantIDs, ",") {
 		t.Fatalf("plan steps = %v, want %v", got, wantIDs)
 	}

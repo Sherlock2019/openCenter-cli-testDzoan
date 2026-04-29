@@ -21,7 +21,7 @@ func newOpenStackBootstrapProvider(runner lifecycleCommandRunner) lifecycleBoots
 	return &openstackBootstrapProvider{runner: runner}
 }
 
-func (p *openstackBootstrapProvider) BuildSteps(cfg *v2.Config, _ *paths.ClusterPaths, opts *BootstrapOptions) ([]bootstrapStep, error) {
+func (p *openstackBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *paths.ClusterPaths, opts *BootstrapOptions) ([]bootstrapStep, error) {
 	clusterDir, err := infrastructureClusterDir(cfg)
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func (p *openstackBootstrapProvider) BuildSteps(cfg *v2.Config, _ *paths.Cluster
 	}
 	planEnv := openStackPlanEnv(opts.KubeconfigPath)
 
-	return []bootstrapStep{
+	steps := []bootstrapStep{
 		{
 			ID:          "openstack-preflight",
 			Description: "Validate OpenStack credentials and bootstrap prerequisites",
@@ -102,19 +102,144 @@ func (p *openstackBootstrapProvider) BuildSteps(cfg *v2.Config, _ *paths.Cluster
 				return runErr
 			},
 		},
+	}
+
+	// When the deployment method is kubespray, add steps to create a Python
+	// virtual environment and run ansible-playbook. All Python/Ansible binaries
+	// are invoked via their full venv path (e.g. venv/bin/pip) instead of
+	// sourcing the activate script, because exec.Command runs processes
+	// directly without a shell.
+	if cfg.Deployment.Method == "kubespray" {
+		kubespraySteps, err := p.buildKubespraySteps(cfg, clusterPaths, clusterDir, planEnv, opts)
+		if err != nil {
+			return nil, fmt.Errorf("building kubespray steps: %w", err)
+		}
+		steps = append(steps, kubespraySteps...)
+	}
+
+	steps = append(steps, bootstrapStep{
+		ID:          "openstack-normalize-kubeconfig",
+		Description: "Normalize kubeconfig into the cluster-owned path",
+		Plan: BootstrapPlanStep{
+			ID:         "openstack-normalize-kubeconfig",
+			Action:     "Normalize kubeconfig into the cluster-owned path",
+			WorkingDir: clusterDir,
+			Reads:      kubeconfigCandidatePaths(clusterDir, opts.KubeconfigPath),
+			Writes:     []string{opts.KubeconfigPath},
+			Notes:      []string{"Plan only; kubeconfig candidates were not checked."},
+		},
+		Run: func(ctx context.Context) error {
+			return normalizeOpenStackKubeconfig(clusterDir, opts.KubeconfigPath)
+		},
+	})
+
+	return steps, nil
+}
+
+// resolveVenvPath returns the Python virtual environment path for the cluster.
+// It prefers ClusterPaths.VenvPath when available, falling back to a
+// conventional path under the cluster infrastructure directory.
+func resolveVenvPath(clusterPaths *paths.ClusterPaths, clusterDir string) string {
+	if clusterPaths != nil && strings.TrimSpace(clusterPaths.VenvPath) != "" {
+		return clusterPaths.VenvPath
+	}
+	return filepath.Join(clusterDir, "venv")
+}
+
+// buildKubespraySteps returns the bootstrap steps that create a Python venv,
+// install Kubespray's requirements, and run ansible-playbook. Every Python
+// and Ansible binary is called by its absolute venv path so that no shell
+// "source activate" is needed.
+func (p *openstackBootstrapProvider) buildKubespraySteps(
+	cfg *v2.Config,
+	clusterPaths *paths.ClusterPaths,
+	clusterDir string,
+	planEnv []BootstrapPlanEnv,
+	opts *BootstrapOptions,
+) ([]bootstrapStep, error) {
+	venvDir := resolveVenvPath(clusterPaths, clusterDir)
+	pipPath := filepath.Join(venvDir, "bin", "pip")
+	ansiblePlaybookPath := filepath.Join(venvDir, "bin", "ansible-playbook")
+
+	kubesprayDir := filepath.Join(clusterDir, "kubespray")
+	inventoryDir := filepath.Join(clusterDir, "inventory")
+	requirementsFile := filepath.Join(kubesprayDir, "requirements.txt")
+
+	return []bootstrapStep{
 		{
-			ID:          "openstack-normalize-kubeconfig",
-			Description: "Normalize kubeconfig into the cluster-owned path",
+			ID:          "kubespray-venv-create",
+			Description: "Create Python virtual environment for Kubespray",
 			Plan: BootstrapPlanStep{
-				ID:         "openstack-normalize-kubeconfig",
-				Action:     "Normalize kubeconfig into the cluster-owned path",
+				ID:         "kubespray-venv-create",
+				Action:     "Create Python virtual environment for Kubespray",
 				WorkingDir: clusterDir,
-				Reads:      kubeconfigCandidatePaths(clusterDir, opts.KubeconfigPath),
-				Writes:     []string{opts.KubeconfigPath},
-				Notes:      []string{"Plan only; kubeconfig candidates were not checked."},
+				Commands:   []BootstrapPlanCommand{commandPlan("python3", "-m", "venv", venvDir)},
+				Writes:     []string{venvDir},
+				Notes:      []string{"Plan only; Python 3 availability was not checked."},
 			},
 			Run: func(ctx context.Context) error {
-				return normalizeOpenStackKubeconfig(clusterDir, opts.KubeconfigPath)
+				env, err := buildOpenStackBootstrapEnvironment(cfg, opts.KubeconfigPath)
+				if err != nil {
+					return err
+				}
+				_, runErr := p.runner.Run(ctx, clusterDir, env, "python3", "-m", "venv", venvDir)
+				return runErr
+			},
+		},
+		{
+			ID:          "kubespray-pip-install",
+			Description: "Install Kubespray requirements into virtual environment",
+			Plan: BootstrapPlanStep{
+				ID:          "kubespray-pip-install",
+				Action:      "Install Kubespray requirements into virtual environment",
+				WorkingDir:  clusterDir,
+				Commands:    []BootstrapPlanCommand{commandPlan(pipPath, "install", "-r", requirementsFile)},
+				Environment: planEnv,
+				Reads:       []string{requirementsFile},
+				Writes:      []string{filepath.Join(venvDir, "lib")},
+				Notes:       []string{"Plan only; requirements.txt existence and network access were not checked."},
+			},
+			Run: func(ctx context.Context) error {
+				env, err := buildOpenStackBootstrapEnvironment(cfg, opts.KubeconfigPath)
+				if err != nil {
+					return err
+				}
+				// Set VIRTUAL_ENV so pip and any post-install hooks see the
+				// correct environment, matching the behavior of "source activate".
+				env["VIRTUAL_ENV"] = venvDir
+				_, runErr := p.runner.Run(ctx, clusterDir, env, pipPath, "install", "-r", requirementsFile)
+				return runErr
+			},
+		},
+		{
+			ID:          "kubespray-ansible-playbook",
+			Description: "Run Kubespray Ansible playbook to deploy the cluster",
+			Plan: BootstrapPlanStep{
+				ID:          "kubespray-ansible-playbook",
+				Action:      "Run Kubespray Ansible playbook to deploy the cluster",
+				WorkingDir:  kubesprayDir,
+				Commands:    []BootstrapPlanCommand{commandPlan(ansiblePlaybookPath, "-i", inventoryDir, "cluster.yml", "-b")},
+				Environment: planEnv,
+				Reads:       []string{kubesprayDir, inventoryDir},
+				Writes:      []string{"Kubernetes cluster nodes"},
+				Notes:       []string{"Plan only; inventory, SSH access, and node connectivity were not checked."},
+			},
+			Run: func(ctx context.Context) error {
+				env, err := buildOpenStackBootstrapEnvironment(cfg, opts.KubeconfigPath)
+				if err != nil {
+					return err
+				}
+				env["VIRTUAL_ENV"] = venvDir
+				// Prepend the venv bin directory to PATH so Ansible can find
+				// its own helper binaries (e.g. ansible-connection).
+				if existing, ok := env["PATH"]; ok && existing != "" {
+					env["PATH"] = filepath.Join(venvDir, "bin") + string(os.PathListSeparator) + existing
+				} else {
+					env["PATH"] = filepath.Join(venvDir, "bin")
+				}
+				env["ANSIBLE_HOST_KEY_CHECKING"] = "False"
+				_, runErr := p.runner.Run(ctx, kubesprayDir, env, ansiblePlaybookPath, "-i", inventoryDir, "cluster.yml", "-b")
+				return runErr
 			},
 		},
 	}, nil
