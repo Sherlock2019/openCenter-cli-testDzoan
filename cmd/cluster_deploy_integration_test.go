@@ -262,6 +262,17 @@ func TestClusterDeployOptions(t *testing.T) {
 			},
 		},
 		{
+			name:        "debug option",
+			args:        []string{"--debug"},
+			clusterName: "test-cluster",
+			expectError: false,
+			checkFunc: func(t *testing.T, opts cluster.BootstrapOptions) {
+				if !opts.Debug {
+					t.Error("expected debug to be true")
+				}
+			},
+		},
+		{
 			name:        "step option",
 			args:        []string{"--step", "terraform-init"},
 			clusterName: "test-cluster",

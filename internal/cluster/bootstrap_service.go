@@ -45,6 +45,7 @@ type BootstrapOptions struct {
 	DryRun           bool
 	ContainerRuntime string
 	Restart          bool
+	Debug            bool
 	OnlyStep         string
 	FromStep         string
 	KubeconfigPath   string
@@ -88,6 +89,67 @@ func (s *BootstrapService) progress(format string, args ...interface{}) {
 		return
 	}
 	fmt.Fprintf(s.output, format+"\n", args...)
+}
+
+func (s *BootstrapService) printStepDebug(step bootstrapStep) {
+	if s.output == nil {
+		return
+	}
+
+	fmt.Fprintln(s.output, "-----")
+	fmt.Fprintf(s.output, "Step: %q\n", debugStepName(step))
+	if len(step.Plan.Environment) == 0 {
+		fmt.Fprintln(s.output, "Environment: (none)")
+	} else {
+		fmt.Fprintln(s.output, "Environment:")
+		for _, env := range step.Plan.Environment {
+			fmt.Fprintf(s.output, "  %s\n", formatDebugEnv(env))
+		}
+	}
+	fmt.Fprintf(s.output, "PATH: %s\n", debugWorkingDir(step.Plan.WorkingDir))
+	if len(step.Plan.Commands) == 0 {
+		fmt.Fprintln(s.output, "Command: (none)")
+		return
+	}
+	for _, command := range step.Plan.Commands {
+		fmt.Fprintf(s.output, "Command: %s\n", formatDebugCommand(command))
+	}
+}
+
+func debugStepName(step bootstrapStep) string {
+	if strings.TrimSpace(step.Description) != "" {
+		return step.Description
+	}
+	if strings.TrimSpace(step.Plan.Action) != "" {
+		return step.Plan.Action
+	}
+	if strings.TrimSpace(step.Plan.ID) != "" {
+		return step.Plan.ID
+	}
+	return step.ID
+}
+
+func debugWorkingDir(workingDir string) string {
+	if strings.TrimSpace(workingDir) == "" {
+		return "(not set)"
+	}
+	return workingDir
+}
+
+func formatDebugCommand(command BootstrapPlanCommand) string {
+	parts := []string{command.Name}
+	parts = append(parts, command.Args...)
+	return strings.Join(parts, " ")
+}
+
+func formatDebugEnv(env BootstrapPlanEnv) string {
+	if env.Redacted {
+		return env.Name + "=<redacted>"
+	}
+	if strings.TrimSpace(env.Value) == "" {
+		return env.Name
+	}
+	return env.Name + "=" + env.Value
 }
 
 // NewBootstrapService creates a new BootstrapService
@@ -359,7 +421,7 @@ func (s *BootstrapService) provisionInfrastructure(ctx context.Context, cfg *v2.
 		return err
 	}
 
-	return s.executeBootstrapSteps(ctx, selectedSteps, ignoreState, stateEnabled, statePath, state, result)
+	return s.executeBootstrapSteps(ctx, selectedSteps, ignoreState, stateEnabled, statePath, state, result, opts)
 }
 
 func (s *BootstrapService) buildBootstrapSteps(cfg *v2.Config, clusterPaths *paths.ClusterPaths, opts *BootstrapOptions) ([]bootstrapStep, error) {
@@ -440,7 +502,7 @@ func (s *BootstrapService) buildBootstrapSteps(cfg *v2.Config, clusterPaths *pat
 	}
 }
 
-func (s *BootstrapService) executeBootstrapSteps(ctx context.Context, selectedSteps []bootstrapStep, ignoreState bool, stateEnabled bool, statePath string, state *bootstrapState, result *BootstrapResult) error {
+func (s *BootstrapService) executeBootstrapSteps(ctx context.Context, selectedSteps []bootstrapStep, ignoreState bool, stateEnabled bool, statePath string, state *bootstrapState, result *BootstrapResult, opts *BootstrapOptions) error {
 	totalSteps := len(selectedSteps)
 	config.Debugf("bootstrap: executing %d step(s) (ignoreState=%v)", totalSteps, ignoreState)
 
@@ -460,6 +522,9 @@ func (s *BootstrapService) executeBootstrapSteps(ctx context.Context, selectedSt
 			if err := s.saveBootstrapState(statePath, state); err != nil {
 				return err
 			}
+		}
+		if opts != nil && opts.Debug {
+			s.printStepDebug(step)
 		}
 		s.progress("  [%d/%d] → %s...", i+1, totalSteps, step.Description)
 		config.Debugf("bootstrap: step %s started - %s", step.ID, step.Description)

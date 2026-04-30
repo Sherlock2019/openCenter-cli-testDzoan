@@ -223,7 +223,7 @@ func guidedCreateAnswers() map[string]string {
 		"dns.route53.access_key":                  "AKIAGUIDEDTEST",
 		"dns.route53.secret_key":                  "guided-secret-key",
 		"storage.loki.swift_secret":               "loki-swift-secret",
-		"storage.tempo.swift_secret":               "tempo-swift-secret",
+		"storage.tempo.swift_secret":              "tempo-swift-secret",
 		"review.confirm":                          "true",
 	}
 }

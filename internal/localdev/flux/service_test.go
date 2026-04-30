@@ -286,7 +286,6 @@ func resolveTestHostIP(t *testing.T) string {
 	return ""
 }
 
-
 func TestParseGitURL(t *testing.T) {
 	tests := []struct {
 		name      string

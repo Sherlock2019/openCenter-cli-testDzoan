@@ -46,6 +46,7 @@ and re-run deploy to continue from the saved state.`,
 	cmd.Flags().String("log", "", "log file path (defaults to <state_dir>/logs/bootstrap/<org>/<name>/bootstrap-YYYYMMDDTHHMMSSZ.log)")
 	cmd.Flags().String("container-runtime", "", "container runtime for kind clusters (docker or podman)")
 	cmd.Flags().Bool("restart", false, "rerun all deploy steps and ignore saved state")
+	cmd.Flags().Bool("debug", false, "print deploy step debug details before each step runs")
 	cmd.Flags().String("step", "", "run a single deploy step by ID")
 	cmd.Flags().String("from-step", "", "restart deploy from the specified step ID")
 	cmd.Flags().Bool("confirm-commit", false, "prompt for confirmation before auto-committing uncommitted changes")
@@ -213,6 +214,7 @@ func parseBootstrapOptions(cmd *cobra.Command, args []string, clusterName string
 	opts.LogPath, _ = cmd.Flags().GetString("log")
 	opts.ContainerRuntime, _ = cmd.Flags().GetString("container-runtime")
 	opts.Restart, _ = cmd.Flags().GetBool("restart")
+	opts.Debug, _ = cmd.Flags().GetBool("debug")
 	opts.OnlyStep, _ = cmd.Flags().GetString("step")
 	opts.FromStep, _ = cmd.Flags().GetString("from-step")
 

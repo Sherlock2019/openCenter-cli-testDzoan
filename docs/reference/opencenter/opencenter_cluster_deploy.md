@@ -24,6 +24,7 @@ opencenter cluster deploy [name] [flags]
       --break-lock                 force removal of an existing operation lock before deploying
       --confirm-commit             prompt for confirmation before auto-committing uncommitted changes
       --container-runtime string   container runtime for kind clusters (docker or podman)
+      --debug                      print deploy step debug details before each step runs
       --from-step string           restart deploy from the specified step ID
   -h, --help                       help for deploy
       --kubeconfig string          path to kubeconfig used by deploy actions (defaults to the cluster-owned kubeconfig path)
@@ -38,6 +39,12 @@ opencenter cluster deploy [name] [flags]
 runtime artifact paths, and provider-specific steps that would run during a real
 deploy. This is a planning aid, not a full simulation of Kind, Flux, Git,
 OpenTofu, Kubernetes, or cloud-provider behavior.
+
+### Debug
+
+`opencenter cluster deploy <name> --debug` prints a debug block before each
+deploy step runs. The block includes the step name, environment metadata,
+working directory, and command plan for that step.
 
 ### SEE ALSO
 
