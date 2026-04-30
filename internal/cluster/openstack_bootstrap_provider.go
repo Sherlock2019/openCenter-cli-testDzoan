@@ -117,19 +117,20 @@ func (p *openstackBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *pa
 		steps = append(steps, kubespraySteps...)
 	}
 
+	apiEndpointIP := resolveAPIEndpointIP(cfg)
 	steps = append(steps, bootstrapStep{
 		ID:          "openstack-normalize-kubeconfig",
-		Description: "Normalize kubeconfig into the cluster-owned path",
+		Description: "Normalize kubeconfig into the cluster-owned path and replace localhost with VIP",
 		Plan: BootstrapPlanStep{
 			ID:         "openstack-normalize-kubeconfig",
-			Action:     "Normalize kubeconfig into the cluster-owned path",
+			Action:     "Normalize kubeconfig into the cluster-owned path and replace localhost with VIP",
 			WorkingDir: clusterDir,
 			Reads:      kubeconfigCandidatePaths(clusterDir, opts.KubeconfigPath),
 			Writes:     []string{opts.KubeconfigPath},
 			Notes:      []string{"Plan only; kubeconfig candidates were not checked."},
 		},
 		Run: func(ctx context.Context) error {
-			return normalizeOpenStackKubeconfig(clusterDir, opts.KubeconfigPath)
+			return normalizeOpenStackKubeconfig(clusterDir, opts.KubeconfigPath, apiEndpointIP)
 		},
 	})
 
@@ -305,6 +306,20 @@ func mergeBootstrapEnvironment(target, extra map[string]string) {
 	}
 }
 
+// resolveAPIEndpointIP returns the IP address that should replace localhost
+// in the kubeconfig server URL. It prefers the explicit k8s_api_ip override
+// and falls back to the VRRP VIP when VRRP is enabled.
+func resolveAPIEndpointIP(cfg *v2.Config) string {
+	if ip := strings.TrimSpace(cfg.OpenCenter.Infrastructure.K8sAPIIP); ip != "" {
+		return ip
+	}
+	net := cfg.OpenCenter.Infrastructure.Networking
+	if net.VRRPEnabled {
+		return strings.TrimSpace(net.VRRPIP)
+	}
+	return ""
+}
+
 func infrastructureClusterDir(cfg *v2.Config) (string, error) {
 	if cfg == nil {
 		return "", fmt.Errorf("configuration is nil")
@@ -323,7 +338,7 @@ func infrastructureClusterDir(cfg *v2.Config) (string, error) {
 	return filepath.Join(gitDir, "infrastructure", "clusters", clusterName), nil
 }
 
-func normalizeOpenStackKubeconfig(clusterDir, targetPath string) error {
+func normalizeOpenStackKubeconfig(clusterDir, targetPath, apiEndpointIP string) error {
 	if strings.TrimSpace(targetPath) == "" {
 		return fmt.Errorf("kubeconfig path must be set")
 	}
@@ -350,17 +365,15 @@ func normalizeOpenStackKubeconfig(clusterDir, targetPath string) error {
 		return fmt.Errorf("kubeconfig not found after bootstrap in %s", clusterDir)
 	}
 
-	if sameFilePath(sourcePath, targetPath) {
-		return nil
-	}
-
-	if err := os.MkdirAll(filepath.Dir(targetPath), 0o755); err != nil {
-		return fmt.Errorf("create kubeconfig directory: %w", err)
-	}
-
 	data, err := os.ReadFile(sourcePath)
 	if err != nil {
 		return fmt.Errorf("read kubeconfig %s: %w", sourcePath, err)
+	}
+
+	data = replaceLocalhostInKubeconfig(data, apiEndpointIP)
+
+	if err := os.MkdirAll(filepath.Dir(targetPath), 0o755); err != nil {
+		return fmt.Errorf("create kubeconfig directory: %w", err)
 	}
 
 	if err := os.WriteFile(targetPath, data, 0o600); err != nil {
@@ -370,19 +383,34 @@ func normalizeOpenStackKubeconfig(clusterDir, targetPath string) error {
 	return nil
 }
 
-func sameFilePath(a, b string) bool {
-	if a == "" || b == "" {
-		return false
+// replaceLocalhostInKubeconfig rewrites cluster server URLs that point to
+// localhost (127.0.0.1 or ::1) so they use the cluster's VIP instead.
+// This is necessary for OpenStack deployments where the bootstrap tooling
+// (e.g. Kubespray) writes a kubeconfig with a localhost endpoint that is
+// only reachable from the control-plane node itself.
+//
+// When apiEndpointIP is empty the data is returned unchanged.
+func replaceLocalhostInKubeconfig(data []byte, apiEndpointIP string) []byte {
+	if strings.TrimSpace(apiEndpointIP) == "" {
+		return data
 	}
 
-	absA, err := filepath.Abs(a)
-	if err != nil {
-		return a == b
+	// Match server lines whose host portion is a localhost address.
+	// Kubeconfig server values follow the pattern:
+	//   server: https://<host>:<port>
+	// We replace only the host, preserving scheme and port.
+	localhostHosts := []string{"127.0.0.1", "localhost", "[::1]"}
+	result := string(data)
+	for _, host := range localhostHosts {
+		// Replace https://<localhost>: with https://<vip>:
+		result = strings.ReplaceAll(result,
+			"https://"+host+":",
+			"https://"+apiEndpointIP+":")
+		// Also handle the less common http:// variant
+		result = strings.ReplaceAll(result,
+			"http://"+host+":",
+			"http://"+apiEndpointIP+":")
 	}
-	absB, err := filepath.Abs(b)
-	if err != nil {
-		return a == b
-	}
-
-	return absA == absB
+	return []byte(result)
 }
+

@@ -4,9 +4,11 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 )
 
@@ -54,18 +56,38 @@ func TestOpenStackBootstrapProviderUsesOpenTofuAndNormalizesKubeconfig(t *testin
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://keystone.example.com/v3"
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ApplicationCredentialID = "app-cred-id"
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ApplicationCredentialSecret = "app-cred-secret"
+	cfg.OpenCenter.Infrastructure.Networking.VRRPEnabled = true
+	cfg.OpenCenter.Infrastructure.Networking.VRRPIP = "10.2.128.5"
 
 	clusterDir := filepath.Join(cfg.OpenCenter.GitOps.Repository.LocalDir, "infrastructure", "clusters", clusterName)
 	if err := os.MkdirAll(clusterDir, 0o755); err != nil {
 		t.Fatalf("mkdir cluster dir: %v", err)
 	}
 
+	localhostKubeconfig := `apiVersion: v1
+clusters:
+- cluster:
+    server: https://127.0.0.1:6443
+  name: demo
+contexts:
+- context:
+    cluster: demo
+    user: demo
+  name: demo
+current-context: demo
+kind: Config
+users:
+- name: demo
+  user:
+    token: fake
+`
+
 	targetKubeconfig := filepath.Join(t.TempDir(), "owned", "kubeconfig.yaml")
 	fakeRunner := &fakeLifecycleRunner{
 		onRun: func(dir string, env map[string]string, name string, args ...string) ([]byte, error) {
 			if len(args) > 0 && args[0] == "apply" {
 				sourceKubeconfig := filepath.Join(clusterDir, "kubeconfig.yaml")
-				if err := os.WriteFile(sourceKubeconfig, []byte("apiVersion: v1\n"), 0o600); err != nil {
+				if err := os.WriteFile(sourceKubeconfig, []byte(localhostKubeconfig), 0o600); err != nil {
 					t.Fatalf("write source kubeconfig: %v", err)
 				}
 			}
@@ -138,6 +160,19 @@ func TestOpenStackBootstrapProviderUsesOpenTofuAndNormalizesKubeconfig(t *testin
 	}
 	if _, err := os.Stat(targetKubeconfig); err != nil {
 		t.Fatalf("expected normalized kubeconfig at %s: %v", targetKubeconfig, err)
+	}
+
+	// Verify the kubeconfig server URL was rewritten from localhost to the VIP.
+	kubeconfigData, err := os.ReadFile(targetKubeconfig)
+	if err != nil {
+		t.Fatalf("read normalized kubeconfig: %v", err)
+	}
+	kubeconfigContent := string(kubeconfigData)
+	if strings.Contains(kubeconfigContent, "127.0.0.1") {
+		t.Fatalf("kubeconfig still contains 127.0.0.1; expected VIP replacement:\n%s", kubeconfigContent)
+	}
+	if !strings.Contains(kubeconfigContent, "https://10.2.128.5:6443") {
+		t.Fatalf("kubeconfig does not contain expected VIP endpoint https://10.2.128.5:6443:\n%s", kubeconfigContent)
 	}
 }
 
@@ -217,5 +252,234 @@ func TestBootstrapServiceOpenStackProvisionInfrastructureHonorsSavedState(t *tes
 	}
 	if _, err := os.Stat(runtimePaths.StatePath); err != nil {
 		t.Fatalf("expected migrated bootstrap state at %s: %v", runtimePaths.StatePath, err)
+	}
+}
+
+func TestReplaceLocalhostInKubeconfig(t *testing.T) {
+	tests := []struct {
+		name           string
+		input          string
+		apiEndpointIP  string
+		wantContains   string
+		wantNotContain string
+	}{
+		{
+			name: "replaces 127.0.0.1 with VIP",
+			input: `apiVersion: v1
+clusters:
+- cluster:
+    server: https://127.0.0.1:6443
+  name: test
+`,
+			apiEndpointIP:  "10.2.128.5",
+			wantContains:   "https://10.2.128.5:6443",
+			wantNotContain: "127.0.0.1",
+		},
+		{
+			name: "replaces localhost with VIP",
+			input: `apiVersion: v1
+clusters:
+- cluster:
+    server: https://localhost:6443
+  name: test
+`,
+			apiEndpointIP:  "10.2.128.5",
+			wantContains:   "https://10.2.128.5:6443",
+			wantNotContain: "localhost",
+		},
+		{
+			name: "replaces IPv6 loopback with VIP",
+			input: `apiVersion: v1
+clusters:
+- cluster:
+    server: https://[::1]:6443
+  name: test
+`,
+			apiEndpointIP:  "10.2.128.5",
+			wantContains:   "https://10.2.128.5:6443",
+			wantNotContain: "[::1]",
+		},
+		{
+			name: "preserves non-localhost server",
+			input: `apiVersion: v1
+clusters:
+- cluster:
+    server: https://10.0.0.1:6443
+  name: test
+`,
+			apiEndpointIP: "10.2.128.5",
+			wantContains:  "https://10.0.0.1:6443",
+		},
+		{
+			name: "empty VIP returns data unchanged",
+			input: `apiVersion: v1
+clusters:
+- cluster:
+    server: https://127.0.0.1:6443
+  name: test
+`,
+			apiEndpointIP: "",
+			wantContains:  "https://127.0.0.1:6443",
+		},
+		{
+			name: "preserves port when replacing host",
+			input: `apiVersion: v1
+clusters:
+- cluster:
+    server: https://127.0.0.1:8443
+  name: test
+`,
+			apiEndpointIP:  "192.168.1.100",
+			wantContains:   "https://192.168.1.100:8443",
+			wantNotContain: "127.0.0.1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := string(replaceLocalhostInKubeconfig([]byte(tt.input), tt.apiEndpointIP))
+			if !strings.Contains(got, tt.wantContains) {
+				t.Errorf("expected output to contain %q, got:\n%s", tt.wantContains, got)
+			}
+			if tt.wantNotContain != "" && strings.Contains(got, tt.wantNotContain) {
+				t.Errorf("expected output to NOT contain %q, got:\n%s", tt.wantNotContain, got)
+			}
+		})
+	}
+}
+
+func TestResolveAPIEndpointIP(t *testing.T) {
+	tests := []struct {
+		name     string
+		setup    func(cfg *v2.Config)
+		expected string
+	}{
+		{
+			name: "prefers k8s_api_ip over VRRP IP",
+			setup: func(cfg *v2.Config) {
+				cfg.OpenCenter.Infrastructure.K8sAPIIP = "10.0.0.99"
+				cfg.OpenCenter.Infrastructure.Networking.VRRPEnabled = true
+				cfg.OpenCenter.Infrastructure.Networking.VRRPIP = "10.2.128.5"
+			},
+			expected: "10.0.0.99",
+		},
+		{
+			name: "falls back to VRRP IP when k8s_api_ip is empty",
+			setup: func(cfg *v2.Config) {
+				cfg.OpenCenter.Infrastructure.K8sAPIIP = ""
+				cfg.OpenCenter.Infrastructure.Networking.VRRPEnabled = true
+				cfg.OpenCenter.Infrastructure.Networking.VRRPIP = "10.2.128.5"
+			},
+			expected: "10.2.128.5",
+		},
+		{
+			name: "returns empty when VRRP is disabled and no k8s_api_ip",
+			setup: func(cfg *v2.Config) {
+				cfg.OpenCenter.Infrastructure.K8sAPIIP = ""
+				cfg.OpenCenter.Infrastructure.Networking.VRRPEnabled = false
+				cfg.OpenCenter.Infrastructure.Networking.VRRPIP = "10.2.128.5"
+			},
+			expected: "",
+		},
+		{
+			name: "returns empty when nothing is configured",
+			setup: func(cfg *v2.Config) {
+				cfg.OpenCenter.Infrastructure.K8sAPIIP = ""
+				cfg.OpenCenter.Infrastructure.Networking.VRRPEnabled = false
+				cfg.OpenCenter.Infrastructure.Networking.VRRPIP = ""
+			},
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := mustNewClusterTestConfig("test", "openstack")
+			tt.setup(&cfg)
+			got := resolveAPIEndpointIP(&cfg)
+			if got != tt.expected {
+				t.Errorf("resolveAPIEndpointIP() = %q, want %q", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestNormalizeOpenStackKubeconfigReplacesLocalhostWithVIP(t *testing.T) {
+	clusterDir := t.TempDir()
+	targetPath := filepath.Join(t.TempDir(), "kubeconfig.yaml")
+
+	sourceContent := `apiVersion: v1
+clusters:
+- cluster:
+    server: https://127.0.0.1:6443
+    certificate-authority-data: LS0tLS1...
+  name: my-cluster
+contexts:
+- context:
+    cluster: my-cluster
+    user: admin
+  name: my-cluster
+current-context: my-cluster
+kind: Config
+users:
+- name: admin
+  user:
+    client-certificate-data: LS0tLS1...
+    client-key-data: LS0tLS1...
+`
+	sourcePath := filepath.Join(clusterDir, "kubeconfig.yaml")
+	if err := os.WriteFile(sourcePath, []byte(sourceContent), 0o600); err != nil {
+		t.Fatalf("write source kubeconfig: %v", err)
+	}
+
+	if err := normalizeOpenStackKubeconfig(clusterDir, targetPath, "10.2.128.5"); err != nil {
+		t.Fatalf("normalizeOpenStackKubeconfig() error = %v", err)
+	}
+
+	data, err := os.ReadFile(targetPath)
+	if err != nil {
+		t.Fatalf("read target kubeconfig: %v", err)
+	}
+
+	content := string(data)
+	if strings.Contains(content, "127.0.0.1") {
+		t.Errorf("target kubeconfig still contains 127.0.0.1:\n%s", content)
+	}
+	if !strings.Contains(content, "https://10.2.128.5:6443") {
+		t.Errorf("target kubeconfig missing VIP endpoint:\n%s", content)
+	}
+	// Verify the rest of the kubeconfig is preserved.
+	if !strings.Contains(content, "certificate-authority-data") {
+		t.Errorf("target kubeconfig lost certificate-authority-data:\n%s", content)
+	}
+}
+
+func TestNormalizeOpenStackKubeconfigNoReplacementWhenVIPEmpty(t *testing.T) {
+	clusterDir := t.TempDir()
+	targetPath := filepath.Join(t.TempDir(), "kubeconfig.yaml")
+
+	sourceContent := `apiVersion: v1
+clusters:
+- cluster:
+    server: https://127.0.0.1:6443
+  name: my-cluster
+`
+	sourcePath := filepath.Join(clusterDir, "kubeconfig.yaml")
+	if err := os.WriteFile(sourcePath, []byte(sourceContent), 0o600); err != nil {
+		t.Fatalf("write source kubeconfig: %v", err)
+	}
+
+	if err := normalizeOpenStackKubeconfig(clusterDir, targetPath, ""); err != nil {
+		t.Fatalf("normalizeOpenStackKubeconfig() error = %v", err)
+	}
+
+	data, err := os.ReadFile(targetPath)
+	if err != nil {
+		t.Fatalf("read target kubeconfig: %v", err)
+	}
+
+	// With empty VIP, localhost should be preserved.
+	if !strings.Contains(string(data), "https://127.0.0.1:6443") {
+		t.Errorf("expected localhost to be preserved when VIP is empty:\n%s", string(data))
 	}
 }
