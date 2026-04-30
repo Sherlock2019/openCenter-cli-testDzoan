@@ -456,7 +456,6 @@ func (r *PathResolver) CreateClusterDirectories(ctx context.Context, clusterName
 		filepath.Join(paths.SecretsDir, "ssh"), // ssh directory
 		filepath.Dir(paths.SSHKeyPath),         // ssh key parent directory
 		paths.InventoryPath,
-		paths.VenvPath,
 		paths.BinPath,
 	}
 

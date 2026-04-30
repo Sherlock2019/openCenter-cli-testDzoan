@@ -630,3 +630,11 @@ demo-cleanup = [
   "mise run kind-cleanup",
   "mise run clean"
 ]
+
+# ---------------------------------------------------------------------------
+# OpenStack utilities
+# ---------------------------------------------------------------------------
+
+# Reset an OpenStack project to a clean state (keeps default SG and PUBLICNET)
+# Usage: mise run openstack-reset -- --os-cloud <name> [--force] [--dry-run]
+openstack-reset = "hack/scripts/openstack-reset.sh"
