@@ -122,6 +122,11 @@ func TestLockManager_AcquireAndRelease(t *testing.T) {
 	if err := lm.Release(lock); err != nil {
 		t.Errorf("Release() error = %v", err)
 	}
+
+	// Verify lock file is removed from disk after release
+	if _, err := os.Stat(lockPath); !os.IsNotExist(err) {
+		t.Errorf("Lock file still exists at %s after Release()", lockPath)
+	}
 }
 
 func TestLockManager_ConcurrentAcquire(t *testing.T) {

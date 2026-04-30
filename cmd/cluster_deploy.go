@@ -101,7 +101,11 @@ func runClusterDeploy(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		defer lockResult.LockManager.Release(lockResult.Lock)
+		defer func() {
+			if lockResult.Lock != nil {
+				lockResult.LockManager.Release(lockResult.Lock)
+			}
+		}()
 	}
 
 	app, err := di.NewApp(config.ResolveClustersDir())

@@ -339,6 +339,12 @@ func (fb *fileLockBackend) release(lock Lock) error {
 	// Remove from our map
 	delete(fb.locks, fileLock.resource)
 
+	// Remove the lock file from disk so other processes don't see a stale lock
+	lockPath := filepath.Join(fb.lockDir, fileLock.resource+".lock")
+	if err := os.Remove(lockPath); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove lock file: %w", err)
+	}
+
 	return nil
 }
 
