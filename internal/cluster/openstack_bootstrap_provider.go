@@ -163,7 +163,7 @@ func (p *openstackBootstrapProvider) buildKubespraySteps(
 	ansiblePlaybookPath := filepath.Join(venvDir, "bin", "ansible-playbook")
 
 	kubesprayDir := filepath.Join(clusterDir, "kubespray")
-	inventoryDir := filepath.Join(clusterDir, "inventory")
+	inventoryFile := filepath.Join(clusterDir, "inventory", "inventory.yaml")
 	requirementsFile := filepath.Join(kubesprayDir, "requirements.txt")
 
 	return []bootstrapStep{
@@ -219,9 +219,9 @@ func (p *openstackBootstrapProvider) buildKubespraySteps(
 				ID:          "kubespray-ansible-playbook",
 				Action:      "Run Kubespray Ansible playbook to deploy the cluster",
 				WorkingDir:  kubesprayDir,
-				Commands:    []BootstrapPlanCommand{commandPlan(ansiblePlaybookPath, "-i", inventoryDir, "cluster.yml", "-b")},
+				Commands:    []BootstrapPlanCommand{commandPlan(ansiblePlaybookPath, "-i", inventoryFile, "cluster.yml", "-b")},
 				Environment: planEnv,
-				Reads:       []string{kubesprayDir, inventoryDir},
+				Reads:       []string{kubesprayDir, inventoryFile},
 				Writes:      []string{"Kubernetes cluster nodes"},
 				Notes:       []string{"Plan only; inventory, SSH access, and node connectivity were not checked."},
 			},
@@ -239,7 +239,7 @@ func (p *openstackBootstrapProvider) buildKubespraySteps(
 					env["PATH"] = filepath.Join(venvDir, "bin")
 				}
 				env["ANSIBLE_HOST_KEY_CHECKING"] = "False"
-				_, runErr := p.runner.Run(ctx, kubesprayDir, env, ansiblePlaybookPath, "-i", inventoryDir, "cluster.yml", "-b")
+				_, runErr := p.runner.Run(ctx, kubesprayDir, env, ansiblePlaybookPath, "-i", inventoryFile, "cluster.yml", "-b")
 				return runErr
 			},
 		},
@@ -413,4 +413,3 @@ func replaceLocalhostInKubeconfig(data []byte, apiEndpointIP string) []byte {
 	}
 	return []byte(result)
 }
-
