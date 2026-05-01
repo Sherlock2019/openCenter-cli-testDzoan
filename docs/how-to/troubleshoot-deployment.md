@@ -253,8 +253,11 @@ cat ansible.log
          network_plugin:
            calico:
              enabled: true
+             version: "3.32.0"
              install_method: helm
    ```
+
+   For OpenStack Calico, the CLI bundles Calico `v3.32.0` native `projectcalico.org/v3` CRDs and eBPF custom resources. A different Calico version fails with a bundled-version error. A cluster API that does not expose `MutatingAdmissionPolicy` fails before the v3 CRDs are applied.
 
 ### Node Not Ready
 
@@ -545,6 +548,7 @@ nslookup kubernetes.default
 
 ```bash
 kubectl get pods -n calico-system
+kubectl get tigerastatus calico
 kubectl logs -n calico-system <calico-node-pod>
 ```
 

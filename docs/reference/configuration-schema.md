@@ -278,15 +278,9 @@ opencenter:
       network_plugin:
         calico:
           enabled: true
+          version: "3.32.0"
           install_method: helm
-          cni_iface: "enp3s0"
-          calico_interface_autodetect: "interface"
-          autodetect_cidr: ""
-          encapsulation_type: "VXLAN"
-          nat_outgoing: true
-          modules:
-            calico:
-              source: "github.com/opencenter-cloud/opencenter-gitops-base.git//iac/cni/calico?ref=main"
+          network_policy: true
         cilium:
           enabled: false
           install_method: helm
@@ -308,7 +302,7 @@ opencenter:
 
 - Only one CNI plugin can have `enabled: true`
 - For OpenStack, supported CNI `install_method` values are `helm` and `kustomize-helm`; `kubespray` is rejected with migration guidance.
-- `cni_iface` required for Calico when `calico_interface_autodetect: "interface"`
+- For OpenStack, Calico uses bundled `v3.32.0` native `projectcalico.org/v3` CRDs and eBPF custom resources. Other Calico versions are rejected unless matching assets are added to the CLI.
 
 ### opencenter.cluster.kubernetes.oidc
 

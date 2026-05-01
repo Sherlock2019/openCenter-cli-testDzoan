@@ -262,7 +262,7 @@ Notes:
 
 ### 3. Tune compute, storage, and networking
 
-The OpenStack defaults are usable, but you should review them before provisioning. The current v2 defaults start with 3 control planes, 2 workers, Kubespray `v2.31.0`, Kubernetes `1.33.5`, Calico installed by Helm after kubeconfig normalization, and a local OpenTofu state backend.
+The OpenStack defaults are usable, but you should review them before provisioning. The current v2 defaults start with 3 control planes, 2 workers, Kubespray `v2.31.0`, Kubernetes `1.33.5`, Calico `v3.32.0` installed from bundled eBPF manifests after kubeconfig normalization, and a local OpenTofu state backend.
 
 Edit these sections as needed:
 
@@ -459,11 +459,12 @@ The OpenStack bootstrap provider runs these step IDs (defined in `internal/clust
 2. `opentofu-init` — runs `opentofu init` in the cluster infrastructure directory
 3. `opentofu-apply` — runs `opentofu apply -auto-approve` to provision infrastructure
 4. `openstack-normalize-kubeconfig` — copies the discovered kubeconfig to the cluster-owned path
-5. `openstack-install-network-plugin` — installs the selected CNI with Helm or Kustomize+Helm
+5. `openstack-install-network-plugin` — installs the selected CNI; Calico uses bundled `v3.32.0` eBPF manifests, while Cilium and Kube-OVN use Helm-backed flows
 
 Additional runtime behavior to be aware of:
 
 - OpenStack deploy does not use Kubespray to install CNIs. Set exactly one `network_plugin` to `enabled: true`; supported OpenStack `install_method` values are `helm` and `kustomize-helm`.
+- OpenStack Calico does not download install manifests at deploy time. The CLI bundles native `projectcalico.org/v3` CRDs, the Tigera operator, and `custom-resources-bpf.yaml`; the target cluster still needs access to required container images or a mirrored registry.
 - Bootstrap acquires a cluster-level lock to prevent concurrent operations. If a lock exists from a previous run, you are prompted to break it.
 - Bootstrap writes a log under the openCenter state directory, by default `~/.local/state/opencenter/logs/bootstrap/<org>/<cluster>/`.
 - Bootstrap keeps resumable state in `~/.local/state/opencenter/bootstrap/<org>/<cluster>/state.json`.

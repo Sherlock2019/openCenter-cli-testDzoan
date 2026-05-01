@@ -2,6 +2,8 @@ package cluster
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -159,6 +161,9 @@ func TestBootstrapServiceOpenStackProvisionInfrastructureHonorsSavedState(t *tes
 
 	fakeRunner := &fakeLifecycleRunner{
 		onRun: func(dir string, env map[string]string, name string, args ...string) ([]byte, error) {
+			if name == "kubectl" && strings.Contains(strings.Join(args, " "), "api-resources --api-group=admissionregistration.k8s.io -o name") {
+				return []byte("mutatingadmissionpolicies\nvalidatingadmissionpolicies\n"), nil
+			}
 			if len(args) > 0 && args[0] == "apply" {
 				sourceKubeconfig := filepath.Join(dir, "kubeconfig.yaml")
 				if err := os.WriteFile(sourceKubeconfig, []byte("apiVersion: v1\n"), 0o600); err != nil {
@@ -220,7 +225,8 @@ func TestBootstrapServiceOpenStackProvisionInfrastructureHonorsSavedState(t *tes
 	if len(fakeRunner.calls[0].args) == 0 || fakeRunner.calls[0].args[0] != "apply" {
 		t.Fatalf("expected resumed command to be opentofu apply, got %#v", fakeRunner.calls[0])
 	}
-	assertRecordedCommandContains(t, fakeRunner.calls, "helm", "upgrade --install calico projectcalico/tigera-operator")
+	assertRecordedCommandContains(t, fakeRunner.calls, "kubectl", "apply --server-side -f")
+	assertNoRecordedCommandName(t, fakeRunner.calls, "helm")
 	if _, err := os.Stat(clusterPaths.KubeconfigPath); err != nil {
 		t.Fatalf("expected cluster-owned kubeconfig at %s: %v", clusterPaths.KubeconfigPath, err)
 	}
@@ -229,9 +235,37 @@ func TestBootstrapServiceOpenStackProvisionInfrastructureHonorsSavedState(t *tes
 	}
 }
 
-func TestOpenStackNetworkPluginInstallCalicoUsesNativeV3CRDs(t *testing.T) {
+func TestOpenStackNetworkPluginInstallCalicoUsesBundledEBPFManifests(t *testing.T) {
 	cfg, clusterDir, kubeconfigPath := openStackNetworkPluginTestConfig(t, "calico-demo")
-	fakeRunner := &fakeLifecycleRunner{}
+	cfg.OpenCenter.Cluster.Kubernetes.SubnetPods = "10.99.0.0/16"
+	type appliedManifest struct {
+		base string
+		data string
+	}
+	var applied []appliedManifest
+	fakeRunner := &fakeLifecycleRunner{
+		onRun: func(dir string, env map[string]string, name string, args ...string) ([]byte, error) {
+			joined := strings.Join(args, " ")
+			if name == "kubectl" && strings.Contains(joined, "api-resources --api-group=admissionregistration.k8s.io -o name") {
+				return []byte("mutatingadmissionpolicies\nvalidatingadmissionpolicies\n"), nil
+			}
+			if name == "kubectl" && strings.Contains(joined, "apply") {
+				for i, arg := range args {
+					if arg == "-f" && i+1 < len(args) {
+						data, err := os.ReadFile(args[i+1])
+						if err != nil {
+							t.Fatalf("read applied manifest %s: %v", args[i+1], err)
+						}
+						applied = append(applied, appliedManifest{
+							base: filepath.Base(args[i+1]),
+							data: string(data),
+						})
+					}
+				}
+			}
+			return nil, nil
+		},
+	}
 	provider := &openstackBootstrapProvider{runner: fakeRunner}
 
 	step := findBootstrapStep(t, provider, cfg, clusterDir, kubeconfigPath, "openstack-install-network-plugin")
@@ -239,11 +273,109 @@ func TestOpenStackNetworkPluginInstallCalicoUsesNativeV3CRDs(t *testing.T) {
 		t.Fatalf("install step failed: %v", err)
 	}
 
-	assertRecordedCommand(t, fakeRunner.calls, "helm", "repo add projectcalico https://docs.tigera.io/calico/charts")
-	assertRecordedCommand(t, fakeRunner.calls, "helm", "template calico-crds projectcalico/projectcalico.org.v3 --version v3.29.2")
-	assertRecordedCommandContains(t, fakeRunner.calls, "helm", "upgrade --install calico projectcalico/tigera-operator --namespace tigera-operator")
+	assertNoRecordedCommandName(t, fakeRunner.calls, "helm")
+	assertRecordedCommandContains(t, fakeRunner.calls, "kubectl", "--kubeconfig "+kubeconfigPath+" api-resources --api-group=admissionregistration.k8s.io -o name")
 	assertRecordedCommandContains(t, fakeRunner.calls, "kubectl", "--kubeconfig "+kubeconfigPath+" apply --server-side -f")
+	if len(applied) < 3 {
+		t.Fatalf("expected at least three applied manifests, got %d:\n%s", len(applied), renderRecordedCommands(fakeRunner.calls))
+	}
+	wantApplied := []string{"v3_projectcalico_org.yaml", "tigera-operator.yaml", "custom-resources-bpf.yaml"}
+	for i, want := range wantApplied {
+		if applied[i].base != want {
+			t.Fatalf("applied manifest %d = %q, want %q", i, applied[i].base, want)
+		}
+	}
+	if !strings.Contains(applied[2].data, "cidr: 10.99.0.0/16") {
+		t.Fatalf("patched custom resources missing pod CIDR:\n%s", applied[2].data)
+	}
+	for _, want := range []string{"linuxDataplane: BPF", "bpfNetworkBootstrap: Enabled", "kubeProxyManagement: Enabled"} {
+		if !strings.Contains(applied[2].data, want) {
+			t.Fatalf("patched custom resources missing %q:\n%s", want, applied[2].data)
+		}
+	}
+	assertRecordedCommandContains(t, fakeRunner.calls, "kubectl", "--kubeconfig "+kubeconfigPath+" wait --for=create tigerastatus/calico --timeout=5m")
+	assertRecordedCommandContains(t, fakeRunner.calls, "kubectl", "--kubeconfig "+kubeconfigPath+" wait --for=condition=Available tigerastatus/calico --timeout=10m")
 	assertRecordedCommandContains(t, fakeRunner.calls, "kubectl", "--kubeconfig "+kubeconfigPath+" -n calico-system wait --for=condition=Ready pods --all --timeout=10m")
+}
+
+func TestOpenStackNetworkPluginInstallCalicoRejectsMissingMutatingAdmissionPolicy(t *testing.T) {
+	cfg, clusterDir, kubeconfigPath := openStackNetworkPluginTestConfig(t, "calico-missing-map")
+	fakeRunner := &fakeLifecycleRunner{
+		onRun: func(dir string, env map[string]string, name string, args ...string) ([]byte, error) {
+			if name == "kubectl" && strings.Contains(strings.Join(args, " "), "api-resources --api-group=admissionregistration.k8s.io -o name") {
+				return []byte("validatingadmissionpolicies\n"), nil
+			}
+			return nil, nil
+		},
+	}
+	provider := &openstackBootstrapProvider{runner: fakeRunner}
+
+	step := findBootstrapStep(t, provider, cfg, clusterDir, kubeconfigPath, "openstack-install-network-plugin")
+	err := step.Run(context.Background())
+	if err == nil {
+		t.Fatal("install step should fail when MutatingAdmissionPolicy is not available")
+	}
+	if !strings.Contains(err.Error(), "MutatingAdmissionPolicy") || !strings.Contains(err.Error(), "Calico v3 CRDs") {
+		t.Fatalf("expected targeted MutatingAdmissionPolicy error, got: %v", err)
+	}
+	assertNoRecordedCommandContains(t, fakeRunner.calls, "kubectl", "apply")
+}
+
+func TestOpenStackCalicoSelectionRequiresBundledVersion(t *testing.T) {
+	cfg, _, _ := openStackNetworkPluginTestConfig(t, "calico-version")
+
+	for _, version := range []string{"", "3.32.0", "v3.32.0"} {
+		cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Version = version
+		selection, err := selectOpenStackNetworkPlugin(cfg)
+		if err != nil {
+			t.Fatalf("selectOpenStackNetworkPlugin(%q) error = %v", version, err)
+		}
+		if selection.Version != "v3.32.0" {
+			t.Fatalf("selectOpenStackNetworkPlugin(%q) version = %q, want v3.32.0", version, selection.Version)
+		}
+	}
+
+	cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Version = "3.31.0"
+	_, err := selectOpenStackNetworkPlugin(cfg)
+	if err == nil {
+		t.Fatal("selectOpenStackNetworkPlugin should reject non-bundled Calico versions")
+	}
+	if !strings.Contains(err.Error(), "bundles v3.32.0") {
+		t.Fatalf("expected bundled-version error, got: %v", err)
+	}
+}
+
+func TestOpenStackCalicoBundledAssetChecksums(t *testing.T) {
+	tests := []struct {
+		name       string
+		wantSHA256 string
+	}{
+		{
+			name:       "v3_projectcalico_org.yaml",
+			wantSHA256: "ca5b8ca6f2e6c681da061d6e9a80f72981e4adc1bfe57143b6156288a5a188d0",
+		},
+		{
+			name:       "tigera-operator.yaml",
+			wantSHA256: "e48fe027f8be3d9136a012a32450f1eabc4c5257c0b76083cd1ab32316637d47",
+		},
+		{
+			name:       "custom-resources-bpf.yaml",
+			wantSHA256: "c705f212aa713cc3f87710ead805168f8cf03bfff383d6921a082121ae74af5c",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := readOpenStackCalicoAsset(tt.name)
+			if err != nil {
+				t.Fatalf("readOpenStackCalicoAsset(%q) error = %v", tt.name, err)
+			}
+			got := fmt.Sprintf("%x", sha256.Sum256(data))
+			if got != tt.wantSHA256 {
+				t.Fatalf("sha256(%s) = %s, want %s", tt.name, got, tt.wantSHA256)
+			}
+		})
+	}
 }
 
 func TestOpenStackNetworkPluginInstallCiliumUsesHelmOCIChartAndReadiness(t *testing.T) {
@@ -369,6 +501,24 @@ func assertRecordedCommandContains(t *testing.T, calls []recordedLifecycleComman
 		}
 	}
 	t.Fatalf("expected command %s containing %q, got:\n%s", name, argsSubstring, renderRecordedCommands(calls))
+}
+
+func assertNoRecordedCommandName(t *testing.T, calls []recordedLifecycleCommand, name string) {
+	t.Helper()
+	for _, call := range calls {
+		if call.name == name {
+			t.Fatalf("did not expect command %s, got:\n%s", name, renderRecordedCommands(calls))
+		}
+	}
+}
+
+func assertNoRecordedCommandContains(t *testing.T, calls []recordedLifecycleCommand, name, argsSubstring string) {
+	t.Helper()
+	for _, call := range calls {
+		if call.name == name && strings.Contains(strings.Join(call.args, " "), argsSubstring) {
+			t.Fatalf("did not expect command %s containing %q, got:\n%s", name, argsSubstring, renderRecordedCommands(calls))
+		}
+	}
 }
 
 func renderRecordedCommands(calls []recordedLifecycleCommand) string {

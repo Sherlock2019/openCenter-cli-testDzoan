@@ -159,7 +159,7 @@ func NewV2Default(name, provider string) (*Config, error) {
 					NetworkPlugin: NetworkPluginConfig{
 						Calico: &CalicoConfig{
 							Enabled:       true,
-							Version:       "3.29.2",
+							Version:       "3.32.0",
 							VXLANMode:     "Always",
 							NetworkPolicy: true,
 							InstallMethod: "helm",

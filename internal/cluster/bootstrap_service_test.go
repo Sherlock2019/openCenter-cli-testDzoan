@@ -484,6 +484,23 @@ func TestBootstrapService_DryRunOpenStackStepFiltersNetworkPluginPlan(t *testing
 	if !strings.Contains(result.Plan.Filter, "--step openstack-install-network-plugin") {
 		t.Fatalf("expected filter description, got %q", result.Plan.Filter)
 	}
+	networkPluginPlan := renderPlanCommands(result.Plan.Steps[0].Commands)
+	for _, want := range []string{
+		"kubectl --kubeconfig",
+		"api-resources --api-group=admissionregistration.k8s.io -o name",
+		"<bundled v3_projectcalico_org.yaml>",
+		"<patched bundled custom-resources-bpf.yaml>",
+		"tigerastatus/calico",
+	} {
+		if !strings.Contains(networkPluginPlan, want) {
+			t.Fatalf("expected Calico dry-run plan to contain %q, got:\n%s", want, networkPluginPlan)
+		}
+	}
+	for _, notWant := range []string{"helm ", "projectcalico/tigera-operator", "helm template"} {
+		if strings.Contains(networkPluginPlan, notWant) {
+			t.Fatalf("Calico dry-run plan should not contain %q, got:\n%s", notWant, networkPluginPlan)
+		}
+	}
 
 	result, err = bootstrapService.Bootstrap(ctx, BootstrapOptions{
 		ClusterName:  clusterName,
@@ -500,6 +517,19 @@ func TestBootstrapService_DryRunOpenStackStepFiltersNetworkPluginPlan(t *testing
 	if !strings.Contains(result.Plan.Filter, "--from-step openstack-install-network-plugin") {
 		t.Fatalf("expected filter description, got %q", result.Plan.Filter)
 	}
+}
+
+func renderPlanCommands(commands []BootstrapPlanCommand) string {
+	var b strings.Builder
+	for _, command := range commands {
+		b.WriteString(command.Name)
+		if len(command.Args) > 0 {
+			b.WriteByte(' ')
+			b.WriteString(strings.Join(command.Args, " "))
+		}
+		b.WriteByte('\n')
+	}
+	return b.String()
 }
 
 func TestBootstrapService_DryRunStepFiltersPlan(t *testing.T) {

@@ -59,7 +59,7 @@ opencenter:
 
 ### Calico (Default)
 
-Calico is enabled by default with VXLAN encapsulation:
+Calico is enabled by default. For OpenStack clusters, openCenter installs bundled Calico `v3.32.0` native `projectcalico.org/v3` CRDs, the Tigera operator, and `custom-resources-bpf.yaml` with eBPF mode enabled after kubeconfig normalization:
 
 ```yaml
 opencenter:
@@ -68,63 +68,22 @@ opencenter:
       network_plugin:
         calico:
           enabled: true
+          version: "3.32.0"
           install_method: helm
-          cni_iface: "enp3s0"
-          calico_interface_autodetect: "interface"
-          autodetect_cidr: ""
-          encapsulation_type: "VXLAN"
-          nat_outgoing: true
+          network_policy: true
 ```
 
-#### Calico Interface Detection
+The Calico manifests are bundled in the CLI for offline installation. The target cluster still needs access to the referenced container images or to a registry mirror.
 
-**By Interface Name:**
-```yaml
-calico:
-  calico_interface_autodetect: "interface"
-  cni_iface: "enp3s0"  # Specific interface
-```
+#### OpenStack Calico eBPF Behavior
 
-**By CIDR:**
-```yaml
-calico:
-  calico_interface_autodetect: "cidr"
-  autodetect_cidr: "10.0.0.0/8"
-```
+The OpenStack bundled installer patches the cluster pod CIDR into Calico's default IP pool and preserves Tigera's eBPF settings:
 
-**By Can-Reach:**
-```yaml
-calico:
-  calico_interface_autodetect: "can-reach"
-  autodetect_cidr: "8.8.8.8"  # Google DNS
-```
+- `linuxDataplane: BPF`
+- `bpfNetworkBootstrap: Enabled`
+- `kubeProxyManagement: Enabled`
 
-**Skip Interface:**
-```yaml
-calico:
-  calico_interface_autodetect: "skip-interface"
-  cni_iface: "docker0"  # Skip this interface
-```
-
-#### Calico Encapsulation
-
-**VXLAN (Default):**
-```yaml
-calico:
-  encapsulation_type: "VXLAN"
-```
-
-**IPIP:**
-```yaml
-calico:
-  encapsulation_type: "IPIP"
-```
-
-**No Encapsulation (BGP):**
-```yaml
-calico:
-  encapsulation_type: "None"
-```
+The bundled installer does not use Kubespray Calico interface-detection or encapsulation settings.
 
 ### Cilium
 
@@ -144,7 +103,7 @@ opencenter:
           kube_proxy_replacement: true
 ```
 
-**Note:** Only one CNI plugin can be enabled at a time. For OpenStack clusters, CNI installation is handled after kubeconfig normalization with `install_method: helm` or `install_method: kustomize-helm`; Kubespray is not used to install CNIs.
+**Note:** Only one CNI plugin can be enabled at a time. For OpenStack clusters, CNI installation is handled after kubeconfig normalization with `install_method: helm` or `install_method: kustomize-helm`; Kubespray is not used to install CNIs. Calico accepts those install method values for compatibility, but OpenStack Calico always uses the bundled eBPF manifest installer.
 
 ### Kube-OVN
 
@@ -558,6 +517,7 @@ After changing network configuration:
 
 ```bash
 kubectl get pods -n calico-system
+kubectl get tigerastatus calico
 kubectl get pods -n kube-system -l k8s-app=cilium
 kubectl get pods -n kube-system -l app.kubernetes.io/part-of=kube-ovn
 ```

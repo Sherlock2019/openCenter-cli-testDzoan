@@ -1,8 +1,12 @@
 package cluster
 
 import (
+	"bytes"
 	"context"
+	"embed"
+	"errors"
 	"fmt"
+	"io"
 	"net/netip"
 	"os"
 	"path/filepath"
@@ -20,7 +24,17 @@ const (
 
 	defaultCiliumChartVersion  = "1.19.3"
 	defaultKubeOVNChartVersion = "v1.17.0"
+
+	bundledOpenStackCalicoVersion      = "v3.32.0"
+	bundledOpenStackCalicoVersionPlain = "3.32.0"
+	bundledOpenStackCalicoAssetBase    = "assets/calico/v3.32.0"
+	bundledOpenStackCalicoV3CRDs       = "v3_projectcalico_org.yaml"
+	bundledOpenStackCalicoOperator     = "tigera-operator.yaml"
+	bundledOpenStackCalicoCustomBPFCRs = "custom-resources-bpf.yaml"
 )
+
+//go:embed assets/calico/v3.32.0/*
+var openStackCalicoAssets embed.FS
 
 type openStackNetworkPluginSelection struct {
 	Name          string
@@ -33,10 +47,22 @@ type openStackNetworkPluginSelection struct {
 	ChartName     string
 }
 
+type openStackCalicoAssetPaths struct {
+	V3CRDs          string
+	Operator        string
+	CustomResources string
+}
+
 func (p *openstackBootstrapProvider) buildNetworkPluginInstallStep(cfg *v2.Config, clusterDir string, planEnv []BootstrapPlanEnv, opts *BootstrapOptions) (bootstrapStep, error) {
 	selection, err := selectOpenStackNetworkPlugin(cfg)
 	if err != nil {
 		return bootstrapStep{}, err
+	}
+	action := fmt.Sprintf("Install %s network plugin using %s", selection.Name, selection.InstallMethod)
+	notes := []string{"Plan only; Helm, kubectl, Kustomize rendering, and Kubernetes API access were not checked."}
+	if selection.Name == "calico" {
+		action = fmt.Sprintf("Install calico network plugin using bundled %s eBPF manifests", selection.Version)
+		notes = []string{"Plan only; bundled Calico manifests, kubectl, and Kubernetes API access were not checked."}
 	}
 
 	return bootstrapStep{
@@ -44,13 +70,13 @@ func (p *openstackBootstrapProvider) buildNetworkPluginInstallStep(cfg *v2.Confi
 		Description: fmt.Sprintf("Install %s network plugin", selection.Name),
 		Plan: BootstrapPlanStep{
 			ID:          openStackNetworkPluginStepID,
-			Action:      fmt.Sprintf("Install %s network plugin using %s", selection.Name, selection.InstallMethod),
+			Action:      action,
 			WorkingDir:  clusterDir,
 			Commands:    openStackNetworkPluginPlanCommands(selection, opts.KubeconfigPath),
 			Environment: planEnv,
 			Reads:       []string{opts.KubeconfigPath},
 			Writes:      []string{"Kubernetes CNI resources"},
-			Notes:       []string{"Plan only; Helm, kubectl, Kustomize rendering, and Kubernetes API access were not checked."},
+			Notes:       notes,
 		},
 		Run: func(ctx context.Context) error {
 			return p.installOpenStackNetworkPlugin(ctx, cfg, opts.KubeconfigPath)
@@ -78,6 +104,13 @@ func (p *openstackBootstrapProvider) installOpenStackNetworkPlugin(ctx context.C
 	}
 	defer os.RemoveAll(tmpDir)
 
+	if selection.Name == "calico" {
+		if err := p.installOpenStackCalicoWithBundledManifests(ctx, cfg, selection, kubeconfigPath, tmpDir, env); err != nil {
+			return err
+		}
+		return p.waitForOpenStackNetworkPlugin(ctx, selection, kubeconfigPath, tmpDir, env)
+	}
+
 	switch selection.InstallMethod {
 	case openStackNetworkPluginMethodHelm:
 		if err := p.installOpenStackNetworkPluginWithHelm(ctx, cfg, selection, kubeconfigPath, tmpDir, env); err != nil {
@@ -94,6 +127,41 @@ func (p *openstackBootstrapProvider) installOpenStackNetworkPlugin(ctx context.C
 	return p.waitForOpenStackNetworkPlugin(ctx, selection, kubeconfigPath, tmpDir, env)
 }
 
+func (p *openstackBootstrapProvider) installOpenStackCalicoWithBundledManifests(ctx context.Context, cfg *v2.Config, selection openStackNetworkPluginSelection, kubeconfigPath, tmpDir string, env map[string]string) error {
+	if err := p.verifyOpenStackCalicoV3CRDPrerequisites(ctx, selection, kubeconfigPath, tmpDir, env); err != nil {
+		return err
+	}
+
+	paths, err := writeOpenStackCalicoAssets(cfg, tmpDir)
+	if err != nil {
+		return err
+	}
+
+	if _, err := p.runner.Run(ctx, tmpDir, env, "kubectl", kubectlArgs(kubeconfigPath, "apply", "--server-side", "-f", paths.V3CRDs)...); err != nil {
+		return fmt.Errorf("apply bundled Calico %s v3 CRDs: %w", selection.Version, err)
+	}
+	if _, err := p.runner.Run(ctx, tmpDir, env, "kubectl", kubectlArgs(kubeconfigPath, "apply", "-f", paths.Operator)...); err != nil {
+		return fmt.Errorf("apply bundled Calico %s Tigera operator: %w", selection.Version, err)
+	}
+	if _, err := p.runner.Run(ctx, tmpDir, env, "kubectl", kubectlArgs(kubeconfigPath, "apply", "-f", paths.CustomResources)...); err != nil {
+		return fmt.Errorf("apply bundled Calico %s eBPF custom resources: %w", selection.Version, err)
+	}
+	return nil
+}
+
+func (p *openstackBootstrapProvider) verifyOpenStackCalicoV3CRDPrerequisites(ctx context.Context, selection openStackNetworkPluginSelection, kubeconfigPath, tmpDir string, env map[string]string) error {
+	resources, err := p.runner.Run(ctx, tmpDir, env, "kubectl", kubectlArgs(kubeconfigPath, "api-resources", "--api-group=admissionregistration.k8s.io", "-o", "name")...)
+	if err != nil {
+		return fmt.Errorf("check Kubernetes API support for MutatingAdmissionPolicy before installing Calico v3 CRDs: %w", err)
+	}
+	for _, resource := range strings.Fields(string(resources)) {
+		if strings.Contains(strings.ToLower(resource), "mutatingadmissionpolicies") {
+			return nil
+		}
+	}
+	return fmt.Errorf("Kubernetes API does not support MutatingAdmissionPolicy required by Calico v3 CRDs for bundled Calico %s", selection.Version)
+}
+
 func (p *openstackBootstrapProvider) installOpenStackNetworkPluginWithHelm(ctx context.Context, cfg *v2.Config, selection openStackNetworkPluginSelection, kubeconfigPath, tmpDir string, env map[string]string) error {
 	valuesPath, err := writeOpenStackNetworkPluginValues(cfg, selection, tmpDir)
 	if err != nil {
@@ -101,37 +169,6 @@ func (p *openstackBootstrapProvider) installOpenStackNetworkPluginWithHelm(ctx c
 	}
 
 	switch selection.Name {
-	case "calico":
-		if _, err := p.runner.Run(ctx, tmpDir, env, "helm", "repo", "add", "projectcalico", "https://docs.tigera.io/calico/charts"); err != nil {
-			return err
-		}
-		if _, err := p.runner.Run(ctx, tmpDir, env, "helm", "repo", "update", "projectcalico"); err != nil {
-			return err
-		}
-		if err := p.applyNamespace(ctx, kubeconfigPath, tmpDir, env, "tigera-operator"); err != nil {
-			return err
-		}
-		crds, err := p.runner.Run(ctx, tmpDir, env, "helm", "template", "calico-crds", "projectcalico/projectcalico.org.v3", "--version", selection.Version)
-		if err != nil {
-			return err
-		}
-		crdsPath := filepath.Join(tmpDir, "calico-v3-crds.yaml")
-		if err := os.WriteFile(crdsPath, crds, 0o600); err != nil {
-			return fmt.Errorf("write Calico v3 CRDs: %w", err)
-		}
-		if _, err := p.runner.Run(ctx, tmpDir, env, "kubectl", kubectlArgs(kubeconfigPath, "apply", "--server-side", "-f", crdsPath)...); err != nil {
-			return err
-		}
-		if _, err := p.runner.Run(ctx, tmpDir, env, "helm", "upgrade", "--install", selection.ReleaseName, selection.Chart, "--namespace", selection.Namespace, "--create-namespace", "--version", selection.Version, "--values", valuesPath); err != nil {
-			return err
-		}
-		apiServerPath := filepath.Join(tmpDir, "calico-apiserver.yaml")
-		if err := os.WriteFile(apiServerPath, []byte(calicoAPIServerManifest()), 0o600); err != nil {
-			return fmt.Errorf("write Calico APIServer manifest: %w", err)
-		}
-		if _, err := p.runner.Run(ctx, tmpDir, env, "kubectl", kubectlArgs(kubeconfigPath, "apply", "-f", apiServerPath)...); err != nil {
-			return err
-		}
 	case "cilium", "kube-ovn":
 		if _, err := p.runner.Run(ctx, tmpDir, env, "helm", "upgrade", "--install", selection.ReleaseName, selection.Chart, "--namespace", selection.Namespace, "--version", selection.Version, "--values", valuesPath); err != nil {
 			return err
@@ -175,6 +212,12 @@ func (p *openstackBootstrapProvider) waitForOpenStackNetworkPlugin(ctx context.C
 		if _, err := p.runner.Run(ctx, tmpDir, env, "kubectl", kubectlArgs(kubeconfigPath, "-n", "tigera-operator", "rollout", "status", "deployment/tigera-operator", "--timeout=5m")...); err != nil {
 			return err
 		}
+		if _, err := p.runner.Run(ctx, tmpDir, env, "kubectl", kubectlArgs(kubeconfigPath, "wait", "--for=create", "tigerastatus/calico", "--timeout=5m")...); err != nil {
+			return err
+		}
+		if _, err := p.runner.Run(ctx, tmpDir, env, "kubectl", kubectlArgs(kubeconfigPath, "wait", "--for=condition=Available", "tigerastatus/calico", "--timeout=10m")...); err != nil {
+			return err
+		}
 		_, err := p.runner.Run(ctx, tmpDir, env, "kubectl", kubectlArgs(kubeconfigPath, "-n", "calico-system", "wait", "--for=condition=Ready", "pods", "--all", "--timeout=10m")...)
 		return err
 	case "cilium":
@@ -191,17 +234,121 @@ func (p *openstackBootstrapProvider) waitForOpenStackNetworkPlugin(ctx context.C
 	}
 }
 
-func (p *openstackBootstrapProvider) applyNamespace(ctx context.Context, kubeconfigPath, tmpDir string, env map[string]string, namespace string) error {
-	manifest, err := p.runner.Run(ctx, tmpDir, env, "kubectl", kubectlArgs(kubeconfigPath, "create", "namespace", namespace, "--dry-run=client", "-o", "yaml")...)
+func writeOpenStackCalicoAssets(cfg *v2.Config, dir string) (openStackCalicoAssetPaths, error) {
+	podCIDR := strings.TrimSpace(cfg.OpenCenter.Cluster.Kubernetes.SubnetPods)
+	v3CRDsPath, err := writeOpenStackCalicoAsset(dir, bundledOpenStackCalicoV3CRDs, nil)
 	if err != nil {
-		return err
+		return openStackCalicoAssetPaths{}, err
 	}
-	namespacePath := filepath.Join(tmpDir, namespace+"-namespace.yaml")
-	if err := os.WriteFile(namespacePath, manifest, 0o600); err != nil {
-		return fmt.Errorf("write namespace manifest for %s: %w", namespace, err)
+	operatorPath, err := writeOpenStackCalicoAsset(dir, bundledOpenStackCalicoOperator, nil)
+	if err != nil {
+		return openStackCalicoAssetPaths{}, err
 	}
-	_, err = p.runner.Run(ctx, tmpDir, env, "kubectl", kubectlArgs(kubeconfigPath, "apply", "-f", namespacePath)...)
-	return err
+	customResources, err := readOpenStackCalicoAsset(bundledOpenStackCalicoCustomBPFCRs)
+	if err != nil {
+		return openStackCalicoAssetPaths{}, err
+	}
+	patchedCustomResources, err := patchOpenStackCalicoCustomResources(customResources, podCIDR)
+	if err != nil {
+		return openStackCalicoAssetPaths{}, err
+	}
+	customResourcesPath, err := writeOpenStackCalicoAsset(dir, bundledOpenStackCalicoCustomBPFCRs, patchedCustomResources)
+	if err != nil {
+		return openStackCalicoAssetPaths{}, err
+	}
+
+	return openStackCalicoAssetPaths{
+		V3CRDs:          v3CRDsPath,
+		Operator:        operatorPath,
+		CustomResources: customResourcesPath,
+	}, nil
+}
+
+func writeOpenStackCalicoAsset(dir, name string, data []byte) (string, error) {
+	if data == nil {
+		var err error
+		data, err = readOpenStackCalicoAsset(name)
+		if err != nil {
+			return "", err
+		}
+	}
+	path := filepath.Join(dir, name)
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		return "", fmt.Errorf("write bundled Calico asset %s: %w", name, err)
+	}
+	return path, nil
+}
+
+func readOpenStackCalicoAsset(name string) ([]byte, error) {
+	data, err := openStackCalicoAssets.ReadFile(filepath.Join(bundledOpenStackCalicoAssetBase, name))
+	if err != nil {
+		return nil, fmt.Errorf("read bundled Calico asset %s: %w", name, err)
+	}
+	return data, nil
+}
+
+func patchOpenStackCalicoCustomResources(data []byte, podCIDR string) ([]byte, error) {
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	docs := make([]map[string]any, 0, 4)
+	patched := false
+	for {
+		var doc map[string]any
+		err := decoder.Decode(&doc)
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("decode bundled Calico eBPF custom resources: %w", err)
+		}
+		if len(doc) == 0 {
+			continue
+		}
+		if doc["kind"] == "Installation" {
+			if err := patchOpenStackCalicoInstallationPodCIDR(doc, podCIDR); err != nil {
+				return nil, err
+			}
+			patched = true
+		}
+		docs = append(docs, doc)
+	}
+	if !patched {
+		return nil, fmt.Errorf("bundled Calico eBPF custom resources did not include Installation/default")
+	}
+
+	var out bytes.Buffer
+	encoder := yaml.NewEncoder(&out)
+	encoder.SetIndent(2)
+	for _, doc := range docs {
+		if err := encoder.Encode(doc); err != nil {
+			_ = encoder.Close()
+			return nil, fmt.Errorf("encode patched Calico eBPF custom resources: %w", err)
+		}
+	}
+	if err := encoder.Close(); err != nil {
+		return nil, fmt.Errorf("close patched Calico eBPF custom resources encoder: %w", err)
+	}
+	return out.Bytes(), nil
+}
+
+func patchOpenStackCalicoInstallationPodCIDR(doc map[string]any, podCIDR string) error {
+	spec, ok := doc["spec"].(map[string]any)
+	if !ok {
+		return fmt.Errorf("bundled Calico Installation missing spec")
+	}
+	calicoNetwork, ok := spec["calicoNetwork"].(map[string]any)
+	if !ok {
+		return fmt.Errorf("bundled Calico Installation missing spec.calicoNetwork")
+	}
+	ipPools, ok := calicoNetwork["ipPools"].([]any)
+	if !ok || len(ipPools) == 0 {
+		return fmt.Errorf("bundled Calico Installation missing spec.calicoNetwork.ipPools")
+	}
+	pool, ok := ipPools[0].(map[string]any)
+	if !ok {
+		return fmt.Errorf("bundled Calico Installation has invalid first ipPool")
+	}
+	pool["cidr"] = podCIDR
+	return nil
 }
 
 func selectOpenStackNetworkPlugin(cfg *v2.Config) (openStackNetworkPluginSelection, error) {
@@ -212,7 +359,11 @@ func selectOpenStackNetworkPlugin(cfg *v2.Config) (openStackNetworkPluginSelecti
 	var enabled []openStackNetworkPluginSelection
 	plugins := cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin
 	if plugins.Calico != nil && plugins.Calico.Enabled {
-		enabled = append(enabled, openStackCalicoSelection(plugins.Calico))
+		selection, err := openStackCalicoSelection(plugins.Calico)
+		if err != nil {
+			return openStackNetworkPluginSelection{}, err
+		}
+		enabled = append(enabled, selection)
 	}
 	if plugins.Cilium != nil && plugins.Cilium.Enabled {
 		enabled = append(enabled, openStackCiliumSelection(plugins.Cilium))
@@ -243,13 +394,16 @@ func selectOpenStackNetworkPlugin(cfg *v2.Config) (openStackNetworkPluginSelecti
 	}
 }
 
-func openStackCalicoSelection(calico *v2.CalicoConfig) openStackNetworkPluginSelection {
+func openStackCalicoSelection(calico *v2.CalicoConfig) (openStackNetworkPluginSelection, error) {
 	version := strings.TrimSpace(calico.Version)
 	if version == "" {
-		version = "3.29.2"
+		version = bundledOpenStackCalicoVersion
 	}
-	if !strings.HasPrefix(version, "v") {
-		version = "v" + version
+	if version == bundledOpenStackCalicoVersionPlain {
+		version = bundledOpenStackCalicoVersion
+	}
+	if version != bundledOpenStackCalicoVersion {
+		return openStackNetworkPluginSelection{}, fmt.Errorf("OpenStack Calico offline installer bundles %s; configure calico.version: %s or add bundled assets for the requested version", bundledOpenStackCalicoVersion, bundledOpenStackCalicoVersionPlain)
 	}
 	return openStackNetworkPluginSelection{
 		Name:          "calico",
@@ -257,10 +411,7 @@ func openStackCalicoSelection(calico *v2.CalicoConfig) openStackNetworkPluginSel
 		Version:       version,
 		Namespace:     "tigera-operator",
 		ReleaseName:   "calico",
-		Chart:         "projectcalico/tigera-operator",
-		Repo:          "https://docs.tigera.io/calico/charts",
-		ChartName:     "tigera-operator",
-	}
+	}, nil
 }
 
 func openStackCiliumSelection(cilium *v2.CiliumConfig) openStackNetworkPluginSelection {
@@ -309,6 +460,15 @@ func normalizeOpenStackNetworkPluginInstallMethod(method string) string {
 }
 
 func openStackNetworkPluginPlanCommands(selection openStackNetworkPluginSelection, kubeconfigPath string) []BootstrapPlanCommand {
+	if selection.Name == "calico" {
+		commands := []BootstrapPlanCommand{
+			commandPlan("kubectl", kubectlArgs(kubeconfigPath, "api-resources", "--api-group=admissionregistration.k8s.io", "-o", "name")...),
+			commandPlan("kubectl", kubectlArgs(kubeconfigPath, "apply", "--server-side", "-f", "<bundled v3_projectcalico_org.yaml>")...),
+			commandPlan("kubectl", kubectlArgs(kubeconfigPath, "apply", "-f", "<bundled tigera-operator.yaml>")...),
+			commandPlan("kubectl", kubectlArgs(kubeconfigPath, "apply", "-f", "<patched bundled custom-resources-bpf.yaml>")...),
+		}
+		return append(commands, openStackNetworkPluginReadinessPlanCommands(selection, kubeconfigPath)...)
+	}
 	switch selection.InstallMethod {
 	case openStackNetworkPluginMethodKustomizeHelm:
 		commands := []BootstrapPlanCommand{
@@ -318,19 +478,6 @@ func openStackNetworkPluginPlanCommands(selection openStackNetworkPluginSelectio
 		return append(commands, openStackNetworkPluginReadinessPlanCommands(selection, kubeconfigPath)...)
 	default:
 		switch selection.Name {
-		case "calico":
-			return []BootstrapPlanCommand{
-				commandPlan("helm", "repo", "add", "projectcalico", "https://docs.tigera.io/calico/charts"),
-				commandPlan("helm", "repo", "update", "projectcalico"),
-				commandPlan("kubectl", kubectlArgs(kubeconfigPath, "create", "namespace", "tigera-operator", "--dry-run=client", "-o", "yaml")...),
-				commandPlan("kubectl", kubectlArgs(kubeconfigPath, "apply", "-f", "<tigera-operator namespace>")...),
-				commandPlan("helm", "template", "calico-crds", "projectcalico/projectcalico.org.v3", "--version", selection.Version),
-				commandPlan("kubectl", kubectlArgs(kubeconfigPath, "apply", "--server-side", "-f", "<calico v3 CRDs>")...),
-				commandPlan("helm", "upgrade", "--install", "calico", "projectcalico/tigera-operator", "--namespace", "tigera-operator", "--create-namespace", "--version", selection.Version, "--values", "<generated values.yaml>"),
-				commandPlan("kubectl", kubectlArgs(kubeconfigPath, "apply", "-f", "<calico APIServer CR>")...),
-				commandPlan("kubectl", kubectlArgs(kubeconfigPath, "-n", "tigera-operator", "rollout", "status", "deployment/tigera-operator", "--timeout=5m")...),
-				commandPlan("kubectl", kubectlArgs(kubeconfigPath, "-n", "calico-system", "wait", "--for=condition=Ready", "pods", "--all", "--timeout=10m")...),
-			}
 		case "cilium":
 			return []BootstrapPlanCommand{
 				commandPlan("helm", "upgrade", "--install", "cilium", "oci://quay.io/cilium/charts/cilium", "--namespace", "kube-system", "--version", selection.Version, "--values", "<generated values.yaml>"),
@@ -353,6 +500,8 @@ func openStackNetworkPluginReadinessPlanCommands(selection openStackNetworkPlugi
 	case "calico":
 		return []BootstrapPlanCommand{
 			commandPlan("kubectl", kubectlArgs(kubeconfigPath, "-n", "tigera-operator", "rollout", "status", "deployment/tigera-operator", "--timeout=5m")...),
+			commandPlan("kubectl", kubectlArgs(kubeconfigPath, "wait", "--for=create", "tigerastatus/calico", "--timeout=5m")...),
+			commandPlan("kubectl", kubectlArgs(kubeconfigPath, "wait", "--for=condition=Available", "tigerastatus/calico", "--timeout=10m")...),
 			commandPlan("kubectl", kubectlArgs(kubeconfigPath, "-n", "calico-system", "wait", "--for=condition=Ready", "pods", "--all", "--timeout=10m")...),
 		}
 	case "cilium":
@@ -388,23 +537,6 @@ func writeOpenStackNetworkPluginValues(cfg *v2.Config, selection openStackNetwor
 func openStackNetworkPluginValues(cfg *v2.Config, selection openStackNetworkPluginSelection) (map[string]any, error) {
 	k8s := cfg.OpenCenter.Cluster.Kubernetes
 	switch selection.Name {
-	case "calico":
-		calico := k8s.NetworkPlugin.Calico
-		return map[string]any{
-			"installation": map[string]any{
-				"serviceCIDRs": []string{k8s.SubnetServices},
-				"calicoNetwork": map[string]any{
-					"ipPools": []map[string]any{
-						{
-							"cidr":          k8s.SubnetPods,
-							"encapsulation": calicoEncapsulation(calico),
-							"natOutgoing":   "Enabled",
-							"nodeSelector":  "all()",
-						},
-					},
-				},
-			},
-		}, nil
 	case "cilium":
 		cilium := k8s.NetworkPlugin.Cilium
 		values := map[string]any{
@@ -468,25 +600,9 @@ func openStackNetworkPluginValues(cfg *v2.Config, selection openStackNetworkPlug
 }
 
 func writeOpenStackNetworkPluginKustomization(selection openStackNetworkPluginSelection, overlayDir string) error {
-	resources := []string{}
-	if selection.Name == "calico" {
-		namespacePath := filepath.Join(overlayDir, "namespace.yaml")
-		if err := os.WriteFile(namespacePath, []byte("apiVersion: v1\nkind: Namespace\nmetadata:\n  name: tigera-operator\n"), 0o600); err != nil {
-			return fmt.Errorf("write Calico namespace resource: %w", err)
-		}
-		apiServerPath := filepath.Join(overlayDir, "apiserver.yaml")
-		if err := os.WriteFile(apiServerPath, []byte(calicoAPIServerManifest()), 0o600); err != nil {
-			return fmt.Errorf("write Calico APIServer resource: %w", err)
-		}
-		resources = []string{"namespace.yaml", "apiserver.yaml"}
-	}
-
 	kustomization := map[string]any{
 		"apiVersion": "kustomize.config.k8s.io/v1beta1",
 		"kind":       "Kustomization",
-	}
-	if len(resources) > 0 {
-		kustomization["resources"] = resources
 	}
 	kustomization["helmCharts"] = openStackNetworkPluginHelmCharts(selection)
 
@@ -501,25 +617,6 @@ func writeOpenStackNetworkPluginKustomization(selection openStackNetworkPluginSe
 }
 
 func openStackNetworkPluginHelmCharts(selection openStackNetworkPluginSelection) []map[string]any {
-	if selection.Name == "calico" {
-		return []map[string]any{
-			{
-				"name":        "projectcalico.org.v3",
-				"repo":        "https://docs.tigera.io/calico/charts",
-				"version":     selection.Version,
-				"releaseName": "calico-crds",
-				"namespace":   "tigera-operator",
-			},
-			{
-				"name":        "tigera-operator",
-				"repo":        "https://docs.tigera.io/calico/charts",
-				"version":     selection.Version,
-				"releaseName": "calico",
-				"namespace":   "tigera-operator",
-				"valuesFile":  "values.yaml",
-			},
-		}
-	}
 	return []map[string]any{
 		{
 			"name":        selection.ChartName,
@@ -530,19 +627,6 @@ func openStackNetworkPluginHelmCharts(selection openStackNetworkPluginSelection)
 			"valuesFile":  "values.yaml",
 		},
 	}
-}
-
-func calicoEncapsulation(calico *v2.CalicoConfig) string {
-	if calico != nil {
-		if mode := strings.ToLower(strings.TrimSpace(calico.IPIPMode)); mode == "always" || mode == "crosssubnet" {
-			return "IPIP"
-		}
-	}
-	return "VXLAN"
-}
-
-func calicoAPIServerManifest() string {
-	return "apiVersion: operator.tigera.io/v1\nkind: APIServer\nmetadata:\n  name: default\nspec: {}\n"
 }
 
 func firstAddressInCIDR(raw string) string {

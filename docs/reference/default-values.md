@@ -117,11 +117,9 @@ All new configurations use schema version 2.0.
 | Field | Default | Description |
 |-------|---------|-------------|
 | `opencenter.cluster.kubernetes.network_plugin.calico.enabled` | `true` | Enable Calico |
-| `opencenter.cluster.kubernetes.network_plugin.calico.install_method` | `"helm"` | OpenStack CNI install backend (`helm` or `kustomize-helm`) |
-| `opencenter.cluster.kubernetes.network_plugin.calico.cni_iface` | `"enp3s0"` | Network interface |
-| `opencenter.cluster.kubernetes.network_plugin.calico.calico_interface_autodetect` | `"interface"` | Interface detection |
-| `opencenter.cluster.kubernetes.network_plugin.calico.encapsulation_type` | `"VXLAN"` | Encapsulation type |
-| `opencenter.cluster.kubernetes.network_plugin.calico.nat_outgoing` | `true` | NAT outgoing traffic |
+| `opencenter.cluster.kubernetes.network_plugin.calico.version` | `"3.32.0"` | Bundled OpenStack Calico manifest version |
+| `opencenter.cluster.kubernetes.network_plugin.calico.install_method` | `"helm"` | Accepted OpenStack CNI install method value; Calico uses bundled eBPF manifests |
+| `opencenter.cluster.kubernetes.network_plugin.calico.network_policy` | `true` | Enable Calico network policy |
 
 ### Cilium
 
