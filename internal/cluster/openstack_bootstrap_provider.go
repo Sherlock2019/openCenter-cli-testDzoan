@@ -148,6 +148,20 @@ func (p *openstackBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *pa
 	}
 	steps = append(steps, networkPluginStep)
 
+	// Flux bootstrap runs after the CNI is installed so the cluster is
+	// network-ready when FluxCD source-controller starts reconciling.
+	// Only add the step when token auth is configured and a real (non-placeholder)
+	// repository URL is present.
+	if cfg.OpenCenter.GitOps.Auth.Token != nil &&
+		strings.TrimSpace(cfg.OpenCenter.GitOps.Auth.Token.Provider) != "" &&
+		cfg.ConfiguredGitURL() != "" {
+		fluxStep, err := p.buildFluxBootstrapStep(cfg, clusterDir, planEnv, opts)
+		if err != nil {
+			return nil, fmt.Errorf("building flux bootstrap step: %w", err)
+		}
+		steps = append(steps, fluxStep)
+	}
+
 	return steps, nil
 }
 
