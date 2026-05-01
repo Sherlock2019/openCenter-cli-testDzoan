@@ -33,15 +33,17 @@ func NewExtractor(cfg v2.Config) *Extractor {
 func (e *Extractor) ExtractAWS() (*AWSCredentials, error) {
 	creds := &AWSCredentials{}
 
-	// Extract from infrastructure cloud configuration
-	awsCloud := e.config.OpenCenter.Infrastructure.Cloud.AWS
-	if awsCloud.Region != "" {
-		creds.Region = awsCloud.Region
+	// Extract from infrastructure cloud configuration.
+	// AWS config is only present for AWS clusters; skip safely for other providers.
+	if awsCloud := e.config.OpenCenter.Infrastructure.Cloud.AWS; awsCloud != nil {
+		if awsCloud.Region != "" {
+			creds.Region = awsCloud.Region
+		}
+		if awsCloud.VPCID != "" {
+			creds.VPCID = awsCloud.VPCID
+		}
+		creds.PrivateSubnets = append(creds.PrivateSubnets, awsCloud.SubnetIDs...)
 	}
-	if awsCloud.VPCID != "" {
-		creds.VPCID = awsCloud.VPCID
-	}
-	creds.PrivateSubnets = append(creds.PrivateSubnets, awsCloud.SubnetIDs...)
 
 	// Extract from legacy cluster-level AWS credentials first (lower priority)
 	// Extract from global infrastructure AWS secrets (highest priority - overwrites cluster-level)
@@ -63,21 +65,23 @@ func (e *Extractor) ExtractAWS() (*AWSCredentials, error) {
 func (e *Extractor) ExtractOpenStack() (*OpenStackCredentials, error) {
 	creds := &OpenStackCredentials{}
 
-	// Extract from infrastructure cloud configuration
-	osCloud := e.config.OpenCenter.Infrastructure.Cloud.OpenStack
-	creds.AuthURL = osCloud.AuthURL
-	creds.Region = osCloud.Region
-	creds.ApplicationCredentialID = osCloud.ApplicationCredentialID
-	creds.ApplicationCredentialSecret = osCloud.ApplicationCredentialSecret
-	creds.Domain = osCloud.Domain
-	creds.TenantName = osCloud.ProjectName
-	creds.ProjectDomainName = osCloud.ProjectDomainName
-	creds.UserDomainName = osCloud.UserDomainName
-	if osCloud.Networking != nil {
-		creds.FloatingNetworkID = osCloud.Networking.FloatingNetworkID
-		creds.SubnetID = osCloud.Networking.SubnetID
+	// Extract from infrastructure cloud configuration.
+	// OpenStack config is only present for OpenStack clusters; skip safely for other providers.
+	if osCloud := e.config.OpenCenter.Infrastructure.Cloud.OpenStack; osCloud != nil {
+		creds.AuthURL = osCloud.AuthURL
+		creds.Region = osCloud.Region
+		creds.ApplicationCredentialID = osCloud.ApplicationCredentialID
+		creds.ApplicationCredentialSecret = osCloud.ApplicationCredentialSecret
+		creds.Domain = osCloud.Domain
+		creds.TenantName = osCloud.ProjectName
+		creds.ProjectDomainName = osCloud.ProjectDomainName
+		creds.UserDomainName = osCloud.UserDomainName
+		if osCloud.Networking != nil {
+			creds.FloatingNetworkID = osCloud.Networking.FloatingNetworkID
+			creds.SubnetID = osCloud.Networking.SubnetID
+		}
+		creds.Insecure = osCloud.Insecure
 	}
-	creds.Insecure = osCloud.Insecure
 
 	return creds, nil
 }
