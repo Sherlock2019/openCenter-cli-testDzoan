@@ -68,6 +68,29 @@ func TestClusterInitTalosDeploymentOpenStack(t *testing.T) {
 	}
 }
 
+func TestClusterInitHelpIncludesTalosDeployment(t *testing.T) {
+	cmd := newClusterInitCmd()
+	var stdout bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetArgs([]string{"--help"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("cluster init help failed: %v", err)
+	}
+
+	help := stdout.String()
+	for _, want := range []string{
+		"--deployment",
+		"deployment method: kubespray, talos",
+		"Initialize a Talos OpenStack cluster",
+		"opencenter cluster init my-cluster --org production --type openstack --deployment talos",
+	} {
+		if !strings.Contains(help, want) {
+			t.Fatalf("cluster init help missing %q:\n%s", want, help)
+		}
+	}
+}
+
 func TestClusterInitTalosSOPSConfigEncryptsTalosSecrets(t *testing.T) {
 	dir := t.TempDir()
 	prepareCommandTestEnv(t, dir)

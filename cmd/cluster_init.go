@@ -53,6 +53,10 @@ command-line flags with dot notation.
 
 This command generates schema version "2.0" configuration only.
 
+Use --deployment talos with --type openstack to initialize a Talos deployment
+on OpenStack infrastructure. Talos is a deployment method, not an
+infrastructure provider; --type talos is rejected.
+
 The configuration is created in an organization-based directory structure:
   ~/.config/opencenter/clusters/<organization>/<cluster>/
 
@@ -71,6 +75,9 @@ don't already exist, unless --no-keygen is specified.`,
 
   # Initialize a VMware cluster
   opencenter cluster init my-cluster --org production --type vmware
+
+  # Initialize a Talos OpenStack cluster
+  opencenter cluster init my-cluster --org production --type openstack --deployment talos
 
   # Initialize a Kind cluster with the built-in CNI disabled
   opencenter cluster init my-cluster --org local --type kind --kind-disable-default-cni

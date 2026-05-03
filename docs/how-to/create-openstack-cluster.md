@@ -12,6 +12,8 @@ tags: [openstack, cluster, deployment, gitops, opentofu, kubespray]
 
 **Purpose:** For platform engineers and operators, shows how to generate the GitOps repository, provision OpenStack infrastructure with OpenTofu, and bring up an openCenter cluster that reconciles from Git.
 
+This page covers the default Kubespray OpenStack flow. For Talos on OpenStack, see [Create a Talos Cluster on OpenStack](create-talos-cluster-openstack.md).
+
 ## Prerequisites
 
 - openCenter CLI installed and on `PATH`
