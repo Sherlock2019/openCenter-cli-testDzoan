@@ -89,6 +89,36 @@ func TestPathResolver_Resolve(t *testing.T) {
 			wantErr:      true,
 		},
 		{
+			name: "resolve config-file-only cluster (no infrastructure directory)",
+			setup: func() string {
+				orgDir := filepath.Join(tmpDir, "cfg-org")
+				if err := os.MkdirAll(orgDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				configFile := filepath.Join(orgDir, ".cfg-cluster-config.yaml")
+				if err := os.WriteFile(configFile, []byte("schema_version: \"2.0\"\n"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir
+			},
+			clusterName:  "cfg-cluster",
+			organization: "cfg-org",
+			wantErr:      false,
+			validate: func(t *testing.T, paths *ClusterPaths) {
+				if paths == nil {
+					t.Fatal("paths is nil")
+				}
+				expectedOrgDir := filepath.Join(tmpDir, "cfg-org")
+				if paths.OrganizationDir != expectedOrgDir {
+					t.Errorf("OrganizationDir = %s, want %s", paths.OrganizationDir, expectedOrgDir)
+				}
+				expectedConfig := filepath.Join(expectedOrgDir, ".cfg-cluster-config.yaml")
+				if paths.ConfigPath != expectedConfig {
+					t.Errorf("ConfigPath = %s, want %s", paths.ConfigPath, expectedConfig)
+				}
+			},
+		},
+		{
 			name: "empty cluster name",
 			setup: func() string {
 				return tmpDir
@@ -199,6 +229,31 @@ func TestPathResolver_ResolveWithFallback(t *testing.T) {
 			},
 			clusterName: "nonexistent",
 			wantErr:     true,
+		},
+		{
+			name: "find config-file-only cluster via fallback",
+			setup: func() string {
+				orgDir := filepath.Join(tmpDir, "fallback-cfg-org")
+				if err := os.MkdirAll(orgDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				configFile := filepath.Join(orgDir, ".fallback-cluster-config.yaml")
+				if err := os.WriteFile(configFile, []byte("schema_version: \"2.0\"\n"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir
+			},
+			clusterName: "fallback-cluster",
+			wantErr:     false,
+			validate: func(t *testing.T, paths *ClusterPaths) {
+				if paths == nil {
+					t.Fatal("paths is nil")
+				}
+				expectedOrgDir := filepath.Join(tmpDir, "fallback-cfg-org")
+				if paths.OrganizationDir != expectedOrgDir {
+					t.Errorf("OrganizationDir = %s, want %s", paths.OrganizationDir, expectedOrgDir)
+				}
+			},
 		},
 		{
 			name: "empty cluster name",
@@ -541,6 +596,23 @@ func TestPathResolver_GetOrganization(t *testing.T) {
 			},
 			clusterName: "nonexistent",
 			wantOrg:     "",
+			wantErr:     false,
+		},
+		{
+			name: "cluster found via config file only",
+			setup: func() string {
+				orgDir := filepath.Join(tmpDir, "cfg-org-detect")
+				if err := os.MkdirAll(orgDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				configFile := filepath.Join(orgDir, ".cfg-detect-cluster-config.yaml")
+				if err := os.WriteFile(configFile, []byte("schema_version: \"2.0\"\n"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir
+			},
+			clusterName: "cfg-detect-cluster",
+			wantOrg:     "cfg-org-detect",
 			wantErr:     false,
 		},
 	}

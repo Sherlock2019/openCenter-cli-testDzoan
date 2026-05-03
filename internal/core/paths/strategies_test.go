@@ -94,6 +94,38 @@ func TestOrgBasedStrategy_CanResolve(t *testing.T) {
 			want:         true,
 			wantErr:      false,
 		},
+		{
+			name: "cluster found via config file only (no infrastructure directory)",
+			setup: func() string {
+				orgDir := filepath.Join(tmpDir, "config-only-org")
+				if err := os.MkdirAll(orgDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				configFile := filepath.Join(orgDir, ".init-only-cluster-config.yaml")
+				if err := os.WriteFile(configFile, []byte("schema_version: \"2.0\"\n"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir
+			},
+			clusterName:  "init-only-cluster",
+			organization: "config-only-org",
+			want:         true,
+			wantErr:      false,
+		},
+		{
+			name: "cluster found via infrastructure directory when config file missing",
+			setup: func() string {
+				clusterDir := filepath.Join(tmpDir, "infra-only-org", "infrastructure", "clusters", "infra-only-cluster")
+				if err := os.MkdirAll(clusterDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				return tmpDir
+			},
+			clusterName:  "infra-only-cluster",
+			organization: "infra-only-org",
+			want:         true,
+			wantErr:      false,
+		},
 	}
 
 	for _, tt := range tests {

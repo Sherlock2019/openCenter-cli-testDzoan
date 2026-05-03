@@ -125,6 +125,14 @@ func (s *OrgBasedStrategy) Name() string {
 }
 
 // CanResolve checks if organization-based structure exists for the cluster.
+//
+// A cluster is considered resolvable if either of these exists:
+//   - The infrastructure directory: <org>/infrastructure/clusters/<cluster>/
+//   - The config file: <org>/.<cluster>-config.yaml
+//
+// This matches the discovery logic in ConfigurationManager.discoverClustersInOrg
+// so that freshly initialized clusters (config file exists, infrastructure
+// directory not yet created) are resolvable by all commands.
 func (s *OrgBasedStrategy) CanResolve(ctx context.Context, clusterName, organization string) (bool, error) {
 	if organization == "" {
 		organization = "opencenter"
@@ -138,11 +146,17 @@ func (s *OrgBasedStrategy) CanResolve(ctx context.Context, clusterName, organiza
 
 	// Check if cluster directory exists in organization structure
 	clusterDir := filepath.Join(orgDir, "infrastructure", "clusters", clusterName)
-	if _, err := os.Stat(clusterDir); os.IsNotExist(err) {
-		return false, nil
+	if _, err := os.Stat(clusterDir); err == nil {
+		return true, nil
 	}
 
-	return true, nil
+	// Check if config file exists in organization root
+	configFile := filepath.Join(orgDir, "."+clusterName+"-config.yaml")
+	if _, err := os.Stat(configFile); err == nil {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 // Resolve resolves paths using organization-based structure.

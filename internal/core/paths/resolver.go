@@ -263,12 +263,24 @@ func (r *PathResolver) ResolveWithFallback(ctx context.Context, clusterName stri
 		}
 
 		orgName := entry.Name()
+
+		// Check infrastructure directory
 		clusterDir := filepath.Join(baseDir, orgName, "infrastructure", "clusters", clusterName)
 		if _, err := os.Stat(clusterDir); err == nil {
-			// Found the cluster, resolve with this organization
 			paths, err := r.Resolve(ctx, clusterName, orgName)
 			if err == nil {
-				// Cache the result
+				if r.cache != nil {
+					r.cache.Set(clusterName, "", "org-search", paths)
+				}
+				return paths, nil
+			}
+		}
+
+		// Check config file in organization root
+		configFile := filepath.Join(baseDir, orgName, "."+clusterName+"-config.yaml")
+		if _, err := os.Stat(configFile); err == nil {
+			paths, err := r.Resolve(ctx, clusterName, orgName)
+			if err == nil {
 				if r.cache != nil {
 					r.cache.Set(clusterName, "", "org-search", paths)
 				}
@@ -378,8 +390,16 @@ func (r *PathResolver) GetOrganization(ctx context.Context, clusterName string) 
 		}
 
 		orgName := entry.Name()
+
+		// Check infrastructure directory
 		clusterDir := filepath.Join(baseDir, orgName, "infrastructure", "clusters", clusterName)
 		if _, err := os.Stat(clusterDir); err == nil {
+			return orgName, nil
+		}
+
+		// Check config file in organization root
+		configFile := filepath.Join(baseDir, orgName, "."+clusterName+"-config.yaml")
+		if _, err := os.Stat(configFile); err == nil {
 			return orgName, nil
 		}
 	}
