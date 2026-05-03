@@ -26,6 +26,7 @@ type InitOptions struct {
 	ClusterName           string
 	Organization          string
 	Provider              string
+	DeploymentMethod      string
 	ConfigFile            string
 	ConfigMap             map[string]any
 	Force                 bool
@@ -334,6 +335,32 @@ func (s *InitService) applyOverrides(cfg *v2.Config, configMap map[string]any, o
 	if opts.Provider != "" {
 		cfg.OpenCenter.Infrastructure.Provider = opts.Provider
 		setNestedConfigValue(configMap, opts.Provider, "opencenter", "infrastructure", "provider")
+	}
+
+	if strings.EqualFold(opts.DeploymentMethod, "talos") {
+		if !strings.EqualFold(cfg.OpenCenter.Infrastructure.Provider, "openstack") {
+			return fmt.Errorf("deployment.method: talos requires opencenter.infrastructure.provider: openstack")
+		}
+		v2.ApplyTalosDeploymentDefaults(cfg)
+		setNestedConfigValue(configMap, "talos", "deployment", "method")
+		setNestedConfigValue(configMap, nil, "deployment", "kubespray")
+		setNestedConfigValue(configMap, map[string]any{
+			"version":            cfg.Deployment.Talos.Version,
+			"kubernetes_version": cfg.Deployment.Talos.KubernetesVersion,
+			"endpoint":           cfg.Deployment.Talos.Endpoint,
+			"install": map[string]any{
+				"disk":  cfg.Deployment.Talos.Install.Disk,
+				"image": cfg.Deployment.Talos.Install.Image,
+			},
+			"network": map[string]any{
+				"pod_subnet":     cfg.Deployment.Talos.Network.PodSubnet,
+				"service_subnet": cfg.Deployment.Talos.Network.ServiceSubnet,
+				"talos_api_port": cfg.Deployment.Talos.Network.TalosAPIPort,
+			},
+			"patches": map[string]any{
+				"static": cfg.Deployment.Talos.Patches.Static,
+			},
+		}, "deployment", "talos")
 	}
 
 	// Apply CLI config defaults
@@ -712,6 +739,9 @@ func (s *InitService) ensureSOPSConfig(clusterPaths *paths.ClusterPaths, cfg *v2
   - path_regex: 'secrets/ssh/(?!.*\.pub$).*'
     age: >-
       %s
+  - path_regex: 'secrets/talos/.*\.ya?ml$'
+    age: >-
+      %s
   - path_regex: 'applications/overlays/[^/]+/(managed-services|services)/.*/.*\.ya?ml$'
     encrypted_regex: "^(secret)$"
     age: >-
@@ -720,7 +750,7 @@ func (s *InitService) ensureSOPSConfig(clusterPaths *paths.ClusterPaths, cfg *v2
     encrypted_regex: "^(secret)$"
     age: >-
       %s
-`, publicKey, publicKey, publicKey, cfg.OpenCenter.Cluster.ClusterName, publicKey)
+`, publicKey, publicKey, publicKey, publicKey, cfg.OpenCenter.Cluster.ClusterName, publicKey)
 
 	return s.fileSystem.WriteFileAtomic(clusterPaths.SOPSConfigPath, []byte(content), 0o600)
 }

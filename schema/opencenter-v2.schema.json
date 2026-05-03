@@ -631,25 +631,62 @@
         "talos": {
           "additionalProperties": false,
           "properties": {
-            "modules": {
-              "additionalProperties": {
-                "additionalProperties": false,
-                "properties": {
-                  "config": {
-                    "additionalProperties": true,
-                    "type": "object"
-                  },
-                  "enabled": {
-                    "type": "boolean"
-                  },
-                  "source": {
-                    "type": "string"
-                  },
-                  "version": {
-                    "type": "string"
-                  }
+            "endpoint": {
+              "type": "string"
+            },
+            "install": {
+              "additionalProperties": false,
+              "properties": {
+                "disk": {
+                  "type": "string"
                 },
-                "type": "object"
+                "image": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "disk",
+                "image"
+              ],
+              "type": "object"
+            },
+            "kubernetes_version": {
+              "pattern": "^v?[0-9]+(\\.[0-9]+){1,2}([-+][0-9A-Za-z.-]+)?$",
+              "type": "string"
+            },
+            "network": {
+              "additionalProperties": false,
+              "properties": {
+                "pod_subnet": {
+                  "pattern": "^([0-9]{1,3}\\.){3}[0-9]{1,3}/[0-9]{1,2}$",
+                  "type": "string"
+                },
+                "service_subnet": {
+                  "pattern": "^([0-9]{1,3}\\.){3}[0-9]{1,3}/[0-9]{1,2}$",
+                  "type": "string"
+                },
+                "talos_api_port": {
+                  "maximum": 65535,
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "pod_subnet",
+                "service_subnet",
+                "talos_api_port"
+              ],
+              "type": "object"
+            },
+            "patches": {
+              "additionalProperties": false,
+              "properties": {
+                "static": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
               },
               "type": "object"
             },
@@ -659,6 +696,9 @@
             }
           },
           "required": [
+            "install",
+            "kubernetes_version",
+            "network",
             "version"
           ],
           "type": "object"

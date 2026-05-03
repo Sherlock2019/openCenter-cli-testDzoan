@@ -86,6 +86,7 @@ don't already exist, unless --no-keygen is specified.`,
 
 	cmd.Flags().String("org", "", "organization name (defaults to 'opencenter')")
 	cmd.Flags().String("type", "openstack", "cluster type: openstack, baremetal, kind, vmware")
+	cmd.Flags().String("deployment", "kubespray", "deployment method: kubespray, talos")
 	cmd.Flags().String("config-file", "", "load configuration from file")
 	cmd.Flags().String("config", "", "load configuration from file")
 	_ = cmd.Flags().MarkHidden("config")
@@ -180,6 +181,15 @@ func parseInitOptions(cmd *cobra.Command, args []string) (cluster.InitOptions, e
 	// Parse flags
 	opts.Organization, _ = cmd.Flags().GetString("org")
 	opts.Provider, _ = cmd.Flags().GetString("type")
+	opts.DeploymentMethod, _ = cmd.Flags().GetString("deployment")
+	opts.Provider = strings.ToLower(strings.TrimSpace(opts.Provider))
+	opts.DeploymentMethod = strings.ToLower(strings.TrimSpace(opts.DeploymentMethod))
+	if opts.DeploymentMethod == "" {
+		opts.DeploymentMethod = "kubespray"
+	}
+	if opts.DeploymentMethod != "kubespray" && opts.DeploymentMethod != "talos" {
+		return opts, fmt.Errorf("unsupported deployment method %q (supported: kubespray, talos)", opts.DeploymentMethod)
+	}
 
 	// Handle org/cluster identifier format: extract organization if embedded
 	// in the cluster name and no explicit --org was provided

@@ -368,7 +368,7 @@ opencenter cluster validate prod-cluster
 
 Current behavior is worth knowing:
 
-- `cluster doctor` checks that `git`, `kubectl`, and `talosctl` are on `PATH`. For OpenStack clusters, it also checks for the `openstack` CLI and warns if `auth_url` is empty.
+- `cluster doctor` checks that `git` and `kubectl` are on `PATH`. For OpenStack clusters, it also checks for the `openstack` CLI and warns if `auth_url` is empty. Talos deployment support uses native Go APIs instead of `talosctl`.
 - `cluster validate` validates the v2 config shape and required provider fields such as `project_id`, `image_id`, and `network_id`. It performs schema validation, required field validation, and cross-field dependency validation.
 
 Additional `cluster validate` flags:

@@ -87,6 +87,10 @@ func registerSchemaValidations(v *validator.Validate) error {
 // Validate performs all validation layers.
 // Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7
 func (v *defaultValidator) Validate(cfg *Config) error {
+	if err := v.ValidateCleanBreakRules(cfg); err != nil {
+		return err
+	}
+
 	// Schema validation
 	if err := v.ValidateSchema(cfg); err != nil {
 		return err
@@ -115,6 +119,21 @@ func (v *defaultValidator) Validate(cfg *Config) error {
 	return nil
 }
 
+// ValidateCleanBreakRules rejects legacy Talos shapes before generic schema
+// validation so users get the explicit migration-free guidance.
+func (v *defaultValidator) ValidateCleanBreakRules(cfg *Config) error {
+	if cfg == nil {
+		return nil
+	}
+	if strings.EqualFold(strings.TrimSpace(cfg.OpenCenter.Infrastructure.Provider), "talos") {
+		return fmt.Errorf("talos is a deployment method, not an infrastructure provider. Use --type openstack --deployment talos.")
+	}
+	if len(cfg.OpenCenter.LegacyTalos) > 0 {
+		return fmt.Errorf("opencenter.talos is not supported in v2; use deployment.talos")
+	}
+	return nil
+}
+
 // ValidateSchema validates required fields, data types, and enum values.
 // Requirements: 11.1
 func (v *defaultValidator) ValidateSchema(cfg *Config) error {
@@ -127,6 +146,10 @@ func (v *defaultValidator) ValidateSchema(cfg *Config) error {
 // ValidateBusinessRules validates cross-field dependencies and value ranges.
 // Requirements: 11.2
 func (v *defaultValidator) ValidateBusinessRules(cfg *Config) error {
+	if len(cfg.OpenCenter.LegacyTalos) > 0 {
+		return fmt.Errorf("opencenter.talos is not supported in v2; use deployment.talos")
+	}
+
 	// Validate OpenTofu backend configuration
 	if err := v.validateOpenTofuBackend(&cfg.OpenTofu); err != nil {
 		return err
@@ -169,6 +192,8 @@ func (v *defaultValidator) ValidateProvider(cfg *Config) error {
 	provider := strings.ToLower(strings.TrimSpace(cfg.OpenCenter.Infrastructure.Provider))
 
 	switch provider {
+	case "talos":
+		return fmt.Errorf("talos is a deployment method, not an infrastructure provider. Use --type openstack --deployment talos.")
 	case "kind":
 		if cfg.OpenCenter.Infrastructure.Kind == nil {
 			return fmt.Errorf("opencenter.infrastructure.kind must be configured for the kind provider")
@@ -197,6 +222,8 @@ func (v *defaultValidator) ValidateProvider(cfg *Config) error {
 		// No provider-specific config block required for baremetal
 	case "":
 		return fmt.Errorf("opencenter.infrastructure.provider must be set")
+	default:
+		return fmt.Errorf("unsupported infrastructure provider: %s", provider)
 	}
 
 	return nil
@@ -205,9 +232,19 @@ func (v *defaultValidator) ValidateProvider(cfg *Config) error {
 // ValidateDeployment validates deployment-method requirements.
 // Requirements: 11.4
 func (v *defaultValidator) ValidateDeployment(cfg *Config) error {
-	// Placeholder for deployment validation
-	// This will be implemented in subsequent tasks
-	return nil
+	methodName := strings.ToLower(strings.TrimSpace(cfg.Deployment.Method))
+	if methodName == "" {
+		return fmt.Errorf("deployment.method must be set")
+	}
+
+	deploymentMethod, err := GetDeploymentMethod(methodName)
+	if err != nil {
+		return err
+	}
+	if err := deploymentMethod.ValidateCompatibility(cfg.OpenCenter.Infrastructure.Provider); err != nil {
+		return err
+	}
+	return deploymentMethod.ValidateConfig(cfg)
 }
 
 // ValidateServices validates service dependencies and required secrets.

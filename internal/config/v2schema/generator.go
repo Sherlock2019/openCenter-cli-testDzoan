@@ -201,6 +201,9 @@ func concreteType(t reflect.Type) reflect.Type {
 }
 
 func yamlFieldName(field reflect.StructField) (name string, inline bool, skip bool) {
+	if field.Tag.Get("json") == "-" {
+		return "", false, true
+	}
 	tag := field.Tag.Get("yaml")
 	if tag == "-" {
 		return "", false, true

@@ -434,12 +434,16 @@ func TestProperty_ProviderDeploymentCompatibility(t *testing.T) {
 		gen.OneConstOf("kubespray", "talos", "kamaji"),
 	))
 
-	properties.Property("talos does not support baremetal", prop.ForAll(
-		func() bool {
+	properties.Property("talos only supports openstack", prop.ForAll(
+		func(provider string) bool {
 			deploymentValidator := &TalosDeployment{}
-			err := deploymentValidator.ValidateCompatibility("baremetal")
+			err := deploymentValidator.ValidateCompatibility(provider)
+			if provider == "openstack" {
+				return err == nil
+			}
 			return err != nil
 		},
+		gen.OneConstOf("openstack", "aws", "gcp", "azure", "baremetal", "vmware"),
 	))
 
 	properties.Property("kamaji does not support baremetal", prop.ForAll(
@@ -537,8 +541,8 @@ func TestProperty_ProviderDeploymentCompatibility(t *testing.T) {
 // isValidProviderDeploymentCombination checks if a provider-deployment combination is valid.
 func isValidProviderDeploymentCombination(provider, method string) bool {
 	validCombinations := map[string][]string{
-		"kubespray": {"openstack", "aws", "gcp", "azure", "baremetal", "vmware"},
-		"talos":     {"openstack", "aws", "gcp", "azure"},
+		"kubespray": {"openstack", "aws", "gcp", "azure", "baremetal", "vmware", "kind"},
+		"talos":     {"openstack"},
 		"kamaji":    {"openstack", "aws", "gcp", "azure", "vmware"},
 	}
 

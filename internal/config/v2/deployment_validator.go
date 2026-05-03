@@ -41,7 +41,7 @@ func (d *KubesprayDeployment) ValidateConfig(cfg *Config) error {
 // ValidateCompatibility validates Kubespray compatibility with infrastructure provider.
 func (d *KubesprayDeployment) ValidateCompatibility(provider string) error {
 	// Kubespray supports all providers
-	validProviders := []string{"openstack", "aws", "gcp", "azure", "baremetal", "vmware"}
+	validProviders := []string{"openstack", "aws", "gcp", "azure", "baremetal", "vmware", "kind"}
 	provider = canonicalInfrastructureProvider(provider)
 	for _, p := range validProviders {
 		if provider == p {
@@ -70,20 +70,31 @@ func (d *TalosDeployment) ValidateConfig(cfg *Config) error {
 	if cfg.OpenCenter.Infrastructure.Compute.MasterCount == 0 {
 		return fmt.Errorf("talos requires master_count > 0")
 	}
+	if cfg.Deployment.Talos == nil {
+		return fmt.Errorf("deployment.method: talos requires deployment.talos")
+	}
+	if cfg.Deployment.Talos.Install.Disk == "" {
+		return fmt.Errorf("deployment.talos.install.disk is required")
+	}
+	if cfg.Deployment.Talos.Install.Image == "" {
+		return fmt.Errorf("deployment.talos.install.image is required")
+	}
+	if cfg.Deployment.Talos.Network.PodSubnet == "" {
+		return fmt.Errorf("deployment.talos.network.pod_subnet is required")
+	}
+	if cfg.Deployment.Talos.Network.ServiceSubnet == "" {
+		return fmt.Errorf("deployment.talos.network.service_subnet is required")
+	}
 	return nil
 }
 
 // ValidateCompatibility validates Talos compatibility with infrastructure provider.
 func (d *TalosDeployment) ValidateCompatibility(provider string) error {
-	// Talos supports most providers except baremetal and vmware
-	validProviders := []string{"openstack", "aws", "gcp", "azure"}
 	provider = canonicalInfrastructureProvider(provider)
-	for _, p := range validProviders {
-		if provider == p {
-			return nil
-		}
+	if provider == "openstack" {
+		return nil
 	}
-	return fmt.Errorf("talos does not support provider: %s (baremetal and vmware require pre-provisioned nodes)", provider)
+	return fmt.Errorf("deployment.method: talos requires opencenter.infrastructure.provider: openstack")
 }
 
 // GetMethodName returns the deployment method name.

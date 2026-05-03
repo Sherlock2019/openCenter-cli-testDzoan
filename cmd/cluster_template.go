@@ -688,7 +688,7 @@ func addGitOpsRepositoryComments(value *yaml.Node) {
 
 // addTalosComments adds comments for Talos configuration
 func addTalosComments(key, value *yaml.Node) {
-	key.HeadComment = "Talos Linux configuration (if using Talos provider)"
+	key.HeadComment = "Talos Linux deployment configuration"
 
 	if value.Kind != yaml.MappingNode {
 		return

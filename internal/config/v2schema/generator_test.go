@@ -65,6 +65,15 @@ func TestGenerateValidationTagsForEditorHints(t *testing.T) {
 	}
 }
 
+func TestGenerateRejectsLegacyOpenCenterTalosShape(t *testing.T) {
+	schema := generatedSchemaMap(t)
+
+	opencenterProps := schemaAt(t, schema, "properties", "opencenter", "properties")
+	if _, ok := opencenterProps["talos"]; ok {
+		t.Fatalf("schema should not expose legacy opencenter.talos: %v", opencenterProps["talos"])
+	}
+}
+
 func TestGenerateHandlesPointersSlicesAndMaps(t *testing.T) {
 	schema := generatedSchemaMap(t)
 

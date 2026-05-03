@@ -47,6 +47,7 @@ type OpenCenterConfig struct {
 	Services        ServiceMap           `yaml:"services,omitempty" json:"services,omitempty"`
 	ManagedServices ServiceMap           `yaml:"managed_services,omitempty" json:"managed_services,omitempty"`
 	LegacyManaged   ServiceMap           `yaml:"managed-service,omitempty" json:"managed-service,omitempty"`
+	LegacyTalos     map[string]any       `yaml:"talos,omitempty" json:"-"`
 	GitOps          GitOpsConfig         `yaml:"gitops,omitempty" json:"gitops,omitempty" validate:"required"`
 }
 

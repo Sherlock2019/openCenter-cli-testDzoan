@@ -182,7 +182,7 @@ Fields with allowed values:
 
 | Field | Allowed Values |
 |-------|----------------|
-| `opencenter.infrastructure.provider` | "openstack", "vmware", "kind", "aws", "baremetal", "talos" |
+| `opencenter.infrastructure.provider` | "openstack", "vmware", "kind", "aws", "baremetal" |
 | `opencenter.cluster.networking.cni_plugin` | "calico", "cilium", "kube-ovn" |
 | `opencenter.meta.environment` | "development", "staging", "production" |
 

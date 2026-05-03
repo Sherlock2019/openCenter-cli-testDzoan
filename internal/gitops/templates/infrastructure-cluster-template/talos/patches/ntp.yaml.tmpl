@@ -1,0 +1,6 @@
+machine:
+  time:
+    servers:
+{{- range .PatchInputs.NTPServers }}
+      - {{ . }}
+{{- end }}

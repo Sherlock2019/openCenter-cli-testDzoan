@@ -42,8 +42,30 @@ type ModuleConfig struct {
 // TalosConfig represents Talos Linux deployment configuration.
 // Requirements: 5.3
 type TalosConfig struct {
-	Version string                  `yaml:"version" json:"version" validate:"required,semver"`
-	Modules map[string]ModuleConfig `yaml:"modules,omitempty" json:"modules,omitempty"`
+	Version           string             `yaml:"version" json:"version" validate:"required,semver"`
+	KubernetesVersion string             `yaml:"kubernetes_version" json:"kubernetes_version" validate:"required,semver"`
+	Endpoint          string             `yaml:"endpoint,omitempty" json:"endpoint,omitempty"`
+	Install           TalosInstallConfig `yaml:"install" json:"install" validate:"required"`
+	Network           TalosNetworkConfig `yaml:"network" json:"network" validate:"required"`
+	Patches           TalosPatchesConfig `yaml:"patches,omitempty" json:"patches,omitempty"`
+}
+
+// TalosInstallConfig represents machine installation settings for Talos.
+type TalosInstallConfig struct {
+	Disk  string `yaml:"disk" json:"disk" validate:"required"`
+	Image string `yaml:"image" json:"image" validate:"required"`
+}
+
+// TalosNetworkConfig represents Talos cluster network settings.
+type TalosNetworkConfig struct {
+	PodSubnet     string `yaml:"pod_subnet" json:"pod_subnet" validate:"required,cidrv4"`
+	ServiceSubnet string `yaml:"service_subnet" json:"service_subnet" validate:"required,cidrv4"`
+	TalosAPIPort  int    `yaml:"talos_api_port" json:"talos_api_port" validate:"required,min=1,max=65535"`
+}
+
+// TalosPatchesConfig lists generated/static Talos machine config patches.
+type TalosPatchesConfig struct {
+	Static []string `yaml:"static,omitempty" json:"static,omitempty"`
 }
 
 // KamajiConfig represents Kamaji hosted control plane configuration.
