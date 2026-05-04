@@ -2,7 +2,10 @@ package talos
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -73,8 +76,11 @@ func (i *Inventory) Validate(path string) error {
 	if strings.TrimSpace(i.Cluster.Endpoint) == "" {
 		return inventoryFieldError(path, "cluster.endpoint")
 	}
-	if i.Cluster.TalosAPIPort <= 0 {
-		return inventoryFieldError(path, "cluster.talos_api_port")
+	if err := validateClusterEndpoint(path, i.Cluster.Endpoint); err != nil {
+		return err
+	}
+	if i.Cluster.TalosAPIPort < 1 || i.Cluster.TalosAPIPort > 65535 {
+		return inventoryInvalidFieldError(path, "cluster.talos_api_port", "must be between 1 and 65535")
 	}
 	if len(i.ControlPlane) == 0 {
 		return inventoryFieldError(path, "control_plane")
@@ -110,14 +116,28 @@ func (i *Inventory) AllNodes() []Node {
 	return nodes
 }
 
-func (i *Inventory) EndpointIPs() []string {
+func (i *Inventory) ControlPlaneEndpoints() []string {
 	if i == nil {
 		return nil
 	}
 	endpoints := make([]string, 0, len(i.ControlPlane))
 	for _, node := range i.ControlPlane {
-		if ip := strings.TrimSpace(node.TalosAPIIP); ip != "" {
-			endpoints = append(endpoints, ip)
+		if endpoint := talosEndpoint(node.TalosAPIIP, i.Cluster.TalosAPIPort); endpoint != "" {
+			endpoints = append(endpoints, endpoint)
+		}
+	}
+	return endpoints
+}
+
+func (i *Inventory) AllNodeEndpoints() []string {
+	if i == nil {
+		return nil
+	}
+	nodes := i.AllNodes()
+	endpoints := make([]string, 0, len(nodes))
+	for _, node := range nodes {
+		if endpoint := talosEndpoint(node.TalosAPIIP, i.Cluster.TalosAPIPort); endpoint != "" {
+			endpoints = append(endpoints, endpoint)
 		}
 	}
 	return endpoints
@@ -157,6 +177,41 @@ func validateInventoryNode(path, prefix string, node Node) error {
 	return nil
 }
 
+func validateClusterEndpoint(path, endpoint string) error {
+	parsed, err := url.Parse(strings.TrimSpace(endpoint))
+	if err != nil {
+		return inventoryInvalidFieldError(path, "cluster.endpoint", "must be an explicit https://...:443 endpoint")
+	}
+	if parsed.Scheme != "https" {
+		return inventoryInvalidFieldError(path, "cluster.endpoint", "must use https scheme")
+	}
+	if parsed.Hostname() == "" {
+		return inventoryInvalidFieldError(path, "cluster.endpoint", "must include a host")
+	}
+	if parsed.Port() == "" {
+		return inventoryInvalidFieldError(path, "cluster.endpoint", "must include explicit port 443")
+	}
+	if parsed.Port() != "443" {
+		return inventoryInvalidFieldError(path, "cluster.endpoint", "must use port 443")
+	}
+	return nil
+}
+
+func talosEndpoint(address string, port int) string {
+	address = strings.TrimSpace(address)
+	if address == "" {
+		return ""
+	}
+	if _, _, err := net.SplitHostPort(address); err == nil {
+		return address
+	}
+	return net.JoinHostPort(address, strconv.Itoa(port))
+}
+
 func inventoryFieldError(path, field string) error {
 	return fmt.Errorf("validating Talos inventory %s: missing required field %s", path, field)
+}
+
+func inventoryInvalidFieldError(path, field, message string) error {
+	return fmt.Errorf("validating Talos inventory %s: invalid field %s: %s", path, field, message)
 }

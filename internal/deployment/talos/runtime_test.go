@@ -61,10 +61,12 @@ func TestRuntimeDeployFlowDoesNotPersistMachineConfigs(t *testing.T) {
 	cfg := *cfgPtr
 	v2.ApplyTalosDeploymentDefaults(&cfg)
 	cfg.Deployment.Talos.Patches.Static = nil
-	cfg.Deployment.Talos.Endpoint = "https://10.2.128.5:6443"
+	cfg.Deployment.Talos.Endpoint = "https://10.2.128.5:443"
 
 	fake := &fakeClient{}
-	runtime, err := NewRuntime(&cfg, clusterPaths, WithClientFactory(func(context.Context, *clientconfig.Config, []string) (Client, error) {
+	var factoryEndpoints []string
+	runtime, err := NewRuntime(&cfg, clusterPaths, WithClientFactory(func(_ context.Context, _ *clientconfig.Config, endpoints []string) (Client, error) {
+		factoryEndpoints = append([]string(nil), endpoints...)
 		return fake, nil
 	}))
 	if err != nil {
@@ -89,10 +91,19 @@ func TestRuntimeDeployFlowDoesNotPersistMachineConfigs(t *testing.T) {
 	if len(fake.appliedConfigs) != 2 {
 		t.Fatalf("applied config count = %d, want 2", len(fake.appliedConfigs))
 	}
-	if len(fake.bootstrapped) != 1 || fake.bootstrapped[0] != "10.2.128.11" {
-		t.Fatalf("bootstrapped nodes = %v, want [10.2.128.11]", fake.bootstrapped)
+	if _, ok := fake.appliedConfigs["10.2.128.11:50000"]; !ok {
+		t.Fatalf("applied config missing control-plane management endpoint: %v", mapKeys(fake.appliedConfigs))
 	}
-	if len(fake.healthNodes) != 1 || strings.Join(fake.healthNodes[0], ",") != "10.2.128.11,10.2.128.21" {
+	if _, ok := fake.appliedConfigs["10.2.128.21:50000"]; !ok {
+		t.Fatalf("applied config missing worker management endpoint: %v", mapKeys(fake.appliedConfigs))
+	}
+	if got, want := strings.Join(factoryEndpoints, ","), "10.2.128.11:50000"; got != want {
+		t.Fatalf("client factory endpoints = %q, want %q", got, want)
+	}
+	if len(fake.bootstrapped) != 1 || fake.bootstrapped[0] != "10.2.128.11:50000" {
+		t.Fatalf("bootstrapped nodes = %v, want [10.2.128.11:50000]", fake.bootstrapped)
+	}
+	if len(fake.healthNodes) != 1 || strings.Join(fake.healthNodes[0], ",") != "10.2.128.11:50000,10.2.128.21:50000" {
 		t.Fatalf("health nodes = %v", fake.healthNodes)
 	}
 
@@ -121,12 +132,20 @@ func TestRuntimeDeployFlowDoesNotPersistMachineConfigs(t *testing.T) {
 	}
 }
 
+func mapKeys[V any](values map[string]V) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	return keys
+}
+
 func writeRuntimeInventory(t *testing.T, path string) {
 	t.Helper()
 
 	if err := os.WriteFile(path, []byte(`cluster:
   name: demo
-  endpoint: https://10.2.128.5:6443
+  endpoint: https://10.2.128.5:443
   talos_api_port: 50000
 control_plane:
   - name: demo-cp-1

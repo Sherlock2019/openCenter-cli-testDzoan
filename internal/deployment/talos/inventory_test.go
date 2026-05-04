@@ -10,7 +10,7 @@ import (
 func TestLoadInventoryValidatesTalosInventoryContract(t *testing.T) {
 	path := writeTestInventory(t, `cluster:
   name: demo
-  endpoint: https://10.2.128.5:6443
+  endpoint: https://10.2.128.5:443
   talos_api_port: 50000
 control_plane:
   - name: demo-cp-1
@@ -46,12 +46,18 @@ patch_inputs:
 	if got := inventory.Workers[0].Role; got != RoleWorker {
 		t.Fatalf("worker role = %q, want %q", got, RoleWorker)
 	}
+	if got, want := inventory.ControlPlaneEndpoints(), []string{"10.2.128.11:50000"}; strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("ControlPlaneEndpoints() = %v, want %v", got, want)
+	}
+	if got, want := inventory.AllNodeEndpoints(), []string{"10.2.128.11:50000", "10.2.128.21:50000"}; strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("AllNodeEndpoints() = %v, want %v", got, want)
+	}
 }
 
 func TestLoadInventoryErrorsIncludePathAndField(t *testing.T) {
 	path := writeTestInventory(t, `cluster:
   name: demo
-  endpoint: https://10.2.128.5:6443
+  endpoint: https://10.2.128.5:443
   talos_api_port: 50000
 control_plane:
   - name: demo-cp-1
@@ -68,6 +74,62 @@ control_plane:
 		if !strings.Contains(msg, want) {
 			t.Fatalf("error %q does not contain %q", msg, want)
 		}
+	}
+}
+
+func TestLoadInventoryRejectsInvalidClusterEndpoint(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint string
+		want     string
+	}{
+		{
+			name:     "http",
+			endpoint: "http://10.2.128.5:443",
+			want:     "must use https scheme",
+		},
+		{
+			name:     "kubernetes default port",
+			endpoint: "https://10.2.128.5:6443",
+			want:     "must use port 443",
+		},
+		{
+			name:     "missing explicit port",
+			endpoint: "https://10.2.128.5",
+			want:     "must include explicit port 443",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := writeTestInventory(t, `cluster:
+  name: demo
+  endpoint: `+tt.endpoint+`
+  talos_api_port: 50000
+control_plane:
+  - name: demo-cp-1
+    talos_api_ip: 10.2.128.11
+    internal_ip: 10.2.128.11
+    install_disk: /dev/vda
+`)
+
+			_, err := LoadInventory(path)
+			if err == nil {
+				t.Fatal("LoadInventory() expected error")
+			}
+			if !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("error = %q, want %q", err.Error(), tt.want)
+			}
+		})
+	}
+}
+
+func TestTalosEndpointAddsPortWhenMissing(t *testing.T) {
+	if got, want := talosEndpoint("198.51.100.11", 50000), "198.51.100.11:50000"; got != want {
+		t.Fatalf("talosEndpoint() = %q, want %q", got, want)
+	}
+	if got, want := talosEndpoint("198.51.100.11:50001", 50000), "198.51.100.11:50001"; got != want {
+		t.Fatalf("talosEndpoint() = %q, want %q", got, want)
 	}
 }
 

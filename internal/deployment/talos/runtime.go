@@ -108,9 +108,9 @@ func (r *Runtime) ApplyMachineConfigs(ctx context.Context) error {
 		return err
 	}
 	for _, config := range configs {
-		nodeIP := strings.TrimSpace(config.Node.TalosAPIIP)
-		if err := client.ApplyMachineConfig(ctx, nodeIP, config.Data); err != nil {
-			return fmt.Errorf("apply Talos machine config to %s (%s): %w", config.Node.Name, nodeIP, err)
+		endpoint := talosEndpoint(config.Node.TalosAPIIP, r.inventory.Cluster.TalosAPIPort)
+		if err := client.ApplyMachineConfig(ctx, endpoint, config.Data); err != nil {
+			return fmt.Errorf("apply Talos machine config to %s (%s): %w", config.Node.Name, endpoint, err)
 		}
 	}
 	r.machineConfigs = configs
@@ -129,8 +129,9 @@ func (r *Runtime) BootstrapControlPlane(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := client.Bootstrap(ctx, node.TalosAPIIP); err != nil {
-		return fmt.Errorf("bootstrap Talos control plane %s (%s): %w", node.Name, node.TalosAPIIP, err)
+	endpoint := talosEndpoint(node.TalosAPIIP, r.inventory.Cluster.TalosAPIPort)
+	if err := client.Bootstrap(ctx, endpoint); err != nil {
+		return fmt.Errorf("bootstrap Talos control plane %s (%s): %w", node.Name, endpoint, err)
 	}
 	return nil
 }
@@ -154,9 +155,10 @@ func (r *Runtime) ExportKubeconfig(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	kubeconfig, err := client.Kubeconfig(ctx, node.TalosAPIIP)
+	endpoint := talosEndpoint(node.TalosAPIIP, r.inventory.Cluster.TalosAPIPort)
+	kubeconfig, err := client.Kubeconfig(ctx, endpoint)
 	if err != nil {
-		return fmt.Errorf("export Talos kubeconfig from %s (%s): %w", node.Name, node.TalosAPIIP, err)
+		return fmt.Errorf("export Talos kubeconfig from %s (%s): %w", node.Name, endpoint, err)
 	}
 	if err := os.MkdirAll(filepath.Dir(r.artifactPaths.KubeconfigPath), 0o700); err != nil {
 		return fmt.Errorf("creating kubeconfig directory: %w", err)
@@ -175,10 +177,7 @@ func (r *Runtime) WaitReady(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	nodes := make([]string, 0, len(r.inventory.AllNodes()))
-	for _, node := range r.inventory.AllNodes() {
-		nodes = append(nodes, node.TalosAPIIP)
-	}
+	nodes := r.inventory.AllNodeEndpoints()
 	if err := client.Health(ctx, nodes); err != nil {
 		return fmt.Errorf("waiting for Talos API readiness: %w", err)
 	}
@@ -199,7 +198,7 @@ func (r *Runtime) ensureClient(ctx context.Context) (Client, error) {
 	if err := r.GenerateSecrets(ctx); err != nil {
 		return nil, err
 	}
-	client, err := r.clientFactory(ctx, r.talosConfig, r.inventory.EndpointIPs())
+	client, err := r.clientFactory(ctx, r.talosConfig, r.inventory.ControlPlaneEndpoints())
 	if err != nil {
 		return nil, fmt.Errorf("create Talos client: %w", err)
 	}
@@ -329,7 +328,7 @@ func (r *Runtime) newGenerateInput(node Node, bundle *secrets.Bundle) (*generate
 	opts := []generate.Option{
 		generate.WithVersionContract(contract),
 		generate.WithSecretsBundle(bundle),
-		generate.WithEndpointList(r.inventory.EndpointIPs()),
+		generate.WithEndpointList(r.inventory.ControlPlaneEndpoints()),
 		generate.WithInstallDisk(installDisk),
 		generate.WithInstallImage(strings.TrimSpace(talosCfg.Install.Image)),
 		generate.WithClusterCNIConfig(&v1alpha1.CNIConfig{CNIName: "none"}),

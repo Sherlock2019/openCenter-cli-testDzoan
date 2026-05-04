@@ -446,6 +446,12 @@ func renderTalosStatusText(ctx context.Context, out interface {
 	if errText, ok := status["kubernetes_api_check"].(string); ok && errText != "" {
 		fmt.Fprintf(out, "  Kubernetes Check:  %s\n", errText)
 	}
+	if nodes, ok := status["nodes"].([]map[string]string); ok && len(nodes) > 0 {
+		fmt.Fprintf(out, "  Management Endpoints:\n")
+		for _, node := range nodes {
+			fmt.Fprintf(out, "    %-24s %s\n", node["name"], node["talos_api_endpoint"])
+		}
+	}
 }
 
 func buildTalosStatus(ctx context.Context, cfg *v2.Config, clusterPaths *paths.ClusterPaths, refresh bool) map[string]any {
@@ -489,13 +495,20 @@ func buildTalosStatus(ctx context.Context, cfg *v2.Config, clusterPaths *paths.C
 			inventory = loaded
 			status["control_plane_count"] = len(loaded.ControlPlane)
 			status["worker_count"] = len(loaded.Workers)
-			nodes := make([]map[string]string, 0, len(loaded.AllNodes()))
-			for _, node := range loaded.AllNodes() {
+			allNodes := loaded.AllNodes()
+			allEndpoints := loaded.AllNodeEndpoints()
+			nodes := make([]map[string]string, 0, len(allNodes))
+			for idx, node := range allNodes {
+				endpoint := ""
+				if idx < len(allEndpoints) {
+					endpoint = allEndpoints[idx]
+				}
 				nodes = append(nodes, map[string]string{
-					"name":         node.Name,
-					"role":         string(node.Role),
-					"talos_api_ip": node.TalosAPIIP,
-					"internal_ip":  node.InternalIP,
+					"name":               node.Name,
+					"role":               string(node.Role),
+					"talos_api_ip":       node.TalosAPIIP,
+					"talos_api_endpoint": endpoint,
+					"internal_ip":        node.InternalIP,
 				})
 			}
 			status["nodes"] = nodes
@@ -504,7 +517,7 @@ func buildTalosStatus(ctx context.Context, cfg *v2.Config, clusterPaths *paths.C
 
 	if refresh {
 		if inventory != nil && pathExists(artifactPaths.TalosConfigPath) {
-			ready, errText := talosAPIStatus(ctx, artifactPaths.TalosConfigPath, inventory.EndpointIPs())
+			ready, errText := talosAPIStatus(ctx, artifactPaths.TalosConfigPath, inventory.AllNodeEndpoints())
 			status["talos_api_ready"] = ready
 			status["talos_api_check"] = errText
 		}
