@@ -265,6 +265,144 @@ func TestConfigurationManager_ListWithOrganization(t *testing.T) {
 	}
 }
 
+// TestConfigurationManager_ListDiscoversConfigFiles verifies that clusters
+// are discovered from config files even when no infrastructure directory exists.
+func TestConfigurationManager_ListDiscoversConfigFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	orgDir := filepath.Join(tmpDir, "test-org")
+	if err := os.MkdirAll(orgDir, 0755); err != nil {
+		t.Fatalf("create org dir: %v", err)
+	}
+
+	// Create a config file without a matching infrastructure/clusters/ directory
+	configFile := filepath.Join(orgDir, ".config-only-cluster-config.yaml")
+	if err := os.WriteFile(configFile, []byte("schema_version: '2.0'\n"), 0600); err != nil {
+		t.Fatalf("write config file: %v", err)
+	}
+
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fileSystem := fs.NewDefaultFileSystem(errorHandler)
+	pathResolver := paths.NewPathResolver(tmpDir)
+	validator := validation.NewValidationEngine()
+	cache := NewConfigCache()
+	loader := NewConfigIOHandler(fileSystem)
+	manager := NewConfigurationManagerWithDeps(loader, validator, cache, pathResolver, fileSystem)
+
+	ctx := context.Background()
+
+	// List all — should find the config-only cluster
+	clusters, err := manager.List(ctx)
+	if err != nil {
+		t.Fatalf("List failed: %v", err)
+	}
+	if len(clusters) != 1 {
+		t.Fatalf("expected 1 cluster, got %d: %v", len(clusters), clusters)
+	}
+	if clusters[0] != "test-org/config-only-cluster" {
+		t.Errorf("expected test-org/config-only-cluster, got %s", clusters[0])
+	}
+
+	// List with organization filter
+	clusters, err = manager.ListWithOrganization(ctx, "test-org")
+	if err != nil {
+		t.Fatalf("ListWithOrganization failed: %v", err)
+	}
+	if len(clusters) != 1 {
+		t.Fatalf("expected 1 cluster, got %d: %v", len(clusters), clusters)
+	}
+	if clusters[0] != "config-only-cluster" {
+		t.Errorf("expected config-only-cluster, got %s", clusters[0])
+	}
+}
+
+// TestConfigurationManager_ListMergesDirectoriesAndConfigFiles verifies that
+// clusters from both infrastructure directories and config files are merged
+// without duplicates.
+func TestConfigurationManager_ListMergesDirectoriesAndConfigFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	orgDir := filepath.Join(tmpDir, "my-org")
+
+	// Create a cluster with both a directory and a config file (should appear once)
+	clusterDir := filepath.Join(orgDir, "infrastructure", "clusters", "both-cluster")
+	if err := os.MkdirAll(clusterDir, 0755); err != nil {
+		t.Fatalf("create cluster dir: %v", err)
+	}
+	bothConfig := filepath.Join(orgDir, ".both-cluster-config.yaml")
+	if err := os.WriteFile(bothConfig, []byte("schema_version: '2.0'\n"), 0600); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	// Create a cluster with only a directory (no config file)
+	dirOnlyCluster := filepath.Join(orgDir, "infrastructure", "clusters", "dir-only")
+	if err := os.MkdirAll(dirOnlyCluster, 0755); err != nil {
+		t.Fatalf("create dir-only cluster: %v", err)
+	}
+
+	// Create a cluster with only a config file (no directory)
+	configOnlyFile := filepath.Join(orgDir, ".config-only-config.yaml")
+	if err := os.WriteFile(configOnlyFile, []byte("schema_version: '2.0'\n"), 0600); err != nil {
+		t.Fatalf("write config-only file: %v", err)
+	}
+
+	errorHandler := errors.NewDefaultErrorHandlerWithoutMasking()
+	fileSystem := fs.NewDefaultFileSystem(errorHandler)
+	pathResolver := paths.NewPathResolver(tmpDir)
+	validator := validation.NewValidationEngine()
+	cache := NewConfigCache()
+	loader := NewConfigIOHandler(fileSystem)
+	manager := NewConfigurationManagerWithDeps(loader, validator, cache, pathResolver, fileSystem)
+
+	ctx := context.Background()
+
+	clusters, err := manager.ListWithOrganization(ctx, "my-org")
+	if err != nil {
+		t.Fatalf("ListWithOrganization failed: %v", err)
+	}
+
+	expected := []string{"both-cluster", "config-only", "dir-only"}
+	if len(clusters) != len(expected) {
+		t.Fatalf("expected %d clusters, got %d: %v", len(expected), len(clusters), clusters)
+	}
+	for i, name := range expected {
+		if clusters[i] != name {
+			t.Errorf("clusters[%d] = %q, want %q", i, clusters[i], name)
+		}
+	}
+}
+
+// TestParseConfigFileName verifies the config file name parsing helper.
+func TestParseConfigFileName(t *testing.T) {
+	tests := []struct {
+		filename string
+		wantName string
+		wantOK   bool
+	}{
+		{".my-cluster-config.yaml", "my-cluster", true},
+		{".talos-test-01-config.yaml", "talos-test-01", true},
+		{".a-config.yaml", "a", true},
+		{"not-dotted-config.yaml", "", false},         // missing leading dot
+		{".config.yaml", "", false},                   // no -config.yaml suffix
+		{".sops.yaml", "", false},                     // unrelated dotfile
+		{"README.md", "", false},                      // unrelated file
+		{".-config.yaml", "", false},                  // empty cluster name
+		{".my-cluster-config.yaml.backup", "", false}, // backup file
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.filename, func(t *testing.T) {
+			name, ok := parseConfigFileName(tt.filename)
+			if ok != tt.wantOK {
+				t.Errorf("parseConfigFileName(%q) ok = %v, want %v", tt.filename, ok, tt.wantOK)
+			}
+			if name != tt.wantName {
+				t.Errorf("parseConfigFileName(%q) name = %q, want %q", tt.filename, name, tt.wantName)
+			}
+		})
+	}
+}
+
 // TestConfigurationManager_DeleteWithBackup verifies delete creates backup and invalidates cache
 func TestConfigurationManager_DeleteWithBackup(t *testing.T) {
 	// Create temporary directory structure

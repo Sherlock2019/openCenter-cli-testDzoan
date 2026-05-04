@@ -166,10 +166,10 @@ func TestSetupService_commitChanges(t *testing.T) {
 
 func TestSetupService_countGeneratedFiles(t *testing.T) {
 	tests := []struct {
-		name           string
-		setupBefore    func(t *testing.T, gitDir string) // files present before generation
-		setupAfter     func(t *testing.T, gitDir string) // files written during generation
-		wantCount      int
+		name        string
+		setupBefore func(t *testing.T, gitDir string) // files present before generation
+		setupAfter  func(t *testing.T, gitDir string) // files written during generation
+		wantCount   int
 	}{
 		{
 			name:        "empty directory, no new files",
@@ -212,7 +212,7 @@ func TestSetupService_countGeneratedFiles(t *testing.T) {
 			wantCount: 1, // Only new.txt
 		},
 		{
-			name: ".git directory is skipped",
+			name:        ".git directory is skipped",
 			setupBefore: func(t *testing.T, gitDir string) {},
 			setupAfter: func(t *testing.T, gitDir string) {
 				gitSubDir := filepath.Join(gitDir, ".git")
@@ -229,7 +229,7 @@ func TestSetupService_countGeneratedFiles(t *testing.T) {
 			wantCount: 1, // Only file1.txt, .git directory is skipped
 		},
 		{
-			name: "non-generated directories are skipped",
+			name:        "non-generated directories are skipped",
 			setupBefore: func(t *testing.T, gitDir string) {},
 			setupAfter: func(t *testing.T, gitDir string) {
 				// Create directories that should be excluded from the count:

@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -558,7 +559,14 @@ func (cm *ConfigurationManager) List(ctx context.Context) ([]string, error) {
 	return cm.ListWithOrganization(ctx, "")
 }
 
+// configFileSuffix is the naming convention for cluster configuration files.
+const configFileSuffix = "-config.yaml"
+
 // ListWithOrganization returns cluster names filtered by organization.
+//
+// Clusters are discovered from two sources and merged (deduplicated):
+//  1. Directories under <org>/infrastructure/clusters/<cluster>/
+//  2. Config files matching .<cluster>-config.yaml in the organization root
 //
 // If organization is empty, returns clusters from all organizations.
 //
@@ -567,7 +575,7 @@ func (cm *ConfigurationManager) List(ctx context.Context) ([]string, error) {
 //   - organization: Organization name to filter by (empty for all)
 //
 // Returns:
-//   - []string: List of cluster names
+//   - []string: Sorted list of cluster names
 //   - error: Directory read error
 //
 // Example:
@@ -581,24 +589,12 @@ func (cm *ConfigurationManager) ListWithOrganization(ctx context.Context, organi
 		return []string{}, nil
 	}
 
-	var clusters []string
-
 	// If organization is specified, only scan that organization
 	if organization != "" {
-		orgDir := filepath.Join(baseDir, organization, "infrastructure", "clusters")
-		if cm.fileSystem.Exists(orgDir) {
-			entries, err := os.ReadDir(orgDir)
-			if err != nil {
-				return nil, NewFileError("read", orgDir, err)
-			}
-
-			for _, entry := range entries {
-				if entry.IsDir() {
-					clusters = append(clusters, entry.Name())
-				}
-			}
-		}
-		return clusters, nil
+		orgDir := filepath.Join(baseDir, organization)
+		names := cm.discoverClustersInOrg(orgDir)
+		sort.Strings(names)
+		return names, nil
 	}
 
 	// Scan all organizations
@@ -607,30 +603,81 @@ func (cm *ConfigurationManager) ListWithOrganization(ctx context.Context, organi
 		return nil, NewFileError("read", baseDir, err)
 	}
 
+	var clusters []string
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
 		}
 
 		orgName := entry.Name()
-		orgClustersDir := filepath.Join(baseDir, orgName, "infrastructure", "clusters")
+		orgDir := filepath.Join(baseDir, orgName)
+		names := cm.discoverClustersInOrg(orgDir)
 
-		if cm.fileSystem.Exists(orgClustersDir) {
-			clusterEntries, err := os.ReadDir(orgClustersDir)
-			if err != nil {
-				continue // Skip organizations we can't read
-			}
+		for _, name := range names {
+			clusters = append(clusters, fmt.Sprintf("%s/%s", orgName, name))
+		}
+	}
 
-			for _, clusterEntry := range clusterEntries {
-				if clusterEntry.IsDir() {
-					// Return in organization/cluster format
-					clusters = append(clusters, fmt.Sprintf("%s/%s", orgName, clusterEntry.Name()))
+	sort.Strings(clusters)
+	return clusters, nil
+}
+
+// discoverClustersInOrg returns deduplicated cluster names found in an
+// organization directory. It merges two discovery sources:
+//   - Subdirectories under <orgDir>/infrastructure/clusters/
+//   - Config files matching .<name>-config.yaml in <orgDir>/
+func (cm *ConfigurationManager) discoverClustersInOrg(orgDir string) []string {
+	seen := make(map[string]struct{})
+
+	// Source 1: directories under infrastructure/clusters/
+	infraDir := filepath.Join(orgDir, "infrastructure", "clusters")
+	if cm.fileSystem.Exists(infraDir) {
+		entries, err := os.ReadDir(infraDir)
+		if err == nil {
+			for _, entry := range entries {
+				if entry.IsDir() {
+					seen[entry.Name()] = struct{}{}
 				}
 			}
 		}
 	}
 
-	return clusters, nil
+	// Source 2: config files matching .<name>-config.yaml in the org root
+	entries, err := os.ReadDir(orgDir)
+	if err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			name := entry.Name()
+			if clusterName, ok := parseConfigFileName(name); ok {
+				seen[clusterName] = struct{}{}
+			}
+		}
+	}
+
+	clusters := make([]string, 0, len(seen))
+	for name := range seen {
+		clusters = append(clusters, name)
+	}
+	return clusters
+}
+
+// parseConfigFileName extracts the cluster name from a config file name
+// matching the pattern .<cluster>-config.yaml. Returns the cluster name
+// and true if the filename matches, or empty string and false otherwise.
+func parseConfigFileName(filename string) (string, bool) {
+	if !strings.HasPrefix(filename, ".") || !strings.HasSuffix(filename, configFileSuffix) {
+		return "", false
+	}
+
+	// Strip leading dot and trailing suffix
+	name := filename[1 : len(filename)-len(configFileSuffix)]
+	if name == "" {
+		return "", false
+	}
+
+	return name, true
 }
 
 // Delete removes a configuration file.
