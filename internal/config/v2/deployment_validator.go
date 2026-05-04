@@ -98,6 +98,39 @@ func (d *TalosDeployment) ValidateConfig(cfg *Config) error {
 			return err
 		}
 	}
+	if err := validateTalosNetworkPlugin(cfg); err != nil {
+		return err
+	}
+	return nil
+}
+
+// validateTalosNetworkPlugin validates that the CNI configuration is compatible
+// with Talos deployments. Talos disables the built-in CNI (via the disable-cni
+// patch) and manages CNI installation externally through Helm. The kubespray
+// install method is incompatible because Talos nodes do not run Kubespray.
+func validateTalosNetworkPlugin(cfg *Config) error {
+	np := cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin
+
+	// Check each enabled plugin for kubespray install method, which is
+	// incompatible with Talos.
+	if np.Calico != nil && np.Calico.Enabled {
+		method := strings.ToLower(strings.TrimSpace(np.Calico.InstallMethod))
+		if method == "kubespray" {
+			return fmt.Errorf("network_plugin calico install_method %q is incompatible with deployment.method talos; use helm or kustomize-helm", method)
+		}
+	}
+	if np.Cilium != nil && np.Cilium.Enabled {
+		method := strings.ToLower(strings.TrimSpace(np.Cilium.InstallMethod))
+		if method == "kubespray" {
+			return fmt.Errorf("network_plugin cilium install_method %q is incompatible with deployment.method talos; use helm or kustomize-helm", method)
+		}
+	}
+	if np.KubeOVN != nil && np.KubeOVN.Enabled {
+		method := strings.ToLower(strings.TrimSpace(np.KubeOVN.InstallMethod))
+		if method == "kubespray" {
+			return fmt.Errorf("network_plugin kube-ovn install_method %q is incompatible with deployment.method talos; use helm or kustomize-helm", method)
+		}
+	}
 	return nil
 }
 

@@ -174,3 +174,74 @@ func validTalosConfigForTest(t *testing.T) *Config {
 	cfg.Deployment.Talos.Network.ManagementCIDRs = []string{"203.0.113.10/32"}
 	return cfg
 }
+
+func TestValidatorTalosCiliumPassesValidation(t *testing.T) {
+	cfg := validTalosConfigForTest(t)
+
+	// Talos defaults already set Cilium; confirm validation passes.
+	if cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium == nil || !cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled {
+		t.Fatal("expected Cilium enabled by Talos defaults")
+	}
+
+	err := NewValidator().Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate() error = %v; Talos + Cilium should pass", err)
+	}
+}
+
+func TestValidatorTalosRejectsKubesprayInstallMethod(t *testing.T) {
+	tests := []struct {
+		name   string
+		setup  func(cfg *Config)
+		errMsg string
+	}{
+		{
+			name: "calico kubespray",
+			setup: func(cfg *Config) {
+				cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled = false
+				cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico = &CalicoConfig{
+					Enabled:       true,
+					InstallMethod: "kubespray",
+				}
+			},
+			errMsg: "install_method \"kubespray\" is incompatible with deployment.method talos",
+		},
+		{
+			name: "cilium kubespray",
+			setup: func(cfg *Config) {
+				cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.InstallMethod = "kubespray"
+			},
+			errMsg: "install_method \"kubespray\" is incompatible with deployment.method talos",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := validTalosConfigForTest(t)
+			tt.setup(cfg)
+
+			err := NewValidator().Validate(cfg)
+			if err == nil {
+				t.Fatal("expected kubespray install method to fail for Talos")
+			}
+			if !strings.Contains(err.Error(), tt.errMsg) {
+				t.Fatalf("error = %q, want %q", err.Error(), tt.errMsg)
+			}
+		})
+	}
+}
+
+func TestValidatorTalosCalicoHelmPassesValidation(t *testing.T) {
+	cfg := validTalosConfigForTest(t)
+	// Switch from Cilium to Calico with helm install method.
+	cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Cilium.Enabled = false
+	cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico = &CalicoConfig{
+		Enabled:       true,
+		InstallMethod: "helm",
+	}
+
+	err := NewValidator().Validate(cfg)
+	if err != nil {
+		t.Fatalf("Validate() error = %v; Talos + Calico(helm) should pass", err)
+	}
+}
