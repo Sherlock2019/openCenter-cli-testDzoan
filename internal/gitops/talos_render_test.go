@@ -20,6 +20,7 @@ func TestRenderInfrastructureClusterAtomicTalosOpenStack(t *testing.T) {
 	cfg.OpenCenter.Infrastructure.Provider = "openstack"
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.AuthURL = "https://auth.example.local/v3/"
 	v2.ApplyTalosDeploymentDefaults(&cfg)
+	cfg.Deployment.Talos.Network.ManagementCIDRs = []string{"198.51.100.10/32"}
 
 	workspace, err := manager.CreateWorkspace(ctx, cfg)
 	if err != nil {
@@ -33,12 +34,30 @@ func TestRenderInfrastructureClusterAtomicTalosOpenStack(t *testing.T) {
 
 	clusterRoot := filepath.Join("infrastructure", "clusters", cfg.ClusterName())
 	mainTF := readWorkspaceFile(t, workspace, filepath.Join(clusterRoot, "main.tf"))
+	if strings.Contains(mainTF, ":6443") {
+		t.Fatalf("Talos OpenStack main.tf must not render Kubernetes API port 6443\n%s", mainTF)
+	}
 	for _, want := range []string{
 		`module "openstack-nova"`,
 		`resource "local_file" "talos_inventory"`,
+		`source  = "terraform-provider-openstack/openstack"`,
+		"k8s_api_port              = 443",
+		`talos_endpoint                   = "https://${module.openstack-nova.k8s_api_ip}:443"`,
+		`talos_management_cidrs           = ["198.51.100.10/32"]`,
+		`data "openstack_compute_instance_v2" "talos_management"`,
+		`resource "openstack_networking_floatingip_v2" "talos_management"`,
+		`resource "openstack_compute_floatingip_associate_v2" "talos_management"`,
+		`resource "openstack_networking_secgroup_rule_v2" "talos_api_management"`,
+		"remote_ip_prefix  = each.value.cidr",
 		`filename = "${path.module}/talos/inventory.yaml"`,
 		"talos_api_port: 50000",
+		"endpoint: ${local.talos_endpoint}",
 		"control_plane:",
+		"talos_api_ip: ${openstack_networking_floatingip_v2.talos_management[node.name].address}",
+		"internal_ip: ${node.access_ip_v4}",
+		"- ${module.openstack-nova.k8s_api_ip}",
+		"- ${openstack_networking_floatingip_v2.talos_management[node.name].address}",
+		"- ${node.access_ip_v4}",
 		"workers:",
 	} {
 		if !strings.Contains(mainTF, want) {

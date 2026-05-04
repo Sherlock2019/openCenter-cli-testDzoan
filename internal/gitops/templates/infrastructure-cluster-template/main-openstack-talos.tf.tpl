@@ -4,6 +4,10 @@ terraform {
       source  = "hashicorp/local"
       version = "~> 2.5"
     }
+    openstack = {
+      source  = "terraform-provider-openstack/openstack"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -42,7 +46,7 @@ locals {
 
   image_id                  = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.ImageID | default "" }}"
   image_id_windows          = "{{ .OpenCenter.Infrastructure.Cloud.OpenStack.ImageIDWindows | default "" }}"
-  k8s_api_port              = {{ .OpenCenter.Cluster.Kubernetes.APIPort | default 6443 }}
+  k8s_api_port              = {{ .OpenCenter.Cluster.Kubernetes.APIPort | default 443 }}
   k8s_api_port_acl          = {{ if .OpenCenter.Infrastructure.Cloud.OpenStack.Networking.K8sAPIPortACL }}[{{ range $i, $acl := .OpenCenter.Infrastructure.Cloud.OpenStack.Networking.K8sAPIPortACL }}{{if $i}}, {{end}}"{{ $acl }}"{{ end }}]{{ else }}["0.0.0.0/0"]{{ end }}
   worker_count              = {{ .OpenCenter.Infrastructure.Compute.WorkerCount | default 4 }}
   worker_count_windows      = 0
@@ -70,7 +74,19 @@ locals {
   loadbalancer_provider            = "{{ .OpenCenter.Infrastructure.Networking.LoadbalancerProvider | default "ovn" }}"
   talos_api_port                   = {{ .Deployment.Talos.Network.TalosAPIPort | default 50000 }}
   talos_install_disk               = "{{ .Deployment.Talos.Install.Disk | default "/dev/sda" }}"
-  talos_endpoint                   = {{ if .Deployment.Talos.Endpoint }}"{{ .Deployment.Talos.Endpoint }}"{{ else }}"https://${module.openstack-nova.k8s_api_ip}:6443"{{ end }}
+  talos_endpoint                   = {{ if .Deployment.Talos.Endpoint }}"{{ .Deployment.Talos.Endpoint }}"{{ else }}"https://${module.openstack-nova.k8s_api_ip}:443"{{ end }}
+  talos_management_cidrs           = {{ if .Deployment.Talos.Network.ManagementCIDRs }}[{{ range $i, $cidr := .Deployment.Talos.Network.ManagementCIDRs }}{{if $i}}, {{end}}"{{ $cidr }}"{{ end }}]{{ else }}[]{{ end }}
+  talos_control_plane_nodes        = { for node in module.openstack-nova.master_nodes : node.name => node }
+  talos_worker_nodes               = { for node in module.openstack-nova.worker_nodes : node.name => node }
+  talos_nodes                      = merge(local.talos_control_plane_nodes, local.talos_worker_nodes)
+  talos_management_security_groups = toset(["controlplane", "master", "worker"])
+  talos_management_rule_matrix = {
+    for pair in setproduct(local.talos_management_security_groups, local.talos_management_cidrs) :
+    "${pair[0]}-${replace(replace(pair[1], ".", "-"), "/", "-")}" => {
+      group = pair[0]
+      cidr  = pair[1]
+    }
+  }
 }
 
 module "openstack-nova" {
@@ -134,6 +150,45 @@ module "openstack-nova" {
   wn_server_group_affinity             = local.wn_server_group_affinity
 }
 
+data "openstack_compute_instance_v2" "talos_management" {
+  for_each = local.talos_nodes
+
+  name       = each.key
+  depends_on = [module.openstack-nova]
+}
+
+resource "openstack_networking_floatingip_v2" "talos_management" {
+  for_each = local.talos_nodes
+
+  pool = local.floatingip_pool
+}
+
+resource "openstack_compute_floatingip_associate_v2" "talos_management" {
+  for_each = local.talos_nodes
+
+  floating_ip = openstack_networking_floatingip_v2.talos_management[each.key].address
+  instance_id = data.openstack_compute_instance_v2.talos_management[each.key].id
+}
+
+data "openstack_networking_secgroup_v2" "talos_management" {
+  for_each = local.talos_management_security_groups
+
+  name       = "${local.naming_prefix}${each.value}"
+  depends_on = [module.openstack-nova]
+}
+
+resource "openstack_networking_secgroup_rule_v2" "talos_api_management" {
+  for_each = local.talos_management_rule_matrix
+
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = local.talos_api_port
+  port_range_max    = local.talos_api_port
+  remote_ip_prefix  = each.value.cidr
+  security_group_id = data.openstack_networking_secgroup_v2.talos_management[each.value.group].id
+}
+
 resource "local_file" "talos_inventory" {
   filename = "${path.module}/talos/inventory.yaml"
   content = <<-YAML
@@ -145,18 +200,19 @@ cluster:
 control_plane:
 %{ for node in module.openstack-nova.master_nodes ~}
   - name: ${node.name}
-    talos_api_ip: ${node.access_ip_v4}
+    talos_api_ip: ${openstack_networking_floatingip_v2.talos_management[node.name].address}
     internal_ip: ${node.access_ip_v4}
     install_disk: ${local.talos_install_disk}
     cert_sans:
       - ${module.openstack-nova.k8s_api_ip}
+      - ${openstack_networking_floatingip_v2.talos_management[node.name].address}
       - ${node.access_ip_v4}
 %{ endfor ~}
 
 workers:
 %{ for node in module.openstack-nova.worker_nodes ~}
   - name: ${node.name}
-    talos_api_ip: ${node.access_ip_v4}
+    talos_api_ip: ${openstack_networking_floatingip_v2.talos_management[node.name].address}
     internal_ip: ${node.access_ip_v4}
     install_disk: ${local.talos_install_disk}
     labels:
@@ -175,4 +231,6 @@ patch_inputs:
   pod_subnet: ${local.subnet_pods}
   service_subnet: ${local.subnet_services}
 YAML
+
+  depends_on = [openstack_compute_floatingip_associate_v2.talos_management]
 }
