@@ -28,7 +28,7 @@ const (
 	bundledOpenStackCalicoVersion      = "v3.32.0"
 	bundledOpenStackCalicoVersionPlain = "3.32.0"
 	bundledOpenStackCalicoAssetBase    = "assets/calico/v3.32.0"
-	bundledOpenStackCalicoV3CRDs       = "v3_projectcalico_org.yaml"
+	bundledOpenStackCalicoCRDs         = "v1_crd_projectcalico_org.yaml"
 	bundledOpenStackCalicoOperator     = "tigera-operator.yaml"
 	bundledOpenStackCalicoCustomBPFCRs = "custom-resources-bpf.yaml"
 )
@@ -48,7 +48,7 @@ type openStackNetworkPluginSelection struct {
 }
 
 type openStackCalicoAssetPaths struct {
-	V3CRDs          string
+	CRDs            string
 	Operator        string
 	CustomResources string
 }
@@ -128,17 +128,13 @@ func (p *openstackBootstrapProvider) installOpenStackNetworkPlugin(ctx context.C
 }
 
 func (p *openstackBootstrapProvider) installOpenStackCalicoWithBundledManifests(ctx context.Context, cfg *v2.Config, selection openStackNetworkPluginSelection, kubeconfigPath, tmpDir string, env map[string]string) error {
-	if err := p.verifyOpenStackCalicoV3CRDPrerequisites(ctx, selection, kubeconfigPath, tmpDir, env); err != nil {
-		return err
-	}
-
 	paths, err := writeOpenStackCalicoAssets(cfg, tmpDir)
 	if err != nil {
 		return err
 	}
 
-	if _, err := p.runner.Run(ctx, tmpDir, env, "kubectl", kubectlArgs(kubeconfigPath, "apply", "--server-side", "-f", paths.V3CRDs)...); err != nil {
-		return fmt.Errorf("apply bundled Calico %s v3 CRDs: %w", selection.Version, err)
+	if _, err := p.runner.Run(ctx, tmpDir, env, "kubectl", kubectlArgs(kubeconfigPath, "apply", "--server-side", "-f", paths.CRDs)...); err != nil {
+		return fmt.Errorf("apply bundled Calico %s CRDs: %w", selection.Version, err)
 	}
 	if _, err := p.runner.Run(ctx, tmpDir, env, "kubectl", kubectlArgs(kubeconfigPath, "apply", "-f", paths.Operator)...); err != nil {
 		return fmt.Errorf("apply bundled Calico %s Tigera operator: %w", selection.Version, err)
@@ -147,19 +143,6 @@ func (p *openstackBootstrapProvider) installOpenStackCalicoWithBundledManifests(
 		return fmt.Errorf("apply bundled Calico %s eBPF custom resources: %w", selection.Version, err)
 	}
 	return nil
-}
-
-func (p *openstackBootstrapProvider) verifyOpenStackCalicoV3CRDPrerequisites(ctx context.Context, selection openStackNetworkPluginSelection, kubeconfigPath, tmpDir string, env map[string]string) error {
-	resources, err := p.runner.Run(ctx, tmpDir, env, "kubectl", kubectlArgs(kubeconfigPath, "api-resources", "--api-group=admissionregistration.k8s.io", "-o", "name")...)
-	if err != nil {
-		return fmt.Errorf("check Kubernetes API support for MutatingAdmissionPolicy before installing Calico v3 CRDs: %w", err)
-	}
-	for _, resource := range strings.Fields(string(resources)) {
-		if strings.Contains(strings.ToLower(resource), "mutatingadmissionpolicies") {
-			return nil
-		}
-	}
-	return fmt.Errorf("Kubernetes API does not support MutatingAdmissionPolicy required by Calico v3 CRDs for bundled Calico %s", selection.Version)
 }
 
 func (p *openstackBootstrapProvider) installOpenStackNetworkPluginWithHelm(ctx context.Context, cfg *v2.Config, selection openStackNetworkPluginSelection, kubeconfigPath, tmpDir string, env map[string]string) error {
@@ -236,7 +219,7 @@ func (p *openstackBootstrapProvider) waitForOpenStackNetworkPlugin(ctx context.C
 
 func writeOpenStackCalicoAssets(cfg *v2.Config, dir string) (openStackCalicoAssetPaths, error) {
 	podCIDR := strings.TrimSpace(cfg.OpenCenter.Cluster.Kubernetes.SubnetPods)
-	v3CRDsPath, err := writeOpenStackCalicoAsset(dir, bundledOpenStackCalicoV3CRDs, nil)
+	crdsPath, err := writeOpenStackCalicoAsset(dir, bundledOpenStackCalicoCRDs, nil)
 	if err != nil {
 		return openStackCalicoAssetPaths{}, err
 	}
@@ -258,7 +241,7 @@ func writeOpenStackCalicoAssets(cfg *v2.Config, dir string) (openStackCalicoAsse
 	}
 
 	return openStackCalicoAssetPaths{
-		V3CRDs:          v3CRDsPath,
+		CRDs:            crdsPath,
 		Operator:        operatorPath,
 		CustomResources: customResourcesPath,
 	}, nil
@@ -462,8 +445,7 @@ func normalizeOpenStackNetworkPluginInstallMethod(method string) string {
 func openStackNetworkPluginPlanCommands(selection openStackNetworkPluginSelection, kubeconfigPath string) []BootstrapPlanCommand {
 	if selection.Name == "calico" {
 		commands := []BootstrapPlanCommand{
-			commandPlan("kubectl", kubectlArgs(kubeconfigPath, "api-resources", "--api-group=admissionregistration.k8s.io", "-o", "name")...),
-			commandPlan("kubectl", kubectlArgs(kubeconfigPath, "apply", "--server-side", "-f", "<bundled v3_projectcalico_org.yaml>")...),
+			commandPlan("kubectl", kubectlArgs(kubeconfigPath, "apply", "--server-side", "-f", "<bundled v1_crd_projectcalico_org.yaml>")...),
 			commandPlan("kubectl", kubectlArgs(kubeconfigPath, "apply", "-f", "<bundled tigera-operator.yaml>")...),
 			commandPlan("kubectl", kubectlArgs(kubeconfigPath, "apply", "-f", "<patched bundled custom-resources-bpf.yaml>")...),
 		}

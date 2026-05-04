@@ -257,7 +257,7 @@ cat ansible.log
              install_method: helm
    ```
 
-   For OpenStack Calico, the CLI bundles Calico `v3.32.0` native `projectcalico.org/v3` CRDs and eBPF custom resources. A different Calico version fails with a bundled-version error. A cluster API that does not expose `MutatingAdmissionPolicy` fails before the v3 CRDs are applied.
+   For OpenStack Calico, the CLI bundles Calico `v3.32.0` `crd.projectcalico.org/v1` CRDs and eBPF custom resources. A different Calico version fails with a bundled-version error.
 
 ### Node Not Ready
 

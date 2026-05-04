@@ -29,7 +29,7 @@ The Calico version for this design is pinned to `v3.32.0`, matching the current 
 The bundled assets come from Calico `v3.32.0`:
 
 - Tigera on-premises install documentation: https://docs.tigera.io/calico/latest/getting-started/kubernetes/self-managed-onprem/onpremises
-- v3 CRDs: https://raw.githubusercontent.com/projectcalico/calico/v3.32.0/manifests/v3_projectcalico_org.yaml
+- v1 CRDs: https://raw.githubusercontent.com/projectcalico/calico/v3.32.0/manifests/v1_crd_projectcalico_org.yaml
 - Tigera operator: https://raw.githubusercontent.com/projectcalico/calico/v3.32.0/manifests/tigera-operator.yaml
 - eBPF custom resources: https://raw.githubusercontent.com/projectcalico/calico/v3.32.0/manifests/custom-resources-bpf.yaml
 
@@ -52,7 +52,7 @@ The Calico installer should be isolated behind the same network-plugin installer
 
 Add a Calico asset package under `internal/cluster`, for example:
 
-- `internal/cluster/assets/calico/v3.32.0/v3_projectcalico_org.yaml`
+- `internal/cluster/assets/calico/v3.32.0/v1_crd_projectcalico_org.yaml`
 - `internal/cluster/assets/calico/v3.32.0/tigera-operator.yaml`
 - `internal/cluster/assets/calico/v3.32.0/custom-resources-bpf.yaml`
 
@@ -65,16 +65,15 @@ The repository should include a small checksum or verification test so future ch
 The OpenStack Calico install sequence should be:
 
 1. Validate that the resolved Calico version is empty, `3.32.0`, or `v3.32.0`.
-2. Verify that the Kubernetes API supports `MutatingAdmissionPolicy`, which Tigera requires for native `projectcalico.org/v3` CRDs.
-3. Write the embedded manifests to a temp directory.
-4. Patch the eBPF custom resources manifest with OpenCenter cluster settings.
-5. Apply `v3_projectcalico_org.yaml`.
-6. Apply `tigera-operator.yaml`.
-7. Apply the patched `custom-resources-bpf.yaml`.
-8. Wait for the Tigera operator deployment.
-9. Wait for Calico health using `tigerastatus` and Calico pod readiness.
+2. Write the embedded manifests to a temp directory.
+3. Patch the eBPF custom resources manifest with OpenCenter cluster settings.
+4. Apply `v1_crd_projectcalico_org.yaml`.
+5. Apply `tigera-operator.yaml`.
+6. Apply the patched `custom-resources-bpf.yaml`.
+7. Wait for the Tigera operator deployment.
+8. Wait for Calico health using `tigerastatus` and Calico pod readiness.
 
-The v3 CRD manifest follows Tigera's native `projectcalico.org/v3` CRD path. The implementation must not also apply `v1_crd_projectcalico_org.yaml`; Tigera documents these as mutually exclusive CRD paths.
+The v1 CRD manifest follows Tigera's `crd.projectcalico.org/v1` CRD path, which does not require `MutatingAdmissionPolicy` support in the Kubernetes API.
 
 `custom-resources-bpf.yaml` already enables:
 
@@ -129,7 +128,6 @@ The Calico installer should fail fast when:
 - the kubeconfig path is missing
 - `kubectl` is not available
 - Calico version is not the bundled version
-- the Kubernetes API does not support `MutatingAdmissionPolicy`
 - embedded assets cannot be written
 - manifest patching fails
 - any `kubectl apply` command fails
@@ -144,7 +142,7 @@ Add or update tests for:
 - Calico default version resolves to `3.32.0`.
 - `v3.32.0` and `3.32.0` are accepted.
 - another Calico version fails with a bundled-version error.
-- the fake runner sees `kubectl apply` for `v3_projectcalico_org.yaml`, operator, and patched eBPF custom resources in order.
+- the fake runner sees `kubectl apply` for `v1_crd_projectcalico_org.yaml`, operator, and patched eBPF custom resources in order.
 - Helm commands are no longer emitted for Calico.
 - Cilium and Kube-OVN command plans remain unchanged.
 - dry-run for `--step openstack-install-network-plugin` shows the bundled Calico eBPF plan.

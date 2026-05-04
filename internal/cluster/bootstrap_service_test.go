@@ -487,8 +487,7 @@ func TestBootstrapService_DryRunOpenStackStepFiltersNetworkPluginPlan(t *testing
 	networkPluginPlan := renderPlanCommands(result.Plan.Steps[0].Commands)
 	for _, want := range []string{
 		"kubectl --kubeconfig",
-		"api-resources --api-group=admissionregistration.k8s.io -o name",
-		"<bundled v3_projectcalico_org.yaml>",
+		"<bundled v1_crd_projectcalico_org.yaml>",
 		"<patched bundled custom-resources-bpf.yaml>",
 		"tigerastatus/calico",
 	} {

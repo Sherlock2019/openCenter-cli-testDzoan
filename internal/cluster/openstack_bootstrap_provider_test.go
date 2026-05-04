@@ -161,9 +161,6 @@ func TestBootstrapServiceOpenStackProvisionInfrastructureHonorsSavedState(t *tes
 
 	fakeRunner := &fakeLifecycleRunner{
 		onRun: func(dir string, env map[string]string, name string, args ...string) ([]byte, error) {
-			if name == "kubectl" && strings.Contains(strings.Join(args, " "), "api-resources --api-group=admissionregistration.k8s.io -o name") {
-				return []byte("mutatingadmissionpolicies\nvalidatingadmissionpolicies\n"), nil
-			}
 			if len(args) > 0 && args[0] == "apply" {
 				sourceKubeconfig := filepath.Join(dir, "kubeconfig.yaml")
 				if err := os.WriteFile(sourceKubeconfig, []byte("apiVersion: v1\n"), 0o600); err != nil {
@@ -246,9 +243,6 @@ func TestOpenStackNetworkPluginInstallCalicoUsesBundledEBPFManifests(t *testing.
 	fakeRunner := &fakeLifecycleRunner{
 		onRun: func(dir string, env map[string]string, name string, args ...string) ([]byte, error) {
 			joined := strings.Join(args, " ")
-			if name == "kubectl" && strings.Contains(joined, "api-resources --api-group=admissionregistration.k8s.io -o name") {
-				return []byte("mutatingadmissionpolicies\nvalidatingadmissionpolicies\n"), nil
-			}
 			if name == "kubectl" && strings.Contains(joined, "apply") {
 				for i, arg := range args {
 					if arg == "-f" && i+1 < len(args) {
@@ -274,12 +268,11 @@ func TestOpenStackNetworkPluginInstallCalicoUsesBundledEBPFManifests(t *testing.
 	}
 
 	assertNoRecordedCommandName(t, fakeRunner.calls, "helm")
-	assertRecordedCommandContains(t, fakeRunner.calls, "kubectl", "--kubeconfig "+kubeconfigPath+" api-resources --api-group=admissionregistration.k8s.io -o name")
 	assertRecordedCommandContains(t, fakeRunner.calls, "kubectl", "--kubeconfig "+kubeconfigPath+" apply --server-side -f")
 	if len(applied) < 3 {
 		t.Fatalf("expected at least three applied manifests, got %d:\n%s", len(applied), renderRecordedCommands(fakeRunner.calls))
 	}
-	wantApplied := []string{"v3_projectcalico_org.yaml", "tigera-operator.yaml", "custom-resources-bpf.yaml"}
+	wantApplied := []string{"v1_crd_projectcalico_org.yaml", "tigera-operator.yaml", "custom-resources-bpf.yaml"}
 	for i, want := range wantApplied {
 		if applied[i].base != want {
 			t.Fatalf("applied manifest %d = %q, want %q", i, applied[i].base, want)
@@ -296,29 +289,6 @@ func TestOpenStackNetworkPluginInstallCalicoUsesBundledEBPFManifests(t *testing.
 	assertRecordedCommandContains(t, fakeRunner.calls, "kubectl", "--kubeconfig "+kubeconfigPath+" wait --for=create tigerastatus/calico --timeout=5m")
 	assertRecordedCommandContains(t, fakeRunner.calls, "kubectl", "--kubeconfig "+kubeconfigPath+" wait --for=condition=Available tigerastatus/calico --timeout=10m")
 	assertRecordedCommandContains(t, fakeRunner.calls, "kubectl", "--kubeconfig "+kubeconfigPath+" -n calico-system wait --for=condition=Ready pods --all --timeout=10m")
-}
-
-func TestOpenStackNetworkPluginInstallCalicoRejectsMissingMutatingAdmissionPolicy(t *testing.T) {
-	cfg, clusterDir, kubeconfigPath := openStackNetworkPluginTestConfig(t, "calico-missing-map")
-	fakeRunner := &fakeLifecycleRunner{
-		onRun: func(dir string, env map[string]string, name string, args ...string) ([]byte, error) {
-			if name == "kubectl" && strings.Contains(strings.Join(args, " "), "api-resources --api-group=admissionregistration.k8s.io -o name") {
-				return []byte("validatingadmissionpolicies\n"), nil
-			}
-			return nil, nil
-		},
-	}
-	provider := &openstackBootstrapProvider{runner: fakeRunner}
-
-	step := findBootstrapStep(t, provider, cfg, clusterDir, kubeconfigPath, "openstack-install-network-plugin")
-	err := step.Run(context.Background())
-	if err == nil {
-		t.Fatal("install step should fail when MutatingAdmissionPolicy is not available")
-	}
-	if !strings.Contains(err.Error(), "MutatingAdmissionPolicy") || !strings.Contains(err.Error(), "Calico v3 CRDs") {
-		t.Fatalf("expected targeted MutatingAdmissionPolicy error, got: %v", err)
-	}
-	assertNoRecordedCommandContains(t, fakeRunner.calls, "kubectl", "apply")
 }
 
 func TestOpenStackCalicoSelectionRequiresBundledVersion(t *testing.T) {
@@ -351,8 +321,8 @@ func TestOpenStackCalicoBundledAssetChecksums(t *testing.T) {
 		wantSHA256 string
 	}{
 		{
-			name:       "v3_projectcalico_org.yaml",
-			wantSHA256: "ca5b8ca6f2e6c681da061d6e9a80f72981e4adc1bfe57143b6156288a5a188d0",
+			name:       "v1_crd_projectcalico_org.yaml",
+			wantSHA256: "d9fe9189f1003ea80d93fb4776bfbadfffa42a470909cd2494a0003197cb1a9a",
 		},
 		{
 			name:       "tigera-operator.yaml",
