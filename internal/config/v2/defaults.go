@@ -366,7 +366,7 @@ func ApplyTalosDeploymentDefaults(cfg *Config) {
 			PodSubnet:       podSubnet,
 			ServiceSubnet:   serviceSubnet,
 			TalosAPIPort:    50000,
-			ManagementCIDRs: []string{},
+			ManagementCIDRs: []string{"0.0.0.0/0"},
 		},
 		Patches: TalosPatchesConfig{
 			Static: []string{

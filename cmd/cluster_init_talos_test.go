@@ -64,8 +64,11 @@ func TestClusterInitTalosDeploymentOpenStack(t *testing.T) {
 	if got := cfg.OpenCenter.Cluster.Kubernetes.APIPort; got != 443 {
 		t.Fatalf("kubernetes api port = %d, want 443", got)
 	}
-	if got := len(cfg.Deployment.Talos.Network.ManagementCIDRs); got != 0 {
-		t.Fatalf("management cidrs len = %d, want 0", got)
+	if got := len(cfg.Deployment.Talos.Network.ManagementCIDRs); got != 1 {
+		t.Fatalf("management cidrs len = %d, want 1", got)
+	}
+	if cfg.Deployment.Talos.Network.ManagementCIDRs[0] != "0.0.0.0/0" {
+		t.Fatalf("management cidrs[0] = %q, want \"0.0.0.0/0\"", cfg.Deployment.Talos.Network.ManagementCIDRs[0])
 	}
 	if cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico != nil && cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Enabled {
 		t.Fatal("expected Calico to be disabled for Talos defaults")
@@ -187,8 +190,8 @@ func loadTalosInitConfigForTest(t *testing.T, configPath string) *v2.Config {
 	if err != nil {
 		t.Fatalf("read config %s: %v", configPath, err)
 	}
-	if !strings.Contains(string(data), "management_cidrs: []") {
-		t.Fatalf("generated Talos config must include management_cidrs placeholder:\n%s", string(data))
+	if !strings.Contains(string(data), "management_cidrs:") {
+		t.Fatalf("generated Talos config must include management_cidrs field:\n%s", string(data))
 	}
 	var cfg v2.Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {

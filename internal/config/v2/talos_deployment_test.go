@@ -28,8 +28,8 @@ func TestApplyTalosDeploymentDefaults(t *testing.T) {
 	if cfg.Deployment.Talos.Network.TalosAPIPort != 50000 {
 		t.Fatalf("talos api port = %d, want 50000", cfg.Deployment.Talos.Network.TalosAPIPort)
 	}
-	if len(cfg.Deployment.Talos.Network.ManagementCIDRs) != 0 {
-		t.Fatalf("management cidrs = %v, want empty list", cfg.Deployment.Talos.Network.ManagementCIDRs)
+	if len(cfg.Deployment.Talos.Network.ManagementCIDRs) != 1 || cfg.Deployment.Talos.Network.ManagementCIDRs[0] != "0.0.0.0/0" {
+		t.Fatalf("management cidrs = %v, want [\"0.0.0.0/0\"]", cfg.Deployment.Talos.Network.ManagementCIDRs)
 	}
 	if cfg.OpenCenter.Cluster.Kubernetes.APIPort != 443 {
 		t.Fatalf("kubernetes api port = %d, want 443", cfg.OpenCenter.Cluster.Kubernetes.APIPort)
