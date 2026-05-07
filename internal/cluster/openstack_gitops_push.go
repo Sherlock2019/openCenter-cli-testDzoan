@@ -3,6 +3,7 @@ package cluster
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strings"
 
 	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
@@ -40,7 +41,7 @@ func (p *openstackBootstrapProvider) buildGitOpsPushStep(
 			Environment: planEnv,
 			Reads:       []string{gitDir},
 			Writes:      []string{"Remote git repository"},
-			Notes:       []string{"Plan only; git remote access and authentication were not checked."},
+			Notes:       []string{"Plan only; git remote access and authentication were not checked. Uses gitops token for push."},
 		},
 		Run: func(ctx context.Context) error {
 			return p.runGitOpsPush(ctx, cfg, gitDir, gitURL)
@@ -49,7 +50,8 @@ func (p *openstackBootstrapProvider) buildGitOpsPushStep(
 }
 
 // runGitOpsPush ensures the origin remote is correctly configured, pulls with
-// rebase, and pushes the local GitOps repository to the remote.
+// rebase, and pushes the local GitOps repository to the remote. Authentication
+// uses the git token from the gitops configuration section.
 func (p *openstackBootstrapProvider) runGitOpsPush(ctx context.Context, cfg *v2.Config, gitDir, gitURL string) error {
 	if strings.TrimSpace(gitDir) == "" {
 		return fmt.Errorf("gitops.git_dir must be configured for gitops push")
@@ -58,14 +60,30 @@ func (p *openstackBootstrapProvider) runGitOpsPush(ctx context.Context, cfg *v2.
 		return fmt.Errorf("gitops.repository.url must be configured for gitops push")
 	}
 
-	env, err := buildGitOpsPushEnvironment(cfg)
+	// Resolve the git token for authenticated push
+	token, err := resolveFluxToken(cfg)
 	if err != nil {
+		return fmt.Errorf("resolving git token for push: %w", err)
+	}
+
+	// Build the authenticated URL by embedding the token
+	authURL, err := buildAuthenticatedGitURL(gitURL, token)
+	if err != nil {
+		return fmt.Errorf("building authenticated git URL: %w", err)
+	}
+
+	env := buildGitOpsPushEnvironment()
+
+	// Check if origin remote already exists (compare against the plain URL,
+	// not the authenticated one, to avoid leaking tokens in error messages)
+	if err := p.ensureOriginRemote(ctx, gitDir, env, gitURL); err != nil {
 		return err
 	}
 
-	// Check if origin remote already exists
-	if err := p.ensureOriginRemote(ctx, gitDir, env, gitURL); err != nil {
-		return err
+	// Set the push URL to the authenticated version so git push uses the token.
+	// This avoids storing the token in the remote config permanently.
+	if _, err := p.runner.Run(ctx, gitDir, env, "git", "remote", "set-url", "--push", "origin", authURL); err != nil {
+		return fmt.Errorf("set authenticated push URL: %w", err)
 	}
 
 	// Stash any unstaged changes so pull --rebase can proceed
@@ -92,10 +110,13 @@ func (p *openstackBootstrapProvider) runGitOpsPush(ctx context.Context, cfg *v2.
 	// Commit only if there are staged changes (--allow-empty is not used)
 	_, _ = p.runner.Run(ctx, gitDir, env, "git", "commit", "-m", "chore: bootstrap cluster gitops state")
 
-	// Push to remote
+	// Push to remote using the authenticated push URL
 	if _, err := p.runner.Run(ctx, gitDir, env, "git", "push", "-u", "origin", "main"); err != nil {
 		return fmt.Errorf("git push to origin: %w", err)
 	}
+
+	// Reset the push URL back to the plain URL so the token is not persisted
+	_, _ = p.runner.Run(ctx, gitDir, env, "git", "remote", "set-url", "--push", "origin", gitURL)
 
 	fmt.Println("\n✓ GitOps repository pushed to remote")
 	fmt.Println("\nTo check FluxCD reconciliation status, run:")
@@ -119,27 +140,73 @@ func (p *openstackBootstrapProvider) ensureOriginRemote(ctx context.Context, git
 		return nil
 	}
 
-	// Origin exists — verify it matches the configured URL
+	// Origin exists — verify it matches the configured URL.
+	// Strip any embedded credentials from the current URL before comparing
+	// so that a previously-authenticated URL still matches.
 	currentURL := strings.TrimSpace(string(output))
-	if currentURL != strings.TrimSpace(expectedURL) {
+	if stripCredentialsFromURL(currentURL) != stripCredentialsFromURL(strings.TrimSpace(expectedURL)) {
 		return fmt.Errorf("git remote origin is %q but configuration expects %q; update the remote or fix gitops.repository.url", currentURL, expectedURL)
 	}
 
 	return nil
 }
 
-// buildGitOpsPushEnvironment constructs the environment variables needed for
-// git operations. It includes token-based auth when configured.
-func buildGitOpsPushEnvironment(cfg *v2.Config) (map[string]string, error) {
-	env := make(map[string]string)
+// buildAuthenticatedGitURL embeds the token into an HTTPS git URL for push.
+// For SSH URLs, it converts to HTTPS with the token. For HTTPS URLs, it
+// inserts the token as the username.
+func buildAuthenticatedGitURL(gitURL, token string) (string, error) {
+	gitURL = strings.TrimSpace(gitURL)
 
-	// Pass through any configured git credentials
-	if cfg.OpenCenter.GitOps.Auth.Token != nil {
-		tokenFile := strings.TrimSpace(cfg.OpenCenter.GitOps.Auth.Token.TokenFile)
-		if tokenFile != "" {
-			env["GIT_TOKEN_FILE"] = tokenFile
+	// Handle SSH format: git@host:owner/repo.git or ssh://git@host/owner/repo.git
+	if strings.HasPrefix(gitURL, "git@") {
+		// Convert git@host:owner/repo.git → https://token@host/owner/repo.git
+		parts := strings.SplitN(gitURL, ":", 2)
+		if len(parts) != 2 {
+			return "", fmt.Errorf("invalid SSH URL format: %s", gitURL)
 		}
+		host := strings.TrimPrefix(parts[0], "git@")
+		path := parts[1]
+		return fmt.Sprintf("https://%s@%s/%s", token, host, path), nil
 	}
 
-	return env, nil
+	if strings.HasPrefix(gitURL, "ssh://") {
+		// Convert ssh://git@host/owner/repo.git → https://token@host/owner/repo.git
+		parsed, err := url.Parse(gitURL)
+		if err != nil {
+			return "", fmt.Errorf("parsing SSH URL %s: %w", gitURL, err)
+		}
+		return fmt.Sprintf("https://%s@%s%s", token, parsed.Host, parsed.Path), nil
+	}
+
+	// HTTPS URL — insert token as userinfo
+	parsed, err := url.Parse(gitURL)
+	if err != nil {
+		return "", fmt.Errorf("parsing URL %s: %w", gitURL, err)
+	}
+	parsed.User = url.User(token)
+	return parsed.String(), nil
+}
+
+// stripCredentialsFromURL removes userinfo (username/password/token) from a URL
+// for safe comparison.
+func stripCredentialsFromURL(rawURL string) string {
+	// Handle SSH scp-style URLs (git@host:path)
+	if strings.HasPrefix(rawURL, "git@") {
+		return rawURL
+	}
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	parsed.User = nil
+	return parsed.String()
+}
+
+// buildGitOpsPushEnvironment constructs the environment variables for git
+// operations. Token auth is handled via the push URL, not env vars.
+func buildGitOpsPushEnvironment() map[string]string {
+	return map[string]string{
+		// Prevent git from prompting for credentials interactively
+		"GIT_TERMINAL_PROMPT": "0",
+	}
 }
