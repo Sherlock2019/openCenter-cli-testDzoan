@@ -320,6 +320,10 @@ type GitOpsTokenAuth struct {
 	// Owner is the repository owner (username or organization).
 	// If empty, extracted from repository URL.
 	Owner string `yaml:"owner,omitempty" json:"owner,omitempty"`
+
+	// Organization is the git organization used as the username in
+	// authenticated HTTPS URLs (e.g., https://<organization>:<token>@host/path).
+	Organization string `yaml:"organization,omitempty" json:"organization,omitempty"`
 }
 
 type GitOpsFluxConfig struct {

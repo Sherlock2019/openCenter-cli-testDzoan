@@ -66,8 +66,17 @@ func (p *openstackBootstrapProvider) runGitOpsPush(ctx context.Context, cfg *v2.
 		return fmt.Errorf("resolving git token for push: %w", err)
 	}
 
-	// Build the authenticated URL by embedding the token
-	authURL, err := buildAuthenticatedGitURL(gitURL, token)
+	// Resolve the git organization for the URL username
+	gitOrg := ""
+	if cfg.OpenCenter.GitOps.Auth.Token != nil {
+		gitOrg = strings.TrimSpace(cfg.OpenCenter.GitOps.Auth.Token.Organization)
+	}
+	if gitOrg == "" {
+		return fmt.Errorf("gitops.auth.token.organization must be configured for gitops push")
+	}
+
+	// Build the authenticated URL: https://<organization>:<token>@<host>/<path>
+	authURL, err := buildAuthenticatedGitURL(gitURL, gitOrg, token)
 	if err != nil {
 		return fmt.Errorf("building authenticated git URL: %w", err)
 	}
@@ -151,39 +160,38 @@ func (p *openstackBootstrapProvider) ensureOriginRemote(ctx context.Context, git
 	return nil
 }
 
-// buildAuthenticatedGitURL embeds the token into an HTTPS git URL for push.
-// For SSH URLs, it converts to HTTPS with the token. For HTTPS URLs, it
-// inserts the token as the username.
-func buildAuthenticatedGitURL(gitURL, token string) (string, error) {
+// buildAuthenticatedGitURL constructs an HTTPS URL with credentials in the
+// format https://<organization>:<token>@<host>/<path>.
+// For SSH URLs, it converts to HTTPS with the embedded credentials.
+func buildAuthenticatedGitURL(gitURL, organization, token string) (string, error) {
 	gitURL = strings.TrimSpace(gitURL)
 
-	// Handle SSH format: git@host:owner/repo.git or ssh://git@host/owner/repo.git
+	// Handle SSH format: git@host:owner/repo.git
 	if strings.HasPrefix(gitURL, "git@") {
-		// Convert git@host:owner/repo.git → https://token@host/owner/repo.git
 		parts := strings.SplitN(gitURL, ":", 2)
 		if len(parts) != 2 {
 			return "", fmt.Errorf("invalid SSH URL format: %s", gitURL)
 		}
 		host := strings.TrimPrefix(parts[0], "git@")
 		path := parts[1]
-		return fmt.Sprintf("https://%s@%s/%s", token, host, path), nil
+		return fmt.Sprintf("https://%s:%s@%s/%s", organization, token, host, path), nil
 	}
 
 	if strings.HasPrefix(gitURL, "ssh://") {
-		// Convert ssh://git@host/owner/repo.git → https://token@host/owner/repo.git
+		// Convert ssh://git@host/owner/repo.git → https://org:token@host/owner/repo.git
 		parsed, err := url.Parse(gitURL)
 		if err != nil {
 			return "", fmt.Errorf("parsing SSH URL %s: %w", gitURL, err)
 		}
-		return fmt.Sprintf("https://%s@%s%s", token, parsed.Host, parsed.Path), nil
+		return fmt.Sprintf("https://%s:%s@%s%s", organization, token, parsed.Host, parsed.Path), nil
 	}
 
-	// HTTPS URL — insert token as userinfo
+	// HTTPS URL — set userinfo to organization:token
 	parsed, err := url.Parse(gitURL)
 	if err != nil {
 		return "", fmt.Errorf("parsing URL %s: %w", gitURL, err)
 	}
-	parsed.User = url.User(token)
+	parsed.User = url.UserPassword(organization, token)
 	return parsed.String(), nil
 }
 

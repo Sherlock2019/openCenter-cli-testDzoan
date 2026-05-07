@@ -970,6 +970,9 @@
                 "token": {
                   "additionalProperties": false,
                   "properties": {
+                    "organization": {
+                      "type": "string"
+                    },
                     "owner": {
                       "type": "string"
                     },
