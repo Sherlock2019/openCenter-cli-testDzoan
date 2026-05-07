@@ -151,16 +151,12 @@ func resolveOpenStackCalicoValuesPath(cfg *v2.Config) (string, error) {
 	if gitDir == "" {
 		return "", fmt.Errorf("gitops.git_dir must be configured for Calico Helm install")
 	}
-	organization := cfg.Organization()
-	if organization == "" {
-		return "", fmt.Errorf("meta.organization must be configured for Calico Helm install")
-	}
 	clusterName := cfg.ClusterName()
 	if clusterName == "" {
 		return "", fmt.Errorf("cluster name must be set for Calico Helm install")
 	}
 
-	return filepath.Join(gitDir, organization, "applications", "overlays", clusterName, "services", "calico", "helm-values", "override_values.yaml"), nil
+	return filepath.Join(gitDir, "applications", "overlays", clusterName, "services", "calico", "helm-values", "override_values.yaml"), nil
 }
 
 func (p *openstackBootstrapProvider) installOpenStackNetworkPluginWithHelm(ctx context.Context, cfg *v2.Config, selection openStackNetworkPluginSelection, kubeconfigPath, tmpDir string, env map[string]string) error {

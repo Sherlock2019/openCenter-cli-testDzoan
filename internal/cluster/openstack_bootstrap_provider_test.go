@@ -192,7 +192,7 @@ func TestBootstrapServiceOpenStackProvisionInfrastructureHonorsSavedState(t *tes
 	}
 
 	// Create the Calico Helm override values file expected by the Helm install step
-	calicoValuesDir := filepath.Join(cfg.OpenCenter.GitOps.Repository.LocalDir, organization, "applications", "overlays", clusterName, "services", "calico", "helm-values")
+	calicoValuesDir := filepath.Join(cfg.OpenCenter.GitOps.Repository.LocalDir, "applications", "overlays", clusterName, "services", "calico", "helm-values")
 	if err := os.MkdirAll(calicoValuesDir, 0o755); err != nil {
 		t.Fatalf("mkdir calico values dir: %v", err)
 	}
@@ -243,9 +243,8 @@ func TestOpenStackNetworkPluginInstallCalicoUsesHelmChart(t *testing.T) {
 	cfg, _, kubeconfigPath := openStackNetworkPluginTestConfig(t, "calico-demo")
 
 	// Create the override values file at the expected path
-	organization := cfg.Organization()
 	clusterName := cfg.ClusterName()
-	valuesDir := filepath.Join(cfg.GitDir(), organization, "applications", "overlays", clusterName, "services", "calico", "helm-values")
+	valuesDir := filepath.Join(cfg.GitDir(), "applications", "overlays", clusterName, "services", "calico", "helm-values")
 	if err := os.MkdirAll(valuesDir, 0o755); err != nil {
 		t.Fatalf("mkdir values dir: %v", err)
 	}
