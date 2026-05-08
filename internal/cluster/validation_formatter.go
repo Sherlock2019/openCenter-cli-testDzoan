@@ -559,15 +559,17 @@ func (s *ValidateService) FormatResultGrouped(result *ValidationResult, provider
 	out.WriteString(fmt.Sprintf("\n%d error(s), %d warning(s)\n", len(parsed), len(result.Warnings)))
 
 	// Grouped errors
-	out.WriteString("\nErrors:\n")
-	for _, section := range sections {
-		errs := grouped[section]
-		out.WriteString(fmt.Sprintf("\n  %s: (%d)\n", section, len(errs)))
-		for _, e := range errs {
-			if e.YAMLPath != "" {
-				out.WriteString(fmt.Sprintf("    ✗ %s — %s\n", e.YAMLPath, e.Message))
-			} else {
-				out.WriteString(fmt.Sprintf("    ✗ %s\n", e.Message))
+	if len(parsed) > 0 {
+		out.WriteString("\nErrors:\n")
+		for _, section := range sections {
+			errs := grouped[section]
+			out.WriteString(fmt.Sprintf("\n  %s: (%d)\n", section, len(errs)))
+			for _, e := range errs {
+				if e.YAMLPath != "" {
+					out.WriteString(fmt.Sprintf("    ✗ %s — %s\n", e.YAMLPath, e.Message))
+				} else {
+					out.WriteString(fmt.Sprintf("    ✗ %s\n", e.Message))
+				}
 			}
 		}
 	}

@@ -54,6 +54,9 @@ func (s *ValidateService) failServicesWithGitOpsFindings(ctx context.Context, cf
 		"invalid-sops-metadata":         true,
 	}
 
+	// Track which services already had an issue added to avoid duplicates.
+	serviceIssued := make(map[string]bool)
+
 	// Map findings to services by path.
 	for i := range result.ServiceReports {
 		report := &result.ServiceReports[i]
@@ -76,8 +79,26 @@ func (s *ValidateService) failServicesWithGitOpsFindings(ctx context.Context, cf
 						report.Message = "secrets missing encryption"
 					}
 				}
-				result.Valid = false
-				result.ConfigValid = false
+				// Add a ValidationIssue so the error appears in the detailed output.
+				if !serviceIssued[serviceName] {
+					serviceIssued[serviceName] = true
+					var message, suggestion string
+					switch {
+					case strings.HasPrefix(f.Rule, "stub-secret"):
+						message = fmt.Sprintf("service %q has stub secret values (CHANGEME/PLACEHOLDER) in %s", serviceName, f.Path)
+						suggestion = "Replace stub secret values with real credentials before deployment."
+					default:
+						message = fmt.Sprintf("service %q has unencrypted secrets in %s", serviceName, f.Path)
+						suggestion = "Run 'opencenter secrets sync' to encrypt service secrets."
+					}
+					result.addIssue(v2.ValidationIssue{
+						Severity:   v2.SeverityError,
+						Category:   v2.CategoryServices,
+						Path:       fmt.Sprintf("services.%s", serviceName),
+						Message:    message,
+						Suggestion: suggestion,
+					})
+				}
 				break
 			}
 		}
