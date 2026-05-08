@@ -52,6 +52,25 @@ var rawSecretPatterns = []struct {
 	},
 }
 
+// stubSecretPatterns detects placeholder/stub secret values that must be
+// replaced before deployment. These are sentinel values left by templates.
+var stubSecretPatterns = []struct {
+	rule    string
+	message string
+	re      *regexp.Regexp
+}{
+	{
+		rule:    "stub-secret-changeme",
+		message: "contains stub secret value 'CHANGEME' that must be replaced",
+		re:      regexp.MustCompile(`(?i)\bCHANGEME\b`),
+	},
+	{
+		rule:    "stub-secret-placeholder",
+		message: "contains placeholder secret value that must be replaced",
+		re:      regexp.MustCompile(`PLACEHOLDER-[A-Z0-9-]+`),
+	},
+}
+
 // ScanGitOpsSecrets scans a GitOps worktree for committed secret material.
 func ScanGitOpsSecrets(root string) ([]SecretScanFinding, error) {
 	return ScanGitOpsSecretsWithOptions(context.Background(), SecretScanOptions{Root: root})
@@ -152,6 +171,7 @@ func scanGitOpsFile(path string, data []byte) []SecretScanFinding {
 
 	if isYAMLPath(path) {
 		findings = append(findings, scanYAMLSecrets(path, data)...)
+		findings = append(findings, scanYAMLStubSecrets(path, data)...)
 	}
 	return findings
 }
@@ -271,4 +291,95 @@ func asYAMLString(value any) string {
 
 func isSOPSEncryptedValue(value string) bool {
 	return strings.HasPrefix(strings.TrimSpace(value), "ENC[")
+}
+
+// scanYAMLStubSecrets detects placeholder/stub secret values in YAML files.
+// These are sentinel values (CHANGEME, PLACEHOLDER-*) left by templates that
+// must be replaced with real secrets before deployment.
+func scanYAMLStubSecrets(path string, data []byte) []SecretScanFinding {
+	var findings []SecretScanFinding
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	for {
+		var doc map[string]any
+		if err := decoder.Decode(&doc); err != nil {
+			if err == io.EOF {
+				break
+			}
+			break
+		}
+		if len(doc) == 0 {
+			continue
+		}
+
+		kind, _ := doc["kind"].(string)
+
+		// For Kubernetes Secret manifests, check data/stringData fields.
+		if kind == "Secret" {
+			for _, field := range []string{"data", "stringData"} {
+				for key, value := range yamlStringMap(doc[field]) {
+					for _, pattern := range stubSecretPatterns {
+						if pattern.re.MatchString(value) {
+							findings = append(findings, SecretScanFinding{
+								Path:    path,
+								Rule:    pattern.rule,
+								Message: fmt.Sprintf("Secret %s.%s %s", field, key, pattern.message),
+							})
+						}
+					}
+				}
+			}
+			continue
+		}
+
+		// For non-Secret YAML (helm values, configs), scan all string values
+		// recursively for stub patterns.
+		findings = append(findings, scanMapForStubs(path, "", doc)...)
+	}
+	return findings
+}
+
+// scanMapForStubs recursively walks a YAML map looking for stub secret values.
+// It only reports findings for keys that look secret-related to avoid false positives.
+func scanMapForStubs(path, prefix string, m map[string]any) []SecretScanFinding {
+	var findings []SecretScanFinding
+	for key, value := range m {
+		fullKey := key
+		if prefix != "" {
+			fullKey = prefix + "." + key
+		}
+		switch v := value.(type) {
+		case string:
+			if !isSecretRelatedKey(key) {
+				continue
+			}
+			for _, pattern := range stubSecretPatterns {
+				if pattern.re.MatchString(v) {
+					findings = append(findings, SecretScanFinding{
+						Path:    path,
+						Rule:    pattern.rule,
+						Message: fmt.Sprintf("field %q %s", fullKey, pattern.message),
+					})
+				}
+			}
+		case map[string]any:
+			findings = append(findings, scanMapForStubs(path, fullKey, v)...)
+		}
+	}
+	return findings
+}
+
+// isSecretRelatedKey returns true if the key name suggests it holds a secret value.
+func isSecretRelatedKey(key string) bool {
+	lower := strings.ToLower(key)
+	secretIndicators := []string{
+		"password", "secret", "token", "key", "credential",
+		"access_key", "secret_key", "api_key", "apikey",
+		"client_secret", "client_id",
+	}
+	for _, indicator := range secretIndicators {
+		if strings.Contains(lower, indicator) {
+			return true
+		}
+	}
+	return false
 }

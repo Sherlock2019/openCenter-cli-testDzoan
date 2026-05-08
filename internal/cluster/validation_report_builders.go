@@ -17,9 +17,71 @@ import (
 func (s *ValidateService) populateOperatorReport(ctx context.Context, cfg *v2.Config, result *ValidationResult) {
 	result.ServiceReports = buildServiceReports(cfg, result.Issues)
 	result.GitOpsReport = s.buildGitOpsReport(ctx, cfg, result.ValidationMode)
+	s.failServicesWithGitOpsFindings(ctx, cfg, result)
 	result.Missing = buildMissing(result.Issues, result.GitOpsReport, result.ServiceReports)
 	result.ActionItems = buildActionItems(result.Suggestions, result.GitOpsReport)
 	result.CheckSummary = buildCheckSummary(result)
+}
+
+// failServicesWithGitOpsFindings scans the local GitOps directory for stub secrets
+// and unencrypted files, then marks the associated services as failed.
+func (s *ValidateService) failServicesWithGitOpsFindings(ctx context.Context, cfg *v2.Config, result *ValidationResult) {
+	if cfg == nil {
+		return
+	}
+	localPath := cfg.GitDir()
+	if localPath == "" {
+		return
+	}
+	if _, err := os.Stat(localPath); err != nil {
+		return
+	}
+
+	findings, err := gitops.ScanGitOpsSecretsWithOptions(ctx, gitops.SecretScanOptions{
+		Root:   localPath,
+		Staged: false,
+	})
+	if err != nil || len(findings) == 0 {
+		return
+	}
+
+	// Filter to only stub secret and encryption findings.
+	relevantRules := map[string]bool{
+		"stub-secret-changeme":          true,
+		"stub-secret-placeholder":       true,
+		"unencrypted-kubernetes-secret": true,
+		"plaintext-secret-field":        true,
+		"invalid-sops-metadata":         true,
+	}
+
+	// Map findings to services by path.
+	for i := range result.ServiceReports {
+		report := &result.ServiceReports[i]
+		serviceName := report.Name
+		serviceKey := strings.ReplaceAll(serviceName, "-", "_")
+
+		for _, f := range findings {
+			if !relevantRules[f.Rule] {
+				continue
+			}
+			pathLower := strings.ToLower(f.Path)
+			// Match if the file path contains the service name (with - or _).
+			if strings.Contains(pathLower, strings.ToLower(serviceName)) || strings.Contains(pathLower, serviceKey) {
+				report.Status = CheckStatusFail
+				if report.Message == "" {
+					switch {
+					case strings.HasPrefix(f.Rule, "stub-secret"):
+						report.Message = "stub secrets must be replaced"
+					default:
+						report.Message = "secrets missing encryption"
+					}
+				}
+				result.Valid = false
+				result.ConfigValid = false
+				break
+			}
+		}
+	}
 }
 
 func buildServiceReports(cfg *v2.Config, issues []v2.ValidationIssue) []ValidationServiceReport {
@@ -251,9 +313,9 @@ func describePorcelainStatus(output string) string {
 }
 
 // secretEncryptionChecks scans the local GitOps directory for Kubernetes Secret
-// manifests that are not SOPS-encrypted. This catches the same issues that the
-// generate command's pre-commit scan would reject, giving operators early
-// feedback during validate.
+// manifests that are not SOPS-encrypted and for stub/placeholder secret values.
+// This catches the same issues that the generate command's pre-commit scan would
+// reject, giving operators early feedback during validate.
 func (s *ValidateService) secretEncryptionChecks(ctx context.Context, localPath string) []ValidationCheck {
 	if _, err := os.Stat(localPath); err != nil {
 		// Directory doesn't exist yet; nothing to scan.
@@ -272,14 +334,54 @@ func (s *ValidateService) secretEncryptionChecks(ctx context.Context, localPath 
 		return []ValidationCheck{{Name: "Secret encryption", Status: CheckStatusPass, Message: "all secrets encrypted"}}
 	}
 
-	// Group findings by file for a concise summary.
-	fileSet := make(map[string]bool)
+	var checks []ValidationCheck
+
+	// Separate findings by type: unencrypted vs stub secrets.
+	var unencryptedFiles []string
+	var stubFiles []string
+	unencryptedSet := make(map[string]bool)
+	stubSet := make(map[string]bool)
+
 	for _, f := range findings {
-		fileSet[f.Path] = true
+		switch f.Rule {
+		case "unencrypted-kubernetes-secret", "invalid-sops-metadata", "plaintext-secret-field":
+			if !unencryptedSet[f.Path] {
+				unencryptedSet[f.Path] = true
+				unencryptedFiles = append(unencryptedFiles, f.Path)
+			}
+		case "stub-secret-changeme", "stub-secret-placeholder":
+			if !stubSet[f.Path] {
+				stubSet[f.Path] = true
+				stubFiles = append(stubFiles, f.Path)
+			}
+		}
 	}
 
-	message := fmt.Sprintf("%d unencrypted secret file(s) found; run 'opencenter secrets sync' to encrypt", len(fileSet))
-	return []ValidationCheck{{Name: "Secret encryption", Status: CheckStatusFail, Message: message}}
+	// Report unencrypted secret files with paths.
+	if len(unencryptedFiles) > 0 {
+		sort.Strings(unencryptedFiles)
+		message := fmt.Sprintf("%d file(s) missing SOPS encryption:", len(unencryptedFiles))
+		for _, file := range unencryptedFiles {
+			message += "\n      " + file
+		}
+		message += "\n    Run 'opencenter secrets sync' to encrypt."
+		checks = append(checks, ValidationCheck{Name: "Secret encryption", Status: CheckStatusFail, Message: message})
+	} else {
+		checks = append(checks, ValidationCheck{Name: "Secret encryption", Status: CheckStatusPass, Message: "all secrets encrypted"})
+	}
+
+	// Report stub/placeholder secrets with paths.
+	if len(stubFiles) > 0 {
+		sort.Strings(stubFiles)
+		message := fmt.Sprintf("%d file(s) contain stub secrets (CHANGEME/PLACEHOLDER):", len(stubFiles))
+		for _, file := range stubFiles {
+			message += "\n      " + file
+		}
+		message += "\n    Replace stub values with real secrets before deployment."
+		checks = append(checks, ValidationCheck{Name: "Stub secrets", Status: CheckStatusFail, Message: message})
+	}
+
+	return checks
 }
 
 func buildMissing(issues []v2.ValidationIssue, gitops ValidationGitOpsReport, services []ValidationServiceReport) []ValidationMissing {

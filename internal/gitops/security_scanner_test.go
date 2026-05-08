@@ -146,3 +146,95 @@ func runGitForScannerTest(t *testing.T, root string, args ...string) {
 		t.Fatalf("git %s failed: %v\n%s", strings.Join(args, " "), err, string(output))
 	}
 }
+
+func TestSecretScannerDetectsStubSecretChangeme(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	writeFile(t, root, "applications/overlays/demo/services/keycloak/secret.yaml", `apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-secret
+stringData:
+  admin_password: CHANGEME
+  client_secret: CHANGEME
+`)
+
+	findings, err := ScanGitOpsSecrets(root)
+	if err != nil {
+		t.Fatalf("ScanGitOpsSecrets() error = %v", err)
+	}
+	assertFinding(t, findings, "stub-secret-changeme")
+}
+
+func TestSecretScannerDetectsStubSecretPlaceholder(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	writeFile(t, root, "applications/overlays/demo/services/harbor/helm-values/override-values.yaml", `
+accesskey: PLACEHOLDER-HARBOR-ACCESS-KEY
+secretkey: PLACEHOLDER-HARBOR-SECRET-KEY
+harborAdminPassword: PLACEHOLDER-HARBOR-ADMIN-PASSWORD
+`)
+
+	findings, err := ScanGitOpsSecrets(root)
+	if err != nil {
+		t.Fatalf("ScanGitOpsSecrets() error = %v", err)
+	}
+	assertFinding(t, findings, "stub-secret-placeholder")
+}
+
+func TestSecretScannerIgnoresNonSecretFieldsForStubs(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	// A YAML file with CHANGEME in a non-secret field should not trigger.
+	writeFile(t, root, "applications/overlays/demo/services/app/config.yaml", `apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  description: "This is a CHANGEME example in docs"
+  hostname: app.example.com
+`)
+
+	findings, err := ScanGitOpsSecrets(root)
+	if err != nil {
+		t.Fatalf("ScanGitOpsSecrets() error = %v", err)
+	}
+	// Should not find stub-secret-changeme because "description" is not a secret-related key
+	for _, f := range findings {
+		if f.Rule == "stub-secret-changeme" || f.Rule == "stub-secret-placeholder" {
+			t.Fatalf("unexpected stub finding in non-secret field: %+v", f)
+		}
+	}
+}
+
+func TestSecretScannerDetectsChangemeInSecretManifest(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	// CHANGEME in a Secret's stringData should always be caught regardless of key name.
+	writeFile(t, root, "applications/overlays/demo/services/loki/secret.yaml", `apiVersion: v1
+kind: Secret
+metadata:
+  name: loki-storage
+stringData:
+  swift_password: CHANGEME
+`)
+
+	findings, err := ScanGitOpsSecrets(root)
+	if err != nil {
+		t.Fatalf("ScanGitOpsSecrets() error = %v", err)
+	}
+	assertFinding(t, findings, "stub-secret-changeme")
+}
+
+func assertNoFinding(t *testing.T, findings []SecretScanFinding, rule string) {
+	t.Helper()
+	for _, finding := range findings {
+		if finding.Rule == rule {
+			t.Fatalf("unexpected finding rule %q: %s", rule, finding.Message)
+		}
+	}
+}

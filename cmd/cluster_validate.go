@@ -35,6 +35,8 @@ This command performs comprehensive validation including:
   • GitOps configuration and local repository validation
   • Network configuration validation
   • SOPS key validation
+  • Stub secret detection (CHANGEME/PLACEHOLDER values in GitOps manifests)
+  • Secret encryption verification (files missing SOPS encryption)
 
 Validation mode is selected from global CLI config behavior.validation
 (default: offline) and can be overridden for one run with --validation.
