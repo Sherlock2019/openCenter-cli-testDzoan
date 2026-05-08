@@ -165,7 +165,7 @@ func TestConfigValidatorPathValidation(t *testing.T) {
 
 	// Test empty paths
 	invalidConfig := DefaultCLIConfig()
-	invalidConfig.Paths.ConfigDir = ""
+	invalidConfig.Paths.SettingsDir = ""
 	invalidConfig.Paths.ClustersDir = ""
 	invalidConfig.Paths.StateDir = ""
 
@@ -800,7 +800,7 @@ logging:
   format: text
   output: stderr
 paths:
-  configDir: ${HOME}/test-config
+  settingsDir: ${HOME}/test-config
   clustersDir: ${OPENCENTER_CONFIG_DIR}/clusters
 behavior:
   autoConfirm: false
@@ -824,8 +824,8 @@ cluster_defaults:
 	config := cm.GetConfig()
 
 	// Verify allowlisted path variables were expanded
-	if config.Paths.ConfigDir != "/tmp/test-home/test-config" {
-		t.Errorf("Expected configDir '/tmp/test-home/test-config', got '%s'", config.Paths.ConfigDir)
+	if config.Paths.SettingsDir != "/tmp/test-home/test-config" {
+		t.Errorf("Expected configDir '/tmp/test-home/test-config', got '%s'", config.Paths.SettingsDir)
 	}
 
 	if config.Paths.ClustersDir != "/tmp/opencenter/clusters" {
@@ -873,7 +873,7 @@ logging:
   format: text
   output: stderr
 paths:
-  configDir: ` + baseConfig.Paths.ConfigDir + `
+  configDir: ` + baseConfig.Paths.SettingsDir + `
   clustersDir: ` + baseConfig.Paths.ClustersDir + `
 behavior:
   autoConfirm: false
@@ -1051,7 +1051,7 @@ func TestConfigValidatorComprehensive(t *testing.T) {
 					},
 				},
 				Paths: PathsConfig{
-					ConfigDir:   "",
+					SettingsDir: "",
 					ClustersDir: "",
 				},
 				Behavior: BehaviorConfig{
@@ -1084,7 +1084,7 @@ func TestConfigValidatorComprehensive(t *testing.T) {
 					},
 				},
 				Paths: PathsConfig{
-					ConfigDir:   "",
+					SettingsDir: "",
 					ClustersDir: "",
 				},
 				Behavior: BehaviorConfig{

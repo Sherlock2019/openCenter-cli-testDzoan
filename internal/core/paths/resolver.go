@@ -102,13 +102,14 @@ func NewPathResolver(baseDir string) *PathResolver {
 //	resolver := paths.NewPathResolverWithOptions("~/.config/opencenter/clusters", opts)
 func NewPathResolverWithOptions(baseDir string, options ResolutionOptions) *PathResolver {
 	roots := DefaultPathRoots(baseDir)
-	return NewPathResolverWithRoots(roots.ClustersDir, roots.GitOpsDir, roots.ClusterStateDir, roots.SecretsDir, options)
+	return NewPathResolverWithRoots(roots.ClustersDir, roots.BlueprintsDir, roots.GitOpsDir, roots.ClusterStateDir, roots.SecretsDir, options)
 }
 
 // NewPathResolverWithRoots creates a resolver with explicit secure zone roots.
-func NewPathResolverWithRoots(baseDir, gitopsRoot, clusterStateRoot, secretsRoot string, options ResolutionOptions) *PathResolver {
+func NewPathResolverWithRoots(baseDir, blueprintsRoot, gitopsRoot, clusterStateRoot, secretsRoot string, options ResolutionOptions) *PathResolver {
 	roots := expandPathRoots(PathRoots{
 		ClustersDir:     baseDir,
+		BlueprintsDir:   blueprintsRoot,
 		GitOpsDir:       gitopsRoot,
 		ClusterStateDir: clusterStateRoot,
 		SecretsDir:      secretsRoot,
@@ -255,20 +256,20 @@ func (r *PathResolver) ResolveWithFallback(ctx context.Context, clusterName stri
 		}
 	}
 
-	// Search for cluster in all organization directories under the state root.
+	// Search for cluster in all organization directories under the blueprints root.
 	r.mu.RLock()
-	stateRoot := r.roots.ClusterStateDir
+	blueprintsRoot := r.roots.BlueprintsDir
 	r.mu.RUnlock()
 
-	entries, err := os.ReadDir(stateRoot)
+	entries, err := os.ReadDir(blueprintsRoot)
 	if err != nil {
 		if os.IsNotExist(err) {
 			if legacyErr := r.detectLegacyLayoutForCluster(clusterName); legacyErr != nil {
 				return nil, legacyErr
 			}
-			return nil, fmt.Errorf("cluster %s not found in any organization (cluster state directory does not exist: %s)", clusterName, stateRoot)
+			return nil, fmt.Errorf("cluster %s not found in any organization (blueprints directory does not exist: %s)", clusterName, blueprintsRoot)
 		}
-		return nil, fmt.Errorf("failed to read cluster state directory: %w", err)
+		return nil, fmt.Errorf("failed to read blueprints directory: %w", err)
 	}
 
 	var matches []*ClusterPaths
@@ -278,9 +279,9 @@ func (r *PathResolver) ResolveWithFallback(ctx context.Context, clusterName stri
 		}
 
 		orgName := entry.Name()
-		stateDir := filepath.Join(stateRoot, orgName, clusterName)
-		configFile := filepath.Join(stateDir, clusterName+"-config.yaml")
-		if _, err := os.Stat(stateDir); err == nil {
+		blueprintDir := filepath.Join(blueprintsRoot, orgName, clusterName)
+		configFile := filepath.Join(blueprintDir, clusterName+"-config.yaml")
+		if _, err := os.Stat(blueprintDir); err == nil {
 			paths, err := r.Resolve(ctx, clusterName, orgName)
 			if err == nil {
 				matches = append(matches, paths)
@@ -311,7 +312,7 @@ func (r *PathResolver) ResolveWithFallback(ctx context.Context, clusterName stri
 	}
 	if len(matches) == 1 {
 		if r.cache != nil {
-			r.cache.Set(clusterName, "", "state-search", matches[0])
+			r.cache.Set(clusterName, "", "blueprints-search", matches[0])
 		}
 		return matches[0], nil
 	}
@@ -383,6 +384,7 @@ func (r *PathResolver) DetectStructureType(ctx context.Context, clusterName stri
 }
 
 // GetOrganization determines the organization for a cluster.
+// GetOrganization determines the organization for a cluster by scanning the blueprints zone.
 // Returns empty string if the cluster cannot be found in the secure layout.
 func (r *PathResolver) GetOrganization(ctx context.Context, clusterName string) (string, error) {
 	if err := r.validateClusterName(clusterName); err != nil {
@@ -390,10 +392,10 @@ func (r *PathResolver) GetOrganization(ctx context.Context, clusterName string) 
 	}
 
 	r.mu.RLock()
-	stateRoot := r.roots.ClusterStateDir
+	blueprintsRoot := r.roots.BlueprintsDir
 	r.mu.RUnlock()
 
-	entries, err := os.ReadDir(stateRoot)
+	entries, err := os.ReadDir(blueprintsRoot)
 	if err != nil {
 		if os.IsNotExist(err) {
 			if legacyErr := r.detectLegacyLayoutForCluster(clusterName); legacyErr != nil {
@@ -411,8 +413,8 @@ func (r *PathResolver) GetOrganization(ctx context.Context, clusterName string) 
 		}
 
 		orgName := entry.Name()
-		stateDir := filepath.Join(stateRoot, orgName, clusterName)
-		if _, err := os.Stat(stateDir); err == nil {
+		blueprintDir := filepath.Join(blueprintsRoot, orgName, clusterName)
+		if _, err := os.Stat(blueprintDir); err == nil {
 			matches = append(matches, orgName)
 		}
 	}
@@ -500,6 +502,7 @@ func (r *PathResolver) CreateClusterDirectories(ctx context.Context, clusterName
 		{filepath.Join(paths.OrganizationDir, "applications"), 0o755},
 		{filepath.Join(paths.OrganizationDir, "applications", "overlays"), 0o755},
 		{paths.ApplicationsDir, 0o755},
+		{filepath.Dir(paths.ConfigPath), 0o755},
 		{paths.ClusterStateDir, 0o700},
 		{paths.InventoryPath, 0o700},
 		{paths.VenvPath, 0o700},

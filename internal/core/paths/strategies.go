@@ -23,6 +23,7 @@ import (
 
 var allowedPathVariables = map[string]struct{}{
 	"HOME":                         {},
+	"OPENCENTER_BLUEPRINTS_DIR":    {},
 	"OPENCENTER_CLUSTER_STATE_DIR": {},
 	"OPENCENTER_CLUSTERS_DIR":      {},
 	"OPENCENTER_CONFIG_DIR":        {},
@@ -135,7 +136,7 @@ func (s *OrgBasedStrategy) Name() string {
 	return "org-based"
 }
 
-// CanResolve checks if the secure cluster-state structure exists.
+// CanResolve checks if the cluster blueprint exists.
 func (s *OrgBasedStrategy) CanResolve(ctx context.Context, clusterName, organization string) (bool, error) {
 	if organization == "" {
 		organization = "opencenter"
@@ -145,12 +146,12 @@ func (s *OrgBasedStrategy) CanResolve(ctx context.Context, clusterName, organiza
 		return false, err
 	}
 
-	stateDir := filepath.Join(s.roots.ClusterStateDir, organization, clusterName)
-	if _, err := os.Stat(stateDir); err == nil {
+	blueprintsDir := filepath.Join(s.roots.BlueprintsDir, organization, clusterName)
+	if _, err := os.Stat(blueprintsDir); err == nil {
 		return true, nil
 	}
 
-	configFile := filepath.Join(stateDir, clusterName+"-config.yaml")
+	configFile := filepath.Join(blueprintsDir, clusterName+"-config.yaml")
 	if _, err := os.Stat(configFile); err == nil {
 		return true, nil
 	}
@@ -165,6 +166,7 @@ func (s *OrgBasedStrategy) Resolve(ctx context.Context, clusterName, organizatio
 	}
 
 	gitOpsDir := filepath.Join(s.roots.GitOpsDir, organization)
+	blueprintsDir := filepath.Join(s.roots.BlueprintsDir, organization, clusterName)
 	clusterStateDir := filepath.Join(s.roots.ClusterStateDir, organization, clusterName)
 	secretsDir := filepath.Join(s.roots.SecretsDir, organization, clusterName)
 	clusterDir := filepath.Join(gitOpsDir, "infrastructure", "clusters", clusterName)
@@ -183,7 +185,7 @@ func (s *OrgBasedStrategy) Resolve(ctx context.Context, clusterName, organizatio
 		InventoryPath:   filepath.Join(clusterStateDir, "inventory"),
 		VenvPath:        filepath.Join(clusterStateDir, "venv"),
 		BinPath:         filepath.Join(clusterStateDir, ".bin"),
-		ConfigPath:      filepath.Join(clusterStateDir, clusterName+"-config.yaml"),
+		ConfigPath:      filepath.Join(blueprintsDir, clusterName+"-config.yaml"),
 		SSHKeyPath:      filepath.Join(secretsDir, "ssh", clusterName),
 	}
 

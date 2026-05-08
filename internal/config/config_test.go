@@ -210,8 +210,8 @@ func TestPathEnvironmentVariablesMapToCLIConfigPaths(t *testing.T) {
 	t.Setenv("OPENCENTER_STATE_DIR", stateDir)
 
 	defaults := DefaultCLIConfig()
-	if defaults.Paths.ConfigDir != configDir {
-		t.Fatalf("DefaultCLIConfig paths.configDir = %q, want %q", defaults.Paths.ConfigDir, configDir)
+	if defaults.Paths.SettingsDir != configDir {
+		t.Fatalf("DefaultCLIConfig paths.configDir = %q, want %q", defaults.Paths.SettingsDir, configDir)
 	}
 	if defaults.Paths.ClustersDir != clustersDir {
 		t.Fatalf("DefaultCLIConfig paths.clustersDir = %q, want %q", defaults.Paths.ClustersDir, clustersDir)
@@ -267,7 +267,7 @@ func TestConfigManagerCreatesConfigOnlyInConfigDir(t *testing.T) {
 		t.Fatalf("NewConfigManager() error = %v", err)
 	}
 
-	if _, err := os.Stat(filepath.Join(configDir, "config.yaml")); err != nil {
+	if _, err := os.Stat(filepath.Join(configDir, "settings.yaml")); err != nil {
 		t.Fatalf("config dir config.yaml stat error = %v, want exists", err)
 	}
 

@@ -273,8 +273,8 @@ func TestOpenStackCalicoSelectionAcceptsAnyVersion(t *testing.T) {
 	cfg, _, _ := openStackNetworkPluginTestConfig(t, "calico-version")
 
 	tests := []struct {
-		input   string
-		want    string
+		input string
+		want  string
 	}{
 		{"", "v3.32.0"},
 		{"3.32.0", "v3.32.0"},

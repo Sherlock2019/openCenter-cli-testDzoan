@@ -133,7 +133,7 @@ func TestClusterInitIntegration(t *testing.T) {
 			}
 
 			// Verify config file was created
-			configPath := filepath.Join(dir, "clusters", "state", expectedOrg, tt.clusterName, tt.clusterName+"-config.yaml")
+			configPath := filepath.Join(dir, "clusters", "blueprints", expectedOrg, tt.clusterName, tt.clusterName+"-config.yaml")
 			if _, err := os.Stat(configPath); os.IsNotExist(err) {
 				t.Errorf("config file not created: %s", configPath)
 			}
@@ -184,7 +184,7 @@ func TestClusterInitIntegrationKindProvider(t *testing.T) {
 		t.Fatalf("cluster init failed: %v\nstderr: %s", err, stderr.String())
 	}
 
-	configPath := filepath.Join(dir, "clusters", "state", "opencenter", "kind-int", "kind-int-config.yaml")
+	configPath := filepath.Join(dir, "clusters", "blueprints", "opencenter", "kind-int", "kind-int-config.yaml")
 	cfg := loadV2ConfigForTest(t, configPath)
 
 	if cfg.OpenCenter.Infrastructure.Provider != "kind" {
@@ -231,7 +231,7 @@ func TestClusterInitUsesDefaultTokenAuthAndGeneratedSecrets(t *testing.T) {
 		t.Fatalf("cluster init failed: %v\nstderr: %s", err, stderr.String())
 	}
 
-	configPath := filepath.Join(dir, "clusters", "state", "opencenter", "token-init", "token-init-config.yaml")
+	configPath := filepath.Join(dir, "clusters", "blueprints", "opencenter", "token-init", "token-init-config.yaml")
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		t.Fatalf("read config: %v", err)
@@ -286,7 +286,7 @@ func TestClusterInitUsesSSHAuthWhenConfigured(t *testing.T) {
 		t.Fatalf("cluster init failed: %v\nstderr: %s", err, stderr.String())
 	}
 
-	configPath := filepath.Join(dir, "clusters", "state", "opencenter", "ssh-init", "ssh-init-config.yaml")
+	configPath := filepath.Join(dir, "clusters", "blueprints", "opencenter", "ssh-init", "ssh-init-config.yaml")
 	cfg := loadV2ConfigForTest(t, configPath)
 	if cfg.OpenCenter.GitOps.Auth.Token != nil {
 		t.Fatalf("expected ssh auth to omit token auth, got %#v", cfg.OpenCenter.GitOps.Auth.Token)
@@ -320,7 +320,7 @@ func TestClusterInitKindDisableDefaultCNIFlag(t *testing.T) {
 		t.Fatalf("cluster init failed: %v\nstderr: %s", err, stderr.String())
 	}
 
-	configPath := filepath.Join(dir, "clusters", "state", "opencenter", "kind-cni-int", "kind-cni-int-config.yaml")
+	configPath := filepath.Join(dir, "clusters", "blueprints", "opencenter", "kind-cni-int", "kind-cni-int-config.yaml")
 	v2Cfg := loadV2ConfigForTest(t, configPath)
 	if v2Cfg.OpenCenter.Infrastructure.Kind == nil {
 		t.Fatal("expected native v2 kind compatibility config to be present")
@@ -380,7 +380,7 @@ func TestClusterInitSupportsDottedOverrides(t *testing.T) {
 		t.Fatalf("cluster init failed: %v\nstderr: %s", err, stderr.String())
 	}
 
-	configPath := filepath.Join(dir, "clusters", "state", "legacy-org", "flag-init", "flag-init-config.yaml")
+	configPath := filepath.Join(dir, "clusters", "blueprints", "legacy-org", "flag-init", "flag-init-config.yaml")
 	cfg := loadV2ConfigForTest(t, configPath)
 
 	if cfg.OpenCenter.Meta.Organization != "legacy-org" {
@@ -438,7 +438,7 @@ func TestClusterInitOrgFlagOverridesDeprecatedAlias(t *testing.T) {
 		t.Fatalf("cluster init failed: %v\nstderr: %s", err, stderr.String())
 	}
 
-	configPath := filepath.Join(dir, "clusters", "state", "flag-org", "org-precedence", "org-precedence-config.yaml")
+	configPath := filepath.Join(dir, "clusters", "blueprints", "flag-org", "org-precedence", "org-precedence-config.yaml")
 	cfg := loadV2ConfigForTest(t, configPath)
 
 	if cfg.OpenCenter.Meta.Organization != "flag-org" {
@@ -459,7 +459,7 @@ func TestClusterInitFullSchemaProducesValidV2Template(t *testing.T) {
 		t.Fatalf("cluster init failed: %v\nstderr: %s", err, stderr.String())
 	}
 
-	configPath := filepath.Join(dir, "clusters", "state", "opencenter", "full-one", "full-one-config.yaml")
+	configPath := filepath.Join(dir, "clusters", "blueprints", "opencenter", "full-one", "full-one-config.yaml")
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		t.Fatalf("read config: %v", err)
@@ -491,7 +491,7 @@ func TestClusterInitNoSOPSKeygenLeavesSOPSPathEmpty(t *testing.T) {
 		t.Fatalf("cluster init failed: %v\nstderr: %s", err, stderr.String())
 	}
 
-	configPath := filepath.Join(dir, "clusters", "state", "opencenter", "no-sops", "no-sops-config.yaml")
+	configPath := filepath.Join(dir, "clusters", "blueprints", "opencenter", "no-sops", "no-sops-config.yaml")
 	cfg := loadV2ConfigForTest(t, configPath)
 
 	if cfg.Secrets.SopsAgeKeyFile != "" {
@@ -519,7 +519,7 @@ func TestClusterInitThenValidateFailsUntilPlaceholdersAreReplaced(t *testing.T) 
 		t.Fatalf("cluster init failed: %v", err)
 	}
 
-	configPath := filepath.Join(dir, "clusters", "state", "opencenter", "validate-me", "validate-me-config.yaml")
+	configPath := filepath.Join(dir, "clusters", "blueprints", "opencenter", "validate-me", "validate-me-config.yaml")
 
 	validateCmd := newClusterValidateCmd()
 	var stdout, stderr bytes.Buffer

@@ -27,6 +27,7 @@ func writeTestConfig(t *testing.T, dir, name, provider, gitDir string) {
 
 	resolver := paths.NewPathResolverWithRoots(
 		baseDir,
+		filepath.Join(baseDir, "blueprints"),
 		gitopsRoot,
 		filepath.Join(baseDir, "state"),
 		filepath.Join(baseDir, "secrets"),

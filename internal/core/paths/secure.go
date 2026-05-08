@@ -24,6 +24,7 @@ func DefaultPathRoots(baseDir string) PathRoots {
 	baseDir = expandPath(baseDir)
 	return PathRoots{
 		ClustersDir:     baseDir,
+		BlueprintsDir:   filepath.Join(baseDir, "blueprints"),
 		GitOpsDir:       filepath.Join(baseDir, "gitops"),
 		ClusterStateDir: filepath.Join(baseDir, "state"),
 		SecretsDir:      filepath.Join(baseDir, "secrets"),
@@ -33,6 +34,9 @@ func DefaultPathRoots(baseDir string) PathRoots {
 func expandPathRoots(roots PathRoots) PathRoots {
 	if roots.ClustersDir != "" {
 		roots.ClustersDir = expandPath(roots.ClustersDir)
+	}
+	if roots.BlueprintsDir != "" {
+		roots.BlueprintsDir = expandPath(roots.BlueprintsDir)
 	}
 	if roots.GitOpsDir != "" {
 		roots.GitOpsDir = expandPath(roots.GitOpsDir)
@@ -47,6 +51,9 @@ func expandPathRoots(roots PathRoots) PathRoots {
 		roots.ClustersDir = "."
 	}
 	defaults := DefaultPathRoots(roots.ClustersDir)
+	if roots.BlueprintsDir == "" {
+		roots.BlueprintsDir = defaults.BlueprintsDir
+	}
 	if roots.GitOpsDir == "" {
 		roots.GitOpsDir = defaults.GitOpsDir
 	}
@@ -75,6 +82,9 @@ func (p *ClusterPaths) Validate() error {
 		"SSH key path":      p.SSHKeyPath,
 	}
 	for label, candidate := range checks {
+		if candidate == "" {
+			continue
+		}
 		resolved, err := secureAbs(candidate)
 		if err != nil {
 			return fmt.Errorf("resolving %s %q: %w", label, candidate, err)

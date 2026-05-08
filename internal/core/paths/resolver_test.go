@@ -26,8 +26,8 @@ func createSecureClusterForTest(t testing.TB, baseDir, organization, clusterName
 	if organization == "" {
 		organization = "opencenter"
 	}
-	stateDir := filepath.Join(baseDir, "state", organization, clusterName)
-	if err := os.MkdirAll(stateDir, 0o755); err != nil {
+	blueprintsDir := filepath.Join(baseDir, "blueprints", organization, clusterName)
+	if err := os.MkdirAll(blueprintsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -35,7 +35,7 @@ func createSecureClusterForTest(t testing.TB, baseDir, organization, clusterName
 func createSecureConfigForTest(t testing.TB, baseDir, organization, clusterName string) {
 	t.Helper()
 	createSecureClusterForTest(t, baseDir, organization, clusterName)
-	configFile := filepath.Join(baseDir, "state", organization, clusterName, clusterName+"-config.yaml")
+	configFile := filepath.Join(baseDir, "blueprints", organization, clusterName, clusterName+"-config.yaml")
 	if err := os.WriteFile(configFile, []byte("schema_version: \"2.0\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -117,7 +117,7 @@ func TestPathResolver_Resolve(t *testing.T) {
 				if paths.OrganizationDir != expectedOrgDir {
 					t.Errorf("OrganizationDir = %s, want %s", paths.OrganizationDir, expectedOrgDir)
 				}
-				expectedConfig := filepath.Join(tmpDir, "state", "cfg-org", "cfg-cluster", "cfg-cluster-config.yaml")
+				expectedConfig := filepath.Join(tmpDir, "blueprints", "cfg-org", "cfg-cluster", "cfg-cluster-config.yaml")
 				if paths.ConfigPath != expectedConfig {
 					t.Errorf("ConfigPath = %s, want %s", paths.ConfigPath, expectedConfig)
 				}
@@ -552,7 +552,7 @@ func TestPathResolver_GetOrganization(t *testing.T) {
 		{
 			name: "cluster not found",
 			setup: func() string {
-				if err := os.MkdirAll(filepath.Join(tmpDir, "state", "test-org"), 0o755); err != nil {
+				if err := os.MkdirAll(filepath.Join(tmpDir, "blueprints", "test-org"), 0o755); err != nil {
 					t.Fatal(err)
 				}
 				return tmpDir

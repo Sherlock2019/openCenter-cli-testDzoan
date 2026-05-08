@@ -584,25 +584,25 @@ func (cm *ConfigurationManager) ListWithOrganization(ctx context.Context, organi
 		return nil, err
 	}
 
-	stateRoot := cm.pathResolver.GetRoots().ClusterStateDir
+	blueprintsRoot := cm.pathResolver.GetRoots().BlueprintsDir
 
 	// Check if base directory exists
-	if !cm.fileSystem.Exists(stateRoot) {
+	if !cm.fileSystem.Exists(blueprintsRoot) {
 		return []string{}, nil
 	}
 
 	// If organization is specified, only scan that organization
 	if organization != "" {
-		orgDir := filepath.Join(stateRoot, organization)
-		names := cm.discoverClustersInStateOrg(orgDir)
+		orgDir := filepath.Join(blueprintsRoot, organization)
+		names := cm.discoverClustersInBlueprints(orgDir)
 		sort.Strings(names)
 		return names, nil
 	}
 
 	// Scan all organizations
-	entries, err := os.ReadDir(stateRoot)
+	entries, err := os.ReadDir(blueprintsRoot)
 	if err != nil {
-		return nil, NewFileError("read", stateRoot, err)
+		return nil, NewFileError("read", blueprintsRoot, err)
 	}
 
 	var clusters []string
@@ -612,8 +612,8 @@ func (cm *ConfigurationManager) ListWithOrganization(ctx context.Context, organi
 		}
 
 		orgName := entry.Name()
-		orgDir := filepath.Join(stateRoot, orgName)
-		names := cm.discoverClustersInStateOrg(orgDir)
+		orgDir := filepath.Join(blueprintsRoot, orgName)
+		names := cm.discoverClustersInBlueprints(orgDir)
 
 		for _, name := range names {
 			clusters = append(clusters, fmt.Sprintf("%s/%s", orgName, name))
@@ -625,23 +625,24 @@ func (cm *ConfigurationManager) ListWithOrganization(ctx context.Context, organi
 }
 
 func (cm *ConfigurationManager) rejectLegacyLayouts(organization string) error {
-	clustersRoot := cm.pathResolver.GetRoots().ClustersDir
+	gitopsRoot := cm.pathResolver.GetRoots().GitOpsDir
+
 	if organization != "" {
-		return legacyLayoutErrorIfMixed(filepath.Join(clustersRoot, organization))
+		return legacyLayoutErrorIfMixed(filepath.Join(gitopsRoot, organization))
 	}
 
-	entries, err := os.ReadDir(clustersRoot)
+	entries, err := os.ReadDir(gitopsRoot)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
 		}
-		return NewFileError("read", clustersRoot, err)
+		return NewFileError("read", gitopsRoot, err)
 	}
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
 		}
-		if err := legacyLayoutErrorIfMixed(filepath.Join(clustersRoot, entry.Name())); err != nil {
+		if err := legacyLayoutErrorIfMixed(filepath.Join(gitopsRoot, entry.Name())); err != nil {
 			return err
 		}
 	}
@@ -652,9 +653,12 @@ func legacyLayoutErrorIfMixed(orgDir string) error {
 	if _, err := os.Stat(filepath.Join(orgDir, ".git")); err != nil {
 		return nil
 	}
+	// A legacy mixed layout has secrets and/or config files co-located with
+	// the git-tracked GitOps manifests. In the secure layout, secrets live in
+	// a separate zone and config files live in the state zone, so their
+	// presence inside a gitops org repo indicates the old layout.
 	markers := []string{
 		filepath.Join(orgDir, "secrets"),
-		filepath.Join(orgDir, "infrastructure", "clusters"),
 	}
 	for _, marker := range markers {
 		if _, err := os.Stat(marker); err == nil {
@@ -672,9 +676,9 @@ func legacyLayoutErrorIfMixed(orgDir string) error {
 	return nil
 }
 
-// discoverClustersInStateOrg returns deduplicated cluster names found in a
-// secure cluster-state organization directory.
-func (cm *ConfigurationManager) discoverClustersInStateOrg(orgDir string) []string {
+// discoverClustersInBlueprints returns deduplicated cluster names found in a
+// blueprints organization directory.
+func (cm *ConfigurationManager) discoverClustersInBlueprints(orgDir string) []string {
 	seen := make(map[string]struct{})
 
 	entries, err := os.ReadDir(orgDir)

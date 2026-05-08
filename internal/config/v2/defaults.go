@@ -26,7 +26,7 @@ const (
 	defaultHTTPSGitURLPlaceholder     = "https://github.com/opencenter/cluster-config.git"
 	defaultGitBaseRepoURL             = "ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git"
 	defaultGitBaseRepoRelease         = "2026.01"
-	defaultGitopsAuthMethod             = "token"
+	defaultGitopsAuthMethod           = "token"
 	defaultDefaultStorageClass        = "Performance"
 	defaultWorkerVolumeType           = "Performance"
 	defaultOpenStackProjectID         = "project-id-placeholder"
@@ -62,7 +62,7 @@ type cliDefaults struct {
 	Provider          string   `yaml:"provider"`
 	Region            string   `yaml:"region"`
 	Environment       string   `yaml:"environment"`
-	GitopsAuthMethod    string   `yaml:"gitops_auth_method"`
+	GitopsAuthMethod  string   `yaml:"gitops_auth_method"`
 	SSHAuthorizedKeys []string `yaml:"ssh_authorized_keys"`
 	BaseDomain        string   `yaml:"base_domain"`
 	AdminEmail        string   `yaml:"admin_email"`
@@ -723,9 +723,9 @@ func storagePluginDefaults(provider string) StoragePluginConfig {
 
 func loadCLIDefaults() cliDefaults {
 	defaults := cliDefaults{
-		Provider:       defaultProvider,
-		Region:         defaultRegion,
-		Environment:    defaultEnvironment,
+		Provider:         defaultProvider,
+		Region:           defaultRegion,
+		Environment:      defaultEnvironment,
 		GitopsAuthMethod: defaultGitopsAuthMethod,
 	}
 

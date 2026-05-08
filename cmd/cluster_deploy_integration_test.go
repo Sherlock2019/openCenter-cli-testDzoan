@@ -81,7 +81,7 @@ func TestClusterDeployIntegration(t *testing.T) {
 		t.Fatalf("expected export kubeconfig invocation in log\nlog:\n%s", string(kindLog))
 	}
 
-	configPath := filepath.Join(dir, "clusters", "state", "opencenter", "kind-bootstrap-int", "kind-bootstrap-int-config.yaml")
+	configPath := filepath.Join(dir, "clusters", "blueprints", "opencenter", "kind-bootstrap-int", "kind-bootstrap-int-config.yaml")
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		t.Fatalf("read config: %v", err)

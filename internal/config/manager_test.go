@@ -257,7 +257,9 @@ func TestConfigurationManager_ListRejectsLegacyMixedLayout(t *testing.T) {
 	tmpDir := t.TempDir()
 	createSecureConfigTestCluster(t, tmpDir, "test-org", "test-cluster")
 
-	legacyOrgDir := filepath.Join(tmpDir, "legacy-org")
+	// Place the legacy org directory inside the gitops zone, which is where
+	// rejectLegacyLayouts scans for mixed layouts.
+	legacyOrgDir := filepath.Join(tmpDir, "gitops", "legacy-org")
 	if err := os.MkdirAll(filepath.Join(legacyOrgDir, ".git"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -343,7 +345,7 @@ func TestConfigurationManager_ListMergesDirectoriesAndConfigFiles(t *testing.T) 
 	}
 
 	// Create a cluster with only a directory (no config file)
-	dirOnlyCluster := filepath.Join(tmpDir, "state", "my-org", "dir-only")
+	dirOnlyCluster := filepath.Join(tmpDir, "blueprints", "my-org", "dir-only")
 	if err := os.MkdirAll(dirOnlyCluster, 0755); err != nil {
 		t.Fatalf("create dir-only cluster: %v", err)
 	}

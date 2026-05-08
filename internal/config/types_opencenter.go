@@ -71,5 +71,3 @@ type GlobalOIDCConfig struct {
 	Scopes     []string `yaml:"scopes" json:"scopes,omitempty" jsonschema:"description=OIDC scopes"`
 	LogoutPath string   `yaml:"logout_path" json:"logout_path,omitempty" jsonschema:"description=OIDC logout path,default=/logout"`
 }
-
-

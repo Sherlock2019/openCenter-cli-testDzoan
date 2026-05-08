@@ -69,7 +69,7 @@ func GetClustersDir() string {
 }
 
 // GetGitOpsDir returns the GitOps repository root using the precedence:
-// OPENCENTER_GITOPS_DIR, CLI config paths.gitopsDir, then clustersDir/gitops.
+// OPENCENTER_GITOPS_DIR, CLI settings paths.gitopsDir, then clustersDir/gitops.
 func GetGitOpsDir() string {
 	if gitopsDir := os.Getenv("OPENCENTER_GITOPS_DIR"); gitopsDir != "" {
 		return normalizeDirectoryPath(gitopsDir)
@@ -85,8 +85,25 @@ func GetGitOpsDir() string {
 	return normalizeDirectoryPath(filepath.Join(GetClustersDir(), "gitops"))
 }
 
+// GetBlueprintsDir returns the cluster blueprints root using the precedence:
+// OPENCENTER_BLUEPRINTS_DIR, CLI settings paths.blueprintsDir, then clustersDir/blueprints.
+func GetBlueprintsDir() string {
+	if blueprintsDir := os.Getenv("OPENCENTER_BLUEPRINTS_DIR"); blueprintsDir != "" {
+		return normalizeDirectoryPath(blueprintsDir)
+	}
+
+	if cliConfigManager, err := NewConfigManager(""); err == nil && cliConfigManager != nil {
+		blueprintsDir := cliConfigManager.GetConfig().Paths.BlueprintsDir
+		if blueprintsDir != "" {
+			return normalizeDirectoryPath(blueprintsDir)
+		}
+	}
+
+	return normalizeDirectoryPath(filepath.Join(GetClustersDir(), "blueprints"))
+}
+
 // GetClusterStateDir returns the per-cluster state root using the precedence:
-// OPENCENTER_CLUSTER_STATE_DIR, CLI config paths.clusterStateDir, then clustersDir/state.
+// OPENCENTER_CLUSTER_STATE_DIR, CLI settings paths.clusterStateDir, then clustersDir/state.
 func GetClusterStateDir() string {
 	if stateDir := os.Getenv("OPENCENTER_CLUSTER_STATE_DIR"); stateDir != "" {
 		return normalizeDirectoryPath(stateDir)
@@ -120,10 +137,11 @@ func GetSecretsDir() string {
 }
 
 // NewPathResolverFromConfig returns a secure zone-aware path resolver using the
-// current CLI config and environment variable precedence.
+// current CLI settings and environment variable precedence.
 func NewPathResolverFromConfig() *corePaths.PathResolver {
 	return corePaths.NewPathResolverWithRoots(
 		GetClustersDir(),
+		GetBlueprintsDir(),
 		GetGitOpsDir(),
 		GetClusterStateDir(),
 		GetSecretsDir(),
@@ -131,8 +149,8 @@ func NewPathResolverFromConfig() *corePaths.PathResolver {
 	)
 }
 
-// GetConfigDir returns the configuration directory from the CLI config.
-// If the CLI config cannot be loaded or configDir is not set, it returns the default.
+// GetConfigDir returns the settings directory from the CLI config.
+// If the CLI config cannot be loaded or settingsDir is not set, it returns the default.
 func GetConfigDir() string {
 	if configDir := os.Getenv("OPENCENTER_CONFIG_DIR"); configDir != "" {
 		return normalizeDirectoryPath(configDir)
@@ -141,9 +159,9 @@ func GetConfigDir() string {
 	// Try to load CLI config (but don't fail if it doesn't exist)
 	cliConfigManager, err := NewConfigManager("")
 	if err == nil && cliConfigManager != nil {
-		configDir := cliConfigManager.GetConfig().Paths.ConfigDir
-		if configDir != "" {
-			return normalizeDirectoryPath(configDir)
+		settingsDir := cliConfigManager.GetConfig().Paths.SettingsDir
+		if settingsDir != "" {
+			return normalizeDirectoryPath(settingsDir)
 		}
 	}
 

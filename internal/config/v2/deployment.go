@@ -158,4 +158,3 @@ type AutoscalingConfig struct {
 	MinReplicas int  `yaml:"min_replicas,omitempty" json:"min_replicas,omitempty" validate:"omitempty,min=1"`
 	MaxReplicas int  `yaml:"max_replicas,omitempty" json:"max_replicas,omitempty" validate:"omitempty,gtefield=MinReplicas"`
 }
-

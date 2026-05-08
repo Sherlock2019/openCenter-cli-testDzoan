@@ -168,6 +168,7 @@ func writeClusterFixtureWithGitOps(t *testing.T, configDir, clusterName, org, gi
 
 	pathResolver := paths.NewPathResolverWithRoots(
 		baseDir,
+		filepath.Join(baseDir, "blueprints"),
 		gitopsRoot,
 		filepath.Join(baseDir, "state"),
 		filepath.Join(baseDir, "secrets"),

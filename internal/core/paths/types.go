@@ -65,8 +65,8 @@ type ClusterPaths struct {
 	// Example: ~/.config/opencenter/clusters/state/<organization>/<cluster>/.bin
 	BinPath string
 
-	// ConfigPath is the path to the cluster configuration file
-	// Example: ~/.config/opencenter/clusters/state/<organization>/<cluster>/<cluster>-config.yaml
+	// ConfigPath is the path to the cluster configuration file (blueprint)
+	// Example: ~/.config/opencenter/clusters/blueprints/<organization>/<cluster>/<cluster>-config.yaml
 	ConfigPath string
 
 	// SSHKeyPath is the path to the cluster SSH key
@@ -77,6 +77,7 @@ type ClusterPaths struct {
 // PathRoots contains the zone root directories used by PathResolver.
 type PathRoots struct {
 	ClustersDir     string
+	BlueprintsDir   string
 	GitOpsDir       string
 	ClusterStateDir string
 	SecretsDir      string

@@ -18,7 +18,7 @@ func TestPathResolverSecureLayoutCreatesScopedZones(t *testing.T) {
 	stateRoot := filepath.Join(root, "state-root")
 	secretsRoot := filepath.Join(root, "secrets-root")
 
-	resolver := NewPathResolverWithRoots(clustersRoot, gitopsRoot, stateRoot, secretsRoot, DefaultResolutionOptions())
+	resolver := NewPathResolverWithRoots(clustersRoot, filepath.Join(clustersRoot, "blueprints"), gitopsRoot, stateRoot, secretsRoot, DefaultResolutionOptions())
 	if err := resolver.CreateClusterDirectories(context.Background(), "demo-cluster", "acme"); err != nil {
 		t.Fatalf("CreateClusterDirectories() error = %v", err)
 	}
@@ -39,7 +39,7 @@ func TestPathResolverSecureLayoutCreatesScopedZones(t *testing.T) {
 	assertPath("GitOpsDir", clusterPaths.GitOpsDir, filepath.Join(gitopsRoot, "acme"))
 	assertPath("ClusterStateDir", clusterPaths.ClusterStateDir, filepath.Join(stateRoot, "acme", "demo-cluster"))
 	assertPath("SecretsDir", clusterPaths.SecretsDir, filepath.Join(secretsRoot, "acme", "demo-cluster"))
-	assertPath("ConfigPath", clusterPaths.ConfigPath, filepath.Join(stateRoot, "acme", "demo-cluster", "demo-cluster-config.yaml"))
+	assertPath("ConfigPath", clusterPaths.ConfigPath, filepath.Join(clustersRoot, "blueprints", "acme", "demo-cluster", "demo-cluster-config.yaml"))
 	assertPath("KubeconfigPath", clusterPaths.KubeconfigPath, filepath.Join(stateRoot, "acme", "demo-cluster", "kubeconfig.yaml"))
 	assertPath("InventoryPath", clusterPaths.InventoryPath, filepath.Join(stateRoot, "acme", "demo-cluster", "inventory"))
 	assertPath("VenvPath", clusterPaths.VenvPath, filepath.Join(stateRoot, "acme", "demo-cluster", "venv"))
@@ -172,16 +172,17 @@ func TestResolveWithFallbackUsesOnlyNewStateLayout(t *testing.T) {
 
 	root := t.TempDir()
 	clustersRoot := filepath.Join(root, "clusters")
+	blueprintsRoot := filepath.Join(clustersRoot, "blueprints")
 	gitopsRoot := filepath.Join(root, "gitops")
 	stateRoot := filepath.Join(root, "state")
 	secretsRoot := filepath.Join(root, "secrets")
-	resolver := NewPathResolverWithRoots(clustersRoot, gitopsRoot, stateRoot, secretsRoot, DefaultResolutionOptions())
+	resolver := NewPathResolverWithRoots(clustersRoot, blueprintsRoot, gitopsRoot, stateRoot, secretsRoot, DefaultResolutionOptions())
 
-	newStateDir := filepath.Join(stateRoot, "org1", "demo")
-	if err := os.MkdirAll(newStateDir, 0o700); err != nil {
+	newBlueprintsDir := filepath.Join(blueprintsRoot, "org1", "demo")
+	if err := os.MkdirAll(newBlueprintsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(newStateDir, "demo-config.yaml"), []byte("schema_version: \"2.0\"\n"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(newBlueprintsDir, "demo-config.yaml"), []byte("schema_version: \"2.0\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	legacyOrgDir := filepath.Join(clustersRoot, "legacy-org")
@@ -196,12 +197,13 @@ func TestResolveWithFallbackUsesOnlyNewStateLayout(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveWithFallback() error = %v", err)
 	}
-	if clusterPaths.ClusterStateDir != newStateDir {
-		t.Fatalf("ClusterStateDir = %q, want %q", clusterPaths.ClusterStateDir, newStateDir)
+	expectedStateDir := filepath.Join(stateRoot, "org1", "demo")
+	if clusterPaths.ClusterStateDir != expectedStateDir {
+		t.Fatalf("ClusterStateDir = %q, want %q", clusterPaths.ClusterStateDir, expectedStateDir)
 	}
 
-	ambiguousDir := filepath.Join(stateRoot, "org2", "demo")
-	if err := os.MkdirAll(ambiguousDir, 0o700); err != nil {
+	ambiguousDir := filepath.Join(blueprintsRoot, "org2", "demo")
+	if err := os.MkdirAll(ambiguousDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(ambiguousDir, "demo-config.yaml"), []byte("schema_version: \"2.0\"\n"), 0o600); err != nil {
@@ -220,7 +222,7 @@ func TestResolveWithFallbackRejectsLegacyLayoutEvenWhenSecureStateExists(t *test
 	gitopsRoot := filepath.Join(root, "gitops")
 	stateRoot := filepath.Join(root, "state")
 	secretsRoot := filepath.Join(root, "secrets")
-	resolver := NewPathResolverWithRoots(clustersRoot, gitopsRoot, stateRoot, secretsRoot, DefaultResolutionOptions())
+	resolver := NewPathResolverWithRoots(clustersRoot, filepath.Join(clustersRoot, "blueprints"), gitopsRoot, stateRoot, secretsRoot, DefaultResolutionOptions())
 
 	stateDir := filepath.Join(stateRoot, "acme", "demo")
 	if err := os.MkdirAll(stateDir, 0o700); err != nil {

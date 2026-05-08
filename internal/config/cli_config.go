@@ -54,8 +54,9 @@ type FileConfig struct {
 
 // PathsConfig controls default paths for configuration and clusters.
 type PathsConfig struct {
-	ConfigDir       string `yaml:"configDir"`
+	SettingsDir     string `yaml:"settingsDir"`
 	ClustersDir     string `yaml:"clustersDir"`
+	BlueprintsDir   string `yaml:"blueprintsDir"`
 	GitOpsDir       string `yaml:"gitopsDir"`
 	ClusterStateDir string `yaml:"clusterStateDir"`
 	SecretsDir      string `yaml:"secretsDir"`
@@ -85,7 +86,7 @@ type ClusterDefaultsConfig struct {
 	Provider          string   `yaml:"provider"`
 	Region            string   `yaml:"region"`
 	Environment       string   `yaml:"environment"`
-	GitopsAuthMethod    string   `yaml:"gitops_auth_method"`
+	GitopsAuthMethod  string   `yaml:"gitops_auth_method"`
 	SSHAuthorizedKeys []string `yaml:"ssh_authorized_keys,omitempty"`
 	BaseDomain        string   `yaml:"base_domain,omitempty"`
 	AdminEmail        string   `yaml:"admin_email,omitempty"`
@@ -159,7 +160,7 @@ func (ce *ConfigError) Suggestions() []string {
 			return []string{"Use a non-negative integer value"}
 		case "logging.file.maxAge":
 			return []string{"Use a non-negative integer value (days)"}
-		case "paths.configDir", "paths.clustersDir", "paths.gitopsDir", "paths.clusterStateDir", "paths.secretsDir":
+		case "paths.settingsDir", "paths.clustersDir", "paths.gitopsDir", "paths.clusterStateDir", "paths.secretsDir":
 			return []string{"Use an absolute path or path starting with ~"}
 		case "paths.stateDir":
 			return []string{"Use an absolute path or path starting with ~"}
@@ -225,6 +226,7 @@ func NewConfigManager(configPath string) (*ConfigManager, error) {
 func DefaultCLIConfig() *CLIConfig {
 	configDir := DefaultConfigDir()
 	clustersDir := filepath.Join(configDir, "clusters")
+	blueprintsDir := filepath.Join(clustersDir, "blueprints")
 	gitopsDir := filepath.Join(clustersDir, "gitops")
 	clusterStateDir := filepath.Join(clustersDir, "state")
 	secretsDir := filepath.Join(clustersDir, "secrets")
@@ -233,9 +235,13 @@ func DefaultCLIConfig() *CLIConfig {
 
 	if envClustersDir := clustersDirFromEnv(); envClustersDir != "" {
 		clustersDir = corePaths.ExpandPath(envClustersDir)
+		blueprintsDir = filepath.Join(clustersDir, "blueprints")
 		gitopsDir = filepath.Join(clustersDir, "gitops")
 		clusterStateDir = filepath.Join(clustersDir, "state")
 		secretsDir = filepath.Join(clustersDir, "secrets")
+	}
+	if envBlueprintsDir := os.Getenv("OPENCENTER_BLUEPRINTS_DIR"); envBlueprintsDir != "" {
+		blueprintsDir = corePaths.ExpandPath(envBlueprintsDir)
 	}
 	if envGitOpsDir := os.Getenv("OPENCENTER_GITOPS_DIR"); envGitOpsDir != "" {
 		gitopsDir = corePaths.ExpandPath(envGitOpsDir)
@@ -263,8 +269,9 @@ func DefaultCLIConfig() *CLIConfig {
 			},
 		},
 		Paths: PathsConfig{
-			ConfigDir:       configDir,
+			SettingsDir:     configDir,
 			ClustersDir:     clustersDir,
+			BlueprintsDir:   blueprintsDir,
 			GitOpsDir:       gitopsDir,
 			ClusterStateDir: clusterStateDir,
 			SecretsDir:      secretsDir,
@@ -277,21 +284,21 @@ func DefaultCLIConfig() *CLIConfig {
 			Validation:  ValidationModeOffline,
 		},
 		ClusterDefaults: ClusterDefaultsConfig{
-			Provider:       "openstack",
-			Region:         "dfw3",
-			Environment:    "dev",
+			Provider:         "openstack",
+			Region:           "dfw3",
+			Environment:      "dev",
 			GitopsAuthMethod: GitopsAuthMethodToken,
 		},
 	}
 }
 
-// DefaultCLIConfigPath returns the default path for the CLI configuration file.
+// DefaultCLIConfigPath returns the default path for the CLI settings file.
 func DefaultCLIConfigPath() (string, error) {
 	configDir, err := ResolveConfigDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(configDir, "config.yaml"), nil
+	return filepath.Join(configDir, "settings.yaml"), nil
 }
 
 // Load loads the CLI configuration from the file system.
@@ -415,11 +422,14 @@ func (cm *ConfigManager) mergeWithDefaults(config *CLIConfig) *CLIConfig {
 	merged.Logging.File.Compress = config.Logging.File.Compress
 
 	// Merge paths configuration
-	if config.Paths.ConfigDir != "" {
-		merged.Paths.ConfigDir = config.Paths.ConfigDir
+	if config.Paths.SettingsDir != "" {
+		merged.Paths.SettingsDir = config.Paths.SettingsDir
 	}
 	if config.Paths.ClustersDir != "" {
 		merged.Paths.ClustersDir = config.Paths.ClustersDir
+	}
+	if config.Paths.BlueprintsDir != "" {
+		merged.Paths.BlueprintsDir = config.Paths.BlueprintsDir
 	}
 	if config.Paths.GitOpsDir != "" {
 		merged.Paths.GitOpsDir = config.Paths.GitOpsDir
@@ -481,8 +491,9 @@ func (cm *ConfigManager) mergeWithDefaults(config *CLIConfig) *CLIConfig {
 
 // expandConfigPaths expands environment variables and tilde in configuration paths.
 func (cm *ConfigManager) expandConfigPaths() {
-	cm.config.Paths.ConfigDir = corePaths.ExpandPath(cm.config.Paths.ConfigDir)
+	cm.config.Paths.SettingsDir = corePaths.ExpandPath(cm.config.Paths.SettingsDir)
 	cm.config.Paths.ClustersDir = corePaths.ExpandPath(cm.config.Paths.ClustersDir)
+	cm.config.Paths.BlueprintsDir = corePaths.ExpandPath(cm.config.Paths.BlueprintsDir)
 	cm.config.Paths.GitOpsDir = corePaths.ExpandPath(cm.config.Paths.GitOpsDir)
 	cm.config.Paths.ClusterStateDir = corePaths.ExpandPath(cm.config.Paths.ClusterStateDir)
 	cm.config.Paths.SecretsDir = corePaths.ExpandPath(cm.config.Paths.SecretsDir)
@@ -906,13 +917,13 @@ func (cm *ConfigManager) setPathsValue(paths *PathsConfig, parts []string, value
 	}
 
 	switch parts[0] {
-	case "configDir":
+	case "settingsDir":
 		if str, ok := value.(string); ok {
-			paths.ConfigDir = str
+			paths.SettingsDir = str
 		} else {
 			return &ConfigError{
 				Type:    "validation",
-				Field:   "paths.configDir",
+				Field:   "paths.settingsDir",
 				Value:   value,
 				Message: "configDir must be a string",
 			}
@@ -1279,8 +1290,8 @@ func (cm *ConfigManager) getPathsValue(paths *PathsConfig, parts []string) (inte
 	}
 
 	switch parts[0] {
-	case "configDir":
-		return paths.ConfigDir, nil
+	case "settingsDir":
+		return paths.SettingsDir, nil
 	case "clustersDir":
 		return paths.ClustersDir, nil
 	case "gitopsDir":
@@ -1539,42 +1550,42 @@ func (cv *ConfigValidator) validatePathsWithResult(paths *PathsConfig, result *V
 	defaults := DefaultCLIConfig()
 
 	// Validate config directory
-	if paths.ConfigDir == "" {
+	if paths.SettingsDir == "" {
 		if cv.autoRepair {
-			paths.ConfigDir = defaults.Paths.ConfigDir
+			paths.SettingsDir = defaults.Paths.SettingsDir
 			result.Repaired = append(result.Repaired, &ConfigError{
 				Type:     "validation",
-				Field:    "paths.configDir",
-				Value:    paths.ConfigDir,
-				Message:  fmt.Sprintf("empty configDir, repaired to default '%s'", defaults.Paths.ConfigDir),
+				Field:    "paths.settingsDir",
+				Value:    paths.SettingsDir,
+				Message:  fmt.Sprintf("empty configDir, repaired to default '%s'", defaults.Paths.SettingsDir),
 				Repaired: true,
 			})
 		} else {
 			result.Errors = append(result.Errors, &ConfigError{
 				Type:    "validation",
-				Field:   "paths.configDir",
-				Value:   paths.ConfigDir,
+				Field:   "paths.settingsDir",
+				Value:   paths.SettingsDir,
 				Message: "configDir cannot be empty",
 			})
 		}
 	} else {
 		// Validate that the path is accessible
-		expandedPath := corePaths.ExpandPath(paths.ConfigDir)
+		expandedPath := corePaths.ExpandPath(paths.SettingsDir)
 		if err := cv.validateDirectoryPath(expandedPath); err != nil {
 			if cv.autoRepair {
 				// Try to create the directory
 				if createErr := os.MkdirAll(expandedPath, 0755); createErr != nil {
 					result.Errors = append(result.Errors, &ConfigError{
 						Type:    "permission",
-						Field:   "paths.configDir",
-						Value:   paths.ConfigDir,
+						Field:   "paths.settingsDir",
+						Value:   paths.SettingsDir,
 						Message: fmt.Sprintf("cannot create configDir '%s': %v", expandedPath, createErr),
 					})
 				} else {
 					result.Repaired = append(result.Repaired, &ConfigError{
 						Type:     "permission",
-						Field:    "paths.configDir",
-						Value:    paths.ConfigDir,
+						Field:    "paths.settingsDir",
+						Value:    paths.SettingsDir,
 						Message:  fmt.Sprintf("created missing configDir '%s'", expandedPath),
 						Repaired: true,
 					})
@@ -1583,8 +1594,8 @@ func (cv *ConfigValidator) validatePathsWithResult(paths *PathsConfig, result *V
 				// For non-auto-repair mode, only warn about missing directories
 				result.Warnings = append(result.Warnings, &ConfigError{
 					Type:    "path",
-					Field:   "paths.configDir",
-					Value:   paths.ConfigDir,
+					Field:   "paths.settingsDir",
+					Value:   paths.SettingsDir,
 					Message: fmt.Sprintf("configDir path may not be accessible: %v", err),
 				})
 			}
@@ -1919,7 +1930,7 @@ func (cv *ConfigValidator) validateClusterDefaultsWithResult(defaults *ClusterDe
 // validateDependenciesWithResult validates system dependencies and requirements.
 func (cv *ConfigValidator) validateDependenciesWithResult(config *CLIConfig, result *ValidationResult) {
 	// Check if required directories are accessible
-	expandedConfigDir := corePaths.ExpandPath(config.Paths.ConfigDir)
+	expandedConfigDir := corePaths.ExpandPath(config.Paths.SettingsDir)
 	expandedClustersDir := corePaths.ExpandPath(config.Paths.ClustersDir)
 	expandedGitOpsDir := corePaths.ExpandPath(config.Paths.GitOpsDir)
 	expandedClusterStateDir := corePaths.ExpandPath(config.Paths.ClusterStateDir)
@@ -1931,7 +1942,7 @@ func (cv *ConfigValidator) validateDependenciesWithResult(config *CLIConfig, res
 	if err := cv.checkDiskSpace(expandedConfigDir); err != nil {
 		result.Warnings = append(result.Warnings, &ConfigError{
 			Type:    "dependency",
-			Field:   "paths.configDir",
+			Field:   "paths.settingsDir",
 			Value:   expandedConfigDir,
 			Message: fmt.Sprintf("disk space warning for configDir: %v", err),
 		})
