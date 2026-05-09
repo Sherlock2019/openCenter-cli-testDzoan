@@ -47,15 +47,35 @@ func (c Config) GetAWSCredentials(serviceAccessKey, serviceSecretKey string) (ac
 	return c.Secrets.Global.AWS.Infrastructure.AccessKey, c.Secrets.Global.AWS.Infrastructure.SecretAccessKey
 }
 
-// GetCertManagerAWSCredentials returns cert-manager AWS credentials with fallback to global AWS application credentials.
+// GetCertManagerAWSCredentials returns cert-manager AWS credentials from legacy flat fields.
+// Deprecated: Use EnabledCertManagerAWSCredentials() for multi-credential support.
 func (c Config) GetCertManagerAWSCredentials() (accessKey, secretKey string) {
-	// Use service-specific credentials if provided
 	if c.Secrets.CertManager.AWSAccessKey != "" && c.Secrets.CertManager.AWSSecretAccessKey != "" {
 		return c.Secrets.CertManager.AWSAccessKey, c.Secrets.CertManager.AWSSecretAccessKey
 	}
+	return "", ""
+}
 
-	// Fall back to global application AWS credentials
-	return c.GetAWSApplicationCredentials()
+// EnabledCertManagerAWSCredentials returns all enabled AWS credentials for cert-manager.
+func (c Config) EnabledCertManagerAWSCredentials() map[string]CertManagerAWSCredential {
+	result := make(map[string]CertManagerAWSCredential)
+	for name, cred := range c.Secrets.CertManager.AWS {
+		if cred.Enabled {
+			result[name] = cred
+		}
+	}
+	return result
+}
+
+// EnabledCertManagerCloudflareCredentials returns all enabled Cloudflare credentials for cert-manager.
+func (c Config) EnabledCertManagerCloudflareCredentials() map[string]CertManagerCloudflareCredential {
+	result := make(map[string]CertManagerCloudflareCredential)
+	for name, cred := range c.Secrets.CertManager.Cloudflare {
+		if cred.Enabled {
+			result[name] = cred
+		}
+	}
+	return result
 }
 
 // GetLokiS3Credentials returns Loki S3 credentials with fallback to global AWS application credentials.
@@ -103,13 +123,15 @@ func (c Config) GetAWSApplicationCredentials() (accessKey, secretKey string) {
 
 // Template-friendly functions that return single values for use in Go templates
 
-// GetCertManagerAWSAccessKey returns cert-manager AWS access key with fallback.
+// GetCertManagerAWSAccessKey returns cert-manager AWS access key from legacy flat fields.
+// Deprecated: Use EnabledCertManagerAWSCredentials() for multi-credential support.
 func (c Config) GetCertManagerAWSAccessKey() string {
 	accessKey, _ := c.GetCertManagerAWSCredentials()
 	return accessKey
 }
 
-// GetCertManagerAWSSecretKey returns cert-manager AWS secret key with fallback.
+// GetCertManagerAWSSecretKey returns cert-manager AWS secret key from legacy flat fields.
+// Deprecated: Use EnabledCertManagerAWSCredentials() for multi-credential support.
 func (c Config) GetCertManagerAWSSecretKey() string {
 	_, secretKey := c.GetCertManagerAWSCredentials()
 	return secretKey

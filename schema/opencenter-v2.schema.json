@@ -8051,11 +8051,59 @@
         "cert_manager": {
           "additionalProperties": false,
           "properties": {
+            "aws": {
+              "additionalProperties": {
+                "additionalProperties": false,
+                "properties": {
+                  "aws_access_key": {
+                    "type": "string"
+                  },
+                  "aws_secret_access_key": {
+                    "type": "string"
+                  },
+                  "dns_zones": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "region": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "object"
+            },
             "aws_access_key": {
               "type": "string"
             },
             "aws_secret_access_key": {
               "type": "string"
+            },
+            "cloudflare": {
+              "additionalProperties": {
+                "additionalProperties": false,
+                "properties": {
+                  "api_token": {
+                    "type": "string"
+                  },
+                  "dns_zones": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "object"
             },
             "cloudflare_api_token": {
               "type": "string"

@@ -65,9 +65,31 @@ type AWSSecrets struct {
 }
 
 // CertManagerSecrets holds cert-manager secret values
+// CertManagerSecrets holds cert-manager secret values
 type CertManagerSecrets struct {
+	// Dynamic multi-credential support: map of named credentials per provider.
+	AWS        map[string]CertManagerAWSCredential        `yaml:"aws,omitempty" json:"aws,omitempty"`
+	Cloudflare map[string]CertManagerCloudflareCredential `yaml:"cloudflare,omitempty" json:"cloudflare,omitempty"`
+
+	// Deprecated: legacy flat fields kept for migration compatibility.
 	AWSAccessKey       string `yaml:"aws_access_key" json:"aws_access_key" jsonschema:"secret=true,description=AWS access key for Route53 DNS validation"`
 	AWSSecretAccessKey string `yaml:"aws_secret_access_key" json:"aws_secret_access_key" jsonschema:"secret=true,description=AWS secret access key for Route53 DNS validation"`
+}
+
+// CertManagerAWSCredential holds a named AWS Route53 credential for cert-manager.
+type CertManagerAWSCredential struct {
+	Enabled            bool     `yaml:"enabled" json:"enabled" jsonschema:"description=Enable this AWS credential for cert-manager"`
+	AWSAccessKey       string   `yaml:"aws_access_key" json:"aws_access_key" jsonschema:"secret=true,description=AWS access key for Route53 DNS validation"`
+	AWSSecretAccessKey string   `yaml:"aws_secret_access_key" json:"aws_secret_access_key" jsonschema:"secret=true,description=AWS secret access key for Route53 DNS validation"`
+	Region             string   `yaml:"region,omitempty" json:"region,omitempty" jsonschema:"description=AWS region for Route53"`
+	DNSZones           []string `yaml:"dns_zones,omitempty" json:"dns_zones,omitempty" jsonschema:"description=DNS zones this credential validates"`
+}
+
+// CertManagerCloudflareCredential holds a named Cloudflare credential for cert-manager.
+type CertManagerCloudflareCredential struct {
+	Enabled  bool     `yaml:"enabled" json:"enabled" jsonschema:"description=Enable this Cloudflare credential for cert-manager"`
+	APIToken string   `yaml:"api_token" json:"api_token" jsonschema:"secret=true,description=Cloudflare API token for DNS validation"`
+	DNSZones []string `yaml:"dns_zones,omitempty" json:"dns_zones,omitempty" jsonschema:"description=DNS zones this credential validates"`
 }
 
 // LokiSecrets holds Loki secret values

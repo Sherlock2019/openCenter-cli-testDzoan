@@ -28,8 +28,13 @@ Feature: Configuration-driven template rendering
             letsencrypt_server: "https://acme-staging-v02.api.letsencrypt.org/directory"
       secrets:
         cert_manager:
-          aws_access_key: "AKIAEXAMPLE123"
-          aws_secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+          aws:
+            production:
+              enabled: true
+              aws_access_key: "AKIAEXAMPLE123"
+              aws_secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+              dns_zones:
+                - test-cluster.example.com
       """
     When I run "opencenter cluster use test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0
@@ -37,8 +42,8 @@ Feature: Configuration-driven template rendering
     Then the exit code should be 0
     And a file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/cert-manager/kustomization.yaml" should exist
     And the file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/cert-manager/kustomization.yaml" should contain "cert-manager-values-override"
-    And the file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/cert-manager/kustomization.yaml" should contain "opencenter-aws-credentials-secret.yaml"
-    And a file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/cert-manager/letsencrypt-issuer.yaml" should exist
+    And the file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/cert-manager/kustomization.yaml" should contain "opencenter-aws-credentials-secret-production.yaml"
+    And a file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/cert-manager/letsencrypt-production-issuer.yaml" should exist
     And a file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/fluxcd/cert-manager.yaml" should exist
     And the file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/fluxcd/cert-manager.yaml" should contain "cert-manager-base"
     And the file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/fluxcd/cert-manager.yaml" should contain "cert-manager-override"
@@ -62,15 +67,20 @@ Feature: Configuration-driven template rendering
             letsencrypt_server: "https://acme-v02.api.letsencrypt.org/directory"
       secrets:
         cert_manager:
-          aws_access_key: "AKIAEXAMPLE456"
-          aws_secret_access_key: "secretkey789"
+          aws:
+            prod:
+              enabled: true
+              aws_access_key: "AKIAEXAMPLE456"
+              aws_secret_access_key: "secretkey789"
+              dns_zones:
+                - prod.example.com
       """
     When I run "opencenter cluster use test-cluster --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     When I run "opencenter cluster generate --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    And a file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/cert-manager/letsencrypt-issuer.yaml" should exist
-    And the file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/cert-manager/letsencrypt-issuer.yaml" should contain "acme-v02.api.letsencrypt.org"
+    And a file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/cert-manager/letsencrypt-prod-issuer.yaml" should exist
+    And the file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/cert-manager/letsencrypt-prod-issuer.yaml" should contain "acme-v02.api.letsencrypt.org"
 
   # ---------------------------------------------------------------------------
   # alert-proxy (managed service)

@@ -1,3 +1,6 @@
+{{- $certManager := index .OpenCenter.Services "cert-manager" -}}
+{{- $dnsProvider := $certManager.DNSProvider | default "route53" -}}
+{{- if eq $dnsProvider "designate" -}}
 {{- $openstack := .OpenCenter.Infrastructure.Cloud.OpenStack -}}
 apiVersion: v1
 kind: Secret
@@ -12,3 +15,4 @@ stringData:
   OS_PROJECT_NAME: {{ if $openstack }}{{ $openstack.ProjectName | default $openstack.TenantName }}{{ end }}
   OS_APPLICATION_CREDENTIAL_ID: {{ if $openstack }}{{ $openstack.ApplicationCredentialID }}{{ end }}
   OS_APPLICATION_CREDENTIAL_SECRET: {{ if $openstack }}{{ $openstack.ApplicationCredentialSecret }}{{ end }}
+{{- end }}

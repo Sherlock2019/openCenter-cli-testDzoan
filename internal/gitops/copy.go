@@ -524,6 +524,14 @@ func RenderSingleService(cfg v2.Config, serviceName string, isManaged bool) erro
 		return err
 	}
 
+	// For cert-manager, also render dynamic credential files
+	if serviceName == "cert-manager" && !isManaged {
+		certManagerDir := filepath.Join(targetRoot, "services", "cert-manager")
+		if err := renderCertManagerDynamicFiles(cfg, certManagerDir, workspace); err != nil {
+			return fmt.Errorf("rendering cert-manager dynamic files: %w", err)
+		}
+	}
+
 	if err := cleanupSingleServiceOutputs(target, serviceName, isManaged, actions); err != nil {
 		return err
 	}
@@ -622,7 +630,19 @@ func RenderClusterAppsAtomic(cfg v2.Config, workspace *GitOpsWorkspace) error {
 		return err
 	}
 
-	return writeClusterAppActions(actions, target, cfg, workspace)
+	if err := writeClusterAppActions(actions, target, cfg, workspace); err != nil {
+		return err
+	}
+
+	// Render dynamic cert-manager credential files (secrets + issuers + kustomization).
+	// These are rendered outside the descriptor pipeline because they produce N files
+	// from a map of enabled credentials rather than a fixed set of templates.
+	certManagerDir := filepath.Join(target, "services", "cert-manager")
+	if err := renderCertManagerDynamicFiles(cfg, certManagerDir, workspace); err != nil {
+		return fmt.Errorf("rendering cert-manager dynamic files: %w", err)
+	}
+
+	return nil
 }
 
 // RenderInfrastructureClusterAtomic renders infrastructure-cluster-template to infrastructure/clusters/<cluster-name>/

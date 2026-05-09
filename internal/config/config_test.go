@@ -987,12 +987,13 @@ func TestApplicationServicesUseApplicationCredentials(t *testing.T) {
 		cfg.Secrets.Global.AWS.Infrastructure.AccessKey = "infra-access-key"
 		cfg.Secrets.Global.AWS.Infrastructure.SecretAccessKey = "infra-secret-key"
 
+		// With no fallback, cert-manager returns empty when no service-specific creds are set
 		accessKey, secretKey := cfg.GetCertManagerAWSCredentials()
-		if accessKey != "app-access-key" {
-			t.Errorf("expected app-access-key, got %s", accessKey)
+		if accessKey != "" {
+			t.Errorf("expected empty (no fallback), got %s", accessKey)
 		}
-		if secretKey != "app-secret-key" {
-			t.Errorf("expected app-secret-key, got %s", secretKey)
+		if secretKey != "" {
+			t.Errorf("expected empty (no fallback), got %s", secretKey)
 		}
 	})
 

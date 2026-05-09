@@ -304,6 +304,16 @@ func NewV2Default(name, provider string) (*Config, error) {
 			},
 			SopsAgeKeyFile: sopsAgeKeyPath,
 			Global:         GlobalSecrets{},
+			CertManager: CertManagerSecrets{
+				AWS: map[string]CertManagerAWSCredential{
+					"default": {
+						Enabled:            false,
+						AWSAccessKey:       PlaceholderSecret,
+						AWSSecretAccessKey: PlaceholderSecret,
+						Region:             region,
+					},
+				},
+			},
 			Keycloak: KeycloakSecrets{
 				ClientSecret:  PlaceholderSecret,
 				AdminPassword: PlaceholderSecret,

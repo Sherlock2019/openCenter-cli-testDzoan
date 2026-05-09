@@ -47,12 +47,36 @@ func (c Config) GetAWSApplicationCredentials() (accessKey, secretKey string) {
 }
 
 // GetCertManagerAWSCredentials resolves cert-manager Route53 credentials.
+// Deprecated: Use EnabledCertManagerAWSCredentials() for multi-credential support.
 func (c Config) GetCertManagerAWSCredentials() (accessKey, secretKey string) {
 	if c.Secrets.CertManager.AWSAccessKey != "" && c.Secrets.CertManager.AWSSecretAccessKey != "" {
 		return c.Secrets.CertManager.AWSAccessKey, c.Secrets.CertManager.AWSSecretAccessKey
 	}
+	return "", ""
+}
 
-	return c.GetAWSApplicationCredentials()
+// EnabledCertManagerAWSCredentials returns all enabled AWS credentials for cert-manager,
+// keyed by their configured name.
+func (c Config) EnabledCertManagerAWSCredentials() map[string]CertManagerAWSCredential {
+	result := make(map[string]CertManagerAWSCredential)
+	for name, cred := range c.Secrets.CertManager.AWS {
+		if cred.Enabled {
+			result[name] = cred
+		}
+	}
+	return result
+}
+
+// EnabledCertManagerCloudflareCredentials returns all enabled Cloudflare credentials for cert-manager,
+// keyed by their configured name.
+func (c Config) EnabledCertManagerCloudflareCredentials() map[string]CertManagerCloudflareCredential {
+	result := make(map[string]CertManagerCloudflareCredential)
+	for name, cred := range c.Secrets.CertManager.Cloudflare {
+		if cred.Enabled {
+			result[name] = cred
+		}
+	}
+	return result
 }
 
 // GetLokiS3Credentials resolves Loki S3 credentials.
@@ -115,28 +139,24 @@ func (c Config) GetS3BackendCredentials() (accessKey, secretKey string) {
 }
 
 // GetCertManagerAWSAccessKey returns the cert-manager AWS access key for templates.
+// Deprecated: Use EnabledCertManagerAWSCredentials() for multi-credential support.
 func (c Config) GetCertManagerAWSAccessKey() string {
 	accessKey, _ := c.GetCertManagerAWSCredentials()
 	return accessKey
 }
 
 // GetCertManagerAWSSecretKey returns the cert-manager AWS secret key for templates.
+// Deprecated: Use EnabledCertManagerAWSCredentials() for multi-credential support.
 func (c Config) GetCertManagerAWSSecretKey() string {
 	_, secretKey := c.GetCertManagerAWSCredentials()
 	return secretKey
 }
 
 // GetCertManagerCloudflareAPIToken returns the Cloudflare API token for cert-manager.
+// Deprecated: Use EnabledCertManagerCloudflareCredentials() for multi-credential support.
 func (c Config) GetCertManagerCloudflareAPIToken() string {
 	if strings.TrimSpace(c.Secrets.CertManager.CloudflareAPIToken) != "" {
 		return strings.TrimSpace(c.Secrets.CertManager.CloudflareAPIToken)
-	}
-	if raw, ok := c.Secrets.ServiceSecrets["cert_manager"]; ok {
-		if mapped, ok := raw.(map[string]any); ok {
-			if token, ok := mapped["cloudflare_api_token"].(string); ok {
-				return strings.TrimSpace(token)
-			}
-		}
 	}
 	return ""
 }

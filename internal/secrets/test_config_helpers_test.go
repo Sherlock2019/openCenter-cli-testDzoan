@@ -2,6 +2,7 @@ package secrets
 
 import (
 	"os"
+	"reflect"
 	"testing"
 
 	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
@@ -125,7 +126,7 @@ func normalizeSecretsConfigYAML(t *testing.T, clusterName, raw string) []byte {
 	if partial.Secrets.SSHPublicKey != "" {
 		cfg.Secrets.SSHKey.Public = partial.Secrets.SSHPublicKey
 	}
-	if partial.Secrets.CertManager != (v2.CertManagerSecrets{}) {
+	if !reflect.DeepEqual(partial.Secrets.CertManager, v2.CertManagerSecrets{}) {
 		cfg.Secrets.CertManager = partial.Secrets.CertManager
 	}
 	if partial.Secrets.Keycloak != (v2.KeycloakSecrets{}) {
@@ -215,7 +216,7 @@ func normalizeSecretsConfigYAMLBytes(clusterName, raw string) ([]byte, error) {
 	if partial.Secrets.SSHPublicKey != "" {
 		cfg.Secrets.SSHKey.Public = partial.Secrets.SSHPublicKey
 	}
-	if partial.Secrets.CertManager != (v2.CertManagerSecrets{}) {
+	if !reflect.DeepEqual(partial.Secrets.CertManager, v2.CertManagerSecrets{}) {
 		cfg.Secrets.CertManager = partial.Secrets.CertManager
 	}
 	if partial.Secrets.Keycloak != (v2.KeycloakSecrets{}) {

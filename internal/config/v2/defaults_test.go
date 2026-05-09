@@ -125,8 +125,6 @@ func TestNewV2Default_NoKnownLegacyFieldContamination(t *testing.T) {
 		"k8s_hardening:",
 		"pod_security_exemptions:",
 		"ssh_authorized_keys:",
-		"aws_access_key:",
-		"aws_secret_access_key:",
 		"managed-service:",
 		"ssh_user:",
 	}

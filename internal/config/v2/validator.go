@@ -320,8 +320,28 @@ func (v *defaultValidator) validatePlaceholderSecrets(cfg *Config) error {
 		}
 	}
 
-	// Cert-manager secrets
+	// Cert-manager secrets (map-based credentials)
 	if isServiceEnabled(cfg, "cert-manager") {
+		for name, cred := range cfg.Secrets.CertManager.AWS {
+			if !cred.Enabled {
+				continue
+			}
+			if cred.AWSAccessKey == PlaceholderSecret {
+				placeholders = append(placeholders, fmt.Sprintf("secrets.cert_manager.aws.%s.aws_access_key", name))
+			}
+			if cred.AWSSecretAccessKey == PlaceholderSecret {
+				placeholders = append(placeholders, fmt.Sprintf("secrets.cert_manager.aws.%s.aws_secret_access_key", name))
+			}
+		}
+		for name, cred := range cfg.Secrets.CertManager.Cloudflare {
+			if !cred.Enabled {
+				continue
+			}
+			if cred.APIToken == PlaceholderSecret {
+				placeholders = append(placeholders, fmt.Sprintf("secrets.cert_manager.cloudflare.%s.api_token", name))
+			}
+		}
+		// Legacy flat fields
 		if cfg.Secrets.CertManager.AWSAccessKey == PlaceholderSecret {
 			placeholders = append(placeholders, "secrets.cert_manager.aws_access_key")
 		}
