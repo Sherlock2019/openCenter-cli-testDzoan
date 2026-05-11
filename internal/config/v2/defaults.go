@@ -300,7 +300,15 @@ func NewV2Default(name, provider string) (*Config, error) {
 				Cypher:  "ed25519",
 			},
 			SopsAgeKeyFile: sopsAgeKeyPath,
-			Global:         GlobalSecrets{},
+			Global: GlobalSecrets{
+				AWS: AWSGlobalSecrets{
+					Application: AWSScopedSecrets{
+						AccessKey:       PlaceholderSecret,
+						SecretAccessKey: PlaceholderSecret,
+						Region:          region,
+					},
+				},
+			},
 			CertManager: CertManagerSecrets{
 				AWS: map[string]CertManagerAWSCredential{
 					"default": {
@@ -323,9 +331,30 @@ func NewV2Default(name, provider string) (*Config, error) {
 			},
 			Loki: LokiSecrets{
 				SwiftApplicationCredentialSecret: PlaceholderSecret,
+				S3AccessKeyID:                    PlaceholderSecret,
+				S3SecretAccessKey:                PlaceholderSecret,
 			},
 			Tempo: TempoSecrets{
 				SwiftApplicationCredentialSecret: PlaceholderSecret,
+				AccessKey:                        PlaceholderSecret,
+				SecretKey:                        PlaceholderSecret,
+			},
+			VSphereCsi: VSphereCsiSecrets{
+				VCenterHost:  PlaceholderSecret,
+				Username:     PlaceholderSecret,
+				Password:     PlaceholderSecret,
+				Datacenters:  "Datacenter1",
+				InsecureFlag: "true",
+				Port:         "443",
+				Datastoreurl: PlaceholderSecret,
+			},
+			AlertProxy: AlertProxySecrets{
+				CoreDeviceId:        PlaceholderSecret,
+				AccountServiceToken: PlaceholderSecret,
+				CoreAccountNumber:   PlaceholderSecret,
+			},
+			WeaveGitOps: WeaveGitOpsSecrets{
+				Password: PlaceholderSecret,
 			},
 			SOPSConfig: SOPSConfig{
 				Enabled:        true,
@@ -672,46 +701,46 @@ func normalizeGitopsAuthMethod(authMethod string) string {
 
 func defaultServiceMap(clusterFQDN string) ServiceMap {
 	return ServiceMap{
-		"calico":               &services.CalicoConfig{BaseConfig: services.BaseConfig{Enabled: true}, KubeAPIServer: ""},
-		"cert-manager":         &services.CertManagerConfig{BaseConfig: services.BaseConfig{Enabled: true}},
-		"etcd-backup":          &services.EtcdBackupConfig{BaseConfig: services.BaseConfig{Enabled: true}},
-		"external-snapshotter": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
-		"fluxcd":               &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
-		"gateway":              &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
-		"gateway-api":          &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"calico":               &services.CalicoConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "calico-system"}, KubeAPIServer: ""},
+		"cert-manager":         &services.CertManagerConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "cert-manager"}},
+		"etcd-backup":          &services.EtcdBackupConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "kube-system"}},
+		"external-snapshotter": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "external-snapshotter", BaseOnly: true}},
+		"fluxcd":               &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "flux-system"}},
+		"gateway":              &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "gateway", SingleStage: true, HasOverrideValues: boolPtr(false), ExtraDependencies: []string{"gateway-api-base"}, OverlayFilesRendererKey: "gateway", KustomizationContent: "---\napiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - \"namespace.yaml\"\n  - \"gateway-class.yaml\"\n  - \"gateway.yaml\"\n  - \"envoy-proxy-config.yaml\"\n"}},
+		"gateway-api":          &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "envoy-gateway-system", KustomizationName: "envoy-gateway-api", OverrideValues: "---\nenvoyGateway:\n  config:\n    envoyGateway:\n      logging:\n        level:\n          default: info\n"}},
 		"headlamp": &services.HeadlampConfig{
-			BaseConfig: services.BaseConfig{Enabled: true},
+			BaseConfig: services.BaseConfig{Enabled: true, Namespace: "headlamp", OverrideValuesRendererKey: "headlamp"},
 			Hostname:   fmt.Sprintf("dashboard.%s", clusterFQDN),
 		},
 		"keycloak": &services.KeycloakConfig{
-			BaseConfig: services.BaseConfig{Enabled: true},
+			BaseConfig: services.BaseConfig{Enabled: true, Namespace: "keycloak"},
 			Hostname:   fmt.Sprintf("auth.%s", clusterFQDN),
 		},
 		// Required by keycloak (keycloak-postgres dependsOn postgres-operator-base).
-		"postgres-operator": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"postgres-operator": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "postgres-operator", OverrideValues: "configGeneral:\n  workers: 2\n"}},
 		// Required by keycloak (oidc-rbac dependsOn rbac-manager-base).
-		"rbac-manager": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"rbac-manager": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "rbac-system", BaseOnly: true, ConditionalDependencies: []services.ConditionalDependency{{Name: "kube-prometheus-stack-base", WhenEnabled: "kube-prometheus-stack"}}}},
 		// The sources FluxCD Kustomization deploys GitRepository objects for all services.
-		"sources":               &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
-		"kube-prometheus-stack": &services.PrometheusStackConfig{BaseConfig: services.BaseConfig{Enabled: true}},
-		"kyverno":               &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
-		"loki":                  &services.LokiConfig{BaseConfig: services.BaseConfig{Enabled: true}},
-		"openstack-ccm":         &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
-		"openstack-csi":         &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
-		"tempo":                 &services.TempoConfig{BaseConfig: services.BaseConfig{Enabled: true}},
-		"velero":                &services.VeleroConfig{BaseConfig: services.BaseConfig{Enabled: true}},
+		"sources":               &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "flux-system"}},
+		"kube-prometheus-stack": &services.PrometheusStackConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "observability", SourceName: "opencenter-observability", OverrideValuesRendererKey: "kube-prometheus-stack"}},
+		"kyverno":               &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "kyverno", HasOverrideValues: boolPtr(false), KustomizationContent: "apiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - \"../base/kyverno/default-ruleset\"\n"}},
+		"loki":                  &services.LokiConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "observability", SourceName: "opencenter-observability", OverrideValuesRendererKey: "loki"}},
+		"openstack-ccm":         &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "kube-system", OverrideValuesRendererKey: "openstack-ccm"}},
+		"openstack-csi":         &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "kube-system", OverrideValuesRendererKey: "openstack-csi"}},
+		"tempo":                 &services.TempoConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "observability", SourceName: "opencenter-observability", OverrideValuesRendererKey: "tempo"}},
+		"velero":                &services.VeleroConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "velero", OverrideValuesRendererKey: "velero"}},
 		// Present (disabled) so template conditionals can safely index the key.
-		"harbor":  &services.HarborConfig{BaseConfig: services.BaseConfig{Enabled: false}},
-		"metallb": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"harbor":  &services.HarborConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "harbor"}},
+		"metallb": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "metallb-system", CustomResources: []string{"ipaddresspool.yaml", "l2advertisement.yaml"}}},
 		// Required by keycloak (keycloak-operator is managed by OLM).
-		"olm":                      &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true}},
-		"kafka-cluster":            &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
-		"vsphere-csi":              &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
-		"weave-gitops":             &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
-		"longhorn":                 &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
-		"mimir":                    &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
-		"opentelemetry-kube-stack": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
-		"sealed-secrets":           &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false}},
+		"olm":                      &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "olm", HasOverrideValues: boolPtr(false), KustomizationContent: "---\napiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - \"../base/olm/\"\n  - \"./netpol.yaml\"\npatchesStrategicMerge:\n  - \"./patches.yaml\"\n", CustomResources: []string{"netpol.yaml", "patches.yaml"}}},
+		"kafka-cluster":            &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "strimzi"}},
+		"vsphere-csi":              &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "vmware-system-csi", OverrideValuesRendererKey: "vsphere-csi"}},
+		"weave-gitops":             &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "flux-system", OverrideDependsOn: []string{"sources", "envoy-gateway-api-base"}}},
+		"longhorn":                 &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "longhorn-system", OverlayFilesRendererKey: "longhorn"}},
+		"mimir":                    &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "observability", SourceName: "opencenter-observability", OverrideValuesRendererKey: "mimir"}},
+		"opentelemetry-kube-stack": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "observability", SourceName: "opencenter-observability", OverrideValuesRendererKey: "opentelemetry-kube-stack"}},
+		"sealed-secrets":           &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "sealed-secrets", OverrideValues: "keyrenewperiod: \"0\"\n"}},
 	}
 }
 
@@ -973,3 +1002,5 @@ func currentUser() string {
 	}
 	return "unknown"
 }
+
+func boolPtr(b bool) *bool { return &b }

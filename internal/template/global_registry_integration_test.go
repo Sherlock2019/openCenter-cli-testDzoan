@@ -77,18 +77,15 @@ func TestAllEmbeddedTemplatesRegistered(t *testing.T) {
 	assert.Greater(t, len(baremetalTemplates), 0, "should have baremetal-specific templates")
 	assert.Greater(t, len(vsphereTemplates), 0, "should have vsphere-specific templates")
 
-	// Verify service-specific templates
-	lokiTemplates := registry.GetTemplatesForService("loki")
-	prometheusTemplates := registry.GetTemplatesForService("prometheus")
+	// Verify service-specific templates (only services with explicit descriptors have embedded templates)
 	certManagerTemplates := registry.GetTemplatesForService("cert-manager")
+	keycloakTemplates := registry.GetTemplatesForService("keycloak")
 
-	t.Logf("Loki templates: %d", len(lokiTemplates))
-	t.Logf("Prometheus templates: %d", len(prometheusTemplates))
 	t.Logf("Cert-manager templates: %d", len(certManagerTemplates))
+	t.Logf("Keycloak templates: %d", len(keycloakTemplates))
 
-	assert.Greater(t, len(lokiTemplates), 0, "should have loki service templates")
-	assert.Greater(t, len(prometheusTemplates), 0, "should have prometheus service templates")
 	assert.Greater(t, len(certManagerTemplates), 0, "should have cert-manager service templates")
+	assert.Greater(t, len(keycloakTemplates), 0, "should have keycloak service templates")
 }
 
 // TestGlobalRegistryInitializationIdempotent verifies that calling GetGlobalRegistry

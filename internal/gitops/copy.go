@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -223,6 +224,45 @@ func renderTemplateAtomic(path, dst string, cfg v2.Config, workspace *GitOpsWork
 			return GetServiceAdoptionSettings(service).Suspend
 		}
 		return false
+	}
+
+	// autoServices returns service names that use auto-descriptors (no explicit
+	// descriptor) and own their own source (not shared). Used by aggregate templates
+	// to include dynamically-added services.
+	funcMap["autoServices"] = func() []string {
+		registry, err := loadClusterDescriptorRegistry()
+		if err != nil {
+			return nil
+		}
+		var names []string
+		for name, svc := range cfg.OpenCenter.Services {
+			if IsServiceDisabled(svc) || IsServiceExternal(svc) {
+				continue
+			}
+			if hasExplicitDescriptor(registry, name) {
+				continue
+			}
+			base := extractBaseConfig(svc)
+			if base == nil {
+				continue
+			}
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		return names
+	}
+
+	// autoServiceSourceName returns the source name for an auto-descriptor service.
+	funcMap["autoServiceSourceName"] = func(serviceName string) string {
+		svc, exists := cfg.OpenCenter.Services[serviceName]
+		if !exists {
+			return "opencenter-" + serviceName
+		}
+		base := extractBaseConfig(svc)
+		if base == nil {
+			return "opencenter-" + serviceName
+		}
+		return base.GetSourceName(serviceName)
 	}
 
 	t, err := template.New(filename).Funcs(funcMap).Parse(content)

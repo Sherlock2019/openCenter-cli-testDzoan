@@ -110,7 +110,7 @@ func TestRenderClusterAppsLokiSwift(t *testing.T) {
 	cfg := newDefault("loki-swift-guided")
 	cfg.OpenCenter.GitOps.Repository.LocalDir = dst
 	cfg.OpenCenter.Services["loki"] = &configservices.LokiConfig{
-		BaseConfig:                   configservices.BaseConfig{Enabled: true},
+		BaseConfig:                   configservices.BaseConfig{Enabled: true, Namespace: "observability", SourceName: "opencenter-observability", OverrideValuesRendererKey: "loki"},
 		StorageType:                  "swift",
 		BucketName:                   "loki-container",
 		SwiftAuthURL:                 "https://identity.api.example.com/v3",
@@ -147,7 +147,7 @@ func TestRenderClusterAppsTempoSwift(t *testing.T) {
 	cfg := newDefault("tempo-swift-guided")
 	cfg.OpenCenter.GitOps.Repository.LocalDir = dst
 	cfg.OpenCenter.Services["tempo"] = &configservices.TempoConfig{
-		BaseConfig:                   configservices.BaseConfig{Enabled: true},
+		BaseConfig:                   configservices.BaseConfig{Enabled: true, Namespace: "observability", SourceName: "opencenter-observability", OverrideValuesRendererKey: "tempo"},
 		StorageType:                  "swift",
 		BucketName:                   "tempo-container",
 		SwiftAuthURL:                 "https://identity.api.example.com/v3",

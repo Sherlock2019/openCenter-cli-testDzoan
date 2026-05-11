@@ -474,6 +474,38 @@ go run ./cmd/schema-gen/main.go --version 2.0 --output schema/cluster.schema.jso
 echo "Schema generated at schema/cluster.schema.json"
 '''
 
+# Regenerate the v2 JSON schema from Go types (BaseConfig, services, etc.)
+schema-v2 = '''
+#!/usr/bin/env bash
+set -e
+cat > /tmp/regen_schema_test.go << 'GOEOF'
+package v2schema
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestRegenSchema(t *testing.T) {
+	root := repoRoot(t)
+	data, err := Generate(Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(root, "schema", "opencenter-v2.schema.json")
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("regenerated %s (%d bytes)", path, len(data))
+}
+GOEOF
+cp /tmp/regen_schema_test.go internal/config/v2schema/regen_test.go
+go test ./internal/config/v2schema/ -run TestRegenSchema -count=1
+rm internal/config/v2schema/regen_test.go
+echo "v2 schema regenerated at schema/opencenter-v2.schema.json"
+'''
+
 # Validate cluster configuration
 validate = "./bin/opencenter cluster validate"
 

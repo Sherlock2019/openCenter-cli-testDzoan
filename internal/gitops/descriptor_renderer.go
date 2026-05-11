@@ -24,6 +24,7 @@ type clusterAppAction struct {
 	Template string
 	Output   string
 	Render   bool
+	Content  string // Pre-rendered content (used by auto-descriptors). When set, Template is ignored.
 }
 
 // lastRenderDiagnostics stores the diagnostics from the most recent
@@ -406,6 +407,21 @@ func planClusterAppActions(cfg v2.Config) ([]clusterAppAction, error) {
 		})
 	}
 
+	// Auto-generate actions for services without explicit descriptors.
+	autoActions, err := planAutoServiceActions(cfg, registry)
+	if err != nil {
+		return nil, err
+	}
+	actions = append(actions, autoActions...)
+
+	for _, action := range autoActions {
+		diag.Actions = append(diag.Actions, ActionDiagnostic{
+			Owner:    action.Owner,
+			Output:   action.Output,
+			Rendered: action.Content != "",
+		})
+	}
+
 	lastRenderDiagnostics = diag
 	return actions, nil
 }
@@ -473,6 +489,17 @@ func planSingleServiceActions(cfg v2.Config, serviceName string, isManaged bool)
 		}
 	}
 	if !found {
+		// Fall back to auto-descriptor for services without explicit descriptors.
+		if !isManaged {
+			serviceCfg, exists := cfg.OpenCenter.Services[serviceName]
+			if exists && !IsServiceDisabled(serviceCfg) {
+				base := extractBaseConfig(serviceCfg)
+				if base != nil {
+					ctx := buildAutoServiceContext(serviceName, base, cfg)
+					return renderAutoServiceActions(ctx, cfg)
+				}
+			}
+		}
 		return nil, fmt.Errorf("descriptor not found for service %q", serviceName)
 	}
 
@@ -507,6 +534,20 @@ func planSingleServiceActions(cfg v2.Config, serviceName string, isManaged bool)
 func writeClusterAppActions(actions []clusterAppAction, target string, cfg v2.Config, workspace *GitOpsWorkspace) error {
 	for _, action := range actions {
 		dst := filepath.Join(target, action.Output)
+
+		// Auto-descriptor actions provide pre-rendered content directly.
+		if action.Content != "" {
+			relPath, err := filepath.Rel(workspace.RootDir, dst)
+			if err != nil {
+				return fmt.Errorf("relative path for %s: %w", action.Output, err)
+			}
+			writer := NewAtomicWriter(workspace)
+			if err := writer.WriteFileString(relPath, action.Content, 0o644); err != nil {
+				return err
+			}
+			continue
+		}
+
 		if action.Render {
 			if err := renderTemplateAtomic(action.Template, dst, cfg, workspace); err != nil {
 				return err
