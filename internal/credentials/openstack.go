@@ -58,124 +58,59 @@ func (c *OpenStackCredentials) IsEmpty() bool {
 func (c *OpenStackCredentials) ToEnvVarsForShell(shell string) string {
 	var output strings.Builder
 
-	switch shell {
-	case "fish":
-		if c.AuthURL != "" {
-			output.WriteString(fmt.Sprintf("set -gx OS_AUTH_URL \"%s\"\n", c.AuthURL))
+	for _, env := range c.shellEnvVars() {
+		switch shell {
+		case "fish":
+			output.WriteString(fmt.Sprintf("set -gx %s \"%s\"\n", env.name, env.value))
+		case "powershell":
+			output.WriteString(fmt.Sprintf("$env:%s = \"%s\"\n", env.name, env.value))
+		default:
+			output.WriteString(fmt.Sprintf("export %s=\"%s\"\n", env.name, env.value))
 		}
-		if c.Region != "" {
-			output.WriteString(fmt.Sprintf("set -gx OS_REGION_NAME \"%s\"\n", c.Region))
-		}
-		if c.ApplicationCredentialID != "" {
-			output.WriteString(fmt.Sprintf("set -gx OS_APPLICATION_CREDENTIAL_ID \"%s\"\n", c.ApplicationCredentialID))
-		}
-		if c.ApplicationCredentialSecret != "" {
-			output.WriteString(fmt.Sprintf("set -gx OS_APPLICATION_CREDENTIAL_SECRET \"%s\"\n", c.ApplicationCredentialSecret))
-		}
-		if c.Username != "" {
-			output.WriteString(fmt.Sprintf("set -gx OS_USERNAME \"%s\"\n", c.Username))
-		}
-		if c.Password != "" {
-			output.WriteString(fmt.Sprintf("set -gx OS_PASSWORD \"%s\"\n", c.Password))
-		}
-		if c.ProjectName != "" {
-			output.WriteString(fmt.Sprintf("set -gx OS_PROJECT_NAME \"%s\"\n", c.ProjectName))
-		}
-		if c.TenantName != "" && c.ProjectName == "" {
-			output.WriteString(fmt.Sprintf("set -gx OS_PROJECT_NAME \"%s\"\n", c.TenantName))
-		}
-		if c.UserDomainName != "" {
-			output.WriteString(fmt.Sprintf("set -gx OS_USER_DOMAIN_NAME \"%s\"\n", c.UserDomainName))
-		}
-		if c.ProjectDomainName != "" {
-			output.WriteString(fmt.Sprintf("set -gx OS_PROJECT_DOMAIN_NAME \"%s\"\n", c.ProjectDomainName))
-		}
-		if c.Domain != "" && c.UserDomainName == "" && c.ProjectDomainName == "" {
-			output.WriteString(fmt.Sprintf("set -gx OS_USER_DOMAIN_NAME \"%s\"\n", c.Domain))
-			output.WriteString(fmt.Sprintf("set -gx OS_PROJECT_DOMAIN_NAME \"%s\"\n", c.Domain))
-		}
-		output.WriteString("set -gx OS_INTERFACE \"public\"\n")
-		output.WriteString("set -gx OS_IDENTITY_API_VERSION \"3\"\n")
-
-	case "powershell":
-		if c.AuthURL != "" {
-			output.WriteString(fmt.Sprintf("$env:OS_AUTH_URL = \"%s\"\n", c.AuthURL))
-		}
-		if c.Region != "" {
-			output.WriteString(fmt.Sprintf("$env:OS_REGION_NAME = \"%s\"\n", c.Region))
-		}
-		if c.ApplicationCredentialID != "" {
-			output.WriteString(fmt.Sprintf("$env:OS_APPLICATION_CREDENTIAL_ID = \"%s\"\n", c.ApplicationCredentialID))
-		}
-		if c.ApplicationCredentialSecret != "" {
-			output.WriteString(fmt.Sprintf("$env:OS_APPLICATION_CREDENTIAL_SECRET = \"%s\"\n", c.ApplicationCredentialSecret))
-		}
-		if c.Username != "" {
-			output.WriteString(fmt.Sprintf("$env:OS_USERNAME = \"%s\"\n", c.Username))
-		}
-		if c.Password != "" {
-			output.WriteString(fmt.Sprintf("$env:OS_PASSWORD = \"%s\"\n", c.Password))
-		}
-		if c.ProjectName != "" {
-			output.WriteString(fmt.Sprintf("$env:OS_PROJECT_NAME = \"%s\"\n", c.ProjectName))
-		}
-		if c.TenantName != "" && c.ProjectName == "" {
-			output.WriteString(fmt.Sprintf("$env:OS_PROJECT_NAME = \"%s\"\n", c.TenantName))
-		}
-		if c.UserDomainName != "" {
-			output.WriteString(fmt.Sprintf("$env:OS_USER_DOMAIN_NAME = \"%s\"\n", c.UserDomainName))
-		}
-		if c.ProjectDomainName != "" {
-			output.WriteString(fmt.Sprintf("$env:OS_PROJECT_DOMAIN_NAME = \"%s\"\n", c.ProjectDomainName))
-		}
-		if c.Domain != "" && c.UserDomainName == "" && c.ProjectDomainName == "" {
-			output.WriteString(fmt.Sprintf("$env:OS_USER_DOMAIN_NAME = \"%s\"\n", c.Domain))
-			output.WriteString(fmt.Sprintf("$env:OS_PROJECT_DOMAIN_NAME = \"%s\"\n", c.Domain))
-		}
-		output.WriteString("$env:OS_INTERFACE = \"public\"\n")
-		output.WriteString("$env:OS_IDENTITY_API_VERSION = \"3\"\n")
-
-	default:
-		// Bash/Zsh syntax
-		if c.AuthURL != "" {
-			output.WriteString(fmt.Sprintf("export OS_AUTH_URL=\"%s\"\n", c.AuthURL))
-		}
-		if c.Region != "" {
-			output.WriteString(fmt.Sprintf("export OS_REGION_NAME=\"%s\"\n", c.Region))
-		}
-		if c.ApplicationCredentialID != "" {
-			output.WriteString(fmt.Sprintf("export OS_APPLICATION_CREDENTIAL_ID=\"%s\"\n", c.ApplicationCredentialID))
-		}
-		if c.ApplicationCredentialSecret != "" {
-			output.WriteString(fmt.Sprintf("export OS_APPLICATION_CREDENTIAL_SECRET=\"%s\"\n", c.ApplicationCredentialSecret))
-		}
-		if c.Username != "" {
-			output.WriteString(fmt.Sprintf("export OS_USERNAME=\"%s\"\n", c.Username))
-		}
-		if c.Password != "" {
-			output.WriteString(fmt.Sprintf("export OS_PASSWORD=\"%s\"\n", c.Password))
-		}
-		if c.ProjectName != "" {
-			output.WriteString(fmt.Sprintf("export OS_PROJECT_NAME=\"%s\"\n", c.ProjectName))
-		}
-		if c.TenantName != "" && c.ProjectName == "" {
-			output.WriteString(fmt.Sprintf("export OS_PROJECT_NAME=\"%s\"\n", c.TenantName))
-		}
-		if c.UserDomainName != "" {
-			output.WriteString(fmt.Sprintf("export OS_USER_DOMAIN_NAME=\"%s\"\n", c.UserDomainName))
-		}
-		if c.ProjectDomainName != "" {
-			output.WriteString(fmt.Sprintf("export OS_PROJECT_DOMAIN_NAME=\"%s\"\n", c.ProjectDomainName))
-		}
-		if c.Domain != "" && c.UserDomainName == "" && c.ProjectDomainName == "" {
-			output.WriteString(fmt.Sprintf("export OS_USER_DOMAIN_NAME=\"%s\"\n", c.Domain))
-			output.WriteString(fmt.Sprintf("export OS_PROJECT_DOMAIN_NAME=\"%s\"\n", c.Domain))
-		}
-		output.WriteString("export OS_INTERFACE=\"public\"\n")
-		output.WriteString("export OS_IDENTITY_API_VERSION=\"3\"\n")
 	}
 
 	return output.String()
+}
+
+type envVar struct {
+	name  string
+	value string
+}
+
+func (c *OpenStackCredentials) shellEnvVars() []envVar {
+	env := make([]envVar, 0, 13)
+	add := func(name, value string) {
+		if value != "" {
+			env = append(env, envVar{name: name, value: value})
+		}
+	}
+
+	add("OS_AUTH_URL", c.AuthURL)
+	add("OS_REGION_NAME", c.Region)
+	add("OS_APPLICATION_CREDENTIAL_ID", c.ApplicationCredentialID)
+	add("OS_APPLICATION_CREDENTIAL_SECRET", c.ApplicationCredentialSecret)
+	add("OS_USERNAME", c.Username)
+	add("OS_PASSWORD", c.Password)
+	add("OS_PROJECT_NAME", firstNonEmpty(c.ProjectName, c.TenantName))
+	add("OS_USER_DOMAIN_NAME", c.UserDomainName)
+	add("OS_PROJECT_DOMAIN_NAME", c.ProjectDomainName)
+	if c.Domain != "" && c.UserDomainName == "" && c.ProjectDomainName == "" {
+		add("OS_USER_DOMAIN_NAME", c.Domain)
+		add("OS_PROJECT_DOMAIN_NAME", c.Domain)
+	}
+	add("OS_INTERFACE", "public")
+	add("OS_IDENTITY_API_VERSION", "3")
+
+	return env
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 // ToEnvMap converts OpenStack credentials to process environment variables.

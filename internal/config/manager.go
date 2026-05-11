@@ -159,70 +159,7 @@ func NewConfigurationManagerWithDeps(
 //	    return fmt.Errorf("failed to load config: %w", err)
 //	}
 func (cm *ConfigurationManager) Load(ctx context.Context, name string) (*v2.Config, error) {
-	if name == "" {
-		return nil, errors.WrapWithOperation(
-			fmt.Errorf("cluster name cannot be empty"),
-			"load",
-		)
-	}
-
-	// Check cache first (fast path)
-	if cached, found := cm.cache.Get(ctx, name); found {
-		return cached, nil
-	}
-
-	// Parse cluster identifier to handle organization/cluster format
-	var clusterPaths *paths.ClusterPaths
-	var err error
-
-	if strings.Contains(name, "/") {
-		// organization/cluster format - parse and use Resolve
-		parts := strings.SplitN(name, "/", 2)
-		if len(parts) != 2 {
-			return nil, errors.WrapWithOperation(
-				fmt.Errorf("invalid cluster identifier format: expected 'organization/cluster'"),
-				"load",
-			)
-		}
-		organization := parts[0]
-		clusterName := parts[1]
-		clusterPaths, err = cm.pathResolver.Resolve(ctx, clusterName, organization)
-	} else {
-		// Just cluster name - use ResolveWithFallback to search all organizations
-		clusterPaths, err = cm.pathResolver.ResolveWithFallback(ctx, name)
-	}
-
-	if err != nil {
-		return nil, NewConfigNotFoundError(name, errors.WrapWithOperation(
-			NewPathError(name, "", err),
-			"load",
-		))
-	}
-
-	configPath := clusterPaths.ConfigPath
-
-	// Check if file exists
-	if !cm.fileSystem.Exists(configPath) {
-		return nil, NewConfigNotFoundError(name, errors.WrapWithOperation(
-			NewFileError("read", configPath, fmt.Errorf("configuration file not found")),
-			"load",
-		))
-	}
-
-	// Load configuration from file
-	config, err := cm.loader.LoadFromFile(ctx, configPath)
-	if err != nil {
-		// Check if it's a parse error - wrap with appropriate context
-		return nil, errors.WrapWithOperation(
-			NewParseError(configPath, 0, 0, err),
-			"load",
-		)
-	}
-
-	// Cache the loaded configuration
-	cm.cache.Set(ctx, name, config)
-
-	return config, nil
+	return cm.loadFromCacheOrDisk(ctx, name)
 }
 
 // LoadWithoutValidation loads a configuration from disk or cache without validation.
@@ -251,6 +188,10 @@ func (cm *ConfigurationManager) Load(ctx context.Context, name string) (*v2.Conf
 //	    return fmt.Errorf("failed to load config: %w", err)
 //	}
 func (cm *ConfigurationManager) LoadWithoutValidation(ctx context.Context, name string) (*v2.Config, error) {
+	return cm.loadFromCacheOrDisk(ctx, name)
+}
+
+func (cm *ConfigurationManager) loadFromCacheOrDisk(ctx context.Context, name string) (*v2.Config, error) {
 	if name == "" {
 		return nil, errors.WrapWithOperation(
 			fmt.Errorf("cluster name cannot be empty"),

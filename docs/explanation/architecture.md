@@ -83,7 +83,7 @@ This allows users to override values at multiple levels while maintaining sensib
 
 **Trade-offs:** Templates are less flexible than code but more maintainable. Changes require CLI rebuild, but this ensures tested combinations.
 
-**Evidence:** `internal/gitops/copy.go`, `internal/util/template/`, `.kiro/steering/product.md:35`
+**Evidence:** `internal/gitops/copy.go`, `internal/template/`, `.kiro/steering/product.md:35`
 
 ### GitOps Repository Generator
 
