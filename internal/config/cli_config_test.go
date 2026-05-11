@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -499,6 +500,51 @@ func TestLoggingInitialization(t *testing.T) {
 	if logger.Level.String() != "warning" {
 		t.Errorf("Expected log level 'warning', got '%s'", logger.Level.String())
 	}
+}
+
+func TestGlobalLoggerConcurrentInitializationAndRead(t *testing.T) {
+	configs := []LoggingConfig{
+		{
+			Level:  "debug",
+			Format: "text",
+			Output: "stderr",
+			File: FileConfig{
+				MaxSize:    100,
+				MaxBackups: 3,
+				MaxAge:     28,
+				Compress:   true,
+			},
+		},
+		{
+			Level:  "info",
+			Format: "json",
+			Output: "stderr",
+			File: FileConfig{
+				MaxSize:    100,
+				MaxBackups: 3,
+				MaxAge:     28,
+				Compress:   true,
+			},
+		},
+	}
+
+	var wg sync.WaitGroup
+	for i := 0; i < 24; i++ {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 100; j++ {
+				if err := InitializeLogging(&configs[(i+j)%len(configs)]); err != nil {
+					t.Errorf("InitializeLogging() error = %v", err)
+				}
+				if logger := GetGlobalLogger(); logger == nil {
+					t.Error("GetGlobalLogger() returned nil")
+				}
+			}
+		}()
+	}
+	wg.Wait()
 }
 
 func TestLoggingValidation(t *testing.T) {

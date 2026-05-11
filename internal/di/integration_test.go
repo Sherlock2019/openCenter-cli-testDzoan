@@ -401,9 +401,9 @@ func TestPathResolverIntegration(t *testing.T) {
 	tmpDir := t.TempDir()
 	container := NewContainer()
 
-	// Create the secure state marker used for resolution.
-	stateDir := filepath.Join(tmpDir, "state", "test-org", "test-cluster")
-	if err := os.MkdirAll(stateDir, 0755); err != nil {
+	// Create the secure blueprint marker used for resolution.
+	blueprintsDir := filepath.Join(tmpDir, "blueprints", "test-org", "test-cluster")
+	if err := os.MkdirAll(blueprintsDir, 0755); err != nil {
 		t.Fatalf("Failed to create directory structure: %v", err)
 	}
 

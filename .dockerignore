@@ -1,0 +1,11 @@
+.git
+.github
+.worktrees
+bin
+coverage.out
+dist
+tmp
+*.test
+*.tmp
+.DS_Store
+

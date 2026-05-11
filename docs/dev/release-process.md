@@ -98,6 +98,8 @@ All tests must pass before proceeding.
 ## Step 2: Push The Release Tag
 
 The GitHub Actions release workflow is the source of truth for published artifacts.
+Pushing the tag also runs the container image workflow, which publishes the
+multi-architecture CLI image to `ghcr.io/opencenter-cloud/opencenter-cli`.
 
 ```bash
 git tag -a v1.2.0 -m "Release 1.2.0"
@@ -126,6 +128,11 @@ Verify the GitHub release contains:
 - `checksums.txt`
 - cosign signature and certificate files
 - `opencenter.spdx.json`
+
+Verify the GitHub Container Registry package contains:
+- `ghcr.io/opencenter-cloud/opencenter-cli:1.2.0`
+- `ghcr.io/opencenter-cloud/opencenter-cli:1.2`
+- the corresponding `sha-*` tag
 
 ### Local Dry Run Helper
 
@@ -202,6 +209,7 @@ Before releasing, verify:
 - [ ] Binaries tested on target platforms
 - [ ] Git tag created and pushed
 - [ ] GitHub release created with binaries
+- [ ] GHCR image published for the release tag
 - [ ] Release verified by downloading and testing
 - [ ] Documentation updated with new version
 - [ ] Release announced to team

@@ -1,8 +1,9 @@
 [tools]
-golang = "latest"
+golang = "1.26.3"
 kubectl = "latest"
 kind = "latest"
 helm = "latest"
+"go:golang.org/x/vuln/cmd/govulncheck" = "latest"
 
 [env]
 # Override the default config directory via environment for reproducible tests
@@ -392,6 +393,9 @@ go test ./internal/config/... ./cmd/... -count=1
 go test ./internal/cloud/... -count=1
 '''
 
+# Run the Go race detector across the CI package set
+test-race = "go test ./internal/... ./cmd/... -count=1 -race"
+
 # Run BDD tests via godog (non-@wip scenarios)
 godog = "go test ./tests/features/steps/... -v -- --godog.tags=~@wip --godog.paths=tests/features"
 
@@ -424,6 +428,12 @@ go test ./internal/... -v -run "TestProperty"
 echo "=== Property-Based Tests Complete ==="
 '''
 
+# Alias with the name used in the developer documentation.
+test-properties = "mise run property"
+
+# Run Go vulnerability analysis.
+govulncheck = "govulncheck ./..."
+
 # Run integration tests (resilience, operations, cluster setup)
 integration = '''
 #!/usr/bin/env bash
@@ -455,7 +465,15 @@ go test -tags perf ./internal/config -run "TestMemoryUsageRegression" -count=1
 test-all = [
   "mise run test",
   "mise run godog",
-  "mise run property"
+  "mise run test-properties"
+]
+
+# Run local verification checks that catch CI regressions.
+verify = [
+  "mise run test",
+  "mise run test-race",
+  "mise run test-properties",
+  "mise run govulncheck"
 ]
 
 # ---------------------------------------------------------------------------

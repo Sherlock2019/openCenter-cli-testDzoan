@@ -46,8 +46,8 @@ func TestNewAppDoesNotCreateCLIConfigInClustersDir(t *testing.T) {
 		t.Fatalf("NewApp() failed: %v", err)
 	}
 
-	if _, err := os.Stat(filepath.Join(configDir, "config.yaml")); err != nil {
-		t.Fatalf("tool config stat error = %v, want config.yaml under config dir", err)
+	if _, err := os.Stat(filepath.Join(configDir, "settings.yaml")); err != nil {
+		t.Fatalf("tool config stat error = %v, want settings.yaml under config dir", err)
 	}
 
 	if _, err := os.Stat(filepath.Join(clustersDir, "config.yaml")); !os.IsNotExist(err) {

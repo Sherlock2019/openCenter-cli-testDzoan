@@ -19,14 +19,19 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	corePaths "github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-// Logger is the global logger instance
-var Logger *logrus.Logger
+var (
+	// Logger is the global logger instance. Use GetGlobalLogger inside this
+	// package so concurrent reconfiguration is synchronized.
+	Logger   *logrus.Logger
+	loggerMu sync.RWMutex
+)
 
 // LoggerManager manages the logging configuration and setup
 type LoggerManager struct {
@@ -82,8 +87,7 @@ func (lm *LoggerManager) Configure() error {
 	}
 	lm.logger.SetOutput(output)
 
-	// Set the global logger
-	Logger = lm.logger
+	setGlobalLogger(lm.logger)
 
 	return nil
 }
@@ -172,24 +176,45 @@ func InitializeLogging(config *LoggingConfig) error {
 		return fmt.Errorf("failed to initialize logging: %w", err)
 	}
 
-	// Set the global logger
-	Logger = loggerManager.GetLogger()
+	setGlobalLogger(loggerManager.GetLogger())
 
 	return nil
 }
 
 // GetGlobalLogger returns the global logger instance
 func GetGlobalLogger() *logrus.Logger {
-	if Logger == nil {
-		// Initialize with default configuration if not already initialized
-		defaultConfig := DefaultCLIConfig()
-		if err := InitializeLogging(&defaultConfig.Logging); err != nil {
-			// Fallback to basic logger
-			Logger = logrus.New()
-			Logger.SetLevel(logrus.WarnLevel)
-		}
+	if logger := getGlobalLogger(); logger != nil {
+		return logger
 	}
+
+	defaultConfig := DefaultCLIConfig()
+	if err := InitializeLogging(&defaultConfig.Logging); err != nil {
+		fallback := logrus.New()
+		fallback.SetLevel(logrus.WarnLevel)
+		setGlobalLogger(fallback)
+		return fallback
+	}
+
+	if logger := getGlobalLogger(); logger != nil {
+		return logger
+	}
+
+	fallback := logrus.New()
+	fallback.SetLevel(logrus.WarnLevel)
+	setGlobalLogger(fallback)
+	return fallback
+}
+
+func getGlobalLogger() *logrus.Logger {
+	loggerMu.RLock()
+	defer loggerMu.RUnlock()
 	return Logger
+}
+
+func setGlobalLogger(logger *logrus.Logger) {
+	loggerMu.Lock()
+	defer loggerMu.Unlock()
+	Logger = logger
 }
 
 // ValidateLoggingConfig validates the logging configuration
