@@ -172,17 +172,26 @@ Shared utility packages:
 
 ### Other Packages
 
-- `internal/cluster/` - Cluster lifecycle management
-- `internal/credentials/` - Credential export/unset
-- `internal/di/` - Dependency injection
-- `internal/observability/` - Metrics and logging
-- `internal/operations/` - Backup, drift detection
-- `internal/plugins/` - Plugin system
-- `internal/resilience/` - Retry, circuit breaker, locking
-- `internal/services/` - Service management
-- `internal/template/` - Template sandbox
-- `internal/testing/` - Test utilities
-- `internal/ui/` - TUI components (Bubble Tea)
+- `internal/ansible/` - Kubespray inventory generation from config
+- `internal/barbican/` - OpenStack Key Manager (Barbican) client
+- `internal/benchmarks/` - Performance benchmarks for config system
+- `internal/cluster/` - Cluster lifecycle services (init, validate, setup, bootstrap, destroy)
+- `internal/core/` - Shared path resolution (`core/paths`) and validation engine (`core/validation`)
+- `internal/credentials/` - Cloud credential extraction from config
+- `internal/di/` - Dependency injection container (App struct + reflection-based Container)
+- `internal/importer/` - Live cluster import/scan for existing workloads
+- `internal/localdev/` - Local dev environment (Kind, Gitea, Flux)
+- `internal/observability/` - Structured logging with credential masking
+- `internal/operations/` - Drift detection, backup, disaster recovery
+- `internal/plugins/` - External CLI plugin discovery and checksum verification
+- `internal/resilience/` - Retry, circuit breaker, distributed locks
+- `internal/secrets/` - Multi-cluster secrets management (rotation, registry, hooks, revocation)
+- `internal/services/` - Platform service plugin registry with dependency resolution
+- `internal/template/` - Template engine with caching, validation, sandboxing
+- `internal/testenv/` - Test environment helpers (isolated CLI config/state)
+- `internal/testing/` - Shared test utilities (helpers, mocks, generators, benchmarks)
+- `internal/tofu/` - OpenTofu/Terraform provisioning execution
+- `internal/ui/` - Prompts, error formatting, guided flows
 
 ## Testing (tests/)
 

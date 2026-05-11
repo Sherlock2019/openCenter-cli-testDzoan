@@ -20,13 +20,57 @@ Mise is the task automation tool for openCenter CLI. All development operations 
 
 **Critical Rule:** Always use `mise run <task>` instead of raw commands (go, terraform, etc.).
 
-**Evidence:** `.kiro/steering/tech.md:1-2`, `.kiro/steering/product.md:23-28`
+## Complete Task Inventory
+
+| Task | Category | Description |
+|------|----------|-------------|
+| `build` | Build | Build both CLI and local plugin (chains build-cli + build-local-plugin) |
+| `build-cli` | Build | Build the opencenter CLI binary with version info |
+| `build-local-plugin` | Build | Build the local workflow plugin (bin/opencenter-local) |
+| `build-linux` | Build | Cross-compile for Linux amd64 |
+| `build-all` | Build | Build for multiple platforms |
+| `local-install` | Build | Build and install to local bin directory |
+| `release` | Release | Build release binaries + generate release notes |
+| `publish` | Release | Publish release to GitHub |
+| `fmt` | Quality | Format all Go source files |
+| `lint` | Quality | Lint Go source files |
+| `tidy` | Quality | Tidy Go module dependencies |
+| `upgrade-deps` | Quality | Upgrade all Go dependencies |
+| `test` | Test | Run unit tests (config, cmd, cloud packages) |
+| `test-race` | Test | Run Go race detector |
+| `test-all` | Test | Run all tests: unit + BDD + property |
+| `godog` | Test | Run BDD tests (non-@wip scenarios) |
+| `godog-wip` | Test | Run only @wip BDD scenarios |
+| `godog-tag` | Test | Run BDD scenarios filtered by tag |
+| `property` | Test | Run property-based tests |
+| `integration` | Test | Run integration tests |
+| `perf` | Test | Run performance-tagged checks |
+| `govulncheck` | Test | Run Go vulnerability analysis |
+| `verify` | Test | Local verification checks (catches CI regressions) |
+| `schema` | Schema | Generate cluster JSON schema |
+| `schema-gen` | Schema | Generate JSON schema from Go struct definitions |
+| `schema-v2` | Schema | Regenerate v2 JSON schema from Go types |
+| `schema-verify` | Schema | Comprehensive schema change verification |
+| `validate` | Schema | Validate cluster configuration |
+| `docs-gen` | Docs | Generate CLI documentation |
+| `tag-wip-failures` | Docs | Detect failing BDD scenarios and tag with @wip |
+| `gitea-up` | Local Dev | Start and configure local Gitea for testing |
+| `gitea-cleanup` | Local Dev | Tear down local Gitea instance |
+| `active` | Local Dev | Show current active cluster status |
+| `terraform-generate` | Local Dev | Generate Terraform main.tf from cluster config |
+| `preflight` | Local Dev | Preflight checks for cluster deployment |
+| `install-shell-integration` | Local Dev | Install shell integration (prompt, completions) |
+| `install-hooks` | Local Dev | Install git hooks for development |
+| `clean` | Cleanup | Remove build artifacts and generated files |
+| `kind-cleanup` | Cleanup | Destroy local Kind cluster and Gitea |
+| `demo-cleanup` | Cleanup | Full demo teardown (Kind + Gitea + artifacts) |
+| `openstack-reset` | OpenStack | Reset an OpenStack project to clean state |
 
 ## Build Tasks
 
 ### build
 
-Build binary with version information.
+Build both the opencenter CLI and the local workflow plugin.
 
 **Usage:**
 ```bash
@@ -34,11 +78,11 @@ mise run build
 ```
 
 **What it does:**
-- Compiles Go code
-- Injects version information via ldflags
-- Creates binary in `bin/opencenter`
+- Runs `build-cli` then `build-local-plugin`
+- Compiles Go code with version information via ldflags
+- Creates binaries in `bin/`
 
-**Output:** `bin/opencenter` (current platform)
+**Output:** `bin/opencenter` + `bin/opencenter-local` (current platform)
 
 **Evidence:** `.kiro/steering/tech.md:52`
 

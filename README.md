@@ -44,13 +44,13 @@ See [Getting Started Tutorial](docs/tutorials/getting-started.md) for complete w
 
 ## Key Capabilities
 
-- **Cluster Lifecycle:** Initialize, validate, setup, bootstrap, update, destroy
+- **Cluster Lifecycle:** Initialize, configure, validate, generate, deploy, destroy
 - **Configuration Management:** Schema-driven with defaults, validation, and override capabilities
-- **Secrets Operations:** Generate keys, encrypt/decrypt, rotate, check expiration
+- **Secrets Operations:** Generate keys, encrypt/decrypt, rotate, check expiration, sync, validate drift
 - **GitOps Repository:** Automated generation with infrastructure (Terraform/Kubespray) and applications (FluxCD/Kustomize)
 - **Provider Abstraction:** Unified interface across OpenStack, VMware, Baremetal, and Kind
-- **Service Management:** Enable/disable platform services, customize configurations
-- **Operational Tools:** Drift detection, backup/restore, audit logging, preflight checks
+- **Service Management:** Enable/disable platform services, customize configurations, view options
+- **Operational Tools:** Drift detection, backup/restore, audit logging, cluster doctor, import
 
 ## Configuration Example
 
@@ -93,12 +93,86 @@ secrets:
 
 See [Configuration Schema Reference](docs/reference/configuration-schema.md) for complete structure.
 
+## CLI Commands Quick Reference
+
+```bash
+# Cluster Lifecycle
+opencenter cluster init <name> --org <org>     # Initialize new cluster
+opencenter cluster configure <name> --guided   # Guided provider configuration
+opencenter cluster validate <name>             # Validate configuration
+opencenter cluster generate <name>             # Generate GitOps repository
+opencenter cluster deploy <name>               # Deploy cluster
+opencenter cluster destroy <name>              # Destroy cluster
+
+# Cluster Management
+opencenter cluster list                        # List all clusters
+opencenter cluster use <name>                  # Set active cluster
+opencenter cluster active                      # Show active cluster
+opencenter cluster status <name>               # Show cluster status
+opencenter cluster describe <name>             # Detailed cluster description
+opencenter cluster doctor <name>               # Check tools and readiness
+
+# Configuration
+opencenter cluster set <name> <path=value>     # Update configuration value
+opencenter cluster edit <name>                 # Edit in $EDITOR
+opencenter cluster normalize <name>            # Add missing defaults
+opencenter cluster export <name>               # Export effective config
+
+# Service Management
+opencenter cluster service enable <svc>        # Enable a platform service
+opencenter cluster service disable <svc>       # Disable a platform service
+opencenter cluster service status              # Show all service states
+opencenter cluster service options <svc>       # Show service config options
+
+# Secrets Management
+opencenter secrets keys generate               # Generate Age key pair
+opencenter secrets keys rotate --type sops     # Rotate encryption keys
+opencenter secrets keys check                  # Check key expiration
+opencenter secrets keys backup                 # Backup Age keys
+opencenter secrets sync <name>                 # Sync secrets to manifests
+opencenter secrets validate <name>             # Validate secrets for drift
+opencenter secrets encrypt                     # Encrypt secrets in YAML
+opencenter secrets decrypt                     # Decrypt secrets in YAML
+opencenter secrets status                      # Show encryption status
+opencenter secrets login                       # Refresh Keystone token
+opencenter secrets list                        # List secrets
+opencenter secrets get <name>                  # Download and decrypt
+opencenter secrets set <name>                  # Create or update
+
+# Operations
+opencenter cluster drift detect <name>         # Detect infrastructure drift
+opencenter cluster drift reconcile <name>      # Reconcile drift
+opencenter cluster backup create <name>        # Create backup
+opencenter cluster backup restore <id>         # Restore from backup
+opencenter cluster lock <name>                 # Lock cluster
+opencenter cluster import scan                 # Scan repo for import
+opencenter cluster migrate-layout --org <org>  # Migrate to secure layout
+
+# CLI Settings
+opencenter settings view                       # Display current settings
+opencenter settings set <key> <value>          # Set a value (dot notation)
+opencenter settings get <key>                  # Get a value
+opencenter settings path                       # Show settings file path
+opencenter settings edit                       # Edit settings in editor
+opencenter settings ide                        # Generate schema + editor setup
+opencenter settings explain                    # Explain config effects
+
+# Plugins
+opencenter plugins list                        # List external plugins
+
+# Utilities
+opencenter version                             # Show version information
+opencenter shell-init                          # Output shell integration script
+opencenter --help                              # Show help
+```
+
+See [CLI Commands Reference](docs/reference/cli-commands.md) for complete documentation with all flags.
+
 ## Documentation
 
 Comprehensive documentation organized by the [Diátaxis framework](https://diataxis.fr/):
 
 ### 📚 [Tutorials](docs/tutorials/) (Learning-Oriented)
-Step-by-step guides for learning openCenter:
 - [Getting Started](docs/tutorials/getting-started.md) - Your first cluster in 10 minutes
 - [OpenStack First Cluster](docs/tutorials/openstack-first-cluster.md) - Deploy on OpenStack
 - [Kind Local Development](docs/tutorials/kind-local-development.md) - Local development setup
@@ -106,7 +180,6 @@ Step-by-step guides for learning openCenter:
 - [Multi-Cluster Management](docs/tutorials/multi-cluster-setup.md) - Manage multiple clusters
 
 ### 🔧 [How-To Guides](docs/how-to/) (Task-Oriented)
-Practical guides for specific tasks:
 - [Validate Configuration](docs/how-to/validate-configuration.md) - Pre-deployment validation
 - [Manage Secrets](docs/how-to/manage-secrets.md) - SOPS encryption and key rotation
 - [Customize Services](docs/how-to/customize-services.md) - Configure platform services
@@ -116,9 +189,9 @@ Practical guides for specific tasks:
 - [Troubleshoot Deployment](docs/how-to/troubleshoot-deployment.md) - Common issues and solutions
 - [Migrate Clusters](docs/how-to/migrate-clusters.md) - Provider/region migration
 - [Integrate CI/CD](docs/how-to/integrate-ci-cd.md) - Pipeline integration
+- [Create and Install a CLI Plugin](docs/how-to/create-install-cli-plugin.md) - External plugins
 
 ### 📖 [Reference](docs/reference/) (Information-Oriented)
-Technical specifications and detailed information:
 - [CLI Commands](docs/reference/cli-commands.md) - Complete command reference
 - [Configuration Schema](docs/reference/configuration-schema.md) - Configuration file structure
 - [Default Values](docs/reference/default-values.md) - Default configuration values
@@ -128,19 +201,21 @@ Technical specifications and detailed information:
 - [Environment Variables](docs/reference/environment-variables.md) - Environment configuration
 - [Exit Codes](docs/reference/exit-codes.md) - CLI exit codes and meanings
 - [File Locations](docs/reference/file-locations.md) - Configuration file paths
+- [Configuration Precedence](docs/reference/configuration-precedence.md) - Resolution order
 - [Mise Tasks](docs/reference/mise-tasks.md) - Development and build tasks
 
 ### 💡 [Explanation](docs/explanation/) (Understanding-Oriented)
-Conceptual explanations and background:
 - [Architecture](docs/explanation/architecture.md) - System design and decisions
 - [GitOps Workflow](docs/explanation/gitops-workflow.md) - Repository structure and reconciliation
 - [Security Model](docs/explanation/security-model.md) - Security architecture and controls
 - [Configuration Lifecycle](docs/explanation/configuration-lifecycle.md) - Configuration management
 - [Provider Comparison](docs/explanation/provider-comparison.md) - Choosing infrastructure providers
 - [Drift Detection](docs/explanation/drift-detection.md) - Configuration drift and reconciliation
+- [Services & Templates](docs/explanation/services-templates.md) - Service rendering system
+- [Plugin Internal Services](docs/explanation/plugin-internal-services.md) - Service plugin architecture
+- [Plugin External CLI](docs/explanation/plugin-external-cli.md) - Command plugin model
 
 ### 🛠️ [Developer Documentation](docs/dev/)
-For contributors and developers:
 - [Contributing Guide](docs/dev/contributing.md) - Contribution guidelines
 - [Development Setup](docs/dev/development-setup.md) - Local development environment
 - [Testing Guide](docs/dev/testing-guide.md) - Writing and running tests
@@ -150,43 +225,17 @@ For contributors and developers:
 - [Build System](docs/dev/build-system.md) - Mise-based build and release
 - [Release Process](docs/dev/release-process.md) - Creating releases
 
+### 🗺️ [Codemaps](docs/CODEMAPS/) (Architecture Maps)
+- [Index](docs/CODEMAPS/INDEX.md) - Package map and cross-references
+- [CLI Commands](docs/CODEMAPS/cli-commands.md) - Command tree and registration
+- [Config System](docs/CODEMAPS/config-system.md) - Loader pipeline and types
+- [GitOps Engine](docs/CODEMAPS/gitops-engine.md) - Generation pipeline
+- [Cluster Lifecycle](docs/CODEMAPS/cluster-lifecycle.md) - Lifecycle services
+- [Secrets Management](docs/CODEMAPS/secrets-management.md) - Secrets architecture
+- [Providers](docs/CODEMAPS/providers.md) - Cloud provider implementations
+- [DI Container](docs/CODEMAPS/di-container.md) - Dependency injection
+
 **Start here:** [Documentation Home](docs/index.md) | [Navigation Guide](docs/_nav.md)
-
-## CLI Commands Quick Reference
-
-```bash
-# Cluster Management
-opencenter cluster init <name>              # Initialize new cluster
-opencenter cluster list                     # List all clusters
-opencenter cluster use <name>            # Set active cluster
-opencenter cluster validate <name>          # Validate configuration
-opencenter cluster generate <name>    # Generate GitOps repository
-opencenter cluster deploy <name>         # Deploy cluster
-
-# Configuration
-opencenter cluster describe <name>          # View cluster configuration
-opencenter cluster set <name> <path=value>  # Update configuration value
-opencenter cluster edit <name>              # Edit in $EDITOR
-
-# Secrets Management
-opencenter secrets keys generate                # Generate Age key pair
-opencenter secrets encrypt             # Encrypt secrets
-opencenter secrets keys rotate --cluster <cluster> --type age   # Rotate encryption keys
-opencenter secrets keys check               # Check key expiration
-
-# Operations
-opencenter cluster status                   # Show cluster status
-opencenter cluster describe <name>              # Detailed cluster description
-opencenter cluster drift                    # Detect configuration drift
-opencenter cluster backup                   # Backup configuration
-opencenter cluster destroy <name>           # Destroy cluster
-
-# Utilities
-opencenter version                          # Show version information
-opencenter --help                           # Show help
-```
-
-See [CLI Commands Reference](docs/reference/cli-commands.md) for complete documentation.
 
 ## Development Workflow
 
@@ -230,17 +279,13 @@ mise run build-all
 # Create release
 mise run release v1.0.0
 
-# Publish official release
-git tag -a v1.0.0 -m "Release 1.0.0"
-git push origin v1.0.0
-
 # Generate JSON schema
 mise run schema
 
 # Validate templates
 mise run validate-templates
 
-# Run a named Kind cluster with openCenter-managed CNI
+# Run a Kind cluster with openCenter-managed CNI
 opencenter cluster init dev-cluster --type kind --kind-disable-default-cni
 opencenter cluster validate dev-cluster
 opencenter cluster generate dev-cluster
@@ -262,17 +307,35 @@ openCenter-cli/
 │   ├── root.go            # Root command and global flags
 │   ├── cluster*.go        # Cluster lifecycle commands
 │   ├── secrets*.go        # Secrets management commands
-│   └── config*.go         # Configuration commands
+│   ├── config*.go         # Settings commands (Cobra Use: "settings")
+│   └── plugins.go         # Plugin management
 ├── internal/              # Internal packages
-│   ├── config/           # Configuration management
-│   ├── gitops/           # GitOps repository generation
-│   ├── sops/             # SOPS secrets management
+│   ├── config/           # Configuration management (loader, builder, types, v2)
+│   ├── cluster/          # Cluster lifecycle services (init, validate, setup, bootstrap)
+│   ├── gitops/           # GitOps repository generation (pipeline, templates, rendering)
+│   ├── secrets/          # Multi-cluster secrets management (rotation, registry, hooks)
+│   ├── sops/             # SOPS encryption (Age keys, file encrypt/decrypt)
 │   ├── cloud/            # Provider adapters (OpenStack, VMware, Kind)
-│   ├── provision/        # Provisioning logic (Terraform, Kubespray)
-│   ├── template/         # Template engine
-│   ├── di/               # Dependency injection
-│   └── core/             # Core validation and utilities
+│   ├── security/         # Audit logging, input validation, command sanitization
+│   ├── di/               # Dependency injection container
+│   ├── services/         # Platform service plugin registry
+│   ├── operations/       # Drift detection, backup, disaster recovery
+│   ├── resilience/       # Retry, circuit breaker, distributed locks
+│   ├── provision/        # Embedded provisioning templates
+│   ├── template/         # Template engine with caching and sandboxing
+│   ├── plugins/          # External CLI plugin discovery
+│   ├── importer/         # Live cluster import/scan
+│   ├── credentials/      # Cloud credential extraction
+│   ├── barbican/         # OpenStack Key Manager client
+│   ├── localdev/         # Local dev environment (Kind, Gitea, Flux)
+│   ├── observability/    # Structured logging, credential masking
+│   ├── ansible/          # Kubespray inventory generation
+│   ├── tofu/             # OpenTofu/Terraform execution
+│   ├── ui/               # Prompts, error formatting, guided flows
+│   ├── core/             # Shared: path resolution, validation engine
+│   └── util/             # Files, errors, crypto, security, metrics
 ├── docs/                  # Documentation (Diátaxis)
+│   ├── CODEMAPS/         # Architecture maps (generated from code)
 │   ├── tutorials/        # Learning-oriented guides
 │   ├── how-to/           # Task-oriented guides
 │   ├── reference/        # Information-oriented specs
@@ -281,17 +344,18 @@ openCenter-cli/
 ├── tests/                 # BDD tests (Godog)
 │   └── features/         # Gherkin feature files
 ├── schema/                # JSON schema definitions
+├── hack/                  # Development scripts and local Gitea setup
 ├── .mise.toml            # Mise configuration and tasks
 ├── go.mod                # Go module definition
 └── main.go               # CLI entrypoint
 ```
 
-See [Code Structure](docs/dev/code-structure.md) for detailed explanation.
+See [Code Structure](docs/dev/code-structure.md) and [Codemaps](docs/CODEMAPS/INDEX.md) for detailed explanation.
 
 ## Configuration File Locations
 
 - **Cluster configurations:** `~/.config/opencenter/clusters/<org>/.<cluster>-config.yaml`
-- **CLI configuration:** `~/.config/opencenter/config.yaml`
+- **CLI settings:** `~/.config/opencenter/config.yaml`
 - **Active cluster:** `~/.config/opencenter/active`
 - **SOPS Age keys:** `~/.config/opencenter/clusters/<org>/secrets/age/`
 - **SSH keys:** `~/.config/opencenter/clusters/<org>/secrets/ssh/`
@@ -307,7 +371,7 @@ See [File Locations Reference](docs/reference/file-locations.md) for complete pa
 | `OPENCENTER_CONFIG_DIR` | Configuration directory | `~/.config/opencenter` |
 | `OPENCENTER_CLUSTERS_DIR` | Cluster storage directory | `${OPENCENTER_CONFIG_DIR}/clusters` |
 | `OPENCENTER_PLUGINS_DIR` | Plugins directory | `${OPENCENTER_CONFIG_DIR}/plugins` |
-| `OPENCENTER_DEBUG` | Enable debug logging | `false` |
+| `OPENCENTER_LOG_LEVEL` | Log level (debug, info, warn, error) | `warn` |
 | `SOPS_AGE_KEY_FILE` | Path to Age key file | |
 | `SOPS_AGE_RECIPIENTS` | Age public keys for encryption | |
 | `KUBECONFIG` | Kubernetes config file | `~/.kube/config` |
@@ -330,7 +394,7 @@ We welcome contributions! Please see our [Contributing Guide](docs/dev/contribut
 
 - **Custom Providers:** Add new infrastructure providers in `internal/cloud/<provider>/`
 - **Custom Services:** Add platform services in `internal/config/services/<service>.go`
-- **Custom Validators:** Add validation rules in `internal/core/validation/validators/`
+- **Custom Validators:** Add validation rules in `internal/core/validation/`
 - **Plugins:** Create external plugins as `opencenter-<plugin>` executables
 
 See [Developer Documentation](docs/dev/) for detailed guides.
@@ -354,17 +418,3 @@ openCenter CLI is part of the openCenter ecosystem:
 - **[openCenter-customer-app-example](https://github.com/opencenter-cloud/openCenter-customer-app-example)** - Reference application deployment patterns
 - **[openCenter-AirGap](https://github.com/opencenter-cloud/openCenter-AirGap)** - Air-gapped deployment packaging
 - **[opencenter-windows](https://github.com/opencenter-cloud/opencenter-windows)** - Windows worker node support
-
-See [Ecosystem Architecture](../docs/ecosystem.md) for how these repositories work together.
-
----
-
-**Evidence:**
-- Project structure: `openCenter-cli/` directory listing
-- Build system: `.mise.toml:1-968`
-- CLI entrypoint: `main.go:1-60`
-- Go module: `go.mod:1-80`
-- Version: `VERSION:1`
-- Documentation structure: `docs/` directory listing
-- Commands: `cmd/*.go` files
-- Configuration: `internal/config/` types and defaults

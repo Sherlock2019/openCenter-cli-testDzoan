@@ -53,7 +53,7 @@ echo $?  # Output: 0
 
 ### 1 - General Error
 
-General error or unspecified failure.
+General error or unspecified failure. This is the catch-all exit code for any error condition.
 
 **Example:**
 ```bash
@@ -62,204 +62,48 @@ echo $?  # Output: 1
 ```
 
 **When returned:**
-- Command failed for unspecified reason
-- Generic error condition
-- Catch-all for errors without specific code
-
-**Common causes:**
+- Configuration validation failed
+- Provider authentication failed
+- Network connectivity error
+- Missing dependencies
 - Invalid command syntax
 - Missing required arguments
-- Unexpected error condition
+- Any unclassified error
 
-### 2 - Configuration Error
+**Note:** Most error conditions currently return exit code 1. Use `--output json` on supported commands to get structured error details for programmatic handling.
 
-Configuration file error or validation failure.
+### 3 - Configuration Not Found
 
-**Example:**
-```bash
-opencenter cluster validate my-cluster
-echo $?  # Output: 2
-```
-
-**When returned:**
-- Configuration file not found
-- Configuration syntax error (invalid YAML)
-- Schema validation failed
-- Business rules validation failed
-
-**Common causes:**
-- Missing configuration file
-- Invalid YAML syntax
-- Required fields missing
-- Type mismatches
-- Validation rule violations
-
-### 3 - Provider Error
-
-Infrastructure provider error.
+The specified cluster configuration does not exist.
 
 **Example:**
 ```bash
-opencenter cluster deploy my-cluster
+opencenter cluster validate nonexistent-cluster
 echo $?  # Output: 3
+# stderr: Check available clusters with: opencenter cluster list
+#         Initialize a new cluster with: opencenter cluster init nonexistent-cluster
 ```
 
 **When returned:**
-- Provider authentication failed
-- Provider API error
-- Provider resource not found
-- Provider quota exceeded
+- Cluster name does not match any configuration file
+- Organization/cluster path does not exist
 
-**Common causes:**
-- Invalid credentials
-- API endpoint unreachable
-- Resource doesn't exist (image, flavor, network)
-- Insufficient quota
-
-### 4 - Network Error
-
-Network connectivity error.
-
-**Example:**
+**Recovery:**
 ```bash
-opencenter cluster validate my-cluster --validation online
-echo $?  # Output: 4
+# List available clusters
+opencenter cluster list
+
+# Initialize the missing cluster
+opencenter cluster init <name> --org <org>
 ```
 
-**When returned:**
-- Network connection failed
-- API endpoint unreachable
-- DNS resolution failed
-- Timeout
+## Exit Code Summary
 
-**Common causes:**
-- No internet connection
-- Firewall blocking connection
-- API endpoint down
-- DNS misconfiguration
-
-### 5 - Permission Error
-
-Permission or authentication error.
-
-**Example:**
-```bash
-opencenter cluster deploy my-cluster
-echo $?  # Output: 5
-```
-
-**When returned:**
-- Insufficient permissions
-- Authentication failed
-- Authorization denied
-- File permission error
-
-**Common causes:**
-- Invalid credentials
-- Insufficient provider permissions
-- File not readable/writable
-- SSH key permission error
-
-### 6 - Resource Error
-
-Resource not found or unavailable.
-
-**Example:**
-```bash
-opencenter cluster status non-existent-cluster
-echo $?  # Output: 6
-```
-
-**When returned:**
-- Cluster not found
-- Configuration file not found
-- Resource doesn't exist
-
-**Common causes:**
-- Cluster name incorrect
-- Configuration file missing
-- Resource deleted
-
-### 7 - Dependency Error
-
-Missing dependency or tool.
-
-**Example:**
-```bash
-opencenter cluster deploy my-cluster
-echo $?  # Output: 7
-```
-
-**When returned:**
-- Required tool not installed
-- Dependency missing
-- Version incompatibility
-
-**Common causes:**
-- Terraform not installed
-- Ansible not installed
-- kubectl not installed
-- Incompatible tool version
-
-### 8 - Timeout Error
-
-Operation timed out.
-
-**Example:**
-```bash
-opencenter cluster deploy my-cluster --timeout 30m
-echo $?  # Output: 8
-```
-
-**When returned:**
-- Operation exceeded timeout
-- Long-running operation failed to complete
-
-**Common causes:**
-- Cluster deploy timeout
-- API request timeout
-- Network timeout
-
-### 9 - User Cancelled
-
-User cancelled operation.
-
-**Example:**
-```bash
-opencenter cluster destroy my-cluster
-# User presses Ctrl+C
-echo $?  # Output: 9
-```
-
-**When returned:**
-- User interrupted operation (Ctrl+C)
-- User declined confirmation prompt
-
-**Common causes:**
-- User pressed Ctrl+C
-- User answered "no" to confirmation
-
-### 10 - Validation Error
-
-Specific validation error (distinct from configuration error).
-
-**Example:**
-```bash
-opencenter cluster validate my-cluster
-echo $?  # Output: 10
-```
-
-**When returned:**
-- Validation checks failed
-- Configuration invalid for deployment
-- Pre-flight checks failed
-
-**Common causes:**
-- Business rule violations
-- Provider validation failed
-- Connectivity validation failed
-
-## Exit Code Usage in Scripts
+| Code | Meaning | Typical Cause |
+|------|---------|---------------|
+| 0 | Success | Command completed without error |
+| 1 | General error | Validation failure, provider error, network error, any unclassified error |
+| 3 | Config not found | Cluster configuration file does not exist |
 
 ### Basic Error Handling
 
@@ -286,23 +130,31 @@ case $EXIT_CODE in
     0)
         echo "Validation passed"
         ;;
-    2)
-        echo "Configuration error - check configuration file"
-        exit 1
-        ;;
     3)
-        echo "Provider error - check credentials and quotas"
-        exit 1
-        ;;
-    4)
-        echo "Network error - check connectivity"
+        echo "Cluster not found - run 'opencenter cluster init' first"
         exit 1
         ;;
     *)
-        echo "Unknown error (exit code: $EXIT_CODE)"
+        echo "Error (exit code: $EXIT_CODE)"
         exit 1
         ;;
 esac
+```
+
+### Structured Error Output
+
+For programmatic error handling, use `--output json` to get structured error details:
+
+```bash
+#!/bin/bash
+
+OUTPUT=$(opencenter cluster validate my-cluster --output json 2>&1)
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+    echo "$OUTPUT" | jq '.errors[]?.message' 2>/dev/null
+    exit $EXIT_CODE
+fi
 ```
 
 ### Retry Logic
@@ -320,8 +172,8 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     if [ $EXIT_CODE -eq 0 ]; then
         echo "Cluster deployed successfully"
         exit 0
-    elif [ $EXIT_CODE -eq 4 ]; then
-        echo "Network error - retrying ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
+    elif [ $EXIT_CODE -eq 1 ]; then
+        echo "Error - retrying ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
         RETRY_COUNT=$((RETRY_COUNT + 1))
         sleep 30
     else

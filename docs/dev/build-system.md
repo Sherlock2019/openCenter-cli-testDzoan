@@ -24,7 +24,7 @@ All build configuration is in `.mise.toml`:
 
 ```toml
 [tools]
-golang = "latest"
+golang = "1.26.3"
 kubectl = "latest"
 kind = "latest"
 helm = "latest"
@@ -45,7 +45,7 @@ build = '''#!/usr/bin/env bash
 ### Installed Tools
 
 Mise manages these tools:
-- **Go 1.25.2** - Primary language
+- **Go 1.26.3** - Primary language
 - **kubectl** - Kubernetes CLI
 - **kind** - Local Kubernetes clusters
 - **helm** - Kubernetes package manager
@@ -71,7 +71,7 @@ mise list
 Tool versions are pinned in `.mise.toml` for reproducibility:
 ```toml
 [tools]
-golang = "1.25.2"  # Specific version
+golang = "1.26.3"  # Specific version
 kubectl = "latest" # Always latest
 ```
 

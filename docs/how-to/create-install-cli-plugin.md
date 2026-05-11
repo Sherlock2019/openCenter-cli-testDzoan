@@ -74,7 +74,7 @@ openCenter discovers plugins from three locations, checked in order:
 The recommended location is the config-based plugins directory. Query it:
 
 ```bash
-PLUGIN_DIR=$(opencenter config get paths.pluginsDir)
+PLUGIN_DIR=$(opencenter settings get paths.pluginsDir)
 echo "${PLUGIN_DIR}"
 # typically: ~/.config/opencenter/plugins/
 ```
@@ -158,7 +158,7 @@ For plugins built with Mise, add a `local-install` task that handles build, copy
 description = "Build, install, and register checksum for the plugin"
 depends = ["build"]
 run = '''
-PLUGIN_DIR=$(opencenter config get paths.pluginsDir)
+PLUGIN_DIR=$(opencenter settings get paths.pluginsDir)
 if [ -z "${PLUGIN_DIR}" ]; then
   echo "ERROR: could not resolve plugins directory" >&2
   exit 1
@@ -193,7 +193,7 @@ mise run local-install
 
 - Confirm the binary name starts with `opencenter-`.
 - Confirm the execute bit is set: `ls -l "${PLUGIN_DIR}/opencenter-myplugin"`.
-- Confirm the plugins directory matches what the CLI expects: `opencenter config get paths.pluginsDir`.
+- Confirm the plugins directory matches what the CLI expects: `opencenter settings get paths.pluginsDir`.
 
 ### "Warning: plugin myplugin is unverified"
 

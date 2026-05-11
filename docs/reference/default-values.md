@@ -396,9 +396,9 @@ opencenter cluster init my-cluster \
 ### Via CLI Defaults
 
 ```bash
-opencenter config set cluster_defaults.provider vmware
-opencenter config set cluster_defaults.region us-west-2
-opencenter config set cluster_defaults.gitops_auth_method ssh
+opencenter settings set cluster_defaults.provider vmware
+opencenter settings set cluster_defaults.region us-west-2
+opencenter settings set cluster_defaults.gitops_auth_method ssh
 ```
 
 ---

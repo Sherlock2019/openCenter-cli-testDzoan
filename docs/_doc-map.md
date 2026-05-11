@@ -61,7 +61,7 @@ This map helps:
 
 | Document | Audience | Purpose | Prerequisites | Evidence |
 |----------|----------|---------|---------------|----------|
-| [Validate Configuration](how-to/validate-configuration.md) | All | Pre-deployment validation | Configuration file | `cmd/cluster_validate.go`, `internal/config/validator.go` |
+| [Validate Configuration](how-to/validate-configuration.md) | All | Pre-deployment validation | Configuration file | `cmd/cluster_validate.go`, `internal/config/v2/validator.go` |
 | [Manage Secrets](how-to/manage-secrets.md) | Operator | SOPS encryption and key rotation | SOPS installed | `internal/sops/`, `cmd/secrets*.go` |
 | [Configure Flux Bootstrap Authentication](how-to/flux-bootstrap-methods.md) | Operator | SSH key or token auth for FluxCD | Git repository | `internal/config/types_gitops.go`, `internal/localdev/flux/service.go` |
 | [Customize Services](how-to/customize-services.md) | Operator | Configure platform services | Deployed cluster | `internal/config/services/` |
@@ -117,6 +117,19 @@ This map helps:
 | [Service Lifecycle](dev/services.md) | Developer | Service enable/disable lifecycle | Config, rendering, FluxCD reconciliation | `cmd/cluster_service.go`, `internal/gitops/` |
 | [Build System](dev/build-system.md) | Developer | Mise-based build and release | Build tasks, release process | `.mise.toml` |
 | [Release Process](dev/release-process.md) | Maintainer | Creating releases | Versioning, changelog, artifacts | `.mise.toml` release tasks |
+
+### Codemaps (Architecture Maps)
+
+| Document | Audience | Purpose | Scope | Evidence |
+|----------|----------|---------|-------|----------|
+| [Index](CODEMAPS/INDEX.md) | Developer/Architect | Package map and cross-references | All packages | `internal/` directory structure |
+| [CLI Commands](CODEMAPS/cli-commands.md) | Developer | Command tree, flags, registration | All commands | `cmd/*.go` |
+| [Config System](CODEMAPS/config-system.md) | Developer | Loader pipeline, types, subpackages | Config management | `internal/config/` |
+| [GitOps Engine](CODEMAPS/gitops-engine.md) | Developer | Generation pipeline, templates | GitOps generation | `internal/gitops/` |
+| [Cluster Lifecycle](CODEMAPS/cluster-lifecycle.md) | Developer | Lifecycle services and flows | Cluster operations | `internal/cluster/` |
+| [Secrets Management](CODEMAPS/secrets-management.md) | Developer | Secrets architecture, SOPS | Secrets lifecycle | `internal/secrets/`, `internal/sops/` |
+| [Providers](CODEMAPS/providers.md) | Developer | Cloud provider implementations | Drift detection | `internal/cloud/` |
+| [DI Container](CODEMAPS/di-container.md) | Developer | Dependency injection | Service wiring | `internal/di/` |
 
 ## Documentation Gaps
 
@@ -231,6 +244,6 @@ This documentation is based on:
 
 ---
 
-**Last Updated:** 2026-02-20
+**Last Updated:** 2026-05-11
 **Maintainer:** openCenter CLI Team
 **Framework:** [Diátaxis](https://diataxis.fr/)

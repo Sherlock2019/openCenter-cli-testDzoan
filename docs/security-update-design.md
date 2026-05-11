@@ -107,12 +107,12 @@ All three new fields are optional zone roots. Defaults resolve relative to `Clus
 
 New helpers `GetGitOpsDir()`, `GetClusterStateDir()`, and `GetSecretsDir()` ship next to the existing `GetClustersDir()` / `GetStateDir()` helpers, with the same precedence logic.
 
-Updating the CLI config happens through the existing `opencenter config set` path:
+Updating the CLI config happens through the existing `opencenter settings set` path:
 
 ```bash
-opencenter config set paths.gitopsDir ~/work/opencenter-gitops
-opencenter config set paths.clusterStateDir ~/.local/state/opencenter/clusters
-opencenter config set paths.secretsDir /Volumes/encrypted/opencenter-secrets
+opencenter settings set paths.gitopsDir ~/work/opencenter-gitops
+opencenter settings set paths.clusterStateDir ~/.local/state/opencenter/clusters
+opencenter settings set paths.secretsDir /Volumes/encrypted/opencenter-secrets
 ```
 
 Validation rejects values where secrets or cluster-state roots are equal to, or descendants of, the gitops root after path normalization and symlink resolution (the same invariant enforced in step G).
@@ -240,7 +240,7 @@ Before calling this complete, the following must hold:
 - Every generated secret manifest in `GitOpsDir` is encrypted before staging, contains `sops:` metadata, and decrypts successfully with the cluster Age key.
 - `stat` on every secret file reports mode `0600` (or `0700` for directories), and init fails when the filesystem reports broader permissions unless `OPENCENTER_ALLOW_INSECURE_FILE_MODES=1` is set.
 - Each new env variable (`OPENCENTER_GITOPS_DIR`, `OPENCENTER_CLUSTER_STATE_DIR`, `OPENCENTER_SECRETS_DIR`) has a unit test that sets it, runs `cluster init`, and asserts the zone resolves to the override path.
-- `opencenter config get paths.gitopsDir`, `paths.clusterStateDir`, and `paths.secretsDir` return the expected values after `opencenter config set`.
+- `opencenter settings get paths.gitopsDir`, `paths.clusterStateDir`, and `paths.secretsDir` return the expected values after `opencenter settings set`.
 - The resolver's `Validate()` unit tests fail when any invariant is violated, including equality and symlink-based containment.
 - A property-based test that generates random valid layouts confirms `Validate()` accepts them and rejects layouts where zones overlap, share a root incorrectly, or differ only by case on case-insensitive filesystems.
 - Normal commands reject a legacy org-root Git repository containing `secrets/`, `.<cluster>-config.yaml`, or cluster state under `infrastructure/clusters/<cluster>/`.

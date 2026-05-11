@@ -67,7 +67,7 @@ opencenter cluster validate my-cluster
 Validation uses one mode per run. The default comes from global CLI config:
 
 ```bash
-opencenter config get behavior.validation
+opencenter settings get behavior.validation
 ```
 
 The default is `offline`, which never contacts cloud providers, Git remotes,
@@ -84,7 +84,7 @@ opencenter cluster validate --validation online
 To change the default mode for future runs:
 
 ```bash
-opencenter config set behavior.validation online
+opencenter settings set behavior.validation online
 ```
 
 Online validation runs the offline profile plus provider discovery/connectivity

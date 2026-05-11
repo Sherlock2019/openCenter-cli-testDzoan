@@ -119,6 +119,19 @@ For contributors and developers:
 - [Build System](dev/build-system.md)
 - [Release Process](dev/release-process.md)
 
+### Codemaps (Architecture Maps)
+
+Generated from source code for navigating the codebase:
+
+- [Index](CODEMAPS/INDEX.md) - Package map and cross-references
+- [CLI Commands](CODEMAPS/cli-commands.md) - Command tree and registration flow
+- [Config System](CODEMAPS/config-system.md) - Loader pipeline and type hierarchy
+- [GitOps Engine](CODEMAPS/gitops-engine.md) - Generation pipeline and templates
+- [Cluster Lifecycle](CODEMAPS/cluster-lifecycle.md) - Lifecycle services
+- [Secrets Management](CODEMAPS/secrets-management.md) - Secrets architecture
+- [Providers](CODEMAPS/providers.md) - Cloud provider implementations
+- [DI Container](CODEMAPS/di-container.md) - Dependency injection
+
 ## By User Journey
 
 ### First-Time User

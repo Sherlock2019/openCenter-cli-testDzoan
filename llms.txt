@@ -58,6 +58,13 @@ opencenter cluster deploy myorg/my-cluster
 opencenter cluster deploy myorg/my-cluster --restart
 ```
 
+Destroy a cluster:
+
+```bash
+opencenter cluster destroy myorg/my-cluster
+opencenter cluster destroy myorg/my-cluster --force --remove-files
+```
+
 Inspect lifecycle state:
 
 ```bash
@@ -65,6 +72,8 @@ opencenter cluster status myorg/my-cluster
 opencenter cluster status myorg/my-cluster --paths
 opencenter cluster status myorg/my-cluster --output json
 opencenter cluster status myorg/my-cluster --sync
+opencenter cluster describe myorg/my-cluster
+opencenter cluster doctor myorg/my-cluster
 ```
 
 ## Active Cluster Context
@@ -89,37 +98,145 @@ opencenter cluster set myorg/my-cluster opencenter.meta.env=staging
 opencenter cluster set myorg/my-cluster opencenter.gitops.repository.url=https://github.com/acme/platform.git
 ```
 
-Normalize and export effective configuration:
+Edit, normalize, and export effective configuration:
 
 ```bash
+opencenter cluster edit myorg/my-cluster
 opencenter cluster normalize myorg/my-cluster
 opencenter cluster export myorg/my-cluster --output-file effective-config.yaml
 ```
 
 The per-cluster YAML remains the source of truth. Generated assets should be treated as outputs of `cluster generate`.
 
+## Service Management
+
+Enable, disable, and inspect platform services:
+
+```bash
+opencenter cluster service enable cert-manager --cluster myorg/my-cluster
+opencenter cluster service enable keycloak --managed --param realm=platform
+opencenter cluster service disable harbor --cluster myorg/my-cluster
+opencenter cluster service status --cluster myorg/my-cluster
+opencenter cluster service options cert-manager
+```
+
 ## Secrets
 
 Secret operations are grouped under `secrets`. Key lifecycle commands are nested under `secrets keys`:
 
 ```bash
-opencenter secrets list
-opencenter secrets validate myorg/my-cluster
-opencenter secrets encrypt myorg/my-cluster
-opencenter secrets decrypt myorg/my-cluster
 opencenter secrets keys generate
 opencenter secrets keys list
 opencenter secrets keys rotate myorg/my-cluster --type sops
+opencenter secrets keys check
 opencenter secrets keys backup
+opencenter secrets keys validate
+opencenter secrets keys revoke --user admin@example.com
+```
+
+Encryption and sync operations:
+
+```bash
+opencenter secrets encrypt
+opencenter secrets decrypt
+opencenter secrets status
+opencenter secrets sync myorg/my-cluster
+opencenter secrets sync --all --org myorg
+opencenter secrets validate myorg/my-cluster
+```
+
+Backend operations (Barbican/file backends):
+
+```bash
+opencenter secrets login
+opencenter secrets list
+opencenter secrets describe my-secret
+opencenter secrets get my-secret
+opencenter secrets set my-secret
+opencenter secrets delete my-secret
 ```
 
 SOPS Age encryption is configured during cluster initialization. Keep private keys and token files outside Git.
 
+## Drift Detection
+
+Detect and reconcile infrastructure drift:
+
+```bash
+opencenter cluster drift detect myorg/my-cluster
+opencenter cluster drift reconcile myorg/my-cluster
+opencenter cluster drift schedule myorg/my-cluster
+```
+
+## Backup and Restore
+
+```bash
+opencenter cluster backup create myorg/my-cluster
+opencenter cluster backup list myorg/my-cluster
+opencenter cluster backup restore <backup-id>
+opencenter cluster backup delete <backup-id>
+opencenter cluster backup schedule myorg/my-cluster
+```
+
+## Import
+
+Import existing clusters into openCenter management:
+
+```bash
+opencenter cluster import scan --repo-path ./gitops-repo
+opencenter cluster import report
+opencenter cluster import apply
+```
+
+## Cluster Operations
+
+Lock, unlock, and migrate:
+
+```bash
+opencenter cluster lock myorg/my-cluster
+opencenter cluster unlock myorg/my-cluster
+opencenter cluster migrate-layout --org myorg
+```
+
+## CLI Settings
+
+Manage CLI-level settings (defaults, paths, IDE integration):
+
+```bash
+opencenter settings view
+opencenter settings set cluster_defaults.provider openstack
+opencenter settings get paths.clustersDir
+opencenter settings path
+opencenter settings edit
+opencenter settings reset
+opencenter settings explain
+opencenter settings explain cluster-defaults
+opencenter settings ide
+```
+
+## Plugins
+
+Discover and use external CLI plugins:
+
+```bash
+opencenter plugins list
+```
+
+External plugins are executables named `opencenter-<name>` discovered in `OPENCENTER_PLUGINS_DIR`, `<config-dir>/plugins`, or `PATH`.
+
+## Shell Integration
+
+```bash
+eval "$(opencenter shell-init --shell zsh)"
+```
+
+Enables session-scoped active cluster tracking and prompt integration.
+
 ## Providers
 
-Supported infrastructure providers include OpenStack, VMware, Kind, AWS, GCP, Azure, and bare metal depending on the configured workflow.
+Supported infrastructure providers include OpenStack, VMware, Kind, and Baremetal as GA providers. AWS, GCP, and Azure have experimental support depending on the configured workflow.
 
-OpenStack and Kind workflows support generation and deployment through the CLI. VMware workflows expect pre-provisioned VMs and provider-specific configuration before generation.
+OpenStack and Kind workflows support full generation and deployment through the CLI. VMware workflows expect pre-provisioned VMs and provider-specific configuration before generation.
 
 ## GitOps
 
@@ -145,6 +262,7 @@ opencenter cluster validate myorg/my-cluster
 opencenter cluster status myorg/my-cluster --paths
 opencenter cluster doctor myorg/my-cluster
 opencenter secrets validate myorg/my-cluster
+opencenter cluster drift detect myorg/my-cluster
 ```
 
 Use `--output json` or `--output yaml` on supported read-only commands when automation needs structured data.

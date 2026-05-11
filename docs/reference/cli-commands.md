@@ -46,12 +46,11 @@ opencenter cluster set prod-cluster \
 | Command | Purpose |
 |---------|---------|
 | `opencenter cluster` | Cluster lifecycle, validation, rendering, drift, services, backup, and import management |
-| `opencenter completion` | Shell completion scripts for `bash`, `fish`, `powershell`, and `zsh` |
-| `opencenter config` | CLI defaults and local IDE configuration |
-| `opencenter plugins` | External plugin discovery |
 | `opencenter secrets` | Secret encryption, sync, validation, and key operations |
-| `opencenter shell-init` | Session-scoped shell integration for active-cluster context |
+| `opencenter settings` | CLI settings, defaults, and local IDE configuration |
+| `opencenter plugins` | External plugin discovery |
 | `opencenter version` | Version and build metadata |
+| `opencenter shell-init` | Session-scoped shell integration for active-cluster context |
 | `opencenter <external-plugin>` | Dynamically discovered plugin entrypoints such as `rmpk` |
 
 ## Cluster Commands
@@ -77,6 +76,7 @@ opencenter cluster set prod-cluster \
 | `opencenter cluster init` |
 | `opencenter cluster list` |
 | `opencenter cluster lock` |
+| `opencenter cluster migrate-layout` |
 | `opencenter cluster normalize` |
 | `opencenter cluster doctor` |
 | `opencenter cluster set` |
@@ -122,18 +122,19 @@ opencenter cluster set prod-cluster \
 | `opencenter cluster service options` |
 | `opencenter cluster service status` |
 
-## Config Commands
+## Settings Commands
 
 | Command |
 |---------|
-| `opencenter config edit` |
-| `opencenter config explain` |
-| `opencenter config explain cluster-defaults` |
-| `opencenter config get` |
-| `opencenter config path` |
-| `opencenter config reset` |
-| `opencenter config set` |
-| `opencenter config view` |
+| `opencenter settings edit` |
+| `opencenter settings explain` |
+| `opencenter settings explain cluster-defaults` |
+| `opencenter settings get` |
+| `opencenter settings ide` |
+| `opencenter settings path` |
+| `opencenter settings reset` |
+| `opencenter settings set` |
+| `opencenter settings view` |
 
 ## Secrets Commands
 
@@ -164,14 +165,11 @@ opencenter cluster set prod-cluster \
 | `opencenter secrets keys rotate` |
 | `opencenter secrets keys validate` |
 
-## Completion Commands
+## Plugins Commands
 
 | Command |
 |---------|
-| `opencenter completion bash` |
-| `opencenter completion fish` |
-| `opencenter completion powershell` |
-| `opencenter completion zsh` |
+| `opencenter plugins list` |
 
 ## GA Notes
 

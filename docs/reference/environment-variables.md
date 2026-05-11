@@ -253,6 +253,72 @@ opencenter cluster deploy dev-cluster
 
 **GA note:** This variable is relevant only for the local Kind provider.
 
+### OPENCENTER_GITOPS_DIR
+
+Override GitOps repository root directory.
+
+**Default:** `${OPENCENTER_CLUSTERS_DIR}/gitops`
+
+**Usage:**
+```bash
+export OPENCENTER_GITOPS_DIR=/data/gitops-repos
+opencenter cluster generate my-cluster
+```
+
+**What it affects:**
+- Location where GitOps repositories are generated
+- Overrides `paths.gitopsDir` in CLI config
+
+### OPENCENTER_SECRETS_DIR
+
+Override per-cluster secrets directory.
+
+**Default:** `${OPENCENTER_CLUSTERS_DIR}/secrets`
+
+**Usage:**
+```bash
+export OPENCENTER_SECRETS_DIR=/secure/secrets
+opencenter secrets keys generate
+```
+
+**What it affects:**
+- Age key storage location
+- SSH key storage location
+- SOPS configuration paths
+
+### OPENCENTER_SESSION_FILE
+
+Path to session file for shell integration.
+
+**Default:** None (shell integration disabled)
+
+**Usage:**
+```bash
+eval "$(opencenter shell-init)"
+opencenter cluster use my-cluster  # writes to session file
+```
+
+**What it affects:**
+- Active cluster tracking in shell sessions
+- Used by `cluster use`, `cluster active`, and `shell-init` commands
+
+### EDITOR / VISUAL
+
+Preferred text editor for `cluster edit` and `settings edit` commands.
+
+**Default:** None (falls back to `vi`)
+
+**Usage:**
+```bash
+export EDITOR=nvim
+opencenter cluster edit my-cluster
+opencenter settings edit
+```
+
+**What it affects:**
+- Editor launched by `cluster edit` and `settings edit`
+- `EDITOR` is checked first, then `VISUAL`
+
 ## Provider and Integration Environment Variables
 
 ### OpenStack
@@ -722,7 +788,7 @@ echo $OPENCENTER_PLUGINS_DIR
 opencenter cluster export my-cluster --output yaml
 
 # Explain CLI defaults injected into new clusters
-opencenter config explain cluster-defaults
+opencenter settings explain cluster-defaults
 
 # Check environment variables
 env | grep -E '(OPENCENTER|OS_|AWS_|VSPHERE_)'

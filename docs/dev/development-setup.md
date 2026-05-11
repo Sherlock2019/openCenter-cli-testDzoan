@@ -79,7 +79,7 @@ mise install
 ```
 
 This installs:
-- **Go 1.25.2** - Primary language
+- **Go 1.26.3** - Primary language
 - **kubectl** - Kubernetes CLI
 - **kind** - Local Kubernetes clusters
 - **helm** - Kubernetes package manager
@@ -91,7 +91,7 @@ mise list
 
 Expected output shows installed versions:
 ```
-go      1.25.2
+go      1.26.3
 kubectl latest
 kind    latest
 helm    latest
@@ -151,7 +151,7 @@ mise run godog
 Expected output: All scenarios pass (may take 2-3 minutes)
 
 If tests fail, check:
-- Go version matches `.mise.toml` (1.25.2)
+- Go version matches `.mise.toml` (1.26.3)
 - All dependencies downloaded (`go mod download`)
 - No local configuration conflicts (`rm -rf testdata/config`)
 
@@ -299,7 +299,7 @@ source ~/.bashrc  # or ~/.zshrc
 
 ### Go version mismatch
 
-**Problem:** `go: version "1.25.2" does not match go.mod`
+**Problem:** `go: version "1.26.3" does not match go.mod`
 
 **Solution:**
 ```bash

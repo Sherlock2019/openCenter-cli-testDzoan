@@ -38,18 +38,24 @@ Production Cluster (Kubernetes + Services)
 
 **Purpose:** Load, validate, and manage cluster configurations.
 
-**Design:** The configuration manager uses a layered approach with precedence rules:
+**Design:** The configuration manager uses a **5-stage loading pipeline** (in `internal/config/v2/loader.go`):
 
-1. Command-line flags (the set override mechanism)
-2. Configuration file
-3. CLI defaults
-4. Built-in defaults
+1. **Parse YAML** — Decode raw YAML into intermediate representation
+2. **Normalize** — Canonicalize provider names, resolve aliases
+3. **Resolve References** — Expand `${ref:path}`, `${env:VAR}`, `${file:path}` with dependency graph and cycle detection
+4. **Apply Defaults** — Hydrate empty fields from provider-region defaults registry
+5. **Validate** — Schema + business rules + provider + deployment + services checks
 
-This allows users to override values at multiple levels while maintaining sensible defaults.
+Configuration precedence (highest to lowest):
+1. Command-line flags
+2. Environment variables
+3. Cluster config file
+4. CLI settings file (`~/.config/opencenter/config.yaml`)
+5. Built-in defaults
 
-**Why this design:** Flexibility for different use cases (development vs production) while ensuring consistency through defaults.
+**Why this design:** The pipeline ensures every config is fully resolved and validated before use. Reference resolution with topological sort prevents circular dependencies. Hydration fills gaps without overwriting explicit values.
 
-**Evidence:** `internal/config/manager.go`, `internal/config/defaults.go`
+**Evidence:** `internal/config/v2/loader.go`, `internal/config/manager.go`, `internal/config/defaults.go`
 
 ### Validation Engine
 
@@ -66,7 +72,7 @@ This allows users to override values at multiple levels while maintaining sensib
 
 **Trade-offs:** More validation means slower feedback, but prevents costly deployment failures. Connectivity validation is optional because it requires credentials and network access.
 
-**Evidence:** `internal/config/validator.go`, `cmd/cluster_validate.go`, Session 1 A3
+**Evidence:** `internal/config/v2/validator.go`, `internal/core/validation/`, `cmd/cluster_validate.go`
 
 ### Template Engine
 
@@ -111,38 +117,83 @@ This allows users to override values at multiple levels while maintaining sensib
 
 **Evidence:** `internal/gitops/`, `.kiro/steering/structure.md:118-128`, Ecosystem.md
 
-### SOPS Manager
+### Secrets Management
 
-**Purpose:** Manage secrets encryption with Age keys.
+**Purpose:** Manage secrets encryption, rotation, and lifecycle.
 
-**Design:** Dual-encryption strategy:
+**Design:** Two-layer architecture:
 
-1. **In Git:** SOPS Age encryption (secrets safe to commit)
-2. **In Cluster:** Kubernetes encryption at rest (etcd encrypted)
-3. **In Transit:** FluxCD decrypts on-the-fly during reconciliation
+1. **`internal/sops/`** — Low-level SOPS/Age encryption operations (encrypt/decrypt files, key generation, OS keyring integration)
+2. **`internal/secrets/`** — High-level multi-cluster secrets management (sync, drift detection, rotation, revocation, registry, Git hooks)
 
-**Why this design:** Secrets can be version-controlled safely. FluxCD handles decryption automatically. Age keys are simpler than GPG (no key servers, no expiration by default).
+Encryption strategy:
+- **In Git:** SOPS Age encryption (secrets safe to commit)
+- **In Cluster:** Kubernetes encryption at rest (etcd encrypted)
+- **In Transit:** FluxCD decrypts on-the-fly during reconciliation
 
-**Trade-offs:** Age keys must be managed separately. Key rotation requires re-encrypting all secrets. But this is simpler than alternatives (Vault, Sealed Secrets) and works offline.
+Key management features:
+- OS keyring integration with file-based fallback
+- Dual-key rotation (add new key → re-encrypt → remove old key)
+- Key expiration monitoring (Age 90 days, SSH 180 days)
+- Git pre-commit hooks preventing plaintext secret commits
+- HMAC-signed audit logging for tamper detection
 
-**Evidence:** `internal/sops/manager.go`, Session 1 A11, Ecosystem.md secrets management
+**Why this design:** Secrets can be version-controlled safely. FluxCD handles decryption automatically. Age keys are simpler than GPG (no key servers). Dual-key rotation allows gradual re-encryption without downtime.
+
+**Evidence:** `internal/sops/`, `internal/secrets/`, `internal/security/audit_logger.go`
 
 ### Dependency Injection Container
 
 **Purpose:** Manage service dependencies and lifecycle.
 
-**Design:** Singleton container with lazy initialization:
+**Design:** Two approaches coexist:
 
-- Services registered as factory functions
-- Dependencies resolved automatically
-- Singletons initialized once
-- Circular dependencies prevented
+1. **`App` struct** (preferred) — Explicit constructor chaining with typed fields. Built via `di.NewApp(baseDir)`.
+2. **`DIContainer`** (legacy) — Reflection-based resolution matching constructor parameter types to registered return types.
 
-**Why this design:** Testability (mock dependencies), flexibility (swap implementations), and explicit dependencies (no global state).
+Key properties:
+- Services registered as factory functions (provider pattern)
+- Dependencies resolved by type matching
+- Singletons initialized eagerly via `Initialize()`
+- Circular dependencies detected via topological ordering
+- Thread-safe after initialization (`sync.RWMutex`)
+- Graceful shutdown calling `Shutdown()` on components
 
-**Trade-offs:** More boilerplate code, but clearer dependencies and easier testing.
+**Why this design:** Testability (mock dependencies), flexibility (swap implementations), and explicit dependencies (no global state). The typed `App` struct provides compile-time safety while the reflection container supports dynamic resolution.
 
-**Evidence:** `internal/di/`, `cmd/root.go:48-90`
+**Evidence:** `internal/di/`, `cmd/root.go`
+
+### Cluster Lifecycle Services
+
+**Purpose:** Orchestrate the full cluster lifecycle from initialization to destruction.
+
+**Design:** Domain services separated from CLI layer for testability:
+
+- `InitService` — Create config, generate SSH/Age keys, create directory structure
+- `ConfigureService` — Interactive guided configuration with provider discovery
+- `ValidateService` — Schema + business + connectivity + provider validation
+- `SetupService` — Generate GitOps repository via pipeline
+- `BootstrapService` — Provision infrastructure + deploy cluster with resume support
+
+**Why this design:** Each service handles one lifecycle stage with clear inputs/outputs. Resume support (JSON state file) allows restarting failed deployments without re-running completed steps.
+
+**Evidence:** `internal/cluster/`, `cmd/cluster*.go`
+
+## Package Map
+
+For a complete architectural map of all packages, see [Codemaps Index](../CODEMAPS/INDEX.md).
+
+Key packages by responsibility:
+
+| Layer | Packages |
+|-------|----------|
+| CLI | `cmd/` (Cobra commands), `internal/ui` (prompts), `internal/plugins` (external plugins) |
+| Domain | `internal/cluster` (lifecycle), `internal/secrets` (secrets mgmt), `internal/operations` (drift, backup) |
+| Config | `internal/config` (types, loader, builder, v2), `internal/config/services` (service registry) |
+| GitOps | `internal/gitops` (pipeline, templates, rendering), `internal/template` (engine) |
+| Infra | `internal/cloud` (providers), `internal/provision` (templates), `internal/tofu` (OpenTofu), `internal/ansible` (Kubespray) |
+| Security | `internal/security` (audit, masking, sanitization), `internal/sops` (encryption) |
+| Foundation | `internal/di` (DI container), `internal/core` (paths, validation), `internal/util` (shared), `internal/resilience` (locks, retry) |
 
 ## Architectural Patterns
 
@@ -210,7 +261,7 @@ This allows users to override values at multiple levels while maintaining sensib
 - Validation can be slow (connectivity checks)
 - False positives possible (stale provider data)
 
-**Evidence:** `internal/config/validator.go`, Session 1 A3
+**Evidence:** `internal/config/v2/validator.go`, `internal/core/validation/`
 
 ### Embedded Resources
 
@@ -249,7 +300,7 @@ This allows users to override values at multiple levels while maintaining sensib
 
 **Rationale:** Faster feedback loop, cheaper to fix (no infrastructure provisioned), clearer error messages (specific validation layer).
 
-**Evidence:** `internal/config/validator.go`, Session 1 A3
+**Evidence:** `internal/config/v2/validator.go`, `internal/core/validation/`
 
 ### 3. Composition Over Inheritance
 
@@ -269,7 +320,7 @@ This allows users to override values at multiple levels while maintaining sensib
 
 **Rationale:** Testability (mock dependencies), flexibility (swap implementations), clarity (dependencies visible in signatures).
 
-**Evidence:** `internal/di/`, Session 1 A2
+**Evidence:** `internal/di/`
 
 ### 5. Security First
 
@@ -279,7 +330,7 @@ This allows users to override values at multiple levels while maintaining sensib
 
 **Rationale:** Prevent accidental exposure, enforce best practices, compliance requirements.
 
-**Evidence:** `internal/sops/`, Session 1 A11, `.kiro/steering/product.md:32`
+**Evidence:** `internal/sops/`, `internal/secrets/`
 
 ## Data Flow
 
@@ -388,7 +439,7 @@ Add new infrastructure providers by implementing provider interface:
 3. Add provider-specific validation
 4. Update schema with provider configuration
 
-**Evidence:** `internal/cloud/`, Session 1 A5
+**Evidence:** `internal/cloud/`, `internal/provision/`
 
 ### Custom Services
 
@@ -399,7 +450,7 @@ Add new platform services by:
 3. Create service manifests in openCenter-gitops-base
 4. Update documentation
 
-**Evidence:** `internal/config/services/`, Session 1 A5
+**Evidence:** `internal/config/services/`, 
 
 ### Custom Validators
 
@@ -409,7 +460,7 @@ Add new validation rules by:
 2. Register validator with validation engine
 3. Add tests for validator
 
-**Evidence:** `internal/core/validation/`, Session 1 A6
+**Evidence:** `internal/core/validation/`, 
 
 ### Plugins
 
@@ -452,14 +503,8 @@ Extend CLI with external plugins:
 
 ---
 
-## Evidence
+---
 
-This explanation is based on:
+**Last Updated:** 2026-05-11
 
-- Architecture review: Session 1 A2
-- Component topology: Session 1 A2
-- Design principles: `.kiro/steering/product.md:30-35`
-- Project structure: `.kiro/steering/structure.md:1-150`
-- Validation strategy: Session 1 A3
-- Security architecture: Session 1 A11
-- Ecosystem architecture: Ecosystem.md
+For detailed code-level architecture maps, see [Codemaps](../CODEMAPS/INDEX.md).
