@@ -22,6 +22,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,6 +31,7 @@ import (
 
 // mockSecretsManager is a mock implementation of SecretsManager for testing.
 type mockSecretsManager struct {
+	mu          sync.Mutex
 	syncResults map[string]*SyncResult
 	syncErrors  map[string]error
 	syncCalls   []string
@@ -44,13 +46,17 @@ func newMockSecretsManager() *mockSecretsManager {
 }
 
 func (m *mockSecretsManager) SyncSecrets(ctx context.Context, opts SyncOptions) (*SyncResult, error) {
+	m.mu.Lock()
 	m.syncCalls = append(m.syncCalls, opts.Cluster)
+	err, hasErr := m.syncErrors[opts.Cluster]
+	result, hasResult := m.syncResults[opts.Cluster]
+	m.mu.Unlock()
 
-	if err, exists := m.syncErrors[opts.Cluster]; exists {
+	if hasErr {
 		return nil, err
 	}
 
-	if result, exists := m.syncResults[opts.Cluster]; exists {
+	if hasResult {
 		return result, nil
 	}
 
