@@ -4,4 +4,4 @@ metadata:
   name: alert-manager-url-secret
 type: Opaque
 data:
-  alert_manager_url: {{ ((index .OpenCenter.ManagedServices "alert-proxy").AlertManagerBaseUrl | default "") | b64enc }}
+  alert_manager_url: {{ ((index .OpenCenter.ManagedServices "alert-proxy").AlertManagerBaseURL | default "") | b64enc }}

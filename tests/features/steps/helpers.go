@@ -372,7 +372,7 @@ func securePathAliasUnderClustersRoot(path, clustersRoot string) (string, bool) 
 	default:
 		if strings.HasPrefix(parts[1], ".") && strings.HasSuffix(parts[1], "-config.yaml") {
 			cluster := strings.TrimSuffix(strings.TrimPrefix(parts[1], "."), "-config.yaml")
-			return filepath.Join(clustersRoot, "state", org, cluster, cluster+"-config.yaml"), true
+			return filepath.Join(clustersRoot, "blueprints", org, cluster, cluster+"-config.yaml"), true
 		}
 	}
 
@@ -417,6 +417,20 @@ func (w *world) resolveClusterConfigPath(clusterName string) (string, error) {
 	clustersDir := filepath.Join(w.configDir, "clusters")
 	if _, err := os.Stat(clustersDir); os.IsNotExist(err) {
 		return "", fmt.Errorf("cluster configuration not found for %s", clusterName)
+	}
+
+	// Search in blueprints directory (current secure layout)
+	blueprintsDir := filepath.Join(clustersDir, "blueprints")
+	if entries, err := os.ReadDir(blueprintsDir); err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			configPath := filepath.Join(blueprintsDir, entry.Name(), clusterName, clusterName+"-config.yaml")
+			if _, err := os.Stat(configPath); err == nil {
+				return configPath, nil
+			}
+		}
 	}
 
 	stateDir := filepath.Join(clustersDir, "state")
@@ -1373,7 +1387,7 @@ func (w *world) canonicalClusterFixturePath(path, body string) (string, string, 
 	}
 
 	baseDir := filepath.Dir(path)
-	return filepath.Join(baseDir, "clusters", "state", organization, clusterName, clusterName+"-config.yaml"), clusterName, organization, true
+	return filepath.Join(baseDir, "clusters", "blueprints", organization, clusterName, clusterName+"-config.yaml"), clusterName, organization, true
 }
 
 func (w *world) ensureCanonicalClusterFixtureLayout(clusterStateDir, clusterName, organization string) error {
@@ -1770,6 +1784,20 @@ func (w *world) findClusterConfigPath(clusterName string) (string, error) {
 	clustersDir := filepath.Join(w.configDir, "clusters")
 	if _, err := os.Stat(clustersDir); os.IsNotExist(err) {
 		return "", fmt.Errorf("clusters directory does not exist")
+	}
+
+	// Search in blueprints directory (current secure layout)
+	blueprintsDir := filepath.Join(clustersDir, "blueprints")
+	if entries, err := os.ReadDir(blueprintsDir); err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			configPath := filepath.Join(blueprintsDir, entry.Name(), clusterName, clusterName+"-config.yaml")
+			if _, err := os.Stat(configPath); err == nil {
+				return configPath, nil
+			}
+		}
 	}
 
 	stateDir := filepath.Join(clustersDir, "state")

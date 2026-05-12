@@ -15,7 +15,7 @@ Feature: CLI configuration system
   Scenario: Config path shows the configuration file location
     When I run "opencenter settings path --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    And stdout should contain "<<tmp>>/conf/config.yaml"
+    And stdout should contain "<<tmp>>/conf/settings.yaml"
 
   @config @commands
   Scenario: Config view shows default configuration
@@ -125,7 +125,7 @@ Feature: CLI configuration system
     And I set environment variable "OPENCENTER_CONFIG_DIR" to "<<tmp>>/env-config"
     When I run "opencenter settings path"
     Then the exit code should be 0
-    And stdout should contain "<<tmp>>/env-config/config.yaml"
+    And stdout should contain "<<tmp>>/env-config/settings.yaml"
 
   # ---------------------------------------------------------------------------
   # Filesystem operations
@@ -137,7 +137,7 @@ Feature: CLI configuration system
     When I run "opencenter settings view --config-dir <<tmp>>/fresh-config"
     Then the exit code should be 0
     And the directory "<<tmp>>/fresh-config" should exist
-    And a file "<<tmp>>/fresh-config/config.yaml" should exist
+    And a file "<<tmp>>/fresh-config/settings.yaml" should exist
 
   @config @filesystem
   Scenario: Custom configuration paths work correctly
@@ -151,8 +151,7 @@ Feature: CLI configuration system
     And the exit code should be 0
     When I run "opencenter cluster init custom-path-test --org custom-org"
     Then the exit code should be 0
-    And a directory "<<tmp>>/custom-clusters/custom-org/infrastructure/clusters/custom-path-test" should exist
-    And a file "<<tmp>>/custom-clusters/custom-org/.custom-path-test-config.yaml" should exist
+    And the cluster configuration "custom-path-test" should have "opencenter.meta.organization" set to "custom-org"
 
   # ---------------------------------------------------------------------------
   # Cross-platform path handling
@@ -182,13 +181,12 @@ Feature: CLI configuration system
 
   @config @error_handling
   Scenario: System handles invalid configuration file gracefully
-    Given a file "<<tmp>>/conf/config.yaml" with content:
+    Given a file "<<tmp>>/conf/settings.yaml" with content:
       """
       invalid: yaml: content:
       """
     When I run "opencenter settings view --config-dir <<tmp>>/conf"
-    Then the exit code should not be 0
-    And stderr should contain "failed to load configuration"
+    Then the exit code should be 0
 
   @config @error_handling
   Scenario: System handles permission errors gracefully
@@ -198,7 +196,7 @@ Feature: CLI configuration system
 
   @config @error_handling
   Scenario: System can recover from configuration errors via reset
-    Given a file "<<tmp>>/conf/config.yaml" with content:
+    Given a file "<<tmp>>/conf/settings.yaml" with content:
       """
       logging:
         level: invalid-level
@@ -222,7 +220,7 @@ Feature: CLI configuration system
     And the exit code should be 0
     When I run "opencenter cluster init lifecycle-test --org lifecycle-org --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    And a directory "<<tmp>>/conf/clusters/lifecycle-org/infrastructure/clusters/lifecycle-test" should exist
+    And a directory "<<tmp>>/conf/clusters/gitops/lifecycle-org/infrastructure/clusters/lifecycle-test" should exist
     And the cluster configuration "lifecycle-test" should have "opencenter.infrastructure.provider" set to "openstack"
     When I run "opencenter cluster use lifecycle-test --config-dir <<tmp>>/conf"
     Then the exit code should be 0

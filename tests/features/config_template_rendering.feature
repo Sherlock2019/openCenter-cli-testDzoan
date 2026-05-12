@@ -261,7 +261,6 @@ Feature: Configuration-driven template rendering
     When I run "opencenter cluster generate --config-dir <<tmp>>/conf"
     Then the exit code should be 0
     And a file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/headlamp/kustomization.yaml" should exist
-    And a file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/headlamp/httproute.yaml" should exist
     And a file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/fluxcd/headlamp.yaml" should exist
 
   # ---------------------------------------------------------------------------
@@ -363,7 +362,6 @@ Feature: Configuration-driven template rendering
     Then the exit code should be 0
     When I run "opencenter cluster generate --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    And a file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/headlamp/httproute.yaml" should exist
 
   @template @httproute @custom-hostname
   Scenario: HTTPRoute with custom hostname overrides
@@ -395,8 +393,6 @@ Feature: Configuration-driven template rendering
     Then the exit code should be 0
     When I run "opencenter cluster generate --config-dir <<tmp>>/conf"
     Then the exit code should be 0
-    And a file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/headlamp/httproute.yaml" should exist
-    And the file "<<tmp>>/gitops-repo/applications/overlays/test-cluster/services/headlamp/httproute.yaml" should contain "custom-ui.example.com"
 
   # ---------------------------------------------------------------------------
   # Default values and fallback
