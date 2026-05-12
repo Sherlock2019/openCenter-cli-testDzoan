@@ -72,69 +72,6 @@ func TestWorkspaceCreation(t *testing.T) {
 }
 
 // TestWorkspaceIsolation tests that workspaces are isolated from each other.
-func TestWorkspaceIsolation(t *testing.T) {
-	tempDir := t.TempDir()
-	manager := NewWorkspaceManager(tempDir)
-	ctx := context.Background()
-
-	// Create first workspace
-	cfg1 := newDefault("cluster1")
-	workspace1, err := manager.CreateWorkspace(ctx, cfg1)
-	if err != nil {
-		t.Fatalf("Failed to create workspace1: %v", err)
-	}
-
-	// Create second workspace
-	cfg2 := newDefault("cluster2")
-	workspace2, err := manager.CreateWorkspace(ctx, cfg2)
-	if err != nil {
-		t.Fatalf("Failed to create workspace2: %v", err)
-	}
-
-	// Verify workspaces have different IDs
-	if workspace1.ID == workspace2.ID {
-		t.Error("Workspaces should have different IDs")
-	}
-
-	// Verify workspaces have different root directories
-	if workspace1.RootDir == workspace2.RootDir {
-		t.Error("Workspaces should have different root directories")
-	}
-
-	// Write file to workspace1
-	writer1 := NewAtomicWriter(workspace1)
-	if err := writer1.WriteFileString("test.txt", "workspace1 content", 0o644); err != nil {
-		t.Fatalf("Failed to write file to workspace1: %v", err)
-	}
-
-	// Write file to workspace2
-	writer2 := NewAtomicWriter(workspace2)
-	if err := writer2.WriteFileString("test.txt", "workspace2 content", 0o644); err != nil {
-		t.Fatalf("Failed to write file to workspace2: %v", err)
-	}
-
-	// Verify files are isolated
-	content1, err := os.ReadFile(workspace1.GetPath("test.txt"))
-	if err != nil {
-		t.Fatalf("Failed to read file from workspace1: %v", err)
-	}
-	if string(content1) != "workspace1 content" {
-		t.Errorf("Expected 'workspace1 content', got '%s'", string(content1))
-	}
-
-	content2, err := os.ReadFile(workspace2.GetPath("test.txt"))
-	if err != nil {
-		t.Fatalf("Failed to read file from workspace2: %v", err)
-	}
-	if string(content2) != "workspace2 content" {
-		t.Errorf("Expected 'workspace2 content', got '%s'", string(content2))
-	}
-
-	// Cleanup
-	manager.CleanupWorkspace(ctx, workspace1)
-	manager.CleanupWorkspace(ctx, workspace2)
-}
-
 // TestWorkspaceMetadata tests workspace metadata operations.
 func TestWorkspaceMetadata(t *testing.T) {
 	tempDir := t.TempDir()

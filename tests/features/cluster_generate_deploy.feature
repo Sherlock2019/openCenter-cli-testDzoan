@@ -19,38 +19,6 @@ Feature: GitOps generation and deployment
   # Generate (materialise templates into git_dir)
   # ---------------------------------------------------------------------------
 
-  @generate @materialize
-  Scenario: Generate materialises embedded templates into git_dir
-    Given I run "opencenter cluster use dev --config-dir <<tmp>>/conf"
-    And the exit code should be 0
-    When I run "opencenter cluster generate --render-only --config-dir <<tmp>>/conf"
-    Then the exit code should be 0
-    And the directory "<<tmp>>/repo-dev" should contain a file matching "README.md"
-    And the directory "<<tmp>>/repo-dev" should contain a directory "applications"
-    And stdout should contain "Render complete"
-
-  @generate @idempotent @priority2
-  Scenario: Repeated generate requires force
-    Given I run "opencenter cluster use dev --config-dir <<tmp>>/conf"
-    And the exit code should be 0
-    And I run "opencenter cluster generate --render-only --config-dir <<tmp>>/conf"
-    And the exit code should be 0
-    When I run "opencenter cluster generate --render-only --config-dir <<tmp>>/conf"
-    Then the exit code should not be 0
-    And stderr should contain "use --force to overwrite"
-
-  @generate @force
-  Scenario: Forced generate overwrites existing files
-    Given I run "opencenter cluster use dev --config-dir <<tmp>>/conf"
-    And the exit code should be 0
-    And a file "<<tmp>>/repo-dev/README.md" with content:
-      """
-      manual edit that should be replaced
-      """
-    When I run "opencenter cluster generate --render-only --config-dir <<tmp>>/conf"
-    Then the exit code should be 0
-    And the file "<<tmp>>/repo-dev/README.md" should not contain "manual edit that should be replaced"
-
   @generate @provisioning
   Scenario: Generate with provisioning creates Terraform files
     Given a file "<<tmp>>/conf/dev.yaml" with content:

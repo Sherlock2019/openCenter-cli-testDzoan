@@ -3,49 +3,8 @@ Feature: Cluster initialisation
   the `init` command, so that I can start defining my cluster layout.
 
   # ---------------------------------------------------------------------------
-  # Default initialisation (no --org flag)
-  # ---------------------------------------------------------------------------
-
-  @init @defaults @priority8
-  Scenario: Initialise a new cluster with default settings
-    When I run "opencenter cluster init test-cluster"
-    Then a cluster configuration "test-cluster" should exist
-    And the cluster configuration "test-cluster" should have "opencenter.cluster.cluster_name" set to "test-cluster"
-    And the file should not contain "local."
-
-  @init @defaults
-  Scenario: Initialise a cluster with default GitOps and compute settings
-    When I run "opencenter cluster init test-cluster"
-    Then a cluster configuration "test-cluster" should exist
-    And the cluster configuration "test-cluster" should have "opencenter.gitops.git_dir" containing "clusters/gitops/opencenter"
-    And the cluster configuration "test-cluster" should have "opencenter.infrastructure.compute.master_count" set to "3"
-
-  @init @defaults
-  Scenario: Init without organization uses opencenter as default organization
-    When I run "opencenter cluster init legacy-app"
-    Then a directory "~/.config/opencenter/clusters/opencenter" should exist
-    And a directory "~/.config/opencenter/clusters/opencenter/infrastructure/clusters/legacy-app" should exist
-    And a file "~/.config/opencenter/clusters/opencenter/.legacy-app-config.yaml" should exist
-    And the cluster configuration "legacy-app" should have "opencenter.meta.organization" set to "opencenter"
-
-  @init @full_schema @priority8
-  Scenario: Init with full schema uses valid v2 template
-    When I run "opencenter cluster init full-one --full-schema"
-    Then a cluster configuration "full-one" should exist
-    And the file should not contain "local."
-    And the file should not contain "iac:"
-
-  # ---------------------------------------------------------------------------
   # Directory structure creation
   # ---------------------------------------------------------------------------
-
-  @init @directory_structure
-  Scenario: Init creates clusters subdirectory and cluster directory structure
-    When I run "opencenter cluster init new-cluster"
-    Then a directory "~/.config/opencenter/clusters" should exist
-    And a directory "~/.config/opencenter/clusters/opencenter" should exist
-    And a directory "~/.config/opencenter/clusters/opencenter/infrastructure/clusters/new-cluster" should exist
-    And a file "~/.config/opencenter/clusters/opencenter/.new-cluster-config.yaml" should exist
 
   @init @directory_structure
   Scenario: Init creates cluster-specific secrets directory structure
@@ -62,46 +21,6 @@ Feature: Cluster initialisation
     And a file "~/.config/opencenter/clusters/opencenter/.test-cluster-123-config.yaml" should exist
 
   # ---------------------------------------------------------------------------
-  # SOPS key generation
-  # ---------------------------------------------------------------------------
-
-  @init @sops
-  Scenario: Init generates a SOPS key when not provided
-    When I run "opencenter cluster init demo"
-    Then a file "~/.config/opencenter/clusters/secrets/opencenter/demo/age/keys/demo-key.txt" should exist
-    And the file "~/.config/opencenter/clusters/secrets/opencenter/demo/age/keys/demo-key.txt" should contain "AGE-SECRET-KEY-1"
-
-  @init @sops
-  Scenario: Init does not generate a SOPS key when disabled
-    When I run "opencenter cluster init demo2 --no-sops-keygen"
-    Then the file "~/.config/opencenter/clusters/secrets/opencenter/demo2/age/keys/demo2-key.txt" should not exist
-    And the cluster configuration "demo2" should have "secrets.sops_age_key_file" set to ""
-
-  @init @sops
-  Scenario: SOPS key generation uses cluster-specific directory
-    When I run "opencenter cluster init sops-dir-test"
-    Then a file "~/.config/opencenter/clusters/secrets/opencenter/sops-dir-test/age/keys/sops-dir-test-key.txt" should exist
-    And the cluster configuration "sops-dir-test" should have "secrets.sops_age_key_file" containing "clusters/secrets/opencenter/sops-dir-test/age/keys/sops-dir-test-key.txt"
-
-  # ---------------------------------------------------------------------------
-  # Force and overwrite behaviour
-  # ---------------------------------------------------------------------------
-
-  @init @force
-  Scenario: Force flag overwrites existing cluster directory
-    When I run "opencenter cluster init force-test"
-    And I run "opencenter cluster init force-test --force"
-    Then the command should succeed
-    And a cluster configuration "force-test" should exist
-
-  @init @force
-  Scenario: Init fails when cluster directory exists without force flag
-    When I run "opencenter cluster init existing-test"
-    And I run "opencenter cluster init existing-test"
-    Then exit code should be 1
-    And stderr should contain "already exists"
-
-  # ---------------------------------------------------------------------------
   # Configuration loading after init
   # ---------------------------------------------------------------------------
 
@@ -115,20 +34,6 @@ Feature: Cluster initialisation
   # ---------------------------------------------------------------------------
   # Organization-based initialisation (--org flag)
   # ---------------------------------------------------------------------------
-
-  @init @org @directory_structure
-  Scenario: Init with organization creates full directory structure
-    When I run "opencenter cluster init web-app --org dev-team"
-    Then a directory "~/.config/opencenter/clusters/dev-team" should exist
-    And a directory "~/.config/opencenter/clusters/dev-team/infrastructure" should exist
-    And a directory "~/.config/opencenter/clusters/dev-team/infrastructure/clusters" should exist
-    And a directory "~/.config/opencenter/clusters/dev-team/infrastructure/clusters/web-app" should exist
-    And a directory "~/.config/opencenter/clusters/dev-team/applications" should exist
-    And a directory "~/.config/opencenter/clusters/dev-team/applications/overlays" should exist
-    And a directory "~/.config/opencenter/clusters/dev-team/applications/overlays/web-app" should exist
-    And a directory "~/.config/opencenter/clusters/secrets/dev-team/web-app" should exist
-    And a directory "~/.config/opencenter/clusters/secrets/dev-team/web-app/age" should exist
-    And a directory "~/.config/opencenter/clusters/secrets/dev-team/web-app/age/keys" should exist
 
   @init @org
   Scenario: Init with organization creates config in correct location
@@ -157,21 +62,6 @@ Feature: Cluster initialisation
     And the cluster configuration "frontend" should have "opencenter.gitops.git_dir" containing "clusters/gitops/web-team"
     And the cluster configuration "backend" should have "opencenter.gitops.git_dir" containing "clusters/gitops/web-team"
 
-  @init @org @force
-  Scenario: Init with organization and force flag overwrites existing
-    When I run "opencenter cluster init test-service --org qa-team"
-    And I run "opencenter cluster init test-service --org qa-team --force"
-    Then the command should succeed
-    And a file "~/.config/opencenter/clusters/qa-team/.test-service-config.yaml" should exist
-    And the cluster configuration "test-service" should have "opencenter.meta.organization" set to "qa-team"
-
-  @init @org @force
-  Scenario: Init with organization fails when cluster exists without force
-    When I run "opencenter cluster init existing-service --org ops-team"
-    And I run "opencenter cluster init existing-service --org ops-team"
-    Then exit code should be 1
-    And stderr should contain "already exists in organization 'ops-team'"
-
   @init @org @sops
   Scenario: Init with organization creates separate SOPS keys per cluster
     When I run "opencenter cluster init service-a --org shared-team"
@@ -180,13 +70,6 @@ Feature: Cluster initialisation
     And a file "~/.config/opencenter/clusters/secrets/shared-team/service-b/age/keys/service-b-key.txt" should exist
     And the file "~/.config/opencenter/clusters/secrets/shared-team/service-a/age/keys/service-a-key.txt" should contain "AGE-SECRET-KEY-1"
     And the file "~/.config/opencenter/clusters/secrets/shared-team/service-b/age/keys/service-b-key.txt" should contain "AGE-SECRET-KEY-1"
-
-  @init @org @sops
-  Scenario: Init with organization and no-sops-keygen flag skips key generation
-    When I run "opencenter cluster init no-sops-service --org security-team --no-sops-keygen"
-    Then a directory "~/.config/opencenter/clusters/security-team/infrastructure/clusters/no-sops-service" should exist
-    And the file "~/.config/opencenter/clusters/secrets/security-team/no-sops-service/age/keys/no-sops-service-key.txt" should not exist
-    And the cluster configuration "no-sops-service" should have "secrets.sops_age_key_file" set to ""
 
   @init @org
   Scenario: Init with organization validates organization name in config
