@@ -610,9 +610,28 @@ func (m *DefaultSecretsManager) loadClusterConfig(ctx context.Context, cluster s
 // The config file is located at ~/.config/opencenter/clusters/blueprints/<org>/<cluster>/<cluster>-config.yaml
 func (m *DefaultSecretsManager) getConfigPath(ctx context.Context, cluster string) (string, error) {
 	pathResolver := config.NewPathResolverFromConfig()
-	clusterPaths, err := pathResolver.ResolveWithFallback(ctx, cluster)
-	if err == nil {
-		return clusterPaths.ConfigPath, nil
+
+	// Parse org/cluster identifier (e.g. "opencenter-dev/hamlet" → org="opencenter-dev", name="hamlet")
+	clusterName := cluster
+	organization := ""
+	if parts := strings.SplitN(cluster, "/", 2); len(parts) == 2 {
+		organization = parts[0]
+		clusterName = parts[1]
+	}
+
+	var err error
+	if organization != "" {
+		clusterPaths, resolveErr := pathResolver.Resolve(ctx, clusterName, organization)
+		if resolveErr == nil {
+			return clusterPaths.ConfigPath, nil
+		}
+		err = resolveErr
+	} else {
+		clusterPaths, resolveErr := pathResolver.ResolveWithFallback(ctx, clusterName)
+		if resolveErr == nil {
+			return clusterPaths.ConfigPath, nil
+		}
+		err = resolveErr
 	}
 
 	// Fallback: search blueprints directory for the cluster config
@@ -623,15 +642,20 @@ func (m *DefaultSecretsManager) getConfigPath(ctx context.Context, cluster strin
 			if !entry.IsDir() {
 				continue
 			}
-			candidate := filepath.Join(blueprintsDir, entry.Name(), cluster, fmt.Sprintf("%s-config.yaml", cluster))
+			candidate := filepath.Join(blueprintsDir, entry.Name(), clusterName, fmt.Sprintf("%s-config.yaml", clusterName))
 			if _, statErr := os.Stat(candidate); statErr == nil {
 				return candidate, nil
 			}
 		}
 	}
 
-	// Final fallback: assume default "opencenter" organization
-	return filepath.Join(blueprintsDir, "opencenter", cluster, fmt.Sprintf("%s-config.yaml", cluster)), nil
+	// Final fallback: use organization if known, otherwise "opencenter"
+	fallbackOrg := "opencenter"
+	if organization != "" {
+		fallbackOrg = organization
+	}
+	_ = err
+	return filepath.Join(blueprintsDir, fallbackOrg, clusterName, fmt.Sprintf("%s-config.yaml", clusterName)), nil
 }
 
 // extractSecretsFromConfig extracts all secrets from the config file.
