@@ -10,24 +10,6 @@ import (
 	servicescfg "github.com/opencenter-cloud/opencenter-cli/internal/config/services"
 )
 
-func TestClusterConfigureRequiresGuidedFlag(t *testing.T) {
-	dir := t.TempDir()
-	prepareCommandTestEnv(t, dir)
-
-	cmd := newClusterConfigureCmd()
-	var stderr bytes.Buffer
-	cmd.SetErr(&stderr)
-	cmd.SetArgs([]string{"guided-openstack"})
-
-	err := cmd.Execute()
-	if err == nil {
-		t.Fatal("expected cluster configure to require --guided")
-	}
-	if want := "--guided is required"; !bytes.Contains([]byte(err.Error()), []byte(want)) {
-		t.Fatalf("expected error containing %q, got %v", want, err)
-	}
-}
-
 func TestClusterConfigureGuidedCreatesOpenStackCluster(t *testing.T) {
 	dir := t.TempDir()
 	prepareCommandTestEnv(t, dir)
@@ -44,7 +26,7 @@ func TestClusterConfigureGuidedCreatesOpenStackCluster(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
-	cmd.SetArgs([]string{"guided-openstack", "--guided", "--org", "opencenter", "--type", "openstack"})
+	cmd.SetArgs([]string{"guided-openstack", "--org", "opencenter", "--type", "openstack"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("cluster configure failed: %v\nstderr: %s", err, stderr.String())
@@ -131,7 +113,7 @@ func TestClusterConfigureGuidedCancelLeavesConfigUnwritten(t *testing.T) {
 	setGuidedAnswers(t, answers)
 
 	cmd := newClusterConfigureCmd()
-	cmd.SetArgs([]string{"cancel-openstack", "--guided", "--org", "opencenter", "--type", "openstack"})
+	cmd.SetArgs([]string{"cancel-openstack", "--org", "opencenter", "--type", "openstack"})
 
 	err := cmd.Execute()
 	if err == nil {
@@ -150,7 +132,7 @@ func TestClusterConfigureGuidedUpdatesExistingCluster(t *testing.T) {
 
 	setGuidedAnswers(t, guidedCreateAnswers())
 	createCmd := newClusterConfigureCmd()
-	createCmd.SetArgs([]string{"update-openstack", "--guided", "--org", "opencenter", "--type", "openstack"})
+	createCmd.SetArgs([]string{"update-openstack", "--org", "opencenter", "--type", "openstack"})
 	if err := createCmd.Execute(); err != nil {
 		t.Fatalf("initial cluster configure failed: %v", err)
 	}
@@ -173,7 +155,7 @@ func TestClusterConfigureGuidedUpdatesExistingCluster(t *testing.T) {
 	resetCommandStateForTests()
 
 	updateCmd := newClusterConfigureCmd()
-	updateCmd.SetArgs([]string{"update-openstack", "--guided"})
+	updateCmd.SetArgs([]string{"update-openstack"})
 	if err := updateCmd.Execute(); err != nil {
 		t.Fatalf("update cluster configure failed: %v", err)
 	}

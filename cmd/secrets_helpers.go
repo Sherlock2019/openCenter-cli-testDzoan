@@ -116,7 +116,8 @@ func createSecretsLogger() *slog.Logger {
 
 // createSOPSManager creates a SOPS manager instance
 func createSOPSManager(logger *slog.Logger) *sops.DefaultSOPSManager {
-	return sops.NewDefaultSOPSManager(nil, nil, logger)
+	encryptor := sops.NewDefaultEncryptor([]string{}, []string{})
+	return sops.NewDefaultSOPSManager(nil, encryptor, logger)
 }
 
 func createAuditLogger() (*security.AuditLogger, error) {

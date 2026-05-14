@@ -734,14 +734,14 @@ func (s *InitService) ensureSOPSConfig(clusterPaths *paths.ClusterPaths, cfg *v2
   - path_regex: 'secrets/age/keys/.*-key\.txt$'
     age: >-
       %s
-  - path_regex: 'secrets/ssh/(?!.*\.pub$).*'
+  - path_regex: 'secrets/ssh/[^.]+$'
     age: >-
       %s
   - path_regex: 'applications/overlays/[^/]+/(managed-services|services)/.*/.*\.ya?ml$'
     encrypted_regex: "^(secret)$"
     age: >-
       %s
-  - path_regex: '^infrastructure\/clusters\/%s\/(?!(?:venv|kubespray|\.terraform|\.bin)\/)(.*)'
+  - path_regex: '^infrastructure/clusters/%s/.*\.ya?ml$'
     encrypted_regex: "^(secret)$"
     age: >-
       %s

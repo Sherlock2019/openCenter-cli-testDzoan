@@ -13,7 +13,6 @@ func newClusterConfigureCmd() *cobra.Command {
 	var (
 		organization string
 		provider     string
-		guided       bool
 	)
 
 	cmd := &cobra.Command{
@@ -21,10 +20,6 @@ func newClusterConfigureCmd() *cobra.Command {
 		Short: "Guided cluster configuration for supported providers",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if !guided {
-				return fmt.Errorf("--guided is required; non-guided cluster configure is not implemented")
-			}
-
 			name, err := resolveClusterNameForCommand(cmd, args, false)
 			if err != nil {
 				return err
@@ -57,7 +52,6 @@ func newClusterConfigureCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVar(&guided, "guided", false, "run the interactive guided configure workflow")
 	cmd.Flags().StringVar(&organization, "org", "", "organization for new cluster configurations")
 	cmd.Flags().StringVar(&provider, "type", "openstack", "infrastructure provider for new cluster configurations")
 
