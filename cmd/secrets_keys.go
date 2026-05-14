@@ -57,7 +57,7 @@ with appropriate file permissions (600).
 The generated public key should be used in .sops.yaml configuration and
 cluster specifications for SOPS encryption.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return executeSOPSGenerateKey(cmd.Context(), keyFile, updateSOPS, dryRun)
+			return executeSOPSGenerateKey(cmd.Context(), cmd.OutOrStdout(), cmd.ErrOrStderr(), keyFile, updateSOPS, dryRun)
 		},
 	}
 
@@ -100,7 +100,7 @@ If any step fails, the old key is restored automatically.`,
 				}
 				return runClusterKeyRotation(cmd, name, keyType, complete, dryRun)
 			}
-			return executeSOPSRotateKey(cmd.Context(), keyFile, path, dryRun)
+			return executeSOPSRotateKey(cmd.Context(), cmd.OutOrStdout(), cmd.ErrOrStderr(), keyFile, path, dryRun)
 		},
 	}
 
@@ -175,7 +175,7 @@ The backup includes:
 • SOPS configuration (.sops.yaml)
 • Backup metadata with timestamp and creation details`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return executeSOPSBackupKey(cmd.Context(), keyFile, backupDir, dryRun)
+			return executeSOPSBackupKey(cmd.Context(), cmd.OutOrStdout(), cmd.ErrOrStderr(), keyFile, backupDir, dryRun)
 		},
 	}
 
@@ -209,7 +209,7 @@ This command performs comprehensive validation of the SOPS configuration:
 Use this command to troubleshoot SOPS issues or verify configuration
 after key rotation or setup changes.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return executeSOPSValidate(cmd.Context(), keyFile, configFile, dryRun)
+			return executeSOPSValidate(cmd.Context(), cmd.OutOrStdout(), cmd.ErrOrStderr(), keyFile, configFile, dryRun)
 		},
 	}
 

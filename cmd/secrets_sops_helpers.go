@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -480,25 +481,25 @@ func updateSOPSConfig(publicKey string) error {
 }
 
 // executeSOPSSecretsEncrypt encrypts secrets files
-func executeSOPSSecretsEncrypt(ctx context.Context, keyFile, searchPath string, dryRun, createBackups bool) error {
+func executeSOPSSecretsEncrypt(ctx context.Context, out, errOut io.Writer, keyFile, searchPath string, dryRun, createBackups bool) error {
 	if dryRun {
-		fmt.Println("🧪 DRY RUN: Secrets encryption simulation")
+		fmt.Fprintf(out, "🧪 DRY RUN: Secrets encryption simulation\n")
 	} else {
-		fmt.Println("🔒 Starting secrets encryption...")
+		fmt.Fprintf(out, "🔒 Starting secrets encryption...\n")
 	}
 
-	fmt.Printf("📁 Search path: %s\n", searchPath)
-	fmt.Printf("💾 Create backups: %t\n", createBackups)
+	fmt.Fprintf(out, "📁 Search path: %s\n", searchPath)
+	fmt.Fprintf(out, "💾 Create backups: %t\n", createBackups)
 
 	// Load SOPS configuration and create path matcher
 	sopsConfigPath := ".sops.yaml"
 	pathMatcher, err := NewSOPSPathMatcher(sopsConfigPath)
 	if err != nil {
-		fmt.Printf("⚠️  Failed to load SOPS configuration: %v\n", err)
-		fmt.Println("ℹ️  Falling back to basic pattern matching")
+		fmt.Fprintf(errOut, "⚠️  Failed to load SOPS configuration: %v\n", err)
+		fmt.Fprintf(out, "ℹ️  Falling back to basic pattern matching\n")
 		pathMatcher = &SOPSPathMatcher{rules: []*SOPSPathRule{}}
 	} else if len(pathMatcher.rules) > 0 {
-		fmt.Printf("✅ Loaded SOPS configuration with %d rules\n", len(pathMatcher.rules))
+		fmt.Fprintf(out, "✅ Loaded SOPS configuration with %d rules\n", len(pathMatcher.rules))
 	}
 
 	// Setup key environment and load age keys
@@ -509,7 +510,7 @@ func executeSOPSSecretsEncrypt(ctx context.Context, keyFile, searchPath string, 
 		if err := setupSOPSKeyEnvironment(keyFile); err != nil {
 			return fmt.Errorf("failed to setup key environment: %w", err)
 		}
-		fmt.Printf("🔑 Using key file: %s\n", keyFile)
+		fmt.Fprintf(out, "🔑 Using key file: %s\n", keyFile)
 
 		// Load the public key from the key file
 		ageKeys, err = loadAgeKeysFromFile(keyFile)
@@ -536,7 +537,7 @@ func executeSOPSSecretsEncrypt(ctx context.Context, keyFile, searchPath string, 
 		// Skip excluded directories (basic exclusion)
 		if info.IsDir() && shouldSkipDirectory(path) {
 			if dryRun {
-				fmt.Printf("⏭️  Skipping directory: %s\n", path)
+				fmt.Fprintf(out, "⏭️  Skipping directory: %s\n", path)
 			}
 			return filepath.SkipDir
 		}
@@ -544,7 +545,7 @@ func executeSOPSSecretsEncrypt(ctx context.Context, keyFile, searchPath string, 
 		// Check if path should be skipped based on SOPS rules
 		if pathMatcher.ShouldSkipPath(path) {
 			if dryRun && !info.IsDir() {
-				fmt.Printf("⏭️  Skipping (SOPS rule): %s\n", path)
+				fmt.Fprintf(out, "⏭️  Skipping (SOPS rule): %s\n", path)
 			}
 			return nil
 		}
@@ -570,15 +571,15 @@ func executeSOPSSecretsEncrypt(ctx context.Context, keyFile, searchPath string, 
 	}
 
 	if len(filesToEncrypt) == 0 {
-		fmt.Println("ℹ️  No files found that need encryption")
+		fmt.Fprintf(out, "ℹ️  No files found that need encryption\n")
 		return nil
 	}
 
-	fmt.Printf("📄 Files to encrypt: %d\n", len(filesToEncrypt))
+	fmt.Fprintf(out, "📄 Files to encrypt: %d\n", len(filesToEncrypt))
 
 	if dryRun {
 		for _, file := range filesToEncrypt {
-			fmt.Printf("  🔒 Would encrypt: %s\n", file)
+			fmt.Fprintf(out, "  🔒 Would encrypt: %s\n", file)
 		}
 		return nil
 	}
@@ -586,16 +587,16 @@ func executeSOPSSecretsEncrypt(ctx context.Context, keyFile, searchPath string, 
 	// Process each file
 	successCount := 0
 	for _, file := range filesToEncrypt {
-		fmt.Printf("🔒 Encrypting: %s\n", file)
+		fmt.Fprintf(out, "🔒 Encrypting: %s\n", file)
 
 		// Create backup if requested
 		if createBackups {
 			backupPath := fmt.Sprintf("%s.backup-%s", file, time.Now().Format("20060102-150405"))
 			if err := copyFile(file, backupPath); err != nil {
-				fmt.Printf("⚠️  Failed to create backup for %s: %v\n", file, err)
+				fmt.Fprintf(errOut, "⚠️  Failed to create backup for %s: %v\n", file, err)
 				continue
 			}
-			fmt.Printf("💾 Backup created: %s\n", backupPath)
+			fmt.Fprintf(out, "💾 Backup created: %s\n", backupPath)
 		}
 
 		// Encrypt the file
@@ -604,38 +605,38 @@ func executeSOPSSecretsEncrypt(ctx context.Context, keyFile, searchPath string, 
 			InPlace: true,
 		}
 		if err := encryptor.EncryptFile(ctx, file, encryptConfig); err != nil {
-			fmt.Printf("❌ Failed to encrypt %s: %v\n", file, err)
+			fmt.Fprintf(errOut, "❌ Failed to encrypt %s: %v\n", file, err)
 			continue
 		}
 
 		successCount++
-		fmt.Printf("✅ Successfully encrypted: %s\n", file)
+		fmt.Fprintf(out, "✅ Successfully encrypted: %s\n", file)
 	}
 
-	fmt.Printf("\n🎉 Encryption completed: %d/%d files processed successfully\n", successCount, len(filesToEncrypt))
+	fmt.Fprintf(out, "\n🎉 Encryption completed: %d/%d files processed successfully\n", successCount, len(filesToEncrypt))
 
 	return nil
 }
 
 // executeSOPSSecretsDecrypt decrypts secrets files
-func executeSOPSSecretsDecrypt(ctx context.Context, keyFile, searchPath string, dryRun, createBackups bool) error {
+func executeSOPSSecretsDecrypt(ctx context.Context, out, errOut io.Writer, keyFile, searchPath string, dryRun, createBackups bool) error {
 	if dryRun {
-		fmt.Println("🧪 DRY RUN: Secrets decryption simulation")
+		fmt.Fprintf(out, "🧪 DRY RUN: Secrets decryption simulation\n")
 	} else {
-		fmt.Println("🔓 Starting secrets decryption...")
+		fmt.Fprintf(out, "🔓 Starting secrets decryption...\n")
 	}
 
-	fmt.Printf("📁 Search path: %s\n", searchPath)
-	fmt.Printf("💾 Create backups: %t\n", createBackups)
+	fmt.Fprintf(out, "📁 Search path: %s\n", searchPath)
+	fmt.Fprintf(out, "💾 Create backups: %t\n", createBackups)
 
 	// Load SOPS configuration and create path matcher
 	sopsConfigPath := ".sops.yaml"
 	pathMatcher, err := NewSOPSPathMatcher(sopsConfigPath)
 	if err != nil {
-		fmt.Printf("⚠️  Failed to load SOPS configuration: %v\n", err)
+		fmt.Fprintf(errOut, "⚠️  Failed to load SOPS configuration: %v\n", err)
 		pathMatcher = &SOPSPathMatcher{rules: []*SOPSPathRule{}}
 	} else if len(pathMatcher.rules) > 0 {
-		fmt.Printf("✅ Loaded SOPS configuration with %d rules\n", len(pathMatcher.rules))
+		fmt.Fprintf(out, "✅ Loaded SOPS configuration with %d rules\n", len(pathMatcher.rules))
 	}
 
 	// Setup key environment if keyFile is specified
@@ -643,7 +644,7 @@ func executeSOPSSecretsDecrypt(ctx context.Context, keyFile, searchPath string, 
 		if err := setupSOPSKeyEnvironment(keyFile); err != nil {
 			return fmt.Errorf("failed to setup key environment: %w", err)
 		}
-		fmt.Printf("🔑 Using key file: %s\n", keyFile)
+		fmt.Fprintf(out, "🔑 Using key file: %s\n", keyFile)
 	}
 
 	encryptor := sops.NewDefaultEncryptor(nil, nil)
@@ -658,7 +659,7 @@ func executeSOPSSecretsDecrypt(ctx context.Context, keyFile, searchPath string, 
 		// Skip excluded directories
 		if info.IsDir() && shouldSkipDirectory(path) {
 			if dryRun {
-				fmt.Printf("⏭️  Skipping directory: %s\n", path)
+				fmt.Fprintf(out, "⏭️  Skipping directory: %s\n", path)
 			}
 			return filepath.SkipDir
 		}
@@ -666,7 +667,7 @@ func executeSOPSSecretsDecrypt(ctx context.Context, keyFile, searchPath string, 
 		// Check if path should be skipped based on SOPS rules
 		if pathMatcher.ShouldSkipPath(path) {
 			if dryRun && !info.IsDir() {
-				fmt.Printf("⏭️  Skipping (SOPS rule): %s\n", path)
+				fmt.Fprintf(out, "⏭️  Skipping (SOPS rule): %s\n", path)
 			}
 			return nil
 		}
@@ -684,15 +685,15 @@ func executeSOPSSecretsDecrypt(ctx context.Context, keyFile, searchPath string, 
 	}
 
 	if len(filesToDecrypt) == 0 {
-		fmt.Println("ℹ️  No encrypted files found")
+		fmt.Fprintf(out, "ℹ️  No encrypted files found\n")
 		return nil
 	}
 
-	fmt.Printf("📄 Files to decrypt: %d\n", len(filesToDecrypt))
+	fmt.Fprintf(out, "📄 Files to decrypt: %d\n", len(filesToDecrypt))
 
 	if dryRun {
 		for _, file := range filesToDecrypt {
-			fmt.Printf("  🔓 Would decrypt: %s\n", file)
+			fmt.Fprintf(out, "  🔓 Would decrypt: %s\n", file)
 		}
 		return nil
 	}
@@ -700,58 +701,58 @@ func executeSOPSSecretsDecrypt(ctx context.Context, keyFile, searchPath string, 
 	// Process each file
 	successCount := 0
 	for _, file := range filesToDecrypt {
-		fmt.Printf("🔓 Decrypting: %s\n", file)
+		fmt.Fprintf(out, "🔓 Decrypting: %s\n", file)
 
 		// Create backup if requested
 		if createBackups {
 			backupPath := fmt.Sprintf("%s.encrypted-backup-%s", file, time.Now().Format("20060102-150405"))
 			if err := copyFile(file, backupPath); err != nil {
-				fmt.Printf("⚠️  Failed to create backup for %s: %v\n", file, err)
+				fmt.Fprintf(errOut, "⚠️  Failed to create backup for %s: %v\n", file, err)
 				continue
 			}
-			fmt.Printf("💾 Backup created: %s\n", backupPath)
+			fmt.Fprintf(out, "💾 Backup created: %s\n", backupPath)
 		}
 
 		// Decrypt the file in place by creating a temporary decrypted version
 		tempFile := file + ".tmp"
 		if err := encryptor.DecryptFile(ctx, file, tempFile); err != nil {
-			fmt.Printf("❌ Failed to decrypt %s: %v\n", file, err)
+			fmt.Fprintf(errOut, "❌ Failed to decrypt %s: %v\n", file, err)
 			continue
 		}
 
 		// Replace original file with decrypted version
 		if err := os.Rename(tempFile, file); err != nil {
-			fmt.Printf("❌ Failed to replace %s with decrypted version: %v\n", file, err)
+			fmt.Fprintf(errOut, "❌ Failed to replace %s with decrypted version: %v\n", file, err)
 			os.Remove(tempFile) // Clean up temp file
 			continue
 		}
 
 		successCount++
-		fmt.Printf("✅ Successfully decrypted: %s\n", file)
+		fmt.Fprintf(out, "✅ Successfully decrypted: %s\n", file)
 	}
 
-	fmt.Printf("\n🎉 Decryption completed: %d/%d files processed successfully\n", successCount, len(filesToDecrypt))
+	fmt.Fprintf(out, "\n🎉 Decryption completed: %d/%d files processed successfully\n", successCount, len(filesToDecrypt))
 
 	return nil
 }
 
 // executeSOPSSecretsList lists all SOPS-encrypted files
-func executeSOPSSecretsList(ctx context.Context, keyFile, searchPath string, dryRun bool) error {
+func executeSOPSSecretsList(ctx context.Context, out, errOut io.Writer, keyFile, searchPath string, dryRun bool) error {
 	if dryRun {
-		fmt.Println("🧪 DRY RUN: Secrets list simulation")
+		fmt.Fprintf(out, "🧪 DRY RUN: Secrets list simulation\n")
 	}
 
-	fmt.Printf("🔍 Searching for SOPS files in: %s\n", searchPath)
+	fmt.Fprintf(out, "🔍 Searching for SOPS files in: %s\n", searchPath)
 
 	// Load SOPS configuration and create path matcher
 	sopsConfigPath := ".sops.yaml"
 	pathMatcher, err := NewSOPSPathMatcher(sopsConfigPath)
 	if err != nil {
-		fmt.Printf("⚠️  Failed to load SOPS configuration: %v\n", err)
-		fmt.Println("ℹ️  Falling back to basic pattern matching")
+		fmt.Fprintf(errOut, "⚠️  Failed to load SOPS configuration: %v\n", err)
+		fmt.Fprintf(out, "ℹ️  Falling back to basic pattern matching\n")
 		pathMatcher = &SOPSPathMatcher{rules: []*SOPSPathRule{}}
 	} else if len(pathMatcher.rules) > 0 {
-		fmt.Printf("✅ Loaded SOPS configuration with %d rules\n", len(pathMatcher.rules))
+		fmt.Fprintf(out, "✅ Loaded SOPS configuration with %d rules\n", len(pathMatcher.rules))
 	}
 
 	// Setup key environment if keyFile is specified
@@ -759,7 +760,7 @@ func executeSOPSSecretsList(ctx context.Context, keyFile, searchPath string, dry
 		if err := setupSOPSKeyEnvironment(keyFile); err != nil {
 			return fmt.Errorf("failed to setup key environment: %w", err)
 		}
-		fmt.Printf("🔑 Using key file: %s\n", keyFile)
+		fmt.Fprintf(out, "🔑 Using key file: %s\n", keyFile)
 	}
 
 	encryptor := sops.NewDefaultEncryptor(nil, nil)
@@ -809,25 +810,25 @@ func executeSOPSSecretsList(ctx context.Context, keyFile, searchPath string, dry
 
 	// Display results
 	if len(skippedDirs) > 0 && dryRun {
-		fmt.Printf("\n⏭️  Skipped directories: %d\n", len(skippedDirs))
+		fmt.Fprintf(out, "\n⏭️  Skipped directories: %d\n", len(skippedDirs))
 		for _, dir := range skippedDirs {
-			fmt.Printf("  • %s\n", dir)
+			fmt.Fprintf(out, "  • %s\n", dir)
 		}
 	}
 
-	fmt.Printf("\n📊 SOPS Files Status:\n")
-	fmt.Printf("🔒 Encrypted files: %d\n", len(encryptedFiles))
+	fmt.Fprintf(out, "\n📊 SOPS Files Status:\n")
+	fmt.Fprintf(out, "🔒 Encrypted files: %d\n", len(encryptedFiles))
 	for _, file := range encryptedFiles {
-		fmt.Printf("  ✅ %s\n", file)
+		fmt.Fprintf(out, "  ✅ %s\n", file)
 	}
 
-	fmt.Printf("\n🔓 Unencrypted files (should be encrypted): %d\n", len(unencryptedFiles))
+	fmt.Fprintf(out, "\n🔓 Unencrypted files (should be encrypted): %d\n", len(unencryptedFiles))
 	for _, file := range unencryptedFiles {
-		fmt.Printf("  ⚠️  %s\n", file)
+		fmt.Fprintf(errOut, "  ⚠️  %s\n", file)
 	}
 
 	if len(encryptedFiles) == 0 && len(unencryptedFiles) == 0 {
-		fmt.Println("ℹ️  No SOPS-managed files found")
+		fmt.Fprintf(out, "ℹ️  No SOPS-managed files found\n")
 	}
 
 	return nil

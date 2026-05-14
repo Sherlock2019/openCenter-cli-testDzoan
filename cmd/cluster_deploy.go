@@ -336,7 +336,7 @@ func checkUnencryptedSecrets(gitOpsDir string) error {
 
 	// Encrypt unencrypted secrets before deploying
 	fmt.Fprintf(os.Stderr, "Encrypting %d unencrypted secret manifest(s)...\n", len(unencrypted))
-	if err := executeSOPSSecretsEncrypt(context.Background(), "", gitOpsDir, false, false); err != nil {
+	if err := executeSOPSSecretsEncrypt(context.Background(), os.Stdout, os.Stderr, "", gitOpsDir, false, false); err != nil {
 		var sb strings.Builder
 		sb.WriteString(fmt.Sprintf("deploy blocked: failed to encrypt %d secret manifest(s):\n", len(unencrypted)))
 		for _, path := range unencrypted {

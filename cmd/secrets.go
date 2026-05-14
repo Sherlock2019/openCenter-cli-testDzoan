@@ -111,7 +111,7 @@ func newSecretsLoginCmd() *cobra.Command {
 				return err
 			}
 
-			fmt.Println("Successfully authenticated and token stored.")
+			fmt.Fprintf(cmd.OutOrStdout(), "Successfully authenticated and token stored.\n")
 			return nil
 		},
 	}
@@ -333,7 +333,7 @@ func newSecretsGetCmd() *cobra.Command {
 
 			switch backend {
 			case "barbican":
-				return getBarbicanSecret(cmd.Context(), cfg, name, outputFile, show)
+				return getBarbicanSecret(cmd.Context(), cmd.OutOrStdout(), cmd.ErrOrStderr(), cfg, name, outputFile, show)
 			case "sops":
 				return getSOPSSecret(cmd.Context(), cfg, name, outputFile, show)
 			case "file":
@@ -348,7 +348,7 @@ func newSecretsGetCmd() *cobra.Command {
 	return cmd
 }
 
-func getBarbicanSecret(ctx context.Context, cfg *v2.Config, name string, outputFile string, show bool) error {
+func getBarbicanSecret(ctx context.Context, out, errOut io.Writer, cfg *v2.Config, name string, outputFile string, show bool) error {
 	client, err := barbican.NewClient(&cfg.OpenCenter.Secrets.Barbican)
 	if err != nil {
 		return err
@@ -363,15 +363,15 @@ func getBarbicanSecret(ctx context.Context, cfg *v2.Config, name string, outputF
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Secret '%s' saved to %s\n", name, outputFile)
+		fmt.Fprintf(out, "Secret '%s' saved to %s\n", name, outputFile)
 	}
 	if show {
 		if outputFile != "" {
-			fmt.Println("--- Secret Content ---")
+			fmt.Fprintf(out, "--- Secret Content ---\n")
 		} else {
-			fmt.Fprintln(os.Stderr, "Warning: Printing secret to stdout is insecure.")
+			fmt.Fprintf(errOut, "Warning: Printing secret to stdout is insecure.\n")
 		}
-		fmt.Println(string(payload))
+		fmt.Fprintf(out, "%s\n", string(payload))
 	}
 	return nil
 }
@@ -388,7 +388,7 @@ func getSOPSSecret(ctx context.Context, cfg *v2.Config, name string, outputFile 
 
 func getFileSecret(ctx context.Context, cfg *v2.Config, name string, outputFile string, show bool) error {
 	_ = ctx
-	return getConfigSecret(cfg, name, outputFile, show)
+	return getConfigSecret(cfg, os.Stdout, os.Stderr, name, outputFile, show)
 }
 
 func newSecretsSetCmd() *cobra.Command {
@@ -441,11 +441,11 @@ func newSecretsSetCmd() *cobra.Command {
 
 			switch backend {
 			case "barbican":
-				return setBarbicanSecret(cmd.Context(), cfg, name, payload, labels, secretType, payloadContentEncoding)
+				return setBarbicanSecret(cmd.Context(), cmd.OutOrStdout(), cfg, name, payload, labels, secretType, payloadContentEncoding)
 			case "sops":
 				return setSOPSSecret(cmd.Context(), cfg, name, payload)
 			case "file":
-				return setFileSecret(cmd.Context(), cfg, name, payload)
+				return setFileSecret(cmd.Context(), os.Stdout, cfg, name, payload)
 			default:
 				return fmt.Errorf("unsupported secrets backend: %s (supported: barbican, sops, file)", backend)
 			}
@@ -458,7 +458,7 @@ func newSecretsSetCmd() *cobra.Command {
 	return cmd
 }
 
-func setBarbicanSecret(ctx context.Context, cfg *v2.Config, name string, payload []byte, labels []string, secretType string, payloadContentEncoding string) error {
+func setBarbicanSecret(ctx context.Context, out io.Writer, cfg *v2.Config, name string, payload []byte, labels []string, secretType string, payloadContentEncoding string) error {
 	client, err := barbican.NewClient(&cfg.OpenCenter.Secrets.Barbican)
 	if err != nil {
 		return err
@@ -487,7 +487,7 @@ func setBarbicanSecret(ctx context.Context, cfg *v2.Config, name string, payload
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Secret '%s' created/updated successfully\n", name)
+	fmt.Fprintf(out, "Secret '%s' created/updated successfully\n", name)
 	return nil
 }
 
@@ -501,11 +501,11 @@ func setSOPSSecret(ctx context.Context, cfg *v2.Config, name string, payload []b
 		"See: https://docs.opencenter.cloud/secrets/sops-encryption")
 }
 
-func setFileSecret(ctx context.Context, cfg *v2.Config, name string, payload []byte) error {
+func setFileSecret(ctx context.Context, out io.Writer, cfg *v2.Config, name string, payload []byte) error {
 	if err := setConfigSecret(ctx, cfg, name, payload); err != nil {
 		return err
 	}
-	fmt.Printf("Secret '%s' created/updated successfully\n", name)
+	fmt.Fprintf(out, "Secret '%s' created/updated successfully\n", name)
 	return nil
 }
 
@@ -539,11 +539,11 @@ func newSecretsDeleteCmd() *cobra.Command {
 
 			switch backend {
 			case "barbican":
-				return deleteBarbicanSecret(cmd.Context(), cfg, name)
+				return deleteBarbicanSecret(cmd.Context(), cmd.OutOrStdout(), cfg, name)
 			case "sops":
 				return deleteSOPSSecret(cmd.Context(), cfg, name)
 			case "file":
-				return deleteFileSecret(cmd.Context(), cfg, name)
+				return deleteFileSecret(cmd.Context(), cmd.OutOrStdout(), cfg, name)
 			default:
 				return fmt.Errorf("unsupported secrets backend: %s (supported: barbican, sops, file)", backend)
 			}
@@ -553,7 +553,7 @@ func newSecretsDeleteCmd() *cobra.Command {
 	return cmd
 }
 
-func deleteBarbicanSecret(ctx context.Context, cfg *v2.Config, name string) error {
+func deleteBarbicanSecret(ctx context.Context, out io.Writer, cfg *v2.Config, name string) error {
 	client, err := barbican.NewClient(&cfg.OpenCenter.Secrets.Barbican)
 	if err != nil {
 		return err
@@ -563,7 +563,7 @@ func deleteBarbicanSecret(ctx context.Context, cfg *v2.Config, name string) erro
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Secret '%s' deleted successfully\n", name)
+	fmt.Fprintf(out, "Secret '%s' deleted successfully\n", name)
 	return nil
 }
 
@@ -577,10 +577,10 @@ func deleteSOPSSecret(ctx context.Context, cfg *v2.Config, name string) error {
 		"See: https://docs.opencenter.cloud/secrets/sops-encryption")
 }
 
-func deleteFileSecret(ctx context.Context, cfg *v2.Config, name string) error {
+func deleteFileSecret(ctx context.Context, out io.Writer, cfg *v2.Config, name string) error {
 	if err := deleteConfigSecret(ctx, cfg, name); err != nil {
 		return err
 	}
-	fmt.Printf("Secret '%s' deleted successfully\n", name)
+	fmt.Fprintf(out, "Secret '%s' deleted successfully\n", name)
 	return nil
 }

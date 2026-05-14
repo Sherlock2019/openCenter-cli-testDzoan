@@ -386,7 +386,7 @@ func describeConfigSecret(out io.Writer, cfg *v2.Config, name string, format str
 	}
 }
 
-func getConfigSecret(cfg *v2.Config, name string, outputFile string, show bool) error {
+func getConfigSecret(cfg *v2.Config, out, errOut io.Writer, name string, outputFile string, show bool) error {
 	entry, err := findConfigSecretEntry(name)
 	if err != nil {
 		return err
@@ -404,15 +404,15 @@ func getConfigSecret(cfg *v2.Config, name string, outputFile string, show bool) 
 		if err := os.WriteFile(outputFile, payload, 0o600); err != nil {
 			return err
 		}
-		fmt.Printf("Secret '%s' saved to %s\n", name, outputFile)
+		fmt.Fprintf(out, "Secret '%s' saved to %s\n", name, outputFile)
 	}
 	if show {
 		if outputFile == "" {
-			fmt.Fprintln(os.Stderr, "Warning: Printing secret to stdout is insecure.")
+			fmt.Fprintf(errOut, "Warning: Printing secret to stdout is insecure.\n")
 		} else {
-			fmt.Println("--- Secret Content ---")
+			fmt.Fprintf(out, "--- Secret Content ---\n")
 		}
-		fmt.Println(string(payload))
+		fmt.Fprintf(out, "%s\n", string(payload))
 	}
 	return nil
 }
