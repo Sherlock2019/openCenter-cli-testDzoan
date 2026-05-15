@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"gopkg.in/yaml.v3"
 )
 
@@ -183,7 +183,12 @@ func validateFieldPath(field string) error {
 
 func defaultValidationRoot() (reflect.Value, error) {
 	validationRootOnce.Do(func() {
-		validationRootValue = reflect.ValueOf(config.NewDefault("descriptor-validation"))
+		cfg, err := v2.NewV2Default("descriptor-validation", "openstack")
+		if err != nil {
+			validationRootErr = err
+			return
+		}
+		validationRootValue = reflect.ValueOf(*cfg)
 	})
 
 	if validationRootErr != nil {
