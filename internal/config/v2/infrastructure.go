@@ -90,6 +90,7 @@ type NodeNamingConfig struct {
 // BastionConfig represents bastion host configuration.
 type BastionConfig struct {
 	Enabled bool   `yaml:"enabled" json:"enabled"`
+	Address string `yaml:"address,omitempty" json:"address,omitempty"`
 	Flavor  string `yaml:"flavor,omitempty" json:"flavor,omitempty" validate:"required_if=Enabled true"`
 	Image   string `yaml:"image,omitempty" json:"image,omitempty" validate:"required_if=Enabled true"`
 }
@@ -130,6 +131,7 @@ type NetworkingConfig struct {
 type NetworkSecurityConfig struct {
 	AllowedCIDRs []string `yaml:"allowed_cidrs,omitempty" json:"allowed_cidrs,omitempty" validate:"dive,cidrv4"`
 	DenyAll      bool     `yaml:"deny_all" json:"deny_all"`
+	OSHardening  bool     `yaml:"os_hardening" json:"os_hardening"`
 }
 
 // VLANConfig represents VLAN configuration.
@@ -152,8 +154,20 @@ type ComputeConfig struct {
 	WorkerCount        int `yaml:"worker_count" json:"worker_count" validate:"min=0"`
 	WorkerCountWindows int `yaml:"worker_count_windows" json:"worker_count_windows" validate:"min=0"`
 
+	// Pre-provisioned node definitions (baremetal/vmware)
+	MasterNodes  []StaticNode `yaml:"master_nodes,omitempty" json:"master_nodes,omitempty"`
+	WorkerNodes  []StaticNode `yaml:"worker_nodes,omitempty" json:"worker_nodes,omitempty"`
+	WindowsNodes []StaticNode `yaml:"windows_nodes,omitempty" json:"windows_nodes,omitempty"`
+
 	// Additional worker pools
 	AdditionalServerPoolsWorker []WorkerPoolConfig `yaml:"additional_server_pools_worker,omitempty" json:"additional_server_pools_worker,omitempty"`
+}
+
+// StaticNode represents a pre-provisioned node for baremetal/vmware deployments.
+type StaticNode struct {
+	ID         string `yaml:"id,omitempty" json:"id,omitempty"`
+	Name       string `yaml:"name" json:"name"`
+	AccessIPv4 string `yaml:"access_ip_v4" json:"access_ip_v4"`
 }
 
 // WorkerPoolConfig represents additional worker pool configuration.

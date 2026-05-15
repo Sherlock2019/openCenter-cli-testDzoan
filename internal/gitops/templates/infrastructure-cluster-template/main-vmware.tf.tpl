@@ -21,8 +21,8 @@ locals {
   k8s_api_ip                              = "{{ .OpenCenter.Infrastructure.K8sAPIIP | default "" }}" != "" ? "{{ .OpenCenter.Infrastructure.K8sAPIIP }}" : local.vrrp_ip
   
   # SSH configuration
-  ssh_user                                = "{{ .OpenCenter.Infrastructure.SSHUser | default "ubuntu" }}"
-  ssh_key_path                            = "{{ .OpenCenter.Infrastructure.SSHKeyPath | default "" }}"
+  ssh_user                                = "{{ .OpenCenter.Infrastructure.SSH.Username | default .OpenCenter.Infrastructure.SSH.User | default "ubuntu" }}"
+  ssh_key_path                            = "{{ .OpenCenter.Infrastructure.SSH.KeyPath | default "" }}"
 
   # VMware does not use Octavia load balancer
   use_octavia                             = false
@@ -114,7 +114,7 @@ locals {
 
 # Kubespray module for Kubernetes deployment on pre-provisioned VMware VMs
 module "kubespray-cluster" {
-  source = "{{ .Deployment.Kubespray.Modules.KubesprayCluster.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/provider/kubespray?ref=main" }}"
+  source = "{{ .Deployment.Kubespray.KubesprayCluster.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/provider/kubespray?ref=main" }}"
   
   # Bastion and cluster identification
   address_bastion                         = local.address_bastion

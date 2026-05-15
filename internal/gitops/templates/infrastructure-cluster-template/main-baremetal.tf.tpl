@@ -14,7 +14,7 @@ locals {
   dns_zone_name                           = "{{ .OpenCenter.Infrastructure.Networking.DNSZoneName | default "" }}"
 
   k8s_api_port                            = {{ .OpenCenter.Cluster.Kubernetes.APIPort | default 443 }}
-  ssh_user                                = "{{ .OpenCenter.Infrastructure.SSHUser | default "ubuntu" }}"
+  ssh_user                                = "{{ .OpenCenter.Infrastructure.SSH.Username | default .OpenCenter.Infrastructure.SSH.User | default "ubuntu" }}"
   use_octavia                             = false
 
   # ====================================
@@ -61,7 +61,7 @@ locals {
   k8s_api_ip                              = "{{ .OpenCenter.Infrastructure.K8sAPIIP | default "" }}" != "" ? "{{ .OpenCenter.Infrastructure.K8sAPIIP }}" : local.vrrp_ip
   windows_dataplane                       = {{ if gt (.OpenCenter.Infrastructure.Compute.WorkerCountWindows | default 0) 0 }}"HNS"{{ else }}"Disabled"{{ end }}
   vrrp_ip                                 = "{{ .OpenCenter.Infrastructure.Networking.VRRPIP | default "172.26.0.5" }}"
-  ssh_key_path                            = "{{ .OpenCenter.Infrastructure.SSHKeyPath | default "" }}"
+  ssh_key_path                            = "{{ .OpenCenter.Infrastructure.SSH.KeyPath | default "" }}"
   
   {{- if .OpenCenter.Infrastructure.Compute.MasterNodes }}
   master_nodes = [
@@ -107,7 +107,7 @@ locals {
 }
 
 module "kubespray-cluster" {
-  source = "{{ .Deployment.Kubespray.Modules.KubesprayCluster.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/provider/kubespray?ref=main" }}"
+  source = "{{ .Deployment.Kubespray.KubesprayCluster.Source | default "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/provider/kubespray?ref=main" }}"
   address_bastion                         = local.address_bastion
   cluster_name                            = local.cluster_name
   cni_iface                               = local.cni_iface

@@ -550,6 +550,25 @@
         "kubespray": {
           "additionalProperties": false,
           "properties": {
+            "kubespray_cluster": {
+              "additionalProperties": false,
+              "properties": {
+                "config": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "enabled": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
             "modules": {
               "additionalProperties": {
                 "additionalProperties": false,
@@ -662,14 +681,29 @@
                 "kube_vip_enabled": {
                   "type": "boolean"
                 },
+                "kubelet_rotate_server_certs": {
+                  "type": "boolean"
+                },
                 "network_plugin": {
                   "additionalProperties": false,
                   "properties": {
                     "calico": {
                       "additionalProperties": false,
                       "properties": {
+                        "autodetect_cidr": {
+                          "type": "string"
+                        },
+                        "calico_interface_autodetect": {
+                          "type": "string"
+                        },
+                        "cni_iface": {
+                          "type": "string"
+                        },
                         "enabled": {
                           "type": "boolean"
+                        },
+                        "encapsulation_type": {
+                          "type": "string"
                         },
                         "install_method": {
                           "enum": [
@@ -686,6 +720,42 @@
                             "Never"
                           ],
                           "type": "string"
+                        },
+                        "modules": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "calico": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "source": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "cilium": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "source": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "kube_ovn": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "source": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "nat_outgoing": {
+                          "type": "boolean"
                         },
                         "network_policy": {
                           "type": "boolean"
@@ -721,7 +791,46 @@
                           ],
                           "type": "string"
                         },
+                        "kube_proxy_replacement": {
+                          "type": "boolean"
+                        },
+                        "modules": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "calico": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "source": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "cilium": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "source": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "kube_ovn": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "source": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
+                        },
                         "network_policy": {
+                          "type": "boolean"
+                        },
+                        "operator_enabled": {
                           "type": "boolean"
                         },
                         "tunnel_mode": {
@@ -741,6 +850,9 @@
                     "kube-ovn": {
                       "additionalProperties": false,
                       "properties": {
+                        "cilium_integration": {
+                          "type": "boolean"
+                        },
                         "enabled": {
                           "type": "boolean"
                         },
@@ -751,6 +863,39 @@
                             "kustomize-helm"
                           ],
                           "type": "string"
+                        },
+                        "modules": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "calico": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "source": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "cilium": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "source": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "kube_ovn": {
+                              "additionalProperties": false,
+                              "properties": {
+                                "source": {
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          },
+                          "type": "object"
                         },
                         "network_policy": {
                           "type": "boolean"
@@ -792,6 +937,27 @@
                         "required_if=Enabled true"
                       ]
                     },
+                    "kube_oidc_ca_file": {
+                      "type": "string"
+                    },
+                    "kube_oidc_client_id": {
+                      "type": "string"
+                    },
+                    "kube_oidc_groups_claim": {
+                      "type": "string"
+                    },
+                    "kube_oidc_groups_prefix": {
+                      "type": "string"
+                    },
+                    "kube_oidc_url": {
+                      "type": "string"
+                    },
+                    "kube_oidc_username_claim": {
+                      "type": "string"
+                    },
+                    "kube_oidc_username_prefix": {
+                      "type": "string"
+                    },
                     "username_claim": {
                       "type": "string"
                     }
@@ -812,6 +978,15 @@
                     },
                     "encryption_at_rest": {
                       "type": "boolean"
+                    },
+                    "k8s_hardening": {
+                      "type": "boolean"
+                    },
+                    "pod_security_exemptions": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
                     },
                     "pod_security_policy": {
                       "type": "boolean"
@@ -1181,6 +1356,9 @@
             "bastion": {
               "additionalProperties": false,
               "properties": {
+                "address": {
+                  "type": "string"
+                },
                 "enabled": {
                   "type": "boolean"
                 },
@@ -1703,6 +1881,42 @@
                   "minimum": 0,
                   "type": "integer"
                 },
+                "master_nodes": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "access_ip_v4": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "windows_nodes": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "access_ip_v4": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
                 "worker_count": {
                   "minimum": 0,
                   "type": "integer"
@@ -1710,6 +1924,24 @@
                 "worker_count_windows": {
                   "minimum": 0,
                   "type": "integer"
+                },
+                "worker_nodes": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "access_ip_v4": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
                 }
               },
               "type": "object"
@@ -1871,6 +2103,9 @@
                       "type": "array"
                     },
                     "deny_all": {
+                      "type": "boolean"
+                    },
+                    "os_hardening": {
                       "type": "boolean"
                     }
                   },

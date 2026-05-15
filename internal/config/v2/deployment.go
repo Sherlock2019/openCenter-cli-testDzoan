@@ -26,8 +26,9 @@ type DeploymentConfig struct {
 // KubesprayConfig represents Kubespray deployment configuration.
 // Requirements: 5.2
 type KubesprayConfig struct {
-	Version string                  `yaml:"version" json:"version" validate:"required,semver"`
-	Modules map[string]ModuleConfig `yaml:"modules,omitempty" json:"modules,omitempty"`
+	Version          string                  `yaml:"version" json:"version" validate:"required,semver"`
+	Modules          map[string]ModuleConfig `yaml:"modules,omitempty" json:"modules,omitempty"`
+	KubesprayCluster ModuleConfig            `yaml:"kubespray_cluster,omitempty" json:"kubespray_cluster,omitempty"`
 }
 
 // ModuleConfig represents a deployment module configuration.

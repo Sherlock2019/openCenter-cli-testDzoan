@@ -281,6 +281,10 @@ func NewV2Default(name, provider string) (*Config, error) {
 						Source:  "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/provider/kubespray?ref=main",
 					},
 				},
+				KubesprayCluster: ModuleConfig{
+					Enabled: true,
+					Source:  "github.com/opencenter-cloud/openCenter-gitops-base.git//iac/provider/kubespray?ref=main",
+				},
 			},
 		},
 		OpenTofu: OpenTofuConfig{
