@@ -364,7 +364,7 @@ func (cm *ConfigManager) Load() error {
 	cm.expandConfigPaths()
 
 	// Initialize logging with the loaded configuration
-	if err := InitializeLogging(&cm.config.Logging); err != nil {
+	if err := logging.Initialize(&cm.config.Logging); err != nil {
 		return fmt.Errorf("failed to initialize logging: %w", err)
 	}
 
@@ -730,7 +730,7 @@ func (cm *ConfigManager) LoadWithConfig(config *CLIConfig) error {
 	cm.expandConfigPaths()
 
 	// Initialize logging with the loaded configuration
-	if err := InitializeLogging(&cm.config.Logging); err != nil {
+	if err := logging.Initialize(&cm.config.Logging); err != nil {
 		return fmt.Errorf("failed to initialize logging: %w", err)
 	}
 
@@ -756,7 +756,7 @@ func NewConfigManagerWithConfig(config *CLIConfig) (*ConfigManager, error) {
 	cm.expandConfigPaths()
 
 	// Initialize logging with the loaded configuration
-	if err := InitializeLogging(&cm.config.Logging); err != nil {
+	if err := logging.Initialize(&cm.config.Logging); err != nil {
 		return nil, fmt.Errorf("failed to initialize logging: %w", err)
 	}
 

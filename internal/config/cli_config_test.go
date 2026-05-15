@@ -23,6 +23,7 @@ import (
 	"time"
 
 	corePaths "github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
+	"github.com/opencenter-cloud/opencenter-cli/internal/logging"
 	"github.com/opencenter-cloud/opencenter-cli/internal/testenv"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
@@ -486,12 +487,12 @@ paths:
 func TestLoggingInitialization(t *testing.T) {
 	// Test default logging initialization
 	defaultConfig := DefaultCLIConfig()
-	err := InitializeLogging(&defaultConfig.Logging)
+	err := logging.Initialize(&defaultConfig.Logging)
 	if err != nil {
 		t.Errorf("Failed to initialize default logging: %v", err)
 	}
 
-	logger := GetGlobalLogger()
+	logger := logging.GetGlobalLogger()
 	if logger == nil {
 		t.Error("Global logger should not be nil after initialization")
 	}
@@ -535,11 +536,11 @@ func TestGlobalLoggerConcurrentInitializationAndRead(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < 100; j++ {
-				if err := InitializeLogging(&configs[(i+j)%len(configs)]); err != nil {
-					t.Errorf("InitializeLogging() error = %v", err)
+				if err := logging.Initialize(&configs[(i+j)%len(configs)]); err != nil {
+					t.Errorf("logging.Initialize() error = %v", err)
 				}
-				if logger := GetGlobalLogger(); logger == nil {
-					t.Error("GetGlobalLogger() returned nil")
+				if logger := logging.GetGlobalLogger(); logger == nil {
+					t.Error("logging.GetGlobalLogger() returned nil")
 				}
 			}
 		}()
@@ -617,7 +618,7 @@ func TestLoggingValidation(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := ValidateLoggingConfig(&test.config)
+			err := logging.ValidateLoggingConfig(&test.config)
 			if test.expectError && err == nil {
 				t.Error("Expected validation error but got none")
 			}
@@ -644,16 +645,16 @@ func TestLoggingFileOutput(t *testing.T) {
 		},
 	}
 
-	err := InitializeLogging(&config)
+	err := logging.Initialize(&config)
 	if err != nil {
 		t.Errorf("Failed to initialize file logging: %v", err)
 	}
 
 	// Test logging to file
-	Debug("Test debug message")
-	Info("Test info message")
-	Warn("Test warning message")
-	Error("Test error message")
+	logging.Debug("Test debug message")
+	logging.Info("Test info message")
+	logging.Warn("Test warning message")
+	logging.Error("Test error message")
 
 	// Check that log file was created
 	if _, err := os.Stat(logFile); os.IsNotExist(err) {
@@ -678,13 +679,13 @@ func TestLoggingFormats(t *testing.T) {
 				},
 			}
 
-			err := InitializeLogging(&config)
+			err := logging.Initialize(&config)
 			if err != nil {
 				t.Errorf("Failed to initialize logging with format %s: %v", format, err)
 			}
 
 			// Test that we can log without errors
-			Info("Test message for format: " + format)
+			logging.Info("Test message for format: " + format)
 		})
 	}
 }
@@ -692,7 +693,7 @@ func TestLoggingFormats(t *testing.T) {
 func TestSetLogLevel(t *testing.T) {
 	// Initialize with default config
 	defaultConfig := DefaultCLIConfig()
-	err := InitializeLogging(&defaultConfig.Logging)
+	err := logging.Initialize(&defaultConfig.Logging)
 	if err != nil {
 		t.Errorf("Failed to initialize logging: %v", err)
 	}
@@ -700,12 +701,12 @@ func TestSetLogLevel(t *testing.T) {
 	// Test setting valid log levels
 	levels := []string{"debug", "info", "warn", "error"}
 	for _, level := range levels {
-		err := SetLogLevel(level)
+		err := logging.SetLogLevel(level)
 		if err != nil {
 			t.Errorf("Failed to set log level to %s: %v", level, err)
 		}
 
-		logger := GetGlobalLogger()
+		logger := logging.GetGlobalLogger()
 		expectedLevel := level
 		if level == "warn" {
 			expectedLevel = "warning"
@@ -716,7 +717,7 @@ func TestSetLogLevel(t *testing.T) {
 	}
 
 	// Test setting invalid log level
-	err = SetLogLevel("invalid")
+	err = logging.SetLogLevel("invalid")
 	if err == nil {
 		t.Error("Expected error when setting invalid log level")
 	}
@@ -725,7 +726,7 @@ func TestSetLogLevel(t *testing.T) {
 func TestSetLogFormat(t *testing.T) {
 	// Initialize with default config
 	defaultConfig := DefaultCLIConfig()
-	err := InitializeLogging(&defaultConfig.Logging)
+	err := logging.Initialize(&defaultConfig.Logging)
 	if err != nil {
 		t.Errorf("Failed to initialize logging: %v", err)
 	}
@@ -733,7 +734,7 @@ func TestSetLogFormat(t *testing.T) {
 	// Test setting valid log formats
 	formats := []string{"text", "json", "yaml"}
 	for _, format := range formats {
-		err := SetLogFormat(format)
+		err := logging.SetLogFormat(format)
 		if err != nil {
 			t.Errorf("Failed to set log format to %s: %v", format, err)
 		}
@@ -741,14 +742,14 @@ func TestSetLogFormat(t *testing.T) {
 	}
 
 	// Test setting invalid log format
-	err = SetLogFormat("invalid")
+	err = logging.SetLogFormat("invalid")
 	if err == nil {
 		t.Error("Expected error when setting invalid log format")
 	}
 }
 
 func TestYAMLFormatter(t *testing.T) {
-	formatter := &YAMLFormatter{}
+	formatter := &logging.YAMLFormatter{}
 
 	// Create a test log entry
 	entry := &logrus.Entry{
@@ -808,24 +809,24 @@ func TestLoggingHelperFunctions(t *testing.T) {
 		},
 	}
 
-	err := InitializeLogging(&config)
+	err := logging.Initialize(&config)
 	if err != nil {
 		t.Errorf("Failed to initialize logging: %v", err)
 	}
 
 	// Test all logging helper functions (they should not panic)
-	Debug("Debug message")
-	Debugf("Debug message with format: %s", "test")
-	Info("Info message")
-	Infof("Info message with format: %d", 42)
-	Warn("Warning message")
-	Warnf("Warning message with format: %v", true)
-	Error("Error message")
-	Errorf("Error message with format: %s", "error")
+	logging.Debug("Debug message")
+	logging.Debugf("Debug message with format: %s", "test")
+	logging.Info("Info message")
+	logging.Infof("Info message with format: %d", 42)
+	logging.Warn("Warning message")
+	logging.Warnf("Warning message with format: %v", true)
+	logging.Error("Error message")
+	logging.Errorf("Error message with format: %s", "error")
 
 	// Test WithField and WithFields
-	WithField("key", "value").Info("Message with field")
-	WithFields(logrus.Fields{
+	logging.WithField("key", "value").Info("Message with field")
+	logging.WithFields(logrus.Fields{
 		"key1": "value1",
 		"key2": 42,
 	}).Info("Message with fields")

@@ -26,6 +26,7 @@ import (
 	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/validation"
+	"github.com/opencenter-cloud/opencenter-cli/internal/logging"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 )
@@ -297,8 +298,8 @@ func (cm *ConfigurationManager) Save(ctx context.Context, config *v2.Config) err
 	}
 
 	// Validate configuration before saving
-	Debug("ConfigManager.Save: starting validation")
-	Debugf("ConfigManager.Save: validating config for cluster: %s", config.ClusterName())
+	logging.Debug("ConfigManager.Save: starting validation")
+	logging.Debugf("ConfigManager.Save: validating config for cluster: %s", config.ClusterName())
 
 	if err := cm.validateConfigStruct(ctx, config); err != nil {
 		return errors.WrapWithOperation(
@@ -460,8 +461,8 @@ func (cm *ConfigurationManager) Validate(ctx context.Context, config *v2.Config)
 		return NewValidationError("", "configuration cannot be nil", nil)
 	}
 
-	Debug("ConfigManager.Validate: starting validation")
-	Debugf("ConfigManager.Validate: validating config for cluster: %s", config.ClusterName())
+	logging.Debug("ConfigManager.Validate: starting validation")
+	logging.Debugf("ConfigManager.Validate: validating config for cluster: %s", config.ClusterName())
 
 	return cm.validateConfigStruct(ctx, config)
 }
@@ -471,7 +472,7 @@ func (cm *ConfigurationManager) validateConfigStruct(ctx context.Context, cfg *v
 		return NewValidationError("", fmt.Sprintf("validation engine error: %v", err), err)
 	}
 
-	Debug("ConfigManager.Validate: validation passed")
+	logging.Debug("ConfigManager.Validate: validation passed")
 	return nil
 }
 
