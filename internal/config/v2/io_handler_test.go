@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package v2
 
 import (
 	"context"
@@ -22,15 +22,14 @@ import (
 	"strings"
 	"testing"
 
-	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 	utilfs "github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 )
 
-func mustLoaderTestConfig(t *testing.T, name, provider string) *v2.Config {
+func mustLoaderTestConfig(t *testing.T, name, provider string) *Config {
 	t.Helper()
 
-	cfg, err := v2.NewV2Default(name, provider)
+	cfg, err := NewV2Default(name, provider)
 	if err != nil {
 		t.Fatalf("NewV2Default(%q, %q) error = %v", name, provider, err)
 	}
@@ -60,7 +59,7 @@ func TestConfigIOHandler_MarshalConfig(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		config      *v2.Config
+		config      *Config
 		expectError bool
 		errorMsg    string
 	}{
@@ -189,13 +188,13 @@ func TestConfigIOHandler_LoadFromBytes(t *testing.T) {
 		name        string
 		data        []byte
 		expectError bool
-		checkFunc   func(*testing.T, *v2.Config)
+		checkFunc   func(*testing.T, *Config)
 	}{
 		{
 			name:        "valid config",
 			data:        validData,
 			expectError: false,
-			checkFunc: func(t *testing.T, cfg *v2.Config) {
+			checkFunc: func(t *testing.T, cfg *Config) {
 				if cfg.OpenCenter.Cluster.ClusterName != "unmarshal-test" {
 					t.Errorf("expected cluster name 'unmarshal-test', got %q", cfg.OpenCenter.Cluster.ClusterName)
 				}
@@ -213,7 +212,7 @@ func TestConfigIOHandler_LoadFromBytes(t *testing.T) {
 				return data
 			}(),
 			expectError: false,
-			checkFunc: func(t *testing.T, cfg *v2.Config) {
+			checkFunc: func(t *testing.T, cfg *Config) {
 				if cfg.OpenCenter.GitOps.Repository.LocalDir != "/path/to/gitops" {
 					t.Errorf("expected git_dir '/path/to/gitops', got %q", cfg.OpenCenter.GitOps.Repository.LocalDir)
 				}
@@ -231,7 +230,7 @@ func TestConfigIOHandler_LoadFromBytes(t *testing.T) {
 				return data
 			}(),
 			expectError: false,
-			checkFunc: func(t *testing.T, cfg *v2.Config) {
+			checkFunc: func(t *testing.T, cfg *Config) {
 				if cfg.OpenCenter.GitOps.Repository.LocalDir != "${AWS_SECRET_ACCESS_KEY}" {
 					t.Errorf("expected literal git_dir, got %q", cfg.OpenCenter.GitOps.Repository.LocalDir)
 				}
@@ -283,7 +282,7 @@ func TestConfigIOHandler_SaveToFile(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		config      *v2.Config
+		config      *Config
 		filename    string
 		expectError bool
 	}{
@@ -389,13 +388,13 @@ func TestConfigIOHandler_LoadFromFile(t *testing.T) {
 		name        string
 		path        string
 		expectError bool
-		checkFunc   func(*testing.T, *v2.Config)
+		checkFunc   func(*testing.T, *Config)
 	}{
 		{
 			name:        "load valid config",
 			path:        validConfigPath,
 			expectError: false,
-			checkFunc: func(t *testing.T, cfg *v2.Config) {
+			checkFunc: func(t *testing.T, cfg *Config) {
 				if cfg.OpenCenter.Cluster.ClusterName != "load-test" {
 					t.Errorf("expected cluster name 'load-test', got %q", cfg.OpenCenter.Cluster.ClusterName)
 				}
