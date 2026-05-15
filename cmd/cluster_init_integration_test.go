@@ -213,7 +213,7 @@ func TestClusterInitIntegrationKindProvider(t *testing.T) {
 	if canonicalCfg.OpenCenter.Infrastructure.Kind.DisableDefaultCNI {
 		t.Fatal("expected disable_default_cni to default to false for kind")
 	}
-	if cfg.OpenCenter.Meta.Stage != config.StageInit || cfg.OpenCenter.Meta.Status != config.StatusSuccess {
+	if cfg.OpenCenter.Meta.Stage != v2.StageInit || cfg.OpenCenter.Meta.Status != v2.StatusSuccess {
 		t.Fatalf("unexpected lifecycle state: %s/%s", cfg.OpenCenter.Meta.Stage, cfg.OpenCenter.Meta.Status)
 	}
 }

@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config/defaults"
 	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"gopkg.in/yaml.v3"
@@ -40,7 +39,7 @@ func TestClusterInitKindDefaults(t *testing.T) {
 	if cfg.OpenCenter.Infrastructure.Cloud.OpenStack != nil {
 		t.Fatalf("expected openstack auth_url to be cleared for kind, got %#v", cfg.OpenCenter.Infrastructure.Cloud.OpenStack)
 	}
-	if cfg.OpenCenter.Meta.Stage != config.StageInit || cfg.OpenCenter.Meta.Status != config.StatusSuccess {
+	if cfg.OpenCenter.Meta.Stage != v2.StageInit || cfg.OpenCenter.Meta.Status != v2.StatusSuccess {
 		t.Fatalf("unexpected lifecycle state: %s/%s", cfg.OpenCenter.Meta.Stage, cfg.OpenCenter.Meta.Status)
 	}
 }
@@ -118,8 +117,8 @@ func TestClusterStatusShowsKindStatusDetails(t *testing.T) {
 	prependTestPath(t, binDir)
 
 	cfg, clusterPaths := saveKindConfigForCommandTest(t, dir, "status-kind-cluster", "opencenter")
-	cfg.OpenCenter.Meta.Stage = config.StageBootstrap
-	cfg.OpenCenter.Meta.Status = config.StatusSuccess
+	cfg.OpenCenter.Meta.Stage = v2.StageBootstrap
+	cfg.OpenCenter.Meta.Status = v2.StatusSuccess
 	cfg.OpenCenter.Infrastructure.Kind.DisableDefaultCNI = true
 	if err := saveConfig(context.Background(), cfg); err != nil {
 		t.Fatalf("save config: %v", err)

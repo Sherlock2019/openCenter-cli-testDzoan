@@ -61,7 +61,6 @@ type ValidationResult struct {
 type ValidateService struct {
 	pathResolver          *paths.PathResolver
 	validationEngine      *validation.ValidationEngine
-	connectivityValidator *config.ConnectivityValidator
 	configManager         *config.ConfigManager
 	configurationMgr      *config.ConfigurationManager
 	fileSystem            fs.FileSystem
@@ -98,13 +97,12 @@ func NewValidateServiceWithConfigMgr(
 	}
 
 	return &ValidateService{
-		pathResolver:          pathResolver,
-		validationEngine:      validationEngine,
-		connectivityValidator: config.NewConnectivityValidator(10 * time.Second),
-		configManager:         configManager,
-		configurationMgr:      configurationMgr,
-		fileSystem:            fileSystem,
-		openStackDiscovery:    openstackcloud.NewDiscoveryClient(),
+		pathResolver:       pathResolver,
+		validationEngine:   validationEngine,
+		configManager:      configManager,
+		configurationMgr:   configurationMgr,
+		fileSystem:         fileSystem,
+		openStackDiscovery: openstackcloud.NewDiscoveryClient(),
 	}
 }
 

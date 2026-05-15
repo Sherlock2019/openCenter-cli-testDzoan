@@ -19,6 +19,7 @@ import (
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/cloud/openstack"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -58,7 +59,7 @@ func newClusterDoctorCmd() *cobra.Command {
 				// Unknown provider; no checks
 			}
 			// Update stage and status
-			if err := config.UpdateStatus(name, config.StagePreflight, config.StatusSuccess); err != nil {
+			if err := config.UpdateStatus(name, v2.StagePreflight, v2.StatusSuccess); err != nil {
 				// Don't fail the command if status update fails, just warn
 				fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
 			}

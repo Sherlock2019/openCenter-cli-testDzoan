@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 )
 
 func TestClusterDestroyKindProvider(t *testing.T) {
@@ -22,8 +22,8 @@ func TestClusterDestroyKindProvider(t *testing.T) {
 	prependTestPath(t, binDir)
 
 	cfg, clusterPaths := saveKindConfigForCommandTest(t, dir, "destroy-kind", "opencenter")
-	cfg.OpenCenter.Meta.Stage = config.StageBootstrap
-	cfg.OpenCenter.Meta.Status = config.StatusSuccess
+	cfg.OpenCenter.Meta.Stage = v2.StageBootstrap
+	cfg.OpenCenter.Meta.Status = v2.StatusSuccess
 	if err := saveConfig(context.Background(), cfg); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
@@ -72,8 +72,8 @@ func TestClusterDestroyKindProviderKeepsFilesByDefault(t *testing.T) {
 	prependTestPath(t, binDir)
 
 	cfg, clusterPaths := saveKindConfigForCommandTest(t, dir, "destroy-kind-keep", "opencenter")
-	cfg.OpenCenter.Meta.Stage = config.StageBootstrap
-	cfg.OpenCenter.Meta.Status = config.StatusSuccess
+	cfg.OpenCenter.Meta.Stage = v2.StageBootstrap
+	cfg.OpenCenter.Meta.Status = v2.StatusSuccess
 	if err := saveConfig(context.Background(), cfg); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
@@ -209,8 +209,8 @@ func TestClusterDestroySkipInfrastructure(t *testing.T) {
 	prependTestPath(t, binDir)
 
 	cfg, clusterPaths := saveKindConfigForCommandTest(t, dir, "destroy-skip-infra", "opencenter")
-	cfg.OpenCenter.Meta.Stage = config.StageBootstrap
-	cfg.OpenCenter.Meta.Status = config.StatusSuccess
+	cfg.OpenCenter.Meta.Stage = v2.StageBootstrap
+	cfg.OpenCenter.Meta.Status = v2.StatusSuccess
 	if err := saveConfig(context.Background(), cfg); err != nil {
 		t.Fatalf("save config: %v", err)
 	}

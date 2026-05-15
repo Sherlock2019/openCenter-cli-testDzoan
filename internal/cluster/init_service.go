@@ -856,7 +856,7 @@ func shouldPopulateGeneratedSSHAuthorizedKey(keys []string) bool {
 
 	for _, key := range keys {
 		trimmed := strings.TrimSpace(key)
-		if trimmed != "" && trimmed != config.DefaultSSHAuthorizedKeyPlaceholder {
+		if trimmed != "" && trimmed != v2.DefaultSSHAuthorizedKeyPlaceholder {
 			return false
 		}
 	}

@@ -346,12 +346,12 @@ func TestInitService_createDefaultConfig(t *testing.T) {
 					t.Errorf("createDefaultConfig() provider = %v, want %v", cfg.OpenCenter.Infrastructure.Provider, tt.opts.Provider)
 				}
 
-				if cfg.OpenCenter.Meta.Stage != config.StageInit {
-					t.Errorf("createDefaultConfig() stage = %v, want %v", cfg.OpenCenter.Meta.Stage, config.StageInit)
+				if cfg.OpenCenter.Meta.Stage != v2.StageInit {
+					t.Errorf("createDefaultConfig() stage = %v, want %v", cfg.OpenCenter.Meta.Stage, v2.StageInit)
 				}
 
-				if cfg.OpenCenter.Meta.Status != config.StatusSuccess {
-					t.Errorf("createDefaultConfig() status = %v, want %v", cfg.OpenCenter.Meta.Status, config.StatusSuccess)
+				if cfg.OpenCenter.Meta.Status != v2.StatusSuccess {
+					t.Errorf("createDefaultConfig() status = %v, want %v", cfg.OpenCenter.Meta.Status, v2.StatusSuccess)
 				}
 			}
 		})

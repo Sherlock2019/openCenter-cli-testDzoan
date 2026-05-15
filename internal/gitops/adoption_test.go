@@ -6,7 +6,6 @@ package gitops
 import (
 	"testing"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
 	"github.com/stretchr/testify/assert"
 )
@@ -37,57 +36,57 @@ func TestGetAdoptionMode(t *testing.T) {
 		{
 			name: "struct with empty AdoptionMode returns managed",
 			input: struct {
-				AdoptionMode config.AdoptionMode
+				AdoptionMode services.AdoptionMode
 			}{AdoptionMode: ""},
 			expected: AdoptionModeManaged,
 		},
 		{
 			name: "struct with managed mode",
 			input: struct {
-				AdoptionMode config.AdoptionMode
-			}{AdoptionMode: config.AdoptionModeManaged},
+				AdoptionMode services.AdoptionMode
+			}{AdoptionMode: services.AdoptionModeManaged},
 			expected: AdoptionModeManaged,
 		},
 		{
 			name: "struct with external mode",
 			input: struct {
-				AdoptionMode config.AdoptionMode
-			}{AdoptionMode: config.AdoptionModeExternal},
+				AdoptionMode services.AdoptionMode
+			}{AdoptionMode: services.AdoptionModeExternal},
 			expected: AdoptionModeExternal,
 		},
 		{
 			name: "struct with sync mode",
 			input: struct {
-				AdoptionMode config.AdoptionMode
-			}{AdoptionMode: config.AdoptionModeSync},
+				AdoptionMode services.AdoptionMode
+			}{AdoptionMode: services.AdoptionModeSync},
 			expected: AdoptionModeSync,
 		},
 		{
 			name: "struct with deferred mode",
 			input: struct {
-				AdoptionMode config.AdoptionMode
-			}{AdoptionMode: config.AdoptionModeDeferred},
+				AdoptionMode services.AdoptionMode
+			}{AdoptionMode: services.AdoptionModeDeferred},
 			expected: AdoptionModeDeferred,
 		},
 		{
 			name: "struct with takeover mode",
 			input: struct {
-				AdoptionMode config.AdoptionMode
-			}{AdoptionMode: config.AdoptionModeTakeover},
+				AdoptionMode services.AdoptionMode
+			}{AdoptionMode: services.AdoptionModeTakeover},
 			expected: AdoptionModeTakeover,
 		},
 		{
 			name: "pointer to struct with external mode",
 			input: &struct {
-				AdoptionMode config.AdoptionMode
-			}{AdoptionMode: config.AdoptionModeExternal},
+				AdoptionMode services.AdoptionMode
+			}{AdoptionMode: services.AdoptionModeExternal},
 			expected: AdoptionModeExternal,
 		},
 		{
 			name: "BaseServiceCfg with sync mode",
 			input: services.BaseConfig{
 				Enabled:      true,
-				AdoptionMode: config.AdoptionModeSync,
+				AdoptionMode: services.AdoptionModeSync,
 			},
 			expected: AdoptionModeSync,
 		},
@@ -95,7 +94,7 @@ func TestGetAdoptionMode(t *testing.T) {
 			name: "ServiceCfg with deferred mode",
 			input: services.BaseConfig{
 				Enabled:      true,
-				AdoptionMode: config.AdoptionModeDeferred,
+				AdoptionMode: services.AdoptionModeDeferred,
 			},
 			expected: AdoptionModeDeferred,
 		},
@@ -123,22 +122,22 @@ func TestIsServiceExternal(t *testing.T) {
 		{
 			name: "managed mode is not external",
 			input: struct {
-				AdoptionMode config.AdoptionMode
-			}{AdoptionMode: config.AdoptionModeManaged},
+				AdoptionMode services.AdoptionMode
+			}{AdoptionMode: services.AdoptionModeManaged},
 			expected: false,
 		},
 		{
 			name: "external mode is external",
 			input: struct {
-				AdoptionMode config.AdoptionMode
-			}{AdoptionMode: config.AdoptionModeExternal},
+				AdoptionMode services.AdoptionMode
+			}{AdoptionMode: services.AdoptionModeExternal},
 			expected: true,
 		},
 		{
 			name: "sync mode is not external",
 			input: struct {
-				AdoptionMode config.AdoptionMode
-			}{AdoptionMode: config.AdoptionModeSync},
+				AdoptionMode services.AdoptionMode
+			}{AdoptionMode: services.AdoptionModeSync},
 			expected: false,
 		},
 	}
@@ -161,48 +160,48 @@ func TestShouldRenderService(t *testing.T) {
 			name: "enabled + managed = render",
 			input: struct {
 				Enabled      bool
-				AdoptionMode config.AdoptionMode
-			}{Enabled: true, AdoptionMode: config.AdoptionModeManaged},
+				AdoptionMode services.AdoptionMode
+			}{Enabled: true, AdoptionMode: services.AdoptionModeManaged},
 			expected: true,
 		},
 		{
 			name: "enabled + external = no render",
 			input: struct {
 				Enabled      bool
-				AdoptionMode config.AdoptionMode
-			}{Enabled: true, AdoptionMode: config.AdoptionModeExternal},
+				AdoptionMode services.AdoptionMode
+			}{Enabled: true, AdoptionMode: services.AdoptionModeExternal},
 			expected: false,
 		},
 		{
 			name: "disabled + managed = no render",
 			input: struct {
 				Enabled      bool
-				AdoptionMode config.AdoptionMode
-			}{Enabled: false, AdoptionMode: config.AdoptionModeManaged},
+				AdoptionMode services.AdoptionMode
+			}{Enabled: false, AdoptionMode: services.AdoptionModeManaged},
 			expected: false,
 		},
 		{
 			name: "enabled + sync = render",
 			input: struct {
 				Enabled      bool
-				AdoptionMode config.AdoptionMode
-			}{Enabled: true, AdoptionMode: config.AdoptionModeSync},
+				AdoptionMode services.AdoptionMode
+			}{Enabled: true, AdoptionMode: services.AdoptionModeSync},
 			expected: true,
 		},
 		{
 			name: "enabled + deferred = render",
 			input: struct {
 				Enabled      bool
-				AdoptionMode config.AdoptionMode
-			}{Enabled: true, AdoptionMode: config.AdoptionModeDeferred},
+				AdoptionMode services.AdoptionMode
+			}{Enabled: true, AdoptionMode: services.AdoptionModeDeferred},
 			expected: true,
 		},
 		{
 			name: "enabled + takeover = render",
 			input: struct {
 				Enabled      bool
-				AdoptionMode config.AdoptionMode
-			}{Enabled: true, AdoptionMode: config.AdoptionModeTakeover},
+				AdoptionMode services.AdoptionMode
+			}{Enabled: true, AdoptionMode: services.AdoptionModeTakeover},
 			expected: true,
 		},
 	}
@@ -276,7 +275,7 @@ func TestGetServiceAdoptionSettings(t *testing.T) {
 			name: "service with sync mode",
 			input: services.BaseConfig{
 				Enabled:      true,
-				AdoptionMode: config.AdoptionModeSync,
+				AdoptionMode: services.AdoptionModeSync,
 			},
 			expected: AdoptionSettings{Force: false, Suspend: false},
 		},
@@ -284,7 +283,7 @@ func TestGetServiceAdoptionSettings(t *testing.T) {
 			name: "service with deferred mode",
 			input: services.BaseConfig{
 				Enabled:      true,
-				AdoptionMode: config.AdoptionModeDeferred,
+				AdoptionMode: services.AdoptionModeDeferred,
 			},
 			expected: AdoptionSettings{Force: true, Suspend: true},
 		},

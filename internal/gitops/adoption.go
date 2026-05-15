@@ -6,20 +6,19 @@ package gitops
 import (
 	"reflect"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
 )
 
-// AdoptionMode mirrors config.AdoptionMode for use in gitops package.
-// This avoids circular imports while maintaining type safety.
-type AdoptionMode = config.AdoptionMode
+// AdoptionMode mirrors services.AdoptionMode for use in gitops package.
+type AdoptionMode = services.AdoptionMode
 
 // Re-export adoption mode constants for convenience.
 const (
-	AdoptionModeManaged  = config.AdoptionModeManaged
-	AdoptionModeExternal = config.AdoptionModeExternal
-	AdoptionModeSync     = config.AdoptionModeSync
-	AdoptionModeDeferred = config.AdoptionModeDeferred
-	AdoptionModeTakeover = config.AdoptionModeTakeover
+	AdoptionModeManaged  = services.AdoptionModeManaged
+	AdoptionModeExternal = services.AdoptionModeExternal
+	AdoptionModeSync     = services.AdoptionModeSync
+	AdoptionModeDeferred = services.AdoptionModeDeferred
+	AdoptionModeTakeover = services.AdoptionModeTakeover
 )
 
 // GetAdoptionMode extracts the adoption mode from a service configuration.

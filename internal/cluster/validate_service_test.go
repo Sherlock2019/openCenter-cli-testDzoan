@@ -569,10 +569,6 @@ func TestNewValidateService(t *testing.T) {
 	if service.validationEngine == nil {
 		t.Error("validationEngine is nil")
 	}
-
-	if service.connectivityValidator == nil {
-		t.Error("connectivityValidator is nil")
-	}
 }
 
 func TestValidateService_validateConnectivity(t *testing.T) {

@@ -23,6 +23,7 @@ import (
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/cluster"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/di"
 	"github.com/opencenter-cloud/opencenter-cli/internal/gitops"
@@ -148,7 +149,7 @@ func runClusterDeploy(cmd *cobra.Command, args []string) error {
 	}
 
 	if !opts.DryRun {
-		if err := config.UpdateStatus(name, config.StageBootstrap, config.StatusRunning); err != nil {
+		if err := config.UpdateStatus(name, v2.StageBootstrap, v2.StatusRunning); err != nil {
 			fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
 		}
 	}
@@ -157,7 +158,7 @@ func runClusterDeploy(cmd *cobra.Command, args []string) error {
 	result, err := bootstrapService.Bootstrap(ctx, opts)
 	if err != nil {
 		if !opts.DryRun {
-			if statusErr := config.UpdateStatus(name, config.StageBootstrap, config.StatusFailed); statusErr != nil {
+			if statusErr := config.UpdateStatus(name, v2.StageBootstrap, v2.StatusFailed); statusErr != nil {
 				fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", statusErr)
 			}
 		}
@@ -191,7 +192,7 @@ func runClusterDeploy(cmd *cobra.Command, args []string) error {
 	}
 
 	if !opts.DryRun {
-		if err := config.UpdateStatus(name, config.StageBootstrap, config.StatusSuccess); err != nil {
+		if err := config.UpdateStatus(name, v2.StageBootstrap, v2.StatusSuccess); err != nil {
 			fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "Next: opencenter cluster status %s\n", name)

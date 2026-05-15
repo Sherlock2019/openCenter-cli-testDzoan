@@ -423,8 +423,8 @@ func displayLifecycleValue(value string) string {
 
 func nextStepsForCluster(clusterName, stage, status string) []string {
 	switch {
-	case stage == "" || stage == config.StageInit:
-		if status == config.StatusFailed {
+	case stage == "" || stage == v2.StageInit:
+		if status == v2.StatusFailed {
 			return []string{
 				fmt.Sprintf("Review the cluster config and rerun 'opencenter cluster init %s --force' if needed", clusterName),
 			}
@@ -433,13 +433,13 @@ func nextStepsForCluster(clusterName, stage, status string) []string {
 			fmt.Sprintf("Run 'opencenter cluster generate %s' to generate the GitOps repository", clusterName),
 			fmt.Sprintf("Run 'opencenter cluster validate %s' to validate configuration", clusterName),
 		}
-	case stage == config.StageSetup:
-		if status == config.StatusRunning {
+	case stage == v2.StageSetup:
+		if status == v2.StatusRunning {
 			return []string{
 				fmt.Sprintf("Wait for 'opencenter cluster generate %s' to finish", clusterName),
 			}
 		}
-		if status == config.StatusFailed {
+		if status == v2.StatusFailed {
 			return []string{
 				fmt.Sprintf("Fix the generate error and rerun 'opencenter cluster generate %s'", clusterName),
 			}
@@ -447,13 +447,13 @@ func nextStepsForCluster(clusterName, stage, status string) []string {
 		return []string{
 			fmt.Sprintf("Run 'opencenter cluster deploy %s' to provision the cluster", clusterName),
 		}
-	case stage == config.StageBootstrap:
-		if status == config.StatusRunning {
+	case stage == v2.StageBootstrap:
+		if status == v2.StatusRunning {
 			return []string{
 				fmt.Sprintf("Wait for 'opencenter cluster deploy %s' to finish", clusterName),
 			}
 		}
-		if status == config.StatusFailed {
+		if status == v2.StatusFailed {
 			return []string{
 				fmt.Sprintf("Fix the deploy error and rerun 'opencenter cluster deploy %s'", clusterName),
 			}
@@ -463,7 +463,7 @@ func nextStepsForCluster(clusterName, stage, status string) []string {
 			"Use 'kubectl' to interact with the cluster",
 		}
 	default:
-		if status == config.StatusFailed {
+		if status == v2.StatusFailed {
 			return []string{"Check cluster logs and rerun the last failed lifecycle command"}
 		}
 		return []string{"Check cluster documentation for next steps"}

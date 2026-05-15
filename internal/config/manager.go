@@ -765,62 +765,6 @@ func (cm *ConfigurationManager) InvalidateCluster(ctx context.Context, name stri
 	return nil
 }
 
-// NewBuilder creates a new ConfigBuilder for building configurations.
-//
-// The builder provides a fluent API for constructing cluster configurations
-// with method chaining and validation. The builder integrates with the
-// ConfigurationManager for validation and saving.
-//
-// Parameters:
-//   - name: Cluster name for the new configuration
-//
-// Returns:
-//   - ConfigBuilder: New builder instance with default values
-//
-// Example:
-//
-//	builder := manager.NewBuilder("my-cluster")
-//	config, err := builder.
-//	    WithProvider("openstack").
-//	    WithOrganization("my-org").
-//	    WithRegion("us-east-1").
-//	    Build()
-func (cm *ConfigurationManager) NewBuilder(name string) ConfigBuilder {
-	builder := NewConfigBuilder(name).(*FluentConfigBuilder)
-	// Inject manager reference for validation and saving
-	builder.manager = cm
-	return builder
-}
-
-// BuildFrom creates a ConfigBuilder from an existing configuration.
-//
-// This method is useful for modifying existing configurations using
-// the fluent builder API.
-//
-// Parameters:
-//   - config: Existing configuration to build from
-//
-// Returns:
-//   - ConfigBuilder: Builder instance initialized with the config
-//
-// Example:
-//
-//	config, _ := manager.Load(ctx, "my-cluster")
-//	builder := manager.BuildFrom(config)
-//	updated, err := builder.
-//	    WithWorkerCount(5).
-//	    Build()
-func (cm *ConfigurationManager) BuildFrom(config *Config) ConfigBuilder {
-	if config == nil {
-		// Return builder with empty config
-		return cm.NewBuilder("")
-	}
-	builder := NewConfigBuilderFromConfig(*config).(*FluentConfigBuilder)
-	// Inject manager reference for validation and saving
-	builder.manager = cm
-	return builder
-}
-
 // GetActive returns the active cluster name with precedence:
 // 1. OPENCENTER_CLUSTER environment variable (session-scoped)
 // 2. Session file (if shell integration is active)
