@@ -16,7 +16,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/logging"
 	"github.com/spf13/cobra"
 )
 
@@ -34,27 +34,27 @@ func newClusterListCmd() *cobra.Command {
 		Short:   "List configured clusters",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			config.Debug("cluster list: starting cluster list operation")
+			logging.Debug("cluster list: starting cluster list operation")
 
 			names, err := listClusters(ctx)
 			if err != nil {
-				config.Debugf("cluster list: failed to list clusters: %v", err)
+				logging.Debugf("cluster list: failed to list clusters: %v", err)
 				return failf("failed to list clusters: %v", err)
 			}
 
-			config.Debugf("cluster list: found %d cluster(s)", len(names))
+			logging.Debugf("cluster list: found %d cluster(s)", len(names))
 			for i, name := range names {
-				config.Debugf("cluster list: [%d] %s", i, name)
+				logging.Debugf("cluster list: [%d] %s", i, name)
 			}
 
 			// Get active cluster to show indicator
 			activeCluster, err := getActiveCluster()
 			if err != nil {
-				config.Debugf("cluster list: failed to get active cluster: %v", err)
+				logging.Debugf("cluster list: failed to get active cluster: %v", err)
 				// Continue without active indicator if we can't get it
 				activeCluster = ""
 			} else {
-				config.Debugf("cluster list: active cluster: %s", activeCluster)
+				logging.Debugf("cluster list: active cluster: %s", activeCluster)
 				activeCluster = normalizeClusterDisplayName(activeCluster)
 			}
 
@@ -63,7 +63,7 @@ func newClusterListCmd() *cobra.Command {
 				return writeStructuredOutput(cmd, opts.Output, names)
 			}
 
-			config.Debug("cluster list: outputting plain text format")
+			logging.Debug("cluster list: outputting plain text format")
 			for _, n := range names {
 				// Show active indicator with asterisk
 				if activeCluster != "" && n == activeCluster {
@@ -72,7 +72,7 @@ func newClusterListCmd() *cobra.Command {
 					fmt.Fprintln(cmd.OutOrStdout(), n)
 				}
 			}
-			config.Debug("cluster list: operation completed successfully")
+			logging.Debug("cluster list: operation completed successfully")
 			return nil
 		},
 	}

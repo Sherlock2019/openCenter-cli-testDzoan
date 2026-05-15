@@ -26,6 +26,7 @@ import (
 	"github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
 	"github.com/opencenter-cloud/opencenter-cli/internal/di"
 	"github.com/opencenter-cloud/opencenter-cli/internal/gitops"
+	"github.com/opencenter-cloud/opencenter-cli/internal/logging"
 	"github.com/opencenter-cloud/opencenter-cli/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -62,7 +63,7 @@ func runClusterDeploy(cmd *cobra.Command, args []string) error {
 	// Apply log-level flag (already parsed by PersistentPreRunE, but ensure
 	// it is honoured when the caller passes --log-level explicitly).
 	if logLevel, _ := cmd.Flags().GetString("log-level"); logLevel != "" {
-		_ = config.SetLogLevel(logLevel)
+		_ = logging.SetLogLevel(logLevel)
 	}
 
 	// Resolve cluster name from args or active cluster

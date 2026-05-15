@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/opencenter-cloud/opencenter-cli/internal/config"
+	"github.com/opencenter-cloud/opencenter-cli/internal/logging"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -111,7 +111,7 @@ func applyGlobalOptions(cmd *cobra.Command, args []string) error {
 		}
 	}
 	if opts.LogLevel != "" {
-		if err := config.SetLogLevel(opts.LogLevel); err != nil {
+		if err := logging.SetLogLevel(opts.LogLevel); err != nil {
 			return fmt.Errorf("failed to set log level: %w", err)
 		}
 	}
@@ -125,10 +125,10 @@ func applyGlobalOptions(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	config.Debugf("Command: %s", cmd.CommandPath())
-	config.Debugf("Arguments: %v", args)
-	config.Debugf("Global output: %s", opts.Output)
-	config.Debugf("Global dry-run: %v", opts.DryRun)
+	logging.Debugf("Command: %s", cmd.CommandPath())
+	logging.Debugf("Arguments: %v", args)
+	logging.Debugf("Global output: %s", opts.Output)
+	logging.Debugf("Global dry-run: %v", opts.DryRun)
 	return nil
 }
 

@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	corePaths "github.com/opencenter-cloud/opencenter-cli/internal/core/paths"
+	"github.com/opencenter-cloud/opencenter-cli/internal/logging"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/errors"
 	"github.com/opencenter-cloud/opencenter-cli/internal/util/fs"
 	"gopkg.in/yaml.v3"
@@ -37,20 +38,12 @@ type CLIConfig struct {
 }
 
 // LoggingConfig controls logging behavior including level, format, output, and file rotation.
-type LoggingConfig struct {
-	Level  string     `yaml:"level"`  // debug, info, warn, error
-	Format string     `yaml:"format"` // text, json, yaml
-	Output string     `yaml:"output"` // stdout, stderr, or file path
-	File   FileConfig `yaml:"file"`
-}
+// Deprecated: Use logging.LoggingConfig directly.
+type LoggingConfig = logging.LoggingConfig
 
 // FileConfig controls file logging rotation settings.
-type FileConfig struct {
-	MaxSize    int  `yaml:"maxSize"` // MB
-	MaxBackups int  `yaml:"maxBackups"`
-	MaxAge     int  `yaml:"maxAge"` // days
-	Compress   bool `yaml:"compress"`
-}
+// Deprecated: Use logging.FileConfig directly.
+type FileConfig = logging.FileConfig
 
 // PathsConfig controls default paths for configuration and clusters.
 type PathsConfig struct {
