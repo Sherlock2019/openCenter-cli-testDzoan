@@ -435,7 +435,7 @@ func TestBootstrapService_DryRunOpenStackBuildsPlanWithoutPrerequisites(t *testi
 	if result.Plan == nil {
 		t.Fatal("expected dry-run plan")
 	}
-	wantIDs := []string{"openstack-preflight", "opentofu-init", "opentofu-apply", "openstack-normalize-kubeconfig", "openstack-install-network-plugin"}
+	wantIDs := []string{"preflight", "opentofu-init", "opentofu-apply", "openstack-normalize-kubeconfig", "openstack-install-network-plugin"}
 	if got := planStepIDs(result.Plan); strings.Join(got, ",") != strings.Join(wantIDs, ",") {
 		t.Fatalf("plan steps = %v, want %v", got, wantIDs)
 	}
@@ -677,6 +677,230 @@ func containsString(values []string, want string) bool {
 		}
 	}
 	return false
+}
+
+func TestBootstrapService_DryRunVMwareBuildsPlan(t *testing.T) {
+	tmpDir := t.TempDir()
+	clusterName := "vmware-plan"
+	organization := "test-org"
+
+	pathResolver := paths.NewPathResolver(tmpDir)
+	bootstrapService := createTestBootstrapService(pathResolver)
+
+	ctx := context.Background()
+	if err := pathResolver.CreateClusterDirectories(ctx, clusterName, organization); err != nil {
+		t.Fatalf("create cluster directories: %v", err)
+	}
+
+	cfg := mustNewClusterTestConfig(clusterName, "vmware")
+	cfg.OpenCenter.Meta.Organization = organization
+	cfg.OpenCenter.GitOps.Repository.LocalDir = filepath.Join(tmpDir, "gitops-repo")
+	testhelpers.SaveConfigWithPathResolver(t, cfg, pathResolver)
+
+	result, err := bootstrapService.Bootstrap(ctx, BootstrapOptions{
+		ClusterName:  clusterName,
+		Organization: organization,
+		DryRun:       true,
+	})
+	if err != nil {
+		t.Fatalf("Bootstrap() dry-run error: %v", err)
+	}
+	if result.Plan == nil {
+		t.Fatal("expected dry-run plan")
+	}
+	if result.Plan.Provider != "vmware" {
+		t.Fatalf("provider = %q, want vmware", result.Plan.Provider)
+	}
+	wantIDs := []string{"preflight", "opentofu-init", "opentofu-apply", "openstack-normalize-kubeconfig", "openstack-install-network-plugin"}
+	if got := planStepIDs(result.Plan); strings.Join(got, ",") != strings.Join(wantIDs, ",") {
+		t.Fatalf("plan steps = %v, want %v", got, wantIDs)
+	}
+	// VMware plan should have VSPHERE env vars redacted
+	initStep := result.Plan.Steps[1]
+	if !envHasRedacted(initStep.Environment, "VSPHERE_PASSWORD") {
+		t.Fatalf("expected redacted VSPHERE_PASSWORD env, got %#v", initStep.Environment)
+	}
+}
+
+func TestValidateStaticNodes(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     func() *v2.Config
+		wantErr string
+	}{
+		{
+			name: "valid vmware with cloud nodes",
+			cfg: func() *v2.Config {
+				cfg := mustNewClusterTestConfig("test", "vmware")
+				return &cfg
+			},
+			wantErr: "",
+		},
+		{
+			name: "valid baremetal with master nodes",
+			cfg: func() *v2.Config {
+				cfg := mustNewClusterTestConfig("test", "baremetal")
+				cfg.OpenCenter.Infrastructure.Compute.MasterNodes = []v2.StaticNode{
+					{Name: "master-1", AccessIPv4: "10.0.0.1"},
+				}
+				cfg.OpenCenter.Infrastructure.SSH.User = "ubuntu"
+				return &cfg
+			},
+			wantErr: "",
+		},
+		{
+			name: "missing master nodes for baremetal",
+			cfg: func() *v2.Config {
+				cfg := mustNewClusterTestConfig("test", "baremetal")
+				cfg.OpenCenter.Infrastructure.Compute.MasterNodes = nil
+				cfg.OpenCenter.Infrastructure.Cloud.VMware = nil
+				return &cfg
+			},
+			wantErr: "no master nodes defined",
+		},
+		{
+			name: "missing ssh user",
+			cfg: func() *v2.Config {
+				cfg := mustNewClusterTestConfig("test", "baremetal")
+				cfg.OpenCenter.Infrastructure.Compute.MasterNodes = []v2.StaticNode{
+					{Name: "master-1", AccessIPv4: "10.0.0.1"},
+				}
+				cfg.OpenCenter.Infrastructure.SSH.User = ""
+				cfg.OpenCenter.Infrastructure.SSH.Username = ""
+				return &cfg
+			},
+			wantErr: "ssh user must be set",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateStaticNodes(tt.cfg())
+			if tt.wantErr == "" {
+				if err != nil {
+					t.Fatalf("validateStaticNodes() unexpected error: %v", err)
+				}
+			} else {
+				if err == nil {
+					t.Fatal("validateStaticNodes() expected error, got nil")
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("validateStaticNodes() error = %q, want containing %q", err.Error(), tt.wantErr)
+				}
+			}
+		})
+	}
+}
+
+func TestValidateProviderBootstrap_VMwareRequiresCredentials(t *testing.T) {
+	cfg := mustNewClusterTestConfig("test", "vmware")
+	// No vSphere secrets set
+	cfg.Secrets.ServiceSecrets = nil
+
+	err := validateProviderBootstrap(&cfg, "vmware")
+	if err == nil {
+		t.Fatal("expected error for missing vmware credentials")
+	}
+	if !strings.Contains(err.Error(), "vmware credentials incomplete") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestValidateProviderBootstrap_BaremetalNoCredentials(t *testing.T) {
+	cfg := mustNewClusterTestConfig("test", "baremetal")
+	cfg.OpenCenter.Infrastructure.Compute.MasterNodes = []v2.StaticNode{
+		{Name: "master-1", AccessIPv4: "10.0.0.1"},
+	}
+	cfg.OpenCenter.Infrastructure.SSH.User = "ubuntu"
+
+	err := validateProviderBootstrap(&cfg, "baremetal")
+	if err != nil {
+		t.Fatalf("validateProviderBootstrap(baremetal) unexpected error: %v", err)
+	}
+}
+
+func TestBootstrapService_DryRunBaremetalBuildsPlan(t *testing.T) {
+	tmpDir := t.TempDir()
+	clusterName := "baremetal-plan"
+	organization := "test-org"
+
+	pathResolver := paths.NewPathResolver(tmpDir)
+	bootstrapService := createTestBootstrapService(pathResolver)
+
+	ctx := context.Background()
+	if err := pathResolver.CreateClusterDirectories(ctx, clusterName, organization); err != nil {
+		t.Fatalf("create cluster directories: %v", err)
+	}
+
+	cfg := mustNewClusterTestConfig(clusterName, "baremetal")
+	cfg.OpenCenter.Meta.Organization = organization
+	cfg.OpenCenter.GitOps.Repository.LocalDir = filepath.Join(tmpDir, "gitops-repo")
+	testhelpers.SaveConfigWithPathResolver(t, cfg, pathResolver)
+
+	result, err := bootstrapService.Bootstrap(ctx, BootstrapOptions{
+		ClusterName:  clusterName,
+		Organization: organization,
+		DryRun:       true,
+	})
+	if err != nil {
+		t.Fatalf("Bootstrap() dry-run error: %v", err)
+	}
+	if result.Plan == nil {
+		t.Fatal("expected dry-run plan")
+	}
+	if result.Plan.Provider != "baremetal" {
+		t.Fatalf("provider = %q, want baremetal", result.Plan.Provider)
+	}
+	wantIDs := []string{"preflight", "opentofu-init", "opentofu-apply", "openstack-normalize-kubeconfig", "openstack-install-network-plugin"}
+	if got := planStepIDs(result.Plan); strings.Join(got, ",") != strings.Join(wantIDs, ",") {
+		t.Fatalf("plan steps = %v, want %v", got, wantIDs)
+	}
+	// Baremetal plan should NOT have VSPHERE or OS_ env vars
+	initStep := result.Plan.Steps[1]
+	if envHasRedacted(initStep.Environment, "OS_APPLICATION_CREDENTIAL_SECRET") {
+		t.Fatalf("baremetal plan should not have OpenStack env vars, got %#v", initStep.Environment)
+	}
+	if envHasRedacted(initStep.Environment, "VSPHERE_PASSWORD") {
+		t.Fatalf("baremetal plan should not have vSphere env vars, got %#v", initStep.Environment)
+	}
+}
+
+func TestBootstrapService_VMwareNoGitOpsPush(t *testing.T) {
+	tmpDir := t.TempDir()
+	clusterName := "vmware-no-push"
+	organization := "test-org"
+
+	pathResolver := paths.NewPathResolver(tmpDir)
+	bootstrapService := createTestBootstrapService(pathResolver)
+
+	ctx := context.Background()
+	if err := pathResolver.CreateClusterDirectories(ctx, clusterName, organization); err != nil {
+		t.Fatalf("create cluster directories: %v", err)
+	}
+
+	cfg := mustNewClusterTestConfig(clusterName, "vmware")
+	cfg.OpenCenter.Meta.Organization = organization
+	cfg.OpenCenter.GitOps.Repository.LocalDir = filepath.Join(tmpDir, "gitops-repo")
+	cfg.OpenCenter.GitOps.Repository.URL = "ssh://git@github.com/test-org/test-repo.git"
+	testhelpers.SaveConfigWithPathResolver(t, cfg, pathResolver)
+
+	result, err := bootstrapService.Bootstrap(ctx, BootstrapOptions{
+		ClusterName:  clusterName,
+		Organization: organization,
+		DryRun:       true,
+	})
+	if err != nil {
+		t.Fatalf("Bootstrap() dry-run error: %v", err)
+	}
+	if result.Plan == nil {
+		t.Fatal("expected dry-run plan")
+	}
+	// Verify no gitops-push step exists
+	for _, step := range result.Plan.Steps {
+		if step.ID == "gitops-push" {
+			t.Fatal("vmware provider should not include gitops-push step")
+		}
+	}
 }
 
 func envHasRedacted(values []BootstrapPlanEnv, name string) bool {

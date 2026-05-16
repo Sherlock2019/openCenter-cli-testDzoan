@@ -74,7 +74,7 @@ func (p *openstackBootstrapProvider) installOpenStackNetworkPlugin(ctx context.C
 		return fmt.Errorf("kubeconfig path must be set before installing %s", selection.Name)
 	}
 
-	env, err := buildOpenStackBootstrapEnvironment(cfg, kubeconfigPath)
+	env, err := buildProviderBootstrapEnvironment(cfg, kubeconfigPath)
 	if err != nil {
 		return err
 	}

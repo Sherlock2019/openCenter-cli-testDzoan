@@ -195,7 +195,7 @@ func runClusterDeploy(cmd *cobra.Command, args []string) error {
 		if err := config.UpdateStatus(name, v2.StageBootstrap, v2.StatusSuccess); err != nil {
 			fmt.Fprintf(cmd.ErrOrStderr(), "Warning: failed to update cluster status: %v\n", err)
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "Next: opencenter cluster status %s\n", name)
+		printPostDeployNextSteps(cmd, name)
 	}
 
 	return nil
@@ -243,6 +243,14 @@ func parseBootstrapOptions(cmd *cobra.Command, args []string, clusterName string
 	}
 
 	return opts, nil
+}
+
+// printPostDeployNextSteps prints next steps after a successful deploy.
+func printPostDeployNextSteps(cmd *cobra.Command, name string) {
+	fmt.Fprintln(cmd.OutOrStdout(), "\nNext steps:")
+	fmt.Fprintf(cmd.OutOrStdout(), "  1. Sync secrets:    opencenter cluster secrets sync %s\n", name)
+	fmt.Fprintf(cmd.OutOrStdout(), "  2. Commit changes:  git add -A && git commit -m \"deploy %s\"\n", name)
+	fmt.Fprintln(cmd.OutOrStdout(), "  3. Push to remote:  git push")
 }
 
 // ensureCleanWorkingTree checks whether the GitOps directory has uncommitted

@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -27,37 +28,19 @@ func (p *openstackBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *pa
 		return nil, err
 	}
 	if !cfg.OpenTofu.Enabled {
-		return nil, fmt.Errorf("opentofu must be enabled for openstack bootstrap")
+		return nil, fmt.Errorf("opentofu must be enabled for bootstrap")
 	}
 
 	openTofuPath, err := resolveTofuBinary(cfg.OpenTofu.Path)
 	if err != nil {
 		return nil, err
 	}
-	planEnv := openStackPlanEnv(opts.KubeconfigPath)
+
+	provider := strings.ToLower(strings.TrimSpace(cfg.Provider()))
+	planEnv := providerPlanEnv(provider, opts.KubeconfigPath)
 
 	steps := []bootstrapStep{
-		{
-			ID:          "openstack-preflight",
-			Description: "Validate OpenStack credentials and bootstrap prerequisites",
-			Plan: BootstrapPlanStep{
-				ID:         "openstack-preflight",
-				Action:     "Validate OpenStack credentials and bootstrap prerequisites",
-				WorkingDir: clusterDir,
-				Reads:      []string{clusterDir},
-				Notes:      []string{"Plan only; OpenStack credentials, infrastructure directory, and OpenTofu availability were not checked."},
-			},
-			Run: func(ctx context.Context) error {
-				if _, err := os.Stat(clusterDir); err != nil {
-					return fmt.Errorf("cluster infrastructure directory not found in GitOps repository: %s", clusterDir)
-				}
-				creds, err := extractOpenStackBootstrapCredentials(cfg)
-				if err != nil {
-					return err
-				}
-				return validateOpenStackBootstrap(creds)
-			},
-		},
+		p.buildPreflightStep(cfg, provider, clusterDir),
 		{
 			ID:          "opentofu-init",
 			Description: "Initialize OpenTofu",
@@ -72,7 +55,7 @@ func (p *openstackBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *pa
 				Notes:       []string{"Plan only; OpenTofu binary, backend access, and provider initialization were not checked."},
 			},
 			Run: func(ctx context.Context) error {
-				env, err := buildOpenStackBootstrapEnvironment(cfg, opts.KubeconfigPath)
+				env, err := buildProviderBootstrapEnvironment(cfg, opts.KubeconfigPath)
 				if err != nil {
 					return err
 				}
@@ -90,11 +73,11 @@ func (p *openstackBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *pa
 				Commands:    []BootstrapPlanCommand{commandPlan(openTofuPath, "apply", "-auto-approve")},
 				Environment: planEnv,
 				Reads:       []string{clusterDir},
-				Writes:      []string{"OpenStack infrastructure resources", filepath.Join(clusterDir, "terraform.tfstate")},
-				Notes:       []string{"Plan only; OpenStack API access and infrastructure changes were not simulated."},
+				Writes:      []string{"infrastructure resources", filepath.Join(clusterDir, "terraform.tfstate")},
+				Notes:       []string{"Plan only; API access and infrastructure changes were not simulated."},
 			},
 			Run: func(ctx context.Context) error {
-				env, err := buildOpenStackBootstrapEnvironment(cfg, opts.KubeconfigPath)
+				env, err := buildProviderBootstrapEnvironment(cfg, opts.KubeconfigPath)
 				if err != nil {
 					return err
 				}
@@ -162,12 +145,7 @@ func (p *openstackBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *pa
 		steps = append(steps, fluxStep)
 	}
 
-	// Push the GitOps repository to the remote so FluxCD can reconcile.
-	// Only add when a git URL is configured.
-	if cfg.ConfiguredGitURL() != "" {
-		gitopsPushStep := p.buildGitOpsPushStep(cfg, planEnv, opts)
-		steps = append(steps, gitopsPushStep)
-	}
+	// No automatic git push — the user commits and pushes manually after deploy.
 
 	return steps, nil
 }
@@ -447,4 +425,173 @@ func replaceLocalhostInKubeconfig(data []byte, apiEndpointIP string) []byte {
 			"http://"+apiEndpointIP+":")
 	}
 	return []byte(result)
+}
+
+// buildPreflightStep returns a provider-aware preflight validation step.
+func (p *openstackBootstrapProvider) buildPreflightStep(cfg *v2.Config, provider, clusterDir string) bootstrapStep {
+	return bootstrapStep{
+		ID:          "preflight",
+		Description: "Validate credentials and bootstrap prerequisites",
+		Plan: BootstrapPlanStep{
+			ID:         "preflight",
+			Action:     "Validate credentials and bootstrap prerequisites",
+			WorkingDir: clusterDir,
+			Reads:      []string{clusterDir},
+			Notes:      []string{"Plan only; credentials, infrastructure directory, and OpenTofu availability were not checked."},
+		},
+		Run: func(ctx context.Context) error {
+			if _, err := os.Stat(clusterDir); err != nil {
+				return fmt.Errorf("cluster infrastructure directory not found in GitOps repository: %s", clusterDir)
+			}
+			return validateProviderBootstrap(cfg, provider)
+		},
+	}
+}
+
+// validateProviderBootstrap performs provider-specific preflight validation.
+func validateProviderBootstrap(cfg *v2.Config, provider string) error {
+	switch provider {
+	case "openstack":
+		creds, err := extractOpenStackBootstrapCredentials(cfg)
+		if err != nil {
+			return err
+		}
+		return validateOpenStackBootstrap(creds)
+	case "vmware", "vsphere":
+		secret := extractVSphereBootstrapCredentials(cfg)
+		if secret.VCenterHost == "" || secret.Username == "" || secret.Password == "" {
+			return fmt.Errorf("vmware credentials incomplete; set secrets.vsphere_csi (vcenter_host, username, password)")
+		}
+		return validateStaticNodes(cfg)
+	case "baremetal":
+		return validateStaticNodes(cfg)
+	default:
+		return fmt.Errorf("unsupported provider %q for bootstrap", provider)
+	}
+}
+
+// validateStaticNodes checks that pre-provisioned nodes are defined in the config.
+func validateStaticNodes(cfg *v2.Config) error {
+	compute := cfg.OpenCenter.Infrastructure.Compute
+	hasNodes := len(compute.MasterNodes) > 0
+
+	// Also accept vmware cloud nodes as a source.
+	if !hasNodes && cfg.OpenCenter.Infrastructure.Cloud.VMware != nil {
+		// VMware nodes are defined in cloud.vmware.nodes via the schema;
+		// the Terraform module reads them directly from the config.
+		hasNodes = true
+	}
+
+	if !hasNodes {
+		return fmt.Errorf("no master nodes defined; set infrastructure.compute.master_nodes for static node deployment")
+	}
+
+	if strings.TrimSpace(cfg.OpenCenter.Infrastructure.SSH.User) == "" &&
+		strings.TrimSpace(cfg.OpenCenter.Infrastructure.SSH.Username) == "" {
+		return fmt.Errorf("ssh user must be set for static node deployment; set infrastructure.ssh.user")
+	}
+	return nil
+}
+
+// buildProviderBootstrapEnvironment returns environment variables for the
+// OpenTofu run, selecting credentials based on the infrastructure provider.
+func buildProviderBootstrapEnvironment(cfg *v2.Config, kubeconfigPath string) (map[string]string, error) {
+	provider := strings.ToLower(strings.TrimSpace(cfg.Provider()))
+	env := buildBootstrapEnvironment(kubeconfigPath)
+
+	switch provider {
+	case "openstack":
+		creds, err := extractOpenStackBootstrapCredentials(cfg)
+		if err != nil {
+			return nil, err
+		}
+		mergeBootstrapEnvironment(env, creds.ToEnvMap())
+	case "vmware", "vsphere":
+		secret := extractVSphereBootstrapCredentials(cfg)
+		if strings.TrimSpace(secret.VCenterHost) != "" {
+			env["VSPHERE_SERVER"] = secret.VCenterHost
+		}
+		if strings.TrimSpace(secret.Username) != "" {
+			env["VSPHERE_USER"] = secret.Username
+		}
+		if strings.TrimSpace(secret.Password) != "" {
+			env["VSPHERE_PASSWORD"] = secret.Password
+		}
+		if strings.TrimSpace(secret.InsecureFlag) != "" {
+			env["VSPHERE_ALLOW_UNVERIFIED_SSL"] = secret.InsecureFlag
+		}
+	case "baremetal":
+		// No extra credentials needed.
+	}
+
+	return env, nil
+}
+
+// vSphereBootstrapSecret holds credentials extracted from the cluster config.
+type vSphereBootstrapSecret struct {
+	VCenterHost  string `json:"vcenter_host" yaml:"vcenter_host"`
+	Username     string `json:"username" yaml:"username"`
+	Password     string `json:"password" yaml:"password"`
+	InsecureFlag string `json:"insecure_flag" yaml:"insecure_flag"`
+}
+
+// extractVSphereBootstrapCredentials extracts vSphere credentials from the
+// secrets.vsphere_csi or secrets.vsphere-csi config block, falling back to
+// infrastructure.cloud.vmware.vcenter_server for the host.
+func extractVSphereBootstrapCredentials(cfg *v2.Config) vSphereBootstrapSecret {
+	var secret vSphereBootstrapSecret
+	for _, key := range []string{"vsphere_csi", "vsphere-csi"} {
+		raw, ok := cfg.Secrets.ServiceSecrets[key]
+		if !ok || raw == nil {
+			continue
+		}
+		data, err := json.Marshal(raw)
+		if err != nil {
+			continue
+		}
+		if err := json.Unmarshal(data, &secret); err == nil {
+			break
+		}
+	}
+
+	// Fall back to cloud.vmware.vcenter_server if secret doesn't have the host.
+	if strings.TrimSpace(secret.VCenterHost) == "" {
+		if vmwareCfg := cfg.OpenCenter.Infrastructure.Cloud.VMware; vmwareCfg != nil {
+			secret.VCenterHost = strings.TrimSpace(vmwareCfg.VCenterServer)
+		}
+	}
+	return secret
+}
+
+// providerPlanEnv returns the dry-run plan environment for the given provider.
+func providerPlanEnv(provider, kubeconfigPath string) []BootstrapPlanEnv {
+	switch provider {
+	case "vmware", "vsphere":
+		env := map[string]string{
+			"VSPHERE_SERVER":             "",
+			"VSPHERE_USER":              "",
+			"VSPHERE_PASSWORD":          "",
+			"VSPHERE_ALLOW_UNVERIFIED_SSL": "",
+			"PATH":                      "<current PATH>",
+		}
+		if strings.TrimSpace(kubeconfigPath) != "" {
+			env["KUBECONFIG"] = kubeconfigPath
+		}
+		redacted := map[string]bool{
+			"VSPHERE_SERVER":   true,
+			"VSPHERE_USER":     true,
+			"VSPHERE_PASSWORD": true,
+		}
+		return envPlanFromMap(env, redacted)
+	case "baremetal":
+		env := map[string]string{
+			"PATH": "<current PATH>",
+		}
+		if strings.TrimSpace(kubeconfigPath) != "" {
+			env["KUBECONFIG"] = kubeconfigPath
+		}
+		return envPlanFromMap(env, nil)
+	default:
+		return openStackPlanEnv(kubeconfigPath)
+	}
 }

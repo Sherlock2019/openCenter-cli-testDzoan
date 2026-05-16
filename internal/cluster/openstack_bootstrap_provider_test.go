@@ -101,7 +101,7 @@ users:
 		t.Fatalf("BuildSteps() error = %v", err)
 	}
 
-	wantIDs := []string{"openstack-preflight", "opentofu-init", "opentofu-apply", "openstack-normalize-kubeconfig", "openstack-install-network-plugin"}
+	wantIDs := []string{"preflight", "opentofu-init", "opentofu-apply", "openstack-normalize-kubeconfig", "openstack-install-network-plugin"}
 	if got := bootstrapStepIDs(steps); strings.Join(got, ",") != strings.Join(wantIDs, ",") {
 		t.Fatalf("BuildSteps() IDs = %v, want %v", got, wantIDs)
 	}
@@ -205,7 +205,7 @@ func TestBootstrapServiceOpenStackProvisionInfrastructureHonorsSavedState(t *tes
 
 	statePath := filepath.Join(clusterDir, "logs", "bootstrap-state.json")
 	state := bootstrapService.newBootstrapState()
-	bootstrapService.setStepStatus(state, "openstack-preflight", bootstrapStatusSuccess, "")
+	bootstrapService.setStepStatus(state, "preflight", bootstrapStatusSuccess, "")
 	bootstrapService.setStepStatus(state, "opentofu-init", bootstrapStatusSuccess, "")
 	if err := bootstrapService.saveBootstrapState(statePath, state); err != nil {
 		t.Fatalf("save bootstrap state: %v", err)

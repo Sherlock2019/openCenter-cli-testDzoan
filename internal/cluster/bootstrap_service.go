@@ -495,6 +495,10 @@ func (s *BootstrapService) buildBootstrapSteps(cfg *v2.Config, clusterPaths *pat
 		providerImpl := newKindBootstrapProvider(s.runner)
 		return providerImpl.BuildSteps(cfg, clusterPaths, opts)
 
+	case "vmware", "vsphere", "baremetal":
+		providerImpl := newOpenStackBootstrapProvider(s.runner)
+		return providerImpl.BuildSteps(cfg, clusterPaths, opts)
+
 	default:
 		if opts.DryRun {
 			return nil, fmt.Errorf("deploy planning is not available for provider %q", provider)
@@ -581,8 +585,8 @@ func (s *BootstrapService) deployCluster(ctx context.Context, cfg *v2.Config, cl
 		// Kind cluster is already deployed in provisionInfrastructure
 		return nil
 
-	case "openstack", "aws", "gcp", "azure":
-		// Cloud providers deploy via Terraform in provisionInfrastructure
+	case "openstack", "aws", "gcp", "azure", "vmware", "vsphere", "baremetal":
+		// Cloud/static providers deploy via Terraform in provisionInfrastructure
 		return nil
 
 	default:
@@ -608,7 +612,7 @@ func (s *BootstrapService) waitForReady(ctx context.Context, cfg *v2.Config, tim
 	case "kind":
 		endpoint, err = s.waitForKindCluster(ctx, kubeconfigPath)
 
-	case "openstack", "aws", "gcp", "azure":
+	case "openstack", "aws", "gcp", "azure", "vmware", "vsphere", "baremetal":
 		endpoint, err = s.waitForCloudCluster(ctx, cfg, kubeconfigPath)
 
 	default:

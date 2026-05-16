@@ -46,8 +46,8 @@ func TestClusterDeployIntegration(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("deploy command failed: %v\nstderr: %s", err, stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "Next: opencenter cluster status kind-bootstrap-int") {
-		t.Fatalf("expected status next step in deploy output, got:\n%s", stdout.String())
+	if !strings.Contains(stdout.String(), "Next steps:") {
+		t.Fatalf("expected next steps in deploy output, got:\n%s", stdout.String())
 	}
 
 	kubeconfigPath := filepath.Join(dir, "clusters", "state", "opencenter", "kind-bootstrap-int", "kubeconfig.yaml")
