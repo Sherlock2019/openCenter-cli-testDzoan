@@ -459,7 +459,7 @@ func validateProviderBootstrap(cfg *v2.Config, provider string) error {
 		return validateOpenStackBootstrap(creds)
 	case "vmware", "vsphere":
 		secret := extractVSphereBootstrapCredentials(cfg)
-		if secret.VCenterHost == "" || secret.Username == "" || secret.Password == "" {
+		if isEmptyOrPlaceholder(secret.VCenterHost) || isEmptyOrPlaceholder(secret.Username) || isEmptyOrPlaceholder(secret.Password) {
 			return fmt.Errorf("vmware credentials incomplete; set secrets.vsphere_csi (vcenter_host, username, password)")
 		}
 		return validateStaticNodes(cfg)
@@ -537,7 +537,7 @@ type vSphereBootstrapSecret struct {
 
 // extractVSphereBootstrapCredentials extracts vSphere credentials from the
 // secrets.vsphere_csi or secrets.vsphere-csi config block, falling back to
-// infrastructure.cloud.vmware.vcenter_server for the host.
+// the typed secrets.VSphereCsi struct and infrastructure.cloud.vmware for the host.
 func extractVSphereBootstrapCredentials(cfg *v2.Config) vSphereBootstrapSecret {
 	var secret vSphereBootstrapSecret
 	for _, key := range []string{"vsphere_csi", "vsphere-csi"} {
@@ -554,13 +554,58 @@ func extractVSphereBootstrapCredentials(cfg *v2.Config) vSphereBootstrapSecret {
 		}
 	}
 
-	// Fall back to cloud.vmware.vcenter_server if secret doesn't have the host.
+	// Fall back to the typed secrets.vsphere_csi struct fields.
+	if strings.TrimSpace(secret.VCenterHost) == "" {
+		secret.VCenterHost = strings.TrimSpace(cfg.Secrets.VSphereCsi.VCenterHost)
+	}
+	if strings.TrimSpace(secret.Username) == "" {
+		secret.Username = strings.TrimSpace(cfg.Secrets.VSphereCsi.Username)
+	}
+	if strings.TrimSpace(secret.Password) == "" {
+		secret.Password = cfg.Secrets.VSphereCsi.Password
+	}
+	if strings.TrimSpace(secret.InsecureFlag) == "" {
+		secret.InsecureFlag = strings.TrimSpace(cfg.Secrets.VSphereCsi.InsecureFlag)
+	}
+
+	// Fall back to cloud.vmware.vcenter_server if still no host.
 	if strings.TrimSpace(secret.VCenterHost) == "" {
 		if vmwareCfg := cfg.OpenCenter.Infrastructure.Cloud.VMware; vmwareCfg != nil {
 			secret.VCenterHost = strings.TrimSpace(vmwareCfg.VCenterServer)
 		}
 	}
+
+	// Normalize: strip https:// scheme from vcenter_host so VSPHERE_SERVER
+	// receives a bare hostname. Users may paste a full URL.
+	secret.VCenterHost = normalizeVCenterHost(secret.VCenterHost)
+
 	return secret
+}
+
+// normalizeVCenterHost strips an https:// or http:// prefix from a vCenter
+// host value, returning just the hostname (with port if present). This allows
+// users to set secrets.vsphere_csi.vcenter_host to either
+// "vcenter.example.com" or "https://vcenter.example.com".
+func normalizeVCenterHost(host string) string {
+	host = strings.TrimSpace(host)
+	for _, prefix := range []string{"https://", "http://"} {
+		if strings.HasPrefix(strings.ToLower(host), prefix) {
+			host = host[len(prefix):]
+			// Strip trailing path (e.g. "/sdk")
+			if idx := strings.Index(host, "/"); idx != -1 {
+				host = host[:idx]
+			}
+			break
+		}
+	}
+	return host
+}
+
+// isEmptyOrPlaceholder returns true if the value is empty or still set to the
+// default placeholder ("CHANGEME") that must be replaced before deployment.
+func isEmptyOrPlaceholder(value string) bool {
+	v := strings.TrimSpace(value)
+	return v == "" || strings.EqualFold(v, "CHANGEME")
 }
 
 // providerPlanEnv returns the dry-run plan environment for the given provider.
