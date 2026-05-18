@@ -143,11 +143,19 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          for artifact in dist/opencenter-* dist/checksums.txt; do
+          artifacts=(dist/opencenter-* dist/checksums.txt)
+          if [ ${#artifacts[@]} -eq 0 ]; then
+            echo "ERROR: No artifacts found in dist/"
+            ls -la dist/ || true
+            exit 1
+          fi
+          for artifact in "${artifacts[@]}"; do
+            [ -f "$artifact" ] || continue
+            echo "Signing: $artifact"
             cosign sign-blob \
               --yes \
               --bundle "${artifact}.bundle" \
-              "${artifact}"
+              "$artifact"
           done
 
       - name: Install syft
