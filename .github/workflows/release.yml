@@ -146,8 +146,7 @@ jobs:
           for artifact in dist/opencenter-* dist/checksums.txt; do
             cosign sign-blob \
               --yes \
-              --output-signature "${artifact}.sig" \
-              --output-certificate "${artifact}.pem" \
+              --bundle "${artifact}.bundle" \
               "${artifact}"
           done
 
