@@ -62,6 +62,7 @@ func TestOpenStackDestroyProvider_BuildSteps(t *testing.T) {
 	}
 	cfg.OpenCenter.GitOps.Repository.LocalDir = gitopsDir
 	cfg.OpenTofu.Enabled = true
+	cfg.OpenTofu.Path = "tofu"
 
 	runner := &fakeDestroyCommandRunner{}
 	provider := newOpenStackDestroyProvider(runner)
@@ -133,6 +134,7 @@ func TestOpenStackDestroyProvider_BuildSteps_NoAutoApprove(t *testing.T) {
 	}
 	cfg.OpenCenter.GitOps.Repository.LocalDir = gitopsDir
 	cfg.OpenTofu.Enabled = true
+	cfg.OpenTofu.Path = "tofu"
 
 	runner := &fakeDestroyCommandRunner{}
 	provider := newOpenStackDestroyProvider(runner)
@@ -194,6 +196,7 @@ func TestOpenStackDestroyProvider_BuildSteps_MissingClusterDir(t *testing.T) {
 	cfg.OpenCenter.Infrastructure.Provider = "openstack"
 	cfg.OpenCenter.GitOps.Repository.LocalDir = gitopsDir
 	cfg.OpenTofu.Enabled = true
+	cfg.OpenTofu.Path = "tofu"
 
 	runner := &fakeDestroyCommandRunner{}
 	provider := newOpenStackDestroyProvider(runner)
@@ -225,6 +228,7 @@ func TestOpenStackDestroyProvider_BuildSteps_CustomTofuPath(t *testing.T) {
 	}
 	cfg.OpenCenter.GitOps.Repository.LocalDir = gitopsDir
 	cfg.OpenTofu.Enabled = true
+	cfg.OpenTofu.Path = "tofu"
 	cfg.OpenTofu.Path = "/custom/path/tofu"
 
 	runner := &fakeDestroyCommandRunner{}

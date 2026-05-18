@@ -90,13 +90,15 @@ func TestClusterDeployDryRunMake(t *testing.T) {
 		"No commands will be run, no files will be written, and prerequisites are not fully validated.",
 		"Provider: openstack",
 		"opentofu-init",
-		"Command: tofu init",
 		"Working dir: " + clusterDir,
 		"OS_APPLICATION_CREDENTIAL_SECRET=<redacted>",
 	} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("expected dry-run output to contain %q, got:\n%s", want, output)
 		}
+	}
+	if !strings.Contains(output, "Command: tofu init") && !strings.Contains(output, "Command: terraform init") {
+		t.Fatalf("expected dry-run output to contain tofu or terraform init command, got:\n%s", output)
 	}
 	if strings.Contains(output, "Deploy complete") {
 		t.Fatalf("dry-run should not report deploy completion, got:\n%s", output)

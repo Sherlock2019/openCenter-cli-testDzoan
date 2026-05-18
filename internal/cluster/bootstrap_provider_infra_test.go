@@ -58,6 +58,7 @@ func TestOpenStackBootstrapProviderUsesOpenTofuAndNormalizesKubeconfig(t *testin
 	cfg.OpenCenter.Infrastructure.Cloud.OpenStack.ApplicationCredentialSecret = "app-cred-secret"
 	cfg.OpenCenter.Infrastructure.Networking.VRRPEnabled = true
 	cfg.OpenCenter.Infrastructure.Networking.VRRPIP = "10.2.128.5"
+	cfg.OpenTofu.Path = "tofu"
 
 	clusterDir := filepath.Join(cfg.OpenCenter.GitOps.Repository.LocalDir, "infrastructure", "clusters", clusterName)
 	if err := os.MkdirAll(clusterDir, 0o755); err != nil {

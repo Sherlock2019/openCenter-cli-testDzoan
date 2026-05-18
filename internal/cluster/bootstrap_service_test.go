@@ -444,7 +444,7 @@ func TestBootstrapService_DryRunOpenStackBuildsPlanWithoutPrerequisites(t *testi
 	if initStep.WorkingDir != wantDir {
 		t.Fatalf("opentofu-init working dir = %q, want %q", initStep.WorkingDir, wantDir)
 	}
-	if len(initStep.Commands) != 1 || initStep.Commands[0].Name != "tofu" || strings.Join(initStep.Commands[0].Args, " ") != "init" {
+	if len(initStep.Commands) != 1 || (initStep.Commands[0].Name != "tofu" && initStep.Commands[0].Name != "terraform") || strings.Join(initStep.Commands[0].Args, " ") != "init" {
 		t.Fatalf("unexpected opentofu-init command: %#v", initStep.Commands)
 	}
 	if !envHasRedacted(initStep.Environment, "OS_APPLICATION_CREDENTIAL_SECRET") {

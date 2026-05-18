@@ -3,7 +3,7 @@ locals {
   cluster_name                            = "{{ .OpenCenter.Cluster.ClusterName }}"
 
   # Network configuration - VMware node network
-  subnet_nodes                            = "{{ .OpenCenter.Infrastructure.Cloud.VMware.Network | default "172.26.0.0/24" }}"
+  subnet_nodes                            = "{{ .OpenCenter.Infrastructure.Networking.SubnetNodes | default "172.26.0.0/24" }}"
   # Kubernetes pod network (overlay)
   subnet_pods                             = "{{ .OpenCenter.Cluster.Kubernetes.SubnetPods | default "10.42.0.0/16" }}"
   # Kubernetes service network (overlay)

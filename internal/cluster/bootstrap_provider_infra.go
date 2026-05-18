@@ -443,7 +443,10 @@ func (p *openstackBootstrapProvider) buildPreflightStep(cfg *v2.Config, provider
 			if _, err := os.Stat(clusterDir); err != nil {
 				return fmt.Errorf("cluster infrastructure directory not found in GitOps repository: %s", clusterDir)
 			}
-			return validateProviderBootstrap(cfg, provider)
+			if err := validateProviderBootstrap(cfg, provider); err != nil {
+				return err
+			}
+			return p.checkBastionSSH(ctx, cfg)
 		},
 	}
 }
@@ -489,6 +492,47 @@ func validateStaticNodes(cfg *v2.Config) error {
 	if strings.TrimSpace(cfg.OpenCenter.Infrastructure.SSH.User) == "" &&
 		strings.TrimSpace(cfg.OpenCenter.Infrastructure.SSH.Username) == "" {
 		return fmt.Errorf("ssh user must be set for static node deployment; set infrastructure.ssh.user")
+	}
+	return nil
+}
+
+// checkBastionSSH verifies SSH connectivity through the bastion host.
+// It SSHs to the bastion and confirms it can reach localhost via SSH.
+// Skipped when bastion is not enabled or has no address.
+func (p *openstackBootstrapProvider) checkBastionSSH(ctx context.Context, cfg *v2.Config) error {
+	bastion := cfg.OpenCenter.Infrastructure.Bastion
+	if !bastion.Enabled {
+		return nil
+	}
+	bastionAddr := strings.TrimSpace(bastion.Address)
+	if bastionAddr == "" {
+		return nil
+	}
+
+	sshUser := strings.TrimSpace(cfg.OpenCenter.Infrastructure.SSH.Username)
+	if sshUser == "" {
+		sshUser = strings.TrimSpace(cfg.OpenCenter.Infrastructure.SSH.User)
+	}
+	if sshUser == "" {
+		sshUser = "ubuntu"
+	}
+
+	keyPath := strings.TrimSpace(cfg.OpenCenter.Infrastructure.SSH.KeyPath)
+
+	// Build SSH args for bastion connectivity check
+	args := []string{
+		"-o", "StrictHostKeyChecking=no",
+		"-o", "ConnectTimeout=10",
+		"-o", "BatchMode=yes",
+	}
+	if keyPath != "" {
+		args = append(args, "-i", keyPath)
+	}
+	args = append(args, fmt.Sprintf("%s@%s", sshUser, bastionAddr), "ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", "localhost", "true")
+
+	_, err := p.runner.Run(ctx, "", nil, "ssh", args...)
+	if err != nil {
+		return fmt.Errorf("bastion SSH check failed: cannot SSH to localhost from bastion %s: %w", bastionAddr, err)
 	}
 	return nil
 }
