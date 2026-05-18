@@ -5,6 +5,9 @@ on:
     paths:
       - '**/*.md'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   docs-p0:
     runs-on: ubuntu-latest
