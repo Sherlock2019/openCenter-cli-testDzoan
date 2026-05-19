@@ -1,45 +1,33 @@
 # Secrets Management Codemap
 
-**Last Updated:** 2026-05-11  
+**Last Updated:** 2026-05-19  
 **Entry Points:** `internal/secrets/manager.go`, `internal/sops/encrypt.go`  
 **Packages:** `internal/secrets`, `internal/sops`
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        CLI (cmd/secrets*.go)                          │
-│  login │ list │ describe │ get │ set │ delete │ sync │ validate      │
-│  encrypt │ decrypt │ status │ keys (generate/rotate/backup/check)    │
-└────────────────────────────────┬────────────────────────────────────┘
-                                 │
-              ┌──────────────────┼──────────────────┐
-              ▼                  ▼                  ▼
-┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
-│  SecretsManager  │  │   KeyRegistry    │  │   SOPSManager    │
-│  (sync, validate │  │  (key lifecycle) │  │  (encrypt/decrypt│
-│   drift detect)  │  │                  │  │   key mgmt)      │
-└────────┬─────────┘  └────────┬─────────┘  └────────┬─────────┘
-         │                     │                      │
-         ▼                     ▼                      ▼
-┌──────────────────────────────────────────────────────────────────┐
-│  Storage Layer                                                    │
-│  ├─ Cluster config YAML (source of truth for secret values)      │
-│  ├─ key-registry.yaml (SOPS-encrypted key metadata)              │
-│  ├─ Age key files (~/.config/opencenter/keys/)                   │
-│  ├─ OS Keyring (optional key storage)                            │
-│  └─ Encrypted manifests (GitOps overlay secrets/)                │
-└──────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    CLI["CLI (cmd/secrets*.go)<br/>login | list | describe | get | set | delete<br/>sync | validate | encrypt | decrypt | status | keys"]
+    CLI --> SM[SecretsManager<br/>sync, validate, drift detect]
+    CLI --> KR[KeyRegistry<br/>key lifecycle]
+    CLI --> SOPS[SOPSManager<br/>encrypt/decrypt, key mgmt]
+    SM --> Storage
+    KR --> Storage
+    SOPS --> Storage
+    Storage["Storage Layer<br/>• Cluster config YAML<br/>• key-registry.yaml<br/>• Age key files<br/>• OS Keyring<br/>• Encrypted manifests"]
 ```
 
 ## Secrets Lifecycle
 
-```
-Register Key → Sync Secrets → Validate/Detect Drift → Rotate Key → [Revoke Key]
-                                                         │
-                                                    Dual-Key Period
-                                                         │
-                                                    Complete Rotation
+```mermaid
+graph LR
+    Register[Register Key] --> Sync[Sync Secrets]
+    Sync --> Validate[Validate / Detect Drift]
+    Validate --> Rotate[Rotate Key]
+    Rotate --> DualKey[Dual-Key Period]
+    DualKey --> Complete[Complete Rotation]
+    Rotate -.-> Revoke[Revoke Key]
 ```
 
 ## `internal/secrets/` — Multi-Cluster Secrets Management
@@ -152,11 +140,12 @@ type ExpirationReport struct {
 
 The `secrets` CLI commands support multiple backends:
 
-```
-secrets.backend config field → resolveBackend()
-  ├─ "barbican" → internal/barbican (OpenStack Key Manager)
-  ├─ "sops"     → internal/sops (Age encryption, local files)
-  └─ "file"     → cmd/secrets_file_backend.go (plaintext, dev only)
+```mermaid
+graph LR
+    Config["secrets.backend config field"] --> Resolve[resolveBackend]
+    Resolve --> Barbican["barbican → internal/barbican"]
+    Resolve --> SOPS["sops → internal/sops"]
+    Resolve --> File["file → cmd/secrets_file_backend.go"]
 ```
 
 ## Related Areas

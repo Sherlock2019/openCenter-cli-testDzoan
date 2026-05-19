@@ -1,40 +1,33 @@
 # GitOps Engine Codemap
 
-**Last Updated:** 2026-05-11  
+**Last Updated:** 2026-05-19  
 **Entry Point:** `internal/gitops/pipeline.go` → `PipelineGenerator`  
 **Package:** `internal/gitops`
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                  PipelineGenerator.Generate()                     │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-          ┌────────────────────┼────────────────────┐
-          ▼                    ▼                    ▼
-   Create Workspace     Validate Deps      Report Progress
-          │
-          ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  FOR EACH STAGE (topological order):                             │
-│    1. Create Checkpoint (filesystem snapshot)                     │
-│    2. Execute Stage (atomic file writes)                         │
-│    3. Validate Stage Output                                      │
-│    4. On failure → Rollback all completed stages (reverse)       │
-│    5. On success → Delete checkpoint                             │
-└─────────────────────────────────────────────────────────────────┘
-                               │
-                               ▼
-                    GenerationResult (files, duration)
+```mermaid
+graph TD
+    PG[PipelineGenerator.Generate] --> CW[Create Workspace]
+    PG --> VD[Validate Deps]
+    PG --> RP[Report Progress]
+    CW --> Loop["FOR EACH STAGE (topological order)"]
+    Loop --> CP[1. Create Checkpoint]
+    CP --> EX[2. Execute Stage]
+    EX --> VA[3. Validate Stage Output]
+    VA -->|failure| RB[Rollback completed stages]
+    VA -->|success| DC[Delete checkpoint]
+    DC --> Result[GenerationResult]
 ```
 
 ## Pipeline Stages
 
-```
-  ┌──────┐     ┌────────────┐     ┌────────┐     ┌────────────────┐     ┌──────────┐
-  │ init │────▶│ validation │     │ config │     │ infrastructure │────▶│ services │
-  └──────┘     └────────────┘     └────────┘     └────────────────┘     └──────────┘
+```mermaid
+graph LR
+    init --> validation
+    init --> config
+    init --> infrastructure
+    infrastructure --> services
 ```
 
 | Stage | File | Dependencies | Purpose |
@@ -65,6 +58,11 @@ Each stage implements: `Execute()`, `Validate()`, `Rollback()`, `DryRun()`
 | `security_scanner.go` | Leaked secrets detection | `ScanGitOpsSecrets()`, `SecretScanFinding` |
 | `overlay_files_renderers.go` | Dynamic overlay file renderers | `getOverlayFilesRenderer()` |
 | `override_values_renderers.go` | Per-service Helm values | `getOverrideValuesRenderer()` |
+| `override_values_registry.go` | Renderer registration | `RegisterOverrideValuesRenderer()`, `RegisterOverlayFilesRenderer()` |
+| `adoption.go` | Service adoption mode logic | `GetAdoptionMode()`, `IsServiceExternal()`, `ShouldRenderService()` |
+| `overlay_units_validation.go` | Overlay unit config validation | `validateOverlayUnitConfig()`, `validateSOPSOverlay()` |
+| `config_helpers.go` | Managed services list | `managedServices()` |
+| `render_diagnostics.go` | Render diagnostics output | `JSON()` method |
 | `embed.go` | Embeds templates into binary | `Files embed.FS` |
 
 ## Embedded Templates
@@ -88,35 +86,33 @@ templates/
     ├── Makefile.tpl
     ├── variables.tf.tpl
     ├── main-default.tf.tpl        # OpenStack
-    ├── main-vmware.tf.tpl         # VMware
+    ├── main-vmware.tf.tpl         # VMware (subnet_nodes from networking CIDR)
     ├── main-baremetal.tf.tpl      # Baremetal
     ├── talos/                     # Talos provider
     └── inventory/                 # Ansible inventory
 ```
 
+**VMware template notes:** `main-vmware.tf.tpl` derives `subnet_nodes` from the networking CIDR configuration and sets `kubelet_rotate_server_certificates = false` by default.
+
 ## Rendering Flow
 
-```
-Config (validated)
-  │
-  ├─ CopyBaseAtomic()
-  │    └─ Copies gitops-base-dir/ skeleton → workspace
-  │
-  ├─ RenderClusterAppsAtomic()
-  │    ├─ For each enabled service:
-  │    │   ├─ Has explicit descriptor? → planClusterAppActions()
-  │    │   │   └─ Evaluate conditions, expand roots/files, plan writes
-  │    │   └─ No descriptor? → planAutoServiceActions()
-  │    │       └─ Auto-generate: source, flux kustomization, overlay, values
-  │    ├─ Write all planned actions via AtomicWriter
-  │    ├─ Render overlay files (getOverlayFilesRenderer)
-  │    ├─ Render override values (getOverrideValuesRenderer)
-  │    └─ Render cert-manager dynamic files if enabled
-  │
-  └─ RenderInfrastructureClusterAtomic()
-       ├─ Select template by provider (openstack/vmware/baremetal/talos)
-       ├─ Render Terraform files (variables, main, outputs)
-       └─ Render Ansible inventory (if Kubespray)
+```mermaid
+graph TD
+    Config[Config validated] --> CopyBase[CopyBaseAtomic<br/>copies skeleton → workspace]
+    Config --> RenderApps[RenderClusterAppsAtomic]
+    Config --> RenderInfra[RenderInfrastructureClusterAtomic]
+
+    RenderApps --> SvcLoop[For each enabled service]
+    SvcLoop -->|has descriptor| Plan[planClusterAppActions<br/>evaluate conditions, expand, plan]
+    SvcLoop -->|no descriptor| Auto[planAutoServiceActions<br/>auto-generate source, kustomization, overlay]
+    RenderApps --> Write[Write via AtomicWriter]
+    RenderApps --> Overlay[Render overlay files]
+    RenderApps --> Values[Render override values]
+    RenderApps --> CertMgr[Render cert-manager dynamic files]
+
+    RenderInfra --> SelectTpl[Select template by provider]
+    RenderInfra --> TF[Render Terraform files]
+    RenderInfra --> Ansible[Render Ansible inventory]
 ```
 
 ## Design Patterns

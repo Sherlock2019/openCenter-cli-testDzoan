@@ -310,7 +310,7 @@ openCenter-cli/
 │   ├── config*.go         # Settings commands (Cobra Use: "settings")
 │   └── plugins.go         # Plugin management
 ├── internal/              # Internal packages
-│   ├── config/           # Configuration management (loader, builder, types, v2)
+│   ├── config/           # Configuration management (CLI settings, v2 loader, defaults, flags)
 │   ├── cluster/          # Cluster lifecycle services (init, validate, setup, bootstrap)
 │   ├── gitops/           # GitOps repository generation (pipeline, templates, rendering)
 │   ├── secrets/          # Multi-cluster secrets management (rotation, registry, hooks)

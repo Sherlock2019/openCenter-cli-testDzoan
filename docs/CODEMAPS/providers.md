@@ -1,24 +1,16 @@
 # Providers Codemap
 
-**Last Updated:** 2026-05-11  
+**Last Updated:** 2026-05-19  
 **Entry Point:** `internal/cloud/` factory pattern  
 **Packages:** `internal/cloud`, `internal/credentials`, `internal/operations`, `internal/localdev`
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    CloudProviderFactory                           │
-│  RegisterProvider(name, provider)                                 │
-│  GetProvider(name) → CloudProvider                                │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-              ┌────────────────┼────────────────┐
-              ▼                ▼                ▼
-┌──────────────────┐  ┌──────────────┐  ┌──────────────────┐
-│    OpenStack     │  │    VMware    │  │      Kind        │
-│  (drift + life)  │  │   (drift)    │  │  (lifecycle only) │
-└──────────────────┘  └──────────────┘  └──────────────────┘
+```mermaid
+graph TD
+    Factory[CloudProviderFactory] --> OS[OpenStack<br/>drift + deploy]
+    Factory --> VMW[VMware<br/>drift + deploy]
+    Factory --> Kind[Kind<br/>lifecycle only]
 ```
 
 ## Cloud Provider Interface (Drift Detection)
@@ -59,8 +51,10 @@ Severity levels: `SeverityInfo`, `SeverityWarning`, `SeverityCritical`
 
 ### VMware (`internal/cloud/vmware/`)
 
-**Capabilities:** Drift detection  
-**API Client:** govmomi (vSphere)
+**Capabilities:** Drift detection + deploy (via shared `bootstrap_provider_infra.go`)  
+**API Client:** govmomi (vSphere)  
+**Deploy flow:** OpenTofu provisions VMs → Kubespray installs K8s → FluxCD bootstrap  
+**Preflight checks:** vSphere credentials validation, bastion SSH connectivity, static node reachability
 
 ### Kind (`internal/cloud/kind/`)
 
@@ -106,19 +100,21 @@ Local development environment management:
 
 ## Integration Points
 
-```
-cmd/cluster_drift.go
-  └─ CloudProviderFactory.GetProvider(config.Infrastructure.Provider)
-       └─ provider.DetectDrift() / provider.ReconcileDrift()
+```mermaid
+graph TD
+    drift[cmd/cluster_drift.go] --> factory[CloudProviderFactory.GetProvider]
+    factory --> detect[provider.DetectDrift / ReconcileDrift]
 
-cmd/cluster_deploy.go (Kind)
-  └─ cloud/kind.CreateCluster() → WaitReady() → ExportKubeconfig()
+    deployKind[cmd/cluster_deploy.go - Kind] --> kindCreate[cloud/kind.CreateCluster]
+    kindCreate --> kindWait[WaitReady → ExportKubeconfig]
 
-cmd/cluster_destroy.go (Kind)
-  └─ cloud/kind.DeleteCluster()
+    deployCloud["cmd/cluster_deploy.go - OpenStack/VMware/Baremetal"] --> bootstrap[cluster.BootstrapService]
+    bootstrap --> infra[bootstrap_provider_infra.go]
+    infra --> tofu[OpenTofu init/plan/apply]
+    tofu --> kubespray[Kubespray → wait ready]
 
-internal/cluster/bootstrap_service.go
-  └─ Provider-specific step builders use cloud/ for readiness checks
+    destroyKind[cmd/cluster_destroy.go - Kind] --> kindDelete[cloud/kind.DeleteCluster]
+    destroyOS[cmd/cluster_destroy.go - OpenStack] --> tofuDestroy[openstack_destroy_provider → OpenTofu destroy]
 ```
 
 ## Supported Providers Matrix
@@ -126,10 +122,15 @@ internal/cluster/bootstrap_service.go
 | Provider | Init | Configure | Validate | Generate | Deploy | Drift | Destroy |
 |----------|------|-----------|----------|----------|--------|-------|---------|
 | OpenStack | ✅ | ✅ (guided) | ✅ (online) | ✅ | ✅ | ✅ | ✅ |
-| VMware | ✅ | ❌ | ✅ (offline) | ✅ | ✅ | ✅ | ✅ |
+| VMware | ✅ | ❌ | ✅ (offline) | ✅ | ✅ | ✅ | ❌ |
 | Kind | ✅ | ❌ | ✅ (offline) | ✅ | ✅ | ❌ | ✅ |
 | Baremetal | ✅ | ❌ | ✅ (offline) | ✅ | ✅ | ❌ | ❌ |
 | AWS | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+
+**Notes:**
+- VMware/Baremetal deploy shares the same bootstrap infrastructure as OpenStack (`bootstrap_provider_infra.go`)
+- `tofu` binary is preferred; falls back to `terraform` if `tofu` is not on PATH
+- Deploy no longer auto-commits to the GitOps repository
 
 ## Related Areas
 

@@ -1,6 +1,6 @@
 # CLI Commands Codemap
 
-**Last Updated:** 2026-05-11  
+**Last Updated:** 2026-05-19  
 **Entry Point:** `cmd/root.go` → `Execute()`  
 **Package:** `cmd`
 
@@ -14,6 +14,7 @@ opencenter (rootCmd)
 │   ├── active                      Show the active cluster
 │   ├── env [name]                  Export cluster environment variables
 │   ├── status [name]              Show cluster status
+│   ├── sync-status [name]         Sync service status from live cluster
 │   ├── describe [name]            Describe cluster config, paths, locks, state
 │   ├── init [name]                Initialize a new cluster configuration
 │   ├── configure [name]           Guided cluster configuration
@@ -22,10 +23,15 @@ opencenter (rootCmd)
 │   ├── normalize [name]           Add missing default fields
 │   ├── export [name]              Export effective configuration
 │   ├── validate [name]            Validate cluster configuration
+│   ├── validate-manifests [name]  (hidden) Validate generated GitOps manifests
 │   ├── doctor [name]              Check tools, credentials, provider readiness
 │   ├── generate [name]            Generate GitOps repository
+│   ├── template                   (hidden) Generate complete config template
 │   ├── deploy [name]              Deploy a cluster
 │   ├── destroy [name]             Destroy a cluster
+│   ├── rotate-keys [name]         Rotate encryption keys (alias for secrets keys rotate)
+│   ├── check-keys [name]          Check key expiration (alias for secrets keys check)
+│   ├── revoke-key [name]          Revoke encryption keys (alias for secrets keys revoke)
 │   ├── service                    Manage cluster services
 │   │   ├── enable <svc>           Enable a service
 │   │   ├── disable <svc>          Disable a service
@@ -96,21 +102,22 @@ opencenter (rootCmd)
 
 ## Registration Flow
 
-```
-main.go
-  └─ cmd.ExecuteWithContext(ctx, version)
-       ├─ Pre-parse --config-dir from os.Args
-       ├─ di.NewApp(config.ResolveClustersDir()) → typed DI graph
-       ├─ di.NewAppContainer(app) → Container interface adapter
-       ├─ context.WithValue(ctx, ContainerKey, container)
-       ├─ rootCmd.AddCommand(NewClusterCmd())
-       ├─ rootCmd.AddCommand(NewSettingsCmd())
-       ├─ rootCmd.AddCommand(NewSecretsCmd())
-       ├─ rootCmd.AddCommand(NewPluginsCmd())
-       ├─ rootCmd.AddCommand(NewVersionCmd())
-       ├─ rootCmd.AddCommand(NewShellInitCmd())
-       ├─ plugins.LoadExternalPlugins(rootCmd)  ← discovers opencenter-* binaries
-       └─ rootCmd.ExecuteContext(ctx)
+```mermaid
+graph TD
+    main[main.go] --> exec[cmd.ExecuteWithContext]
+    exec --> parse[Pre-parse --config-dir]
+    exec --> app[di.NewApp → typed DI graph]
+    exec --> container[di.NewAppContainer → Container adapter]
+    exec --> ctx[context.WithValue ContainerKey]
+    exec --> add[rootCmd.AddCommand]
+    add --> cluster[NewClusterCmd]
+    add --> settings[NewSettingsCmd]
+    add --> secrets[NewSecretsCmd]
+    add --> plugins[NewPluginsCmd]
+    add --> version[NewVersionCmd]
+    add --> shell[NewShellInitCmd]
+    exec --> extPlugins[plugins.LoadExternalPlugins]
+    exec --> run[rootCmd.ExecuteContext]
 ```
 
 ## Key Patterns
@@ -127,16 +134,30 @@ main.go
 |------|---------------|
 | `root.go` | Root command, global flags, DI setup, plugin loading |
 | `cluster.go` | Cluster parent command, subcommand registration |
+| `cluster_deploy.go` | Deploy command (no longer auto-commits to GitOps repo) |
+| `cluster_deploy_plan.go` | Deploy dry-run plan formatting |
+| `cluster_sync_status.go` | Sync service status from live cluster |
+| `cluster_template.go` | (hidden) Generate complete config template |
+| `cluster_rotate_keys.go` | Rotate encryption keys (cluster-level alias) |
+| `cluster_check_keys.go` | Check key expiration (cluster-level alias) |
+| `cluster_revoke_key.go` | Revoke encryption keys (cluster-level alias) |
+| `cluster_status_inventory.go` | Node/network inventory from OpenTofu state + live cluster |
+| `cluster_validate_manifests.go` | (hidden) Validate generated GitOps manifests |
 | `config.go` | Settings command (Cobra Use: "settings") |
 | `secrets.go` | Secrets parent + CRUD subcommands |
 | `secrets_keys.go` | Key lifecycle subcommands |
+| `secrets_keys_ops.go` | Key operations (generate, rotate, backup, validate) |
 | `secrets_sync.go` | Secrets sync command |
 | `secrets_sops.go` | Encrypt/decrypt/status commands |
+| `secrets_sops_helpers.go` | SOPS encryption/decryption helper functions |
+| `secrets_file_backend.go` | File-based secrets backend (config-mapped catalog) |
 | `secrets_router.go` | Backend routing logic |
+| `secrets_helpers.go` | Shared secrets helper functions |
 | `plugins.go` | Plugins parent + list |
 | `global_options.go` | GlobalOptions struct, parsing |
 | `config_helpers.go` | Shared config loading utilities |
-| `test_helpers.go` | Test utilities for command tests |
+| `output_helpers.go` | Output formatting helpers (JSON/YAML/text) |
+| `provider_availability.go` | Provider availability check (planned vs supported) |
 
 ## Dependencies
 

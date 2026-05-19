@@ -33,25 +33,34 @@ Commands follow the pattern `cmd/<command>_<subcommand>.go`:
 **Cluster commands** (`cluster_*.go`):
 - `cluster_init.go` - Initialize cluster configuration
 - `cluster_validate.go` - Validate configuration
-- `cluster_setup.go` - Generate GitOps repository
-- `cluster_bootstrap.go` - Deploy cluster
+- `cluster_generate.go` - Generate GitOps repository
+- `cluster_deploy.go` - Deploy cluster (no longer auto-commits)
+- `cluster_deploy_plan.go` - Deploy dry-run plan formatting
 - `cluster_edit.go` - Edit configuration interactively
-- `cluster_update.go` - Update configuration via flags
+- `cluster_set.go` - Update configuration via dot-notation flags
 - `cluster_list.go` - List clusters
-- `cluster_select.go` - Set active cluster
-- `cluster_info.go` - Show cluster details
+- `cluster_use.go` - Set active cluster
+- `cluster_describe.go` - Show cluster details
+- `cluster_status.go` - Show cluster status with inventory
 - `cluster_destroy.go` - Destroy cluster
-- `cluster_preflight.go` - Run preflight checks
 - `cluster_render.go` - Render templates without deploying
+- `cluster_drift.go` - Infrastructure drift detection/reconciliation
+- `cluster_service.go` - Service enable/disable/status
+- `cluster_backup.go` - Backup/restore operations
 
-**Secrets commands** (`secrets_*.go`, `sops_*.go`):
-- `cluster_check_keys.go` - Check SOPS key expiration
-- `cluster_rotate_keys.go` - Rotate SOPS keys
-- `cluster_validate_secrets.go` - Validate secrets encryption
-- `cluster_sync_secrets.go` - Synchronize secrets
+**Secrets commands** (`secrets_*.go`):
+- `secrets.go` - Secrets parent + CRUD subcommands
+- `secrets_keys.go` - Key lifecycle subcommands
+- `secrets_keys_ops.go` - Key operations (generate, rotate, backup, validate)
+- `secrets_sync.go` - Synchronize secrets to encrypted manifests
+- `secrets_validate.go` - Validate secrets encryption
+- `secrets_sops.go` - Encrypt/decrypt/status commands
 
 **Configuration commands** (`config_*.go`):
+- `config.go` - Settings parent command
 - `config_edit.go` - Edit global configuration
+- `config_ide.go` - IDE schema generation
+- `config_explain.go` - Explain config effects
 
 **Utility commands**:
 - `version.go` - Show version information
@@ -75,36 +84,30 @@ func newCluster<Action>Cmd() *cobra.Command {
 
 ### Configuration (internal/config/)
 
-Core configuration management:
+CLI settings management (the legacy monolithic config package was removed in May 2026):
 
-- `config.go` - Main Config struct and types
-- `schema.go` - JSON schema generation
-- `validator.go` - Validation logic (schema + business rules)
-- `loader.go` - Configuration loading from YAML
-- `manager.go` - Configuration lifecycle management
-- `path_resolver.go` - Organization-based path resolution
-- `migrator.go` - Schema migration between versions
-- `defaults/` - Default configuration templates per provider
-- `v2/` - Version 2 configuration structs
+- `cli_settings.go` - CLI user preferences, cluster defaults, plugin checksums
+- `cli_settings_helpers.go` - Path resolution from CLI config (ResolveClustersDir, GetGitOpsDir, etc.)
+- `manager.go` - Global manager singleton
+- `persistence.go` - Config/state directory resolution
+- `status.go` - Cluster status updates
+- `defaults/` - Default configuration templates per provider-region
+- `v2/` - Authoritative v2 configuration (loader, validator, manager, cache, errors, io_handler)
+- `flags/` - CLI flag parsing and struct mutation via reflection
+- `services/` - Typed service configs with dependency/provider validation
 
-**Key types:**
+**Key types (v2):**
 ```go
 type Config struct {
-    OpenCenter OpenCenterConfig
-    OpenTofu   OpenTofuConfig
-    Deployment DeploymentConfig
-    Metadata   MetadataConfig
-    Secrets    SecretsConfig
-}
-
-type OpenCenterConfig struct {
     Meta           MetaConfig
-    Secrets        SecretsBackendConfig
+    OpenCenter     OpenCenterConfig
     Infrastructure InfrastructureConfig
-    Cluster        ClusterConfig
+    Kubernetes     KubernetesConfig
     GitOps         GitOpsConfig
-    Storage        StorageConfig
-    Services       ServicesConfig
+    Services       ServiceMap
+    Secrets        SecretsConfig
+    OpenTofu       OpenTofuConfig
+    Deployment     DeploymentConfig
 }
 ```
 
@@ -147,9 +150,11 @@ SOPS and Age key management:
 
 Cloud provider adapters:
 
-- `internal/cloud/openstack/` - OpenStack preflight checks
-- `internal/provision/` - Terraform/OpenTofu provisioning
-- `internal/ansible/` - Ansible provisioning (Kubespray)
+- `internal/cloud/openstack/` - OpenStack drift detection + discovery
+- `internal/cloud/vmware/` - VMware/vSphere drift detection
+- `internal/cloud/kind/` - Kind cluster lifecycle
+- `internal/cloud/` - Provider factory, drift comparison
+- `internal/provision/` - Embedded OpenTofu/Terraform provisioning templates
 
 ### Security (internal/security/)
 
@@ -174,14 +179,14 @@ Shared utility packages:
 
 - `internal/ansible/` - Kubespray inventory generation from config
 - `internal/barbican/` - OpenStack Key Manager (Barbican) client
-- `internal/benchmarks/` - Performance benchmarks for config system
 - `internal/cluster/` - Cluster lifecycle services (init, validate, setup, bootstrap, destroy)
 - `internal/core/` - Shared path resolution (`core/paths`) and validation engine (`core/validation`)
 - `internal/credentials/` - Cloud credential extraction from config
 - `internal/di/` - Dependency injection container (App struct + reflection-based Container)
 - `internal/importer/` - Live cluster import/scan for existing workloads
 - `internal/localdev/` - Local dev environment (Kind, Gitea, Flux)
-- `internal/observability/` - Structured logging with credential masking
+- `internal/logging/` - Structured logging (global logger, level/format reconfiguration)
+- `internal/observability/` - Log shipping (Loki, syslog), migration helpers
 - `internal/operations/` - Drift detection, backup, disaster recovery
 - `internal/plugins/` - External CLI plugin discovery and checksum verification
 - `internal/resilience/` - Retry, circuit breaker, distributed locks
@@ -190,7 +195,7 @@ Shared utility packages:
 - `internal/template/` - Template engine with caching, validation, sandboxing
 - `internal/testenv/` - Test environment helpers (isolated CLI config/state)
 - `internal/testing/` - Shared test utilities (helpers, mocks, generators, benchmarks)
-- `internal/tofu/` - OpenTofu/Terraform provisioning execution
+- `internal/tofu/` - OpenTofu/Terraform provisioning execution (falls back to terraform)
 - `internal/ui/` - Prompts, error formatting, guided flows
 
 ## Testing (tests/)
@@ -221,8 +226,7 @@ User configurations stored in organization-based structure:
 ```
 ~/.config/opencenter/clusters/
 └── <organization>/
-    ├── <cluster>/
-    │   └── .<cluster>-config.yaml
+    ├── .<cluster>-config.yaml       # Cluster configuration (dot-prefixed)
     ├── secrets/
     │   ├── age/
     │   │   └── <cluster>-key.txt
@@ -296,8 +300,9 @@ if err != nil {
 
 ## File Naming Conventions
 
-- Commands: `<noun>_<verb>.go` (e.g., `cluster_init.go`)
-- Tests: `<name>_test.go` (unit), `<name>_property_test.go` (property)
+- Commands: `<noun>_<verb>.go` (e.g., `cluster_init.go`, `secrets_keys_ops.go`)
+- Tests: `<name>_test.go` (unit), `<name>_property_test.go` (property-based)
+- Integration tests: `<name>_integration_test.go`
 - Interfaces: `interfaces.go` in each package
 - Documentation: `doc.go` for package documentation
 
@@ -309,32 +314,34 @@ if err != nil {
 3. Register in `cmd/cluster.go`
 
 **To modify configuration:**
-1. Update `internal/config/config.go` (structs)
-2. Update `internal/config/schema.go` (JSON schema)
-3. Update `internal/config/defaults.go` (defaults)
+1. Update `internal/config/v2/config.go` (structs)
+2. Update `internal/config/v2/validator.go` (validation rules)
+3. Update `internal/config/v2/defaults.go` (defaults)
+4. Run `go generate ./internal/config/v2schema/` to regenerate JSON schema
 
 **To add a provider:**
-1. Create `internal/cloud/<provider>/preflight.go`
-2. Add defaults in `internal/config/defaults.go`
-3. Register in `cmd/cluster_preflight.go`
+1. Create `internal/cloud/<provider>/provider.go`
+2. Add defaults in `internal/config/defaults/<provider>.go`
+3. Add bootstrap steps in `internal/cluster/bootstrap_provider_infra.go`
+4. Add template in `internal/gitops/templates/infrastructure-cluster-template/`
 
 **To add a service:**
-1. Add defaults in `internal/config/defaults.go`
-2. Create templates in `internal/gitops/gitops-base-dir/`
-3. Add validation in `internal/config/service_validator.go`
+1. Add service config in `internal/config/services/`
+2. Create plugin in `internal/services/plugins/`
+3. Add templates in `internal/gitops/gitops-base-dir/`
+4. Add descriptor in `internal/services/descriptors/`
 
 **To add validation:**
-1. Update `internal/config/validator.go` (business rules)
-2. Update `internal/config/schema.go` (schema constraints)
-3. Add provider-specific validation in `internal/config/<provider>_validator.go`
+1. Create validator in `internal/core/validation/validators/`
+2. Register in `internal/di/providers.go`
 
 ## Code Metrics
 
-- **Total lines:** 147,952 LOC
-- **Go files:** 628 files
-- **Test files:** 276 files
-- **Internal packages:** 25 packages
-- **Commands:** 70+ command files
+- **Total lines:** ~226,000 LOC
+- **Go files:** ~710 files
+- **Test files:** ~350 files
+- **Internal packages:** 30+ packages
+- **Commands:** 50+ command files
 - **Dependencies:** 19 direct dependencies
 
 ## Architecture Patterns

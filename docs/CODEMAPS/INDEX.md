@@ -1,25 +1,23 @@
 # openCenter CLI — Codemaps Index
 
-**Last Updated:** 2026-05-11  
+**Last Updated:** 2026-05-19  
 **Module:** `github.com/opencenter-cloud/opencenter-cli`  
 **Language:** Go 1.23+  
 **Entry Point:** `main.go` → `cmd.ExecuteWithContext()`
 
 ## Architecture Overview
 
-```
-main.go
-  │
-  ├─ config.ResolveClustersDir()     → base directory
-  ├─ di.SetupContainer(baseDir)      → DI container
-  └─ cmd.ExecuteWithContext(ctx)     → Cobra root command
-       │
-       ├─ cluster   → internal/cluster (lifecycle services)
-       ├─ secrets   → internal/secrets + internal/sops
-       ├─ settings  → internal/config (CLI config)
-       ├─ plugins   → internal/plugins (external CLI plugins)
-       ├─ version   → build info (ldflags)
-       └─ shell-init → shell integration scripts
+```mermaid
+graph TD
+    main[main.go] --> resolve[config.ResolveClustersDir]
+    main --> di[di.SetupContainer]
+    main --> exec[cmd.ExecuteWithContext]
+    exec --> cluster[cluster → internal/cluster]
+    exec --> secrets[secrets → internal/secrets + internal/sops]
+    exec --> settings[settings → internal/config]
+    exec --> plugins[plugins → internal/plugins]
+    exec --> version[version → build info]
+    exec --> shell[shell-init → shell integration]
 ```
 
 ## Codemaps
@@ -40,17 +38,27 @@ main.go
 |---------|---------|---------|
 | `ansible` | Kubespray inventory generation | [Cluster Lifecycle](cluster-lifecycle.md) |
 | `barbican` | OpenStack Key Manager client | [Secrets](secrets-management.md) |
-| `benchmarks` | Performance benchmarks | — (internal tooling) |
 | `cloud` | Provider abstraction + drift detection | [Providers](providers.md) |
 | `cluster` | Lifecycle domain services | [Cluster Lifecycle](cluster-lifecycle.md) |
-| `config` | Configuration management | [Config System](config-system.md) |
-| `core` | Shared: path resolution, validation engine | [Config System](config-system.md) |
+| `config` | CLI settings management (`cli_settings.go`) | [Config System](config-system.md) |
+| `config/v2` | Authoritative config pipeline (loader, validator, manager, cache, errors, io_handler, constants) | [Config System](config-system.md) |
+| `config/defaults` | Provider-region defaults hydration | [Config System](config-system.md) |
+| `config/flags` | CLI flag parsing + path-based mutation | [Config System](config-system.md) |
+| `config/overlay` | GitOps overlay customization types | [Config System](config-system.md) |
+| `config/persistence` | Path resolution for on-disk storage | [Config System](config-system.md) |
+| `config/registry` | Config type registry | [Config System](config-system.md) |
+| `config/services` | Typed service configs + validation | [Config System](config-system.md) |
+| `config/v2schema` | JSON Schema generator for IDE support | [Config System](config-system.md) |
+| `config/validation` | Shared validation utilities | [Config System](config-system.md) |
+| `core/paths` | Path resolution, caching, identifier parsing | [Config System](config-system.md) |
+| `core/validation` | Shared validation engine with pluggable validators | [Config System](config-system.md) |
 | `credentials` | Cloud credential extraction | [Providers](providers.md) |
 | `di` | Dependency injection | [DI Container](di-container.md) |
 | `gitops` | GitOps repo generation | [GitOps Engine](gitops-engine.md) |
 | `importer` | Live cluster import/scan | [Cluster Lifecycle](cluster-lifecycle.md) |
 | `localdev` | Local dev environment (Kind, Gitea, Flux) | [Providers](providers.md) |
-| `observability` | Structured logging, credential masking | [DI Container](di-container.md) |
+| `logging` | Structured logging (global logger, reconfiguration) | [DI Container](di-container.md) |
+| `observability` | Log shipping, migration helpers | [DI Container](di-container.md) |
 | `operations` | Drift detection, backup, disaster recovery | [Providers](providers.md) |
 | `plugins` | External CLI plugin discovery | [CLI Commands](cli-commands.md) |
 | `provision` | Embedded provisioning templates | [Cluster Lifecycle](cluster-lifecycle.md) |
@@ -70,5 +78,6 @@ main.go
 
 - **Security**: `internal/security` provides audit logging, credential masking, input validation, and command sanitization used across all packages.
 - **File I/O**: `internal/util/fs.FileSystem` interface abstracts all disk operations for testability.
-- **Path Resolution**: `internal/core/paths.PathResolver` provides consistent cluster path resolution.
+- **Path Resolution**: `internal/core/paths.PathResolver` provides consistent cluster path resolution. `core/paths/identifier.go` handles cluster identifier parsing.
 - **Validation**: `internal/core/validation.ValidationEngine` is the shared validation framework with pluggable validators.
+- **Logging**: `internal/logging` provides the global structured logger with level/format reconfiguration. `internal/observability` adds log shipping (Loki, syslog).

@@ -51,7 +51,7 @@ This map helps:
 
 | Document | Audience | Purpose | Prerequisites | Evidence |
 |----------|----------|---------|---------------|----------|
-| [Getting Started](tutorials/getting-started.md) | Beginner | Create first cluster end-to-end | Mise, Git, infrastructure access | `tests/features/workflow.feature`, `internal/config/defaults.go` |
+| [Getting Started](tutorials/getting-started.md) | Beginner | Create first cluster end-to-end | Mise, Git, infrastructure access | `tests/features/workflow.feature`, `internal/config/v2/defaults.go` |
 | [OpenStack First Cluster](tutorials/openstack-first-cluster.md) | Beginner | Deploy on OpenStack specifically | OpenStack credentials | `internal/cloud/openstack/` |
 | [Kind Local Development](tutorials/kind-local-development.md) | Beginner/Developer | Local development setup | Kind installed | `.mise.toml` kind tasks |
 | [VMware Deployment](tutorials/vmware-deployment.md) | Beginner | Deploy on pre-provisioned VMs | VMware vSphere access | `internal/cloud/vmware/`, `docs/providers/vmware.md` |
@@ -63,31 +63,31 @@ This map helps:
 |----------|----------|---------|---------------|----------|
 | [Validate Configuration](how-to/validate-configuration.md) | All | Pre-deployment validation | Configuration file | `cmd/cluster_validate.go`, `internal/config/v2/validator.go` |
 | [Manage Secrets](how-to/manage-secrets.md) | Operator | SOPS encryption and key rotation | SOPS installed | `internal/sops/`, `cmd/secrets*.go` |
-| [Configure Flux Bootstrap Authentication](how-to/flux-bootstrap-methods.md) | Operator | SSH key or token auth for FluxCD | Git repository | `internal/config/types_gitops.go`, `internal/localdev/flux/service.go` |
+| [Configure Flux Bootstrap Authentication](how-to/flux-bootstrap-methods.md) | Operator | SSH key or token auth for FluxCD | Git repository | `internal/config/v2/config.go`, `internal/localdev/flux/service.go` |
 | [Customize Services](how-to/customize-services.md) | Operator | Configure platform services | Deployed cluster | `internal/config/services/` |
-| [Configure Networking](how-to/configure-networking.md) | Operator | CNI and network setup | Network knowledge | `internal/config/types_networking.go` |
+| [Configure Networking](how-to/configure-networking.md) | Operator | CNI and network setup | Network knowledge | `internal/config/v2/infrastructure.go` |
 | [Add Worker Pools](how-to/add-worker-pools.md) | Operator | Scale cluster | Running cluster | Configuration schema |
 | [Backup and Restore](how-to/backup-and-restore.md) | Operator | Disaster recovery | Velero enabled | `cmd/cluster_backup.go` |
 | [Upgrade Kubernetes](how-to/upgrade-kubernetes.md) | Operator | Safe version upgrades | Running cluster | Kubespray integration |
 | [Troubleshoot Deployment](how-to/troubleshoot-deployment.md) | All | Common issues and solutions | Deployment attempt | Error patterns from tests |
 | [Migrate Clusters](how-to/migrate-clusters.md) | Operator | Provider/region migration | Source cluster | Configuration migration |
 | [Integrate CI/CD](how-to/integrate-ci-cd.md) | Developer | Pipeline integration | CI/CD system | CLI automation patterns |
-| [Create and Install a CLI Plugin](how-to/create-install-cli-plugin.md) | Developer | Build, install, and checksum-register an external CLI plugin | Plugin binary, `shasum` | `internal/plugins/loader.go`, `internal/config/cli_config_helpers.go` |
+| [Create and Install a CLI Plugin](how-to/create-install-cli-plugin.md) | Developer | Build, install, and checksum-register an external CLI plugin | Plugin binary, `shasum` | `internal/plugins/loader.go`, `internal/config/cli_settings_helpers.go` |
 
 ### Reference (Information-Oriented)
 
 | Document | Audience | Purpose | Scope | Evidence |
 |----------|----------|---------|-------|----------|
 | [CLI Commands](reference/cli-commands.md) | All | Complete command reference | All commands, flags, examples | `cmd/*.go` |
-| [Configuration Schema](reference/configuration-schema.md) | All | Configuration file structure | All config fields | `internal/config/types*.go`, `schema/` |
-| [Default Values](reference/default-values.md) | All | Default configuration values | All defaults | `internal/config/defaults.go` |
+| [Configuration Schema](reference/configuration-schema.md) | All | Configuration file structure | All config fields | `internal/config/v2/config.go`, `schema/` |
+| [Default Values](reference/default-values.md) | All | Default configuration values | All defaults | `internal/config/v2/defaults.go`, `internal/config/defaults/` |
 | [Platform Services](reference/platform-services.md) | Operator | Available services and versions | All services | `internal/config/services/` |
 | [Providers](reference/providers.md) | Operator | Infrastructure provider details | OpenStack, VMware, Baremetal, Kind | `internal/cloud/` |
 | [Validation Rules](reference/validation-rules.md) | All | Configuration constraints | All validation rules | `internal/core/validation/` |
 | [Environment Variables](reference/environment-variables.md) | All | Environment configuration | All env vars | `cmd/root.go`, `internal/config/` |
 | [Exit Codes](reference/exit-codes.md) | Developer | CLI exit codes and meanings | All exit codes | `cmd/*.go` error handling |
-| [File Locations](reference/file-locations.md) | All | Configuration file paths | All file paths | `internal/config/paths.go` |
-| [Configuration Precedence](reference/configuration-precedence.md) | All | Flag/env/config/default resolution order | All config sources | `cmd/root.go`, `internal/config/cli_config_helpers.go` |
+| [File Locations](reference/file-locations.md) | All | Configuration file paths | All file paths | `internal/core/paths/resolver.go` |
+| [Configuration Precedence](reference/configuration-precedence.md) | All | Flag/env/config/default resolution order | All config sources | `cmd/root.go`, `internal/config/cli_settings_helpers.go` |
 | [Audit Signing Key](reference/audit-key.md) | Operator/Security | HMAC key for audit log integrity | Key lifecycle, verification | `internal/security/audit_logger.go` |
 | [Mise Tasks](reference/mise-tasks.md) | Developer | Development and build tasks | All mise tasks | `.mise.toml` |
 
@@ -244,6 +244,6 @@ This documentation is based on:
 
 ---
 
-**Last Updated:** 2026-05-11
+**Last Updated:** 2026-05-19
 **Maintainer:** openCenter CLI Team
 **Framework:** [Diátaxis](https://diataxis.fr/)

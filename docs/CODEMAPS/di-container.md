@@ -6,17 +6,16 @@
 
 ## Architecture
 
-```
-main.go
-  └─ di.SetupContainer(baseDir)
-       ├─ Creates DIContainer (reflection-based)
-       ├─ Registers all singletons
-       └─ Returns Container interface
+```mermaid
+graph TD
+    main[main.go] --> setup[di.SetupContainer]
+    setup --> container[DIContainer - reflection-based]
+    setup --> singletons[Registers all singletons]
+    setup --> iface[Returns Container interface]
 
-cmd/root.go (alternative path)
-  └─ di.NewApp(baseDir)
-       ├─ Builds typed App struct (explicit wiring)
-       └─ di.NewAppContainer(app) → Container adapter
+    root[cmd/root.go] --> app[di.NewApp]
+    app --> typed[Builds typed App struct]
+    app --> adapter[di.NewAppContainer → Container adapter]
 ```
 
 Two approaches coexist:
@@ -92,34 +91,23 @@ type App struct {
 
 ## Dependency Graph
 
-```
-Logger
-  │
-  ├─▶ PathResolver(baseDir)
-  │     │
-  │     ├─▶ ConfigManager
-  │     │     │
-  │     │     └─▶ InitService
-  │     │         ConfigureService
-  │     │         ValidateService
-  │     │         SetupService
-  │     │         BootstrapService
-  │     │
-  │     └─▶ AuditLogger
-  │
-  ├─▶ ValidationEngine
-  │
-  ├─▶ InputValidator
-  │
-  ├─▶ CredentialMasker
-  │
-  ├─▶ CommandSanitizer
-  │     │
-  │     └─▶ CommandRunner
-  │
-  └─▶ ErrorHandler
-        │
-        └─▶ ErrorFormatter
+```mermaid
+graph TD
+    Logger --> PathResolver
+    PathResolver --> ConfigManager
+    ConfigManager --> InitService
+    ConfigManager --> ConfigureService
+    ConfigManager --> ValidateService
+    ConfigManager --> SetupService
+    ConfigManager --> BootstrapService
+    PathResolver --> AuditLogger
+    Logger --> ValidationEngine
+    Logger --> InputValidator
+    Logger --> CredentialMasker
+    Logger --> CommandSanitizer
+    CommandSanitizer --> CommandRunner
+    Logger --> ErrorHandler
+    ErrorHandler --> ErrorFormatter
 ```
 
 ## DIContainer (Reflection-Based)
