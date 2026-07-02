@@ -59,6 +59,7 @@ Pages are organised by **lifecycle category**, not by Diátaxis type:
 |------|-------------|
 | [cli-commands](reference/cli-commands.md) | Full CLI command tree |
 | [configuration-schema](reference/configuration-schema.md) | Cluster config YAML schema |
+| [gitops-configuration](reference/gitops-configuration.adoc) | GitOps section field reference |
 | [configuration-precedence](reference/configuration-precedence.md) | Config override order |
 | [default-values](reference/default-values.md) | Default config values |
 | [environment-variables](reference/environment-variables.md) | Env var reference |

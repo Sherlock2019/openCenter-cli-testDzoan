@@ -208,6 +208,7 @@ attribute. Build the site locally with Antora — see
 ### 📖 Reference
 - [CLI Commands](docs/modules/ROOT/pages/reference/cli-commands.adoc)
 - [Configuration Schema](docs/modules/ROOT/pages/reference/configuration-schema.adoc)
+- [GitOps Configuration](docs/modules/ROOT/pages/reference/gitops-configuration.adoc)
 - [Configuration Precedence](docs/modules/ROOT/pages/reference/configuration-precedence.adoc)
 - [Default Values](docs/modules/ROOT/pages/reference/default-values.adoc)
 - [Environment Variables](docs/modules/ROOT/pages/reference/environment-variables.adoc)
