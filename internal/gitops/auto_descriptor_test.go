@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	descriptorcfg "github.com/opencenter-cloud/opencenter-cli/internal/services/descriptors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -76,6 +76,56 @@ func TestBuildAutoServiceContextSharedSource(t *testing.T) {
 
 	assert.Equal(t, "opencenter-observability", ctx.SourceName)
 	assert.Equal(t, "applications/base/services/observability/loki/enterprise", ctx.BasePath)
+}
+
+func TestBuildAutoServiceContext_ReleaseTag(t *testing.T) {
+	base := &services.BaseConfig{
+		Enabled:   true,
+		Namespace: "test-ns",
+	}
+
+	t.Run("uses release as tag when set", func(t *testing.T) {
+		cfg := newAutoTestConfig("tag-cluster")
+		cfg.OpenCenter.GitOps.BaseRepo.Release = "2026.01.2"
+
+		ctx := buildAutoServiceContext("test-svc", base, cfg)
+
+		assert.Equal(t, "2026.01.2", ctx.RepoTag)
+		assert.Empty(t, ctx.RepoBranch)
+	})
+
+	t.Run("falls back to branch when release is empty", func(t *testing.T) {
+		cfg := newAutoTestConfig("branch-cluster")
+		cfg.OpenCenter.GitOps.BaseRepo.Release = ""
+		cfg.OpenCenter.GitOps.BaseRepo.Branch = "develop"
+
+		ctx := buildAutoServiceContext("test-svc", base, cfg)
+
+		assert.Empty(t, ctx.RepoTag)
+		assert.Equal(t, "develop", ctx.RepoBranch)
+	})
+}
+
+func TestRenderAutoServiceActions_WithReleaseTag(t *testing.T) {
+	ctx := autoServiceContext{
+		ServiceName:       "sealed-secrets",
+		Namespace:         "sealed-secrets",
+		SourceName:        "opencenter-sealed-secrets",
+		BasePath:          "applications/base/services/sealed-secrets",
+		HasOverrideValues: true,
+		ClusterName:       "k8s-prod",
+		BaseRepoURL:       "ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git",
+		RepoTag:           "2026.01.2",
+		IsSSH:             true,
+		FluxInterval:      "15m",
+	}
+
+	actions, err := renderAutoServiceActions(ctx, newAutoTestConfig(ctx.ClusterName))
+	require.NoError(t, err)
+
+	// Source should use tag, not branch
+	assert.Contains(t, actions[0].Content, "tag: 2026.01.2")
+	assert.NotContains(t, actions[0].Content, "branch:")
 }
 
 func TestRenderAutoServiceActions_TwoStage(t *testing.T) {
@@ -219,7 +269,6 @@ func TestRenderAutoServiceActions_EnterpriseRegistry(t *testing.T) {
 	assert.Contains(t, kustContent, "- httproute.yaml")
 	assert.Contains(t, kustContent, `"../global/rackspace-registry/"`)
 }
-
 
 func TestRenderAutoServiceActions_BaseOnly(t *testing.T) {
 	ctx := autoServiceContext{

@@ -226,10 +226,12 @@ func (v *ManifestValidator) validateGitRepository(file string) {
 			}
 		}
 
-		// Check ref uses branch not tag
+		// Check ref uses branch or tag (both are valid: branch for development, tag for releases)
 		if ref, ok := spec["ref"].(map[string]interface{}); ok {
-			if _, hasTag := ref["tag"]; hasTag {
-				v.errors = append(v.errors, fmt.Sprintf("%s: should use 'branch: main' not 'tag: v0.1.0'", file))
+			if _, hasBranch := ref["branch"]; !hasBranch {
+				if _, hasTag := ref["tag"]; !hasTag {
+					v.errors = append(v.errors, fmt.Sprintf("%s: ref should contain either 'branch' or 'tag'", file))
+				}
 			}
 		}
 	}

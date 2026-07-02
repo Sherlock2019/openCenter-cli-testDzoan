@@ -20,37 +20,38 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
-	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config/services"
+	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	descriptorcfg "github.com/opencenter-cloud/opencenter-cli/internal/services/descriptors"
 )
 
 // autoServiceContext holds the data passed to generic service templates.
 type autoServiceContext struct {
-	ServiceName             string
-	Namespace               string
-	SourceName              string
-	BasePath                string
-	Edition                 string
-	SingleStage             bool
-	BaseOnly                bool
-	KustomizationName       string
-	HasOverrideValues       bool
-	EnterpriseRegistry      bool
-	CustomResources         []string
-	ExtraDependencies       []string
-	OverrideDependsOn       []string
-	OverrideValues          string
+	ServiceName               string
+	Namespace                 string
+	SourceName                string
+	BasePath                  string
+	Edition                   string
+	SingleStage               bool
+	BaseOnly                  bool
+	KustomizationName         string
+	HasOverrideValues         bool
+	EnterpriseRegistry        bool
+	CustomResources           []string
+	ExtraDependencies         []string
+	OverrideDependsOn         []string
+	OverrideValues            string
 	OverrideValuesRendererKey string
 	KustomizationContent      string
 	OverlayFilesRendererKey   string
-	ClusterName             string
-	BaseRepoURL             string
-	RepoBranch              string
-	IsSSH                   bool
-	FluxInterval            string
-	Force                   bool
-	Suspend                 bool
+	ClusterName               string
+	BaseRepoURL               string
+	RepoBranch                string
+	RepoTag                   string
+	IsSSH                     bool
+	FluxInterval              string
+	Force                     bool
+	Suspend                   bool
 }
 
 // planAutoServiceActions generates render actions for enabled services that lack
@@ -123,12 +124,21 @@ func extractBaseConfig(serviceCfg any) *services.BaseConfig {
 // buildAutoServiceContext populates the template context from config.
 func buildAutoServiceContext(serviceName string, base *services.BaseConfig, cfg v2.Config) autoServiceContext {
 	baseRepoURL := cfg.OpenCenter.GitOps.BaseRepo.URL
+	release := cfg.OpenCenter.GitOps.BaseRepo.Release
 	branch := cfg.OpenCenter.GitOps.BaseRepo.Branch
-	if branch == "" {
-		branch = cfg.OpenCenter.GitOps.Repository.Branch
-	}
-	if branch == "" {
-		branch = "main"
+
+	// When a release tag is set, use it as the git ref (tag). Otherwise fall
+	// back to branch tracking.
+	var repoTag string
+	if release != "" {
+		repoTag = release
+	} else {
+		if branch == "" {
+			branch = cfg.OpenCenter.GitOps.Repository.Branch
+		}
+		if branch == "" {
+			branch = "main"
+		}
 	}
 
 	interval := cfg.OpenCenter.GitOps.Flux.Interval
@@ -167,6 +177,7 @@ func buildAutoServiceContext(serviceName string, base *services.BaseConfig, cfg 
 		ClusterName:               cfg.ClusterName(),
 		BaseRepoURL:               baseRepoURL,
 		RepoBranch:                branch,
+		RepoTag:                   repoTag,
 		IsSSH:                     !strings.HasPrefix(baseRepoURL, "https://"),
 		FluxInterval:              interval,
 		Force:                     adoption.Force,
@@ -312,7 +323,11 @@ spec:
   interval: 15m
   url: {{ .BaseRepoURL }}
   ref:
+{{- if .RepoTag }}
+    tag: {{ .RepoTag }}
+{{- else }}
     branch: {{ .RepoBranch }}
+{{- end }}
 {{- if .IsSSH }}
   secretRef:
     name: opencenter-base

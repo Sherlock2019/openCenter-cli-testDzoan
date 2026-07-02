@@ -404,8 +404,7 @@ spec:
   url: ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git
   ref:
     tag: v0.1.0`,
-			wantErrors:  1,
-			errorSubstr: "branch: main",
+			wantErrors: 0,
 		},
 	}
 
