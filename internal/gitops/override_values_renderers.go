@@ -101,7 +101,7 @@ const vsphereCsiTemplate = `global:
       enabled: true
     storageclass:
       enabled: true
-      name: "{{ .OpenCenter.Storage.DefaultStorageClass }}"
+      name: "{{ .OpenCenter.Infrastructure.Storage.DefaultStorageClass }}"
       storagepolicyname: ""
       expansion: true
       default: true
@@ -334,13 +334,13 @@ mimir:
             compactor_blocks_retention_period: 14d
 compactor:
     persistentVolume:
-        storageClassName: {{ .OpenCenter.Storage.DefaultStorageClass }}
+        storageClassName: {{ .OpenCenter.Infrastructure.Storage.DefaultStorageClass }}
         size: 20Gi
 distributor:
     replicas: 2
 ingester:
     persistentVolume:
-        storageClassName: {{ .OpenCenter.Storage.DefaultStorageClass }}
+        storageClassName: {{ .OpenCenter.Infrastructure.Storage.DefaultStorageClass }}
         size: 15Gi
     replicas: 3
     topologySpreadConstraints: {}
@@ -382,7 +382,7 @@ ruler:
     enabled: false
 store_gateway:
     persistentVolume:
-        storageClassName: {{ .OpenCenter.Storage.DefaultStorageClass }}
+        storageClassName: {{ .OpenCenter.Infrastructure.Storage.DefaultStorageClass }}
         size: 15Gi
     replicas: 3
     topologySpreadConstraints: {}
