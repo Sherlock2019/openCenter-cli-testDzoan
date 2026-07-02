@@ -21,7 +21,7 @@ const (
 	defaultCiliumChartVersion  = "1.19.3"
 	defaultKubeOVNChartVersion = "v1.17.0"
 
-	defaultCalicoChartVersion = "v3.32.0"
+	defaultCalicoChartVersion = "v3.31.6"
 	calicoHelmRepo            = "https://docs.tigera.io/calico/charts"
 	calicoHelmRepoName        = "projectcalico"
 	calicoHelmChart           = "projectcalico/tigera-operator"

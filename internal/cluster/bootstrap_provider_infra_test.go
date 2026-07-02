@@ -277,9 +277,9 @@ func TestOpenStackCalicoSelectionAcceptsAnyVersion(t *testing.T) {
 		input string
 		want  string
 	}{
-		{"", "v3.32.0"},
-		{"3.32.0", "v3.32.0"},
-		{"v3.32.0", "v3.32.0"},
+		{"", "v3.31.6"},
+		{"3.31.6", "v3.31.6"},
+		{"v3.31.6", "v3.31.6"},
 		{"3.31.0", "v3.31.0"},
 		{"v3.33.1", "v3.33.1"},
 	}

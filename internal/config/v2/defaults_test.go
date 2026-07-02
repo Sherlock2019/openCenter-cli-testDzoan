@@ -71,8 +71,8 @@ func TestNewV2DefaultProviders(t *testing.T) {
 				if cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico == nil {
 					t.Fatal("OpenStack default Calico config is nil")
 				}
-				if got := cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Version; got != "3.32.0" {
-					t.Fatalf("OpenStack default Calico version = %q, want 3.32.0", got)
+				if got := cfg.OpenCenter.Cluster.Kubernetes.NetworkPlugin.Calico.Version; got != "3.31.6" {
+					t.Fatalf("OpenStack default Calico version = %q, want 3.31.6", got)
 				}
 			}
 			if (cfg.OpenCenter.Infrastructure.Cloud.VMware != nil) != tt.expectVMware {
