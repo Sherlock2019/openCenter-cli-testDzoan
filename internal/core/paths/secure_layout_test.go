@@ -216,6 +216,170 @@ func TestResolveWithFallbackUsesOnlyNewStateLayout(t *testing.T) {
 	}
 }
 
+// TestGitOpsRepoWithInfrastructureDirIsNotLegacy verifies that a git-initialized
+// GitOps repository containing only infrastructure/clusters/<name> (as created
+// by cluster init) is NOT flagged as a legacy layout. Regression test for a
+// false-positive where the presence of infrastructure/clusters/<name> alone was
+// incorrectly treated as a legacy marker.
+func TestGitOpsRepoWithInfrastructureDirIsNotLegacy(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	clustersRoot := filepath.Join(root, "clusters")
+	blueprintsRoot := filepath.Join(clustersRoot, "blueprints")
+	gitopsRoot := filepath.Join(root, "gitops")
+	stateRoot := filepath.Join(root, "state")
+	secretsRoot := filepath.Join(root, "secrets")
+
+	organization := "my-org"
+	clusterName := "my-cluster"
+
+	// Simulate what cluster init does: create the org directory inside
+	// ClustersDir with .git and infrastructure/clusters/<name>.
+	orgDir := filepath.Join(clustersRoot, organization)
+	if err := os.MkdirAll(filepath.Join(orgDir, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(orgDir, "infrastructure", "clusters", clusterName), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(orgDir, "applications", "overlays", clusterName), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Set up a valid blueprint so the cluster can be resolved.
+	if err := os.MkdirAll(filepath.Join(blueprintsRoot, organization, clusterName), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(blueprintsRoot, organization, clusterName, clusterName+"-config.yaml"),
+		[]byte("schema_version: \"2.0\"\n"), 0o600,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	resolver := NewPathResolverWithRoots(clustersRoot, blueprintsRoot, gitopsRoot, stateRoot, secretsRoot, DefaultResolutionOptions())
+
+	// CanResolve must not return a LegacyLayoutError.
+	strategy := NewOrgBasedStrategyWithRoots(resolver.GetRoots())
+	canResolve, err := strategy.CanResolve(context.Background(), clusterName, organization)
+	if err != nil {
+		if _, ok := err.(*LegacyLayoutError); ok {
+			t.Fatalf("CanResolve() returned LegacyLayoutError for a valid GitOps repo with only infrastructure dirs")
+		}
+		t.Fatalf("CanResolve() unexpected error: %v", err)
+	}
+	if !canResolve {
+		t.Log("CanResolve() = false (blueprint not in gitops zone), which is acceptable")
+	}
+
+	// detectLegacyLayoutForCluster must not return a LegacyLayoutError.
+	if err := resolver.detectLegacyLayoutForCluster(clusterName); err != nil {
+		if _, ok := err.(*LegacyLayoutError); ok {
+			t.Fatalf("detectLegacyLayoutForCluster() returned LegacyLayoutError for a valid GitOps repo with only infrastructure dirs")
+		}
+		t.Fatalf("detectLegacyLayoutForCluster() unexpected error: %v", err)
+	}
+}
+
+// TestGitOpsRepoWithSecretsIsLegacy verifies that a git repo with a secrets/
+// directory is still correctly detected as a legacy layout.
+func TestGitOpsRepoWithSecretsIsLegacy(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	clustersRoot := filepath.Join(root, "clusters")
+	blueprintsRoot := filepath.Join(clustersRoot, "blueprints")
+	gitopsRoot := filepath.Join(root, "gitops")
+	stateRoot := filepath.Join(root, "state")
+	secretsRoot := filepath.Join(root, "secrets")
+
+	organization := "legacy-org"
+	clusterName := "legacy-cluster"
+
+	// Create org directory with .git, infrastructure dirs, AND secrets (legacy).
+	orgDir := filepath.Join(clustersRoot, organization)
+	if err := os.MkdirAll(filepath.Join(orgDir, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(orgDir, "infrastructure", "clusters", clusterName), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(orgDir, "secrets"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	resolver := NewPathResolverWithRoots(clustersRoot, blueprintsRoot, gitopsRoot, stateRoot, secretsRoot, DefaultResolutionOptions())
+
+	// detectLegacyLayoutForCluster MUST return a LegacyLayoutError.
+	err := resolver.detectLegacyLayoutForCluster(clusterName)
+	if err == nil {
+		t.Fatal("detectLegacyLayoutForCluster() = nil, want LegacyLayoutError for layout with secrets dir")
+	}
+	if _, ok := err.(*LegacyLayoutError); !ok {
+		t.Fatalf("detectLegacyLayoutForCluster() error = %T %v, want LegacyLayoutError", err, err)
+	}
+
+	// Strategy's rejectLegacyLayout must also flag it.
+	strategy := NewOrgBasedStrategyWithRoots(resolver.GetRoots())
+	_, err = strategy.CanResolve(context.Background(), clusterName, organization)
+	if err == nil {
+		t.Fatal("CanResolve() = nil error, want LegacyLayoutError for layout with secrets dir")
+	}
+	if _, ok := err.(*LegacyLayoutError); !ok {
+		t.Fatalf("CanResolve() error = %T %v, want LegacyLayoutError", err, err)
+	}
+}
+
+// TestGitOpsRepoWithDotConfigFileIsLegacy verifies that a git repo with a
+// .<cluster>-config.yaml file is correctly detected as a legacy layout.
+func TestGitOpsRepoWithDotConfigFileIsLegacy(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	clustersRoot := filepath.Join(root, "clusters")
+	blueprintsRoot := filepath.Join(clustersRoot, "blueprints")
+	gitopsRoot := filepath.Join(root, "gitops")
+	stateRoot := filepath.Join(root, "state")
+	secretsRoot := filepath.Join(root, "secrets")
+
+	organization := "config-org"
+	clusterName := "config-cluster"
+
+	// Create org directory with .git and a dot-config file (legacy marker).
+	orgDir := filepath.Join(clustersRoot, organization)
+	if err := os.MkdirAll(filepath.Join(orgDir, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(orgDir, "."+clusterName+"-config.yaml"),
+		[]byte("schema_version: \"2.0\"\n"), 0o600,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	resolver := NewPathResolverWithRoots(clustersRoot, blueprintsRoot, gitopsRoot, stateRoot, secretsRoot, DefaultResolutionOptions())
+
+	// detectLegacyLayoutForCluster MUST return a LegacyLayoutError.
+	err := resolver.detectLegacyLayoutForCluster(clusterName)
+	if err == nil {
+		t.Fatal("detectLegacyLayoutForCluster() = nil, want LegacyLayoutError for layout with dot-config file")
+	}
+	if _, ok := err.(*LegacyLayoutError); !ok {
+		t.Fatalf("detectLegacyLayoutForCluster() error = %T %v, want LegacyLayoutError", err, err)
+	}
+
+	// Strategy's rejectLegacyLayout must also flag it.
+	strategy := NewOrgBasedStrategyWithRoots(resolver.GetRoots())
+	_, err = strategy.CanResolve(context.Background(), clusterName, organization)
+	if err == nil {
+		t.Fatal("CanResolve() = nil error, want LegacyLayoutError for layout with dot-config file")
+	}
+	if _, ok := err.(*LegacyLayoutError); !ok {
+		t.Fatalf("CanResolve() error = %T %v, want LegacyLayoutError", err, err)
+	}
+}
+
 func TestResolveWithFallbackRejectsLegacyLayoutEvenWhenSecureStateExists(t *testing.T) {
 	root := t.TempDir()
 	clustersRoot := filepath.Join(root, "clusters")

@@ -644,10 +644,13 @@ func (r *PathResolver) detectLegacyLayoutForCluster(clusterName string) error {
 		if _, err := os.Stat(filepath.Join(orgDir, ".git")); err != nil {
 			continue
 		}
+		// Only flag as legacy if secrets or config files are co-located with
+		// the git-tracked GitOps manifests. The presence of
+		// infrastructure/clusters/<name> alone is expected in a valid GitOps
+		// repository and does not indicate a legacy mixed layout.
 		legacyPaths := []string{
 			filepath.Join(orgDir, "secrets"),
 			filepath.Join(orgDir, "."+clusterName+"-config.yaml"),
-			filepath.Join(orgDir, "infrastructure", "clusters", clusterName),
 		}
 		for _, path := range legacyPaths {
 			if _, err := os.Stat(path); err == nil {
