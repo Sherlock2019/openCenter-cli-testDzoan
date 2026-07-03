@@ -51,11 +51,8 @@ ALLOWED_DOC_TYPES = {"tutorial", "how-to", "reference", "explanation"}
 # that do not represent reader-facing pages and so are exempt from the
 # steering rule.
 DEFAULT_IGNORES = (
-    "docs/modules/**",            # Antora tree (slated for removal).
     "docs/CODEMAPS/**",           # Internal architectural maps.
     "docs/superpowers/**",        # Internal automation specs.
-    "docs/antora.yml",
-    "docs/local-playbook.yml",
     "docs/README.md",             # Repo-navigation README, not a doc page.
 )
 

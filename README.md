@@ -40,7 +40,7 @@ $EDITOR ~/.config/opencenter/clusters/my-org/.my-cluster-config.yaml
 
 **Time to first cluster:** 10 minutes configuration + 30-50 minutes deployment
 
-See [Getting Started](docs/modules/ROOT/pages/getting-started/getting-started.adoc) for the full walkthrough.
+See [Getting Started](docs/getting-started/getting-started.md) for the full walkthrough.
 
 ## Key Capabilities
 
@@ -91,7 +91,7 @@ secrets:
       - age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p
 ```
 
-See [Configuration Schema Reference](docs/modules/ROOT/pages/reference/configuration-schema.adoc) for the complete structure.
+See [Configuration Schema Reference](docs/reference/configuration-schema.md) for the complete structure.
 
 ## CLI Commands Quick Reference
 
@@ -173,80 +173,79 @@ opencenter shell-init                          # Output shell integration script
 opencenter --help                              # Show help
 ```
 
-See [CLI Commands Reference](docs/modules/ROOT/pages/reference/cli-commands.adoc) for the full command tree.
+See [CLI Commands Reference](docs/reference/cli-commands.md) for the full command tree.
 
 ## Documentation
 
-The published documentation is built from the AsciiDoc tree under
-`docs/modules/ROOT/pages/`, organised by lifecycle category. Each page records
-its Diátaxis type (`task`, `reference`, or `concept`) in its `:page-type:`
-attribute. Build the site locally with Antora — see
-[`docs/README.md`](docs/README.md).
+Documentation is written in Markdown with YAML frontmatter, organised by
+lifecycle category following the [Diátaxis](https://diataxis.fr/) framework.
+See [`docs/README.md`](docs/README.md) for layout, editing rules, and the
+complete site map.
 
 ### 🚀 Getting Started
-- [Getting Started](docs/modules/ROOT/pages/getting-started/getting-started.adoc) — first cluster end-to-end
-- [Kind Local Development](docs/modules/ROOT/pages/getting-started/kind-local-development.adoc)
-- [OpenStack First Cluster](docs/modules/ROOT/pages/getting-started/openstack-first-cluster.adoc)
-- [VMware Deployment](docs/modules/ROOT/pages/getting-started/vmware-deployment.adoc)
-- [Multi-Cluster Deployment](docs/modules/ROOT/pages/getting-started/multi-cluster-setup.adoc)
+- [Getting Started](docs/getting-started/getting-started.md) — first cluster end-to-end
+- [Kind Local Development](docs/getting-started/kind-local-development.md)
+- [OpenStack First Cluster](docs/getting-started/openstack-first-cluster.md)
+- [VMware Deployment](docs/getting-started/vmware-deployment.md)
+- [Multi-Cluster Deployment](docs/getting-started/multi-cluster-setup.md)
 
 ### 🔧 Operations (How-To)
-- [Validate Configuration](docs/modules/ROOT/pages/operations/validate-configuration.adoc)
-- [Manage Secrets](docs/modules/ROOT/pages/operations/manage-secrets.adoc)
-- [Customize Services](docs/modules/ROOT/pages/operations/customize-services.adoc)
-- [Configure Networking](docs/modules/ROOT/pages/operations/configure-networking.adoc)
-- [Add Worker Pools](docs/modules/ROOT/pages/operations/add-worker-pools.adoc)
+- [Validate Configuration](docs/operations/validate-configuration.md)
+- [Manage Secrets](docs/operations/manage-secrets.md)
+- [Customize Services](docs/operations/customize-services.md)
+- [Configure Networking](docs/operations/configure-networking.md)
+- [Add Worker Pools](docs/operations/add-worker-pools.md)
 - [Manage Worker Pools](docs/operations/manage-worker-pools.md)
-- [Backup and Restore](docs/modules/ROOT/pages/operations/backup-and-restore.adoc)
-- [Upgrade Kubernetes](docs/modules/ROOT/pages/operations/upgrade-kubernetes.adoc)
-- [Migrate Clusters](docs/modules/ROOT/pages/operations/migrate-clusters.adoc)
-- [Troubleshoot Deployment](docs/modules/ROOT/pages/operations/troubleshoot-deployment.adoc)
-- [Integrate CI/CD](docs/modules/ROOT/pages/operations/integrate-ci-cd.adoc)
-- [Create and Install a CLI Plugin](docs/modules/ROOT/pages/operations/create-install-cli-plugin.adoc)
-- [Flux Bootstrap Methods](docs/modules/ROOT/pages/operations/flux-bootstrap-methods.adoc)
+- [Backup and Restore](docs/operations/backup-and-restore.md)
+- [Upgrade Kubernetes](docs/operations/upgrade-kubernetes.md)
+- [Migrate Clusters](docs/operations/migrate-clusters.md)
+- [Troubleshoot Deployment](docs/operations/troubleshoot-deployment.md)
+- [Integrate CI/CD](docs/operations/integrate-ci-cd.md)
+- [Create and Install a CLI Plugin](docs/operations/create-install-cli-plugin.md)
+- [Flux Bootstrap Methods](docs/operations/flux-bootstrap-methods.md)
 
 ### 📖 Reference
-- [CLI Commands](docs/modules/ROOT/pages/reference/cli-commands.adoc)
-- [Configuration Schema](docs/modules/ROOT/pages/reference/configuration-schema.adoc)
-- [GitOps Configuration](docs/modules/ROOT/pages/reference/gitops-configuration.adoc)
-- [Configuration Precedence](docs/modules/ROOT/pages/reference/configuration-precedence.adoc)
-- [Default Values](docs/modules/ROOT/pages/reference/default-values.adoc)
-- [Environment Variables](docs/modules/ROOT/pages/reference/environment-variables.adoc)
-- [Exit Codes](docs/modules/ROOT/pages/reference/exit-codes.adoc)
-- [File Locations](docs/modules/ROOT/pages/reference/file-locations.adoc)
-- [Validation Rules](docs/modules/ROOT/pages/reference/validation-rules.adoc)
-- [Platform Services](docs/modules/ROOT/pages/reference/platform-services.adoc)
-- [Providers](docs/modules/ROOT/pages/reference/providers.adoc)
-- [Audit Signing Key](docs/modules/ROOT/pages/reference/audit-key.adoc)
-- [Mise Tasks](docs/modules/ROOT/pages/reference/mise-tasks.adoc)
+- [CLI Commands](docs/reference/cli-commands.md)
+- [Configuration Schema](docs/reference/configuration-schema.md)
+- [GitOps Configuration](docs/reference/gitops-configuration.md)
+- [Configuration Precedence](docs/reference/configuration-precedence.md)
+- [Default Values](docs/reference/default-values.md)
+- [Environment Variables](docs/reference/environment-variables.md)
+- [Exit Codes](docs/reference/exit-codes.md)
+- [File Locations](docs/reference/file-locations.md)
+- [Validation Rules](docs/reference/validation-rules.md)
+- [Platform Services](docs/reference/platform-services.md)
+- [Providers](docs/reference/providers.md)
+- [Audit Signing Key](docs/reference/audit-key.md)
+- [Mise Tasks](docs/reference/mise-tasks.md)
 
 ### 🌐 Providers
-- [Providers Overview](docs/modules/ROOT/pages/providers/README.adoc)
-- [VMware Provider Guide](docs/modules/ROOT/pages/providers/vmware.adoc)
-- [VMware Quick Start](docs/modules/ROOT/pages/providers/vmware-quick-start.adoc)
-- [VMware Terraform Template](docs/modules/ROOT/pages/providers/vmware-terraform-template.adoc)
+- [Providers Overview](docs/providers/README.md)
+- [VMware Provider Guide](docs/providers/vmware.md)
+- [VMware Quick Start](docs/providers/vmware-quick-start.md)
+- [VMware Terraform Template](docs/providers/vmware-terraform-template.md)
 
 ### 💡 Concepts (Explanation)
-- [Architecture](docs/modules/ROOT/pages/concepts/architecture.adoc)
-- [Reference Architecture](docs/modules/ROOT/pages/concepts/reference-architecture.adoc)
-- [GitOps Workflow](docs/modules/ROOT/pages/concepts/gitops-workflow.adoc)
-- [Configuration Lifecycle](docs/modules/ROOT/pages/concepts/configuration-lifecycle.adoc)
-- [Security Model](docs/modules/ROOT/pages/concepts/security-model.adoc)
-- [Services and Templates](docs/modules/ROOT/pages/concepts/services-templates.adoc)
-- [Drift Detection](docs/modules/ROOT/pages/concepts/drift-detection.adoc)
-- [Plugin Internal Services](docs/modules/ROOT/pages/concepts/plugin-internal-services.adoc)
-- [Plugin External CLI](docs/modules/ROOT/pages/concepts/plugin-external-cli.adoc)
-- [Provider Comparison](docs/modules/ROOT/pages/concepts/provider-comparison.adoc)
+- [Architecture](docs/concepts/architecture.md)
+- [Reference Architecture](docs/concepts/reference-architecture.md)
+- [GitOps Workflow](docs/concepts/gitops-workflow.md)
+- [Configuration Lifecycle](docs/concepts/configuration-lifecycle.md)
+- [Security Model](docs/concepts/security-model.md)
+- [Services and Templates](docs/concepts/services-templates.md)
+- [Drift Detection](docs/concepts/drift-detection.md)
+- [Plugin Internal Services](docs/concepts/plugin-internal-services.md)
+- [Plugin External CLI](docs/concepts/plugin-external-cli.md)
+- [Provider Comparison](docs/concepts/provider-comparison.md)
 
 ### 🛠️ Contributing
-- [Contributing Guide](docs/modules/ROOT/pages/contributing/contributing.adoc)
-- [Development Setup](docs/modules/ROOT/pages/contributing/development-setup.adoc)
-- [Code Structure](docs/modules/ROOT/pages/contributing/code-structure.adoc)
-- [Testing Guide](docs/modules/ROOT/pages/contributing/testing-guide.adoc)
-- [Adding Providers](docs/modules/ROOT/pages/contributing/adding-providers.adoc)
-- [Adding Services](docs/modules/ROOT/pages/contributing/adding-services.adoc)
-- [Build System](docs/modules/ROOT/pages/contributing/build-system.adoc)
-- [Release Process](docs/modules/ROOT/pages/contributing/release-process.adoc)
+- [Contributing Guide](docs/contributing/contributing.md)
+- [Development Setup](docs/contributing/development-setup.md)
+- [Code Structure](docs/contributing/code-structure.md)
+- [Testing Guide](docs/contributing/testing-guide.md)
+- [Adding Providers](docs/contributing/adding-providers.md)
+- [Adding Services](docs/contributing/adding-services.md)
+- [Build System](docs/contributing/build-system.md)
+- [Release Process](docs/contributing/release-process.md)
 
 ### 🗺️ Codemaps (architecture maps, not part of the published site)
 - [Index](docs/CODEMAPS/INDEX.md)
@@ -258,7 +257,7 @@ attribute. Build the site locally with Antora — see
 - [Providers](docs/CODEMAPS/providers.md)
 - [DI Container](docs/CODEMAPS/di-container.md)
 
-**Start here:** [Documentation Home](docs/modules/ROOT/pages/index.adoc) · [Glossary](docs/modules/ROOT/pages/glossary.adoc) · [Docs README](docs/README.md)
+**Start here:** [Documentation Home](docs/index.md) · [Glossary](docs/glossary.md) · [Docs README](docs/README.md)
 
 ## Development Workflow
 
@@ -318,7 +317,7 @@ opencenter cluster deploy dev-cluster
 mise run gitea-up
 ```
 
-See [Mise Tasks Reference](docs/modules/ROOT/pages/reference/mise-tasks.adoc) for the complete list.
+See [Mise Tasks Reference](docs/reference/mise-tasks.md) for the complete list.
 
 Tagged releases are published by GitHub Actions. Use `mise run release` for local preflight builds, then push a `v*` tag to create the signed release artifacts.
 
@@ -357,21 +356,19 @@ openCenter-cli/
 │   ├── ui/               # Prompts, error formatting, guided flows
 │   ├── core/             # Shared: path resolution, validation engine
 │   └── util/             # Files, errors, crypto, security, metrics
-├── docs/                  # Documentation site (Antora source)
+├── docs/                  # Documentation (Markdown with YAML frontmatter)
 │   ├── README.md          # Layout, build, and editing rules
-│   ├── antora.yml         # Antora component descriptor
-│   ├── local-playbook.yml # Local Antora build playbook
-│   ├── modules/ROOT/      # Canonical AsciiDoc tree (published)
-│   │   ├── nav.adoc       # Site navigation
-│   │   └── pages/         # Pages organised by lifecycle category
-│   │       ├── getting-started/  # Tutorials (page-type: task)
-│   │       ├── operations/       # How-to guides (page-type: task)
-│   │       ├── reference/        # Reference (page-type: reference)
-│   │       │   └── opencenter/   # Auto-generated Cobra command pages
-│   │       ├── concepts/         # Explanations (page-type: concept)
-│   │       ├── providers/        # Per-provider guides
-│   │       ├── contributing/     # Contributor docs
-│   │       └── release/          # Release notes
+│   ├── index.md           # Documentation home
+│   ├── glossary.md        # Term definitions
+│   ├── getting-started/   # Tutorials (doc_type: tutorial)
+│   ├── operations/        # How-to guides (doc_type: how-to)
+│   ├── reference/         # Reference (doc_type: reference)
+│   │   ├── opencenter/    # Auto-generated Cobra command pages
+│   │   └── services/      # Per-service reference docs
+│   ├── concepts/          # Explanations (doc_type: explanation)
+│   ├── providers/         # Per-provider guides
+│   ├── contributing/      # Contributor docs
+│   ├── release/           # Release notes
 │   └── CODEMAPS/          # Architecture maps (not part of the published site)
 ├── tests/                 # BDD tests (Godog)
 │   └── features/         # Gherkin feature files
@@ -382,7 +379,7 @@ openCenter-cli/
 └── main.go               # CLI entrypoint
 ```
 
-See [Code Structure](docs/modules/ROOT/pages/contributing/code-structure.adoc) and [Codemaps](docs/CODEMAPS/INDEX.md) for the detailed explanation.
+See [Code Structure](docs/contributing/code-structure.md) and [Codemaps](docs/CODEMAPS/INDEX.md) for the detailed explanation.
 
 ## Configuration File Locations
 
@@ -394,7 +391,7 @@ See [Code Structure](docs/modules/ROOT/pages/contributing/code-structure.adoc) a
 
 Override CLI configuration storage with `OPENCENTER_CONFIG_DIR` and cluster storage with `OPENCENTER_CLUSTERS_DIR`.
 
-See [File Locations Reference](docs/modules/ROOT/pages/reference/file-locations.adoc) for the complete paths.
+See [File Locations Reference](docs/reference/file-locations.md) for the complete paths.
 
 ## Environment Variables
 
@@ -408,11 +405,11 @@ See [File Locations Reference](docs/modules/ROOT/pages/reference/file-locations.
 | `SOPS_AGE_RECIPIENTS` | Age public keys for encryption | |
 | `KUBECONFIG` | Kubernetes config file | `~/.kube/config` |
 
-See [Environment Variables Reference](docs/modules/ROOT/pages/reference/environment-variables.adoc) for the complete list.
+See [Environment Variables Reference](docs/reference/environment-variables.md) for the complete list.
 
 ## Contributing
 
-We welcome contributions. See the [Contributing Guide](docs/modules/ROOT/pages/contributing/contributing.adoc) to get started.
+We welcome contributions. See the [Contributing Guide](docs/contributing/contributing.md) to get started.
 
 ### Quick Contribution Workflow
 
@@ -429,7 +426,7 @@ We welcome contributions. See the [Contributing Guide](docs/modules/ROOT/pages/c
 - **Custom Validators:** Add validation rules in `internal/core/validation/`
 - **Plugins:** Create external plugins as `opencenter-<plugin>` executables
 
-See the [contributing pages](docs/modules/ROOT/pages/contributing/) for detailed guides.
+See the [contributing pages](docs/contributing/) for detailed guides.
 
 ## License
 
