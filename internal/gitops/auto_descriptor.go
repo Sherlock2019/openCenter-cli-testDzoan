@@ -128,10 +128,11 @@ func buildAutoServiceContext(serviceName string, base *services.BaseConfig, cfg 
 	branch := cfg.OpenCenter.GitOps.BaseRepo.Branch
 
 	// When a release tag is set, use it as the git ref (tag). Otherwise fall
-	// back to branch tracking.
+	// back to branch tracking. Tag and branch are mutually exclusive.
 	var repoTag string
 	if release != "" {
 		repoTag = release
+		branch = ""
 	} else {
 		if branch == "" {
 			branch = cfg.OpenCenter.GitOps.Repository.Branch
