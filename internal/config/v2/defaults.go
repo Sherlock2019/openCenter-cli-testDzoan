@@ -731,7 +731,7 @@ func defaultServiceMap(clusterFQDN string) ServiceMap {
 		"etcd-backup":          &services.EtcdBackupConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "kube-system"}},
 		"external-snapshotter": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "external-snapshotter", BaseOnly: true}},
 		"fluxcd":               &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "flux-system"}},
-		"gateway":              &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "gateway", SingleStage: true, HasOverrideValues: boolPtr(false), ExtraDependencies: []string{"envoy-gateway-api-base"}, OverlayFilesRendererKey: "gateway", KustomizationContent: "---\napiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - \"namespace.yaml\"\n  - \"gateway-class.yaml\"\n  - \"gateway.yaml\"\n  - \"envoy-proxy-config.yaml\"\n"}},
+		"gateway":              &services.GatewayConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "gateway", SingleStage: true, HasOverrideValues: boolPtr(false), ExtraDependencies: []string{"envoy-gateway-api-base"}, OverlayFilesRendererKey: "gateway", KustomizationContent: "---\napiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - \"namespace.yaml\"\n  - \"gateway-class.yaml\"\n  - \"gateway.yaml\"\n  - \"envoy-proxy-config.yaml\"\n"}},
 		"gateway-api":          &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "envoy-gateway-system", KustomizationName: "envoy-gateway-api", OverrideValues: "---\nenvoyGateway:\n  config:\n    envoyGateway:\n      logging:\n        level:\n          default: info\n"}},
 		"headlamp": &services.HeadlampConfig{
 			BaseConfig: services.BaseConfig{Enabled: true, Namespace: "headlamp", OverrideValuesRendererKey: "headlamp"},
@@ -756,15 +756,18 @@ func defaultServiceMap(clusterFQDN string) ServiceMap {
 		"velero":                &services.VeleroConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "velero", OverrideValuesRendererKey: "velero"}},
 		// Present (disabled) so template conditionals can safely index the key.
 		"harbor":  &services.HarborConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "harbor"}},
-		"metallb": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "metallb-system", CustomResources: []string{"ipaddresspool.yaml", "l2advertisement.yaml"}}},
+		"metallb": &services.MetalLBConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "metallb-system", CustomResources: []string{"ipaddresspool.yaml", "l2advertisement.yaml"}}},
 		// Required by keycloak (keycloak-operator is managed by OLM).
-		"olm":                      &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "olm", HasOverrideValues: boolPtr(false), KustomizationContent: "---\napiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - \"../base/olm/\"\n  - \"./netpol.yaml\"\npatchesStrategicMerge:\n  - \"./patches.yaml\"\n", CustomResources: []string{"netpol.yaml", "patches.yaml"}}},
-		"kafka-cluster":            &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "strimzi"}},
-		"vsphere-csi":              &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "vmware-system-csi", OverrideValuesRendererKey: "vsphere-csi"}},
-		"weave-gitops":             &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "flux-system", OverrideDependsOn: []string{"sources", "envoy-gateway-api-base"}}},
-		"longhorn":                 &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "longhorn-system", OverlayFilesRendererKey: "longhorn"}},
+		"olm":           &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: true, Namespace: "olm", HasOverrideValues: boolPtr(false), KustomizationContent: "---\napiVersion: kustomize.config.k8s.io/v1beta1\nkind: Kustomization\nresources:\n  - \"../base/olm/\"\n  - \"./netpol.yaml\"\npatchesStrategicMerge:\n  - \"./patches.yaml\"\n", CustomResources: []string{"netpol.yaml", "patches.yaml"}}},
+		"kafka-cluster": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "strimzi"}},
+		"vsphere-csi":   &services.VSphereCSIConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "vmware-system-csi", OverrideValuesRendererKey: "vsphere-csi"}},
+		"weave-gitops":  &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "flux-system", OverrideDependsOn: []string{"sources", "envoy-gateway-api-base"}}},
+		"longhorn": &services.LonghornConfig{
+			BaseConfig: services.BaseConfig{Enabled: false, Namespace: "longhorn-system", OverlayFilesRendererKey: "longhorn"},
+			Hostname:   fmt.Sprintf("longhorn.%s", clusterFQDN),
+		},
 		"mimir":                    &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "observability", SourceName: "opencenter-observability", OverrideValuesRendererKey: "mimir"}},
-		"opentelemetry-kube-stack": &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "observability", SourceName: "opencenter-observability", OverrideValuesRendererKey: "opentelemetry-kube-stack"}},
+		"opentelemetry-kube-stack": &services.OpenTelemetryConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "observability", SourceName: "opencenter-observability", OverrideValuesRendererKey: "opentelemetry-kube-stack"}},
 		"sealed-secrets":           &services.DefaultServiceConfig{BaseConfig: services.BaseConfig{Enabled: false, Namespace: "sealed-secrets", OverrideValues: "keyrenewperiod: \"0\"\n"}},
 	}
 }

@@ -662,7 +662,12 @@ func TestRenderClusterAppsOpenStackCSINamespace(t *testing.T) {
 func TestRenderClusterAppsGatewayDependsOnEnvoyGatewayAPIBase(t *testing.T) {
 	cfg := newDefault("gw-dep-test")
 
-	svc := cfg.OpenCenter.Services["gateway"].(*configservices.DefaultServiceConfig)
+	// Read through BaseConfig rather than asserting a concrete service type: this
+	// test cares about ExtraDependencies, not how gateway happens to be typed.
+	svc := extractBaseConfig(cfg.OpenCenter.Services["gateway"])
+	if svc == nil {
+		t.Fatal("gateway service config does not expose a BaseConfig")
+	}
 
 	// The gateway must depend on envoy-gateway-api-base (the base-stage kustomization
 	// name for the gateway-api service whose KustomizationName is "envoy-gateway-api").
