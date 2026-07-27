@@ -128,9 +128,6 @@ func TestRenderClusterAppsLokiSwift(t *testing.T) {
 	}
 
 	overrideValues := mustReadFile(t, filepath.Join(dst, "applications", "overlays", cfg.ClusterName(), "services", "loki", "helm-values", "override-values.yaml"))
-	if !strings.Contains(overrideValues, "object_store: swift") {
-		t.Fatalf("expected swift object store in Loki values:\n%s", overrideValues)
-	}
 	if !strings.Contains(overrideValues, "type: swift") {
 		t.Fatalf("expected swift storage type in Loki values:\n%s", overrideValues)
 	}

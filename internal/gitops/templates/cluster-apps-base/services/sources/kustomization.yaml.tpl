@@ -20,7 +20,7 @@ resources:
   - "opencenter-keycloak.yaml"
   - "opencenter-keycloak-config.yaml"
 {{- end }}
-{{- if or (index $services "kube-prometheus-stack").Enabled (index $services "loki").Enabled }}
+{{- if or (index $services "kube-prometheus-stack").Enabled (index $services "loki").Enabled (index $services "tempo").Enabled (index $services "mimir").Enabled (index $services "opentelemetry-kube-stack").Enabled }}
   - "opencenter-observability.yaml"
 {{- end }}
 {{- range autoServices }}

@@ -182,19 +182,7 @@ extraObjects:
 const lokiTemplate = `{{- $loki := index .OpenCenter.Services "loki" -}}
 {{- $storageType := $loki.StorageType | default "s3" -}}
 {{- $bucketName := $loki.BucketName | default (printf "%s-loki" .OpenCenter.Meta.Name) -}}
-global:
-    dnsService: coredns
 loki:
-    auth_enabled: true
-    schemaConfig:
-        configs:
-            - from: "2025-01-01"
-              store: tsdb
-              object_store: {{ $storageType }}
-              schema: v13
-              index:
-                prefix: index_
-                period: 24h
     storage:
         bucketNames:
             chunks: {{ $bucketName }}
@@ -225,49 +213,11 @@ loki:
             backoff_config: {}
             disable_dualstack: false
 {{- end }}
-    storage_config:
-        tsdb_shipper:
-            active_index_directory: /var/loki/index
-            cache_location: /var/loki/index-cache
-    serviceMonitor:
-        enabled: true
-write:
-    replicas: 3
-    persistence:
-        enabled: true
-        size: 100Gi
-    podAntiAffinityPreset: soft
-read:
-    replicas: 3
-    persistence:
-        enabled: true
-        size: 50Gi
-    podAntiAffinityPreset: soft
-backend:
-    replicas: 3
-    persistence:
-        enabled: true
-        size: 50Gi
-    podAntiAffinityPreset: soft
-gateway:
-    replicas: 2
-    ingress:
-        enabled: false
-chunksCache:
-    enabled: true
-    memcached:
-        replicaCount: 3
-resultsCache:
-    enabled: true
-    memcached:
-        replicaCount: 3
 `
 
 const tempoTemplate = `{{- $tempo := index .OpenCenter.Services "tempo" -}}
 {{- $storageType := $tempo.StorageType | default "s3" -}}
 {{- $bucketName := $tempo.BucketName | default (printf "%s-tempo" .OpenCenter.Meta.Name) -}}
-global:
-    storageClass: {{ $tempo.StorageClass | default .OpenCenter.Infrastructure.Storage.DefaultStorageClass }}
 storage:
     trace:
         backend: {{ $storageType }}
@@ -291,28 +241,9 @@ storage:
             forcepathstyle: {{ $tempo.S3ForcePathStyle }}
             insecure: {{ $tempo.S3Insecure }}
 {{- end }}
-multitenancyEnabled: true
-ingester:
-    persistence:
-        size: {{ $tempo.VolumeSize | default 50 }}Gi
 `
 
-const mimirTemplate = `global:
-    dnsService: coredns
-alertmanager:
-    enabled: false
-metaMonitoring:
-    dashboards:
-        enabled: true
-    serviceMonitor:
-        enabled: true
-    prometheusRule:
-        enabled: true
-        mimirAlerts: true
-        mimirRules: true
-kafka:
-    enabled: false
-mimir:
+const mimirTemplate = `mimir:
     structuredConfig:
         blocks_storage:
             backend: s3
@@ -327,79 +258,6 @@ mimir:
                 topic: mimir-ingest
                 auto_create_topic_enabled: true
                 auto_create_topic_default_partitions: 1000
-        limits:
-            ingestion_rate: 100000
-            ingestion_burst_size: 500000
-            max_global_series_per_user: 2000000
-            compactor_blocks_retention_period: 14d
-compactor:
-    persistentVolume:
-        storageClassName: {{ .OpenCenter.Infrastructure.Storage.DefaultStorageClass }}
-        size: 20Gi
-distributor:
-    replicas: 2
-ingester:
-    persistentVolume:
-        storageClassName: {{ .OpenCenter.Infrastructure.Storage.DefaultStorageClass }}
-        size: 15Gi
-    replicas: 3
-    topologySpreadConstraints: {}
-    affinity:
-        podAntiAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-                - labelSelector:
-                    matchExpressions:
-                        - key: app.kubernetes.io/component
-                          operator: In
-                          values:
-                            - ingester
-                  topologyKey: kubernetes.io/hostname
-    zoneAwareReplication:
-        topologyKey: kubernetes.io/hostname
-admin-cache:
-    enabled: true
-    replicas: 2
-chunks-cache:
-    enabled: true
-    replicas: 2
-    allocatedMemory: 500
-index-cache:
-    enabled: true
-    replicas: 3
-metadata-cache:
-    enabled: true
-results-cache:
-    enabled: true
-minio:
-    enabled: false
-overrides_exporter:
-    replicas: 1
-querier:
-    replicas: 1
-query_frontend:
-    replicas: 2
-ruler:
-    enabled: false
-store_gateway:
-    persistentVolume:
-        storageClassName: {{ .OpenCenter.Infrastructure.Storage.DefaultStorageClass }}
-        size: 15Gi
-    replicas: 3
-    topologySpreadConstraints: {}
-    affinity:
-        podAntiAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-                - labelSelector:
-                    matchExpressions:
-                        - key: app.kubernetes.io/component
-                          operator: In
-                          values:
-                            - store-gateway
-                  topologyKey: kubernetes.io/hostname
-    zoneAwareReplication:
-        topologyKey: kubernetes.io/hostname
-gateway:
-    replicas: 2
 `
 
 const otelTemplate = `collectors:
@@ -539,16 +397,8 @@ exporter:
 
 const kubePrometheusStackTemplate = `---
 alertmanager:
-  enabled: true
   alertmanagerSpec:
     externalUrl: https://{{ (index .OpenCenter.Services "kube-prometheus-stack").Hostname | default (printf "alertmanager.%s" .OpenCenter.Cluster.ClusterFQDN) }}
-    storage:
-      volumeClaimTemplate:
-        spec:
-          accessModes: ["ReadWriteOnce"]
-          resources:
-            requests:
-              storage: 50Gi
   config:
     global:
       resolve_timeout: 5m
@@ -588,30 +438,17 @@ alertmanager:
           - url: http://rackspace-alert-proxy.rackspace.svc.cluster.local/alert/process
             send_resolved: true
 prometheus:
-  enabled: true
   prometheusSpec:
     externalUrl: https://{{ (index .OpenCenter.Services "kube-prometheus-stack").Hostname | default (printf "prometheus.%s" .OpenCenter.Cluster.ClusterFQDN) }}
     externalLabels:
-      cluster: k8s-dev
+      cluster: {{ .OpenCenter.Meta.Name }}
       region: {{ .OpenCenter.Meta.Region }}
       customer: {{ .OpenCenter.Meta.Organization }}
-    serviceMonitorSelectorNilUsesHelmValues: false
-    podMonitorSelectorNilUsesHelmValues: false
-    ruleSelectorNilUsesHelmValues: false
 grafana:
-  enabled: true
   admin:
     existingSecret: "grafana-admin-password"
     userKey: admin-user
     passwordKey: admin-password
-  persistence:
-    enabled: true
-    type: sts
-    accessModes:
-      - ReadWriteOnce
-    size: 50Gi
-    finalizers:
-      - kubernetes.io/pvc-protection
   datasources:
     datasources.yaml:
       apiVersion: 1
