@@ -376,8 +376,6 @@ spec:
   wait: true
   force: {{ .Force }}
   suspend: {{ .Suspend }}
-  cluster:
-    name: {{ .ClusterName }}
   healthChecks:
     - apiVersion: helm.toolkit.fluxcd.io/v2
       kind: HelmRelease
