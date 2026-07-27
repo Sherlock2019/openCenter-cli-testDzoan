@@ -116,16 +116,19 @@ func TestRenderAutoServiceActions_WithReleaseTag(t *testing.T) {
 		ClusterName:       "k8s-prod",
 		BaseRepoURL:       "ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git",
 		RepoTag:           "2026.01.2",
-		IsSSH:             true,
+		GitopsAuthMethod:  gitopsAuthMethodSSH,
 		FluxInterval:      "15m",
 	}
 
 	actions, err := renderAutoServiceActions(ctx, newAutoTestConfig(ctx.ClusterName))
 	require.NoError(t, err)
 
-	// Source should use tag, not branch
+	// Source should use tag in the active SSH block
+	assert.Contains(t, actions[0].Content, "# --- ssh auth (active) ---")
 	assert.Contains(t, actions[0].Content, "tag: 2026.01.2")
-	assert.NotContains(t, actions[0].Content, "branch:")
+	// Alternative token block should be commented out
+	assert.Contains(t, actions[0].Content, "# --- token auth (alternative) ---")
+	assert.Contains(t, actions[0].Content, "# url: https://github.com/opencenter-cloud/openCenter-gitops-base.git")
 }
 
 func TestRenderAutoServiceActions_TwoStage(t *testing.T) {
@@ -138,7 +141,7 @@ func TestRenderAutoServiceActions_TwoStage(t *testing.T) {
 		ClusterName:       "k8s-sandbox",
 		BaseRepoURL:       "https://github.com/rackerlabs/openCenter-gitops-base.git",
 		RepoBranch:        "main",
-		IsSSH:             false,
+		GitopsAuthMethod:  gitopsAuthMethodToken,
 		FluxInterval:      "15m",
 	}
 
@@ -151,8 +154,14 @@ func TestRenderAutoServiceActions_TwoStage(t *testing.T) {
 	// Source
 	assert.Equal(t, "services/sources/opencenter-sealed-secrets.yaml", actions[0].Output)
 	assert.Contains(t, actions[0].Content, "name: opencenter-sealed-secrets")
+	assert.Contains(t, actions[0].Content, "# --- token auth (active) ---")
+	assert.Contains(t, actions[0].Content, "url: https://github.com/rackerlabs/openCenter-gitops-base.git")
 	assert.Contains(t, actions[0].Content, "branch: main")
-	assert.NotContains(t, actions[0].Content, "secretRef") // HTTPS, no secret
+	assert.Contains(t, actions[0].Content, "secretRef:")
+	assert.Contains(t, actions[0].Content, "name: opencenter-base")
+	// Alternative SSH block should be commented out
+	assert.Contains(t, actions[0].Content, "# --- ssh auth (alternative) ---")
+	assert.Contains(t, actions[0].Content, "# url: ssh://git@github.com/rackerlabs/openCenter-gitops-base.git")
 
 	// FluxCD two-stage
 	assert.Equal(t, "services/fluxcd/sealed-secrets.yaml", actions[1].Output)
@@ -184,7 +193,7 @@ func TestRenderAutoServiceActions_SingleStage(t *testing.T) {
 		ClusterName:       "k8s-dev",
 		BaseRepoURL:       "ssh://git@github.com/rackerlabs/openCenter-gitops-base.git",
 		RepoBranch:        "main",
-		IsSSH:             true,
+		GitopsAuthMethod:  gitopsAuthMethodSSH,
 		FluxInterval:      "5m",
 		ExtraDependencies: []string{"gateway-api-base"},
 		CustomResources:   []string{"namespace.yaml", "gateway.yaml"},
@@ -196,9 +205,13 @@ func TestRenderAutoServiceActions_SingleStage(t *testing.T) {
 	// source + fluxcd + kustomization (no override-values since HasOverrideValues=false)
 	assert.Len(t, actions, 3)
 
-	// Source with SSH secretRef
+	// Source with SSH secretRef (active)
+	assert.Contains(t, actions[0].Content, "# --- ssh auth (active) ---")
 	assert.Contains(t, actions[0].Content, "secretRef:")
 	assert.Contains(t, actions[0].Content, "name: opencenter-base")
+	// Alternative token block should be commented out
+	assert.Contains(t, actions[0].Content, "# --- token auth (alternative) ---")
+	assert.Contains(t, actions[0].Content, "# url: https://github.com/rackerlabs/openCenter-gitops-base.git")
 
 	// FluxCD single-stage
 	assert.Contains(t, actions[1].Content, "name: gateway")
@@ -222,7 +235,7 @@ func TestRenderAutoServiceActions_SharedSource(t *testing.T) {
 		ClusterName:       "k8s-sandbox",
 		BaseRepoURL:       "https://github.com/rackerlabs/openCenter-gitops-base.git",
 		RepoBranch:        "main",
-		IsSSH:             false,
+		GitopsAuthMethod:  gitopsAuthMethodToken,
 		FluxInterval:      "15m",
 		ExtraDependencies: []string{"observability-namespace"},
 	}
@@ -250,7 +263,7 @@ func TestRenderAutoServiceActions_EnterpriseRegistry(t *testing.T) {
 		ClusterName:        "k8s-sandbox",
 		BaseRepoURL:        "https://github.com/rackerlabs/openCenter-gitops-base.git",
 		RepoBranch:         "main",
-		IsSSH:              false,
+		GitopsAuthMethod:   gitopsAuthMethodToken,
 		FluxInterval:       "15m",
 	}
 
@@ -281,7 +294,7 @@ func TestRenderAutoServiceActions_BaseOnly(t *testing.T) {
 		ClusterName:       "k8s-sandbox",
 		BaseRepoURL:       "https://github.com/rackerlabs/openCenter-gitops-base.git",
 		RepoBranch:        "main",
-		IsSSH:             false,
+		GitopsAuthMethod:  gitopsAuthMethodToken,
 		FluxInterval:      "15m",
 	}
 
@@ -312,7 +325,7 @@ func TestRenderAutoServiceActions_OverrideDependsOn(t *testing.T) {
 		ClusterName:       "k8s-dev",
 		BaseRepoURL:       "ssh://git@github.com/rackerlabs/openCenter-gitops-base.git",
 		RepoBranch:        "main",
-		IsSSH:             true,
+		GitopsAuthMethod:  gitopsAuthMethodSSH,
 		FluxInterval:      "5m",
 	}
 
@@ -350,7 +363,7 @@ func TestRenderAutoServiceActions_OverrideValues(t *testing.T) {
 		ClusterName:       "k8s-sandbox",
 		BaseRepoURL:       "https://github.com/rackerlabs/openCenter-gitops-base.git",
 		RepoBranch:        "main",
-		IsSSH:             false,
+		GitopsAuthMethod:  gitopsAuthMethodToken,
 		FluxInterval:      "15m",
 	}
 
@@ -414,6 +427,7 @@ func newAutoTestConfig(clusterName string) v2.Config {
 				ClusterName: clusterName,
 			},
 			GitOps: v2.GitOpsConfig{
+				ResolvedAuthMethod: gitopsAuthMethodToken,
 				Repository: v2.GitOpsRepository{
 					Branch: "main",
 				},
@@ -428,4 +442,31 @@ func newAutoTestConfig(clusterName string) v2.Config {
 			Services: v2.ServiceMap{},
 		},
 	}
+}
+
+func TestBuildAutoServiceContextPreservesServiceSourceOverride(t *testing.T) {
+	cfg := newAutoTestConfig("source-override")
+	cfg.OpenCenter.GitOps.ResolvedAuthMethod = gitopsAuthMethodSSH
+	cfg.OpenCenter.GitOps.BaseRepo.Release = "2026.01"
+	base := &services.BaseConfig{
+		Enabled: true,
+		Source: services.ServiceSource{
+			Repo:    "https://gitlab.example.com/team/custom-service.git",
+			Branch:  "develop",
+			Release: "",
+		},
+	}
+
+	ctx := buildAutoServiceContext("custom-service", base, cfg)
+	assert.Equal(t, "https://gitlab.example.com/team/custom-service.git", ctx.BaseRepoURL)
+	assert.Equal(t, "develop", ctx.RepoBranch)
+	assert.Empty(t, ctx.RepoTag)
+	assert.Equal(t, gitopsAuthMethodSSH, ctx.GitopsAuthMethod)
+
+	actions, err := renderAutoServiceActions(ctx, cfg)
+	require.NoError(t, err)
+	assert.Contains(t, actions[0].Content, "# --- ssh auth (active) ---")
+	assert.Contains(t, actions[0].Content, "url: ssh://git@gitlab.example.com/team/custom-service.git")
+	assert.Contains(t, actions[0].Content, "# url: https://gitlab.example.com/team/custom-service.git")
+	assert.Contains(t, actions[0].Content, "branch: develop")
 }

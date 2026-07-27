@@ -166,6 +166,17 @@ func (p *kindBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *paths.C
 			},
 		},
 		{
+			ID:          baseRepoSecretStepID,
+			Description: "Reconcile base Git repository credentials for Flux",
+			Plan:        newBaseRepoSecretStep(cfg, opts.KubeconfigPath, p.runner).Plan,
+			Run: func(ctx context.Context) error {
+				if os.Getenv("OPENCENTER_TEST_MODE") != "" {
+					return nil
+				}
+				return reconcileBaseRepoSecret(ctx, cfg, opts.KubeconfigPath, p.runner)
+			},
+		},
+		{
 			ID:          "gitea-rebase",
 			Description: "Rebase local checkout with Flux bootstrap commits from Gitea",
 			Plan: BootstrapPlanStep{

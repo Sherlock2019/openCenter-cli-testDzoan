@@ -32,6 +32,24 @@ FluxCD bootstrap requires Git repository access. openCenter supports two authent
 
 **Recommendation:** Use SSH keys for production clusters. Use tokens for local development or environments where SSH is blocked.
 
+## Base-Service Source Authentication
+
+The customer GitOps repository authentication above is used for Flux bootstrap. Base-service `GitRepository` sources have a separate run-only selector:
+
+```bash
+opencenter cluster generate my-cluster --gitops-auth=token
+opencenter cluster generate my-cluster --gitops-auth=ssh
+```
+
+Without the flag, generation uses `cluster_defaults.gitops_auth_method` and then the built-in `token` default. It writes an active URL/ref/`secretRef` block and a fully commented alternative to each base-service source. The flag does not persist a setting.
+
+Both base-source variants reference `opencenter-base` in `flux-system`. During `opencenter cluster deploy`, openCenter creates or updates that live Secret without committing it to the GitOps repository:
+
+* token mode uses `username: git` and `password: <token>`;
+* SSH mode uses `identity`, `identity.pub`, and `known_hosts`.
+
+The deploy command reads the active marker from generated source manifests, so run `cluster generate` before deploy. For a manual source-file switch, also rerun `cluster deploy --restart` after ensuring local credentials exist for the selected mode. `opencenter-keycloak-config` remains a customer-repository source and uses the bootstrap `flux-system` Secret instead.
+
 ## SSH Key Authentication
 
 ### Step 1: Generate SSH Key Pair

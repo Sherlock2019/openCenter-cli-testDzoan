@@ -17,11 +17,12 @@ import (
 
 // SetupOptions contains options for cluster setup
 type SetupOptions struct {
-	ClusterName    string
-	Organization   string
-	DryRun         bool
-	SkipValidation bool
-	Force          bool
+	ClusterName      string
+	Organization     string
+	DryRun           bool
+	SkipValidation   bool
+	Force            bool
+	GitopsAuthMethod string // "ssh" or "token"; when set, overrides BaseRepo URL scheme
 }
 
 // SetupResult contains the result of cluster setup
@@ -120,6 +121,21 @@ func (s *SetupService) Setup(ctx context.Context, opts SetupOptions) (*SetupResu
 	// Check schema version - only v2 is supported
 	if cfg.SchemaVersion != "2.0" {
 		return nil, fmt.Errorf("invalid schema version for cluster %s: expected 2.0, got %q", opts.ClusterName, cfg.SchemaVersion)
+	}
+
+	// Apply the run-only GitOps auth choice to the in-memory config. Setup may
+	// also be invoked outside the command layer, so validate it here too.
+	if opts.GitopsAuthMethod != "" {
+		if err := config.ValidateGitopsAuthMethod(opts.GitopsAuthMethod); err != nil {
+			return nil, fmt.Errorf("invalid GitOps auth method: %w", err)
+		}
+		cfg.OpenCenter.GitOps.ResolvedAuthMethod = opts.GitopsAuthMethod
+		switch opts.GitopsAuthMethod {
+		case config.GitopsAuthMethodSSH:
+			cfg.OpenCenter.GitOps.BaseRepo.URL = v2.DefaultGitBaseRepoURLSSH
+		default:
+			cfg.OpenCenter.GitOps.BaseRepo.URL = v2.DefaultGitBaseRepoURLHTTPS
+		}
 	}
 
 	// Validate that git_dir is set

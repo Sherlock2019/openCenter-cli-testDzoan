@@ -30,6 +30,12 @@ func runClusterGenerateRenderOnly(cmd *cobra.Command, args []string) error {
 	force, _ := cmd.Flags().GetBool("force")
 	dryRun := getGlobalOptions(cmd).DryRun
 
+	// Resolve gitops auth method early so we fail fast on invalid values.
+	gitopsAuth, err := resolveGitopsAuthMethod(cmd)
+	if err != nil {
+		return err
+	}
+
 	name, err := resolveClusterName(args, true)
 	if err != nil {
 		return err
@@ -39,6 +45,9 @@ func runClusterGenerateRenderOnly(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	// Apply gitops auth override to BaseRepo.URL
+	applyGitopsAuthOverride(cfg, gitopsAuth)
 
 	return renderAllServices(cfg, force, dryRun, cmd)
 }

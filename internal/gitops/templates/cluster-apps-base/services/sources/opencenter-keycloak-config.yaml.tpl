@@ -6,11 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 15m
-  url: {{ .OpenCenter.GitOps.Repository.URL }}
-  ref:
-    branch: {{ .OpenCenter.GitOps.Repository.Branch }}
-  secretRef:
-    name: flux-system
+{{ sourceAuthBlockCustomerRepository }}
   include:
     - repository:
         name: opencenter-keycloak

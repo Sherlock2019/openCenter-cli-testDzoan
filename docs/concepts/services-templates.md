@@ -125,7 +125,12 @@ The cert-manager templates live in `openCenter-cli/internal/gitops/templates/clu
 
 Template: `services/sources/opencenter-cert-manager.yaml.tpl`
 
+All base-service source templates call one shared renderer. It preserves any service-level `source.repo`, `source.branch`, or `source.release` override while rendering both authentication variants. `--gitops-auth` selects the active block for this generation only; the other block remains commented so an operator can inspect or deliberately change it.
+
+Rendered output with the default token method:
+
 ```yaml
+# applications/overlays/dev/services/sources/opencenter-cert-manager.yaml
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
@@ -133,34 +138,23 @@ metadata:
   namespace: flux-system
 spec:
   interval: 15m
-  {{- $service := index .OpenCenter.Services "cert-manager" }}
-  url: {{ $service.Uri | default .OpenCenter.GitOps.GitOpsBaseRepo }}
+  # --- token auth (active) ---
+  url: https://github.com/opencenter-cloud/openCenter-gitops-base.git
   ref:
-    branch: {{ $service.Branch | default .OpenCenter.GitOps.GitOpsBranch | default "main" }}
+    tag: 2026.01
   secretRef:
     name: opencenter-base
+  # --- ssh auth (alternative) ---
+  # url: ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git
+  # ref:
+  #   tag: 2026.01
+  # secretRef:
+  #   name: opencenter-base
 ```
 
-This tells FluxCD where to find the base cert-manager manifests. The URL defaults to the `openCenter-gitops-base` repository but can be overridden per-service (useful for testing forks).
+Use `opencenter cluster generate <cluster> --gitops-auth=ssh` to make the SSH block active. The source uses the stable `opencenter-base` Secret in either mode. `cluster deploy` reconciles that Secret directly into `flux-system` from local Git credentials; credentials are not committed to the GitOps repository.
 
-Rendered output (Uniphore example):
-
-```yaml
-# customers/6427159-Uniphore/applications/overlays/dev/services/sources/opencenter-cert-manager.yaml
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: GitRepository
-metadata:
-  name: opencenter-cert-manager
-  namespace: flux-system
-spec:
-  interval: 15m
-  url: https://github.com/rackerlabs/openCenter-gitops-base.git
-  ref:
-    branch: main
-```
-
-**📌 NOTE**\
-Some environments use SSH URLs with `secretRef` for private repo access, while others use HTTPS. The template handles both via the config.
+`opencenter-keycloak-config` is intentionally different: it sources the customer GitOps repository and continues to reference the Flux bootstrap Secret (`flux-system`), although it uses the same active/commented rendering convention.
 
 #### Category 2: FluxCD Kustomizations (The Wiring)
 

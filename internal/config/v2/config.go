@@ -271,6 +271,10 @@ type GitOpsConfig struct {
 	// Auth holds authentication configuration (SSH or Token).
 	Auth GitOpsAuth `yaml:"auth,omitempty" json:"auth,omitempty"`
 
+	// ResolvedAuthMethod carries the run-only source-rendering selection. It is
+	// deliberately excluded from persisted cluster configuration.
+	ResolvedAuthMethod string `yaml:"-" json:"-"`
+
 	// Flux holds FluxCD reconciliation settings.
 	Flux GitOpsFluxConfig `yaml:"flux,omitempty" json:"flux,omitempty"`
 

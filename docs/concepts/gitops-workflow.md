@@ -110,12 +110,21 @@ metadata:
   namespace: flux-system
 spec:
   interval: 15m
-  url: ssh://git@github.com/opencenter-cloud/opencenter-gitops-base.git
+  # --- token auth (active) ---
+  url: https://github.com/opencenter-cloud/openCenter-gitops-base.git
   ref:
-    tag: v1.0.0
+    tag: 2026.01
   secretRef:
     name: opencenter-base
+  # --- ssh auth (alternative) ---
+  # url: ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git
+  # ref:
+  #   tag: 2026.01
+  # secretRef:
+  #   name: opencenter-base
 ```
+
+`opencenter cluster generate <cluster> --gitops-auth=token|ssh` controls which source block is active. With no flag, generation uses `cluster_defaults.gitops_auth_method`, then the built-in `token` default. The choice only affects that run; it does not modify cluster configuration. The generated `opencenter-base` reference is reconciled as a live Secret in `flux-system` during deploy, using token `username`/`password` data or SSH `identity`, `identity.pub`, and `known_hosts` data from local credentials.
 
 ### Kustomize Controller
 

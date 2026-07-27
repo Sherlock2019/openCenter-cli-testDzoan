@@ -14,6 +14,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// DefaultGitBaseRepoURLSSH is the SSH URL for the shared openCenter-gitops-base repo.
+const DefaultGitBaseRepoURLSSH = "ssh://git@github.com/opencenter-cloud/openCenter-gitops-base.git"
+
+// DefaultGitBaseRepoURLHTTPS is the HTTPS URL for the shared openCenter-gitops-base repo.
+const DefaultGitBaseRepoURLHTTPS = "https://github.com/opencenter-cloud/openCenter-gitops-base.git"
+
 const (
 	defaultSchemaVersion              = "2.0"
 	defaultOrganization               = "opencenter"
@@ -263,8 +269,8 @@ func NewV2Default(name, provider string) (*Config, error) {
 			},
 			ManagedServices: ServiceMap{
 				"alert-proxy": &services.AlertProxyConfig{
-					BaseConfig:      services.BaseConfig{Enabled: false},
-					HTTPRouteFQDN:   fmt.Sprintf("alerts.%s", clusterFQDN),
+					BaseConfig:          services.BaseConfig{Enabled: false},
+					HTTPRouteFQDN:       fmt.Sprintf("alerts.%s", clusterFQDN),
 					AlertManagerBaseURL: "",
 				},
 			},
@@ -450,10 +456,9 @@ func NewV2FullTemplate(name, provider string) (*Config, error) {
 			DeleteOnTermination: false,
 		},
 	}
-	// BaseRepo settings are already set in NewV2Default, but we can override here if needed
+	// Keep the base repository URL selected by applyGitOpsAuthDefaults.
 	cfg.OpenCenter.GitOps.BaseRepo.Release = defaultGitBaseRepoRelease
 	cfg.OpenCenter.GitOps.BaseRepo.Branch = defaultGitBranch
-	cfg.OpenCenter.GitOps.BaseRepo.URL = defaultGitBaseRepoURL
 
 	return cfg, nil
 }
@@ -685,8 +690,12 @@ func applyProviderBehaviorDefaults(cfg *Config) {
 }
 
 func applyGitOpsAuthDefaults(cfg *Config, authMethod, sshKeyPath string) {
-	switch normalizeGitopsAuthMethod(authMethod) {
+	resolvedMethod := normalizeGitopsAuthMethod(authMethod)
+	cfg.OpenCenter.GitOps.ResolvedAuthMethod = resolvedMethod
+
+	switch resolvedMethod {
 	case "ssh":
+		cfg.OpenCenter.GitOps.BaseRepo.URL = DefaultGitBaseRepoURLSSH
 		cfg.OpenCenter.GitOps.Repository.URL = defaultGitURLPlaceholder
 		cfg.OpenCenter.GitOps.Auth.SSH = &GitOpsSSHAuth{
 			PrivateKey: sshKeyPath,
@@ -694,6 +703,7 @@ func applyGitOpsAuthDefaults(cfg *Config, authMethod, sshKeyPath string) {
 		}
 		cfg.OpenCenter.GitOps.Auth.Token = nil
 	default:
+		cfg.OpenCenter.GitOps.BaseRepo.URL = DefaultGitBaseRepoURLHTTPS
 		cfg.OpenCenter.GitOps.Repository.URL = defaultHTTPSGitURLPlaceholder
 		cfg.OpenCenter.GitOps.Auth.SSH = nil
 		cfg.OpenCenter.GitOps.Auth.Token = &GitOpsTokenAuth{

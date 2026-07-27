@@ -16,12 +16,67 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/opencenter-cloud/opencenter-cli/internal/cluster"
 	"github.com/opencenter-cloud/opencenter-cli/internal/config"
 	v2 "github.com/opencenter-cloud/opencenter-cli/internal/config/v2"
 	"github.com/spf13/cobra"
 )
+
+// resolveGitopsAuthMethod resolves the effective GitOps auth method from the
+// --gitops-auth flag, falling back to cluster_defaults.gitops_auth_method from
+// the CLI settings, then to the built-in default ("token"). Settings errors
+// are returned rather than silently changing the selected authentication mode.
+func resolveGitopsAuthMethod(cmd *cobra.Command) (string, error) {
+	flagVal, err := cmd.Flags().GetString("gitops-auth")
+	if err != nil {
+		return "", fmt.Errorf("reading --gitops-auth: %w", err)
+	}
+
+	if strings.TrimSpace(flagVal) != "" {
+		return resolveGitopsAuthMethodValues(flagVal, "")
+	}
+
+	cm, err := config.NewConfigManager("")
+	if err != nil {
+		return "", fmt.Errorf("loading CLI settings for gitops auth: %w", err)
+	}
+	return resolveGitopsAuthMethodValues("", cm.GetConfig().ClusterDefaults.GitopsAuthMethod)
+}
+
+// resolveGitopsAuthMethodValues contains the deterministic precedence and
+// validation rules independently of settings I/O so callers and tests cannot
+// accidentally apply different behavior.
+func resolveGitopsAuthMethodValues(flagValue, configuredValue string) (string, error) {
+	method := strings.ToLower(strings.TrimSpace(flagValue))
+	if method == "" {
+		method = strings.ToLower(strings.TrimSpace(configuredValue))
+	}
+	if method == "" {
+		method = config.GitopsAuthMethodToken
+	}
+	if err := config.ValidateGitopsAuthMethod(method); err != nil {
+		if strings.TrimSpace(flagValue) != "" {
+			return "", fmt.Errorf("invalid --gitops-auth value: %w", err)
+		}
+		return "", err
+	}
+	return method, nil
+}
+
+// applyGitopsAuthOverride adjusts the in-memory generation config only. It
+// carries the selected method explicitly to renderers and derives the base
+// repository URL scheme from the same value.
+func applyGitopsAuthOverride(cfg *v2.Config, authMethod string) {
+	cfg.OpenCenter.GitOps.ResolvedAuthMethod = authMethod
+	switch authMethod {
+	case config.GitopsAuthMethodSSH:
+		cfg.OpenCenter.GitOps.BaseRepo.URL = v2.DefaultGitBaseRepoURLSSH
+	default:
+		cfg.OpenCenter.GitOps.BaseRepo.URL = v2.DefaultGitBaseRepoURLHTTPS
+	}
+}
 
 // newClusterGenerateCmd creates the command for generating a cluster's GitOps repository.
 func newClusterGenerateCmd() *cobra.Command {
@@ -35,7 +90,9 @@ func newClusterGenerateCmd() *cobra.Command {
 This command creates or updates the repository structure, infrastructure templates,
 Flux manifests, and application overlays based on the cluster configuration.
 
-Use --render-only to render templates without running the full repository setup flow.`,
+Use --render-only to render templates without running the full repository setup flow.
+Use --gitops-auth to select the GitOps authentication method for the base repository
+sources (ssh or token). Defaults to cluster_defaults.gitops_auth_method from settings.`,
 		Example: `  # Generate assets for the active cluster
   opencenter cluster generate
 
@@ -46,7 +103,11 @@ Use --render-only to render templates without running the full repository setup 
   opencenter cluster generate my-cluster --dry-run
 
   # Render templates only
-  opencenter cluster generate my-cluster --render-only`,
+  opencenter cluster generate my-cluster --render-only
+
+  # Generate with explicit GitOps auth method
+  opencenter cluster generate my-cluster --gitops-auth=token
+  opencenter cluster generate my-cluster --gitops-auth=ssh`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if renderOnly {
@@ -59,12 +120,19 @@ Use --render-only to render templates without running the full repository setup 
 	cmd.Flags().Bool("force", false, "overwrite existing GitOps repository")
 	cmd.Flags().Bool("skip-validation", false, "skip configuration validation before generation")
 	cmd.Flags().BoolVar(&renderOnly, "render-only", false, "render templates without running repository setup")
+	cmd.Flags().String("gitops-auth", "", "GitOps authentication method for base repo sources (ssh, token); defaults to cluster_defaults.gitops_auth_method")
 
 	return cmd
 }
 
 func runClusterGenerate(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
+
+	// Resolve gitops auth method early so we fail fast on invalid values.
+	gitopsAuth, err := resolveGitopsAuthMethod(cmd)
+	if err != nil {
+		return err
+	}
 
 	// Resolve cluster name from args or active cluster
 	name, err := resolveClusterNameForCommand(cmd, args, true)
@@ -98,11 +166,12 @@ func runClusterGenerate(cmd *cobra.Command, args []string) error {
 	skipValidation, _ := cmd.Flags().GetBool("skip-validation")
 
 	opts := cluster.SetupOptions{
-		ClusterName:    actualClusterName,
-		Organization:   organization,
-		DryRun:         dryRun,
-		SkipValidation: skipValidation,
-		Force:          force,
+		ClusterName:      actualClusterName,
+		Organization:     organization,
+		DryRun:           dryRun,
+		SkipValidation:   skipValidation,
+		Force:            force,
+		GitopsAuthMethod: gitopsAuth,
 	}
 
 	if !dryRun {

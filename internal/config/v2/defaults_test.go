@@ -236,3 +236,16 @@ func TestNewV2Default_KindSpecificBehavior(t *testing.T) {
 		t.Errorf("SubnetServices = %q, want %q", got, "10.96.0.0/16")
 	}
 }
+
+func TestNewV2DefaultUsesTokenBaseRepoByDefault(t *testing.T) {
+	cfg, err := NewV2Default("auth-default", "openstack")
+	if err != nil {
+		t.Fatalf("NewV2Default() error = %v", err)
+	}
+	if got := cfg.OpenCenter.GitOps.ResolvedAuthMethod; got != "token" {
+		t.Fatalf("resolved auth method = %q, want token", got)
+	}
+	if got := cfg.OpenCenter.GitOps.BaseRepo.URL; got != DefaultGitBaseRepoURLHTTPS {
+		t.Fatalf("base repository URL = %q, want %q", got, DefaultGitBaseRepoURLHTTPS)
+	}
+}

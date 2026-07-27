@@ -143,6 +143,7 @@ func (p *openstackBootstrapProvider) BuildSteps(cfg *v2.Config, clusterPaths *pa
 			return nil, fmt.Errorf("building flux bootstrap step: %w", err)
 		}
 		steps = append(steps, fluxStep)
+		steps = append(steps, newBaseRepoSecretStep(cfg, opts.KubeconfigPath, p.runner))
 	}
 
 	// No automatic git push — the user commits and pushes manually after deploy.
@@ -538,11 +539,11 @@ func providerPlanEnv(provider, kubeconfigPath string) []BootstrapPlanEnv {
 	switch provider {
 	case "vmware", "vsphere":
 		env := map[string]string{
-			"VSPHERE_SERVER":             "",
-			"VSPHERE_USER":              "",
-			"VSPHERE_PASSWORD":          "",
+			"VSPHERE_SERVER":               "",
+			"VSPHERE_USER":                 "",
+			"VSPHERE_PASSWORD":             "",
 			"VSPHERE_ALLOW_UNVERIFIED_SSL": "",
-			"PATH":                      "<current PATH>",
+			"PATH":                         "<current PATH>",
 		}
 		if strings.TrimSpace(kubeconfigPath) != "" {
 			env["KUBECONFIG"] = kubeconfigPath

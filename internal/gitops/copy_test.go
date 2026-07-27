@@ -475,3 +475,55 @@ func TestAtomicOperationsPreventPartialWrites(t *testing.T) {
 		t.Errorf("Expected 'success content 1', got '%s'", string(content1))
 	}
 }
+
+func TestCopyBaseRendersAllSourceAuthBlocksAndPreservesServiceRepo(t *testing.T) {
+	dst := t.TempDir()
+	cfg := newDefault("source-auth")
+	cfg.OpenCenter.GitOps.Repository.LocalDir = dst
+	cfg.OpenCenter.GitOps.Repository.URL = "ssh://git@gitlab.example.com/customer/cluster-config.git"
+	cfg.OpenCenter.GitOps.Repository.Branch = "customer-main"
+	cfg.OpenCenter.GitOps.BaseRepo.Release = ""
+	cfg.OpenCenter.GitOps.ResolvedAuthMethod = gitopsAuthMethodToken
+	cfg.OpenCenter.Services["cert-manager"] = &services.CertManagerConfig{
+		BaseConfig: services.BaseConfig{
+			Enabled: true,
+			Source: services.ServiceSource{
+				Repo:    "ssh://git@gitlab.example.com/team/cert-manager.git",
+				Release: "v1.2.3",
+			},
+		},
+	}
+
+	if err := CopyBase(cfg, true); err != nil {
+		t.Fatalf("CopyBase() error = %v", err)
+	}
+	if err := RenderClusterApps(cfg); err != nil {
+		t.Fatalf("RenderClusterApps() error = %v", err)
+	}
+
+	certSource := filepath.Join(dst, "applications", "overlays", cfg.ClusterName(), "services", "sources", "opencenter-cert-manager.yaml")
+	certContents, err := os.ReadFile(certSource)
+	if err != nil {
+		t.Fatalf("read cert-manager source: %v", err)
+	}
+	certText := string(certContents)
+	if !strings.Contains(certText, "# --- token auth (active) ---") ||
+		!strings.Contains(certText, "url: https://gitlab.example.com/team/cert-manager.git") ||
+		!strings.Contains(certText, "tag: v1.2.3") ||
+		!strings.Contains(certText, "# url: ssh://git@gitlab.example.com/team/cert-manager.git") {
+		t.Fatalf("cert-manager source did not preserve custom repository/ref or render both variants:\n%s", certText)
+	}
+
+	keycloakSource := filepath.Join(dst, "applications", "overlays", cfg.ClusterName(), "services", "sources", "opencenter-keycloak-config.yaml")
+	keycloakContents, err := os.ReadFile(keycloakSource)
+	if err != nil {
+		t.Fatalf("read keycloak config source: %v", err)
+	}
+	keycloakText := string(keycloakContents)
+	if !strings.Contains(keycloakText, "# --- token auth (active) ---") ||
+		!strings.Contains(keycloakText, "url: https://gitlab.example.com/customer/cluster-config.git") ||
+		!strings.Contains(keycloakText, "# url: ssh://git@gitlab.example.com/customer/cluster-config.git") ||
+		!strings.Contains(keycloakText, "name: flux-system") {
+		t.Fatalf("keycloak-config source did not use the shared customer-repository block:\n%s", keycloakText)
+	}
+}

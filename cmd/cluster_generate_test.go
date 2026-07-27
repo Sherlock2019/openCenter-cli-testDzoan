@@ -255,3 +255,51 @@ func TestClusterGenerateDryRunSkipsCommit(t *testing.T) {
 		t.Error("expected non-zero ManifestsCreated in dry-run mode")
 	}
 }
+
+func TestResolveGitopsAuthMethodValues(t *testing.T) {
+	tests := []struct {
+		name       string
+		flagValue  string
+		configured string
+		want       string
+		wantErr    string
+	}{
+		{name: "explicit token wins", flagValue: "token", configured: "ssh", want: "token"},
+		{name: "explicit SSH is normalized", flagValue: " SSH ", configured: "token", want: "ssh"},
+		{name: "configured fallback", configured: "ssh", want: "ssh"},
+		{name: "built-in token fallback", want: "token"},
+		{name: "invalid explicit value", flagValue: "password", wantErr: "invalid --gitops-auth value"},
+		{name: "invalid configured value", configured: "password", wantErr: "invalid cluster_defaults.gitops_auth_method"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := resolveGitopsAuthMethodValues(tt.flagValue, tt.configured)
+			if tt.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("resolveGitopsAuthMethodValues() error = %v, want %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("resolveGitopsAuthMethodValues() error = %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("resolveGitopsAuthMethodValues() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestApplyGitopsAuthOverrideIsInMemoryAndExplicit(t *testing.T) {
+	cfg := &v2.Config{}
+	cfg.OpenCenter.GitOps.BaseRepo.URL = v2.DefaultGitBaseRepoURLSSH
+
+	applyGitopsAuthOverride(cfg, "token")
+	if cfg.OpenCenter.GitOps.ResolvedAuthMethod != "token" {
+		t.Fatalf("resolved auth method = %q, want token", cfg.OpenCenter.GitOps.ResolvedAuthMethod)
+	}
+	if cfg.OpenCenter.GitOps.BaseRepo.URL != v2.DefaultGitBaseRepoURLHTTPS {
+		t.Fatalf("base repository URL = %q, want %q", cfg.OpenCenter.GitOps.BaseRepo.URL, v2.DefaultGitBaseRepoURLHTTPS)
+	}
+}

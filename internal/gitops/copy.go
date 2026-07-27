@@ -265,6 +265,82 @@ func renderTemplateAtomic(path, dst string, cfg v2.Config, workspace *GitOpsWork
 		return base.GetSourceName(serviceName)
 	}
 
+	// sourceAuthBlock renders the shared active-and-commented GitRepository
+	// auth block for a repository/ref pair. Auth selection is carried on the
+	// run-only config field and never inferred from the URL scheme.
+	sourceAuthBlock := func(repositoryURL, refType, refValue, secretName string) (string, error) {
+		params, err := BuildSourceAuthParams(cfg.OpenCenter.GitOps.ResolvedAuthMethod, repositoryURL, refType, refValue, secretName)
+		if err != nil {
+			return "", err
+		}
+		return RenderSourceAuthBlock(params), nil
+	}
+
+	// sourceAuthBlockForService preserves service Source.Repo, Source.Branch,
+	// and Source.Release overrides while providing both auth variants.
+	funcMap["sourceAuthBlockForService"] = func(serviceName string) (string, error) {
+		repositoryURL := cfg.OpenCenter.GitOps.BaseRepo.URL
+		branch := cfg.OpenCenter.GitOps.BaseRepo.Branch
+		release := cfg.OpenCenter.GitOps.BaseRepo.Release
+
+		if svc, exists := cfg.OpenCenter.Services[serviceName]; exists {
+			if base := extractBaseConfig(svc); base != nil {
+				if value := strings.TrimSpace(base.Source.Repo); value != "" {
+					repositoryURL = value
+				}
+				if value := strings.TrimSpace(base.Source.Release); value != "" {
+					release = value
+					branch = ""
+				} else if value := strings.TrimSpace(base.Source.Branch); value != "" {
+					branch = value
+					release = ""
+				}
+			}
+		}
+
+		refType := "branch"
+		refValue := strings.TrimSpace(branch)
+		if strings.TrimSpace(release) != "" {
+			refType = "tag"
+			refValue = strings.TrimSpace(release)
+		} else if refValue == "" {
+			refValue = strings.TrimSpace(cfg.OpenCenter.GitOps.Repository.Branch)
+			if refValue == "" {
+				refValue = "main"
+			}
+		}
+		return sourceAuthBlock(repositoryURL, refType, refValue, "opencenter-base")
+	}
+
+	// sourceAuthBlockDefault renders the base repository source using its
+	// shared branch/release settings.
+	funcMap["sourceAuthBlockDefault"] = func() (string, error) {
+		branch := strings.TrimSpace(cfg.OpenCenter.GitOps.BaseRepo.Branch)
+		release := strings.TrimSpace(cfg.OpenCenter.GitOps.BaseRepo.Release)
+		refType := "branch"
+		refValue := branch
+		if release != "" {
+			refType = "tag"
+			refValue = release
+		} else if refValue == "" {
+			refValue = strings.TrimSpace(cfg.OpenCenter.GitOps.Repository.Branch)
+			if refValue == "" {
+				refValue = "main"
+			}
+		}
+		return sourceAuthBlock(cfg.OpenCenter.GitOps.BaseRepo.URL, refType, refValue, "opencenter-base")
+	}
+
+	// sourceAuthBlockCustomerRepository retains customer-repository semantics
+	// for sources such as keycloak-config while using the same renderer.
+	funcMap["sourceAuthBlockCustomerRepository"] = func() (string, error) {
+		branch := strings.TrimSpace(cfg.OpenCenter.GitOps.Repository.Branch)
+		if branch == "" {
+			branch = "main"
+		}
+		return sourceAuthBlock(cfg.OpenCenter.GitOps.Repository.URL, "branch", branch, "flux-system")
+	}
+
 	t, err := template.New(filename).Funcs(funcMap).Parse(content)
 	if err != nil {
 		return fmt.Errorf("failed to parse template %s: %w", path, err)

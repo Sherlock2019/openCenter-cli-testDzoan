@@ -48,7 +48,7 @@ type autoServiceContext struct {
 	BaseRepoURL               string
 	RepoBranch                string
 	RepoTag                   string
-	IsSSH                     bool
+	GitopsAuthMethod          string
 	FluxInterval              string
 	Force                     bool
 	Suspend                   bool
@@ -124,11 +124,19 @@ func extractBaseConfig(serviceCfg any) *services.BaseConfig {
 // buildAutoServiceContext populates the template context from config.
 func buildAutoServiceContext(serviceName string, base *services.BaseConfig, cfg v2.Config) autoServiceContext {
 	baseRepoURL := cfg.OpenCenter.GitOps.BaseRepo.URL
-	release := cfg.OpenCenter.GitOps.BaseRepo.Release
-	branch := cfg.OpenCenter.GitOps.BaseRepo.Branch
+	if strings.TrimSpace(base.Source.Repo) != "" {
+		baseRepoURL = strings.TrimSpace(base.Source.Repo)
+	}
 
-	// When a release tag is set, use it as the git ref (tag). Otherwise fall
-	// back to branch tracking. Tag and branch are mutually exclusive.
+	// A service-level ref takes precedence over the shared base-repository ref.
+	// Otherwise use a pinned base release before branch tracking.
+	branch := strings.TrimSpace(base.Source.Branch)
+	release := strings.TrimSpace(base.Source.Release)
+	if release == "" && branch == "" {
+		release = cfg.OpenCenter.GitOps.BaseRepo.Release
+		branch = cfg.OpenCenter.GitOps.BaseRepo.Branch
+	}
+
 	var repoTag string
 	if release != "" {
 		repoTag = release
@@ -179,7 +187,7 @@ func buildAutoServiceContext(serviceName string, base *services.BaseConfig, cfg 
 		BaseRepoURL:               baseRepoURL,
 		RepoBranch:                branch,
 		RepoTag:                   repoTag,
-		IsSSH:                     !strings.HasPrefix(baseRepoURL, "https://"),
+		GitopsAuthMethod:          cfg.OpenCenter.GitOps.ResolvedAuthMethod,
 		FluxInterval:              interval,
 		Force:                     adoption.Force,
 		Suspend:                   adoption.Suspend,
@@ -301,6 +309,21 @@ func kustomizationName(serviceName, override string) string {
 
 func renderInlineAutoTemplate(tmplStr string, ctx autoServiceContext) (string, error) {
 	funcMap := sprig.TxtFuncMap()
+	// Add the shared source auth block renderer. Returning an error from a
+	// template function makes invalid repository URLs fail rendering clearly.
+	funcMap["sourceAuthBlock"] = func() (string, error) {
+		refType := "branch"
+		refValue := ctx.RepoBranch
+		if ctx.RepoTag != "" {
+			refType = "tag"
+			refValue = ctx.RepoTag
+		}
+		params, err := BuildSourceAuthParams(ctx.GitopsAuthMethod, ctx.BaseRepoURL, refType, refValue, "opencenter-base")
+		if err != nil {
+			return "", err
+		}
+		return RenderSourceAuthBlock(params), nil
+	}
 	t, err := template.New("auto").Funcs(funcMap).Parse(tmplStr)
 	if err != nil {
 		return "", err
@@ -322,17 +345,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 15m
-  url: {{ .BaseRepoURL }}
-  ref:
-{{- if .RepoTag }}
-    tag: {{ .RepoTag }}
-{{- else }}
-    branch: {{ .RepoBranch }}
-{{- end }}
-{{- if .IsSSH }}
-  secretRef:
-    name: opencenter-base
-{{- end }}
+{{ sourceAuthBlock }}
 `
 
 const autoFluxTwoStageTemplate = `{{- $kn := .KustomizationName | default .ServiceName -}}
