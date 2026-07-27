@@ -45,7 +45,7 @@ Task-oriented how-to guides for day-2 work.
 |     |     |
 | --- | --- |
 | Cluster creation | [Create a Kind cluster](operations/create-kind-cluster.md)<br> [Create an OpenStack cluster](operations/create-openstack-cluster.md)<br> [Deploy an OpenStack cluster](operations/deploy-openstack-cluster.md) |
-| Configuration | [Validate configuration](operations/validate-configuration.md)<br> [Customize services](operations/customize-services.md)<br> [Configure networking](operations/configure-networking.md) |
+| Configuration | [Validate configuration](operations/validate-configuration.md)<br> [Customize services](operations/customize-services.md)<br> [Deployment profiles](operations/deployment-profiles.md)<br> [Configure networking](operations/configure-networking.md) |
 | Secrets and bootstrap | [Manage secrets](operations/manage-secrets.md)<br> [Configure Flux bootstrap auth](operations/flux-bootstrap-methods.md) |
 | Day-2 operations | [Add worker pools](operations/add-worker-pools.md)<br> [Backup and restore](operations/backup-and-restore.md)<br> [Upgrade Kubernetes](operations/upgrade-kubernetes.md)<br> [Migrate clusters](operations/migrate-clusters.md) |
 | Integration and plugins | [Integrate CI/CD](operations/integrate-ci-cd.md)<br> [Create and install a CLI plugin](operations/create-install-cli-plugin.md) |
