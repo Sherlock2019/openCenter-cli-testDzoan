@@ -224,6 +224,19 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    - name: longhorn-https
+      port: 443
+      protocol: HTTPS
+      hostname: {{ (index .OpenCenter.Services "longhorn").Hostname | default (printf "longhorn.%s" .OpenCenter.Cluster.ClusterFQDN) }}
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: longhorn-tls
 `
 
 const longhornHTTPRouteTemplate = `---
