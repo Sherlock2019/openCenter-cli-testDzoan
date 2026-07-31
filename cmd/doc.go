@@ -11,27 +11,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/*
-Package cmd implements the command-line interface for opencenter.
-
-It provides commands for managing cluster configurations, including initialization, validation, and GitOps scaffolding.
-
-# When to use
-
-Use the commands in this package to interact with opencenter from the command line. The main entry point is the `opencenter` command, which has several subcommands for managing clusters.
-
-# Examples
-
-To list all available clusters:
-
-	opencenter cluster list
-
-To initialize a new cluster configuration:
-
-	opencenter cluster init my-cluster
-
-To validate a cluster configuration:
-
-	opencenter cluster validate my-cluster
-*/
+// Package cmd defines the Cobra command tree and the user-facing orchestration
+// layer for opencenter.
+//
+// ExecuteWithContext in root.go is the primary wiring boundary. It builds the
+// typed application graph, places it in the command context, registers the root
+// commands, and discovers external command plugins. Individual command files
+// should remain responsible for argument handling, prompts, terminal output,
+// and sequencing calls into lower-level packages.
+//
+// Reusable configuration, cluster lifecycle, provider, GitOps, secrets, and
+// validation behavior belongs in a specifically named package under internal.
+// Do not add domain logic to a Cobra Run or RunE function when it can be tested
+// independently behind a focused service API. Conversely, keep command-only
+// presentation policy here instead of leaking it into reusable packages.
 package cmd
