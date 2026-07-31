@@ -311,11 +311,6 @@ func capitalizeFirst(s string) string {
 	return strings.ToUpper(s[:1]) + s[1:]
 }
 
-// Legacy configuration merger (simplified for testing)
-func NewLegacyConfigurationMerger() ConfigurationMerger {
-	return NewDefaultConfigurationMerger() // For now, use same implementation
-}
-
 // Helper functions for backward compatibility testing
 
 func splitPathCompat(path, separator string) []string {
