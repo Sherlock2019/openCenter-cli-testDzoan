@@ -112,6 +112,31 @@ opencenter cluster set prod-cluster \
 | `opencenter cluster drift reconcile` |
 | `opencenter cluster drift schedule` |
 
+### External Synchronization
+
+| Command | Purpose |
+| --- | --- |
+| `opencenter cluster sync openstack <cluster>` | Discover an OpenStack `clouds.yaml` profile and reconcile cluster networking, images, flavors, storage, and supported service storage wiring |
+
+`cluster sync openstack` is a native replacement for the OpenStack cluster-sync
+workflow previously supplied by the RMPK plugin. It reads the selected profile
+from `--clouds-yaml` (or `OS_CLIENT_CONFIG_FILE` / `~/.config/openstack/clouds.yaml`)
+and requires `--os-cloud` or `OS_CLOUD`.
+
+```bash
+# Inspect planned configuration and credential changes without modifying anything
+opencenter cluster sync openstack acme/prod --os-cloud production --dry-run
+
+# Reconcile selected storage-backed services without an interactive prompt
+opencenter cluster sync openstack acme/prod --os-cloud production \
+  --services loki=swift,tempo=s3 --yes
+```
+
+Existing storage credentials are retained unless `--rotate-creds` is supplied.
+Creating Swift application credentials or S3-compatible EC2 credentials requires
+`auth.user_id` and a project ID in the cloud profile. Use `--no-scope-creds` only
+when unscoped Swift application credentials are explicitly acceptable.
+
 ### Services
 
 | Command |
