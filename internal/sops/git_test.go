@@ -126,41 +126,6 @@ func TestGitIntegrator_CreateCommitMessage(t *testing.T) {
 	}
 }
 
-func TestGitIntegrator_getFilesToEncrypt(t *testing.T) {
-	tmpDir := t.TempDir()
-
-	encryptor := NewDefaultEncryptor(nil, nil)
-	integrator := NewGitIntegrator(tmpDir, encryptor)
-
-	cfg := newSOPSTestConfig("test-cluster", "openstack", "")
-
-	files := integrator.getFilesToEncrypt(tmpDir, cfg)
-
-	// Should contain standard files
-	expectedFiles := []string{
-		"flux-system/gotk-sync.yaml",
-		"managed-services/sources/base-repo.yaml",
-		"secrets/openstack-credentials.yaml",
-	}
-
-	if len(files) != len(expectedFiles) {
-		t.Errorf("getFilesToEncrypt() returned %d files, expected %d", len(files), len(expectedFiles))
-	}
-
-	for _, expected := range expectedFiles {
-		found := false
-		for _, file := range files {
-			if file == expected {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("getFilesToEncrypt() should include %s", expected)
-		}
-	}
-}
-
 // Helper function to check if string contains substring
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||

@@ -104,7 +104,7 @@ func (g *GitIntegrator) CommitEncryptedFiles(ctx context.Context, cfg *v2.Config
 
 // encryptFilesForCommit encrypts files that should be encrypted before commit
 func (g *GitIntegrator) encryptFilesForCommit(ctx context.Context, cfg *v2.Config) error {
-	filesToEncrypt := g.getFilesToEncrypt(g.repoPath, cfg)
+	filesToEncrypt := overlayFilesToEncrypt(cfg)
 
 	// Get age key from configuration
 	var ageKeys []string
@@ -147,7 +147,7 @@ func (g *GitIntegrator) encryptFilesForCommit(ctx context.Context, cfg *v2.Confi
 
 // stageEncryptedFiles stages encrypted files for commit
 func (g *GitIntegrator) stageEncryptedFiles(ctx context.Context, cfg *v2.Config) error {
-	filesToStage := g.getFilesToEncrypt(g.repoPath, cfg)
+	filesToStage := overlayFilesToEncrypt(cfg)
 
 	for _, file := range filesToStage {
 		filePath := filepath.Join(g.repoPath, file)
@@ -538,32 +538,6 @@ func (g *GitIntegrator) GetLastCommitHash(ctx context.Context) (string, error) {
 	}
 
 	return strings.TrimSpace(string(output)), nil
-}
-
-// Helper methods for GitIntegrator
-
-// getFilesToEncrypt returns the list of files that should be encrypted
-func (g *GitIntegrator) getFilesToEncrypt(overlayPath string, cfg *v2.Config) []string {
-	var files []string
-
-	// Standard encrypted files
-	files = append(files,
-		"flux-system/gotk-sync.yaml",
-		"managed-services/sources/base-repo.yaml",
-	)
-
-	// Provider-specific encrypted files
-	switch cfg.OpenCenter.Infrastructure.Provider {
-	case "openstack":
-		files = append(files, "secrets/openstack-credentials.yaml")
-	case "vsphere":
-		files = append(files,
-			"secrets/vsphere-credentials.yaml",
-			"customer-managed/services/cloud-provider-vsphere/secret.yaml",
-		)
-	}
-
-	return files
 }
 
 // loadAgeKeyFromFile loads an age key pair from a file path

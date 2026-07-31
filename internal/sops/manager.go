@@ -106,7 +106,7 @@ func (m *DefaultSOPSManager) EncryptOverlayFiles(ctx context.Context, overlayPat
 	m.logger.Info("Starting overlay files encryption", "overlay_path", overlayPath)
 
 	// Get list of files to encrypt
-	filesToEncrypt := m.getFilesToEncrypt(overlayPath, cfg)
+	filesToEncrypt := overlayFilesToEncrypt(cfg)
 	m.logger.Debug("Files to encrypt", "count", len(filesToEncrypt), "files", filesToEncrypt)
 
 	// Get encryption keys
@@ -430,32 +430,6 @@ func (m *DefaultSOPSManager) CheckSOPSVersion(ctx context.Context) (string, erro
 
 	m.logger.Info("SOPS version check successful", "version", version)
 	return version, nil
-}
-
-// Helper methods
-
-// getFilesToEncrypt returns the list of files that should be encrypted
-func (m *DefaultSOPSManager) getFilesToEncrypt(overlayPath string, cfg *v2.Config) []string {
-	var files []string
-
-	// Standard encrypted files
-	files = append(files,
-		"flux-system/gotk-sync.yaml",
-		"managed-services/sources/base-repo.yaml",
-	)
-
-	// Provider-specific encrypted files
-	switch cfg.OpenCenter.Infrastructure.Provider {
-	case "openstack":
-		files = append(files, "secrets/openstack-credentials.yaml")
-	case "vsphere":
-		files = append(files,
-			"secrets/vsphere-credentials.yaml",
-			"customer-managed/services/cloud-provider-vsphere/secret.yaml",
-		)
-	}
-
-	return files
 }
 
 // generateSOPSConfig generates the SOPS configuration content
