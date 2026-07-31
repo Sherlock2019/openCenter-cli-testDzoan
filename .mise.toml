@@ -4,6 +4,7 @@ kubectl = "latest"
 kind = "latest"
 helm = "latest"
 "go:golang.org/x/vuln/cmd/govulncheck" = "latest"
+"aqua:gitleaks/gitleaks" = "latest"
 
 [env]
 # Override the default config directory via environment for reproducible tests
@@ -433,6 +434,9 @@ test-properties = "mise run property"
 
 # Run Go vulnerability analysis.
 govulncheck = "govulncheck ./..."
+
+# Scan the complete Git repository history for potential secrets.
+gitleaks = "gitleaks detect --source . --config .gitleaks.toml --redact --no-banner"
 
 # Run integration tests (resilience, operations, cluster setup)
 integration = '''
